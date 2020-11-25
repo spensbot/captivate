@@ -1,8 +1,10 @@
 import { configureStore } from '@reduxjs/toolkit'
-import counterReducer from './counterSlice'
+import timeReducer from './timeSlice'
+import paramsReducer from './paramsSlice'
 
 export default configureStore({
   reducer: {
-    counter: counterReducer
+    time: timeReducer,
+    params: paramsReducer
   }
 })

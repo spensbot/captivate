@@ -1,9 +1,9 @@
 import React from 'react'
 import { render } from 'react-dom'
-import { GlobalStyle } from './styles/GlobalStyle'
 import { Provider } from 'react-redux'
 import store from './redux/store'
-import Greetings from './components/Greetings'
+import Home from './components/Home'
+import * as engine from './engine/engine'
 
 // import { useSelector, useDispatch } from 'react-redux'
 
@@ -11,21 +11,11 @@ const mainElement = document.createElement('div')
 mainElement.setAttribute('id', 'root')
 document.body.appendChild(mainElement)
 
-import './serial'
-
-const App = () => {
-  return (
-    <>
-      <GlobalStyle />
-      <Greetings />
-      <h1>Hello Earthlings</h1>
-    </>
-  )
-}
+engine.init(store)
 
 render(
   <Provider store={store}>
-    <App />
+    <Home />
   </Provider> 
   , mainElement
 )

@@ -38,5 +38,11 @@ module.exports = {
   },
   plugins: [
     new HtmlWebpackPlugin()
-  ]
+  ],
+  externals: {
+    serialport: {
+      commonjs: 'serialport',
+      commonjs2: 'serialport',
+    }
+  }
 }
