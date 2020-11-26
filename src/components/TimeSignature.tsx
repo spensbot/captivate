@@ -1,6 +1,5 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
-import Divider from './Divider';
 
 export default function TimeSignature() {
 
@@ -28,9 +27,6 @@ export default function TimeSignature() {
   return (
     <div style={styles.root}>
       <div style={styles.fraction}>
-        {/* <span>{signature.numerator}</span>
-        <Divider thickness={'1.5px'} color={'white'}/>
-        <span>{signature.numerator}</span> */}
         <span>{signature.numerator}/{signature.denominator}</span>
       </div>
       <span style={styles.spaced}>Time</span>

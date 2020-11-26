@@ -8,13 +8,13 @@ module.exports = {
     extensions: ['.tsx', '.ts', '.js', '.jsx'],
     mainFields: ['main', 'module', 'browser']
   },
-  entry: path.resolve(rootPath, 'src', 'App.tsx'),
+  entry: path.resolve(rootPath, 'src', 'Index.tsx'),
   target: 'electron-renderer',
   devtool: 'source-map',
   module: {
     rules: [
       {
-        test: /\.(js|ts|tsx)$/,
+        test: /\.(js|ts|tsx|jsx)$/,
         exclude: /node_modules/,
         use: {
           loader: 'babel-loader'

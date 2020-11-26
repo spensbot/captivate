@@ -1,9 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 import {visualizerResize, visualizerSetElement} from '../engine/engine'
-import Time from './Time';
-import FPS from './FPS';
 
-export default function Home({style}) {
+export default function Visualizer({style}) {
 
   const threeJSDomElement = useRef(null)
 
@@ -14,18 +12,7 @@ export default function Home({style}) {
     return () => {window.removeEventListener('resize', visualizerResize)};
   }, [])
 
-  const styles = {
-    webgl: {
-      width: '50vw',
-      height: '50vh',
-    }
-  }
-
   return (
-    <>
-    <Time />
-    <div style={styles.webgl} ref={threeJSDomElement}></div>
-    <FPS />
-    </>
+    <div style={style} ref={threeJSDomElement}></div>
   )
 }
