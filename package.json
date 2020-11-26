@@ -73,9 +73,11 @@
   },
   "dependencies": {
     "@reduxjs/toolkit": "^1.4.0",
+    "@types/react-helmet": "^6.1.0",
     "bindings": "^1.5.0",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
+    "react-helmet": "^6.1.0",
     "react-redux": "^7.2.2",
     "redux": "^4.0.5",
     "serialport": "^9.0.2",

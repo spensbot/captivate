@@ -1,14 +1,14 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-export const connectionSlice = createSlice({
-  name: 'connection',
+export const connectionsSlice = createSlice({
+  name: 'connections',
   initialState: {
     dmx: {
-      connected: false,
+      isConnected: false,
       path: null
     },
     midi: {
-      connected: false,
+      isConnected: false,
       path: null
     }
   },
@@ -22,6 +22,6 @@ export const connectionSlice = createSlice({
   },
 });
 
-export const { setDmx, setMidi } = connectionSlice.actions;
+export const { setDmx, setMidi } = connectionsSlice.actions;
 
-export default connectionSlice.reducer;
+export default connectionsSlice.reducer;

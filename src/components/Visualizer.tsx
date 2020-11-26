@@ -1,7 +1,11 @@
 import React, { useEffect, useRef } from 'react'
 import {visualizerResize, visualizerSetElement} from '../engine/engine'
 
-export default function Visualizer({style}) {
+type Props = {
+  style: React.CSSProperties
+}
+
+export default function Visualizer({style}: Props) {
 
   const threeJSDomElement = useRef(null)
 
