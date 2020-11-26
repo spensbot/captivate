@@ -1,6 +1,10 @@
-## Captivate Visual Synth
-An easy to use program for live-creation of visuals synced to music.
+# Captivate
+### Visual & Lighting Synth
+An easy to use cross-platform app (mac, linux, windows) for real-time, synchronized generation of Visuals and DMX Lighting
 
-I've gone back-and-forth on the most appropriate technologies for this project more times than I can count. I really hope this is the one!
+Thanks to this repo https://github.com/diego3g/electron-typescript-react for the electron/react boilerplate
+
+MIT License https://github.com/spensbot/Captivate2/blob/master/LICENSE
+
 
 
