@@ -21,61 +21,51 @@ function isDmxUsbPro(port) {
 }
 
 async function getFirstDmxUsbProPath() {
-  serialport.list().then(ports => {
-    console.log(ports)
-    const dmxDevices = ports.filter(isDmxUsbPro)
-    console.log(dmxDevices)
-    if (dmxDevices.length > 0) {
-      return dmxDevices[0].path
-    }
-    return null
-  }).catch(err => {
-    console.log(err)
-    return null
-  }).finally()
+  const ports = await serialport.list()
+  const dmxDevices = ports.filter(isDmxUsbPro)
+  if (dmxDevices.length > 0) {
+    return dmxDevices[0].path
+  }
+  return null
 }
 
 export async function maintainConnection() {
-  console.log("Connection", connection)
-
   if (connection) {
     setTimeout(maintainConnection, 5000)
     return
   }
 
-  getFirstDmxUsbProPath().then(path => {
-    console.log(path)
-    connect("/dev/tty.usbserial-6A1UGL5M")
-    // connect(path)
-  })
+  const path = await getFirstDmxUsbProPath()
+  if (path) {
+    connect(path)
+    console.log(`Connected to device at path: ${path}`);
+  }
 
   setTimeout(maintainConnection, 2000)
 }
 
 function connect(path) {
-  if (path) {
-    connection = new serialport(
-      path,
-      {
-        baudRate: 250000,
-        dataBits: 8,
-        stopBits: 2,
-        parity: 'none',
-      },
-      (err) => {
-        if (err) {
-          console.warn("Serialport connection failed", err)
-          connection = null
-        } else {
-          start()
-        }
+  connection = new serialport(
+    path,
+    {
+      baudRate: 250000,
+      dataBits: 8,
+      stopBits: 2,
+      parity: 'none',
+    },
+    (err) => {
+      if (err) {
+        console.warn("Serialport connection failed", err)
+        connection = null
+      } else {
+        start()
       }
-    )
-  }
+    }
+  )
 }
 
 function start() {
-  console.log("Sending DMX")
+  console.log("Sending DMX...")
   intervalHandle = setInterval(() => {
     sendUniverse()
   }, interval)
@@ -94,7 +84,7 @@ function close() {
 
 export function update(u) {
   for (const c in u) {
-    this.universe[c] = u[c];
+    universe[c] = u[c];
   }
 }
 

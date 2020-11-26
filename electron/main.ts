@@ -27,6 +27,8 @@ function createWindow () {
     )
   }
 
+  mainWindow.webContents.openDevTools();
+
   mainWindow.on('closed', () => {
     mainWindow = null
   })
@@ -44,4 +46,7 @@ app.on('ready', createWindow)
         .catch((err) => console.log('An error occurred: ', err))
     }
   })
+
+// This allows serialport to be imported via window.require('serialport')
+// A workaround webpack breaking serialport
 app.allowRendererProcessReuse = false
