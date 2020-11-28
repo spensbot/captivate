@@ -1,13 +1,14 @@
 import * as graphicsEngine from "./graphicsEngine"
 import { updateTime } from '../redux/timeSlice'
 import * as dmxEngine from './dmxEngine'
+import { ReduxStore } from '../redux/store'
 
 let lastFrameTime = 0;
 let engineTime = 0;
 let initTime = 0;
-let reduxStore;
+let reduxStore: ReduxStore;
 
-export function init(_reduxStore) {
+export function init(_reduxStore: ReduxStore) {
   reduxStore = _reduxStore;
   initTime = Date.now();
   graphicsEngine.init();
@@ -20,11 +21,11 @@ export function visualizerResize() {
   graphicsEngine.resize();
 }
 
-export function visualizerSetElement(domRef) {
+export function visualizerSetElement(domRef: any) {
   graphicsEngine.setDomElement(domRef);
 }
 
-function engineUpdate(time) {
+function engineUpdate(time: number) {
   requestAnimationFrame(engineUpdate);
 
   const dt = time - lastFrameTime;

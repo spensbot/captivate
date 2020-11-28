@@ -1,8 +1,12 @@
 import * as THREE from 'three'
 
-var camera, scene, renderer;
-var geometry, material, mesh;
-var domRef;
+var camera: THREE.Camera
+var scene: THREE.Scene
+var renderer: THREE.Renderer
+var geometry: THREE.Geometry
+var material: THREE.Material
+var mesh: THREE.Mesh
+var domRef: any
 
 export function init() {
 
@@ -17,7 +21,7 @@ export function init() {
   renderer = new THREE.WebGLRenderer( { antialias: true } );
 }
 
-export function setDomElement(_domRef) {
+export function setDomElement(_domRef: any) {
   domRef = _domRef;
   resize();
   domRef.appendChild( renderer.domElement );
@@ -33,7 +37,7 @@ export function resize () {
   renderer.setSize( width, height );
 }
 
-export function update (dt) {
+export function update (dt: number) {
   mesh.rotation.x += 0.001 * dt;
   mesh.rotation.y += 0.002 * dt;
 

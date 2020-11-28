@@ -1,6 +1,12 @@
 import React from 'react'
 
-export default function ProgressCircle({ratio, radius, style}) {
+type Props = {
+  ratio: number,
+  radius: number,
+  style: React.CSSProperties
+}
+
+export default function ProgressCircle({ratio, radius, style}: Props) {
 
   const rest = 1 - ratio;
   const thickness = radius / 5;

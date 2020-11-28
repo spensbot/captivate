@@ -1,11 +1,11 @@
 import React from 'react';
-import { useSelector } from 'react-redux';
+import { useTypedSelector } from '../redux/store';
 
 export default function TimeSignature() {
 
-  const signature = useSelector(state => state.time.signature);
+  const signature = useTypedSelector(state => state.time.signature);
 
-  const styles = {
+  const styles: {[key: string]: React.CSSProperties} = {
     root: {
       display: 'flex',
       justifyContent: 'center',
@@ -16,7 +16,6 @@ export default function TimeSignature() {
       flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
-      // fontSize: '1.3rem',
       margin: '0 0.5rem 0 0',
     },
     spaced: {

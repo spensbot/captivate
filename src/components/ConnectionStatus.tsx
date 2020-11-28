@@ -1,11 +1,11 @@
 import React from 'react'
-import { useSelector } from 'react-redux';
+import { useTypedSelector } from '../redux/store'
 
 export default function ConnectionStatus() {
 
-  const dmxConnection = useSelector(state => state.connections.dmx);
+  const dmxConnection = useTypedSelector(state => state.connections.dmx);
 
-  const styles: React.CSSProperties[] = [
+  const styles = [
     {
       color: dmxConnection.isConnected ? '#44cc44' : '#cc4444',
       padding: '0.2rem'

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useSelector } from 'react-redux';
+import { useTypedSelector } from '../redux/store';
 import Counter from './Counter';
 import TimeSignature from './TimeSignature';
 
@@ -7,7 +7,7 @@ export default function Time() {
 
   const height = 50;
 
-  const bpm = useSelector(state => state.time.bpm);
+  const bpm = useTypedSelector(state => state.time.bpm);
 
   const styles = {
     root: {
