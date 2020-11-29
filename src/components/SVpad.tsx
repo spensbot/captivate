@@ -1,15 +1,22 @@
 import React, {useState} from 'react'
 import useDrag from './hooks/useDrag'
+import {useTypedSelector} from '../redux/store'
+import {useDispatch} from 'react-redux'
+import {setParams} from '../redux/paramsSlice'
+import {Param} from '../engine/params'
 
 export default function SVpad() {
 
   const radiusREM = 0.4
 
-  const [pos, setPos] = useState({x: 0.5, y: 0.5})
+  const {X, Y, Hue} = useTypedSelector(state => state.params)
+  const dispatch = useDispatch()
 
   const [dragContainer, onMouseDown] = useDrag((x, y) => {
-    console.log(`x:${x} y:${y}`)
-    setPos({x, y})
+    dispatch(setParams({
+      [Param.X]: x,
+      [Param.Y]: y
+    }))
   })
 
   const styles: {[key: string]: React.CSSProperties} = {
@@ -17,7 +24,7 @@ export default function SVpad() {
       position: 'relative',
       width: '350px',
       height: '200px',
-      background: `hsl(${100},100%, 50%)`,
+      background: `hsl(${Hue * 360},100%, 50%)`,
     },
     white: {
       position: 'absolute',
@@ -31,8 +38,8 @@ export default function SVpad() {
     },
     cursor: {
       position: 'absolute',
-      top: `${(1 - pos.y) * 100}%`,
-      left: `${pos.x * 100}%`,
+      top: `${(1 - Y) * 100}%`,
+      left: `${X * 100}%`,
       width: `${radiusREM*2}rem`,
       height: `${radiusREM*2}rem`,
       borderRadius: '50%',

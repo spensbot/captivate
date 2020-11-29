@@ -1,13 +1,15 @@
 import React from 'react'
 import useDrag from './hooks/useDrag'
 import {useDispatch} from 'react-redux'
+import {setParams} from '../redux/paramsSlice'
+import {Param} from '../engine/params'
 
 export default function Hue() {
 
   const dispatch = useDispatch()
 
   const [dragContainer, onMouseDown] = useDrag((x, y) => {
-    
+    dispatch(setParams({[Param.Hue]: x}))
   })
 
   const styles: {[key: string]: React.CSSProperties} = {

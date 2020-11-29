@@ -1,22 +1,20 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { getDefaultParams, Param } from '../engine/params';
 
-type ParamPayload = {
-  param: Param,
-  value: string
-}
+type ParamPayload = {[key: string]: number}
 
 export const paramsSlice = createSlice({
   name: 'params',
   initialState: getDefaultParams(),
   reducers: {
-    setParam: (state, action: PayloadAction<ParamPayload>) => {
-      let param = action.payload.param
-      state[param] = action.payload.value
+    setParams: (state, action: PayloadAction<ParamPayload>) => {
+      for (let [key, value] of Object.entries(action.payload)) {
+        state[key] = value
+      }
     },
   },
 });
 
-export const { setParam } = paramsSlice.actions;
+export const { setParams } = paramsSlice.actions;
 
 export default paramsSlice.reducer;
