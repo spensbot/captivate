@@ -6,10 +6,12 @@ import ConnectionStatus from './ConnectionStatus';
 import SplitPane from './SplitPane'
 import Hue from './Hue';
 import SVpad from './SVpad'
+import XYpad from './XYpad';
 
 export default function App() {
   return (
     <>
+      <XYpad />
       <SVpad />
       <Hue />
       <SplitPane style={{height: '200px', width: '100%'}} type="vertical" initialSplit={0.25} px={5}>
