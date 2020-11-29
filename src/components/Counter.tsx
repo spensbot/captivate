@@ -1,12 +1,16 @@
 import React from 'react'
 import ProgressCircle from './ProgressCircle'
-import { useSelector } from 'react-redux'
+import { useTypedSelector } from '../redux/store'
 
-export default function Counter({radius}) {
+type Props = {
+  radius: number
+}
 
-  const time = useSelector(state => state.time);
+export default function Counter({radius}: Props) {
 
-  const styles = {
+  const time = useTypedSelector(state => state.time);
+
+  const styles: {[key: string]: React.CSSProperties} = {
     container: {
       position: 'relative',
       width: `${radius * 2}px`,
@@ -34,7 +38,7 @@ export default function Counter({radius}) {
 
   return (
     <div style={styles.container}>
-      <ProgressCircle ratio={(time.beat - 1 + time.pos) / time.signature.numerator} radius={radius}/>
+      <ProgressCircle style={{}} ratio={(time.beat - 1 + time.pos) / time.signature.numerator} radius={radius}/>
       {/* <div style={styles.number}>
         <ProgressCircle ratio={time.pos} radius={radius-10}/>
       </div> */}

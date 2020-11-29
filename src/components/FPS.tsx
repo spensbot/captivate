@@ -1,13 +1,13 @@
 import React from 'react';
-import { useSelector } from 'react-redux';
+import { useTypedSelector } from '../redux/store';
 
 export default function Time() {
 
-  const dt = useSelector(state => state.time.dt);
+  const dt = useTypedSelector(state => state.time.dt);
 
   const styles = {
     root: {
-
+      
     },
   }
 

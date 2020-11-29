@@ -2,13 +2,24 @@ import { Normalized } from './baseTypes'
 
 export type Blackout = "Blackout" | "No Blackout"
 
+export type Param2 =
+  | "Hue"
+  | "Saturation"
+  | "Brightness"
+  | "Black"
+  | "X"
+  | "Y"
+  | "X_Width"
+  | "Y_Width"
+  | "Epicness"
+  | "Strobe"
+  | "Blackout"
+
 export enum Param {
   Hue = "Hue",
   Saturation = "Saturation",
   Brightness = "Brightness",
   Black = "Black",
-  Position = "Position",
-  Size = "Size",
   X = "X",
   Y = "Y",
   X_Width = "X_Width",
@@ -18,19 +29,20 @@ export enum Param {
   Blackout = "Blackout"
 }
 
-export type Params = {
-  [Param.Hue]: Normalized
-  [Param.Saturation]: Normalized
-  [Param.Brightness]: Normalized
-  [Param.Black]: Normalized
-  [Param.X]: Normalized
-  [Param.X_Width]: Normalized
-  [Param.Y]: Normalized
-  [Param.Y_Width]: Normalized
-  [Param.Epicness]: Normalized
-  [Param.Strobe]: Boolean
-  [Param.Blackout]: Boolean
-}
+export type Params = {[key in Param2]: Normalized}
+// {
+//   [Param.Hue]: Normalized
+//   [Param.Saturation]: Normalized
+//   [Param.Brightness]: Normalized
+//   [Param.Black]: Normalized
+//   [Param.X]: Normalized
+//   [Param.X_Width]: Normalized
+//   [Param.Y]: Normalized
+//   [Param.Y_Width]: Normalized
+//   [Param.Epicness]: Normalized
+//   [Param.Strobe]: Boolean
+//   [Param.Blackout]: Boolean
+// }
 
 export function getDefaultParams(): Params {
   return {
@@ -43,7 +55,7 @@ export function getDefaultParams(): Params {
     [Param.Y]: 0.0,
     [Param.Y_Width]: 0.0,
     [Param.Epicness]: 0.0,
-    [Param.Strobe]: false,
-    [Param.Blackout]: false
+    [Param.Strobe]: 0,
+    [Param.Blackout]: 0
   }
 }

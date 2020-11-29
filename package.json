@@ -72,13 +72,17 @@
     "webpack-dev-server": "^3.10.3"
   },
   "dependencies": {
+    "@material-ui/core": "^4.11.1",
     "@reduxjs/toolkit": "^1.4.0",
     "@types/react-helmet": "^6.1.0",
     "bindings": "^1.5.0",
+    "lodash.throttle": "^4.1.1",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-helmet": "^6.1.0",
     "react-redux": "^7.2.2",
+    "react-split": "^2.0.9",
+    "react-split-pane": "^0.1.92",
     "redux": "^4.0.5",
     "serialport": "^9.0.2",
     "styled-components": "^5.1.1",

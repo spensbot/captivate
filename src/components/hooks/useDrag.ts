@@ -1,20 +1,7 @@
-import React, { useEffect, useState, useRef } from 'react'
-import throttle from 'lodash.throttle'
+import {useEffect, useRef} from 'react'
 
-type Props = {
-  type: 'vertical' | 'horizontal'
-  thickness: number
-
-  style: React.CSSProperties
-  children: React.ReactElement[]
-}
-
-export default function SplitPane({type, thickness, style, children}: Props) {
-  const v = type === 'vertical'
-
-  const [split, setSplit] = useState(0.5)
-
-  const container = useRef()
+export default function useDrag(onChange: (x: number, y: number) => void){
+  const containerRef = useRef()
 
   const onMouseMove = (e:React.MouseEvent) => {
     update(e)
@@ -48,7 +35,7 @@ export default function SplitPane({type, thickness, style, children}: Props) {
   const update = (e:React.MouseEvent) => {
     const {x, y} = getRelativePosition(e, container.current)
 
-    setSplit(v ? x : y)
+    onChange(x, y)
   }
 
   function clamp(val: number, min: number, max: number) {
@@ -75,38 +62,8 @@ export default function SplitPane({type, thickness, style, children}: Props) {
     }
   }, [])
 
-  const styles: {[key: string]: React.CSSProperties} = {
-    root: {
-      display: 'flex',
-      flexDirection: v ? 'row' : 'column',
-      height: '100%',
-      width: '100%'
-    },
-    child1: {
-      flex: `${split} 0 0`,
-      height: v ? '100%' : undefined,
-      width: v ? undefined : '100%'
-    },
-    child2: {
-      flex: `${1 - split} 0 0`,
-      height: v ? '100%' : undefined,
-      width: v ? undefined : '100%'
-    },
-    divider: {
-      width: v ? '10px' : '100%',
-      height: v ? '100%' : '10px',
-      // flex: '0 0 10px',
-      cursor: v ? 'ew-resize' : 'ns-resize'
-    }
-  }
-
-  return (
-    <div style={style} ref={container}>
-      <div style={styles.root}>
-        <div style={styles.child1}>{children[0]}</div>
-        <div style={styles.divider} onMouseDown={onMouseDown}></div>
-        <div style={styles.child2}>{children[1]}</div>
-      </div>
-    </div>
-  )
+  return [
+    containerRef,
+    onMouseDown
+  ]
 }
