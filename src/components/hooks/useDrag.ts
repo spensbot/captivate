@@ -1,7 +1,7 @@
 import {useEffect, useRef} from 'react'
 
 export default function useDrag(onChange: (x: number, y: number) => void){
-  const containerRef = useRef()
+  const dragContainer = useRef()
 
   const onMouseMove = (e:React.MouseEvent) => {
     update(e)
@@ -29,11 +29,12 @@ export default function useDrag(onChange: (x: number, y: number) => void){
 
   const onMouseDown = (e:React.MouseEvent) => {
     e.preventDefault()
+    update(e)
     startListening()
   }
 
   const update = (e:React.MouseEvent) => {
-    const {x, y} = getRelativePosition(e, container.current)
+    const {x, y} = getRelativePosition(e, dragContainer.current)
 
     onChange(x, y)
   }
@@ -52,7 +53,7 @@ export default function useDrag(onChange: (x: number, y: number) => void){
     const {width, height, left, top, right, bottom} =  elem.getBoundingClientRect()
     return {
       x: getRatio(e.clientX, left, right, width),
-      y: getRatio(e.clientY, top, bottom, height)
+      y: 1 - getRatio(e.clientY, top, bottom, height)
     }
   }
 
@@ -63,7 +64,7 @@ export default function useDrag(onChange: (x: number, y: number) => void){
   }, [])
 
   return [
-    containerRef,
+    dragContainer,
     onMouseDown
   ]
 }
