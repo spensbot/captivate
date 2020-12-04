@@ -3,12 +3,14 @@ import timeReducer from './timeSlice'
 import paramsReducer from './paramsSlice'
 import connectionsReducer from './connectionsSlice'
 import { useSelector, TypedUseSelectorHook } from 'react-redux'
+import dmxSlice from './dmxSlice'
 
 export const store = configureStore({
   reducer: {
     time: timeReducer,
     params: paramsReducer,
-    connections: connectionsReducer
+    connections: connectionsReducer,
+    dmx: dmxSlice
   }
 })
 

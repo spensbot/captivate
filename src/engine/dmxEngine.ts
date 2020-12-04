@@ -2,10 +2,35 @@ import * as dmxConnection from './dmxConnection'
 import { Window, Window2D } from './baseTypes'
 import { Params } from './params'
 import { Colors, getColors } from './dmxColors'
-import { DmxValue, DMX_MAX_VALUE, FixtureChannel, ChannelType, Fixture, DMX_DEFAULT_VALUE, DMX_NUM_CHANNELS} from './dmxFixtures'
+import { DmxValue, DMX_MAX_VALUE, FixtureChannel, ChannelType, Fixture, DMX_DEFAULT_VALUE} from './dmxFixtures'
 
 export function init() {
   dmxConnection.maintainConnection()
+
+  writeDMX(0)
+}
+
+const skewDMX = (value: number, max: number, power: number) => {
+  value /= max
+  value = Math.pow(value, power)
+  return value * max
+}
+
+// Power values > 1 skew 
+const skew = (value: number, power: number) => {
+  return Math.pow(value, power)
+}
+
+const writeDMX = (value: number) => {
+  value += 0.01
+  if (value > 1) value -= 1
+
+  const dmxValue = skew(value, 2) * DMX_MAX_VALUE
+  
+  dmxConnection.updateChannel(1, dmxValue)
+  dmxConnection.updateChannel(3, dmxValue)
+
+  setTimeout(() => writeDMX(value), 200)
 }
 
 function getWindowMultiplier2D(fixtureWindow?: Window2D, movingWindow?: Window2D) {
@@ -46,9 +71,14 @@ function getMovingWindow(params: Params): Window2D {
 }
 
 export default function getDMX(params: Params, fixtures: Fixture[]): DmxValue[] {
-  const dmxSend = new Array(DMX_NUM_CHANNELS).fill(DMX_DEFAULT_VALUE);
 
-  if (params.Blackout) return dmxSend
+  if (params.Blackout > 0.5) {
+    fixtures.forEach(fixture => {
+      fixture.type.channels.forEach( (channel, offset) => {
+        dmxConnection.update(fixture.channelNum + offset, DMX_DEFAULT_VALUE)
+      })
+    })
+  }
 
   const colors = getColors(params);
   const movingWindow = getMovingWindow(params);

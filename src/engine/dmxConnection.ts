@@ -88,10 +88,14 @@ function close() {
   }
 }
 
-export function update(values: u8[]) {
+export function updateAll(values: u8[]) {
   values.forEach( (value, index) => {
     universe[index] = value
   })
+}
+
+export function updateChannel(channel: number, value: u8) {
+  universe[channel] = value
 }
 
 function sendUniverse() {

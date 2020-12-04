@@ -1,6 +1,14 @@
 import React from 'react'
 
-export default ({vertical, color, thickness, marginX, marginY}) => {
+type Props = {
+  vertical?: boolean,
+  color?: string,
+  thickness?: string,
+  marginX?: string,
+  marginY?: string
+}
+
+export default ({vertical, color, thickness, marginX, marginY}: Props) => {
 
   const Thickness = thickness || '1px'
   const MarginX = marginX || '0'

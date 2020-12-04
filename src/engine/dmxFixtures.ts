@@ -38,12 +38,14 @@ type ChannelOther = {
 export type FixtureChannel = ChannelMaster | ChannelColor | ChannelStrobe | ChannelOther
 
 export type FixtureType = {
-  manufacturer?: String
-  name?: String
+  id: string
+  manufacturer?: string
+  name?: string
   channels: FixtureChannel[]
 }
 
 const parFixture : FixtureType = {
+  id: "1",
   manufacturer: "Laluce Natz",
   name: "Par",
   channels: [
@@ -59,12 +61,14 @@ const parFixture : FixtureType = {
 }
 
 const stringLightFixture : FixtureType = {
+  id: '2',
   channels: [
     { type: ChannelType.Master },
   ]
 }
 
 const strobeFixture : FixtureType = {
+  id: '3',
   channels: [
     { type: ChannelType.Master },
     { type: ChannelType.StrobeSpeed, default_solid: 0, default_strobe: 251 },
@@ -73,6 +77,7 @@ const strobeFixture : FixtureType = {
 }
 
 const derbyFixture : FixtureType = {
+  id: '4',
   channels: [
     { type: ChannelType.Master },
     { type: ChannelType.Color, color: Color.Red },
@@ -90,15 +95,20 @@ export type Fixture = {
   window?: Window2D
 }
 
-type Universe = Fixture[]
+export const testFixtureTypes = {
+  1: parFixture,
+  2: stringLightFixture,
+  3: strobeFixture,
+  4: derbyFixture
+}
 
-export const universe : Universe = [
-  {channelNum: 1, type: stringLightFixture, window: {x: {pos: 0.0, width: 0.0}} },
-  {channelNum: 2, type: stringLightFixture, window: {x: {pos: 0.33, width: 0.0}} },
-  {channelNum: 3, type: stringLightFixture, window: {x: {pos: 0.66, width: 0.0}} },
-  {channelNum: 4, type: stringLightFixture, window: {x: {pos: 1.0, width: 0.0}} },
-  {channelNum: 5, type: parFixture },
-  {channelNum: 12, type: parFixture },
-  {channelNum: 19, type: strobeFixture },
-  {channelNum: 22, type: derbyFixture },
-]
+export const testUniverse = {
+  1: {channelNum: 1, type: stringLightFixture, window: {x: {pos: 0.0, width: 0.0}} },
+  2: {channelNum: 2, type: stringLightFixture, window: {x: {pos: 0.33, width: 0.0}} },
+  3: {channelNum: 3, type: stringLightFixture, window: {x: {pos: 0.66, width: 0.0}} },
+  4: {channelNum: 4, type: stringLightFixture, window: {x: {pos: 1.0, width: 0.0}} },
+  5: {channelNum: 5, type: parFixture },
+  13: {channelNum: 13, type: parFixture },
+  21: {channelNum: 21, type: strobeFixture },
+  24: {channelNum: 24, type: derbyFixture },
+}
