@@ -70,7 +70,7 @@ function getMovingWindow(params: Params): Window2D {
   }
 }
 
-export default function getDMX(params: Params, fixtures: Fixture[]): DmxValue[] {
+export default function setDMX(params: Params, fixtures: Fixture[]): DmxValue[] {
 
   if (params.Blackout > 0.5) {
     fixtures.forEach(fixture => {

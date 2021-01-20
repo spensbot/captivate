@@ -3,7 +3,7 @@ import { useTypedSelector } from '../redux/store';
 
 export default function TimeSignature() {
 
-  const signature = useTypedSelector(state => state.time.signature);
+  const time = useTypedSelector(state => state.time);
 
   const styles: {[key: string]: React.CSSProperties} = {
     root: {
@@ -26,7 +26,7 @@ export default function TimeSignature() {
   return (
     <div style={styles.root}>
       <div style={styles.fraction}>
-        <span>{signature.numerator}/{signature.denominator}</span>
+        <span>{time.quantum}/4</span>
       </div>
       <span style={styles.spaced}>Time</span>
     </div>

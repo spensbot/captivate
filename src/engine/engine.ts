@@ -2,14 +2,18 @@ import * as graphicsEngine from "./graphicsEngine"
 import { updateTime } from '../redux/timeSlice'
 import * as dmxEngine from './dmxEngine'
 import { ReduxStore } from '../redux/store'
+// import NodeLink from 'node-link'
+const NodeLink = window.require('node-link');
 
 let lastFrameTime = 0;
 let engineTime = 0;
 let initTime = 0;
 let reduxStore: ReduxStore;
+let nodeLink;
 
 export function init(_reduxStore: ReduxStore) {
   reduxStore = _reduxStore;
+  nodeLink = new NodeLink();
   initTime = Date.now();
   graphicsEngine.init();
   dmxEngine.init();

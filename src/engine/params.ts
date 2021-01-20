@@ -29,20 +29,7 @@ export enum Param {
   Blackout = "Blackout"
 }
 
-export type Params = {[key in Param2]: Normalized}
-// {
-//   [Param.Hue]: Normalized
-//   [Param.Saturation]: Normalized
-//   [Param.Brightness]: Normalized
-//   [Param.Black]: Normalized
-//   [Param.X]: Normalized
-//   [Param.X_Width]: Normalized
-//   [Param.Y]: Normalized
-//   [Param.Y_Width]: Normalized
-//   [Param.Epicness]: Normalized
-//   [Param.Strobe]: Boolean
-//   [Param.Blackout]: Boolean
-// }
+export type Params = {[key in Param]: Normalized}
 
 export function getDefaultParams(): Params {
   return {

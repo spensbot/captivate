@@ -1,44 +1,33 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+
+interface UpdateTimePayload {
+  bpm: number
+  beats: number
+  phase: number
+  quantum: number
+  dt: number
+}
 
 export const timeSlice = createSlice({
   name: 'time',
   initialState: {
-    signature: {
-      numerator: 4,
-      denominator: 4,
-      bars: 4,
-    },
-    bpm: 90,
-    bar: 1,
-    beat: 1,
-    pos: 0.0,
+    bpm: 90.0, // (from LINK)
+    beats: 0.0, // running total of beats (from LINK)
+    phase: 0.0, // from 0.0 to quantum (from LINK)
+    quantum: 4.0,
     dt: 0.0,
   },
   reducers: {
-    setTimeSig: (state, action) => {
-      state.signature = action.payload.signature;
-    },
-    setBPM: (state, action) => {
-      state.bpm = action.payload;
-    },
-    updateTime: (state, action) => {
-      state.dt = action.payload; // seconds
-      state.pos += state.dt / 1000 * state.bpm / 60;
-      if (state.pos > 1.0) {
-        state.pos -= 1.0;
-        state.beat += 1;
-        if (state.beat > state.signature.numerator) {
-          state.beat = 1;
-          state.bar += 1;
-          if (state.bar > state.signature.bars) {
-            state.bar = 1;
-          }
-        }
-      }
+    updateTime: (state, action: PayloadAction<UpdateTimePayload>) => {
+      state.bpm = action.payload.bpm;
+      state.beats = action.payload.beats;
+      state.phase = action.payload.phase;
+      state.quantum = action.payload.quantum;
+      state.dt = action.payload.dt;
     },
   },
 });
 
-export const { setTimeSig, setBPM, updateTime } = timeSlice.actions;
+export const { updateTime } = timeSlice.actions;
 
 export default timeSlice.reducer;

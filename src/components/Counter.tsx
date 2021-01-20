@@ -38,12 +38,12 @@ export default function Counter({radius}: Props) {
 
   return (
     <div style={styles.container}>
-      <ProgressCircle style={{}} ratio={(time.beat - 1 + time.pos) / time.signature.numerator} radius={radius}/>
+      <ProgressCircle style={{}} ratio={time.phase / time.quantum} radius={radius}/>
       {/* <div style={styles.number}>
         <ProgressCircle ratio={time.pos} radius={radius-10}/>
       </div> */}
       <div style={styles.number}>
-        <span>{time.beat}</span>
+        <span>{time.beats}</span>
       </div>
     </div>
   )
