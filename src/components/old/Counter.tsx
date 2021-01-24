@@ -1,6 +1,6 @@
 import React from 'react'
 import ProgressCircle from './ProgressCircle'
-import { useTypedSelector } from '../redux/store'
+import { useTypedSelector } from '../../redux/store'
 
 type Props = {
   radius: number
@@ -43,7 +43,7 @@ export default function Counter({radius}: Props) {
         <ProgressCircle ratio={time.pos} radius={radius-10}/>
       </div> */}
       <div style={styles.number}>
-        <span>{time.beats}</span>
+        <span>{Math.floor(time.phase) + 1}</span>
       </div>
     </div>
   )

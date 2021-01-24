@@ -2,8 +2,8 @@ import React from 'react'
 import useDrag from './hooks/useDrag'
 import {useTypedSelector} from '../redux/store'
 import {useDispatch} from 'react-redux'
-import {setParams} from '../redux/paramsSlice'
-import {Param} from '../engine/params'
+import {setBaseParams} from '../redux/paramsSlice'
+import {ParamKey} from '../engine/params'
 import PadCursor from './PadCursor'
 
 export default function SVpad() {
@@ -12,18 +12,18 @@ export default function SVpad() {
   const dispatch = useDispatch()
 
   const [dragContainer, onMouseDown] = useDrag((x, y) => {
-    dispatch(setParams({
-      [Param.Saturation]: x,
-      [Param.Brightness]: y
+    dispatch(setBaseParams({
+      [ParamKey.Saturation]: x,
+      [ParamKey.Brightness]: y
     }))
   })
 
   const styles: {[key: string]: React.CSSProperties} = {
     root: {
       position: 'relative',
-      width: '350px',
-      height: '200px',
-      background: `hsl(${Hue * 360},100%, 50%)`,
+      width: '200px',
+      height: '160px',
+      background: `hsl(${Hue.baseValue * 360},100%, 50%)`,
     },
     white: {
       position: 'absolute',
@@ -41,7 +41,7 @@ export default function SVpad() {
     <div style={styles.root} ref={dragContainer} onMouseDown={onMouseDown}>
       <div style={styles.white}>
         <div style={styles.black}></div>
-        <PadCursor paramX={Param.Saturation} paramY={Param.Brightness} getCursorColor={(x,y) => y < 0.3 ? '#ccc' : '#111' }/>
+        <PadCursor paramX={ParamKey.Saturation} paramY={ParamKey.Brightness} getCursorColor={(x,y) => y < 0.3 ? '#ccc' : '#111' }/>
       </div>
     </div>
   )

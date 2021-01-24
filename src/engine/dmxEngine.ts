@@ -1,19 +1,27 @@
 import * as dmxConnection from './dmxConnection'
-import { Window, Window2D } from './baseTypes'
+import { Window, Window2D } from '../types/baseTypes'
 import { Params } from './params'
-import { Colors, getColors } from './dmxColors'
-import { DmxValue, DMX_MAX_VALUE, FixtureChannel, ChannelType, Fixture, DMX_DEFAULT_VALUE} from './dmxFixtures'
+import { Color, Colors, getColors } from './dmxColors'
+import { DmxValue, DMX_MAX_VALUE, FixtureChannel, ChannelType, Fixture, DMX_DEFAULT_VALUE, testUniverse} from './dmxFixtures'
+import { ReduxStore } from '../redux/store'
+import { setDmx } from '../redux/connectionsSlice'
 
-export function init() {
-  dmxConnection.maintainConnection()
+let _store: ReduxStore
 
-  writeDMX(0)
+function connectionStatusUpdate(isConnected: boolean, path: string | null) {
+  if (_store.getState().connections.dmx.isConnected != isConnected) {
+    _store.dispatch(setDmx({
+      isConnected: isConnected,
+      path: path,
+      isTroubleshoot: false
+    }));
+  }
 }
 
-const skewDMX = (value: number, max: number, power: number) => {
-  value /= max
-  value = Math.pow(value, power)
-  return value * max
+export function init(store: ReduxStore) {
+  _store = store
+  dmxConnection.init(connectionStatusUpdate)
+  setInterval(writeDMX, 1000 / 40)
 }
 
 // Power values > 1 skew 
@@ -21,16 +29,8 @@ const skew = (value: number, power: number) => {
   return Math.pow(value, power)
 }
 
-const writeDMX = (value: number) => {
-  value += 0.01
-  if (value > 1) value -= 1
-
-  const dmxValue = skew(value, 2) * DMX_MAX_VALUE
-  
-  dmxConnection.updateChannel(1, dmxValue)
-  dmxConnection.updateChannel(3, dmxValue)
-
-  setTimeout(() => writeDMX(value), 200)
+const writeDMX = () => {  
+  setDMX(_store.getState().params, testUniverse)
 }
 
 function getWindowMultiplier2D(fixtureWindow?: Window2D, movingWindow?: Window2D) {
@@ -53,29 +53,29 @@ function getWindowMultiplier(fixtureWindow?: Window, movingWindow?: Window) {
 function getDmxValue(fixtureChannel: FixtureChannel, params: Params, colors: Colors, fixtureWindow?: Window2D, movingWindow?: Window2D): DmxValue {
   switch (fixtureChannel.type) {
     case ChannelType.Master:
-      return params.Brightness * DMX_MAX_VALUE * getWindowMultiplier2D(fixtureWindow, movingWindow);
+      return params.Brightness.value * DMX_MAX_VALUE // * getWindowMultiplier2D(fixtureWindow, movingWindow);
     case ChannelType.Other:
       return fixtureChannel.default;
     case ChannelType.Color:
-      return colors[fixtureChannel.color]
+      return colors[fixtureChannel.color] * DMX_MAX_VALUE
     case ChannelType.StrobeSpeed:
-      return params.Strobe ? fixtureChannel.default_strobe : fixtureChannel.default_solid
+      return (params.Strobe.value > 0.5) ? fixtureChannel.default_strobe : fixtureChannel.default_solid
   }
 }
 
 function getMovingWindow(params: Params): Window2D {
   return {
-    x: {pos: params.X, width: params.X_Width},
-    y: {pos: params.Y, width: params.Y_Width}
+    x: {pos: params.X.value, width: params.X_Width.value},
+    y: {pos: params.Y.value, width: params.Y_Width.value}
   }
 }
 
-export default function setDMX(params: Params, fixtures: Fixture[]): DmxValue[] {
+export default function setDMX(params: Params, universe: Fixture[]) {
 
-  if (params.Blackout > 0.5) {
-    fixtures.forEach(fixture => {
+  if (params.Blackout.value > 0.5) {
+    universe.forEach(fixture => {
       fixture.type.channels.forEach( (channel, offset) => {
-        dmxConnection.update(fixture.channelNum + offset, DMX_DEFAULT_VALUE)
+        dmxConnection.updateChannel(fixture.channelNum + offset, DMX_DEFAULT_VALUE)
       })
     })
   }
@@ -83,11 +83,9 @@ export default function setDMX(params: Params, fixtures: Fixture[]): DmxValue[] 
   const colors = getColors(params);
   const movingWindow = getMovingWindow(params);
 
-  fixtures.forEach(fixture => {
+  universe.forEach(fixture => {
     fixture.type.channels.forEach( (channel, offset) => {
-      dmxSend[fixture.channelNum + offset] = getDmxValue(channel, params, colors, fixture.window, movingWindow)
+      dmxConnection.updateChannel(fixture.channelNum + offset, getDmxValue(channel, params, colors, fixture.window, movingWindow));
     })
   })
-
-  return dmxSend
 }

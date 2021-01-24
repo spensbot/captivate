@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { ReduxStore } from '../redux/store'
 
 var camera: THREE.Camera
 var scene: THREE.Scene
@@ -7,8 +8,10 @@ var geometry: THREE.Geometry
 var material: THREE.Material
 var mesh: THREE.Mesh
 var domRef: any
+var _store: ReduxStore
 
-export function init() {
+export function init(store: ReduxStore) {
+  _store = store
 
   scene = new THREE.Scene();
 
@@ -37,9 +40,17 @@ export function resize () {
   renderer.setSize( width, height );
 }
 
-export function update (dt: number) {
-  mesh.rotation.x += 0.001 * dt;
-  mesh.rotation.y += 0.002 * dt;
+export function update (timeState) {
+  mesh.rotation.x += 0.001 * timeState.dt;
+  mesh.rotation.y += 0.002 * timeState.dt;
+
+  let scale = timeState.phase / timeState.quantum
+  scale = 1 - scale
+  scale = Math.pow(scale, 3);
+
+  mesh.scale.setScalar(1.5);
+  mesh.material.transparent = true;
+  mesh.material.opacity = scale;
 
   if (renderer && scene && camera ){
     renderer.render( scene, camera );

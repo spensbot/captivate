@@ -17,6 +17,8 @@ export default function Visualizer({style}: Props) {
   }, [])
 
   return (
-    <div style={style} ref={threeJSDomElement}></div>
+    <div style={style} ref={threeJSDomElement}>
+      
+    </div>
   )
 }

@@ -1,21 +1,21 @@
-import { Normalized } from './baseTypes'
+import { Normalized } from '../types/baseTypes'
 
 export type Blackout = "Blackout" | "No Blackout"
 
-export type Param2 =
-  | "Hue"
-  | "Saturation"
-  | "Brightness"
-  | "Black"
-  | "X"
-  | "Y"
-  | "X_Width"
-  | "Y_Width"
-  | "Epicness"
-  | "Strobe"
-  | "Blackout"
+// export type Param2 =
+//   | "Hue"
+//   | "Saturation"
+//   | "Brightness"
+//   | "Black"
+//   | "X"
+//   | "Y"
+//   | "X_Width"
+//   | "Y_Width"
+//   | "Epicness"
+//   | "Strobe"
+//   | "Blackout"
 
-export enum Param {
+export enum ParamKey {
   Hue = "Hue",
   Saturation = "Saturation",
   Brightness = "Brightness",
@@ -29,20 +29,39 @@ export enum Param {
   Blackout = "Blackout"
 }
 
-export type Params = {[key in Param]: Normalized}
+export interface Param {
+  baseValue: Normalized
+  value: Normalized
+  modulator?: number
+}
+
+const initParam: Param = {
+  baseValue: 0,
+  value: 0
+}
+
+export type Params = { [key in ParamKey]: Param }
+
+export type PartialParams = { [key in ParamKey]?: Param }
 
 export function getDefaultParams(): Params {
   return {
-    [Param.Hue]: 0.0,
-    [Param.Saturation]: 0.0,
-    [Param.Brightness]: 0.0,
-    [Param.Black]: 0.0,
-    [Param.X]: 0.0,
-    [Param.X_Width]: 0.0,
-    [Param.Y]: 0.0,
-    [Param.Y_Width]: 0.0,
-    [Param.Epicness]: 0.0,
-    [Param.Strobe]: 0,
-    [Param.Blackout]: 0
+    [ParamKey.Hue]: initParam,
+    [ParamKey.Saturation]: initParam,
+    [ParamKey.Brightness]: {
+      baseValue: 0,
+      value: 0,
+      modulator: 0
+    },
+    [ParamKey.X]: initParam,
+    [ParamKey.X_Width]: initParam,
+
+    // I'm not gonna worry about these until later :p
+    [ParamKey.Epicness]: initParam,
+    [ParamKey.Strobe]: initParam,
+    [ParamKey.Blackout]: initParam,
+    [ParamKey.Y]: initParam,
+    [ParamKey.Y_Width]: initParam,
+    [ParamKey.Black]: initParam,
   }
 }

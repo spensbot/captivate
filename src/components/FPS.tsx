@@ -1,17 +1,11 @@
 import React from 'react';
 import { useTypedSelector } from '../redux/store';
 
-export default function Time() {
+export default function FPS() {
 
   const dt = useTypedSelector(state => state.time.dt);
 
-  const styles = {
-    root: {
-      
-    },
-  }
-
   return (
-    <span style={styles.root}>{`${Math.floor(1000 / dt)} FPS`}</span>
+    <span style={{fontSize: '0.8rem'}}>{`${Math.floor(1000 / dt)} FPS`}</span>
   )
 }

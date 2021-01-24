@@ -1,4 +1,4 @@
-import { Window2D } from './baseTypes'
+import { Window2D } from '../types/baseTypes'
 import { Color } from './dmxColors'
 
 export const DMX_MAX_VALUE = 255;
@@ -56,7 +56,7 @@ const parFixture : FixtureType = {
     { type: ChannelType.Color, color: Color.White },
     { type: ChannelType.StrobeSpeed, default_solid: 0, default_strobe: 125 },
     { type: ChannelType.Other, default: 0 },
-    { type: ChannelType.Other, default: 0 },
+    { type: ChannelType.Other, default: 0 }
   ]
 }
 
@@ -102,13 +102,18 @@ export const testFixtureTypes = {
   4: derbyFixture
 }
 
-export const testUniverse = {
-  1: {channelNum: 1, type: stringLightFixture, window: {x: {pos: 0.0, width: 0.0}} },
-  2: {channelNum: 2, type: stringLightFixture, window: {x: {pos: 0.33, width: 0.0}} },
-  3: {channelNum: 3, type: stringLightFixture, window: {x: {pos: 0.66, width: 0.0}} },
-  4: {channelNum: 4, type: stringLightFixture, window: {x: {pos: 1.0, width: 0.0}} },
-  5: {channelNum: 5, type: parFixture },
-  13: {channelNum: 13, type: parFixture },
-  21: {channelNum: 21, type: strobeFixture },
-  24: {channelNum: 24, type: derbyFixture },
-}
+// export const testUniverse = [
+//   {channelNum: 1, type: stringLightFixture, window: {x: {pos: 0.0, width: 0.0}} },
+//   {channelNum: 2, type: stringLightFixture, window: {x: {pos: 0.33, width: 0.0}} },
+//   {channelNum: 3, type: stringLightFixture, window: {x: {pos: 0.66, width: 0.0}} },
+//   {channelNum: 4, type: stringLightFixture, window: {x: {pos: 1.0, width: 0.0}} },
+//   {channelNum: 5, type: parFixture },
+//   {channelNum: 13, type: parFixture },
+//   {channelNum: 21, type: strobeFixture },
+//   {channelNum: 24, type: derbyFixture },
+// ]
+
+export const testUniverse = [
+  { channelNum: 15, type: parFixture },
+  { channelNum: 23, type: parFixture }
+]

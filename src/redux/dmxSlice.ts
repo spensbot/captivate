@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { Fixture, FixtureType, testFixtureTypes, testUniverse } from '../engine/dmxFixtures';
 
 type DmxState = {
-  universe: {[key: string]: Fixture}
+  universe: Fixture[]
   fixtureTypes: {[key: string]: FixtureType}
 }
 

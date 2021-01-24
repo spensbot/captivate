@@ -33,11 +33,21 @@ async function getFirstDmxUsbProPath() {
   return null
 }
 
+let _statusUpdate: (isConnected: boolean, path: string | null) => void
+
+export function init(statusUpdate: typeof _statusUpdate) {
+  _statusUpdate = statusUpdate
+  maintainConnection()
+}
+
 export async function maintainConnection() {
   if (connection) {
+    _statusUpdate(true, connection.path)
     setTimeout(maintainConnection, 5000)
     return
   }
+
+  _statusUpdate(false, null)
 
   const path = await getFirstDmxUsbProPath()
   if (path) {
@@ -45,7 +55,7 @@ export async function maintainConnection() {
     console.log(`Connected to device at path: ${path}`);
   }
 
-  setTimeout(maintainConnection, 2000)
+  setTimeout(maintainConnection, 1000)
 }
 
 function connect(path: String) {
@@ -101,6 +111,8 @@ export function updateChannel(channel: number, value: u8) {
 function sendUniverse() {
   if (!connection) return
   if (!connection.writable) return
+
+  // console.log(`mrgbw: ${universe[15]} ${universe[16]} ${universe[17]} ${universe[18]} ${universe[19]} ${universe[20]} ${universe[21]} ${universe[22]}`)
 
   if (readyToWrite) {
     const hdr = Buffer.from([

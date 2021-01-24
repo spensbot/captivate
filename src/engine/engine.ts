@@ -1,22 +1,25 @@
 import * as graphicsEngine from "./graphicsEngine"
 import { updateTime } from '../redux/timeSlice'
+import { setParams } from '../redux/paramsSlice'
 import * as dmxEngine from './dmxEngine'
 import { ReduxStore } from '../redux/store'
+import { session } from "electron";
 // import NodeLink from 'node-link'
 const NodeLink = window.require('node-link');
+import { getInitialModulators, modulateParams } from './modulationEngine';
 
 let lastFrameTime = 0;
 let engineTime = 0;
 let initTime = 0;
 let reduxStore: ReduxStore;
-let nodeLink;
+let nodeLink: typeof NodeLink;
 
 export function init(_reduxStore: ReduxStore) {
   reduxStore = _reduxStore;
   nodeLink = new NodeLink();
   initTime = Date.now();
-  graphicsEngine.init();
-  dmxEngine.init();
+  graphicsEngine.init(reduxStore);
+  dmxEngine.init(reduxStore);
 
   requestAnimationFrame(engineUpdate);
 }
@@ -36,15 +39,17 @@ function engineUpdate(time: number) {
 
   if (dt < 10) return;
 
-  // For a video game, you might limit dt so that object in-game will never move too far in a given frame
-  // However, it is more important that visuals maintain sync with real time
-  // if (dt > 100) dt = 1000 / 30;
-
   lastFrameTime = time;
   engineTime += dt;
 
-  reduxStore.dispatch(updateTime(dt));
+  const timeState = nodeLink.getSessionInfoCurrent();
+  timeState.dt = dt;
+  timeState.quantum = 4.0;
 
-  graphicsEngine.update(dt);
+  const newParams = modulateParams(timeState.beats, getInitialModulators(), reduxStore.getState().params)
+  reduxStore.dispatch(setParams(newParams))
 
+  reduxStore.dispatch(updateTime(timeState));
+
+  graphicsEngine.update(timeState);
 }

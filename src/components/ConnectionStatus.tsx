@@ -5,27 +5,22 @@ export default function ConnectionStatus() {
 
   const dmxConnection = useTypedSelector(state => state.connections.dmx);
 
-  const styles = [
-    {
-      color: dmxConnection.isConnected ? '#44cc44' : '#cc4444',
-      padding: '0.2rem'
-    },
-    {
-      textDecoration: 'underline'
-    }   
-  ]
+  const style = {
+    padding: '0.2rem',
+    fontSize: '0.9rem'
+  }
 
   if (dmxConnection.isConnected) {
     return (
-      <div style={styles[1]}>
-        DMX: Connected
+      <div style={style}>
+        DMX: <span style={{color: '#3f3'}}>Connected</span>
       </div>
     )
   }
 
   return (
-    <div style={styles[1]}>
-      DMX: No devices found <span style={styles[2]}>Troubleshoot</span>
+    <div style={style}>
+      DMX: <span style={{ color: '#f33' }}>No devices found </span><span style={{textDecoration: 'underline'}}>Troubleshoot</span>
     </div>
   )
 }

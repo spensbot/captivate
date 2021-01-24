@@ -1,10 +1,10 @@
 import React from 'react'
 import {useTypedSelector} from '../redux/store'
-import {Param} from '../engine/params'
+import {Param, ParamKey} from '../engine/params'
 
 type Props = {
-  paramX: Param
-  paramY: Param
+  paramX: ParamKey
+  paramY: ParamKey
   radius?: number
   thickness?: number
   getCursorColor?: (x: number, y: number) => string
@@ -13,8 +13,8 @@ type Props = {
 export default function PadCursor({paramX, paramY, radius = 0.4, thickness = 1, getCursorColor = () => '#000'}: Props) {
 
   const params = useTypedSelector(state => state.params)
-  const x = params[paramX]
-  const y = params[paramY]
+  const x = params[paramX].value
+  const y = params[paramY].value
 
   const styles: {[key: string]: React.CSSProperties} = {
     root: {
