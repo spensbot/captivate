@@ -63,13 +63,13 @@ export function hsi2rgb(h: Normalized, s: Normalized, i: Normalized) {
 }
 
 export function getColors(params: Params): Colors {
-  const [r, g, b] = hsv2rgb(params.Hue.value, params.Saturation.value, 1.0)
+  const [r, g, b] = hsv2rgb(params.Hue, params.Saturation, 1.0)
 
   return {
     [Color.Red]: r,
     [Color.Green]: g,
     [Color.Blue]: b,
-    [Color.Black]: params.Black.value,
+    [Color.Black]: params.Black,
     // The min of r g b represents a little bit of white
     [Color.White]: Math.min(r, g, b)
   }

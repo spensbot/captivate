@@ -1,10 +1,9 @@
 import React from 'react'
-import { useTypedSelector } from '../redux/store'
-import { GetSin, Lfo } from '../engine/oscillator'
+import { Lfo } from '../engine/oscillator'
 import { GetValueFromPhase } from '../engine/oscillator'
 import { useDispatch } from 'react-redux'
-import { updateModulator } from '../redux/modulatorsSlice'
-import { update } from '../engine/graphicsEngine'
+import useDragBasic from './hooks/useDragBasic'
+import { incrementModulator } from '../redux/modulatorsSlice'
 
 type Props = {
   lfo: Lfo
@@ -22,9 +21,19 @@ const backgroundColor = '#000000'
 const lineColor = '#33ff33'
 
 export default function LfoVisualizer({lfo, index}: Props) {
-  // const {Hue, Saturation, Brightness} = useTypedSelector(state => state.params)
   const dispatch = useDispatch();
-  // dispatch(updateModulator({ lfo: GetSin(), index: index}));
+
+  const [dragContainer, onMouseDown] = useDragBasic((e) => {
+    const dx = - e.movementX / width
+    const dy = e.movementY / height
+    dispatch(incrementModulator({
+      index: index,
+      phaseShift: e.metaKey ? 0 : dx,
+      flip: e.metaKey ? 0 : dy,
+      symmetricSkew: e.metaKey ? dx : 0,
+      skew: e.metaKey ? dy : 0,
+    }))
+  })
 
   function GetPoints() {
     const zeros = Array(width_ / stepSize + 1).fill(0)
@@ -43,7 +52,7 @@ export default function LfoVisualizer({lfo, index}: Props) {
   }
 
   return (
-    <div style={{width: width, height: height, backgroundColor: backgroundColor, margin: '1rem'}}>
+    <div ref={dragContainer} onMouseDown={onMouseDown} style={{width: width, height: height, backgroundColor: backgroundColor, margin: '1rem'}}>
       <svg height={height} width={width}>
         <polyline points={GetPoints()} style={{ fill: 'none', stroke: lineColor, strokeWidth: lineWidth}}/>
       </svg>

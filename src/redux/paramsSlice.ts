@@ -1,28 +1,39 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { getDefaultParams, Params, ParamKey } from '../engine/params';
+import { initParams, Params, ParamKey, initParamsModulation, PartialParams, ParamsModulation } from '../engine/params';
 
-type BaseValuePayload = { [key in ParamKey]?: number }
+interface SetModulationPayload {
+  param: ParamKey,
+  modulatorIndex: number | null
+}
 
 export const paramsSlice = createSlice({
   name: 'params',
-  initialState: getDefaultParams(),
+  initialState: {
+    base: initParams(),
+    output: initParams(),
+    modulation: initParamsModulation()
+  },
   reducers: {
-    setBaseParams: (state, action: PayloadAction<BaseValuePayload>) => {
+    setBaseParams: (state, action: PayloadAction<PartialParams>) => {
       for (let [key, value] of Object.entries(action.payload)) {
-        state[key].baseValue = value
-        if (!state[key].modulator === undefined) { state[key].value = value }
+        state.base[key] = value
       }
     },
-    setParams: (state, action: PayloadAction<Params>) => {
-      for (let [key, value] of Object.entries(action.payload)) {
-        state[key].baseValue = value.baseValue
-        state[key].value = value.value
-        state[key].modulator = value.modulator
-      }
+    setOutputParams: (state, {payload}: PayloadAction<Params>) => {
+      state.output.Hue = payload.Hue
+      state.output.Saturation = payload.Saturation
+      state.output.Brightness = payload.Brightness
+      state.output.X = payload.X
+      state.output.Width = payload.Width
+      state.output.Y = payload.Y
+      state.output.Height = payload.Height
     },
+    setModulation: (state, {payload}: PayloadAction<SetModulationPayload>) => {
+      state.modulation[payload.param] = payload.modulatorIndex
+    }
   },
 });
 
-export const { setParams, setBaseParams } = paramsSlice.actions;
+export const { setOutputParams, setBaseParams, setModulation } = paramsSlice.actions;
 
 export default paramsSlice.reducer;

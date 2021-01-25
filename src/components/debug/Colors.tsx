@@ -6,7 +6,7 @@ const dp = 1
 
 export default function Colors() {
 
-  const {Hue, Saturation, Brightness} = useTypedSelector(state => state.params)
+  const {Hue, Saturation, Brightness} = useTypedSelector(state => state.params.output)
 
   const styles: {[key: string]: React.CSSProperties} = {
     
@@ -18,12 +18,12 @@ export default function Colors() {
 
   return (
     <div>
-      <div>{`H: ${Hue.value.toFixed(dp)} S: ${Saturation.value.toFixed(dp)} V: ${Brightness.value.toFixed(dp)}`}</div>
+      <div>{`H: ${Hue.toFixed(dp)} S: ${Saturation.toFixed(dp)} V: ${Brightness.toFixed(dp)}`}</div>
       <hr/>
-      {rgbDiv('L', hsl2rgb(Hue.value, Saturation.value, Brightness.value))}
-      {rgbDiv('V', hsv2rgb(Hue.value, Saturation.value, Brightness.value))}
-      {rgbDiv('I', hsi2rgb(Hue.value, Saturation.value, Brightness.value))}
-      {rgbDiv('B', hsv2rgb(Hue.value, Saturation.value, 1.0))}
+      {rgbDiv('L', hsl2rgb(Hue, Saturation, Brightness))}
+      {rgbDiv('V', hsv2rgb(Hue, Saturation, Brightness))}
+      {rgbDiv('I', hsi2rgb(Hue, Saturation, Brightness))}
+      {rgbDiv('B', hsv2rgb(Hue, Saturation, 1.0))}
     </div>
   )
 }

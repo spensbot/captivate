@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import useDrag from './hooks/useDrag'
+import useDragMapped from './hooks/useDragMapped'
 
 type Props = {
   type: 'vertical' | 'horizontal'
@@ -15,7 +15,7 @@ export default function SplitPane({type='vertical', px=5, initialSplit=0.5, styl
 
   const [split, setSplit] = useState(initialSplit)
 
-  const [dragContainer, onMouseDown] = useDrag((x, y) => {
+  const [dragContainer, onMouseDown] = useDragMapped((x, y) => {
     setSplit(v ? x : y)
   })
 

@@ -2,66 +2,49 @@ import { Normalized } from '../types/baseTypes'
 
 export type Blackout = "Blackout" | "No Blackout"
 
-// export type Param2 =
-//   | "Hue"
-//   | "Saturation"
-//   | "Brightness"
-//   | "Black"
-//   | "X"
-//   | "Y"
-//   | "X_Width"
-//   | "Y_Width"
-//   | "Epicness"
-//   | "Strobe"
-//   | "Blackout"
-
 export enum ParamKey {
   Hue = "Hue",
   Saturation = "Saturation",
   Brightness = "Brightness",
-  Black = "Black",
   X = "X",
+  Width = "Width",
   Y = "Y",
-  X_Width = "X_Width",
-  Y_Width = "Y_Width",
-  Epicness = "Epicness",
-  Strobe = "Strobe",
-  Blackout = "Blackout"
+  Height = "Height",
+  Black = "Black",
+  
+  // I'm not gonna worry about these until later :p
+  // Epicness = "Epicness",
+  // Strobe = "Strobe"
 }
 
-export interface Param {
-  baseValue: Normalized
-  value: Normalized
-  modulator?: number
-}
+export type Params = { [key in ParamKey]: Normalized }
 
-const initParam: Param = {
-  baseValue: 0,
-  value: 0
-}
+export type PartialParams = { [key in ParamKey]?: Normalized }
 
-export type Params = { [key in ParamKey]: Param }
+export type ParamsModulation = { [key in ParamKey]: number | null }
 
-export type PartialParams = { [key in ParamKey]?: Param }
-
-export function getDefaultParams(): Params {
+export function initParams(): Params {
   return {
-    [ParamKey.Hue]: initParam,
-    [ParamKey.Saturation]: initParam,
-    [ParamKey.Brightness]: {
-      baseValue: 0,
-      value: 0,
-      modulator: 0
-    },
-    [ParamKey.X]: initParam,
-    [ParamKey.X_Width]: initParam,
+    [ParamKey.Hue]: 0.0,
+    [ParamKey.Saturation]: 0.0,
+    [ParamKey.Brightness]: 0.0,
+    [ParamKey.X]: 0.0,
+    [ParamKey.Width]: 0.0,
+    [ParamKey.Y]: 0.0,
+    [ParamKey.Height]: 0.0,
+    [ParamKey.Black]: 0.0
+  }
+}
 
-    // I'm not gonna worry about these until later :p
-    [ParamKey.Epicness]: initParam,
-    [ParamKey.Strobe]: initParam,
-    [ParamKey.Blackout]: initParam,
-    [ParamKey.Y]: initParam,
-    [ParamKey.Y_Width]: initParam,
-    [ParamKey.Black]: initParam,
+export function initParamsModulation(): ParamsModulation {
+  return {
+    [ParamKey.Hue]: 1,
+    [ParamKey.Saturation]: null,
+    [ParamKey.Brightness]: 0,
+    [ParamKey.X]: null,
+    [ParamKey.Width]: null,
+    [ParamKey.Y]: null,
+    [ParamKey.Height]: null,
+    [ParamKey.Black]: null
   }
 }

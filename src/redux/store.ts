@@ -1,4 +1,4 @@
-import { configureStore } from '@reduxjs/toolkit'
+import { configureStore, getDefaultMiddleware } from '@reduxjs/toolkit'
 import timeReducer from './timeSlice'
 import paramsReducer from './paramsSlice'
 import connectionsReducer from './connectionsSlice'
@@ -13,7 +13,8 @@ export const store = configureStore({
     connections: connectionsReducer,
     dmx: dmxSlice,
     modulators: modulatorsReducer
-  }
+  },
+  middleware: []
 })
 
 export type ReduxStore = typeof store

@@ -1,5 +1,5 @@
 import React from 'react'
-import useDrag from './hooks/useDrag'
+import useDragMapped from './hooks/useDragMapped'
 import {useTypedSelector} from '../redux/store'
 import {useDispatch} from 'react-redux'
 import {setBaseParams} from '../redux/paramsSlice'
@@ -8,10 +8,10 @@ import PadCursor from './PadCursor'
 
 export default function SVpad() {
 
-  const {Hue} = useTypedSelector(state => state.params)
+  const hue = useTypedSelector(state => state.params.output.Hue)
   const dispatch = useDispatch()
 
-  const [dragContainer, onMouseDown] = useDrag((x, y) => {
+  const [dragContainer, onMouseDown] = useDragMapped((x, y) => {
     dispatch(setBaseParams({
       [ParamKey.Saturation]: x,
       [ParamKey.Brightness]: y
@@ -23,7 +23,7 @@ export default function SVpad() {
       position: 'relative',
       width: '200px',
       height: '160px',
-      background: `hsl(${Hue.baseValue * 360},100%, 50%)`,
+      background: `hsl(${hue * 360},100%, 50%)`,
     },
     white: {
       position: 'absolute',

@@ -1,12 +1,10 @@
 import * as graphicsEngine from "./graphicsEngine"
 import { updateTime } from '../redux/timeSlice'
-import { setParams } from '../redux/paramsSlice'
+import { setOutputParams } from '../redux/paramsSlice'
 import * as dmxEngine from './dmxEngine'
 import { ReduxStore } from '../redux/store'
-import { session } from "electron";
-// import NodeLink from 'node-link'
 const NodeLink = window.require('node-link');
-import { getInitialModulators, modulateParams } from './modulationEngine';
+import { modulateParams } from './modulationEngine';
 
 let lastFrameTime = 0;
 let engineTime = 0;
@@ -46,8 +44,8 @@ function engineUpdate(time: number) {
   timeState.dt = dt;
   timeState.quantum = 4.0;
 
-  const newParams = modulateParams(timeState.beats, reduxStore.getState().modulators, reduxStore.getState().params)
-  reduxStore.dispatch(setParams(newParams))
+  const outputParams = modulateParams(timeState.beats, reduxStore.getState().modulators, reduxStore.getState().params.base, reduxStore.getState().params.modulation)
+  reduxStore.dispatch(setOutputParams(outputParams))
 
   reduxStore.dispatch(updateTime(timeState));
 

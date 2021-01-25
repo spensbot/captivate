@@ -1,39 +1,68 @@
 import React from 'React'
+import { useDispatch } from 'react-redux';
+import { ParamKey } from '../engine/params';
 import { useTypedSelector } from '../redux/store'
+import { setModulation } from '../redux/paramsSlice'
+
 
 export default function ModulationMatrix() {
 
-  const params = useTypedSelector(state => state.params);
+  const paramsModulation = useTypedSelector(state => state.params.modulation)
+  const modulators = useTypedSelector(state => state.modulators)
+  const dispatch = useDispatch()
 
   const styles: { [key: string]: React.CSSProperties } = {
-    root: {
-      display: 'grid',
-      gridTemplateColumns: '100px 30px 30px 30px 30px',
-      gridTemplateRows: '30px 30px 30px',
-      gap: '0.2rem 0.2rem',
-      placeItems: 'center'
+    table: {
+      margin: '1rem',
+      border: '1px solid black',
+      borderCollapse: 'collapse',
     },
     activeCell: {
-      width: '20px',
-      height: '20px',
+      width: '1rem',
+      height: '1rem',
+      margin: '0.2rem',
       backgroundColor: '#fff8',
+    },
+    cell: {
+      width: '1rem',
+      height: '1rem',
+      margin: '0.2rem'
     }
   }
 
+  function setParamModulation(param: ParamKey, modulatorIndex: number | null) {
+    return () => {
+      dispatch(setModulation({param: param, modulatorIndex: modulatorIndex}))
+    }
+  }
+
+  function getRow([param, modulatorIndex]: [ParamKey, number | null]) {
+    const paramMods = Array(modulators.length).fill(false)
+    if (modulatorIndex !== null) paramMods[modulatorIndex] = true
+
+    return (
+      <tr key={param}>
+        <td>{param}</td>
+        {paramMods.map((isModded, index) => {
+          return (
+            <td key={index}>
+              <div
+                onClick={setParamModulation(param, isModded ? null : index)}
+                style={isModded ? styles.activeCell : styles.cell}
+              ></div>
+            </td>
+          )
+        })}
+      </tr>
+    )
+  }
+
   return (
-    <table>
+    <table style={styles.table}>
       <tr>
-        <th></th> <th>0</th> <th>1</th>
+        <th><span></span></th> <th>0</th> <th>1</th>
       </tr>
-      <tr>
-        <td>Hue</td> <td></td> <td></td> 
-      </tr>
-      <tr>
-        <td>Saturation</td> <td></td> <td></td> 
-      </tr>
-      <tr>
-        <td>Brightness</td> <td></td> <td></td> 
-      </tr>
+      {Object.entries(paramsModulation).map(getRow)}
     </table>
   )
 }

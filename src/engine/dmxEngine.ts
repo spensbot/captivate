@@ -24,13 +24,8 @@ export function init(store: ReduxStore) {
   setInterval(writeDMX, 1000 / 40)
 }
 
-// Power values > 1 skew 
-const skew = (value: number, power: number) => {
-  return Math.pow(value, power)
-}
-
 const writeDMX = () => {  
-  setDMX(_store.getState().params, testUniverse)
+  setDMX(_store.getState().params.output, testUniverse)
 }
 
 function getWindowMultiplier2D(fixtureWindow?: Window2D, movingWindow?: Window2D) {
@@ -53,26 +48,27 @@ function getWindowMultiplier(fixtureWindow?: Window, movingWindow?: Window) {
 function getDmxValue(fixtureChannel: FixtureChannel, params: Params, colors: Colors, fixtureWindow?: Window2D, movingWindow?: Window2D): DmxValue {
   switch (fixtureChannel.type) {
     case ChannelType.Master:
-      return params.Brightness.value * DMX_MAX_VALUE // * getWindowMultiplier2D(fixtureWindow, movingWindow);
+      return params.Brightness * DMX_MAX_VALUE // * getWindowMultiplier2D(fixtureWindow, movingWindow);
     case ChannelType.Other:
       return fixtureChannel.default;
     case ChannelType.Color:
       return colors[fixtureChannel.color] * DMX_MAX_VALUE
-    case ChannelType.StrobeSpeed:
-      return (params.Strobe.value > 0.5) ? fixtureChannel.default_strobe : fixtureChannel.default_solid
+    // case ChannelType.StrobeSpeed:
+    //   return (params.Strobe > 0.5) ? fixtureChannel.default_strobe : fixtureChannel.default_solid
   }
 }
 
 function getMovingWindow(params: Params): Window2D {
   return {
-    x: {pos: params.X.value, width: params.X_Width.value},
-    y: {pos: params.Y.value, width: params.Y_Width.value}
+    x: {pos: params.X, width: params.Width},
+    y: {pos: params.Y, width: params.Height}
   }
 }
 
 export default function setDMX(params: Params, universe: Fixture[]) {
+  const blackout = false
 
-  if (params.Blackout.value > 0.5) {
+  if (blackout) {
     universe.forEach(fixture => {
       fixture.type.channels.forEach( (channel, offset) => {
         dmxConnection.updateChannel(fixture.channelNum + offset, DMX_DEFAULT_VALUE)
@@ -84,8 +80,9 @@ export default function setDMX(params: Params, universe: Fixture[]) {
   const movingWindow = getMovingWindow(params);
 
   universe.forEach(fixture => {
-    fixture.type.channels.forEach( (channel, offset) => {
-      dmxConnection.updateChannel(fixture.channelNum + offset, getDmxValue(channel, params, colors, fixture.window, movingWindow));
+    fixture.type.channels.forEach((channel, offset) => {
+      const dmxOut = getDmxValue(channel, params, colors, fixture.window, movingWindow)
+      dmxConnection.updateChannel(fixture.channelNum + offset, dmxOut);
     })
   })
 }
