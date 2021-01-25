@@ -20,7 +20,8 @@ export default function XYpad() {
       position: 'relative',
       width: '200px',
       height: '180px',
-      background: `#000`
+      background: `#000`,
+      margin: '1rem'
     },
   }
 

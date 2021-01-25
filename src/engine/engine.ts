@@ -46,7 +46,7 @@ function engineUpdate(time: number) {
   timeState.dt = dt;
   timeState.quantum = 4.0;
 
-  const newParams = modulateParams(timeState.beats, getInitialModulators(), reduxStore.getState().params)
+  const newParams = modulateParams(timeState.beats, reduxStore.getState().modulators, reduxStore.getState().params)
   reduxStore.dispatch(setParams(newParams))
 
   reduxStore.dispatch(updateTime(timeState));

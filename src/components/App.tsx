@@ -1,19 +1,19 @@
 import React from 'react'
 import StatusBar from './StatusBar';
 import Visualizer from './Visualizer';
-import HsvPad from './HsvPad'
-import XYpad from './XYpad';
-import LfoVisualizer from './LfoVisualizer'
+import Params from './Params'
+import Modulators from './Modulators'
+import ModulationMatrix from './ModulationMatrix';
 
 export default function App() {
   return (
     <>
       <StatusBar />
-      <LfoVisualizer lfoIndex={0} />
+      <Modulators />
       {/* <MyFixtures />
       <MyUniverse /> */}
-      <XYpad />
-      <HsvPad />
+      <Params />
+      <ModulationMatrix />
       {/* <SplitPane style={{height: '200px', width: '100%'}} type="vertical" initialSplit={0.25} px={5}>
         <div style={{background: '#fff1', height: '100%'}}>Div One</div>
         <div style={{background: '#fff1', height: '100%'}}>Div Two</div>

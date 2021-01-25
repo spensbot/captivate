@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit'
 import timeReducer from './timeSlice'
 import paramsReducer from './paramsSlice'
 import connectionsReducer from './connectionsSlice'
+import modulatorsReducer from './modulatorsSlice'
 import { useSelector, TypedUseSelectorHook } from 'react-redux'
 import dmxSlice from './dmxSlice'
 
@@ -10,7 +11,8 @@ export const store = configureStore({
     time: timeReducer,
     params: paramsReducer,
     connections: connectionsReducer,
-    dmx: dmxSlice
+    dmx: dmxSlice,
+    modulators: modulatorsReducer
   }
 })
 

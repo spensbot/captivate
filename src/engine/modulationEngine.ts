@@ -1,16 +1,7 @@
-import { Param, ParamKey, Params } from './params'
-import { Lfo, GetValue, GetSin, GetRamp } from './oscillator'
+import { Params } from './params'
+import { Lfo, GetValue } from './oscillator'
 
-export type Modulator = Lfo
-
-export function getInitialModulators(): Modulator[] {
-  return [
-    GetSin(),
-    GetSin()
-  ]
-}
-
-export function modulateParams(beats: number, modulators: Modulator[], params: Params) {
+export function modulateParams(beats: number, modulators: Lfo[], params: Params) {
   const newParams: Params = {}
 
   for (let [key, value] of Object.entries(params)) {
