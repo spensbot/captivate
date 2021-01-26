@@ -38,9 +38,9 @@ export function initParams(): Params {
 
 export function initParamsModulation(): ParamsModulation {
   return {
-    [ParamKey.Hue]: 1,
+    [ParamKey.Hue]: null,
     [ParamKey.Saturation]: null,
-    [ParamKey.Brightness]: 0,
+    [ParamKey.Brightness]: null,
     [ParamKey.X]: null,
     [ParamKey.Width]: null,
     [ParamKey.Y]: null,

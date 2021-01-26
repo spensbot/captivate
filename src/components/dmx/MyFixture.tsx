@@ -1,6 +1,6 @@
-import Divider from './Divider'
+import Divider from '../base/Divider'
 import React from 'react'
-import { FixtureType } from '../engine/dmxFixtures'
+import { FixtureType } from '../../engine/dmxFixtures'
 
 type Props = {
   fixtureType: FixtureType

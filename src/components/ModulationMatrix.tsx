@@ -60,7 +60,7 @@ export default function ModulationMatrix() {
   return (
     <table style={styles.table}>
       <tr>
-        <th><span></span></th> <th>0</th> <th>1</th>
+        <th><span></span></th> {modulators.map((_, index) => (<th key={index}>{index}</th>))}
       </tr>
       {Object.entries(paramsModulation).map(getRow)}
     </table>

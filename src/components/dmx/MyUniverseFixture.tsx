@@ -1,5 +1,5 @@
 import React from 'react'
-import { Fixture } from '../engine/dmxFixtures'
+import { Fixture } from '../../engine/dmxFixtures'
 
 type Props = {
   fixture: Fixture

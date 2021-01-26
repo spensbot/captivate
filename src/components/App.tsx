@@ -1,8 +1,8 @@
 import React from 'react'
 import StatusBar from './StatusBar';
 import Visualizer from './Visualizer';
-import ParamsControl from './ParamsControl'
-import Modulators from './Modulators'
+import ParamsControl from './controls/ParamsControl'
+import Modulators from './modulators/Modulators'
 
 export default function App() {
   return (

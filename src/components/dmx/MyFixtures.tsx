@@ -1,5 +1,5 @@
 import React from 'react'
-import {useTypedSelector} from '../redux/store'
+import {useTypedSelector} from '../../redux/store'
 import MyFixture from './MyFixture'
 
 export default function MyFixtures() {

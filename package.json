@@ -73,6 +73,7 @@
   },
   "dependencies": {
     "@material-ui/core": "^4.11.1",
+    "@material-ui/icons": "^4.11.2",
     "@reduxjs/toolkit": "^1.4.0",
     "@types/react-helmet": "^6.1.0",
     "bindings": "^1.5.0",

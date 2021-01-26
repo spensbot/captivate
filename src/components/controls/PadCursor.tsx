@@ -1,6 +1,6 @@
 import React from 'react'
-import {useTypedSelector} from '../redux/store'
-import {ParamKey} from '../engine/params'
+import {useTypedSelector} from '../../redux/store'
+import {ParamKey} from '../../engine/params'
 
 type Props = {
   paramX: ParamKey

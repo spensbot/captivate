@@ -1,9 +1,9 @@
 import React from 'react'
-import useDragMapped from './hooks/useDragMapped'
-import {useTypedSelector} from '../redux/store'
+import useDragMapped from '../hooks/useDragMapped'
+import {useTypedSelector} from '../../redux/store'
 import {useDispatch} from 'react-redux'
-import {setBaseParams} from '../redux/paramsSlice'
-import {ParamKey} from '../engine/params'
+import {setBaseParams} from '../../redux/paramsSlice'
+import {ParamKey} from '../../engine/params'
 import PadCursor from './PadCursor'
 
 export default function SVpad() {

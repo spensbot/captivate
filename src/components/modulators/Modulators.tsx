@@ -1,6 +1,7 @@
 import React from 'react'
-import { useTypedSelector } from '../redux/store'
-import LfoVisualizer from './LfoVisualizer';
+import { useTypedSelector } from '../../redux/store'
+import LfoVisualizer from './LfoVisualizer'
+import NewModulator from './NewModulator'
 
 export default function Modulators() {
 
@@ -13,6 +14,7 @@ export default function Modulators() {
           <LfoVisualizer key={index} lfo={lfo} index={index} />
         )
       })}
+      <NewModulator />
     </div>
   )
 }

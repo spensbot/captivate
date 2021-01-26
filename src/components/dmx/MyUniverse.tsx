@@ -1,6 +1,6 @@
 import React from 'react'
-import {useTypedSelector} from '../redux/store'
-import root from '../util/prepareDOM'
+import {useTypedSelector} from '../../redux/store'
+import root from '../../util/prepareDOM'
 import MyUniverseFixture from './MyUniverseFixture'
 
 export default function MyUniverse() {

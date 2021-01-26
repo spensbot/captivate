@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import useDragMapped from './hooks/useDragMapped'
+import useDragMapped from '../hooks/useDragMapped'
 
 type Props = {
   type: 'vertical' | 'horizontal'
