@@ -1,18 +1,26 @@
 import React from 'react'
 import useDragMapped from '../hooks/useDragMapped'
 import {useDispatch} from 'react-redux'
-import {setBaseParams} from '../../redux/paramsSlice'
+import {setBaseParams, incrementBaseParams} from '../../redux/paramsSlice'
 import {ParamKey} from '../../engine/params'
 import PadCursor from './PadCursor'
+import XYWindow from './XYWindow'
 
 export default function XYpad() {
   const dispatch = useDispatch()
 
-  const [dragContainer, onMouseDown] = useDragMapped((x, y) => {
-    dispatch(setBaseParams({
-      [ParamKey.X]: x,
-      [ParamKey.Y]: y
-    }))
+  const [dragContainer, onMouseDown] = useDragMapped((x, y, e) => {
+    if (e.metaKey) {
+      dispatch(incrementBaseParams({
+        [ParamKey.Width]: e.movementX / 100,
+        [ParamKey.Height]: - e.movementY / 90
+      }))
+    } else {
+      dispatch(setBaseParams({
+        [ParamKey.X]: x,
+        [ParamKey.Y]: y
+      }))
+    }
   })
 
   const styles: {[key: string]: React.CSSProperties} = {
@@ -21,7 +29,8 @@ export default function XYpad() {
       width: '200px',
       height: '180px',
       background: `#000`,
-      margin: '1rem'
+      margin: '1rem',
+      overflow: 'hidden'
     },
   }
 
@@ -30,6 +39,7 @@ export default function XYpad() {
       <div style={styles.white}>
         <div style={styles.black}></div>
         <PadCursor paramX={ParamKey.X} paramY={ParamKey.Y} getCursorColor={() => '#eee'} />
+        <XYWindow />
       </div>
     </div>
   )

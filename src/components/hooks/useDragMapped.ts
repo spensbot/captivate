@@ -1,6 +1,6 @@
 import {useEffect, useRef} from 'react'
 
-export default function useDragMapped(onChange: (x: number, y: number) => void){
+export default function useDragMapped(onChange: (x: number, y: number, e:React.MouseEvent) => void){
   const dragContainer = useRef()
 
   const onMouseMove = (e: React.MouseEvent) => {
@@ -36,7 +36,7 @@ export default function useDragMapped(onChange: (x: number, y: number) => void){
   const update = (e:React.MouseEvent) => {
     const {x, y} = getRelativePosition(e, dragContainer.current)
 
-    onChange(x, y)
+    onChange(x, y, e)
   }
 
   function clamp(val: number, min: number, max: number) {

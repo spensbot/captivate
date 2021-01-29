@@ -84,7 +84,7 @@ const derbyFixture : FixtureType = {
     { type: ChannelType.Color, color: Color.Green },
     { type: ChannelType.Color, color: Color.Blue },
     { type: ChannelType.StrobeSpeed, default_solid: 0, default_strobe: 251 },
-    { type: ChannelType.Other, default: 0 },
+    { type: ChannelType.Other, default: 130 },
     { type: ChannelType.Other, default: 0 },
   ]
 }
@@ -102,18 +102,13 @@ export const testFixtureTypes = {
   4: derbyFixture
 }
 
-// export const testUniverse = [
-//   {channelNum: 1, type: stringLightFixture, window: {x: {pos: 0.0, width: 0.0}} },
-//   {channelNum: 2, type: stringLightFixture, window: {x: {pos: 0.33, width: 0.0}} },
-//   {channelNum: 3, type: stringLightFixture, window: {x: {pos: 0.66, width: 0.0}} },
-//   {channelNum: 4, type: stringLightFixture, window: {x: {pos: 1.0, width: 0.0}} },
-//   {channelNum: 5, type: parFixture },
-//   {channelNum: 13, type: parFixture },
-//   {channelNum: 21, type: strobeFixture },
-//   {channelNum: 24, type: derbyFixture },
-// ]
-
 export const testUniverse = [
-  { channelNum: 15, type: parFixture },
-  { channelNum: 23, type: parFixture }
+  { channelNum: 1, type: derbyFixture, window: {x: {pos: 0.5, width: 0.0}} },
+  { channelNum: 8, type: strobeFixture, window: {x: {pos: 0.5, width: 0.0}} },
+  { channelNum: 11, type: stringLightFixture, window: {x: {pos: 0.0, width: 0.0}} },
+  { channelNum: 12, type: stringLightFixture, window: {x: {pos: 0.33, width: 0.0}} },
+  { channelNum: 13, type: stringLightFixture, window: {x: {pos: 0.66, width: 0.0}} },
+  { channelNum: 14, type: stringLightFixture, window: {x: {pos: 1.0, width: 0.0}} },
+  { channelNum: 15, type: parFixture, window: {x: {pos: 1.0, width: 0.0}} },
+  { channelNum: 23, type: parFixture, window: {x: {pos: 0.0, width: 0.0}} }
 ]

@@ -25,7 +25,7 @@ export const modulatorsSlice = createSlice({
       state[payload.index].shape = payload.shape
     },
     incrementPeriod: (state, { payload }: PayloadAction<{index: number, amount: number}>) => {
-      state[payload.index].period = clamp(state[payload.index].period + payload.amount, 1, 4)
+      state[payload.index].period = clamp(state[payload.index].period + payload.amount, 1, 8)
     },
     incrementModulator: (state, { payload }: PayloadAction<IncrementPayload>) => {
       state[payload.index].flip = clampNormalized(state[payload.index].flip + payload.flip)

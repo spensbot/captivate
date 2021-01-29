@@ -24,6 +24,7 @@ export default function SVpad() {
       width: '200px',
       height: '160px',
       background: `hsl(${hue * 360},100%, 50%)`,
+      overflow: 'hidden'
     },
     white: {
       position: 'absolute',

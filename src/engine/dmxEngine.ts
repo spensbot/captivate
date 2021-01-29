@@ -39,7 +39,6 @@ function getWindowMultiplier(fixtureWindow?: Window, movingWindow?: Window) {
   if (fixtureWindow && movingWindow) {
     const distanceBetween = Math.abs(fixtureWindow.pos - movingWindow.pos)
     const reach = fixtureWindow.width / 2 + movingWindow.width / 2
-
     return distanceBetween > reach ? 0.0 : 1.0 - distanceBetween / reach;
   }
   return 1.0 // Don't affect light values if the moving window or fixture position haven't been assigned.
@@ -48,7 +47,7 @@ function getWindowMultiplier(fixtureWindow?: Window, movingWindow?: Window) {
 function getDmxValue(fixtureChannel: FixtureChannel, params: Params, colors: Colors, fixtureWindow?: Window2D, movingWindow?: Window2D): DmxValue {
   switch (fixtureChannel.type) {
     case ChannelType.Master:
-      return params.Brightness * DMX_MAX_VALUE // * getWindowMultiplier2D(fixtureWindow, movingWindow);
+      return params.Brightness * DMX_MAX_VALUE * getWindowMultiplier2D(fixtureWindow, movingWindow);
     case ChannelType.Other:
       return fixtureChannel.default;
     case ChannelType.Color:

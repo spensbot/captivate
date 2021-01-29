@@ -29,9 +29,9 @@ export function initParams(): Params {
     [ParamKey.Saturation]: 0.0,
     [ParamKey.Brightness]: 0.0,
     [ParamKey.X]: 0.0,
-    [ParamKey.Width]: 0.0,
-    [ParamKey.Y]: 0.0,
-    [ParamKey.Height]: 0.0,
+    [ParamKey.Width]: 0.3,
+    [ParamKey.Y]: 0.5,
+    [ParamKey.Height]: 1.0,
     [ParamKey.Black]: 0.0
   }
 }

@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { initParams, Params, ParamKey, initParamsModulation, PartialParams, ParamsModulation } from '../engine/params';
+import {clampNormalized, clamp} from '../util/helpers'
 
 interface SetModulationPayload {
   param: ParamKey,
@@ -19,6 +20,11 @@ export const paramsSlice = createSlice({
         state.base[key] = value
       }
     },
+    incrementBaseParams: (state, action: PayloadAction<PartialParams>) => {
+      for (let [key, value] of Object.entries(action.payload)) {
+        state.base[key] = clamp(state.base[key] + value, 0.1, 1.0)
+      }
+    },
     setOutputParams: (state, {payload}: PayloadAction<Params>) => {
       state.output.Hue = payload.Hue
       state.output.Saturation = payload.Saturation
@@ -34,6 +40,6 @@ export const paramsSlice = createSlice({
   },
 });
 
-export const { setOutputParams, setBaseParams, setModulation } = paramsSlice.actions;
+export const { setOutputParams, setBaseParams, incrementBaseParams, setModulation } = paramsSlice.actions;
 
 export default paramsSlice.reducer;
