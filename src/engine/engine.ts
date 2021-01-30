@@ -1,23 +1,24 @@
 import * as graphicsEngine from "./graphicsEngine"
-import { updateTime } from '../redux/timeSlice'
-import { setOutputParams } from '../redux/paramsSlice'
 import * as dmxEngine from './dmxEngine'
 import { ReduxStore } from '../redux/store'
+import { RealtimeStore, update } from '../redux/realtimeStore'
 const NodeLink = window.require('node-link');
 import { modulateParams } from './modulationEngine';
 
-let lastFrameTime = 0;
-let engineTime = 0;
-let initTime = 0;
-let reduxStore: ReduxStore;
-let nodeLink: typeof NodeLink;
+let _lastFrameTime = 0;
+let _engineTime = 0;
+let _initTime = 0;
+let _store: ReduxStore;
+let _realtimeStore: RealtimeStore;
+let _nodeLink: typeof NodeLink;
 
-export function init(_reduxStore: ReduxStore) {
-  reduxStore = _reduxStore;
-  nodeLink = new NodeLink();
-  initTime = Date.now();
-  graphicsEngine.init(reduxStore);
-  dmxEngine.init(reduxStore);
+export function init(store: ReduxStore, realtimeStore: RealtimeStore) {
+  _store = store;
+  _realtimeStore = realtimeStore;
+  _nodeLink = new NodeLink();
+  _initTime = Date.now();
+  graphicsEngine.init();
+  dmxEngine.init(store);
 
   requestAnimationFrame(engineUpdate);
 }
@@ -30,24 +31,28 @@ export function visualizerSetElement(domRef: any) {
   graphicsEngine.setDomElement(domRef);
 }
 
-function engineUpdate(time: number) {
+function engineUpdate(currentTime: number) {
   requestAnimationFrame(engineUpdate);
 
-  const dt = time - lastFrameTime;
+  const dt = currentTime - _lastFrameTime;
 
   if (dt < 10) return;
 
-  lastFrameTime = time;
-  engineTime += dt;
+  _lastFrameTime = currentTime;
+  _engineTime += dt;
 
-  const timeState = nodeLink.getSessionInfoCurrent();
+  const timeState = _nodeLink.getSessionInfoCurrent();
   timeState.dt = dt;
   timeState.quantum = 4.0;
 
-  const outputParams = modulateParams(timeState.beats, reduxStore.getState().modulators, reduxStore.getState().params.base, reduxStore.getState().params.modulation)
-  reduxStore.dispatch(setOutputParams(outputParams))
+  const outputParams = modulateParams(timeState.beats, _store.getState().modulators, _store.getState().params.base, _store.getState().params.modulation)
+  
+  const newRealtimeState = {
+    time: timeState,
+    outputParams: outputParams
+  }
 
-  reduxStore.dispatch(updateTime(timeState));
+  _realtimeStore.dispatch(update(newRealtimeState))
 
-  graphicsEngine.update(timeState);
+  graphicsEngine.update(newRealtimeState);
 }

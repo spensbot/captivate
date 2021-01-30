@@ -1,5 +1,5 @@
 import React from 'react'
-import {useTypedSelector} from '../../redux/store'
+import { useRealtimeSelector } from '../../redux/realtimeStore'
 import {ParamKey} from '../../engine/params'
 
 type Props = {
@@ -12,7 +12,7 @@ type Props = {
 
 export default function PadCursor({paramX, paramY, radius = 0.4, thickness = 1, getCursorColor = () => '#000'}: Props) {
 
-  const params = useTypedSelector(state => state.params.output)
+  const params = useRealtimeSelector(state => state.outputParams)
   const x = params[paramX]
   const y = params[paramY]
 

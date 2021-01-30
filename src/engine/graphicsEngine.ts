@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { ReduxStore } from '../redux/store'
+import {RealtimeState} from '../redux/realtimeStore'
 
 var camera: THREE.Camera
 var scene: THREE.Scene
@@ -8,11 +9,8 @@ var geometry: THREE.Geometry
 var material: THREE.Material
 var mesh: THREE.Mesh
 var domRef: any
-var _store: ReduxStore
 
-export function init(store: ReduxStore) {
-  _store = store
-
+export function init() {
   scene = new THREE.Scene();
 
   geometry = new THREE.BoxGeometry( 0.2, 0.2, 0.2 );
@@ -40,11 +38,11 @@ export function resize () {
   renderer.setSize( width, height );
 }
 
-export function update (timeState) {
-  mesh.rotation.x += 0.001 * timeState.dt;
-  mesh.rotation.y += 0.002 * timeState.dt;
+export function update ({time, outputParams}: RealtimeState) {
+  mesh.rotation.x += 0.001 * time.dt;
+  mesh.rotation.y += 0.002 * time.dt;
 
-  let scale = timeState.phase / timeState.quantum
+  let scale = time.phase / time.quantum
   scale = 1 - scale
   scale = Math.pow(scale, 3);
 

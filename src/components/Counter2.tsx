@@ -1,9 +1,9 @@
 import React from 'react'
-import { useTypedSelector } from '../redux/store'
+import { useRealtimeSelector } from '../redux/realtimeStore'
 
 export default function Counter2() {
 
-  const time = useTypedSelector(state => state.time);
+  const time = useRealtimeSelector(state => state.time);
 
   const beats = Array(time.quantum).fill(0)
   beats[Math.floor(time.phase)] = 1 - time.phase % 1.0

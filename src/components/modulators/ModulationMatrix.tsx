@@ -1,8 +1,8 @@
-import React from 'React'
+import React from 'react'
 import { useDispatch } from 'react-redux';
-import { ParamKey } from '../engine/params';
-import { useTypedSelector } from '../redux/store'
-import { setModulation } from '../redux/paramsSlice'
+import { ParamKey } from '../../engine/params';
+import { useTypedSelector } from '../../redux/store'
+import { setModulation } from '../../redux/paramsSlice'
 
 
 export default function ModulationMatrix() {
@@ -59,10 +59,14 @@ export default function ModulationMatrix() {
 
   return (
     <table style={styles.table}>
-      <tr>
-        <th><span></span></th> {modulators.map((_, index) => (<th key={index}>{index}</th>))}
-      </tr>
-      {Object.entries(paramsModulation).map(getRow)}
+      <thead>
+        <tr>
+          <th>_</th>{modulators.map((_, index) => (<th key={index}>{index}</th>))}
+        </tr>
+      </thead>
+      <tbody>
+        {Object.entries(paramsModulation).map(getRow)}
+      </tbody>
     </table>
   )
 }

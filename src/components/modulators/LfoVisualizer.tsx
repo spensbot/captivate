@@ -64,7 +64,7 @@ export default function LfoVisualizer({lfo, index}: Props) {
   return (
     <div>
       <div style={{ margin: '0.5rem', display: 'flex', flexDirection: 'row' }}>
-        <Select color="#fff" labelId="lfo-shape-select-label" id="lfo-shape-select" value={lfo.shape}
+        <Select labelId="lfo-shape-select-label" id="lfo-shape-select" value={lfo.shape}
           onChange={(e) => dispatch(setModulatorShape({ index: index, shape: e.target.value }))}>
           <MenuItem value={LfoShape.Ramp}>Ramp</MenuItem>
           <MenuItem value={LfoShape.Random}>Random</MenuItem>

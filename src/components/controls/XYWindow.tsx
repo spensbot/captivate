@@ -1,9 +1,9 @@
 import React from 'react'
-import {useTypedSelector} from '../../redux/store'
+import { useRealtimeSelector } from '../../redux/realtimeStore'
 
 export default function XYWindow() {
 
-  const {Height, Width, X, Y} = useTypedSelector(state => state.params.output)
+  const {Height, Width, X, Y} = useRealtimeSelector(state => state.outputParams)
 
   const styles: {[key: string]: React.CSSProperties} = {
     root: {

@@ -1,14 +1,30 @@
 import React from 'react'
-import { useTypedSelector } from '../redux/store'
 import Counter2 from './Counter2'
 import ConnectionStatus from './ConnectionStatus'
-import FPS from './FPS'
+import { useRealtimeSelector, useRealtimeDispatch, incrementBPM } from '../redux/realtimeStore'
+import useDragBasic from './hooks/useDragBasic'
+
+function BPM() {
+  const dispatch = useRealtimeDispatch()
+  const bpm = useRealtimeSelector(state => state.time.bpm)
+
+  const [dragContainer, onMouseDown] = useDragBasic((e) => {
+    console.log("Mouse Down")
+    const dx = - e.movementX
+    const dy = e.movementY
+    dispatch(incrementBPM(dx + dy))
+  })
+
+  return (
+    <div ref={dragContainer} onMouseDown={onMouseDown} style={{ margin: '0 1rem 0 0', cursor: 'pointer' }}>
+      {`${Math.round(bpm)} BPM`}
+    </div>
+  )
+}
 
 export default function StatusBar() {
 
   const height = 30
-
-  const bpm = useTypedSelector(state => state.time.bpm)
 
   const styles = {
     root: {
@@ -17,16 +33,12 @@ export default function StatusBar() {
       alignItems: 'center',
       fontSize: `${height * 0.75}px`,
       padding: '0 1rem'
-    },
-    spaced: {
-      margin: '0 1rem 0 0'
     }
   }
 
   return (
     <div style={styles.root}>
-      {/* <TimeSignature /> */}
-      <span style={styles.spaced}>{`${Math.round(bpm)} BPM`}</span>
+      <BPM />
       <Counter2 />
       <div style={{ flex: '1 0 0' }} />
       <ConnectionStatus />

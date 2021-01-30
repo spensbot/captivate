@@ -1,7 +1,7 @@
 import React from 'react'
 import HsvPad from './HsvPad'
 import XYpad from './XYpad'
-import ModulationMatrix from '../ModulationMatrix';
+import ModulationMatrix from '../modulators/ModulationMatrix';
 
 export default function ParamsControl() {
 
