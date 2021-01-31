@@ -8,9 +8,9 @@ import CloseIcon from '@material-ui/icons/Close';
 import IconButton from '@material-ui/core/IconButton';
 import MenuItem from '@material-ui/core/MenuItem';
 import Select from '@material-ui/core/Select';
+import { useTypedSelector } from '../../redux/store'
 
 type Props = {
-  lfo: Lfo
   index: number
 }
 
@@ -24,7 +24,7 @@ const lineWidth = 2
 const backgroundColor = '#000000'
 const lineColor = '#33ff33'
 
-export default function LfoVisualizer({lfo, index}: Props) {
+export default function LfoVisualizer({index}: Props) {
   const dispatch = useDispatch();
 
   const [dragContainer, onMouseDown] = useDragBasic((e) => {
@@ -38,6 +38,8 @@ export default function LfoVisualizer({lfo, index}: Props) {
       skew: e.metaKey ? dy : 0,
     }))
   })
+
+  const lfo = useTypedSelector(state => state.modulators[index])
 
   function GetPoints() {
     const zeros = Array(width_ / stepSize + 1).fill(0)
@@ -55,33 +57,11 @@ export default function LfoVisualizer({lfo, index}: Props) {
     return points
   }
 
-  function incrementPeriodBy(amount: number) {
-    return () => {
-      dispatch(incrementPeriod({index: index, amount: amount}))
-    }
-  }
-
   return (
-    <div>
-      <div style={{ margin: '0.5rem', display: 'flex', flexDirection: 'row' }}>
-        <Select labelId="lfo-shape-select-label" id="lfo-shape-select" value={lfo.shape}
-          onChange={(e) => dispatch(setModulatorShape({ index: index, shape: e.target.value }))}>
-          <MenuItem value={LfoShape.Ramp}>Ramp</MenuItem>
-          <MenuItem value={LfoShape.Random}>Random</MenuItem>
-          <MenuItem value={LfoShape.Sin}>Sin</MenuItem>
-        </Select>
-        <div style={{padding: '0.5rem', backgroundColor: '#fff5'}} onClick={incrementPeriodBy(-1)}></div>
-        <div>{ lfo.period }</div>
-        <div style={{padding: '0.5rem', backgroundColor: '#fff5'}} onClick={incrementPeriodBy(1)}></div>
-        <IconButton style={{ backgroundColor: '#000c' }} color="primary" aria-label="delete" size="small" onClick={() => dispatch(removeModulator(index))}>
-          <CloseIcon />
-        </IconButton>
-      </div>
-      <div ref={dragContainer} onMouseDown={onMouseDown} style={{width: width, height: height, backgroundColor: backgroundColor, margin: '1rem'}}>
-        <svg height={height} width={width}>
-          <polyline points={GetPoints()} style={{ fill: 'none', stroke: lineColor, strokeWidth: lineWidth}}/>
-        </svg>
-      </div>
+    <div ref={dragContainer} onMouseDown={onMouseDown} style={{width: width, height: height, backgroundColor: backgroundColor, position: 'relative'}}>
+      <svg height={height} width={width}>
+        <polyline points={GetPoints()} style={{ fill: 'none', stroke: lineColor, strokeWidth: lineWidth}}/>
+      </svg>
     </div>
   )
 }

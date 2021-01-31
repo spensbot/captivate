@@ -4,11 +4,12 @@ import {useTypedSelector} from '../../redux/store'
 import {useDispatch} from 'react-redux'
 import {setBaseParams} from '../../redux/paramsSlice'
 import {ParamKey} from '../../engine/params'
-import PadCursor from './PadCursor'
+import SVCursor from './SVCursor'
+import { useRealtimeSelector } from '../../redux/realtimeStore'
 
 export default function SVpad() {
 
-  const hue = useTypedSelector(state => state.params.output.Hue)
+  const hue = useRealtimeSelector(state => state.outputParams.Hue)
   const dispatch = useDispatch()
 
   const [dragContainer, onMouseDown] = useDragMapped((x, y) => {
@@ -42,7 +43,7 @@ export default function SVpad() {
     <div style={styles.root} ref={dragContainer} onMouseDown={onMouseDown}>
       <div style={styles.white}>
         <div style={styles.black}></div>
-        <PadCursor paramX={ParamKey.Saturation} paramY={ParamKey.Brightness} getCursorColor={(x,y) => y < 0.3 ? '#ccc' : '#111' }/>
+        <SVCursor />
       </div>
     </div>
   )

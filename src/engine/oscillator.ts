@@ -85,6 +85,6 @@ function ShiftPhase(phase: Normalized, phaseShift: Normalized) {
   return (phase + phaseShift) % 1.0
 }
 
-function GetPhase(lfo: Lfo, beats: number) {
+export function GetPhase(lfo: Lfo, beats: number) {
   return (beats % lfo.period) / lfo.period
 }

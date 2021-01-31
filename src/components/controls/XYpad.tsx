@@ -3,7 +3,7 @@ import useDragMapped from '../hooks/useDragMapped'
 import {useDispatch} from 'react-redux'
 import {setBaseParams, incrementBaseParams} from '../../redux/paramsSlice'
 import {ParamKey} from '../../engine/params'
-import PadCursor from './PadCursor'
+import XYCursor from './XYCursor'
 import XYWindow from './XYWindow'
 
 export default function XYpad() {
@@ -38,7 +38,7 @@ export default function XYpad() {
     <div style={styles.root} ref={dragContainer} onMouseDown={onMouseDown}>
       <div style={styles.white}>
         <div style={styles.black}></div>
-        <PadCursor paramX={ParamKey.X} paramY={ParamKey.Y} getCursorColor={() => '#eee'} />
+        <XYCursor />
         <XYWindow />
       </div>
     </div>

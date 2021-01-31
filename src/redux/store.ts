@@ -8,6 +8,7 @@ import dmxSlice from './dmxSlice'
 export const store = configureStore({
   reducer: {
     params: paramsReducer,
+    baseParams: paramsReducer,
     connections: connectionsReducer,
     dmx: dmxSlice,
     modulators: modulatorsReducer
