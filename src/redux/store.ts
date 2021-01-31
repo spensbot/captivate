@@ -1,5 +1,4 @@
-import { configureStore, getDefaultMiddleware } from '@reduxjs/toolkit'
-import timeReducer from './timeSlice'
+import { configureStore } from '@reduxjs/toolkit'
 import paramsReducer from './paramsSlice'
 import connectionsReducer from './connectionsSlice'
 import modulatorsReducer from './modulatorsSlice'
@@ -8,7 +7,6 @@ import dmxSlice from './dmxSlice'
 
 export const store = configureStore({
   reducer: {
-    time: timeReducer,
     params: paramsReducer,
     connections: connectionsReducer,
     dmx: dmxSlice,

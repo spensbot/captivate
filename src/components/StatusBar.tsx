@@ -1,23 +1,40 @@
 import React from 'react'
 import Counter2 from './Counter2'
 import ConnectionStatus from './ConnectionStatus'
-import { useRealtimeSelector, useRealtimeDispatch, incrementBPM } from '../redux/realtimeStore'
+import { useRealtimeSelector } from '../redux/realtimeStore'
 import useDragBasic from './hooks/useDragBasic'
+import { incrementTempo, setLinkEnabled } from '../engine/engine'
 
 function BPM() {
-  const dispatch = useRealtimeDispatch()
   const bpm = useRealtimeSelector(state => state.time.bpm)
 
   const [dragContainer, onMouseDown] = useDragBasic((e) => {
-    console.log("Mouse Down")
-    const dx = - e.movementX
-    const dy = e.movementY
-    dispatch(incrementBPM(dx + dy))
+    const dx = e.movementX / 3
+    const dy = - e.movementY / 3
+    incrementTempo(dx + dy)
   })
 
   return (
     <div ref={dragContainer} onMouseDown={onMouseDown} style={{ margin: '0 1rem 0 0', cursor: 'pointer' }}>
       {`${Math.round(bpm)} BPM`}
+    </div>
+  )
+}
+
+function LinkButton() {
+  const numPeers = useRealtimeSelector(state => state.time.numPeers)
+  const isEnabled = useRealtimeSelector(state => state.time.isEnabled)
+
+  const style: React.CSSProperties = {
+    backgroundColor: isEnabled ? '#3d5' : '#666',
+    color: isEnabled ? '#eee' : '#fff9',
+    borderRadius: '0.2rem',
+    padding: '0.2rem'
+  }
+
+  return (
+    <div onClick={() => setLinkEnabled(!isEnabled)} style={style}>
+      Link{isEnabled ? `: ${numPeers}` : ""}
     </div>
   )
 }
@@ -31,13 +48,14 @@ export default function StatusBar() {
       display: 'flex',
       justifyContent: 'right',
       alignItems: 'center',
-      fontSize: `${height * 0.75}px`,
+      fontSize: `1.2rem`,
       padding: '0 1rem'
     }
   }
 
   return (
     <div style={styles.root}>
+      <LinkButton />
       <BPM />
       <Counter2 />
       <div style={{ flex: '1 0 0' }} />

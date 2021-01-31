@@ -23,6 +23,14 @@ export function init(store: ReduxStore, realtimeStore: RealtimeStore) {
   requestAnimationFrame(engineUpdate);
 }
 
+export function incrementTempo(amount: number) {
+  if (_nodeLink) _nodeLink.setTempo(_realtimeStore.getState().time.bpm + amount);
+}
+
+export function setLinkEnabled(isEnabled: boolean) {
+  if (_nodeLink) _nodeLink.enable(isEnabled);
+}
+
 export function visualizerResize() {
   graphicsEngine.resize();
 }
