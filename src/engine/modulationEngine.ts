@@ -1,15 +1,39 @@
-import { Params, ParamsModulation } from './params'
-import { Lfo, GetValue } from './oscillator'
+import { Params, initModulation, initParams, paramsList, ParamKey } from './params'
+import { Lfo, GetValue, GetRamp } from './oscillator'
+import { clampNormalized } from '../util/helpers'
 
-export function modulateParams(beats: number, modulators: Lfo[], params: Params, modulation: ParamsModulation) {
-  const modulatedParams: Params = {}
+interface Modulator {
+  lfo: Lfo,
+  modulation: Params
+}
 
-  for (let [param, baseValue] of Object.entries(params)) {
-    const modulatorIndex = modulation[param]
-    modulatedParams[param] = (modulatorIndex === null)
-      ? baseValue
-      : GetValue(modulators[modulatorIndex], beats)
+export function initModulator() {
+  return {
+    lfo: GetRamp(),
+    modulation: initModulation()
   }
+}
+
+export function modulateParams(beats: number, modulators: Modulator[], baseParams: Params) {
+  const modulatedParams: Params = {...baseParams}
+  
+  const modValues = modulators.map(modulator => {
+    return GetValue(modulator.lfo, beats)
+  })
+
+  paramsList.forEach(paramKey => {
+    modulatedParams[paramKey] = modulateParam(baseParams[paramKey], modulators, modValues, paramKey)
+  })
 
   return modulatedParams
+}
+
+function modulateParam(baseParam: number, modulators: Modulator[], modValues: number[], paramKey: ParamKey) {
+  return clampNormalized(modulators.reduce((sum: number, modulator, index) => {
+    const modAmountMapped = modulator.modulation[paramKey] * 2 - 1 // from -1 to 1
+    const modValueMapped = modValues[index] * 2 - 1 // from -1 to 1
+    const addedModulation = modAmountMapped * modValueMapped / 2 // from -0.5 to -0.5
+
+    return sum + addedModulation
+  }, baseParam))
 }

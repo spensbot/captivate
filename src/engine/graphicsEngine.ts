@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { ReduxStore } from '../redux/store'
 import {RealtimeState} from '../redux/realtimeStore'
+import { MeshMatcapMaterial } from 'three'
 
 var camera: THREE.Camera
 var scene: THREE.Scene
@@ -38,17 +39,17 @@ export function resize () {
   renderer.setSize( width, height );
 }
 
-export function update ({time, outputParams}: RealtimeState) {
+export function update({ time, outputParams }: RealtimeState) {
+  const {X, Y, Width, Brightness} = outputParams
+
   mesh.rotation.x += 0.001 * time.dt;
   mesh.rotation.y += 0.002 * time.dt;
 
-  let scale = time.phase / time.quantum
-  scale = 1 - scale
-  scale = Math.pow(scale, 3);
-
-  mesh.scale.setScalar(1.5);
+  mesh.scale.setScalar(Width * 3);
+  mesh.position.setX(X - 0.5)
+  mesh.position.setY(Y - 0.5)
   mesh.material.transparent = true;
-  mesh.material.opacity = scale;
+  mesh.material.opacity = Brightness;
 
   if (renderer && scene && camera ){
     renderer.render( scene, camera );

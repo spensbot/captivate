@@ -1,30 +1,28 @@
 import React from 'react'
-import { Lfo, GetSin, GetRamp, LfoShape } from '../../engine/oscillator'
 import { GetValueFromPhase } from '../../engine/oscillator'
 import { useDispatch } from 'react-redux'
 import useDragBasic from '../hooks/useDragBasic'
-import { incrementPeriod, incrementModulator, removeModulator, setModulatorShape } from '../../redux/modulatorsSlice'
-import CloseIcon from '@material-ui/icons/Close';
-import IconButton from '@material-ui/core/IconButton';
-import MenuItem from '@material-ui/core/MenuItem';
-import Select from '@material-ui/core/Select';
+import { incrementModulator } from '../../redux/modulatorsSlice'
 import { useTypedSelector } from '../../redux/store'
 
 type Props = {
-  index: number
+  index: number,
+  width: number,
+  height: number,
+  padding: number
 }
 
 const stepSize = 2
-const height = 150
-const width = 200
-const padding = 5
-const width_ = width - padding * 2
-const height_ = height - padding * 2
 const lineWidth = 2
 const backgroundColor = '#000000'
-const lineColor = '#33ff33'
+const lineColor = '#3333ff'
 
-export default function LfoVisualizer({index}: Props) {
+export default function LfoVisualizer({ index, width, height, padding }: Props) {
+  const xPadding = width * padding;
+  const yPadding = height * padding;
+  const width_ = width - xPadding*2
+  const height_ = height - yPadding*2
+
   const dispatch = useDispatch();
 
   const [dragContainer, onMouseDown] = useDragBasic((e) => {
@@ -39,15 +37,15 @@ export default function LfoVisualizer({index}: Props) {
     }))
   })
 
-  const lfo = useTypedSelector(state => state.modulators[index])
+  const modulator = useTypedSelector(state => state.modulators[index])
 
   function GetPoints() {
     const zeros = Array(width_ / stepSize + 1).fill(0)
 
     const pointsArray = zeros.map((_, i) => {
       const x = i * stepSize / width_
-      const y = 1 - GetValueFromPhase(lfo, x)
-      return [x * width_ + padding, y * height_ + padding]
+      const y = 1 - GetValueFromPhase(modulator.lfo, x)
+      return [x * width_ + xPadding, y * height_ + yPadding]
     })
 
     const points = pointsArray.reduce((accum, point) => {

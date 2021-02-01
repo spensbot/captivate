@@ -1,17 +1,19 @@
 import React from 'react'
 import { useTypedSelector } from '../../redux/store'
-import LfoControl from './LfoControl'
+import ModulatorControl from './ModulatorControl'
 import NewModulator from './NewModulator'
 
 export default function Modulators() {
 
-  const modulators = useTypedSelector(state => state.modulators);
+  const modulatorCount = useTypedSelector(state => state.modulators.length);
+
+  const indexes = Array.from(Array(modulatorCount).keys())
 
   return (
     <div style={{ display: 'flex', flexDirection: 'row' }}>
-      {modulators.map((lfo, index) => {
+      {indexes.map(index => {
         return (
-          <LfoControl key={index} index={index} />
+          <ModulatorControl key={index} index={index} />
         )
       })}
       <NewModulator />

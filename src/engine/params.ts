@@ -21,30 +21,39 @@ export type Params = { [key in ParamKey]: Normalized }
 
 export type PartialParams = { [key in ParamKey]?: Normalized }
 
-export type ParamsModulation = { [key in ParamKey]: number | null }
-
 export function initParams(): Params {
   return {
-    [ParamKey.Hue]: 0.0,
-    [ParamKey.Saturation]: 0.0,
-    [ParamKey.Brightness]: 0.0,
-    [ParamKey.X]: 0.0,
-    [ParamKey.Width]: 0.3,
+    [ParamKey.Hue]: 0.5,
+    [ParamKey.Saturation]: 0.5,
+    [ParamKey.Brightness]: 0.5,
+    [ParamKey.X]: 0.5,
+    [ParamKey.Width]: 0.5,
     [ParamKey.Y]: 0.5,
     [ParamKey.Height]: 1.0,
-    [ParamKey.Black]: 0.0
+    [ParamKey.Black]: 0.5
   }
 }
 
-export function initParamsModulation(): ParamsModulation {
+export function initModulation(): Params {
   return {
-    [ParamKey.Hue]: null,
-    [ParamKey.Saturation]: null,
-    [ParamKey.Brightness]: null,
-    [ParamKey.X]: null,
-    [ParamKey.Width]: null,
-    [ParamKey.Y]: null,
-    [ParamKey.Height]: null,
-    [ParamKey.Black]: null
+    [ParamKey.Hue]: 0.5,
+    [ParamKey.Saturation]: 0.5,
+    [ParamKey.Brightness]: 0.5,
+    [ParamKey.X]: 0.5,
+    [ParamKey.Width]: 0.5,
+    [ParamKey.Y]: 0.5,
+    [ParamKey.Height]: 0.5,
+    [ParamKey.Black]: 0.5
   }
 }
+
+export const paramsList = [
+  ParamKey.Hue,
+  ParamKey.Saturation,
+  ParamKey.Brightness,
+  ParamKey.X,
+  ParamKey.Width,
+  ParamKey.Y,
+  ParamKey.Height,
+  ParamKey.Black
+]

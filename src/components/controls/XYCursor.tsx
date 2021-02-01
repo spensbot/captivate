@@ -9,7 +9,7 @@ export default function XYCursor() {
   const xOut = outputParams.X
   const yOut = outputParams.Y
 
-  const baseParams = useTypedSelector(state => state.params.base)
+  const baseParams = useTypedSelector(state => state.baseParams)
   const x = baseParams.X
   const y = baseParams.Y
 

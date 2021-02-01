@@ -18,7 +18,7 @@ export function init(store: ReduxStore, realtimeStore: RealtimeStore) {
   _nodeLink = new NodeLink();
   _initTime = Date.now();
   graphicsEngine.init();
-  dmxEngine.init(store);
+  dmxEngine.init(store, realtimeStore);
 
   requestAnimationFrame(engineUpdate);
 }
@@ -53,7 +53,7 @@ function engineUpdate(currentTime: number) {
   timeState.dt = dt;
   timeState.quantum = 4.0;
 
-  const outputParams = modulateParams(timeState.beats, _store.getState().modulators, _store.getState().params.base, _store.getState().params.modulation)
+  const outputParams = modulateParams(timeState.beats, _store.getState().modulators, _store.getState().baseParams)
   
   const newRealtimeState = {
     time: timeState,

@@ -3,9 +3,11 @@ import { Window, Window2D } from '../types/baseTypes'
 import { Params } from './params'
 import { Color, Colors, getColors } from './dmxColors'
 import { DmxValue, DMX_MAX_VALUE, FixtureChannel, ChannelType, Fixture, DMX_DEFAULT_VALUE, testUniverse} from './dmxFixtures'
+import { RealtimeStore } from '../redux/realtimeStore'
 import { ReduxStore } from '../redux/store'
 import { setDmx } from '../redux/connectionsSlice'
 
+let _realtimeStore: RealtimeStore
 let _store: ReduxStore
 
 function connectionStatusUpdate(isConnected: boolean, path: string | null) {
@@ -18,14 +20,15 @@ function connectionStatusUpdate(isConnected: boolean, path: string | null) {
   }
 }
 
-export function init(store: ReduxStore) {
+export function init(store: ReduxStore, realtimeStore: RealtimeStore) {
+  _realtimeStore = realtimeStore
   _store = store
   dmxConnection.init(connectionStatusUpdate)
   setInterval(writeDMX, 1000 / 40)
 }
 
 const writeDMX = () => {  
-  setDMX(_store.getState().params.output, testUniverse)
+  setDMX(_realtimeStore.getState().outputParams, testUniverse)
 }
 
 function getWindowMultiplier2D(fixtureWindow?: Window2D, movingWindow?: Window2D) {

@@ -13,7 +13,9 @@ export default function XYWindow() {
       width: `${Width*100}%`,
       height: `${Height*100}%`,
       // transform: `translate(-${Width * 50}%, -${Height * 50}%)`,
-      backgroundColor: '#fff2'
+      backgroundColor: '#aff2',
+      border: '1px solid #aff3',
+      borderRadius: '0.2rem'
     }
   }
 

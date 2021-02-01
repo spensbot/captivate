@@ -9,7 +9,7 @@ export default function SVCursor() {
   const xOut = outputParams.Saturation
   const yOut = outputParams.Brightness
 
-  const baseParams = useTypedSelector(state => state.params.base)
+  const baseParams = useTypedSelector(state => state.baseParams)
   const x = baseParams.Saturation
   const y = baseParams.Brightness
 

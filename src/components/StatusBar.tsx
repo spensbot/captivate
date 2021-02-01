@@ -15,7 +15,7 @@ function BPM() {
   })
 
   return (
-    <div ref={dragContainer} onMouseDown={onMouseDown} style={{ margin: '0 1rem 0 0', cursor: 'pointer' }}>
+    <div ref={dragContainer} onMouseDown={onMouseDown} style={{ margin: '0 1rem 0 0', cursor: 'nesw-resize', userSelect: 'none' }}>
       {`${Math.round(bpm)} BPM`}
     </div>
   )
@@ -26,10 +26,14 @@ function LinkButton() {
   const isEnabled = useRealtimeSelector(state => state.time.isEnabled)
 
   const style: React.CSSProperties = {
-    backgroundColor: isEnabled ? '#3d5' : '#666',
+    backgroundColor: isEnabled ? '#3d5a' : '#fff3',
     color: isEnabled ? '#eee' : '#fff9',
-    borderRadius: '0.2rem',
-    padding: '0.2rem'
+    borderRadius: '0.3rem',
+    padding: '0.2rem',
+    cursor: 'pointer',
+    userSelect: 'none',
+    fontSize: '0.9rem',
+    marginRight: '0.5rem'
   }
 
   return (
@@ -41,15 +45,13 @@ function LinkButton() {
 
 export default function StatusBar() {
 
-  const height = 30
-
   const styles = {
     root: {
       display: 'flex',
       justifyContent: 'right',
       alignItems: 'center',
       fontSize: `1.2rem`,
-      padding: '0 1rem'
+      padding: '0.5rem 1rem'
     }
   }
 
