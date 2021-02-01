@@ -47,7 +47,7 @@ export default function LfoPeriod({index}: Props) {
   }
 
   return (
-    <div ref={dragContainer} onMouseDown={onMouseDownWrapper} style={{ padding: '0.5rem', backgroundColor: '#0003', border: '1px solid #fff3', borderRadius: '0.3rem' }}>
+    <div ref={dragContainer} onMouseDown={onMouseDownWrapper} style={{ padding: '0.5rem', backgroundColor: '#0005', cursor: 'move' }}>
       {periodString}
     </div>
   )
