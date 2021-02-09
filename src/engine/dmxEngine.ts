@@ -40,7 +40,7 @@ function getWindowMultiplier2D(fixtureWindow?: Window2D, movingWindow?: Window2D
 
 function getWindowMultiplier(fixtureWindow?: Window, movingWindow?: Window) {
   if (fixtureWindow && movingWindow) {
-    const distanceBetween = Math.abs(fixtureWindow.pos - movingWindow.pos)
+    const distanceBetween = Math.abs(fixtureWindow.pos - movingWindow.pos) / 2
     const reach = fixtureWindow.width / 2 + movingWindow.width / 2
     return distanceBetween > reach ? 0.0 : 1.0 - distanceBetween / reach;
   }

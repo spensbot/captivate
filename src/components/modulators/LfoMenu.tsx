@@ -21,14 +21,14 @@ export default function LfoMenu({index}: Props) {
   const lfo = useTypedSelector(state => state.modulators[index].lfo)
 
   return (
-    <div style={{ padding: '0', display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#0005' }}>
+    <div style={{ paddingLeft: '0.3rem', display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#0005' }}>
       <Select style={{color: '#fffa'}} labelId="lfo-shape-select-label" id="lfo-shape-select" value={lfo.shape}
         onChange={(e) => dispatch(setModulatorShape({ index: index, shape: e.target.value }))}>
         <MenuItem value={LfoShape.Ramp}>Ramp</MenuItem>
         <MenuItem value={LfoShape.Random}>Random</MenuItem>
         <MenuItem value={LfoShape.Sin}>Sin</MenuItem>
       </Select>
-      <Divider vertical color={'#fff3'}/>
+      <div style = {{flex: '1 0 0'}} />
       <LfoPeriod index={index}/>
       <Divider vertical color={'#fff3'}/>
       <IconButton color="primary" aria-label="delete" size="small" onClick={() => dispatch(resetModulator(index))}>
