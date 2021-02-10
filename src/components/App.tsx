@@ -1,22 +1,38 @@
 import React from 'react'
-import StatusBar from './StatusBar';
-import Visualizer from './Visualizer';
-import ParamsControl from './controls/ParamsControl'
-import Modulators from './modulators/Modulators'
+import Video from './pages/Video'
+import Modulation from './pages/Modulation'
+import Universe from './pages/Universe'
+import MenuBar from './MenuBar'
+import { useTypedSelector } from '../redux/store'
+import { Page } from '../redux/guiSlice'
 
 export default function App() {
+  const activePage = useTypedSelector(state => state.gui.activePage)
+
+  const styles: { [key: string]: React.CSSProperties } = {
+    root: {
+      display: 'flex',
+      flexDirection: 'row',
+      width: '100vw',
+      height: '100vh'
+    },
+    activePage: {
+      flex: '1 0 0'
+    }
+  }
+
+  function getActivePage() {
+    if (activePage == Page.MODULATION) return (<Modulation />)
+    if (activePage == Page.UNIVERSE) return (<Universe />)
+    if (activePage == Page.VIDEO) return (<Video />)
+  }
+
   return (
-    <>
-      <StatusBar />
-      <Modulators />
-      {/* <MyFixtures />
-      <MyUniverse /> */}
-      <ParamsControl />
-      {/* <SplitPane style={{height: '200px', width: '100%'}} type="vertical" initialSplit={0.25} px={5}>
-        <div style={{background: '#fff1', height: '100%'}}>Div One</div>
-        <div style={{background: '#fff1', height: '100%'}}>Div Two</div>
-      </SplitPane> */}
-      <Visualizer style={{width: '100vw', height: '100vh'}} />
-    </>
+    <div style={styles.root}>
+      <MenuBar />
+      <div style={styles.activePage}>
+        {getActivePage()}
+      </div>
+    </div>
   )
 }

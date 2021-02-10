@@ -3,14 +3,16 @@ import paramsReducer from './paramsSlice'
 import connectionsReducer from './connectionsSlice'
 import modulatorsReducer from './modulatorsSlice'
 import { useSelector, TypedUseSelectorHook } from 'react-redux'
-import dmxSlice from './dmxSlice'
+import dmxReducer from './dmxSlice'
+import guiReducer from './guiSlice'
 
 export const store = configureStore({
   reducer: {
     baseParams: paramsReducer,
     connections: connectionsReducer,
-    dmx: dmxSlice,
-    modulators: modulatorsReducer
+    dmx: dmxReducer,
+    modulators: modulatorsReducer,
+    gui: guiReducer
     // fixtures: 
     // universe: 
   }
