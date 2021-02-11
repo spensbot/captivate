@@ -25,27 +25,35 @@ export default function MenuBar() {
     root: {
       display: 'flex',
       flexDirection: 'column',
-      backgroundColor: '#fff3'
+      backgroundColor: '#ffffff08'
     },
     item: {
       padding: '1rem',
       cursor: 'pointer',
+      color: '#fff8'
     },
     selectedItem: {
-      padding: '1rem',
-      borderLeft: '5px solid #fff',
-      color: '#fff'
-    },
-    icon: {
-      color: '#fff8'
+      padding: '1rem 1rem 1rem 0.9rem',
+      cursor: 'pointer',
+      borderLeft: '0.1rem solid #fff',
+      color: '#fffc'
     }
   }
 
   return (
     <div style={styles.root}>
-      <div style={styles.item} onClick={setPage(Page.UNIVERSE)}><ViewComfyIcon /></div>
-      <div style={styles.item} onClick={setPage(Page.MODULATION)}><WhatshotIcon /></div>
-      <div style={styles.item} onClick={setPage(Page.VIDEO)}><FeaturedVideoIcon /></div>
+      <div style={activePage === Page.UNIVERSE ? styles.selectedItem : styles.item}
+        onClick={setPage(Page.UNIVERSE)}>
+        <ViewComfyIcon />
+      </div>
+      <div style={activePage === Page.MODULATION ? styles.selectedItem : styles.item}
+        onClick={setPage(Page.MODULATION)}>
+        <WhatshotIcon />
+      </div>
+      <div style={activePage === Page.VIDEO ? styles.selectedItem : styles.item}
+        onClick={setPage(Page.VIDEO)}>
+        <FeaturedVideoIcon />
+      </div>
     </div>
   )
 }

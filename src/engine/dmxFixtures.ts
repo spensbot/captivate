@@ -1,5 +1,6 @@
 import { Window2D } from '../types/baseTypes'
 import { Color } from './dmxColors'
+import { nanoid } from 'nanoid'
 
 export const DMX_MAX_VALUE = 255;
 export const DMX_NUM_CHANNELS = 512;
@@ -46,7 +47,7 @@ export type FixtureType = {
 
 const parFixture : FixtureType = {
   id: "1",
-  manufacturer: "Laluce Natz",
+  manufacturer: "YeeSaw",
   name: "Par",
   channels: [
     { type: ChannelType.Master },
@@ -62,6 +63,7 @@ const parFixture : FixtureType = {
 
 const stringLightFixture : FixtureType = {
   id: '2',
+  name: "Light String",
   channels: [
     { type: ChannelType.Master },
   ]
@@ -69,6 +71,8 @@ const stringLightFixture : FixtureType = {
 
 const strobeFixture : FixtureType = {
   id: '3',
+  manufacturer: "DragonX",
+  name: "Strobe",
   channels: [
     { type: ChannelType.Master },
     { type: ChannelType.StrobeSpeed, default_solid: 0, default_strobe: 251 },
@@ -78,6 +82,8 @@ const strobeFixture : FixtureType = {
 
 const derbyFixture : FixtureType = {
   id: '4',
+  manufacturer: "Laluce Natz",
+  name: "Derby",
   channels: [
     { type: ChannelType.Master },
     { type: ChannelType.Color, color: Color.Red },
@@ -95,11 +101,27 @@ export type Fixture = {
   window?: Window2D
 }
 
-export const testFixtureTypes = {
-  1: parFixture,
-  2: stringLightFixture,
-  3: strobeFixture,
-  4: derbyFixture
+export function initFixtureType(): FixtureType {
+  return {
+    id: nanoid(),
+    channels: [
+      {type: ChannelType.Master}
+    ]
+  }
+} 
+
+export const fixtureTypes = [
+  '1',
+  '2',
+  '3',
+  '4'
+]
+
+export const fixtureTypesByID = {
+  '1': parFixture,
+  '2': stringLightFixture,
+  '3': strobeFixture,
+  '4': derbyFixture
 }
 
 export const testUniverse = [

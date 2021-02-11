@@ -1,17 +1,17 @@
 import Divider from '../base/Divider'
 import React from 'react'
-import EditIcon from '@material-ui/icons/Edit';
-import { IconButton } from '@material-ui/core';
+import { FixtureType } from '../../engine/dmxFixtures'
+import DoneIcon from '@material-ui/icons/Done';
+import { IconButton, TextField } from '@material-ui/core';
 import { useTypedSelector } from '../../redux/store';
 import { useDispatch } from 'react-redux';
-import { setEditedFixture, addFixtureType } from '../../redux/dmxSlice';
-import MyFixtureEditing from './MyFixtureEditing';
+import { updateFixtureType, setEditedFixture } from '../../redux/dmxSlice';
 
 type Props = {
   id: string
 }
 
-export default function MyFixture({ id }: Props) {
+export default function MyFixtureEditing({ id }: Props) {
 
   const fixtureType = useTypedSelector(state => state.dmx.fixtureTypesByID[id])
   const editedFixture = useTypedSelector(state => state.dmx.editedFixture)
@@ -20,31 +20,25 @@ export default function MyFixture({ id }: Props) {
   const styles: { [key: string]: React.CSSProperties } = {
     root: {
       display: 'flex',
-      flexDirection: 'row',
+      flexDirection: 'column',
       justifyContent: 'space-between',
       alignItems: 'center'
     },
-    fixtureInfo: {
-
+    textField: {
+      color: '#fffa'
     },
-    editButton: {
-      color: '#fff'
+    button: {
+      color: '#fffa'
     }
-  }
-
-  let infoText = fixtureType.manufacturer || ''
-  infoText += fixtureType.name || ''
-
-  if (editedFixture === id) {
-    return <MyFixtureEditing id={id} />
   }
 
   return (
     <>
       <div style={styles.root}>
-        {infoText}
-        <IconButton style={styles.editButton} onClick={() => dispatch(setEditedFixture(id))}>
-          <EditIcon />
+        <TextField style={styles.textField} label="Name" value={fixtureType.name}/>
+        <TextField style={styles.textField} label="Manufacturer" value={fixtureType.manufacturer}/>
+        <IconButton style={styles.button} onClick={() => dispatch(setEditedFixture(null))}>
+          <DoneIcon />
         </IconButton>
       </div>
       <Divider marginY="0rem" />
