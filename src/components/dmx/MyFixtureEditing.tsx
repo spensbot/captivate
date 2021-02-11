@@ -31,8 +31,8 @@ export default function MyFixtureEditing({ id }: Props) {
   const dispatch = useDispatch()
   const formik = useFormik({
     initialValues: {
-      name: '',
-      manufacturer: ''
+      name: fixtureType.name,
+      manufacturer: fixtureType.manufacturer
     },
     validationSchema: validationSchema,
     onSubmit: (values) => {

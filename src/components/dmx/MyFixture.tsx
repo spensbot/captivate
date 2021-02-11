@@ -21,19 +21,20 @@ export default function MyFixture({ id }: Props) {
     root: {
       display: 'flex',
       flexDirection: 'row',
-      justifyContent: 'space-between',
       alignItems: 'center'
     },
-    fixtureInfo: {
-
+    name: {
+      fontSize: '1rem',
+      paddingRight: '0.5rem'
     },
-    editButton: {
-      color: '#fff'
+    manufacturer: {
+      fontSize: '0.8rem',
+      opacity: 0.4
+    },
+    spacer: {
+      flex: '1 0 0'
     }
   }
-
-  let infoText = fixtureType.manufacturer || ''
-  infoText += fixtureType.name || ''
 
   if (editedFixture === id) {
     return <MyFixtureEditing id={id} />
@@ -42,8 +43,10 @@ export default function MyFixture({ id }: Props) {
   return (
     <>
       <div style={styles.root}>
-        {infoText}
-        <IconButton style={styles.editButton} onClick={() => dispatch(setEditedFixture(id))}>
+        {fixtureType.name ? (<span style={styles.name}>{fixtureType.name}</span>) : null}
+        {fixtureType.manufacturer ? (<span style={styles.manufacturer}>{fixtureType.manufacturer}</span>) : null}
+        <div style={styles.spacer} />
+        <IconButton onClick={() => dispatch(setEditedFixture(id))}>
           <EditIcon />
         </IconButton>
       </div>
