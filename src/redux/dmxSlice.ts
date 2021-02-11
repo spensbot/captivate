@@ -35,10 +35,17 @@ export const dmxSlice = createSlice({
     },
     updateFixtureType: (state, { payload }: PayloadAction<FixtureType>) => {
       state.fixtureTypesByID[payload.id] = payload
+    },
+    deleteFixtureType: (state, { payload }: PayloadAction<string>) => {
+      let index = state.fixtureTypes.indexOf(payload);
+      if (index !== -1) {
+        state.fixtureTypes.splice(index, 1);
+      }
+      delete state.fixtureTypesByID[payload]
     }
   },
 });
 
-export const { setEditedFixture, addFixture, removeFixture, addFixtureType, updateFixtureType } = dmxSlice.actions;
+export const { setEditedFixture, addFixture, removeFixture, addFixtureType, updateFixtureType, deleteFixtureType } = dmxSlice.actions;
 
 export default dmxSlice.reducer;

@@ -5,17 +5,46 @@ import DoneIcon from '@material-ui/icons/Done';
 import { IconButton, TextField } from '@material-ui/core';
 import { useTypedSelector } from '../../redux/store';
 import { useDispatch } from 'react-redux';
-import { updateFixtureType, setEditedFixture } from '../../redux/dmxSlice';
+import { updateFixtureType, deleteFixtureType, setEditedFixture } from '../../redux/dmxSlice';
+import CloseIcon from '@material-ui/icons/Close';
+import DeleteForeverIcon from '@material-ui/icons/DeleteForever';
+import { useFormik } from 'formik';
+import * as yup from 'yup'
 
 type Props = {
   id: string
 }
+
+const validationSchema = yup.object({
+  name: yup
+    .string('Fixture Name')
+    .min(4, 'Name should be a minium 4 characters')
+    .required('Fixture Name is required'),
+  manufacturer: yup
+    .string('Fixture Manufacturer')
+});
 
 export default function MyFixtureEditing({ id }: Props) {
 
   const fixtureType = useTypedSelector(state => state.dmx.fixtureTypesByID[id])
   const editedFixture = useTypedSelector(state => state.dmx.editedFixture)
   const dispatch = useDispatch()
+  const formik = useFormik({
+    initialValues: {
+      name: '',
+      manufacturer: ''
+    },
+    validationSchema: validationSchema,
+    onSubmit: (values) => {
+      dispatch(setEditedFixture(null))
+      dispatch(updateFixtureType({
+        id: id,
+        name: values.name,
+        manufacturer: values.manufacturer,
+        channels: []
+      }))
+    },
+  });
   
   const styles: { [key: string]: React.CSSProperties } = {
     root: {
@@ -24,22 +53,41 @@ export default function MyFixtureEditing({ id }: Props) {
       justifyContent: 'space-between',
       alignItems: 'center'
     },
-    textField: {
-      color: '#fffa'
-    },
-    button: {
-      color: '#fffa'
+    buttonContainer: {
+      display: 'flex',
+      flexDirection: 'row',
+      justifyContent: 'center'
     }
   }
 
   return (
     <>
       <div style={styles.root}>
-        <TextField style={styles.textField} label="Name" value={fixtureType.name}/>
-        <TextField style={styles.textField} label="Manufacturer" value={fixtureType.manufacturer}/>
-        <IconButton style={styles.button} onClick={() => dispatch(setEditedFixture(null))}>
-          <DoneIcon />
-        </IconButton>
+        <form onSubmit={formik.handleSubmit}>
+          <TextField fullWidth id="name" name="name" label="Name"
+            value={formik.values.name}
+            onChange={formik.handleChange}
+            error={formik.touched.name && Boolean(formik.errors.name)}
+            helperText={formik.touched.name && formik.errors.name}
+          />
+          <TextField fullWidth id="manufacturer" name="manufacturer" label="Manufacturer"
+            value={formik.values.manufacturer}
+            onChange={formik.handleChange}
+            error={formik.touched.manufacturer && Boolean(formik.errors.manufacturer)}
+            helperText={formik.touched.manufacturer && formik.errors.manufacturer}
+          />
+          <div style={styles.buttonContainer}>
+            <IconButton type="submit">
+              <DoneIcon />
+            </IconButton>
+            <IconButton onClick={() => dispatch(setEditedFixture(null))}>
+              <CloseIcon />
+            </IconButton>
+            <IconButton onClick={() => dispatch(deleteFixtureType(id))}>
+              <DeleteForeverIcon />
+            </IconButton>
+          </div>
+        </form>
       </div>
       <Divider marginY="0rem" />
     </>

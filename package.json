@@ -78,6 +78,7 @@
     "@types/react-helmet": "^6.1.0",
     "bindings": "^1.5.0",
     "caniuse-lite": "^1.0.30001183",
+    "formik": "^2.2.6",
     "lodash.throttle": "^4.1.1",
     "nanoid": "^3.1.20",
     "node-link": "file:../../Dev/node-link",
@@ -90,7 +91,8 @@
     "redux": "^4.0.5",
     "serialport": "^9.0.2",
     "styled-components": "^5.1.1",
-    "three": "^0.122.0"
+    "three": "^0.122.0",
+    "yup": "^0.32.8"
   },
   "build": {
     "appId": "com.sailingtomars.captivate",
