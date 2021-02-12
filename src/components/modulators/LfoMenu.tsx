@@ -22,7 +22,7 @@ export default function LfoMenu({index}: Props) {
 
   return (
     <div style={{ paddingLeft: '0.3rem', display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#0005' }}>
-      <Select style={{color: '#fffa'}} labelId="lfo-shape-select-label" id="lfo-shape-select" value={lfo.shape}
+      <Select labelId="lfo-shape-select-label" id="lfo-shape-select" value={lfo.shape}
         onChange={(e) => dispatch(setModulatorShape({ index: index, shape: e.target.value }))}>
         <MenuItem value={LfoShape.Ramp}>Ramp</MenuItem>
         <MenuItem value={LfoShape.Random}>Random</MenuItem>

@@ -2,11 +2,11 @@ import { Normalized } from '../types/baseTypes'
 import { Params } from './params'
 
 export enum Color {
-  Red,
-  Green,
-  Blue,
-  White,
-  Black
+  Red = 'red',
+  Green = 'green',
+  Blue = 'blue',
+  White = 'white',
+  Black = 'black'
 }
 
 export const colorList = [

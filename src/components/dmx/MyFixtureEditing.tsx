@@ -1,6 +1,6 @@
 import Divider from '../base/Divider'
 import React from 'react'
-import {colorList} from '../../engine/dmxColors'
+import {colorList, Color} from '../../engine/dmxColors'
 import { FixtureType, ChannelType, FixtureChannel, channelTypes } from '../../engine/dmxFixtures'
 import DoneIcon from '@material-ui/icons/Done';
 import { IconButton, TextField } from '@material-ui/core';
@@ -14,6 +14,9 @@ import * as yup from 'yup'
 import Select from '@material-ui/core/Select';
 import MenuItem from '@material-ui/core/MenuItem'
 import { Menu } from 'electron';
+import AddIcon from '@material-ui/icons/Add';
+import InputLabel from '@material-ui/core/InputLabel'
+import RemoveIcon from '@material-ui/icons/Remove';
 
 type Props = {
   id: string
@@ -54,7 +57,8 @@ export default function MyFixtureEditing({ id }: Props) {
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'space-between',
-      alignItems: 'center'
+      alignItems: 'center',
+      margin: '1rem 0 1rem 0'
     },
     buttonContainer: {
       display: 'flex',
@@ -65,7 +69,7 @@ export default function MyFixtureEditing({ id }: Props) {
 
   function getColorMenuItems() {
     colorList.map(color => {
-      return (<MenuItem key={color} value={color}>color</MenuItem>)
+      return (<MenuItem value={color}>{color}</MenuItem>)
     })
   }
 
@@ -74,20 +78,26 @@ export default function MyFixtureEditing({ id }: Props) {
       return null
     if (fixtureChannel.type === ChannelType.Color)
       return (
-        <Select id={index + "color"} value={fixtureChannel.color}>
-          {getColorMenuItems}
-        </Select>
+        <>
+          <Select labelId={index+"color label"} id={index + "color"} value={fixtureChannel.color} style={{alignSelf: 'flex-end'}}>
+            <MenuItem value={Color.Red}>{Color.Red}</MenuItem>
+            <MenuItem value={Color.Green}>{Color.Green}</MenuItem>
+            <MenuItem value={Color.Blue}>{Color.Blue}</MenuItem>
+            <MenuItem value={Color.White}>{Color.White}</MenuItem>
+            <MenuItem value={Color.Black}>{Color.Black}</MenuItem>
+          </Select>
+        </>
       )
     if (fixtureChannel.type === ChannelType.StrobeSpeed)
       return (
         <>
-          <TextField style={{width: '5rem'}} size="small" id="default_strobe" name="default_strobe" label="Strobe Value"
+          <TextField style={{width: '4rem', marginRight: '0.5rem'}} size="small" id="default_strobe" name="default_strobe" label="Strobe"
             value={fixtureChannel.default_strobe}
             onChange={() => { }}
             // error={formik.touched.name && Boolean(formik.errors.name)}
             // helperText={formik.touched.name && formik.errors.name}
           />
-          <TextField style={{width: '5rem'}} size="small" id="default_solid" name="default_solid" label="Solid Value"
+          <TextField style={{width: '4rem'}} size="small" id="default_solid" name="default_solid" label="Solid"
             value={fixtureChannel.default_strobe}
             onChange={() => { }}
             // error={formik.touched.name && Boolean(formik.errors.name)}
@@ -97,7 +107,7 @@ export default function MyFixtureEditing({ id }: Props) {
       )
     if (fixtureChannel.type === ChannelType.Other)
       return (
-        <TextField style={{width: '5rem'}} size="small" id="default" name="default" label="Default Value"
+        <TextField style={{width: '4rem'}} size="small" id="default" name="default" label="Default"
           value={fixtureChannel.default}
           onChange={() => { }}
           // error={formik.touched.name && Boolean(formik.errors.name)}
@@ -108,22 +118,26 @@ export default function MyFixtureEditing({ id }: Props) {
 
   function getChannelTypeMenuItems() {
     return channelTypes.map(channelType => {
-      <MenuItem key={channelType} value={channelType}>channelType</MenuItem>
+      <MenuItem value={channelType}>{channelType}</MenuItem>
     })
   }
 
   function getChannels() {
     return fixtureType.channels.map((fixtureChannel, index) => {
       return (
-        <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' }}>
-          <span>{index + 1}</span>
-          <Select labelId={"channel" + index + "label"} id={"channel" + index}
+        <div key={index} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', margin: '0 0 0.5rem 0' }}>
+          <span style={{ fontSize: '1.3rem', margin: '0 1rem 0 0' }}>{index + 1}</span>
+          <Select labelId={"channel" + index + "type label"} id={"channel" + index + "type"}
             value={fixtureChannel.type}
-            onChange={() => {}}
+            onChange={() => { }}
+            style={{margin: '-0.2rem 0.5rem 0 0', alignSelf: 'flex-end'}}
           >
-            {getChannelTypeMenuItems()}
+            <MenuItem value={ChannelType.Master}>{ChannelType.Master}</MenuItem>
+            <MenuItem value={ChannelType.Color}>{ChannelType.Color}</MenuItem>
+            <MenuItem value={ChannelType.StrobeSpeed}>{ChannelType.StrobeSpeed}</MenuItem>
+            <MenuItem value={ChannelType.Other}>{ChannelType.Other}</MenuItem>
           </Select>
-          {getChannelFields(fixtureChannel)}
+          {getChannelFields(fixtureChannel, index)}
         </div>
       )
     })
@@ -133,7 +147,7 @@ export default function MyFixtureEditing({ id }: Props) {
     <>
       <div style={styles.root}>
         <form onSubmit={formik.handleSubmit}>
-          <TextField size="small" fullWidth id="name" name="name" label="Name"
+          <TextField size="small" fullWidth id="name" name="name" label="Name" style={{marginBottom: '0.5rem'}}
             value={formik.values.name}
             onChange={formik.handleChange}
             error={formik.touched.name && Boolean(formik.errors.name)}
@@ -145,8 +159,18 @@ export default function MyFixtureEditing({ id }: Props) {
             error={formik.touched.manufacturer && Boolean(formik.errors.manufacturer)}
             helperText={formik.touched.manufacturer && formik.errors.manufacturer}
           />
-          <span>Channels</span>
-          {getChannels()}
+          <div style={{ padding: '0.5rem 0 0.5rem 0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', margin: '0.5rem 0 0.5rem 0' }}>
+              <span style={{fontSize: '1.3rem', marginRight: '0.5rem'}}>Channels</span>
+              <IconButton size='small' style={{marginRight: '0.5rem'}} onClick={() => {}}>
+                <AddIcon />
+              </IconButton>
+              <IconButton size='small' onClick={() => {}}>
+                <RemoveIcon />
+              </IconButton>
+            </div>
+            {getChannels()}
+          </div>
           <div style={styles.buttonContainer}>
             <IconButton type="submit">
               <DoneIcon />

@@ -13,7 +13,7 @@ export enum ChannelType {
   Color = 'color',
   Master = 'master',
   StrobeSpeed = 'strobe speed',
-  Other = 'other',
+  Other = 'constant',
 }
 
 export const channelTypes = [
