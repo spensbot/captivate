@@ -1,7 +1,6 @@
 import Divider from '../base/Divider'
 import React from 'react'
-import {colorList} from '../../engine/dmxColors'
-import { FixtureType, ChannelType, FixtureChannel, channelTypes } from '../../engine/dmxFixtures'
+import { FixtureChannel } from '../../engine/dmxFixtures'
 import DoneIcon from '@material-ui/icons/Done';
 import { IconButton, TextField } from '@material-ui/core';
 import { useTypedSelector } from '../../redux/store';
@@ -11,12 +10,9 @@ import CloseIcon from '@material-ui/icons/Close';
 import DeleteForeverIcon from '@material-ui/icons/DeleteForever';
 import { useFormik } from 'formik';
 import * as yup from 'yup'
-import Select from '@material-ui/core/Select';
-import MenuItem from '@material-ui/core/MenuItem'
-import { Menu } from 'electron';
 
 type Props = {
-  id: string
+  fixtureChannel: FixtureChannel
 }
 
 const validationSchema = yup.object({
@@ -28,9 +24,10 @@ const validationSchema = yup.object({
     .string('Fixture Manufacturer')
 });
 
-export default function MyFixtureEditing({ id }: Props) {
+export default function MyFixtureChannel({ fixtureChannel }: Props) {
 
   const fixtureType = useTypedSelector(state => state.dmx.fixtureTypesByID[id])
+  const editedFixture = useTypedSelector(state => state.dmx.editedFixture)
   const dispatch = useDispatch()
   const formik = useFormik({
     initialValues: {
@@ -63,72 +60,6 @@ export default function MyFixtureEditing({ id }: Props) {
     }
   }
 
-  function getColorMenuItems() {
-    colorList.map(color => {
-      return (<MenuItem key={color} value={color}>color</MenuItem>)
-    })
-  }
-
-  function getChannelFields(fixtureChannel: FixtureChannel, index: number) {
-    if (fixtureChannel.type === ChannelType.Master)
-      return null
-    if (fixtureChannel.type === ChannelType.Color)
-      return (
-        <Select id={index + "color"} value={fixtureChannel.color}>
-          {getColorMenuItems}
-        </Select>
-      )
-    if (fixtureChannel.type === ChannelType.StrobeSpeed)
-      return (
-        <>
-          <TextField style={{width: '5rem'}} size="small" id="default_strobe" name="default_strobe" label="Strobe Value"
-            value={fixtureChannel.default_strobe}
-            onChange={() => { }}
-            // error={formik.touched.name && Boolean(formik.errors.name)}
-            // helperText={formik.touched.name && formik.errors.name}
-          />
-          <TextField style={{width: '5rem'}} size="small" id="default_solid" name="default_solid" label="Solid Value"
-            value={fixtureChannel.default_strobe}
-            onChange={() => { }}
-            // error={formik.touched.name && Boolean(formik.errors.name)}
-            // helperText={formik.touched.name && formik.errors.name}
-          />
-        </>
-      )
-    if (fixtureChannel.type === ChannelType.Other)
-      return (
-        <TextField style={{width: '5rem'}} size="small" id="default" name="default" label="Default Value"
-          value={fixtureChannel.default}
-          onChange={() => { }}
-          // error={formik.touched.name && Boolean(formik.errors.name)}
-          // helperText={formik.touched.name && formik.errors.name}
-        />
-      )
-  }
-
-  function getChannelTypeMenuItems() {
-    return channelTypes.map(channelType => {
-      <MenuItem key={channelType} value={channelType}>channelType</MenuItem>
-    })
-  }
-
-  function getChannels() {
-    return fixtureType.channels.map((fixtureChannel, index) => {
-      return (
-        <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' }}>
-          <span>{index + 1}</span>
-          <Select labelId={"channel" + index + "label"} id={"channel" + index}
-            value={fixtureChannel.type}
-            onChange={() => {}}
-          >
-            {getChannelTypeMenuItems()}
-          </Select>
-          {getChannelFields(fixtureChannel)}
-        </div>
-      )
-    })
-  }
-
   return (
     <>
       <div style={styles.root}>
@@ -145,8 +76,6 @@ export default function MyFixtureEditing({ id }: Props) {
             error={formik.touched.manufacturer && Boolean(formik.errors.manufacturer)}
             helperText={formik.touched.manufacturer && formik.errors.manufacturer}
           />
-          <span>Channels</span>
-          {getChannels()}
           <div style={styles.buttonContainer}>
             <IconButton type="submit">
               <DoneIcon />

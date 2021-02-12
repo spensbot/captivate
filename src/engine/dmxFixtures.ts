@@ -10,11 +10,18 @@ export type DmxChannel = number // 1 - 512
 export type DmxValue = number // 0 - 255
 
 export enum ChannelType {
-  Color,
-  Master,
-  StrobeSpeed,
-  Other,
+  Color = 'color',
+  Master = 'master',
+  StrobeSpeed = 'strobe speed',
+  Other = 'other',
 }
+
+export const channelTypes = [
+  ChannelType.Master,
+  ChannelType.Color,
+  ChannelType.StrobeSpeed,
+  ChannelType.Other
+]
 
 type ChannelMaster = {
   type: ChannelType.Master

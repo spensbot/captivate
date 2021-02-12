@@ -31,6 +31,10 @@ export default function MyFixture({ id }: Props) {
       fontSize: '0.8rem',
       opacity: 0.4
     },
+    channelCount: {
+      fontSize: '0.9rem',
+      paddingRight: '0.2rem'
+    },
     spacer: {
       flex: '1 0 0'
     }
@@ -46,6 +50,7 @@ export default function MyFixture({ id }: Props) {
         {fixtureType.name ? (<span style={styles.name}>{fixtureType.name}</span>) : null}
         {fixtureType.manufacturer ? (<span style={styles.manufacturer}>{fixtureType.manufacturer}</span>) : null}
         <div style={styles.spacer} />
+        <span style={styles.channelCount}>{fixtureType.channels.length}</span><span style={styles.manufacturer}>ch</span>
         <IconButton onClick={() => dispatch(setEditedFixture(id))}>
           <EditIcon />
         </IconButton>

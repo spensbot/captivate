@@ -9,13 +9,15 @@ export enum Color {
   Black
 }
 
-export type Colors = {
-  [Color.Red]: Normalized,
-  [Color.Green]: Normalized,
-  [Color.Blue]: Normalized,
-  [Color.White]: Normalized,
-  [Color.Black]: Normalized
-}
+export const colorList = [
+  Color.Red,
+  Color.Green,
+  Color.Blue,
+  Color.White,
+  Color.Black
+]
+
+export type Colors = { [key in Color]: Normalized }
 
 function intermediate(C: number, X: number, hp: Normalized) {
   if (hp < 1) {

@@ -17,7 +17,7 @@ export default function MyFixtures() {
   })
 
   return (
-    <div>
+    <div style={{height: '100%', overflow: 'scroll'}}>
       <h1>My Fixtures</h1>
       <br/>
       {elements}
