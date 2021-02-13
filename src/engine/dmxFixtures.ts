@@ -47,8 +47,9 @@ export type FixtureChannel = ChannelMaster | ChannelColor | ChannelStrobe | Chan
 
 export type FixtureType = {
   id: string
+  name: string
+  epicness: number
   manufacturer?: string
-  name?: string
   channels: FixtureChannel[]
 }
 
@@ -56,6 +57,7 @@ const parFixture : FixtureType = {
   id: "1",
   manufacturer: "YeeSaw",
   name: "Par",
+  epicness: 0,
   channels: [
     { type: ChannelType.Master },
     { type: ChannelType.Color, color: Color.Red },
@@ -71,6 +73,7 @@ const parFixture : FixtureType = {
 const stringLightFixture : FixtureType = {
   id: '2',
   name: "Light String",
+  epicness: 0,
   channels: [
     { type: ChannelType.Master },
   ]
@@ -80,6 +83,7 @@ const strobeFixture : FixtureType = {
   id: '3',
   manufacturer: "DragonX",
   name: "Strobe",
+  epicness: 0,
   channels: [
     { type: ChannelType.Master },
     { type: ChannelType.StrobeSpeed, default_solid: 0, default_strobe: 251 },
@@ -91,6 +95,7 @@ const derbyFixture : FixtureType = {
   id: '4',
   manufacturer: "Laluce Natz",
   name: "Derby",
+  epicness: 0,
   channels: [
     { type: ChannelType.Master },
     { type: ChannelType.Color, color: Color.Red },
@@ -111,6 +116,8 @@ export type Fixture = {
 export function initFixtureType(): FixtureType {
   return {
     id: nanoid(),
+    name: '',
+    epicness: 0,
     channels: [
       {type: ChannelType.Master}
     ]
