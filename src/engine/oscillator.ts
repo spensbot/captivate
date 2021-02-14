@@ -40,7 +40,10 @@ export function GetValue(lfo: Lfo, beats: number): Normalized {
 export function GetValueFromPhase(lfo: Lfo, phase: Normalized) {
   const phaseShifted = ShiftPhase(phase, lfo.phaseShift)
   const baseValue = GetValue_base(lfo, phaseShifted)
-  return Flip(Skew(SymmetricSkew(baseValue, lfo.symmetricSkew), lfo.skew), lfo.flip)
+  // return Flip(Skew(SymmetricSkew(baseValue, lfo.symmetricSkew), lfo.skew), lfo.flip)
+  return lfo.shape == LfoShape.Sin
+    ? Flip(SymmetricSkew(baseValue, lfo.skew), lfo.flip)
+    : Flip(Skew(baseValue, lfo.skew), lfo.flip)
 }
 
 function Skew(value: Normalized, skew: Normalized) {
@@ -60,7 +63,7 @@ function SymmetricSkew(value: Normalized, skew: Normalized) {
   if (output > 0) {
     output = Skew(output, skew)
   } else {
-    output = -Math.pow(-output, skew)
+    output = -Skew(-output, skew)
   }
   return (output + 1) / 2
 }
