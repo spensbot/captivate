@@ -70,9 +70,11 @@ function getMovingWindow(params: Params): Window2D {
 export default function setDMX(params: Params, universe: Fixture[]) {
   const blackout = false
 
+  const fixtureTypes = _store.getState().dmx.fixtureTypesByID
+
   if (blackout) {
     universe.forEach(fixture => {
-      fixture.type.channels.forEach( (channel, offset) => {
+      fixtureTypes[fixture.type].channels.forEach( (channel, offset) => {
         dmxConnection.updateChannel(fixture.channelNum + offset, DMX_DEFAULT_VALUE)
       })
     })
@@ -82,7 +84,7 @@ export default function setDMX(params: Params, universe: Fixture[]) {
   const movingWindow = getMovingWindow(params);
 
   universe.forEach(fixture => {
-    fixture.type.channels.forEach((channel, offset) => {
+    fixtureTypes[fixture.type].channels.forEach((channel, offset) => {
       const dmxOut = getDmxValue(channel, params, colors, fixture.window, movingWindow)
       dmxConnection.updateChannel(fixture.channelNum + offset, dmxOut);
     })

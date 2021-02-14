@@ -109,7 +109,7 @@ const derbyFixture : FixtureType = {
 
 export type Fixture = {
   channelNum: DmxChannel,
-  type: FixtureType,
+  type: string, // FixtureType id
   window?: Window2D
 }
 
@@ -118,9 +118,7 @@ export function initFixtureType(): FixtureType {
     id: nanoid(),
     name: '',
     epicness: 0,
-    channels: [
-      {type: ChannelType.Master}
-    ]
+    channels: []
   }
 } 
 
@@ -139,12 +137,12 @@ export const fixtureTypesByID = {
 }
 
 export const testUniverse = [
-  { channelNum: 1, type: derbyFixture, window: {x: {pos: 0.5, width: 0.0}} },
-  // { channelNum: 8, type: strobeFixture, window: {x: {pos: 0.5, width: 0.0}} },
-  { channelNum: 11, type: stringLightFixture, window: {x: {pos: 0.0, width: 0.0}} },
-  { channelNum: 12, type: stringLightFixture, window: {x: {pos: 0.33, width: 0.0}} },
-  { channelNum: 13, type: stringLightFixture, window: {x: {pos: 0.66, width: 0.0}} },
-  { channelNum: 14, type: stringLightFixture, window: {x: {pos: 1.0, width: 0.0}} },
-  { channelNum: 15, type: parFixture, window: {x: {pos: 0.8333, width: 0.0}} },
-  { channelNum: 23, type: parFixture, window: {x: {pos: 0.1666, width: 0.0}} }
+  { channelNum: 1, type: '4', window: {x: {pos: 0.5, width: 0.0}} },
+  // { channelNum: 8, type: '3', window: {x: {pos: 0.5, width: 0.0}} },
+  { channelNum: 11, type: '2', window: {x: {pos: 0.0, width: 0.0}} },
+  { channelNum: 12, type: '2', window: {x: {pos: 0.33, width: 0.0}} },
+  { channelNum: 13, type: '2', window: {x: {pos: 0.66, width: 0.0}} },
+  { channelNum: 14, type: '2', window: {x: {pos: 1.0, width: 0.0}} },
+  { channelNum: 15, type: '1', window: {x: {pos: 0.8333, width: 0.0}} },
+  { channelNum: 23, type: '1', window: {x: {pos: 0.1666, width: 0.0}} }
 ]
