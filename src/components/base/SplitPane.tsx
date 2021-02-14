@@ -3,14 +3,14 @@ import useDragMapped from '../hooks/useDragMapped'
 
 type Props = {
   type: 'vertical' | 'horizontal'
-  px: number
+  rem: number
   initialSplit: number
 
   style: React.CSSProperties
   children: React.ReactElement[]
 }
 
-export default function SplitPane({type='vertical', px=5, initialSplit=0.5, style, children}: Props) {
+export default function SplitPane({type='vertical', rem=1, initialSplit=0.5, style, children}: Props) {
   const v = type === 'vertical'
 
   const [split, setSplit] = useState(initialSplit)
@@ -37,9 +37,11 @@ export default function SplitPane({type='vertical', px=5, initialSplit=0.5, styl
       width: v ? undefined : '100%'
     },
     divider: {
-      width: v ? `${px}px` : '100%',
-      height: v ? '100%' : `${px}px`,
-      cursor: v ? 'ew-resize' : 'ns-resize'
+      width: v ? `${rem}rem` : '100%',
+      height: v ? '100%' : `${rem}rem`,
+      cursor: v ? 'ew-resize' : 'ns-resize',
+      margin: v ? `0 -${rem / 2}rem` : `-${rem / 2}rem 0`,
+      zIndex: 1000
     }
   }
 

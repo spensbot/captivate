@@ -107,12 +107,6 @@ const derbyFixture : FixtureType = {
   ]
 }
 
-export type Fixture = {
-  channelNum: DmxChannel,
-  type: string, // FixtureType id
-  window?: Window2D
-}
-
 export function initFixtureType(): FixtureType {
   return {
     id: nanoid(),
@@ -136,9 +130,15 @@ export const fixtureTypesByID = {
   '4': derbyFixture
 }
 
-export const testUniverse = [
+export type Fixture = {
+  channelNum: DmxChannel,
+  type: string, // FixtureType id
+  window?: Window2D
+}
+
+export const testUniverse: Fixture[] = [
   { channelNum: 1, type: '4', window: {x: {pos: 0.5, width: 0.0}} },
-  // { channelNum: 8, type: '3', window: {x: {pos: 0.5, width: 0.0}} },
+  { channelNum: 8, type: '3', window: {x: {pos: 0.5, width: 0.0}} },
   { channelNum: 11, type: '2', window: {x: {pos: 0.0, width: 0.0}} },
   { channelNum: 12, type: '2', window: {x: {pos: 0.33, width: 0.0}} },
   { channelNum: 13, type: '2', window: {x: {pos: 0.66, width: 0.0}} },

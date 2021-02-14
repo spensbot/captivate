@@ -7,8 +7,7 @@ export default function Universe() {
 
   const styles: { [key: string]: React.CSSProperties } = {
     root: {
-      height: '100%',
-      padding: '0.5rem'
+      height: '100%'
     }
   }
 

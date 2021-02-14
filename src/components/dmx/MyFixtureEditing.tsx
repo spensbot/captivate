@@ -23,7 +23,7 @@ type Props = {
 
 const validationSchema = yup.object({
   name: yup.string()
-    .min(4, 'Name should be a minium 4 characters')
+    .min(3, 'Name should be a minium 3 characters')
     .required('Fixture Name is required'),
   manufacturer: yup.string()
 });

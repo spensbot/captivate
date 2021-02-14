@@ -29,7 +29,7 @@ export default function XYpad() {
       width: '200px',
       height: '180px',
       background: `#000`,
-      margin: '1rem',
+      marginRight: '2rem',
       overflow: 'hidden'
     },
   }
