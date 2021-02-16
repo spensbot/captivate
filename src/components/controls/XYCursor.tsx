@@ -1,10 +1,9 @@
 import React from 'react'
 import { useRealtimeSelector } from '../../redux/realtimeStore'
 import { useTypedSelector } from '../../redux/store'
-import Cursor from './Cursor'
+import Cursor from '../base/Cursor'
 
 export default function XYCursor() {
-
   const outputParams = useRealtimeSelector(state => state.outputParams)
   const xOut = outputParams.X
   const yOut = outputParams.Y

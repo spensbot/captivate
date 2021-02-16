@@ -41,7 +41,7 @@ export default function SplitPane({type='vertical', rem=1, initialSplit=0.5, sty
       height: v ? '100%' : `${rem}rem`,
       cursor: v ? 'ew-resize' : 'ns-resize',
       margin: v ? `0 -${rem / 2}rem` : `-${rem / 2}rem 0`,
-      zIndex: 1000
+      zIndex: 1
     }
   }
 

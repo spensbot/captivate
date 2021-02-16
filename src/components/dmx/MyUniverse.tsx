@@ -6,6 +6,24 @@ export default function MyUniverse() {
 
   const universe = useTypedSelector(state => state.dmx.universe)
 
+  interface FixtureGap {
+    channelCount: number
+  }
+
+  const elements = universe.reduce((accum, fixture, index) => {
+    if (fixture !== null) {
+      return <MyUniverseFixture key={index} fixture={fixture} channel={index + 1}/>
+    } else {
+      
+    }
+  }, [])
+
+  const elements = universe.filter(fixture => { fixture !== null }).map((fixture, index)=> {
+    return (
+      <MyUniverseFixture key={channelNum} fixture={fixture}
+    )
+  })
+
   const elements = Object.entries(universe).map(([channelNum, fixture]) => {
     return (
       <MyUniverseFixture key={channelNum} fixture={fixture} />

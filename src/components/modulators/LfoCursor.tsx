@@ -1,6 +1,6 @@
 import React from 'react'
 import { useRealtimeSelector } from '../../redux/realtimeStore'
-import Cursor from '../controls/Cursor'
+import Cursor from '../base/Cursor'
 import { GetValueFromPhase, GetPhase } from '../../engine/oscillator'
 import { useTypedSelector } from '../../redux/store'
 

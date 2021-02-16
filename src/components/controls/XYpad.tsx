@@ -4,7 +4,7 @@ import {useDispatch} from 'react-redux'
 import {setBaseParams, incrementBaseParams} from '../../redux/paramsSlice'
 import {ParamKey} from '../../engine/params'
 import XYCursor from './XYCursor'
-import XYWindow from './XYWindow'
+import XYWindow from '../base/XYWindow'
 
 export default function XYpad() {
   const dispatch = useDispatch()

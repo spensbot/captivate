@@ -4,12 +4,13 @@ import { useTypedSelector } from '../../redux/store'
 
 type Props = {
   fixture: Fixture
+  channel: number
 }
 
-export default function MyUniverseFixture({ fixture }: Props) {
+export default function MyUniverseFixture({ fixture, channel }: Props) {
   const fixtureType = useTypedSelector(state => state.dmx.fixtureTypesByID[fixture.type])
   const numChannels = fixtureType.channels.length
-  const start = fixture.channelNum
+  const start = channel
   const end = start + numChannels - 1
 
   const channelString = (numChannels > 1) ? `${start} ... ${end}` : `${start}`
