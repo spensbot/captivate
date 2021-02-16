@@ -1,4 +1,5 @@
 import React from 'react'
+import { Fixture, Universe } from '../../engine/dmxFixtures'
 import {useTypedSelector} from '../../redux/store'
 import MyUniverseFixture from './MyUniverseFixture'
 
@@ -6,28 +7,60 @@ export default function MyUniverse() {
 
   const universe = useTypedSelector(state => state.dmx.universe)
 
-  interface FixtureGap {
-    channelCount: number
+  interface GapSlot {
+    kind: 'gap'
+    count: number
   }
 
-  const elements = universe.reduce((accum, fixture, index) => {
-    if (fixture !== null) {
-      return <MyUniverseFixture key={index} fixture={fixture} channel={index + 1}/>
+  interface FixtureSlot {
+    kind: 'fixture'
+    fixture: Fixture
+  }
+
+  interface Slot {
+    channel: number
+    data: GapSlot | FixtureSlot 
+  }
+
+  function getSlots(universe: Universe): Slot[] {
+    const slots: Slot[] = []
+
+    universe.forEach((fixture, index) => {
+      if (fixture !== null) {
+        slots.push({
+          channel: index + 1,
+          data: {
+            kind: 'fixture',
+            fixture: fixture
+          }
+        })
+      } else {
+        const lastSlot = slots[slots.length - 1]
+        if (lastSlot.data.kind === 'gap') {
+          lastSlot.data.count += 1
+        } else {
+          slots.push({
+            channel: index + 1,
+            data: {
+              kind: 'gap',
+              count: 1
+            }
+          })
+        }
+      }
+    });
+
+    return slots
+  }
+
+  const elements = getSlots(universe).map(slot => {
+    if (slot.data.kind === 'gap') {
+      return null
     } else {
-      
+      return (
+        <MyUniverseFixture key={slot.channel} channel={slot.channel} fixture={slot.data.fixture} />
+      )
     }
-  }, [])
-
-  const elements = universe.filter(fixture => { fixture !== null }).map((fixture, index)=> {
-    return (
-      <MyUniverseFixture key={channelNum} fixture={fixture}
-    )
-  })
-
-  const elements = Object.entries(universe).map(([channelNum, fixture]) => {
-    return (
-      <MyUniverseFixture key={channelNum} fixture={fixture} />
-    )
   })
 
   return (

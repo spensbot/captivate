@@ -1,6 +1,7 @@
 import { Window2D } from '../types/baseTypes'
 import { Color } from './dmxColors'
 import { nanoid } from 'nanoid'
+import Universe from '../components/pages/Universe';
 
 export const DMX_MAX_VALUE = 255;
 export const DMX_NUM_CHANNELS = 512;
@@ -130,11 +131,6 @@ export const fixtureTypesByID = {
   '4': derbyFixture
 }
 
-export type Fixture = {
-  type: string, // FixtureType id
-  window?: Window2D
-}
-
 export type Universe = (Fixture | null)[]
 
 export function initUniverse(): Universe {
@@ -154,13 +150,18 @@ export function getTestUniverse(): Universe {
   return universe
 }
 
-// export const testUniverse: Fixture[] = [
-//   { channelNum: 1, type: '4', window: {x: {pos: 0.5, width: 0.0}} },
-//   { channelNum: 8, type: '3', window: {x: {pos: 0.5, width: 0.0}} },
-//   { channelNum: 11, type: '2', window: {x: {pos: 0.0, width: 0.0}} },
-//   { channelNum: 12, type: '2', window: {x: {pos: 0.33, width: 0.0}} },
-//   { channelNum: 13, type: '2', window: {x: {pos: 0.66, width: 0.0}} },
-//   { channelNum: 14, type: '2', window: {x: {pos: 1.0, width: 0.0}} },
-//   { channelNum: 15, type: '1', window: {x: {pos: 0.8333, width: 0.0}} },
-//   { channelNum: 23, type: '1', window: {x: {pos: 0.1666, width: 0.0}} }
+export interface Fixture {
+  type: string, // FixtureType id
+  window?: Window2D
+}
+
+// export const getTestUniverse: Fixture[] = [
+//   { ch: 1, type: '4', window: {x: {pos: 0.5, width: 0.0}} },
+//   { ch: 8, type: '3', window: {x: {pos: 0.5, width: 0.0}} },
+//   { ch: 11, type: '2', window: {x: {pos: 0.0, width: 0.0}} },
+//   { ch: 12, type: '2', window: {x: {pos: 0.33, width: 0.0}} },
+//   { ch: 13, type: '2', window: {x: {pos: 0.66, width: 0.0}} },
+//   { ch: 14, type: '2', window: {x: {pos: 1.0, width: 0.0}} },
+//   { ch: 15, type: '1', window: {x: {pos: 0.8333, width: 0.0}} },
+//   { ch: 23, type: '1', window: {x: {pos: 0.1666, width: 0.0}} }
 // ]
