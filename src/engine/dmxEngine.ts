@@ -2,7 +2,7 @@ import * as dmxConnection from './dmxConnection'
 import { Window, Window2D } from '../types/baseTypes'
 import { Params } from './params'
 import { Color, Colors, getColors } from './dmxColors'
-import { DmxValue, DMX_MAX_VALUE, FixtureChannel, ChannelType, Fixture, DMX_DEFAULT_VALUE, testUniverse} from './dmxFixtures'
+import { DmxValue, DMX_MAX_VALUE, FixtureChannel, ChannelType, Fixture, DMX_DEFAULT_VALUE, getTestUniverse} from './dmxFixtures'
 import { RealtimeStore } from '../redux/realtimeStore'
 import { ReduxStore } from '../redux/store'
 import { setDmx } from '../redux/connectionsSlice'
@@ -28,7 +28,7 @@ export function init(store: ReduxStore, realtimeStore: RealtimeStore) {
 }
 
 const writeDMX = () => {  
-  setDMX(_realtimeStore.getState().outputParams, testUniverse)
+  setDMX(_realtimeStore.getState().outputParams, getTestUniverse())
 }
 
 function getWindowMultiplier2D(fixtureWindow?: Window2D, movingWindow?: Window2D) {
@@ -75,7 +75,7 @@ export default function setDMX(params: Params, universe: Fixture[]) {
   if (blackout) {
     universe.forEach(fixture => {
       fixtureTypes[fixture.type].channels.forEach( (channel, offset) => {
-        dmxConnection.updateChannel(fixture.channelNum + offset, DMX_DEFAULT_VALUE)
+        dmxConnection.updateChannel(fixture.ch + offset, DMX_DEFAULT_VALUE)
       })
     })
   }
@@ -86,7 +86,7 @@ export default function setDMX(params: Params, universe: Fixture[]) {
   universe.forEach(fixture => {
     fixtureTypes[fixture.type].channels.forEach((channel, offset) => {
       const dmxOut = getDmxValue(channel, params, colors, fixture.window, movingWindow)
-      dmxConnection.updateChannel(fixture.channelNum + offset, dmxOut);
+      dmxConnection.updateChannel(fixture.ch + offset, dmxOut);
     })
   })
 }

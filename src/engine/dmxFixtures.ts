@@ -131,37 +131,78 @@ export const fixtureTypesByID = {
   '4': derbyFixture
 }
 
-export type Universe = (Fixture | null)[]
-
-export function initUniverse(): Universe {
-  return Array(512).fill(null)
-}
-
-export function getTestUniverse(): Universe {
-  const universe = initUniverse()
-  universe[0] = { type: '4', window: {x: {pos: 0.5, width: 0.0}} },
-  universe[7] = { type: '3', window: {x: {pos: 0.5, width: 0.0}} },
-  universe[10] = { type: '2', window: {x: {pos: 0.0, width: 0.0}} },
-  universe[11] = { type: '2', window: {x: {pos: 0.33, width: 0.0}} },
-  universe[12] = { type: '2', window: {x: {pos: 0.66, width: 0.0}} },
-  universe[13] = { type: '2', window: {x: {pos: 1.0, width: 0.0}} },
-  universe[14] = { type: '1', window: {x: {pos: 0.8333, width: 0.0}} },
-  universe[22] = { type: '1', window: { x: { pos: 0.1666, width: 0.0 } } }
-  return universe
-}
-
 export interface Fixture {
+  ch: number
   type: string, // FixtureType id
   window?: Window2D
 }
 
-// export const getTestUniverse: Fixture[] = [
-//   { ch: 1, type: '4', window: {x: {pos: 0.5, width: 0.0}} },
-//   { ch: 8, type: '3', window: {x: {pos: 0.5, width: 0.0}} },
-//   { ch: 11, type: '2', window: {x: {pos: 0.0, width: 0.0}} },
-//   { ch: 12, type: '2', window: {x: {pos: 0.33, width: 0.0}} },
-//   { ch: 13, type: '2', window: {x: {pos: 0.66, width: 0.0}} },
-//   { ch: 14, type: '2', window: {x: {pos: 1.0, width: 0.0}} },
-//   { ch: 15, type: '1', window: {x: {pos: 0.8333, width: 0.0}} },
-//   { ch: 23, type: '1', window: {x: {pos: 0.1666, width: 0.0}} }
-// ]
+export type Universe = Fixture[]
+
+export function getTestUniverse(): Universe {
+  return [
+    { ch: 1, type: '4', window: {x: {pos: 0.5, width: 0.0}} },
+    { ch: 8, type: '3', window: {x: {pos: 0.5, width: 0.0}} },
+    { ch: 11, type: '2', window: {x: {pos: 0.0, width: 0.0}} },
+    { ch: 12, type: '2', window: {x: {pos: 0.33, width: 0.0}} },
+    { ch: 13, type: '2', window: {x: {pos: 0.66, width: 0.0}} },
+    { ch: 14, type: '2', window: {x: {pos: 1.0, width: 0.0}} },
+    { ch: 15, type: '1', window: {x: {pos: 0.8333, width: 0.0}} },
+    { ch: 23, type: '1', window: {x: {pos: 0.1666, width: 0.0}} }
+  ]
+}
+
+type UniverseMap = (Fixture | null)[]
+
+function initUniverseMap(): UniverseMap {
+  return Array(512).fill(null)
+}
+
+function getUniverseMap(universe: Universe): UniverseMap {
+  const universeMap = initUniverseMap()
+
+  universe.forEach(fixture => {
+    universeMap[fixture.ch - 1] = fixture
+  })
+
+  return universeMap
+}
+
+interface GapSlot_t {
+  kind: 'gap'
+  ch: number
+  count: number
+}
+
+interface FixtureSlot_t {
+  kind: 'fixture'
+  fixture: Fixture
+}
+
+export type Slot_t = GapSlot_t | FixtureSlot_t
+
+export function getSlots(universe: Universe): Slot_t[] {
+  const slots: Slot_t[] = []
+  const universeMap = getUniverseMap(universe)
+  universeMap.forEach((maybeFixture, index) => {
+    if (maybeFixture !== null) {
+      slots.push({
+        kind: 'fixture',
+        fixture: maybeFixture
+      })
+    } else {
+      const lastSlot = slots[slots.length - 1]
+      if (lastSlot.kind === 'gap') {
+        lastSlot.count += 1
+      } else {
+        slots.push({
+          kind: 'gap',
+          count: 1,
+          ch: index + 1
+        })
+      }
+    }
+  });
+
+  return slots
+}

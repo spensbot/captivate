@@ -1,8 +1,8 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Fixture, FixtureType, fixtureTypes, fixtureTypesByID, getTestUniverse } from '../engine/dmxFixtures';
+import { Fixture, FixtureType, Universe, fixtureTypes, fixtureTypesByID, getTestUniverse } from '../engine/dmxFixtures';
 
 type DmxState = {
-  universe: (Fixture | null)[]
+  universe: Universe
   fixtureTypes: string[]
   fixtureTypesByID: {[id: string]: FixtureType}
   editedFixture: null | string
@@ -29,12 +29,18 @@ export const dmxSlice = createSlice({
     setSelectedFixture: (state, { payload }: PayloadAction<number>) => {
       state.selectedFixture = payload
     },
-    addFixture: (state, {payload}: PayloadAction<AddFixturePayload>) => {
-      state.universe[payload.channel] = payload.fixture
+    addFixture: (state, { payload }: PayloadAction<Fixture>) => {
+      state.universe.push(payload)
     },
-    removeFixture: (state, {payload}: PayloadAction<number>) => {
-      state.universe[payload] = null
+    removeFixture: (state, { payload }: PayloadAction<number>) => {
+      state.universe.splice(payload, 1)
     },
+    // addFixture: (state, {payload}: PayloadAction<AddFixturePayload>) => {
+    //   state.universe[payload.channel] = payload.fixture
+    // },
+    // removeFixture: (state, {payload}: PayloadAction<number>) => {
+    //   state.universe[payload] = null
+    // },
     setEditedFixture: (state, {payload}: PayloadAction<null|string >) => {
       state.editedFixture = payload
     },
