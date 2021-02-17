@@ -62,6 +62,6 @@ export const dmxSlice = createSlice({
   },
 });
 
-export const { setEditedFixture, addFixture, removeFixture, addFixtureType, updateFixtureType, deleteFixtureType } = dmxSlice.actions;
+export const { setSelectedFixture, setEditedFixture, addFixture, removeFixture, addFixtureType, updateFixtureType, deleteFixtureType } = dmxSlice.actions;
 
 export default dmxSlice.reducer;

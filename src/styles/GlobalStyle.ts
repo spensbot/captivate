@@ -11,5 +11,6 @@ export const GlobalStyle = createGlobalStyle`
     font-family: Arial, Helvetica, sans-serif;
     font-size: 16px;
     color: #ddd;
+    user-select: none;
   }
 `

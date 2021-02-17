@@ -58,7 +58,7 @@ const parFixture : FixtureType = {
   id: "1",
   manufacturer: "YeeSaw",
   name: "Par",
-  epicness: 0,
+  epicness: 0.3,
   channels: [
     { type: ChannelType.Master },
     { type: ChannelType.Color, color: Color.Red },
@@ -74,7 +74,7 @@ const parFixture : FixtureType = {
 const stringLightFixture : FixtureType = {
   id: '2',
   name: "Light String",
-  epicness: 0,
+  epicness: 0.3,
   channels: [
     { type: ChannelType.Master },
   ]
@@ -84,7 +84,7 @@ const strobeFixture : FixtureType = {
   id: '3',
   manufacturer: "DragonX",
   name: "Strobe",
-  epicness: 0,
+  epicness: 0.8,
   channels: [
     { type: ChannelType.Master },
     { type: ChannelType.StrobeSpeed, default_solid: 0, default_strobe: 251 },
@@ -108,6 +108,16 @@ const derbyFixture : FixtureType = {
   ]
 }
 
+const laserFixture: FixtureType = {
+  id: '5',
+  manufacturer: 'Laser World',
+  name: 'EL-400',
+  epicness: 0.5,
+  channels: [
+    { type: ChannelType.Master }
+  ]
+}
+
 export function initFixtureType(): FixtureType {
   return {
     id: nanoid(),
@@ -121,14 +131,16 @@ export const fixtureTypes = [
   '1',
   '2',
   '3',
-  '4'
+  '4',
+  '5'
 ]
 
 export const fixtureTypesByID = {
   '1': parFixture,
   '2': stringLightFixture,
   '3': strobeFixture,
-  '4': derbyFixture
+  '4': derbyFixture,
+  '5': laserFixture
 }
 
 export interface Fixture {
@@ -141,14 +153,15 @@ export type Universe = Fixture[]
 
 export function getTestUniverse(): Universe {
   return [
-    { ch: 1, type: '4', window: {x: {pos: 0.5, width: 0.0}} },
+    // { ch: 1, type: '4', window: {x: {pos: 0.5, width: 0.0}} },
     { ch: 8, type: '3', window: {x: {pos: 0.5, width: 0.0}} },
     { ch: 11, type: '2', window: {x: {pos: 0.0, width: 0.0}} },
     { ch: 12, type: '2', window: {x: {pos: 0.33, width: 0.0}} },
     { ch: 13, type: '2', window: {x: {pos: 0.66, width: 0.0}} },
     { ch: 14, type: '2', window: {x: {pos: 1.0, width: 0.0}} },
     { ch: 15, type: '1', window: {x: {pos: 0.8333, width: 0.0}} },
-    { ch: 23, type: '1', window: {x: {pos: 0.1666, width: 0.0}} }
+    { ch: 23, type: '1', window: { x: { pos: 0.1666, width: 0.0 } } },
+    { ch: 35, type: '5', window: {}}
   ]
 }
 
@@ -168,41 +181,28 @@ function getUniverseMap(universe: Universe): UniverseMap {
   return universeMap
 }
 
-interface GapSlot_t {
-  kind: 'gap'
-  ch: number
-  count: number
-}
+// export function getSlots_old(universe: Universe): Slot_t[] {
+//   const slots: Slot_t[] = []
+//   const universeMap = getUniverseMap(universe)
+//   universeMap.forEach((maybeFixture, index) => {
+//     if (maybeFixture !== null) {
+//       slots.push({
+//         kind: 'fixture',
+//         fixture: maybeFixture
+//       })
+//     } else {
+//       const lastSlot = slots[slots.length - 1]
+//       if (lastSlot.kind === 'gap') {
+//         lastSlot.count += 1
+//       } else {
+//         slots.push({
+//           kind: 'gap',
+//           count: 1,
+//           ch: index + 1
+//         })
+//       }
+//     }
+//   });
 
-interface FixtureSlot_t {
-  kind: 'fixture'
-  fixture: Fixture
-}
-
-export type Slot_t = GapSlot_t | FixtureSlot_t
-
-export function getSlots(universe: Universe): Slot_t[] {
-  const slots: Slot_t[] = []
-  const universeMap = getUniverseMap(universe)
-  universeMap.forEach((maybeFixture, index) => {
-    if (maybeFixture !== null) {
-      slots.push({
-        kind: 'fixture',
-        fixture: maybeFixture
-      })
-    } else {
-      const lastSlot = slots[slots.length - 1]
-      if (lastSlot.kind === 'gap') {
-        lastSlot.count += 1
-      } else {
-        slots.push({
-          kind: 'gap',
-          count: 1,
-          ch: index + 1
-        })
-      }
-    }
-  });
-
-  return slots
-}
+//   return slots
+// }
