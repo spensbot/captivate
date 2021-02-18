@@ -2,6 +2,7 @@ import React from 'react'
 import StatusBar from '../StatusBar';
 import ParamsControl from '../controls/ParamsControl'
 import Modulators from '../modulators/Modulators'
+import Scenes from '../Scenes';
 
 export default function App() {
   const styles: { [key: string]: React.CSSProperties } = {
@@ -19,6 +20,7 @@ export default function App() {
       <StatusBar />
       <Modulators />
       <ParamsControl />
+      <Scenes />
     </>
   )
 }

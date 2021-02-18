@@ -8,9 +8,10 @@ type Props = {
   color?: string
   withHorizontal?: boolean
   withVertical?: boolean
+  onClick?: () => void
 }
 
-export default function Cursor({ x, y, radius = 0.4, thickness = 1, color = '#fff', withHorizontal = false, withVertical = false }: Props) {
+export default function Cursor({ x, y, radius = 0.4, thickness = 1, color = '#fff', withHorizontal = false, withVertical = false, onClick }: Props) {
 
   const styles: {[key: string]: React.CSSProperties} = {
     root: {
@@ -22,6 +23,7 @@ export default function Cursor({ x, y, radius = 0.4, thickness = 1, color = '#ff
       borderRadius: '50%',
       border: `1.5px solid ${color}`,
       transform: `translate(-${radius}rem, -${radius}rem)`,
+      cursor: onClick ? 'pointer' : undefined
     }
   }
 
@@ -81,7 +83,7 @@ export default function Cursor({ x, y, radius = 0.4, thickness = 1, color = '#ff
 
   return (
     <>
-      <div style={styles.root}></div>
+      <div onClick={onClick ? e => { e.stopPropagation; onClick();} : undefined} style={styles.root}></div>
       {withVertical ? VerticalLines() : null}
       {withHorizontal ? HorizontalLines() : null}
     </>

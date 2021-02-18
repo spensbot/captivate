@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { Fixture, FixtureType, Universe, fixtureTypes, fixtureTypesByID, getTestUniverse } from '../engine/dmxFixtures';
+import { Window2D } from '../types/baseTypes'
 
 type DmxState = {
   universe: Universe
@@ -12,6 +13,11 @@ type DmxState = {
 interface AddFixturePayload {
   fixture: Fixture,
   channel: number
+}
+
+interface SetFixtureWindowPayload {
+  window2D: Window2D,
+  index: number
 }
 
 const initialDmxState: DmxState = {
@@ -34,6 +40,9 @@ export const dmxSlice = createSlice({
     },
     removeFixture: (state, { payload }: PayloadAction<number>) => {
       state.universe.splice(payload, 1)
+    },
+    setFixtureWindow: (state, { payload }: PayloadAction<SetFixtureWindowPayload>) => {
+      state.universe[payload.index].window = payload.window2D
     },
     // addFixture: (state, {payload}: PayloadAction<AddFixturePayload>) => {
     //   state.universe[payload.channel] = payload.fixture
@@ -62,6 +71,6 @@ export const dmxSlice = createSlice({
   },
 });
 
-export const { setSelectedFixture, setEditedFixture, addFixture, removeFixture, addFixtureType, updateFixtureType, deleteFixtureType } = dmxSlice.actions;
+export const { setSelectedFixture, setEditedFixture, setFixtureWindow, addFixture, removeFixture, addFixtureType, updateFixtureType, deleteFixtureType } = dmxSlice.actions;
 
 export default dmxSlice.reducer;

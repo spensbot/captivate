@@ -18,8 +18,7 @@ export default function MyFixtures() {
 
   return (
     <div style={{height: '100%', overflow: 'scroll', padding: '0.5rem'}}>
-      <h1>My Fixtures</h1>
-      <br/>
+      <div style={{fontSize: '1.5rem'}}>Fixtures</div>
       {elements}
       <IconButton style={{ color: '#fff' }} onClick={() => {
         dispatch(addFixtureType(initFixtureType()))

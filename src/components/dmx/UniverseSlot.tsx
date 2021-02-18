@@ -25,7 +25,7 @@ const useStyles = makeStyles({
     alignItems: 'center'
   },
   fixture: {
-    backgroundColor: '#0001',
+    backgroundColor: '#0004',
     '&:hover': {
       color: '#fffc'
     },
