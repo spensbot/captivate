@@ -28,8 +28,8 @@ const useStyles = makeStyles({
     }
   },
   selectedItem: {
-    padding: '1rem 1rem 1rem 0.9rem',
-    borderLeft: '0.1rem solid #fff',
+    padding: '1rem 1rem 1rem 0.8rem',
+    borderLeft: '0.2rem solid #fff',
     color: '#fffc'
   }
 })

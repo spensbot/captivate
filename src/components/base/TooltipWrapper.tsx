@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 
 interface Props {
   children: React.ReactNode
@@ -12,6 +12,11 @@ export default function TooltipWrapper({ children, text, style = {} }: Props) {
 
   const [visible, setVisible] = useState(false)
   const [timeoutRef, setTimeoutRef] = useState(0)
+  useEffect(() => {
+    return () => {
+      clearTimeout(timeoutRef)
+    }
+  })
 
   function onMouseEnter() {
     setTimeoutRef(setTimeout(() => {
