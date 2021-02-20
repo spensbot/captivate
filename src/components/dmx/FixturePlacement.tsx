@@ -10,7 +10,7 @@ export default function FixturePlacement() {
   const selectedFixture = useTypedSelector(state => state.dmx.selectedFixture)
   const dispatch = useDispatch()
 
-  const [dragContainer, onMouseDown] = useDragMapped((x, y, e) => {
+  const [dragContainer, onMouseDown] = useDragMapped(({x, y}) => {
     if (selectedFixture !== null) {
       dispatch(setFixtureWindow({
         index: selectedFixture,

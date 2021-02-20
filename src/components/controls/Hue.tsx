@@ -8,7 +8,7 @@ export default function Hue() {
 
   const dispatch = useDispatch()
 
-  const [dragContainer, onMouseDown] = useDragMapped((x, y) => {
+  const [dragContainer, onMouseDown] = useDragMapped(({ x, y }) => {
     dispatch(setBaseParams({[ParamKey.Hue]: x}))
   })
 

@@ -12,12 +12,20 @@ export default function FixtureCursor({ index }: { index: number }) {
 
   const isSelected = selectedFixture === index
 
+  function onClick(e: React.MouseEvent) {
+    e.stopPropagation()
+    e.preventDefault()
+    dispatch(setSelectedFixture(index))
+  }
+
   return isSelected ? (
-    <>
+    <div style={{zIndex: -1}}>
       <Cursor x={fixture.window?.x?.pos || 0.5} y={fixture.window?.y?.pos || 0.5} withHorizontal withVertical color="#fffc" />
       <Window2D window2D={ fixture.window || {} }/>
-    </>
+    </div>
   ) : (
-    <Cursor onClick={() => dispatch(setSelectedFixture(index))} x={fixture.window?.x?.pos || 0.5} y={fixture.window?.y?.pos || 0.5} color="#fff7" />
+    <div style={{zIndex: 1}}>
+        <Cursor onClick={onClick} x={fixture.window?.x?.pos || 0.5} y={fixture.window?.y?.pos || 0.5} color="#fff7" />
+    </div>
   )
 }

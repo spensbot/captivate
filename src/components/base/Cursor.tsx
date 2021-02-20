@@ -8,7 +8,7 @@ type Props = {
   color?: string
   withHorizontal?: boolean
   withVertical?: boolean
-  onClick?: () => void
+  onClick?: (e:React.MouseEvent) => void
 }
 
 export default function Cursor({ x, y, radius = 0.4, thickness = 1, color = '#fff', withHorizontal = false, withVertical = false, onClick }: Props) {
@@ -83,7 +83,7 @@ export default function Cursor({ x, y, radius = 0.4, thickness = 1, color = '#ff
 
   return (
     <>
-      <div onClick={onClick ? e => { e.stopPropagation; onClick();} : undefined} style={styles.root}></div>
+      <div onClick={onClick} style={styles.root}></div>
       {withVertical ? VerticalLines() : null}
       {withHorizontal ? HorizontalLines() : null}
     </>

@@ -11,7 +11,7 @@ export default function SVpad() {
   const hue = useRealtimeSelector(state => state.outputParams.Hue)
   const dispatch = useDispatch()
 
-  const [dragContainer, onMouseDown] = useDragMapped((x, y) => {
+  const [dragContainer, onMouseDown] = useDragMapped(({ x, y }) => {
     dispatch(setBaseParams({
       [ParamKey.Saturation]: x,
       [ParamKey.Brightness]: y

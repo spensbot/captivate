@@ -9,7 +9,7 @@ export default function ModulationSlider({index, param}: {index: number, param: 
 
   const amount = useTypedSelector(state => state.modulators[index].modulation[param])
   const dispatch = useDispatch()
-  const [dragContainer, onMouseDown] = useDragMapped((x, y) => {
+  const [dragContainer, onMouseDown] = useDragMapped(({ x }) => {
     dispatch(setModulation({param: param, index: index, value: x}))
   })
 

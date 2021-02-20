@@ -9,11 +9,11 @@ import XYWindow from './XYWindow'
 export default function XYpad() {
   const dispatch = useDispatch()
 
-  const [dragContainer, onMouseDown] = useDragMapped((x, y, e) => {
+  const [dragContainer, onMouseDown] = useDragMapped(({ x, y, dx, dy }, e) => {
     if (e.metaKey) {
       dispatch(incrementBaseParams({
-        [ParamKey.Width]: e.movementX / 100,
-        [ParamKey.Height]: - e.movementY / 90
+        [ParamKey.Width]: dx / 2,
+        [ParamKey.Height]: dy / 2
       }))
     } else {
       dispatch(setBaseParams({
