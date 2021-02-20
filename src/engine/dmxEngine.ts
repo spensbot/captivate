@@ -1,5 +1,5 @@
 import * as dmxConnection from './dmxConnection'
-import { Window, Window2D } from '../types/baseTypes'
+import { Window, Window2D_t } from '../types/baseTypes'
 import { Params } from './params'
 import { Color, Colors, getColors } from './dmxColors'
 import { DmxValue, DMX_MAX_VALUE, FixtureChannel, ChannelType, Fixture, DMX_DEFAULT_VALUE, getTestUniverse} from './dmxFixtures'
@@ -31,7 +31,7 @@ const writeDMX = () => {
   setDMX(_realtimeStore.getState().outputParams, getTestUniverse())
 }
 
-function getWindowMultiplier2D(fixtureWindow?: Window2D, movingWindow?: Window2D) {
+function getWindowMultiplier2D(fixtureWindow?: Window2D_t, movingWindow?: Window2D_t) {
   if (fixtureWindow && movingWindow) {
     return getWindowMultiplier(fixtureWindow.x, movingWindow.x) * getWindowMultiplier(fixtureWindow.y, movingWindow.y)
   }
@@ -47,7 +47,7 @@ function getWindowMultiplier(fixtureWindow?: Window, movingWindow?: Window) {
   return 1.0 // Don't affect light values if the moving window or fixture position haven't been assigned.
 }
 
-function getDmxValue(fixtureChannel: FixtureChannel, params: Params, colors: Colors, fixtureWindow?: Window2D, movingWindow?: Window2D): DmxValue {
+function getDmxValue(fixtureChannel: FixtureChannel, params: Params, colors: Colors, fixtureWindow?: Window2D_t, movingWindow?: Window2D_t): DmxValue {
   switch (fixtureChannel.type) {
     case ChannelType.Master:
       return params.Brightness * DMX_MAX_VALUE * getWindowMultiplier2D(fixtureWindow, movingWindow);
@@ -60,7 +60,7 @@ function getDmxValue(fixtureChannel: FixtureChannel, params: Params, colors: Col
   }
 }
 
-function getMovingWindow(params: Params): Window2D {
+function getMovingWindow(params: Params): Window2D_t {
   return {
     x: {pos: params.X, width: params.Width},
     y: {pos: params.Y, width: params.Height}

@@ -14,7 +14,7 @@ export default function FixturePlacement() {
     if (selectedFixture !== null) {
       dispatch(setFixtureWindow({
         index: selectedFixture,
-        window2D: {
+        Window2D_t: {
           x: {width: 0, pos: x},
           y: {width: 0, pos: y}
         }

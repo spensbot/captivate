@@ -1,4 +1,4 @@
-import { Window2D } from '../types/baseTypes'
+import { Window2D_t } from '../types/baseTypes'
 import { Color } from './dmxColors'
 import { nanoid } from 'nanoid'
 import Universe from '../components/pages/Universe';
@@ -146,7 +146,7 @@ export const fixtureTypesByID = {
 export interface Fixture {
   ch: number
   type: string, // FixtureType id
-  window?: Window2D
+  window?: Window2D_t
 }
 
 export type Universe = Fixture[]

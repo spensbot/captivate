@@ -20,7 +20,7 @@ export type Window = {
   width: Normalized
 }
 
-export type Window2D = {
+export type Window2D_t = {
   x?: Window
   y?: Window
 }
