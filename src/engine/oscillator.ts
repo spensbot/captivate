@@ -2,8 +2,7 @@ import { Normalized } from "../types/baseTypes";
 
 export enum LfoShape {
   Sin,
-  Ramp,
-  Random
+  Ramp
 }
 
 export interface Lfo {

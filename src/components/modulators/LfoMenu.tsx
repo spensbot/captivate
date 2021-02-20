@@ -25,7 +25,6 @@ export default function LfoMenu({index}: Props) {
       <Select labelId="lfo-shape-select-label" id="lfo-shape-select" value={lfo.shape}
         onChange={(e) => dispatch(setModulatorShape({ index: index, shape: e.target.value }))}>
         <MenuItem value={LfoShape.Ramp}>Ramp</MenuItem>
-        <MenuItem value={LfoShape.Random}>Random</MenuItem>
         <MenuItem value={LfoShape.Sin}>Sin</MenuItem>
       </Select>
       <div style = {{flex: '1 0 0'}} />
