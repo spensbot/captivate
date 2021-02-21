@@ -145,22 +145,22 @@ export const fixtureTypesByID = {
 
 export interface Fixture {
   ch: number
-  type: string, // FixtureType id
-  window?: Window2D_t
+  type: string // FixtureType id
+  window: Window2D_t
 }
 
 export type Universe = Fixture[]
 
 export function getTestUniverse(): Universe {
   return [
-    { ch: 1, type: '4', window: {x: {pos: 0.5, width: 0.0}} },
+    { ch: 1, type: '4', window: {x: {pos: 0.5, width: 0.3}, y: {pos: 0.6, width: 0.3}} },
     { ch: 8, type: '3', window: {x: {pos: 0.5, width: 0.0}} },
     { ch: 11, type: '2', window: {x: {pos: 0.0, width: 0.0}} },
     { ch: 12, type: '2', window: {x: {pos: 0.33, width: 0.0}} },
     { ch: 13, type: '2', window: {x: {pos: 0.66, width: 0.0}} },
     { ch: 14, type: '2', window: {x: {pos: 1.0, width: 0.0}} },
     { ch: 15, type: '1', window: {x: {pos: 0.8333, width: 0.0}} },
-    { ch: 23, type: '1', window: { x: { pos: 0.1666, width: 0.0 } } },
+    { ch: 23, type: '1', window: {x: { pos: 0.1666, width: 0.0 }} },
     { ch: 35, type: '5', window: {}}
   ]
 }
@@ -180,29 +180,3 @@ function getUniverseMap(universe: Universe): UniverseMap {
 
   return universeMap
 }
-
-// export function getSlots_old(universe: Universe): Slot_t[] {
-//   const slots: Slot_t[] = []
-//   const universeMap = getUniverseMap(universe)
-//   universeMap.forEach((maybeFixture, index) => {
-//     if (maybeFixture !== null) {
-//       slots.push({
-//         kind: 'fixture',
-//         fixture: maybeFixture
-//       })
-//     } else {
-//       const lastSlot = slots[slots.length - 1]
-//       if (lastSlot.kind === 'gap') {
-//         lastSlot.count += 1
-//       } else {
-//         slots.push({
-//           kind: 'gap',
-//           count: 1,
-//           ch: index + 1
-//         })
-//       }
-//     }
-//   });
-
-//   return slots
-// }

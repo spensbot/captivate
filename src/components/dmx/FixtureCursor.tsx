@@ -4,6 +4,7 @@ import { useTypedSelector } from '../../redux/store'
 import Cursor from '../base/Cursor'
 import { setSelectedFixture } from '../../redux/dmxSlice'
 import Window2D from '../base/Window2D'
+import Window2D2 from '../base/Window2D2'
 
 export default function FixtureCursor({ index }: { index: number }) {
   const fixture = useTypedSelector(state => state.dmx.universe[index])
@@ -20,8 +21,9 @@ export default function FixtureCursor({ index }: { index: number }) {
 
   return isSelected ? (
     <div style={{zIndex: -1}}>
-      <Cursor x={fixture.window?.x?.pos || 0.5} y={fixture.window?.y?.pos || 0.5} withHorizontal withVertical color="#fffc" />
-      <Window2D window2D={ fixture.window || {} }/>
+      {/* <Cursor x={fixture.window?.x?.pos || 0.5} y={fixture.window?.y?.pos || 0.5} withHorizontal withVertical color="#fffc" />
+      <Window2D window2D={ fixture.window || {} }/> */}
+      <Window2D2 window2D={fixture.window}/>
     </div>
   ) : (
     <div style={{zIndex: 1}}>
