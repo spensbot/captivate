@@ -2,7 +2,7 @@ import { Params, initModulation, initParams, paramsList, ParamKey } from './para
 import { Lfo, GetValue, GetRamp } from './oscillator'
 import { clampNormalized } from '../util/helpers'
 
-interface Modulator {
+export interface Modulator {
   lfo: Lfo,
   modulation: Params
 }
