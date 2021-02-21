@@ -2,9 +2,9 @@ import React from 'react'
 import StatusBar from '../StatusBar';
 import ParamsControl from '../controls/ParamsControl'
 import Modulators from '../modulators/Modulators'
-import Scenes from '../Scenes';
+import SceneSelection from '../SceneSelection';
 
-export default function App() {
+export default function Scenes() {
   const styles: { [key: string]: React.CSSProperties } = {
     root: {
       display: 'flex',
@@ -20,7 +20,7 @@ export default function App() {
       <StatusBar />
       <Modulators />
       <ParamsControl />
-      <Scenes />
+      <SceneSelection />
     </>
   )
 }

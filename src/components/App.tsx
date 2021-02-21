@@ -1,6 +1,6 @@
 import React from 'react'
 import Video from './pages/Video'
-import Modulation from './pages/Modulation'
+import Modulation from './pages/Scenes'
 import Universe from './pages/Universe'
 import MenuBar from './MenuBar'
 import { useTypedSelector } from '../redux/store'

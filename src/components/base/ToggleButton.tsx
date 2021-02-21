@@ -9,7 +9,7 @@ interface Props {
 
 const useStyles = makeStyles({
   root: (props: Props) => ({
-    backgroundColor: props.isEnabled ? '#aafa' : '#fff2',
+    backgroundColor: props.isEnabled ? '#afaa' : '#fff2',
     color: props.isEnabled ? '#fff' : '#fff8',
     borderRadius: '0.3rem',
     padding: '0.0rem 0.2rem',

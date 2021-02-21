@@ -1,7 +1,6 @@
 import React from 'react'
 import { useDispatch } from 'react-redux';
 import AddIcon from '@material-ui/icons/Add';
-import { GetSin, GetRamp } from '../../engine/oscillator'
 import { addModulator } from '../../redux/modulatorsSlice'
 
 

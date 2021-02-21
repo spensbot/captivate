@@ -5,6 +5,7 @@ import modulatorsReducer from './modulatorsSlice'
 import { useSelector, TypedUseSelectorHook } from 'react-redux'
 import dmxReducer from './dmxSlice'
 import guiReducer from './guiSlice'
+import scenesReducer from './scenesSlice'
 
 export const store = configureStore({
   reducer: {
@@ -12,7 +13,8 @@ export const store = configureStore({
     connections: connectionsReducer,
     dmx: dmxReducer,
     modulators: modulatorsReducer,
-    gui: guiReducer
+    gui: guiReducer,
+    scenes: scenesReducer
     // fixtures: 
     // universe: 
   }
