@@ -19,7 +19,7 @@ const initState: SceneState_t = {
   scenesById: {
     [initID]: initScene()
   },
-  activeScene: null
+  activeScene: initID
 }
 
 interface IncrementModulatorPayload {

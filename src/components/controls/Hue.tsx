@@ -1,7 +1,7 @@
 import React from 'react'
 import useDragMapped from '../hooks/useDragMapped'
 import {useDispatch} from 'react-redux'
-import {setBaseParams} from '../../redux/paramsSlice'
+import { setBaseParams } from '../../redux/paramsSlice'
 import {ParamKey} from '../../engine/params'
 
 export default function Hue() {

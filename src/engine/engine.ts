@@ -53,14 +53,20 @@ function engineUpdate(currentTime: number) {
   timeState.dt = dt;
   timeState.quantum = 4.0;
 
-  const outputParams = modulateParams(timeState.beats, _store.getState().modulators, _store.getState().baseParams)
+  const state = _store.getState()
   
-  const newRealtimeState = {
-    time: timeState,
-    outputParams: outputParams
+  if (state.scenes.activeScene && state.scenes.scenesById[state.scenes.activeScene]) {
+    const scene = state.scenes.scenesById[state.scenes.activeScene]
+    
+    const outputParams = modulateParams(timeState.beats, scene)
+  
+    const newRealtimeState = {
+      time: timeState,
+      outputParams: outputParams
+    }
+  
+    _realtimeStore.dispatch(update(newRealtimeState))
+  
+    graphicsEngine.update(newRealtimeState);
   }
-
-  _realtimeStore.dispatch(update(newRealtimeState))
-
-  graphicsEngine.update(newRealtimeState);
 }
