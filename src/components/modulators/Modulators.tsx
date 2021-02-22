@@ -5,7 +5,7 @@ import NewModulator from './NewModulator'
 
 export default function Modulators() {
 
-  const modulatorCount = useTypedSelector(state => state.modulators.length);
+  const modulatorCount = useTypedSelector(state => state.scenes.byId[state.scenes.active].modulators.length);
 
   const indexes = Array.from(Array(modulatorCount).keys())
 

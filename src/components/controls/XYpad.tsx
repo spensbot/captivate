@@ -1,7 +1,7 @@
 import React from 'react'
 import useDragMapped from '../hooks/useDragMapped'
 import {useDispatch} from 'react-redux'
-import {setBaseParams, incrementBaseParams} from '../../redux/paramsSlice'
+import {setBaseParams, incrementBaseParams} from '../../redux/scenesSlice'
 import {ParamKey} from '../../engine/params'
 import XYCursor from './XYCursor'
 import XYWindow from './XYWindow'

@@ -2,7 +2,7 @@ import React from 'react'
 import { GetValueFromPhase } from '../../engine/oscillator'
 import { useDispatch } from 'react-redux'
 import useDragBasic from '../hooks/useDragBasic'
-import { incrementModulator } from '../../redux/modulatorsSlice'
+import { incrementModulator } from '../../redux/scenesSlice'
 import { useTypedSelector } from '../../redux/store'
 
 type Props = {
@@ -37,7 +37,7 @@ export default function LfoVisualizer({ index, width, height, padding }: Props) 
     }))
   })
 
-  const modulator = useTypedSelector(state => state.modulators[index])
+  const modulator = useTypedSelector(state => state.scenes.byId[state.scenes.active].modulators[index])
 
   function GetPoints() {
     const zeros = Array(width_ / stepSize + 1).fill(0)

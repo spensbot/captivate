@@ -8,7 +8,7 @@ export default function XYCursor() {
   const xOut = outputParams.X
   const yOut = outputParams.Y
 
-  const baseParams = useTypedSelector(state => state.baseParams)
+  const baseParams = useTypedSelector(state => state.scenes.byId[state.scenes.active].baseParams)
   const x = baseParams.X
   const y = baseParams.Y
 

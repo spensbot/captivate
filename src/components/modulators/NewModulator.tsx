@@ -1,7 +1,7 @@
 import React from 'react'
 import { useDispatch } from 'react-redux';
 import AddIcon from '@material-ui/icons/Add';
-import { addModulator } from '../../redux/modulatorsSlice'
+import { addModulator } from '../../redux/scenesSlice'
 
 
 export default function NewModulator() {

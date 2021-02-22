@@ -7,19 +7,19 @@ import { initModulator } from '../engine/modulationEngine'
 import { nanoid } from 'nanoid'
 
 interface SceneState_t {
-  sceneIds: string[],
-  scenesById: {[key: string]: Scene_t},
-  activeScene: string | null
+  ids: string[],
+  byId: {[key: string]: Scene_t},
+  active: string
 }
 
 const initID = nanoid()
 
 const initState: SceneState_t = {
-  sceneIds: [initID],
-  scenesById: {
+  ids: [initID],
+  byId: {
     [initID]: initScene()
   },
-  activeScene: initID
+  active: initID
 }
 
 interface IncrementModulatorPayload {
@@ -37,8 +37,8 @@ interface SetModulationPayload {
 }
 
 function modifyActiveScene(state: SceneState_t, callback: (scene: Scene_t) => void) {
-  if (state.activeScene && state.scenesById[state.activeScene]) {
-    callback(state.scenesById[state.activeScene])
+  if (state.active && state.byId[state.active]) {
+    callback(state.byId[state.active])
   }
 }
 
@@ -47,16 +47,16 @@ export const scenesSlice = createSlice({
   initialState: initState,
   reducers: {
     addScene: (state, { payload }: PayloadAction<{ id: string, scene: Scene_t }>) => {
-      state.sceneIds.push(payload.id)
-      state.scenesById[payload.id] = payload.scene
+      state.ids.push(payload.id)
+      state.byId[payload.id] = payload.scene
     },
     removeScene: (state, { payload }: PayloadAction<{ index: number }>) => {
-      const id = state.sceneIds[payload.index]
-      state.sceneIds.splice(payload.index, 1)
-      delete state.scenesById[id]
+      const id = state.ids[payload.index]
+      state.ids.splice(payload.index, 1)
+      delete state.byId[id]
     },
-    setActiveScene: (state, { payload }: PayloadAction<string | null>) => {
-      state.activeScene = payload
+    setActiveScene: (state, { payload }: PayloadAction<string>) => {
+      state.active = payload
     },
     setModulatorShape: (state, { payload }: PayloadAction<{ index: number, shape: LfoShape }>) => {
       modifyActiveScene(state, scene => {

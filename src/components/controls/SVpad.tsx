@@ -1,7 +1,7 @@
 import React from 'react'
 import useDragMapped from '../hooks/useDragMapped'
 import {useDispatch} from 'react-redux'
-import {setBaseParams} from '../../redux/paramsSlice'
+import {setBaseParams} from '../../redux/scenesSlice'
 import {ParamKey} from '../../engine/params'
 import SVCursor from './SVCursor'
 import { useRealtimeSelector } from '../../redux/realtimeStore'

@@ -1,6 +1,6 @@
 import React from 'react'
 import {useDispatch} from 'react-redux'
-import {setBaseParams} from '../../redux/paramsSlice'
+import { setBaseParams } from '../../redux/scenesSlice'
 import {ParamKey} from '../../engine/params'
 import { useRealtimeSelector } from '../../redux/realtimeStore'
 import { useTypedSelector } from '../../redux/store'

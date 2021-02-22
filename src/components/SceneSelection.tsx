@@ -32,14 +32,21 @@ const useStyles = makeStyles({
 
 function Scene({ index, id }: { index: number, id: string }) {
   const classes = useStyles()
-  const isSelected = useTypedSelector(state => state.scenes.activeScene === id)
+  const isSelected = useTypedSelector(state => state.scenes.active === id)
   const dispatch = useDispatch()
   return (
     <div className={`${classes.root} ${isSelected ? classes.selected : null}`} onClick={() => { dispatch(setActiveScene(id))} }>
       Scene {index + 1}
-      <IconButton aria-label="delete" size="small" onClick={() => dispatch(removeScene({ index: index }))}>
-        <CloseIcon />
-      </IconButton>
+      <br />
+      {id.substring(0, 3)}
+      { isSelected ? null : (
+        <IconButton aria-label="delete" size="small" onClick={e => {
+          e.stopPropagation()
+          dispatch(removeScene({ index: index }))
+        }}>
+          <CloseIcon />
+        </IconButton>
+      )}
     </div>
   )
 }
@@ -57,7 +64,7 @@ function NewScene() {
 let array = Array.from(Array(5).keys())
 
 export default function SceneSelection() {
-  const sceneIds = useTypedSelector(state => state.scenes.sceneIds)
+  const sceneIds = useTypedSelector(state => state.scenes.ids)
 
   return (
     <div style={{ backgroundColor: '#0006', padding: '0.5rem'}}>

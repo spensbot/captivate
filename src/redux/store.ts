@@ -1,7 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit'
-import paramsReducer from './paramsSlice'
 import connectionsReducer from './connectionsSlice'
-import modulatorsReducer from './modulatorsSlice'
 import { useSelector, TypedUseSelectorHook } from 'react-redux'
 import dmxReducer from './dmxSlice'
 import guiReducer from './guiSlice'
@@ -9,14 +7,10 @@ import scenesReducer from './scenesSlice'
 
 export const store = configureStore({
   reducer: {
-    baseParams: paramsReducer,
     connections: connectionsReducer,
     dmx: dmxReducer,
-    modulators: modulatorsReducer,
     gui: guiReducer,
     scenes: scenesReducer
-    // fixtures: 
-    // universe: 
   }
 })
 

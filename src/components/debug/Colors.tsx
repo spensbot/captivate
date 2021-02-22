@@ -6,7 +6,7 @@ const dp = 1
 
 export default function Colors() {
 
-  const {Hue, Saturation, Brightness} = useTypedSelector(state => state.baseParams)
+  const {Hue, Saturation, Brightness} = useTypedSelector(state => state.scenes.byId[state.scenes.active].baseParams)
 
   const styles: {[key: string]: React.CSSProperties} = {
     

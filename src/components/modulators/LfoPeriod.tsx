@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import useDragBasic from '../hooks/useDragBasic'
 import { useDispatch } from 'react-redux'
 import { useTypedSelector } from '../../redux/store'
-import { incrementPeriod } from '../../redux/modulatorsSlice'
+import { incrementPeriod } from '../../redux/scenesSlice'
 
 type Props = {
   index: number
@@ -12,7 +12,7 @@ type Props = {
 let movement = 0
 
 export default function LfoPeriod({index}: Props) {
-  const period = useTypedSelector(state => state.modulators[index].lfo.period)
+  const period = useTypedSelector(state => state.scenes.byId[state.scenes.active].modulators[index].lfo.period)
   const periodString = Number.isInteger(period) ? period.toString() : period.toFixed(2)
 
   const dispatch = useDispatch();

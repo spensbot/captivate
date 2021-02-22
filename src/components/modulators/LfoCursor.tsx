@@ -7,7 +7,7 @@ import { useTypedSelector } from '../../redux/store'
 export default function LfoCursor({index, padding}: {index: number, padding: number}) {
 
   const time = useRealtimeSelector(state => state.time)
-  const lfo = useTypedSelector(state => state.modulators[index].lfo)
+  const lfo = useTypedSelector(state => state.scenes.byId[state.scenes.active].modulators[index].lfo)
   const phase = GetPhase(lfo, time.beats)
   const value = GetValueFromPhase(lfo, phase)
 

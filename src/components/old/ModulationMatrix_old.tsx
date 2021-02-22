@@ -2,7 +2,7 @@ import React from 'react'
 import { useDispatch } from 'react-redux';
 import { ParamKey } from '../../engine/params';
 import { useTypedSelector } from '../../redux/store'
-import { setModulation } from '../../redux/paramsSlice'
+import { setModulation } from '../../redux/scenesSlice'
 
 
 export default function ModulationMatrix() {

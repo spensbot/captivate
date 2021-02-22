@@ -55,8 +55,8 @@ function engineUpdate(currentTime: number) {
 
   const state = _store.getState()
   
-  if (state.scenes.activeScene && state.scenes.scenesById[state.scenes.activeScene]) {
-    const scene = state.scenes.scenesById[state.scenes.activeScene]
+  if (state.scenes.active && state.scenes.byId[state.scenes.active]) {
+    const scene = state.scenes.byId[state.scenes.active]
     
     const outputParams = modulateParams(timeState.beats, scene)
   

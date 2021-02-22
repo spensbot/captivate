@@ -2,7 +2,7 @@ import React from 'react'
 import { LfoShape } from '../../engine/oscillator'
 import { useDispatch } from 'react-redux'
 import { useTypedSelector } from '../../redux/store'
-import { resetModulator, removeModulator, setModulatorShape } from '../../redux/modulatorsSlice'
+import { resetModulator, removeModulator, setModulatorShape } from '../../redux/scenesSlice'
 import CloseIcon from '@material-ui/icons/Close';
 import IconButton from '@material-ui/core/IconButton';
 import MenuItem from '@material-ui/core/MenuItem';
@@ -18,7 +18,7 @@ type Props = {
 export default function LfoMenu({index}: Props) {
   const dispatch = useDispatch();
 
-  const lfo = useTypedSelector(state => state.modulators[index].lfo)
+  const lfo = useTypedSelector(state => state.scenes.byId[state.scenes.active].modulators[index].lfo)
 
   return (
     <div style={{ paddingLeft: '0.3rem', display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#0005' }}>

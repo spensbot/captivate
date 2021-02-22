@@ -2,12 +2,12 @@ import React from 'react'
 import { useDispatch } from 'react-redux';
 import { ParamKey } from '../../engine/params';
 import { useTypedSelector } from '../../redux/store'
-import { setModulation } from '../../redux/modulatorsSlice'
+import { setModulation } from '../../redux/scenesSlice'
 import useDragMapped from '../hooks/useDragMapped'
 
 export default function ModulationSlider({index, param}: {index: number, param: ParamKey}) {
 
-  const amount = useTypedSelector(state => state.modulators[index].modulation[param])
+  const amount = useTypedSelector(state => state.scenes.byId[state.scenes.active].modulators[index].modulation[param])
   const dispatch = useDispatch()
   const [dragContainer, onMouseDown] = useDragMapped(({ x }) => {
     dispatch(setModulation({param: param, index: index, value: x}))
