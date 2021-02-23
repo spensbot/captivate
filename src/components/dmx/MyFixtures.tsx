@@ -8,6 +8,36 @@ import { useDispatch } from 'react-redux'
 import { initFixtureType } from '../../engine/dmxFixtures'
 import SaveIcon from '@material-ui/icons/Save';
 import GetAppIcon from '@material-ui/icons/GetApp';
+import { saveFile, loadFile } from '../../util/saveload_renderer'
+import { ipcRenderer } from 'electron';
+
+function loadUniverse() {
+  ipcRenderer.invoke('test', 'load').then(res => {
+    console.log(res)
+  }).catch(err => {
+    console.log(err)
+  })
+  // loadFile('Load Universe', null).then(string => {
+  //   console.log(string)
+  // }).catch(err => {
+  //   console.log(err)
+  // })
+}
+
+function saveUniverse() {
+  ipcRenderer.invoke('test', 'save').then(res => {
+    console.log(res)
+  }).catch(err => {
+    console.log(err)
+  })
+//   saveFile('Save Universe', null).then(err => {
+//     if (err) {
+//       console.log(err)
+//     }
+//   }).catch(err => {
+//     console.log(err)
+//   })
+}
 
 export default function MyFixtures() {
   const fixtureTypes = useTypedSelector(state => state.dmx.fixtureTypes)
@@ -23,10 +53,10 @@ export default function MyFixtures() {
       <div style={{ display: 'flex' }}>
         <div style={{ fontSize: '1.5rem' }}>Fixtures</div>
         <div style={{ flex: '1 0 0' }} />
-        <IconButton>
+        <IconButton onClick={loadUniverse}>
           <SaveIcon />
         </IconButton>
-        <IconButton>
+        <IconButton onClick={saveUniverse}>
           <GetAppIcon />
         </IconButton>
       </div>
