@@ -12,31 +12,21 @@ import { saveFile, loadFile } from '../../util/saveload_renderer'
 import { ipcRenderer } from 'electron';
 
 function loadUniverse() {
-  ipcRenderer.invoke('test', 'load').then(res => {
-    console.log(res)
+  loadFile('Load Universe', null).then(string => {
+    console.log(string)
   }).catch(err => {
     console.log(err)
   })
-  // loadFile('Load Universe', null).then(string => {
-  //   console.log(string)
-  // }).catch(err => {
-  //   console.log(err)
-  // })
 }
 
 function saveUniverse() {
-  ipcRenderer.invoke('test', 'save').then(res => {
-    console.log(res)
+  saveFile('Save Universe', null).then(err => {
+    if (err) {
+      console.log(err)
+    }
   }).catch(err => {
     console.log(err)
   })
-//   saveFile('Save Universe', null).then(err => {
-//     if (err) {
-//       console.log(err)
-//     }
-//   }).catch(err => {
-//     console.log(err)
-//   })
 }
 
 export default function MyFixtures() {
