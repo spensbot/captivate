@@ -3,7 +3,7 @@ import { app, BrowserWindow } from 'electron'
 import * as path from 'path'
 import * as url from 'url'
 import installExtension, { REACT_DEVELOPER_TOOLS, REDUX_DEVTOOLS } from 'electron-devtools-installer'
-import './saveload'
+import './saveload' // Registers ipc handlers for save and load functions
 
 let mainWindow: Electron.BrowserWindow | null
 

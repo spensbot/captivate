@@ -6,7 +6,7 @@ import { clampNormalized, clamp } from '../util/helpers'
 import { initModulator } from '../engine/modulationEngine'
 import { nanoid } from 'nanoid'
 
-interface SceneState_t {
+export interface SceneState_t {
   ids: string[],
   byId: {[key: string]: Scene_t},
   active: string
@@ -46,6 +46,9 @@ export const scenesSlice = createSlice({
   name: 'scenes',
   initialState: initState,
   reducers: {
+    resetScenesState: (state, { payload }: PayloadAction<SceneState_t>) => {
+      state = payload
+    },
     addScene: (state, { payload }: PayloadAction<{ id: string, scene: Scene_t }>) => {
       state.ids.push(payload.id)
       state.byId[payload.id] = payload.scene
@@ -115,6 +118,6 @@ export const scenesSlice = createSlice({
   },
 });
 
-export const { addScene, removeScene, setActiveScene, setBaseParams, incrementBaseParams, setModulatorShape, incrementPeriod, incrementModulator, addModulator, removeModulator, setModulation, resetModulator } = scenesSlice.actions;
+export const { resetScenesState, addScene, removeScene, setActiveScene, setBaseParams, incrementBaseParams, setModulatorShape, incrementPeriod, incrementModulator, addModulator, removeModulator, setModulation, resetModulator } = scenesSlice.actions;
 
 export default scenesSlice.reducer;

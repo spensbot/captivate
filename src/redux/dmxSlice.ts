@@ -46,6 +46,9 @@ export const dmxSlice = createSlice({
   name: 'dmx',
   initialState: initialDmxState,
   reducers: {
+    resetDmxState: (state, { payload }: PayloadAction<DmxState>) => {
+      state = payload
+    },
     setSelectedFixture: (state, { payload }: PayloadAction<number>) => {
       state.selectedFixture = payload
     },
@@ -111,6 +114,6 @@ export const dmxSlice = createSlice({
   },
 });
 
-export const { setSelectedFixture, setEditedFixture, setFixtureWindow, setFixtureWindowEnabled, incrementFixtureWindow, addFixture, removeFixture, addFixtureType, updateFixtureType, deleteFixtureType } = dmxSlice.actions;
+export const { resetDmxState, setSelectedFixture, setEditedFixture, setFixtureWindow, setFixtureWindowEnabled, incrementFixtureWindow, addFixture, removeFixture, addFixtureType, updateFixtureType, deleteFixtureType } = dmxSlice.actions;
 
 export default dmxSlice.reducer;
