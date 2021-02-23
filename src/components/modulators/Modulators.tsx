@@ -10,7 +10,7 @@ export default function Modulators() {
   const indexes = Array.from(Array(modulatorCount).keys())
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'row' }}>
+    <div style={{ display: 'flex', flexDirection: 'row', overflow: 'scroll'}}>
       {indexes.map(index => {
         return (
           <ModulatorControl key={index} index={index} />

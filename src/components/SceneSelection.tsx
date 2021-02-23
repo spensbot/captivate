@@ -9,14 +9,12 @@ import { IconButton } from '@material-ui/core'
 import CloseIcon from '@material-ui/icons/Close'
 import AddIcon from '@material-ui/icons/Add';
   
-const height = 6
-const width = 6
+const height = 3
 
 const useStyles = makeStyles({
   root: {
     height: `${height}rem`,
     padding: '0.5rem',
-    minWidth: `${width}rem`,
     marginRight: '0.3rem',
     marginBottom: '0.3rem',
     color: "#fff8",
@@ -37,8 +35,6 @@ function Scene({ index, id }: { index: number, id: string }) {
   return (
     <div className={`${classes.root} ${isSelected ? classes.selected : null}`} onClick={() => { dispatch(setActiveScene(id))} }>
       Scene {index + 1}
-      <br />
-      {id.substring(0, 3)}
       { isSelected ? null : (
         <IconButton aria-label="delete" size="small" onClick={e => {
           e.stopPropagation()
@@ -67,9 +63,9 @@ export default function SceneSelection() {
   const sceneIds = useTypedSelector(state => state.scenes.ids)
 
   return (
-    <div style={{ backgroundColor: '#0006', padding: '0.5rem'}}>
+    <div style={{ backgroundColor: '#0006', padding: '0.5rem', height: '100%', maxHeight: '100%'}}>
       <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Scenes</div>
-      <div style={{ display: 'flex' }}>
+      <div style={{ overflow: 'scroll' }}>
         {sceneIds.map((id, index) => {
           return (
             <Scene key={index} index={index} id={id} />
