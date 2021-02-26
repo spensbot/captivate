@@ -1,17 +1,16 @@
 import { ReduxStore } from '../redux/store'
+import { setActiveSceneIndex } from '../redux/scenesSlice'
 
 let _store: ReduxStore
 
-function onKeyDown(e: React.KeyboardEvent) {
-  console.log(e.key)
-  console.log(parseInt(e.key))
-  if (parseInt(e.key)) {
-    _store.dispatch() parseInt(e.key)
+function onKeyDown(this: Document, e: KeyboardEvent) {
+  if (parseInt(e.key) !== NaN) {
+    _store.dispatch(setActiveSceneIndex(parseInt(e.key) - 1)) 
   }
 }
 
 export function init(store: ReduxStore) {
   _store = store
   
-  document.addEventListener('keydown', () => {});
+  document.addEventListener('keydown', onKeyDown);
 }

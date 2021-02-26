@@ -1,5 +1,6 @@
 import * as graphicsEngine from "./graphicsEngine"
 import * as dmxEngine from './dmxEngine'
+import * as keyboardManager from './keyboardManager'
 import { ReduxStore } from '../redux/store'
 import { RealtimeStore, update } from '../redux/realtimeStore'
 const NodeLink = window.require('node-link');
@@ -19,6 +20,7 @@ export function init(store: ReduxStore, realtimeStore: RealtimeStore) {
   _initTime = Date.now();
   graphicsEngine.init();
   dmxEngine.init(store, realtimeStore);
+  keyboardManager.init(store);
 
   requestAnimationFrame(engineUpdate);
 }
