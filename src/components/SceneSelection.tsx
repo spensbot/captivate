@@ -7,11 +7,11 @@ import { nanoid } from 'nanoid'
 import { initScene } from '../engine/scene_t'
 import { IconButton } from '@material-ui/core'
 import CloseIcon from '@material-ui/icons/Close'
-import AddIcon from '@material-ui/icons/Add';
+import AddIcon from '@material-ui/icons/Add'
 import { store } from '../redux/store'
 import { loadFile, saveFile } from '../util/saveload_renderer'
-import SaveIcon from '@material-ui/icons/Save';
-import GetAppIcon from '@material-ui/icons/GetApp';
+import SaveIcon from '@material-ui/icons/Save'
+import GetAppIcon from '@material-ui/icons/GetApp'
 
 function loadScenes() {
   loadFile('Load Scenes', null).then(string => {

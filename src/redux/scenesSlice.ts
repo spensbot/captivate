@@ -61,6 +61,11 @@ export const scenesSlice = createSlice({
     setActiveScene: (state, { payload }: PayloadAction<string>) => {
       state.active = payload
     },
+    setActiveSceneIndex: (state, { payload }: PayloadAction<number>) => {
+      if (state.ids.length > payload) {
+        state.active = state.ids[payload]
+      }
+    },
     setModulatorShape: (state, { payload }: PayloadAction<{ index: number, shape: LfoShape }>) => {
       modifyActiveScene(state, scene => {
         scene.modulators[payload.index].lfo.shape = payload.shape
@@ -118,6 +123,21 @@ export const scenesSlice = createSlice({
   },
 });
 
-export const { resetScenesState, addScene, removeScene, setActiveScene, setBaseParams, incrementBaseParams, setModulatorShape, incrementPeriod, incrementModulator, addModulator, removeModulator, setModulation, resetModulator } = scenesSlice.actions;
+export const {
+  resetScenesState,
+  addScene,
+  removeScene,
+  setActiveScene,
+  setActiveSceneIndex,
+  setBaseParams,
+  incrementBaseParams,
+  setModulatorShape,
+  incrementPeriod,
+  incrementModulator,
+  addModulator,
+  removeModulator,
+  setModulation,
+  resetModulator
+} = scenesSlice.actions;
 
 export default scenesSlice.reducer;

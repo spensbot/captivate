@@ -12,12 +12,14 @@ import { useTypedSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import { setActivePage, Page } from '../redux/guiSlice'
 import TooltipWrapper from './base/TooltipWrapper';
+import logoThick from '../images/Thick.png'
 
 const useStyles = makeStyles({
   root: {
     display: 'flex',
     flexDirection: 'column',
-    backgroundColor: '#ffffff08'
+    backgroundColor: '#ffffff08',
+    alignItems: 'center'
   },
   item: {
     padding: '1rem',
@@ -67,6 +69,8 @@ export default function MenuBar() {
       <MenuItem page={Page.VIDEO} tooltipText="Visualizer">
         <FeaturedVideoIcon />
       </MenuItem>
+      <div style={{flex: '1 0 0'}}/>
+      <img src={logoThick} style={{width: '3rem', height: '3rem', marginBottom: '0.5rem'}} />
     </div>
   )
 }
