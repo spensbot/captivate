@@ -47,7 +47,9 @@ export const scenesSlice = createSlice({
   initialState: initState,
   reducers: {
     resetScenesState: (state, { payload }: PayloadAction<SceneState_t>) => {
-      state = payload
+      state.active = payload.active
+      state.byId = payload.byId
+      state.ids = payload.ids
     },
     addScene: (state, { payload }: PayloadAction<{ id: string, scene: Scene_t }>) => {
       state.ids.push(payload.id)

@@ -1,59 +1,61 @@
 import * as graphicsEngine from "./graphicsEngine"
 import * as dmxEngine from './dmxEngine'
 import * as keyboardManager from './keyboardManager'
+import { autoSave } from '../util/saveload_renderer'
 import { ReduxStore } from '../redux/store'
 import { RealtimeStore, update } from '../redux/realtimeStore'
-const NodeLink = window.require('node-link');
-import { modulateParams } from './modulationEngine';
+const NodeLink = window.require('node-link')
+import { modulateParams } from './modulationEngine'
 
-let _lastFrameTime = 0;
-let _engineTime = 0;
-let _initTime = 0;
-let _store: ReduxStore;
-let _realtimeStore: RealtimeStore;
-let _nodeLink: typeof NodeLink;
+let _lastFrameTime = 0
+let _engineTime = 0
+let _initTime = 0
+let _store: ReduxStore
+let _realtimeStore: RealtimeStore
+let _nodeLink: typeof NodeLink
 
 export function init(store: ReduxStore, realtimeStore: RealtimeStore) {
-  _store = store;
-  _realtimeStore = realtimeStore;
-  _nodeLink = new NodeLink();
-  _initTime = Date.now();
-  graphicsEngine.init();
-  dmxEngine.init(store, realtimeStore);
-  keyboardManager.init(store);
+  _store = store
+  _realtimeStore = realtimeStore
+  _nodeLink = new NodeLink()
+  _initTime = Date.now()
+  autoSave(_store)
+  graphicsEngine.init()
+  dmxEngine.init(store, realtimeStore)
+  keyboardManager.init(store)
 
-  requestAnimationFrame(engineUpdate);
+  requestAnimationFrame(engineUpdate)
 }
 
 export function incrementTempo(amount: number) {
-  if (_nodeLink) _nodeLink.setTempo(_realtimeStore.getState().time.bpm + amount);
+  if (_nodeLink) _nodeLink.setTempo(_realtimeStore.getState().time.bpm + amount)
 }
 
 export function setLinkEnabled(isEnabled: boolean) {
-  if (_nodeLink) _nodeLink.enable(isEnabled);
+  if (_nodeLink) _nodeLink.enable(isEnabled)
 }
 
 export function visualizerResize() {
-  graphicsEngine.resize();
+  graphicsEngine.resize()
 }
 
 export function visualizerSetElement(domRef: any) {
-  graphicsEngine.setDomElement(domRef);
+  graphicsEngine.setDomElement(domRef)
 }
 
 function engineUpdate(currentTime: number) {
-  requestAnimationFrame(engineUpdate);
+  requestAnimationFrame(engineUpdate)
 
-  const dt = currentTime - _lastFrameTime;
+  const dt = currentTime - _lastFrameTime
 
-  if (dt < 10) return;
+  if (dt < 10) return
 
-  _lastFrameTime = currentTime;
-  _engineTime += dt;
+  _lastFrameTime = currentTime
+  _engineTime += dt
 
-  const timeState = _nodeLink.getSessionInfoCurrent();
-  timeState.dt = dt;
-  timeState.quantum = 4.0;
+  const timeState = _nodeLink.getSessionInfoCurrent()
+  timeState.dt = dt
+  timeState.quantum = 4.0
 
   const state = _store.getState()
   
