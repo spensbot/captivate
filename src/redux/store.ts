@@ -1,4 +1,4 @@
-import { configureStore, combineReducers, Reducer, PayloadAction } from '@reduxjs/toolkit'
+import { configureStore, combineReducers, Reducer, PayloadAction, createStore } from '@reduxjs/toolkit'
 import connectionsReducer from './connectionsSlice'
 import { useSelector, TypedUseSelectorHook } from 'react-redux'
 import dmxReducer from './dmxSlice'
@@ -23,18 +23,15 @@ export function resetState(newState: ReduxState): PayloadAction<ReduxState> {
   }
 }
 
-const rootReducer: Reducer = (state: ReduxState, action) => {
+const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (state, action) => {
   if (action.type === RESET_STATE) {
-    state = action.payload
+    return action.payload
   }
-  baseReducer(state, action)
+  return baseReducer(state, action)
 }
 
-export const store = configureStore({
-  reducer: baseReducer
-})
+export const store = createStore(rootReducer)
 
 export type ReduxStore = typeof store
-// export type ReduxState = ReturnType<typeof store.getState>
 export type ReduxDispatch = typeof store.dispatch
 export const useTypedSelector: TypedUseSelectorHook<ReduxState> = useSelector

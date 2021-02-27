@@ -1,8 +1,8 @@
 import React from 'react'
-import StatusBar from '../StatusBar';
+import StatusBar from '../StatusBar'
 import ParamsControl from '../controls/ParamsControl'
 import Modulators from '../modulators/Modulators'
-import SceneSelection from '../SceneSelection';
+import SceneSelection from '../SceneSelection'
 import SplitPane from '../base/SplitPane'
 
 export default function Scenes() {

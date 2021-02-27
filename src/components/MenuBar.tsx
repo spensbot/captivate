@@ -1,18 +1,28 @@
 import React, { useState } from 'react'
-import FeaturedVideoIcon from '@material-ui/icons/FeaturedVideo'; // Video
-import GridOnIcon from '@material-ui/icons/GridOn'; // Universe
-import LibraryMusicIcon from '@material-ui/icons/LibraryMusic'; // Design
-import MovieFilterIcon from '@material-ui/icons/MovieFilter'; // Design 
-import StarBorderIcon from '@material-ui/icons/StarBorder'; // Design
-import WhatshotIcon from '@material-ui/icons/Whatshot'; // Design
-import ViewComfyIcon from '@material-ui/icons/ViewComfy'; // Universe
+// Possible Universe Logos
+import GridOnIcon from '@material-ui/icons/GridOn';
+import ViewComfyIcon from '@material-ui/icons/ViewComfy';
+import PlaylistAddIcon from '@material-ui/icons/PlaylistAdd';
+import ListIcon from '@material-ui/icons/List';
+// Possible Scene Editor Logos
+import LibraryMusicIcon from '@material-ui/icons/LibraryMusic';
+import MovieFilterIcon from '@material-ui/icons/MovieFilter';
+import StarBorderIcon from '@material-ui/icons/StarBorder';
+import WhatshotIcon from '@material-ui/icons/Whatshot';
+// Possible Video Logos
+import FeaturedVideoIcon from '@material-ui/icons/FeaturedVideo';
+import logoThick from '../images/Thick.png'
+// Possible Share Logos
+import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
+import CloudUploadIcon from '@material-ui/icons/CloudUpload';
 import { makeStyles } from '@material-ui/core/styles'
 
 import { useTypedSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import { setActivePage, Page } from '../redux/guiSlice'
 import TooltipWrapper from './base/TooltipWrapper';
-import logoThick from '../images/Thick.png'
+
+const selectedBorder = 0.2 //rem
 
 const useStyles = makeStyles({
   root: {
@@ -22,17 +32,16 @@ const useStyles = makeStyles({
     alignItems: 'center'
   },
   item: {
-    padding: '1rem',
     cursor: 'pointer',
-    color: '#fff8',
+    opacity: 0.5,
+    filter: 'grayscale(100%)',
     '&:hover': {
-      color: '#fffc'
+      filter: 'grayscale(0%)',
+      opacity: 1
     }
   },
   selectedItem: {
-    padding: '1rem 1rem 1rem 0.8rem',
-    borderLeft: '0.2rem solid #fff',
-    color: '#fffc'
+    borderLeft: `${selectedBorder}rem solid #fff`
   }
 })
 
@@ -48,10 +57,13 @@ export default function MenuBar() {
 
   const classes = useStyles()
 
-  function MenuItem({page, tooltipText, children}: {page: Page, tooltipText: string, children: React.ReactNode}) {
+  function MenuItem({ page, tooltipText, paddingRem = 1, children }: { page: Page, tooltipText: string, paddingRem?: number, children: React.ReactNode }) {
+    const isActive = activePage === page
+    const p = paddingRem
+    const padding = isActive ? `${p}rem ${p}rem ${p}rem ${p - selectedBorder}rem` : `${p}rem`
     return (
       <TooltipWrapper text={tooltipText}>
-        <div className={`${classes.item} ${activePage === page ? classes.selectedItem : ""}`} onClick={setPage(page)}>
+        <div style={{padding: padding}} className={activePage === page ? classes.selectedItem : classes.item} onClick={setPage(page)}>
           {children}
         </div>
       </TooltipWrapper>
@@ -60,17 +72,26 @@ export default function MenuBar() {
 
   return (
     <div className={classes.root}>
-      <MenuItem page={Page.UNIVERSE} tooltipText="DMX Universe Editor">
-        <ViewComfyIcon />
+      <MenuItem page={Page.UNIVERSE} tooltipText="DMX Editor">
+        {/* <ViewComfyIcon /> */}
+        {/* <PlaylistAddIcon /> */}
+        <ListIcon />
       </MenuItem>
-      <MenuItem page={Page.MODULATION} tooltipText="Modulation Editor">
-        <WhatshotIcon />
+      <MenuItem page={Page.MODULATION} tooltipText="Scene Editor">
+        {/* <WhatshotIcon /> */}
+        <MovieFilterIcon />
+        {/* <StarBorderIcon /> */}
       </MenuItem>
-      <MenuItem page={Page.VIDEO} tooltipText="Visualizer">
-        <FeaturedVideoIcon />
+      <MenuItem page={Page.VIDEO} tooltipText="Visualizer" paddingRem={0.6}>
+        {/* <FeaturedVideoIcon /> */}
+        {/* <MovieFilterIcon /> */}
+        <img src={logoThick} style={{width: '2.3rem', height: '2.3rem', margin: '0'}} />
       </MenuItem>
-      <div style={{flex: '1 0 0'}}/>
-      <img src={logoThick} style={{width: '3rem', height: '3rem', marginBottom: '0.5rem'}} />
+      <MenuItem page={Page.SHARE} tooltipText="Share">
+        <CloudUploadIcon />
+      </MenuItem>
+      {/* <div style={{flex: '1 0 0'}}/>
+      <img src={logoThick} style={{width: '3rem', height: '3rem', marginBottom: '0.5rem'}} /> */}
     </div>
   )
 }

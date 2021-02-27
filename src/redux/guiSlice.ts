@@ -3,7 +3,8 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 export enum Page {
   UNIVERSE,
   MODULATION,
-  VIDEO
+  VIDEO,
+  SHARE
 }
 
 export const guiSlice = createSlice({

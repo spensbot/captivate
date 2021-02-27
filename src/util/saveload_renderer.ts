@@ -10,11 +10,11 @@ const CACHED_STATE_KEY = 'cached-state'
 const AUTO_SAVE_INTERVAL = 1000 // ms
 
 function refreshLastSession(store: ReduxStore) {
-  // const cachedState = localStorage.getItem(CACHED_STATE_KEY);
-  // if (!!cachedState) {
-  //   const lastState: ReduxState = JSON.parse(cachedState)
-  //   store.dispatch(resetState(lastState))
-  // }
+  const cachedState = localStorage.getItem(CACHED_STATE_KEY);
+  if (!!cachedState) {
+    const lastState: ReduxState = JSON.parse(cachedState)
+    store.dispatch(resetState(lastState))
+  }
 }
 
 function saveState(state: ReduxState) {

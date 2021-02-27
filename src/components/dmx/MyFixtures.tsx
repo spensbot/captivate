@@ -1,13 +1,14 @@
 import React from 'react'
 import {useTypedSelector} from '../../redux/store'
 import MyFixture from './MyFixture'
-import AddIcon from '@material-ui/icons/Add';
-import { IconButton } from '@material-ui/core';
-import { addFixtureType, resetDmxState } from '../../redux/dmxSlice';
+import AddIcon from '@material-ui/icons/Add'
+import { IconButton } from '@material-ui/core'
+import { addFixtureType, resetDmxState } from '../../redux/dmxSlice'
 import { useDispatch } from 'react-redux'
 import { initFixtureType } from '../../engine/dmxFixtures'
-import SaveIcon from '@material-ui/icons/Save';
-import GetAppIcon from '@material-ui/icons/GetApp';
+import SaveIcon from '@material-ui/icons/Save'
+import GetAppIcon from '@material-ui/icons/GetApp'
+import PublishIcon from '@material-ui/icons/Publish'
 import { saveFile, loadFile } from '../../util/saveload_renderer'
 import { store } from '../../redux/store'
 
@@ -43,14 +44,14 @@ export default function MyFixtures() {
 
   return (
     <div style={{ height: '100%', overflow: 'scroll', padding: '0.5rem' }}>
-      <div style={{ display: 'flex' }}>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
         <div style={{ fontSize: '1.5rem' }}>Fixtures</div>
         <div style={{ flex: '1 0 0' }} />
-        <IconButton onClick={loadUniverse}>
+        <IconButton onClick={saveUniverse}>
           <SaveIcon />
         </IconButton>
-        <IconButton onClick={saveUniverse}>
-          <GetAppIcon />
+        <IconButton onClick={loadUniverse}>
+          <PublishIcon />
         </IconButton>
       </div>
       {elements}

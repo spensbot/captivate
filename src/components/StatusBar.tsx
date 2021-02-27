@@ -51,7 +51,9 @@ export default function StatusBar() {
       justifyContent: 'right',
       alignItems: 'center',
       fontSize: `1.2rem`,
-      padding: '0.5rem 1rem'
+      padding: '0.5rem 1rem',
+      // backgroundColor: '#0006',
+      borderBottom: '1px solid #fff6'
     }
   }
 

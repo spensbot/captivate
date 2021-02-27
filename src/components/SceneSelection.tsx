@@ -12,6 +12,7 @@ import { store } from '../redux/store'
 import { loadFile, saveFile } from '../util/saveload_renderer'
 import SaveIcon from '@material-ui/icons/Save'
 import GetAppIcon from '@material-ui/icons/GetApp'
+import PublishIcon from '@material-ui/icons/Publish'
 
 function loadScenes() {
   loadFile('Load Scenes', null).then(string => {
@@ -90,15 +91,15 @@ export default function SceneSelection() {
   const sceneIds = useTypedSelector(state => state.scenes.ids)
 
   return (
-    <div style={{ backgroundColor: '#0006', padding: '0.5rem', height: '100%', maxHeight: '100%'}}>
-      <div style={{ display: 'flex' }}>
+    <div style={{ backgroundColor: '#0003', padding: '0.5rem', height: '100%', maxHeight: '100%'}}>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
         <div style={{ fontSize: '1.5rem' }}>Scenes</div>
         <div style={{ flex: '1 0 0' }} />
-        <IconButton onClick={loadScenes}>
+        <IconButton onClick={saveScenes}>
           <SaveIcon />
         </IconButton>
-        <IconButton onClick={saveScenes}>
-          <GetAppIcon />
+        <IconButton onClick={loadScenes}>
+          <PublishIcon />
         </IconButton>
       </div>
       <div style={{ overflow: 'scroll' }}>

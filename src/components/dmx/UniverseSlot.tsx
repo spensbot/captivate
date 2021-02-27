@@ -75,7 +75,6 @@ function FixtureSlot({ fixture, index }: { fixture: Fixture, index: number }) {
   const isSelected = selectedFixture === index
   function setWindowEnabled(dimension: 'x' | 'y', isEnabled: boolean) {
     return (e: React.MouseEvent) => {
-      console.log("click")
       dispatch(setFixtureWindowEnabled({
         dimension: dimension,
         index: index,
