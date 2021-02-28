@@ -8,6 +8,10 @@ const LOAD_FILE = 'load-file'
 const SAVE_FILE = 'save-file'
 const CACHED_STATE_KEY = 'cached-state'
 const AUTO_SAVE_INTERVAL = 1000 // ms
+export const captivateFileFilters = {
+  dmx: { name: 'captivate dmx', extensions: ['.cap_dmx'] },
+  scenes: { name: 'captivate scenes', extensions: ['.cap_scenes'] }
+}
 
 function refreshLastSession(store: ReduxStore) {
   const cachedState = localStorage.getItem(CACHED_STATE_KEY);
@@ -31,11 +35,11 @@ export const autoSave = (store: ReduxStore) => {
   }, AUTO_SAVE_INTERVAL)
 }
 
-export async function loadFile(title: string, defaultPath: string | null): Promise<string> {
-  return ipcRenderer.invoke(LOAD_FILE, title, defaultPath)
+export async function loadFile(title: string, fileFilters: Electron.FileFilter[]): Promise<string> {
+  return ipcRenderer.invoke(LOAD_FILE, title, fileFilters)
 }
 
-export async function saveFile(title: string, data: string, defaultPath: string | null): Promise<NodeJS.ErrnoException> {
-  return ipcRenderer.invoke(SAVE_FILE, title, data, defaultPath)
+export async function saveFile(title: string, data: string, fileFilters: Electron.FileFilter[]): Promise<NodeJS.ErrnoException> {
+  return ipcRenderer.invoke(SAVE_FILE, title, data, fileFilters)
 }
 

@@ -9,13 +9,13 @@ import { IconButton } from '@material-ui/core'
 import CloseIcon from '@material-ui/icons/Close'
 import AddIcon from '@material-ui/icons/Add'
 import { store } from '../redux/store'
-import { loadFile, saveFile } from '../util/saveload_renderer'
+import { loadFile, saveFile, captivateFileFilters } from '../util/saveload_renderer'
 import SaveIcon from '@material-ui/icons/Save'
 import GetAppIcon from '@material-ui/icons/GetApp'
 import PublishIcon from '@material-ui/icons/Publish'
 
 function loadScenes() {
-  loadFile('Load Scenes', null).then(string => {
+  loadFile('Load Scenes', [captivateFileFilters.scenes]).then(string => {
     console.log(string)
     const newScenes: SceneState_t = JSON.parse(string)
     store.dispatch(resetScenesState(newScenes))
@@ -27,7 +27,7 @@ function loadScenes() {
 function saveScenes() {
   const data = JSON.stringify( store.getState().scenes )
 
-  saveFile('Save Scenes', data, null).then(err => {
+  saveFile('Save Scenes', data, [captivateFileFilters.scenes]).then(err => {
     if (err) {
       console.log(err)
     }

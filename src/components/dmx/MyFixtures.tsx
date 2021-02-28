@@ -9,11 +9,11 @@ import { initFixtureType } from '../../engine/dmxFixtures'
 import SaveIcon from '@material-ui/icons/Save'
 import GetAppIcon from '@material-ui/icons/GetApp'
 import PublishIcon from '@material-ui/icons/Publish'
-import { saveFile, loadFile } from '../../util/saveload_renderer'
+import { saveFile, loadFile, captivateFileFilters } from '../../util/saveload_renderer'
 import { store } from '../../redux/store'
 
 function loadUniverse() {
-  loadFile('Load Universe', null).then(string => {
+  loadFile('Load Universe', [captivateFileFilters.dmx]).then(string => {
     const newUniverse = JSON.parse(string)
     store.dispatch(resetDmxState(newUniverse))
   }).catch(err => {
@@ -24,7 +24,7 @@ function loadUniverse() {
 function saveUniverse() {
   const data = JSON.stringify( store.getState().dmx )
 
-  saveFile('Save Universe', data, null).then(err => {
+  saveFile('Save Universe', data, [captivateFileFilters.dmx]).then(err => {
     if (err) {
       console.log(err)
     }

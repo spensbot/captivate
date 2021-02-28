@@ -11,9 +11,9 @@ export default function ParamsControl() {
     <div style={{ display: 'flex', flexDirection: 'row', margin: '1rem' }}>
       <HsvPad />
       <XYpad />
-      <ParamSlider paramKey={ParamKey.Black} />
-      <ParamSlider paramKey={ ParamKey.Strobe }/>
-      <ParamSlider paramKey={ ParamKey.Epicness }/>
+      <ParamSlider paramKey={ ParamKey.Black } />
+      {/* <ParamSlider paramKey={ ParamKey.Strobe }/>
+      <ParamSlider paramKey={ ParamKey.Epicness }/> */}
     </div>
   )
 }

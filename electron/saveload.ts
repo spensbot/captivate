@@ -5,13 +5,10 @@ import fs, { promises } from 'fs'
 const LOAD_FILE = 'load-file'
 const SAVE_FILE = 'save-file'
 
-const captivateFileFilter: Electron.FileFilter = { name: 'json', extensions: ['.json'] }
-
-ipcMain.handle(LOAD_FILE, async (event, title: string, defaultPath: string | null) => {
+ipcMain.handle(LOAD_FILE, async (event, title: string, fileFilters: Electron.FileFilter[]) => {
   const dialogResult = await dialog.showOpenDialog({
     title: title,
-    defaultPath: defaultPath || undefined,
-    filters: [captivateFileFilter],
+    filters: fileFilters,
     properties: ['openFile']
   })
   if (!dialogResult.canceled && dialogResult.filePaths.length > 0) {
@@ -21,11 +18,10 @@ ipcMain.handle(LOAD_FILE, async (event, title: string, defaultPath: string | nul
   }
 })
 
-ipcMain.handle(SAVE_FILE, async (event, title: string, data: string, defaultPath: string | null) => {
+ipcMain.handle(SAVE_FILE, async (event, title: string, data: string, fileFilters: Electron.FileFilter[]) => {
   const dialogResult = await dialog.showSaveDialog({
     title: title,
-    defaultPath: defaultPath || undefined,
-    filters: [captivateFileFilter],
+    filters: fileFilters,
     properties: ['createDirectory']
   })
   if (!dialogResult.canceled && dialogResult.filePath !== undefined) {

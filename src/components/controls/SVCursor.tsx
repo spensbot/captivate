@@ -6,8 +6,8 @@ import Cursor from '../base/Cursor'
 export default function SVCursor() {
 
   const outputParams = useRealtimeSelector(state => state.outputParams)
-  const xOut = outputParams.Saturation
-  const yOut = outputParams.Brightness
+  let xOut = outputParams.Saturation
+  let yOut = outputParams.Brightness
 
   const baseParams = useTypedSelector(state => state.scenes.byId[state.scenes.active].baseParams)
   const x = baseParams.Saturation
