@@ -109,6 +109,18 @@
     "files": [
       "package.json",
       "dist/**"
+    ],
+    "fileAssociations": [
+      {
+        "ext": "cap_dmx",
+        "name": "Captivate DMX File",
+        "role": "Editor"
+      },
+      {
+        "ext": "cap_scenes",
+        "name": "Captivate scenes File",
+        "role": "Editor"
+      }
     ]
   },
   "config": {
