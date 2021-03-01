@@ -64,7 +64,7 @@ export const scenesSlice = createSlice({
       state.active = payload
     },
     setActiveSceneIndex: (state, { payload }: PayloadAction<number>) => {
-      if (state.ids.length > payload) {
+      if (payload > -1 && state.ids.length > payload) {
         state.active = state.ids[payload]
       }
     },

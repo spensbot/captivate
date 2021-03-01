@@ -13,8 +13,8 @@ export default function Scenes() {
       height: '100%', 
     },
     splitContainer: {
-      flex: '1 0 0',
-      overflow: 'hidden'
+      flex: '1 1 auto',
+      overflow: 'auto'
     },
     splitPane: {
       height: '100%'

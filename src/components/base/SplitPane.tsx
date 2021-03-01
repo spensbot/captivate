@@ -29,12 +29,14 @@ export default function SplitPane({type='vertical', rem=1, initialSplit=0.5, sty
     child1: {
       flex: `${split} 0 0`,
       height: v ? '100%' : undefined,
-      width: v ? undefined : '100%'
+      width: v ? undefined : '100%',
+      overflow: 'auto'
     },
     child2: {
       flex: `${1 - split} 0 0`,
       height: v ? '100%' : undefined,
-      width: v ? undefined : '100%'
+      width: v ? undefined : '100%',
+      overflow: 'auto'
     },
     divider: {
       width: v ? `${rem}rem` : '100%',

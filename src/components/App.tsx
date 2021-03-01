@@ -17,7 +17,8 @@ export default function App() {
       height: '100vh'
     },
     activePage: {
-      flex: '1 1 0',
+      flex: '1 1 auto',
+      overflow: 'auto',
       height: '100%',
     }
   }
