@@ -8,7 +8,7 @@ export default function ModulationMatrix({index}: {index: number}) {
     <div>
       {paramsList.map(paramKey => {
         return (
-          <ModulationSlider key={paramKey} index={index} param={paramKey}/>
+          <ModulationSlider key={ paramKey + 'mod' + index.toString()} index={index} param={paramKey}/>
         )
       })}
     </div>

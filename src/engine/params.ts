@@ -11,8 +11,6 @@ export enum ParamKey {
   Y = "Y",
   Height = "Height",
   Black = "Black",
-  
-  // I'm not gonna worry about these until later :p
   Epicness = "Epicness",
   Strobe = "Strobe"
 }

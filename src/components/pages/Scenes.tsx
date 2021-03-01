@@ -29,8 +29,10 @@ export default function Scenes() {
           <SceneSelection />
         </div>
         <div style={styles.splitPane}>
-          <Modulators />
-          <ParamsControl />
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <Modulators />
+            <ParamsControl />
+          </div>
         </div>
       </SplitPane>
     </div>
