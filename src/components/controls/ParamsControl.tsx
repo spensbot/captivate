@@ -8,7 +8,7 @@ import XYpad from './XYpad'
 export default function ParamsControl() {
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'row', margin: '0 1re' }}>
+    <div style={{ display: 'flex', flexDirection: 'row', margin: '0 1rem' }}>
       <HsvPad />
       <XYpad />
       <ParamSlider paramKey={ ParamKey.Black } />
