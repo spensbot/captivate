@@ -53,7 +53,7 @@ export default function StatusBar() {
       fontSize: `1.2rem`,
       padding: '0.5rem 1rem',
       // backgroundColor: '#0006',
-      borderBottom: '1px solid #fff6'
+      borderBottom: '1px solid #fff3'
     }
   }
 

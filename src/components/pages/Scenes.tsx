@@ -9,25 +9,26 @@ export default function Scenes() {
   const styles: { [key: string]: React.CSSProperties } = {
     root: {
       display: 'flex',
-      flexDirection: 'row'
+      flexDirection: 'column',
+      height: '100%', 
     },
-    activePage: {
-      flex: '1 0 0'
+    splitContainer: {
+      flex: '1 0 0',
+      overflow: 'hidden'
     },
-    split: {
-      height: '100%',
-      maxHeight: '100%'
+    splitPane: {
+      height: '100%'
     }
   }
 
   return (
-    <div style={{width: '100%', height: '100%', display: 'flex', flexDirection: 'column'}}>
+    <div style={styles.root}>
       <StatusBar />
-      <SplitPane style={{ flex: '1 0 0' }} type="vertical" initialSplit={0.30} rem={0.5}>
-        <div style={styles.split}>
+      <SplitPane style={styles.splitContainer} type="vertical" initialSplit={0.30} rem={0.5}>
+        <div style={styles.splitPane}>
           <SceneSelection />
         </div>
-        <div style={styles.split}>
+        <div style={styles.splitPane}>
           <Modulators />
           <ParamsControl />
         </div>

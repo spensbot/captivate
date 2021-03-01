@@ -84,10 +84,9 @@ export default function MyUniverse() {
 
   return (
     <div style={{
-      backgroundColor: '#0003', padding: '0.5rem',
-      height: '100%', maxHeight: '100%', display: 'flex', flexDirection: 'column'
+      padding: '0.5rem', height: '100%', maxHeight: '100%', display: 'flex', flexDirection: 'column'
     }}>
-      <div style={{fontSize: '1.5rem', margin: '0 0 0.5rem'}}>Universe</div>
+      <div style={{ fontSize: '1.5rem', margin: '0 0 0.5rem' }}>Universe</div>
       <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'start', flexWrap: 'wrap', overflow: 'scroll'}}>
         {elements}
       </div>

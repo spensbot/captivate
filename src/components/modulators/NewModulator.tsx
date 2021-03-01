@@ -8,7 +8,7 @@ export default function NewModulator() {
   const dispatch = useDispatch();
 
   return (
-    <div style={{ width: 200, height: 150, margin: '1rem', backgroundColor: '#fff3', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+    <div style={{ width: 70, alignSelf: 'stretch', backgroundColor: '#fff1', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer' }}
     onClick={() => dispatch(addModulator())}>
       <AddIcon />
     </div>

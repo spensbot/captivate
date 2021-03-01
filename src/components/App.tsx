@@ -14,12 +14,11 @@ export default function App() {
     root: {
       display: 'flex',
       flexDirection: 'row',
-      width: '100vw',
       height: '100vh'
     },
     activePage: {
-      flex: '1 0 0',
-      height: '100%'
+      flex: '1 1 0',
+      height: '100%',
     }
   }
 

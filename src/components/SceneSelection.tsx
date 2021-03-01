@@ -91,7 +91,10 @@ export default function SceneSelection() {
   const sceneIds = useTypedSelector(state => state.scenes.ids)
 
   return (
-    <div style={{ backgroundColor: '#0003', padding: '0.5rem', height: '100%', maxHeight: '100%'}}>
+    <div style={{
+      backgroundColor: '#0003', padding: '0.5rem', height: '100%', borderRight: '1px solid #fff3',
+      display: 'flex', flexDirection: 'column'
+    }}>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <div style={{ fontSize: '1.5rem' }}>Scenes</div>
         <div style={{ flex: '1 0 0' }} />
@@ -102,7 +105,7 @@ export default function SceneSelection() {
           <PublishIcon />
         </IconButton>
       </div>
-      <div style={{ overflow: 'scroll' }}>
+      <div style={{ flex: '0 1 auto', overflow: 'scroll' }}>
         {sceneIds.map((id, index) => {
           return (
             <Scene key={index} index={index} id={id} />

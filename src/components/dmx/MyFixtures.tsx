@@ -43,7 +43,10 @@ export default function MyFixtures() {
   })
 
   return (
-    <div style={{ height: '100%', overflow: 'scroll', padding: '0.5rem' }}>
+    <div style={{
+      height: '100%', padding: '0.5rem', backgroundColor: '#0003', borderRight: '1px solid #fff3', display: 'flex',
+      flexDirection: 'column'
+    }}>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <div style={{ fontSize: '1.5rem' }}>Fixtures</div>
         <div style={{ flex: '1 0 0' }} />
@@ -54,12 +57,14 @@ export default function MyFixtures() {
           <PublishIcon />
         </IconButton>
       </div>
-      {elements}
-      <IconButton style={{ color: '#fff' }} onClick={() => {
-        dispatch(addFixtureType(initFixtureType()))
-      }}>
-        <AddIcon />
-      </IconButton>
+      <div style={{overflow: 'scroll', height: 'auto'}}>
+        {elements}
+        <IconButton style={{ color: '#fff' }} onClick={() => {
+          dispatch(addFixtureType(initFixtureType()))
+        }}>
+          <AddIcon />
+        </IconButton>
+      </div>
     </div>
   )
 }
