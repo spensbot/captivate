@@ -21,6 +21,7 @@ import { useTypedSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import { setActivePage, Page } from '../redux/guiSlice'
 import TooltipWrapper from './base/TooltipWrapper';
+import BlackoutButton from './BlackoutButton';
 
 const selectedBorder = 0.2 //rem
 
@@ -72,7 +73,7 @@ export default function MenuBar() {
 
   return (
     <div className={classes.root}>
-      <MenuItem page={Page.UNIVERSE} tooltipText="DMX Editor">
+      <MenuItem page={Page.UNIVERSE} tooltipText="DMX Setup">
         {/* <ViewComfyIcon /> */}
         {/* <PlaylistAddIcon /> */}
         <ListIcon />
@@ -90,8 +91,9 @@ export default function MenuBar() {
       <MenuItem page={Page.SHARE} tooltipText="Share">
         <CloudUploadIcon />
       </MenuItem>
-      {/* <div style={{flex: '1 0 0'}}/>
-      <img src={logoThick} style={{width: '3rem', height: '3rem', marginBottom: '0.5rem'}} /> */}
+      <div style={{ flex: '1 0 0' }} />
+      <BlackoutButton />
+      {/* <img src={logoThick} style={{width: '3rem', height: '3rem', marginBottom: '0.5rem'}} /> */}
     </div>
   )
 }

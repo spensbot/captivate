@@ -2,7 +2,8 @@ import * as dmxConnection from './dmxConnection'
 import { Window, Window2D_t } from '../types/baseTypes'
 import { Params } from './params'
 import { Color, Colors, getColors } from './dmxColors'
-import { DmxValue, DMX_MAX_VALUE, FixtureChannel, ChannelType, Fixture, DMX_DEFAULT_VALUE, getTestUniverse} from './dmxFixtures'
+import { DmxValue, DMX_MAX_VALUE, FixtureChannel, ChannelType, Fixture, DMX_DEFAULT_VALUE, Universe } from './dmxFixtures'
+import { DmxState } from '../redux/dmxSlice'
 import { RealtimeStore } from '../redux/realtimeStore'
 import { ReduxStore } from '../redux/store'
 import { setDmx } from '../redux/connectionsSlice'
@@ -28,7 +29,7 @@ export function init(store: ReduxStore, realtimeStore: RealtimeStore) {
 }
 
 const writeDMX = () => {  
-  setDMX(_realtimeStore.getState().outputParams, getTestUniverse())
+  setDMX(_realtimeStore.getState().outputParams, _store.getState().dmx)
 }
 
 function getWindowMultiplier2D(fixtureWindow: Window2D_t, movingWindow: Window2D_t) {
@@ -66,7 +67,7 @@ function getMovingWindow(params: Params): Window2D_t {
   }
 }
 
-export default function setDMX(params: Params, universe: Fixture[]) {
+export default function setDMX(params: Params, dmxState: DmxState) {
   const blackout = false
 
   const fixtureTypes = _store.getState().dmx.fixtureTypesByID

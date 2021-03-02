@@ -1,5 +1,4 @@
 import React from 'react'
-import {useDispatch} from 'react-redux'
 import {ParamKey} from '../../engine/params'
 import MySlider from '../base/MySlider'
 

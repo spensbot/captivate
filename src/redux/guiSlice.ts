@@ -10,15 +10,19 @@ export enum Page {
 export const guiSlice = createSlice({
   name: 'gui',
   initialState: {
-    activePage: Page.UNIVERSE
+    activePage: Page.UNIVERSE,
+    blackout: false
   },
   reducers: {
     setActivePage: (state,{payload}: PayloadAction<Page>) => {
       state.activePage = payload
+    },
+    setBlackout: (state, { payload }: PayloadAction<boolean>) => {
+      state.blackout = payload
     }
   },
 });
 
-export const { setActivePage } = guiSlice.actions;
+export const { setActivePage, setBlackout } = guiSlice.actions;
 
 export default guiSlice.reducer;
