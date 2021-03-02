@@ -1,8 +1,8 @@
 import * as dmxConnection from './dmxConnection'
 import { Window, Window2D_t } from '../types/baseTypes'
 import { Params } from './params'
-import { Color, Colors, getColors } from './dmxColors'
-import { DmxValue, DMX_MAX_VALUE, FixtureChannel, ChannelType, Fixture, DMX_DEFAULT_VALUE, Universe } from './dmxFixtures'
+import { Colors, getColors } from './dmxColors'
+import { DmxValue, DMX_MAX_VALUE, FixtureChannel, ChannelType, DMX_DEFAULT_VALUE } from './dmxFixtures'
 import { DmxState } from '../redux/dmxSlice'
 import { RealtimeStore } from '../redux/realtimeStore'
 import { ReduxStore } from '../redux/store'
@@ -70,7 +70,8 @@ function getMovingWindow(params: Params): Window2D_t {
 export default function setDMX(params: Params, dmxState: DmxState) {
   const blackout = false
 
-  const fixtureTypes = _store.getState().dmx.fixtureTypesByID
+  const universe = dmxState.universe
+  const fixtureTypes = dmxState.fixtureTypesByID
 
   if (blackout) {
     universe.forEach(fixture => {

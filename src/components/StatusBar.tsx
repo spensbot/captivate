@@ -31,7 +31,6 @@ function LinkButton() {
     borderRadius: '0.3rem',
     padding: '0.2rem',
     cursor: 'pointer',
-    userSelect: 'none',
     fontSize: '0.9rem',
     marginRight: '0.5rem'
   }

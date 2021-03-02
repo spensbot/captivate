@@ -154,7 +154,7 @@ export type Universe = Fixture[]
 export function getTestUniverse(): Universe {
   return [
     { ch: 1, type: '4', window: {x: {pos: 0.5, width: 0.3}, y: {pos: 0.6, width: 0.3}} },
-    // { ch: 8, type: '3', window: {x: {pos: 0.5, width: 0.0}} },
+    { ch: 8, type: '3', window: {x: {pos: 0.5, width: 0.0}} },
     { ch: 11, type: '2', window: {x: {pos: 0.0, width: 0.0}} },
     { ch: 12, type: '2', window: {x: {pos: 0.33, width: 0.0}} },
     { ch: 13, type: '2', window: {x: {pos: 0.66, width: 0.0}} },

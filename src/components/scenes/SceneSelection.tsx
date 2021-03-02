@@ -1,18 +1,19 @@
 import React from 'react'
-import { useTypedSelector } from '../redux/store'
+import { useTypedSelector } from '../../redux/store'
 import { makeStyles } from '@material-ui/core/styles'
 import { useDispatch } from 'react-redux'
-import { setActiveScene, addScene, removeScene, resetScenesState, SceneState_t } from '../redux/scenesSlice'
+import { setActiveScene, addScene, removeScene, resetScenesState, SceneState_t } from '../../redux/scenesSlice'
 import { nanoid } from 'nanoid'
-import { initScene } from '../engine/scene_t'
+import { initScene } from '../../engine/scene_t'
 import { IconButton } from '@material-ui/core'
 import CloseIcon from '@material-ui/icons/Close'
 import AddIcon from '@material-ui/icons/Add'
-import { store } from '../redux/store'
-import { loadFile, saveFile, captivateFileFilters } from '../util/saveload_renderer'
+import { store } from '../../redux/store'
+import { loadFile, saveFile, captivateFileFilters } from '../../util/saveload_renderer'
 import SaveIcon from '@material-ui/icons/Save'
 import GetAppIcon from '@material-ui/icons/GetApp'
 import PublishIcon from '@material-ui/icons/Publish'
+import AutoScene from './AutoScene'
 
 function loadScenes() {
   loadFile('Load Scenes', [captivateFileFilters.scenes]).then(string => {
@@ -105,6 +106,7 @@ export default function SceneSelection() {
           <PublishIcon />
         </IconButton>
       </div>
+      <AutoScene />
       <div style={{ flex: '0 1 auto', overflow: 'scroll' }}>
         {sceneIds.map((id, index) => {
           return (

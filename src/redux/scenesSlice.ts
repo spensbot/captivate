@@ -9,7 +9,11 @@ import { nanoid } from 'nanoid'
 export interface SceneState_t {
   ids: string[],
   byId: {[key: string]: Scene_t},
-  active: string
+  active: string,
+  auto: {
+    enabled: boolean,
+    bombacity: number
+  }
 }
 
 const initID = nanoid()
@@ -19,7 +23,11 @@ const initState: SceneState_t = {
   byId: {
     [initID]: initScene()
   },
-  active: initID
+  active: initID,
+  auto: {
+    enabled: false,
+    bombacity: 0
+  }
 }
 
 interface IncrementModulatorPayload {
@@ -46,6 +54,13 @@ export const scenesSlice = createSlice({
   name: 'scenes',
   initialState: initState,
   reducers: {
+    setAutoSceneEnabled: (state, { payload }: PayloadAction<boolean>) => {
+      state.auto.enabled = payload
+    },
+    setAutoSceneBombacity: (state, { payload }: PayloadAction<number>) => {
+      console.log(payload)
+      state.auto.bombacity = payload
+    },
     resetScenesState: (state, { payload }: PayloadAction<SceneState_t>) => {
       state.active = payload.active
       state.byId = payload.byId
@@ -126,6 +141,8 @@ export const scenesSlice = createSlice({
 });
 
 export const {
+  setAutoSceneEnabled,
+  setAutoSceneBombacity,
   resetScenesState,
   addScene,
   removeScene,
