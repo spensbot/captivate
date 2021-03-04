@@ -13,14 +13,20 @@ export type DmxValue = number // 0 - 255
 export enum ChannelType {
   Color = 'color',
   Master = 'master',
-  StrobeSpeed = 'strobe speed',
+  Strobe = 'strobe',
+  Speed = 'speed',
+  Pos = 'pos',
+  Width = 'width',
   Other = 'constant',
 }
 
 export const channelTypes = [
   ChannelType.Master,
   ChannelType.Color,
-  ChannelType.StrobeSpeed,
+  ChannelType.Strobe,
+  // ChannelType.Speed,
+  // ChannelType.Pos,
+  // ChannelType.Width,
   ChannelType.Other
 ]
 
@@ -34,10 +40,24 @@ type ChannelColor = {
 }
 
 type ChannelStrobe = {
-  type: ChannelType.StrobeSpeed
+  type: ChannelType.Strobe
   default_strobe: DmxValue
   default_solid: DmxValue
 }
+
+// type ChannelSpeed = {
+//   type: ChannelType.Speed
+// }
+
+// type ChannelPos = {
+//   type: ChannelType.Pos,
+//   dim: 'x' | 'y'
+// }
+
+// type ChannelWidth = {
+//   type: ChannelType.Width,
+//   dim: 'x' | 'y'
+// }
 
 type ChannelOther = {
   type: ChannelType.Other
@@ -65,8 +85,8 @@ const parFixture : FixtureType = {
     { type: ChannelType.Color, color: Color.Green },
     { type: ChannelType.Color, color: Color.Blue },
     { type: ChannelType.Color, color: Color.White },
-    { type: ChannelType.StrobeSpeed, default_solid: 0, default_strobe: 125 },
     { type: ChannelType.Other, default: 0 },
+    { type: ChannelType.Strobe, default_solid: 0, default_strobe: 255 },
     { type: ChannelType.Other, default: 0 }
   ]
 }
@@ -87,7 +107,7 @@ const strobeFixture : FixtureType = {
   epicness: 0.8,
   channels: [
     { type: ChannelType.Master },
-    { type: ChannelType.StrobeSpeed, default_solid: 0, default_strobe: 251 },
+    { type: ChannelType.Strobe, default_solid: 0, default_strobe: 251 },
     { type: ChannelType.Other, default: 0 },
   ]
 }
@@ -102,7 +122,7 @@ const derbyFixture : FixtureType = {
     { type: ChannelType.Color, color: Color.Red },
     { type: ChannelType.Color, color: Color.Green },
     { type: ChannelType.Color, color: Color.Blue },
-    { type: ChannelType.StrobeSpeed, default_solid: 0, default_strobe: 251 },
+    { type: ChannelType.Strobe, default_solid: 0, default_strobe: 220 },
     { type: ChannelType.Other, default: 130 },
     { type: ChannelType.Other, default: 0 },
   ]
@@ -153,7 +173,7 @@ export type Universe = Fixture[]
 
 export function getTestUniverse(): Universe {
   return [
-    { ch: 1, type: '4', window: {x: {pos: 0.5, width: 0.3}, y: {pos: 0.6, width: 0.3}} },
+    { ch: 1, type: '4', window: {x: {pos: 0.5, width: 0.0}, y: {pos: 0.6, width: 0.0}} },
     { ch: 8, type: '3', window: {x: {pos: 0.5, width: 0.0}} },
     { ch: 11, type: '2', window: {x: {pos: 0.0, width: 0.0}} },
     { ch: 12, type: '2', window: {x: {pos: 0.33, width: 0.0}} },

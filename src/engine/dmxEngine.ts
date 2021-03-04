@@ -2,7 +2,7 @@ import * as dmxConnection from './dmxConnection'
 import { Window, Window2D_t } from '../types/baseTypes'
 import { Params } from './params'
 import { Colors, getColors } from './dmxColors'
-import { DmxValue, DMX_MAX_VALUE, FixtureChannel, ChannelType, DMX_DEFAULT_VALUE } from './dmxFixtures'
+import { DmxValue, DMX_MAX_VALUE, FixtureChannel, ChannelType, DMX_DEFAULT_VALUE, channelTypes } from './dmxFixtures'
 import { DmxState } from '../redux/dmxSlice'
 import { RealtimeStore } from '../redux/realtimeStore'
 import { ReduxStore } from '../redux/store'
@@ -29,7 +29,7 @@ export function init(store: ReduxStore, realtimeStore: RealtimeStore) {
 }
 
 const writeDMX = () => {  
-  setDMX(_realtimeStore.getState().outputParams, _store.getState().dmx)
+  setDMX(_realtimeStore.getState().outputParams, _store.getState().dmx, _store.getState().gui.blackout)
 }
 
 function getWindowMultiplier2D(fixtureWindow: Window2D_t, movingWindow: Window2D_t) {
@@ -53,8 +53,8 @@ function getDmxValue(fixtureChannel: FixtureChannel, params: Params, colors: Col
       return fixtureChannel.default;
     case ChannelType.Color:
       return colors[fixtureChannel.color] * DMX_MAX_VALUE
-    // case ChannelType.StrobeSpeed:
-    //   return (params.Strobe > 0.5) ? fixtureChannel.default_strobe : fixtureChannel.default_solid
+    case ChannelType.Strobe:
+      return (params.Strobe > 0.5) ? fixtureChannel.default_strobe : fixtureChannel.default_solid
     default:
       return 0
   }
@@ -67,27 +67,35 @@ function getMovingWindow(params: Params): Window2D_t {
   }
 }
 
-export default function setDMX(params: Params, dmxState: DmxState) {
-  const blackout = false
-
+export default function setDMX(params: Params, dmxState: DmxState, blackout: boolean) {
   const universe = dmxState.universe
   const fixtureTypes = dmxState.fixtureTypesByID
 
   if (blackout) {
+
+    for (let channel = 1; channel < 513; channel++) {
+      dmxConnection.updateChannel(channel, DMX_DEFAULT_VALUE)
+    }
+
+  } else {
+
+    const colors = getColors(params);
+    const movingWindow = getMovingWindow(params);
+  
     universe.forEach(fixture => {
-      fixtureTypes[fixture.type].channels.forEach( (channel, offset) => {
-        dmxConnection.updateChannel(fixture.ch + offset, DMX_DEFAULT_VALUE)
-      })
+      const fixtureType = fixtureTypes[fixture.type]
+  
+      if (params.Epicness >= fixtureType.epicness) {
+        fixtureType.channels.forEach((channel, offset) => {
+          const dmxOut = getDmxValue(channel, params, colors, fixture.window, movingWindow)
+          dmxConnection.updateChannel(fixture.ch + offset, dmxOut);
+        })
+      } else {
+        fixtureType.channels.forEach((channel, offset) => {
+          dmxConnection.updateChannel(fixture.ch + offset, DMX_DEFAULT_VALUE)
+        })
+      }
     })
+    
   }
-
-  const colors = getColors(params);
-  const movingWindow = getMovingWindow(params);
-
-  universe.forEach(fixture => {
-    fixtureTypes[fixture.type].channels.forEach((channel, offset) => {
-      const dmxOut = getDmxValue(channel, params, colors, fixture.window, movingWindow)
-      dmxConnection.updateChannel(fixture.ch + offset, dmxOut);
-    })
-  })
 }

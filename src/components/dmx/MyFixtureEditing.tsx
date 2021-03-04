@@ -94,7 +94,7 @@ export default function MyFixtureEditing({ id }: Props) {
           </Select>
         </>
       )
-    if (fixtureChannel.type === ChannelType.StrobeSpeed)
+    if (fixtureChannel.type === ChannelType.Strobe)
       return (
         <>
           <TextField style={{width: '4rem', marginRight: '0.5rem'}} size="small" id="default_strobe" name="default_strobe" label="Strobe"
@@ -152,7 +152,7 @@ export default function MyFixtureEditing({ id }: Props) {
           >
             <MenuItem value={ChannelType.Master}>{ChannelType.Master}</MenuItem>
             <MenuItem value={ChannelType.Color}>{ChannelType.Color}</MenuItem>
-            <MenuItem value={ChannelType.StrobeSpeed}>{ChannelType.StrobeSpeed}</MenuItem>
+            <MenuItem value={ChannelType.Strobe}>{ChannelType.Strobe}</MenuItem>
             <MenuItem value={ChannelType.Other}>{ChannelType.Other}</MenuItem>
           </Select>
           {getChannelFields(fixtureChannel, index)}

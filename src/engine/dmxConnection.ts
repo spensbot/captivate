@@ -112,8 +112,6 @@ function sendUniverse() {
   if (!connection) return
   if (!connection.writable) return
 
-  // console.log(`mrgbw: ${universe[15]} ${universe[16]} ${universe[17]} ${universe[18]} ${universe[19]} ${universe[20]} ${universe[21]} ${universe[22]}`)
-
   if (readyToWrite) {
     const hdr = Buffer.from([
       ENTTEC_PRO_START_OF_MSG,
