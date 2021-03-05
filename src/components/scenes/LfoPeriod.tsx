@@ -8,7 +8,7 @@ type Props = {
   index: number
 } 
 
-// This is really bad react behaviour... But IDK what else to do
+// This is really bad react behavior... But IDK what else to do
 let movement = 0
 
 export default function LfoPeriod({index}: Props) {

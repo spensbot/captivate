@@ -53,7 +53,18 @@ function engineUpdate(currentTime: number) {
   _lastFrameTime = currentTime
   _engineTime += dt
 
-  const timeState = _nodeLink.getSessionInfoCurrent()
+  interface timeState {
+    bpm: number, // (from LINK)
+    beats: number, // running total of beats (from LINK)
+    phase: number, // from 0.0 to quantum (from LINK)
+    numPeers: number,
+    isEnabled: boolean,
+  }
+  const timeState: timeState = _nodeLink.getSessionInfoCurrent()
+  interface timeState {
+    dt: number
+    quantum: number
+  }
   timeState.dt = dt
   timeState.quantum = 4.0
 

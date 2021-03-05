@@ -12,7 +12,8 @@ export interface SceneState_t {
   active: string,
   auto: {
     enabled: boolean,
-    bombacity: number
+    bombacity: number,
+    period: number
   }
 }
 
@@ -26,7 +27,8 @@ const initState: SceneState_t = {
   active: initID,
   auto: {
     enabled: false,
-    bombacity: 0
+    bombacity: 0,
+    period: 1
   }
 }
 
@@ -60,6 +62,9 @@ export const scenesSlice = createSlice({
     setAutoSceneBombacity: (state, { payload }: PayloadAction<number>) => {
       console.log(payload)
       state.auto.bombacity = payload
+    },
+    setAutoScenePeriod: (state, { payload }: PayloadAction<number>) => {
+      state.auto.period = payload
     },
     resetScenesState: (state, { payload }: PayloadAction<SceneState_t>) => {
       state.active = payload.active
@@ -143,6 +148,7 @@ export const scenesSlice = createSlice({
 export const {
   setAutoSceneEnabled,
   setAutoSceneBombacity,
+  setAutoScenePeriod,
   resetScenesState,
   addScene,
   removeScene,
