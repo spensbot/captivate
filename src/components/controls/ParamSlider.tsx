@@ -27,7 +27,7 @@ export default function ParamSlider({ paramKey }: Props) {
       <div style={{ flex: '1 0 10rem' }}>
         <SliderBase orientation="vertical" radius={radius} onChange={onChange}>
           <ParamCursor orientation="vertical" paramKey={paramKey} radius={radius} />
-          <SliderCursor orientation="vertical" value={value} radius={radius} border/>
+          <SliderCursor orientation="vertical" value={value} radius={radius} color="#fff" border/>
         </SliderBase>
       </div>
       <div style={{ marginTop: '1rem' }}>{paramKey}</div>
