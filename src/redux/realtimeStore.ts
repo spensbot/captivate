@@ -3,7 +3,17 @@ import { createDispatchHook, createSelectorHook, TypedUseSelectorHook } from 're
 import { initParams } from '../engine/params';
 import React from 'react'
 
-function initTime() {
+export interface TimeState {
+  bpm: number
+  beats: number
+  phase: number
+  numPeers: number
+  isEnabled: boolean
+  quantum: number
+  dt: number
+}
+
+function initTime(): TimeState {
   return {
     bpm: 90.0, // (from LINK)
     beats: 0.0, // running total of beats (from LINK)
