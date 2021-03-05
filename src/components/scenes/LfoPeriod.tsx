@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
-import useDragBasic from '../hooks/useDragBasic'
 import { useDispatch } from 'react-redux'
 import { useTypedSelector } from '../../redux/store'
-import { incrementPeriod } from '../../redux/scenesSlice'
+import { setPeriod } from '../../redux/scenesSlice'
+import DraggableNumber from '../base/DraggableNumber'
 
 type Props = {
   index: number
@@ -16,39 +16,12 @@ export default function LfoPeriod({index}: Props) {
   const periodString = Number.isInteger(period) ? period.toString() : period.toFixed(2)
 
   const dispatch = useDispatch();
-  function incrementPeriodBy(amount: number) {
-    dispatch(incrementPeriod({index: index, amount: amount}))
-  }
 
-  const [dragContainer, onMouseDown] = useDragBasic((e) => {
-    const dx = e.movementX
-    const dy = - e.movementY
-    const d = (dx + dy) / 50
-
-    if (e.metaKey) {
-      incrementPeriodBy(d)
-    } else {
-      const newMovement = movement + (d * 2)
-      if (newMovement > 1) {
-        incrementPeriodBy(1)
-        movement = 0
-      } else if (newMovement < -1) {
-        incrementPeriodBy(-1)
-        movement = 0
-      } else {
-        movement = newMovement
-      }
-    }
-  })
-
-  function onMouseDownWrapper(e: React.MouseEvent) {
-    movement = 0
-    onMouseDown(e)
+  function onChange(newVal: number) {
+    dispatch(setPeriod({index: index, newVal: newVal}))
   }
 
   return (
-    <div ref={dragContainer} onMouseDown={onMouseDownWrapper} style={{ padding: '0.5rem 0.8rem', backgroundColor: '#0005', cursor: 'move' }}>
-      {periodString}
-    </div>
+    <DraggableNumber value={period} min={0.25} max={32} onChange={onChange} style={{}} />
   )
 }

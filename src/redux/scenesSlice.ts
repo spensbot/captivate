@@ -93,6 +93,11 @@ export const scenesSlice = createSlice({
         scene.modulators[payload.index].lfo.shape = payload.shape
       })
     },
+    setPeriod: (state, { payload }: PayloadAction<{ index: number, newVal: number }>) => {
+      modifyActiveScene(state, scene => {
+        scene.modulators[payload.index].lfo.period = payload.newVal
+      })
+    },
     incrementPeriod: (state, { payload }: PayloadAction<{ index: number, amount: number }>) => {
       modifyActiveScene(state, scene => {
         scene.modulators[payload.index].lfo.period = clamp(scene.modulators[payload.index].lfo.period + payload.amount, 0.25, 16)
@@ -157,6 +162,7 @@ export const {
   setBaseParams,
   incrementBaseParams,
   setModulatorShape,
+  setPeriod,
   incrementPeriod,
   incrementModulator,
   addModulator,
