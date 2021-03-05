@@ -96,6 +96,6 @@ export default function setDMX(params: Params, dmxState: DmxState, blackout: boo
         })
       }
     })
-    
+
   }
 }

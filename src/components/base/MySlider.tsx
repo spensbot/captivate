@@ -27,6 +27,7 @@ export default function MySlider({ paramKey, orientation }: Props) {
   })
 
   const percent = paramBase * 100
+  const v = orientation === 'vertical'
 
   const styles: { [key: string]: React.CSSProperties } = {
     root: {
@@ -39,8 +40,8 @@ export default function MySlider({ paramKey, orientation }: Props) {
     track: {
       position: 'relative',
       borderRadius: thick,
-      width: orientation === 'vertical' ? thick : '100%',
-      height: orientation === 'vertical' ? '100%' : thick,
+      width: v ? thick : '100%',
+      height: v ? '100%' : thick,
       backgroundColor: '#0006',
     },
     cursor: {
@@ -49,8 +50,9 @@ export default function MySlider({ paramKey, orientation }: Props) {
       height: thick,
       borderRadius: thick,
       border: '2px solid #eee',
-      bottom: orientation === 'vertical' ? `${percent}%` : 0,
-      left: orientation === 'vertical' ? 0 : `${percent}`,
+      bottom: v ? `${percent}%` : 0,
+      left: v ? 0 : `${percent}`,
+      transform: `translate(${v ? 0 : THICK/2}rem, ${v ? THICK/2 : 0}rem)`
     }
   }
 

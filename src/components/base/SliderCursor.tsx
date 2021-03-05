@@ -1,31 +1,29 @@
 import React from 'react'
-import { useRealtimeSelector } from '../../redux/realtimeStore'
-import { ParamKey } from '../../engine/params'
-
-const THICK = 0.8 // rem
-const thick = `${THICK}rem`
 
 interface Props {
-  paramKey: ParamKey
+  value: number
   orientation: 'vertical' | 'horizontal'
+  radius: number
+  border?: boolean
 }
 
-export default function SliderCursor({ paramKey, orientation }: Props) {
-  
-  const paramOut = useRealtimeSelector(state => state.outputParams[paramKey])
-  const percent = paramOut * 100
-
-  const style: React.CSSProperties = {
-    position: 'absolute',
-    width: thick,
-    height: thick,
-    borderRadius: thick,
-    bottom: orientation === 'vertical' ? `${percent}%` : 0,
-    left: orientation === 'vertical' ? 0 : `${percent}%`,
-    backgroundColor: '#fff5'
-  }
+export default function SliderCursor({ value, orientation, radius, border }: Props) {
+  const percent = value * 100
+  const v = orientation === 'vertical'
+  const r = `${radius}rem`
+  const d = `${radius*2}rem`
 
   return (
-    <div style={style} />
+    <div style={{
+      position: 'absolute',
+      width: d,
+      height: d,
+      borderRadius: r,
+      bottom: v ? `${percent}%` : 0,
+      left: v ? 0 : `${percent}%`,
+      border: border ? '2px solid #fffa' : undefined,
+      backgroundColor: border ? undefined : '#fff5',
+      transform: `translate(${v ? 0 : radius}, ${v ? radius : 0}rem)`
+    }} />
   )
 }
