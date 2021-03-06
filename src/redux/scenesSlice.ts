@@ -6,15 +6,17 @@ import { clampNormalized, clamp } from '../util/helpers'
 import { initModulator } from '../engine/modulationEngine'
 import { nanoid } from 'nanoid'
 
+export interface AutoScene_t {
+  enabled: boolean,
+  bombacity: number,
+  period: number
+}
+
 export interface SceneState_t {
   ids: string[],
   byId: {[key: string]: Scene_t},
   active: string,
-  auto: {
-    enabled: boolean,
-    bombacity: number,
-    period: number
-  }
+  auto: AutoScene_t
 }
 
 const initID = nanoid()

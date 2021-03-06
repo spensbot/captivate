@@ -2,7 +2,7 @@ import * as graphicsEngine from "./graphicsEngine"
 import * as dmxEngine from './dmxEngine'
 import * as keyboardManager from './keyboardManager'
 import { autoSave } from '../util/saveload_renderer'
-import { setActiveSceneIndex } from '../redux/scenesSlice'
+import handleAutoScene from './autoScene'
 import { ReduxStore } from '../redux/store'
 import { RealtimeStore, update, TimeState } from '../redux/realtimeStore'
 const NodeLink = window.require('node-link')
@@ -73,29 +73,8 @@ function engineUpdate(currentTime: number) {
   
     _realtimeStore.dispatch(update(newRealtimeState))
 
-    handleAutoScene()
+    handleAutoScene(_store, newRealtimeState.time)
   
     graphicsEngine.update(newRealtimeState);
   }
-}
-
-function handleAutoScene() {
-  const state = _store.getState().scenes.auto
-
-  if (state.enabled && isNewScene(_realtimeStore.getState().time, state.period)) {
-    setRandomScene(state.bombacity)
-  }
-}
-
-function isNewScene(ts: TimeState, autoScenePeriod: number): boolean {
-  const beatsPerScene = ts.quantum * autoScenePeriod
-  const dtMinutes = ts.dt / 60000
-  const dtBeats = dtMinutes * ts.bpm
-  return (ts.beats % beatsPerScene) < dtBeats
-}
-
-function setRandomScene(bombacity: number) {
-  const sceneIDs = _store.getState().scenes.ids
-  const randomIndex = Math.floor(Math.random() * sceneIDs.length)
-  _store.dispatch(setActiveSceneIndex(randomIndex))
 }
