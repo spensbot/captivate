@@ -11,7 +11,7 @@ export interface Scene_t {
 export function initScene(): Scene_t {
   return {
     name: '',
-    bombacity: 1,
+    bombacity: 0,
     modulators: [initModulator()],
     baseParams: initParams()
   }

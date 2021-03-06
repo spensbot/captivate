@@ -88,6 +88,16 @@ export const scenesSlice = createSlice({
         state.active = state.ids[payload]
       }
     },
+    setActiveSceneBombacity: (state, { payload }: PayloadAction<number>) => {
+      modifyActiveScene(state, scene => {
+        scene.bombacity = payload
+      })
+    },
+    setActiveSceneName: (state, { payload }: PayloadAction<string>) => {
+      modifyActiveScene(state, scene => {
+        scene.name = payload
+      })
+    },
     setModulatorShape: (state, { payload }: PayloadAction<{ index: number, shape: LfoShape }>) => {
       modifyActiveScene(state, scene => {
         scene.modulators[payload.index].lfo.shape = payload.shape
@@ -159,6 +169,8 @@ export const {
   removeScene,
   setActiveScene,
   setActiveSceneIndex,
+  setActiveSceneBombacity,
+  setActiveSceneName,
   setBaseParams,
   incrementBaseParams,
   setModulatorShape,
