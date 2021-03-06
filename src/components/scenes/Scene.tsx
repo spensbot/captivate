@@ -31,7 +31,9 @@ function getColor(bombacity: number) {
   // const g = min
   // const b = min + (1-bombacity) * range
   // return `rgb(${r}, ${g}, ${b})`
-  const hue = 250 + bombacity * 110
+  const hueStart = 250
+  const hueRange = 110 // 170 
+  const hue = (hueStart + bombacity * hueRange) % 360
   return `hsl(${hue}, ${50}%, ${50}%)`
 }
 
@@ -71,8 +73,8 @@ export function Scene({ index, id }: { index: number, id: string }) {
       }}>{index + 1}</div>
       { isActive ? (
         <div style={{flex: '1 0 auto'}}>
-          <input style={{ border: 'none', color: '#fff', backgroundColor: '#fff1', width: '100%', marginBottom: '0.2rem', fontSize: '0.9rem' }} type="text" value={name} onChange={onNameChange} />
-          <Slider value={bombacity} radius={0.35} orientation="horizontal" onChange={onBombacityChange} />
+          <input style={{ border: 'none', color: '#fff', backgroundColor: '#fff1', width: '100%', marginBottom: '0.5rem', fontSize: '1rem' }} type="text" value={name} onChange={onNameChange} />
+          <Slider value={bombacity} radius={0.3} orientation="horizontal" onChange={onBombacityChange} />
         </div>
       ) : (
         <>

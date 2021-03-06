@@ -10,7 +10,7 @@ export default function FPS() {
   const dt = useRealtimeSelector(state => state.time.dt);
 
   return (
-    <div onClick={toggleIsVisible} style={{ fontSize: '0.9rem', padding: '0.5rem', cursor: 'pointer', color: color, userSelect: 'none'}}>
+    <div onClick={toggleIsVisible} style={{ position: 'absolute', fontSize: '0.9rem', padding: '0.5rem', cursor: 'pointer', color: color, userSelect: 'none'}}>
       {`${Math.floor(1000 / dt)} FPS`}
     </div>
   )

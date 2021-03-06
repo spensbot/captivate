@@ -18,10 +18,8 @@ export default function Visualizer({style}: Props) {
   }, [])
 
   return (
-    <div style={{ ...style, position: 'relative' }} ref={threeJSDomElement}>
-      <div style={{position: 'absolute', top:0, left: 0}}>
-        <FPS />
-      </div>
+    <div style={{position: 'absolute', top:0, left: 0, bottom: 0, right: 0}} ref={threeJSDomElement}>
+      <FPS />
     </div>
   )
 }

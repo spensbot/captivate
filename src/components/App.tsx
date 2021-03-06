@@ -18,7 +18,7 @@ export default function App() {
     },
     activePage: {
       flex: '1 1 auto',
-      overflow: 'auto',
+      overflow: activePage === Page.VIDEO ? undefined : 'auto',
       height: '100%',
     }
   }
