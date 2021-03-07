@@ -13,8 +13,7 @@ function createWindow () {
     height: 700,
     backgroundColor: '#191622',
     webPreferences: {
-      nodeIntegration: true,
-      webSecurity: false
+      nodeIntegration: true
     }
   })
 
