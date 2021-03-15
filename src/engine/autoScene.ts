@@ -49,9 +49,5 @@ function setRandomScene(activeScene: string, bombacity: number, store: ReduxStor
     accum += weight
   }
 
-  // console.log(`closest: ${closest.length} | weighted: ${weighted.length} | totalWeight: ${totalWeight} | byWeight: ${byWeight.length}`)
-  // console.log(`total: ${totalWeight} | random: ${randomWeight}`)
-  console.log(newID)
-
   if (newID) store.dispatch(setActiveScene(newID))
 }

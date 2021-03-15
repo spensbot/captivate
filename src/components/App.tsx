@@ -1,5 +1,5 @@
 import React from 'react'
-import Video from './pages/Video'
+import Video from './pages/Visualizer'
 import Modulation from './pages/Scenes'
 import Universe from './pages/Universe'
 import Share from './pages/Share'

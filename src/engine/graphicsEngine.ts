@@ -1,39 +1,37 @@
 import * as THREE from 'three'
-import { ReduxStore } from '../redux/store'
-import {RealtimeState} from '../redux/realtimeStore'
-import { MeshMatcapMaterial } from 'three'
+import { RealtimeState } from '../redux/realtimeStore'
 
-var camera: THREE.Camera
-var scene: THREE.Scene
-var renderer: THREE.Renderer
-var geometry: THREE.Geometry
-var material: THREE.Material
-var mesh: THREE.Mesh
-var domRef: any
+let camera: THREE.Camera
+let scene: THREE.Scene
+let renderer: THREE.Renderer
+let geometry: THREE.Geometry
+let material: THREE.Material
+let mesh: THREE.Mesh
 
 export function init() {
   scene = new THREE.Scene();
+
+  initCube();
+
+  renderer = new THREE.WebGLRenderer( { antialias: true } );
+}
+
+function initCube() {
+  scene.clear()
 
   geometry = new THREE.BoxGeometry( 0.2, 0.2, 0.2 );
   material = new THREE.MeshNormalMaterial();
 
   mesh = new THREE.Mesh( geometry, material );
   scene.add( mesh );
-
-  renderer = new THREE.WebGLRenderer( { antialias: true } );
 }
 
-export function setDomElement(_domRef: any) {
-  domRef = _domRef;
-  resize();
-  domRef.appendChild( renderer.domElement );
+export function getDomElement() {
+  return renderer.domElement
 }
 
-export function resize () {
-  const height = domRef.clientHeight;
-  const width = domRef.clientWidth;
-
-  camera = new THREE.PerspectiveCamera( 70, width / height, 0.01, 10 );
+export function resize (width: number, height: number) {
+  camera = new THREE.PerspectiveCamera( 70, width / height, 0.01, 100 );
   camera.position.z = 1;
 
   renderer.setSize( width, height );

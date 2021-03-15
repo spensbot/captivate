@@ -62,7 +62,6 @@ export const scenesSlice = createSlice({
       state.auto.enabled = payload
     },
     setAutoSceneBombacity: (state, { payload }: PayloadAction<number>) => {
-      console.log(payload)
       state.auto.bombacity = payload
     },
     setAutoScenePeriod: (state, { payload }: PayloadAction<number>) => {

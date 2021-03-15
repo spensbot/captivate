@@ -22,8 +22,6 @@ export default function DraggableNumber({value, min, max, onChange, style}: Prop
     const dy = - e.movementY
     const d = (dx + dy) / 50
 
-    console.log(globalValue.toFixed(2) + " : " + globalMovement.toFixed(2))
-
     if (e.metaKey) {
       globalValue += d
     } else {

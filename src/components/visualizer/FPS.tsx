@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useRealtimeSelector } from '../redux/realtimeStore'
+import { useRealtimeSelector } from '../../redux/realtimeStore'
 
 export default function FPS() {
 
@@ -10,7 +10,7 @@ export default function FPS() {
   const dt = useRealtimeSelector(state => state.time.dt);
 
   return (
-    <div onClick={toggleIsVisible} style={{ position: 'absolute', fontSize: '0.9rem', padding: '0.5rem', cursor: 'pointer', color: color, userSelect: 'none'}}>
+    <div onClick={toggleIsVisible} style={{ position: 'absolute', fontSize: '0.9rem', padding: '0.5rem', cursor: 'pointer', color: color, userSelect: 'none', top: 0, left: 0}}>
       {`${Math.floor(1000 / dt)} FPS`}
     </div>
   )

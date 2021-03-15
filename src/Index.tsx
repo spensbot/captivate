@@ -29,7 +29,7 @@ render(
         <Helmet>
           <meta charSet="utf-8" />
           <title>Captivate - Lighting and Visual Synth</title>
-          <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'" />
+          {/* <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'; media-src * 'unsafe-inline' 'unsafe-eval'" /> */}
         </Helmet>
         <GlobalStyle />
         <App />

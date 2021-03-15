@@ -36,14 +36,6 @@ export function setLinkEnabled(isEnabled: boolean) {
   if (_nodeLink) _nodeLink.enable(isEnabled)
 }
 
-export function visualizerResize() {
-  graphicsEngine.resize()
-}
-
-export function visualizerSetElement(domRef: any) {
-  graphicsEngine.setDomElement(domRef)
-}
-
 function engineUpdate(currentTime: number) {
   requestAnimationFrame(engineUpdate)
 
