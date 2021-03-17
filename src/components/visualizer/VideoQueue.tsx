@@ -11,22 +11,27 @@ export const videoQueue = new LoadQueue<Video_t>(() => {
   element.loop = true
   element.muted = true
   element.playbackRate = 3.0
+  element.className = "fullscreen-video"
   return {
     element: element
   }
 })
 
-const sources = [
-  "file:///Users/Spenser/Movies/videos/Pexels Videos 4708.mp4",
-  "file:///Users/Spenser/Movies/videos/Pexels Videos 1851190.mp4"
-]
-
-function loadVideo(src: string) {
+function load(path: string) {
   return (video: Video_t) => {
-    video.element.src = src
+    video.element.src = "file://" + path
   }
 }
 
-videoQueue.loadBackground(loadVideo(sources[0]))
+export function loadVideo(src: string) {
+  videoQueue.loadBackground(load(src))
+}
+
+const sources = [
+  "file:///Users/Spenser/Movies/videos/sailing.mp4",
+  "file:///Users/Spenser/Movies/videos/space.mp4",
+]
+
+loadVideo(sources[0])
 videoQueue.getNext()
-videoQueue.loadBackground(loadVideo(sources[0]))
+loadVideo(sources[1])

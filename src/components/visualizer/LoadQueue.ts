@@ -1,17 +1,13 @@
 const COUNT = 2
 
-type SetState = (state: 'play' | 'pause') => void
-
 // Instantiates multiple objects
 // Returns 1 at a time, allowing others to load in the background
 export default class LoadQueue<Type> {
-  private items: Type[]
-  private setState?: SetState
-  private current: number
+  items: Type[]
+  current: number
 
-  constructor(createElement: () => Type, setState?: SetState) {
+  constructor(createElement: () => Type) {
     this.items = Array(COUNT).fill(0).map(_ => createElement())
-    this.setState = setState
     this.current = 0
 
     console.log(this.items)
@@ -32,9 +28,11 @@ export default class LoadQueue<Type> {
     if (loadIndex < 0) {
       loadIndex = COUNT - 1
     }
-    console.log(loadIndex)
-    console.log(this.items[loadIndex])
     load(this.items[loadIndex])
+  }
+
+  forEach(cb: (item: Type) => void) {
+    this.items.forEach(cb)
   }
 }
 

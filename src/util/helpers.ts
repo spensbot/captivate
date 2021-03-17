@@ -9,3 +9,12 @@ export function clamp(val: number, min: number, max: number) {
   if (val > max) return max
   return val
 }
+
+export function randomElement<Type>(items: Type[]) {
+  const randIndex = Math.floor( (Math.random() * items.length) )
+  return items[randIndex]
+}
+
+export function getFilename(path: string) {
+  return path.substring(path.lastIndexOf("/") + 1);
+}

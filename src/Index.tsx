@@ -9,7 +9,7 @@ import {GlobalStyle} from './styles/GlobalStyle'
 import Helmet from 'react-helmet';
 import { createMuiTheme } from '@material-ui/core/styles';
 import root from './util/prepareDOM'
-import { CssBaseline, ThemeProvider } from '@material-ui/core'
+import { ThemeProvider } from '@material-ui/core'
 
 engine.init(store, realtimeStore)
 

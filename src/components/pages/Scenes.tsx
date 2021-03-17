@@ -4,6 +4,7 @@ import ParamsControl from '../controls/ParamsControl'
 import Modulators from '../scenes/Modulators'
 import SceneSelection from '../scenes/SceneSelection'
 import SplitPane from '../base/SplitPane'
+import VideoList from '../visualizer/VideoList'
 
 export default function Scenes() {
   const styles: { [key: string]: React.CSSProperties } = {
@@ -32,6 +33,7 @@ export default function Scenes() {
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <Modulators />
             <ParamsControl />
+            <VideoList />
           </div>
         </div>
       </SplitPane>
