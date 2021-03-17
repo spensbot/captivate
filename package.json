@@ -1,5 +1,5 @@
 {
-  "name": "Captivate",
+  "name": "captivate",
   "version": "1.0.0",
   "description": "Lighting and Visual Synth",
   "main": "./dist/main.js",

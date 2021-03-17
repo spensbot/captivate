@@ -17,9 +17,6 @@ export function resizeVisualizer(width: number, height: number) {
   })
 }
 
-console.log(`[0]: ${videoQueue.items[0].element.src}`)
-console.log(`[1]: ${videoQueue.items[1].element.src}`)
-
 setInterval(() => {
   visualizerRef.innerHTML = ''
   if (count % max === 0) {
