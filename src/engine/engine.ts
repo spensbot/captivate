@@ -1,4 +1,5 @@
 import * as graphicsEngine from "./graphicsEngine"
+import * as visualizerRef from '../components/visualizer/visualizerRef'
 import * as dmxEngine from './dmxEngine'
 import * as keyboardManager from './keyboardManager'
 import { autoSave } from '../util/saveload_renderer'
@@ -21,7 +22,6 @@ export function init(store: ReduxStore, realtimeStore: RealtimeStore) {
   _nodeLink = new NodeLink()
   _initTime = Date.now()
   autoSave(_store)
-  graphicsEngine.init()
   dmxEngine.init(store, realtimeStore)
   keyboardManager.init(store)
 
@@ -67,6 +67,6 @@ function engineUpdate(currentTime: number) {
 
     handleAutoScene(_store, newRealtimeState.time)
   
-    graphicsEngine.update(newRealtimeState);
+    visualizerRef.update(newRealtimeState)
   }
 }

@@ -4,35 +4,29 @@ const COUNT = 2
 // Returns 1 at a time, allowing others to load in the background
 export default class LoadQueue<Type> {
   items: Type[]
-  current: number
+  private active: number
+  private bg: number
 
   constructor(createElement: () => Type) {
     this.items = Array(COUNT).fill(0).map(_ => createElement())
-    this.current = 0
+    this.active = 0
+    this.bg = 1
 
     console.log(this.items)
   }
 
-  // getCurrent() {
-  //   return this.items[this.current]
-  // }
-
-  getNext() {
-    this.current += 1
-    this.current %= COUNT
-    return this.items[this.current]
+  next() {
+    this.bg = this.active
+    this.active += 1
+    this.active %= COUNT
   }
 
-  loadBackground(load: (item: Type) => void) {
-    let loadIndex = this.current - 1
-    if (loadIndex < 0) {
-      loadIndex = COUNT - 1
-    }
-    load(this.items[loadIndex])
+  getActive() {
+    return this.items[this.active]
   }
-
-  forEach(cb: (item: Type) => void) {
-    this.items.forEach(cb)
+  
+  getBackground() {
+    return this.items[this.bg]
   }
 }
 

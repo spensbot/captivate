@@ -17,21 +17,18 @@ export const videoQueue = new LoadQueue<Video_t>(() => {
   }
 })
 
-function load(path: string) {
-  return (video: Video_t) => {
-    video.element.src = "file://" + path
-  }
+export function getNext() {
+  videoQueue.next()
+  return videoQueue.getActive()
 }
 
-export function loadVideo(src: string) {
-  videoQueue.loadBackground(load(src))
+export function resize(width: number, height: number) {
+  videoQueue.items.forEach(video => {
+    video.element.width = width
+    video.element.height = height
+  })
 }
 
-const sources = [
-  "file:///Users/Spenser/Movies/videos/sailing.mp4",
-  "file:///Users/Spenser/Movies/videos/space.mp4",
-]
-
-loadVideo(sources[0])
-videoQueue.getNext()
-loadVideo(sources[1])
+export function loadBackground(path: string) {
+  videoQueue.getBackground().element.src = 'file://' + path
+}
