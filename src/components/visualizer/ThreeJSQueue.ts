@@ -1,6 +1,7 @@
 import LoadQueue from './LoadQueue'
 import * as THREE from 'three'
 import { RealtimeState } from '../../redux/realtimeStore'
+import helvetiker from './fonts/helvetiker_regular.typeface.json'
 
 interface ThreeJSBase_t {
   scene: THREE.Scene
@@ -13,7 +14,9 @@ interface ThreeJSBase_t {
 type Assets_t = Text_t | Cube_t
 interface Text_t {
   type: 'text'
-  text: string
+  geometry: THREE.Geometry
+  material: THREE.Material
+  mesh: THREE.Mesh
 }
 interface Cube_t {
   type: 'cube'
@@ -46,6 +49,7 @@ export function getNext() {
 
 export function update({ time, outputParams }: RealtimeState) {
   const active = threeJSQueue.getActive()
+
   if (active.assets && active.assets.type === 'cube') {
     const {X, Y, Width, Brightness} = outputParams
 
@@ -58,8 +62,50 @@ export function update({ time, outputParams }: RealtimeState) {
     active.assets.mesh.material.transparent = true
     active.assets.mesh.material.opacity = Brightness
 
-    active.renderer.render(active.scene, active.camera)
+    
   }
+
+  else if (active.assets && active.assets.type === 'text') {
+
+  }
+
+  active.renderer.render(active.scene, active.camera)
+}
+
+export function loadText(text: string) {
+  console.log(helvetiker)
+
+  const loader = new THREE.FontLoader();
+
+  loader.load(helvetiker, function ( font ) {
+    const geometry = new THREE.TextGeometry( text, {
+      font: font,
+      size: 0.5,
+      height: 0.2,
+      curveSegments: 12,
+      bevelEnabled: false,
+      bevelThickness: 10,
+      bevelSize: 8,
+      bevelOffset: 0,
+      bevelSegments: 5
+    });
+    
+    const bg = threeJSQueue.getBackground()
+    const material = new THREE.MeshNormalMaterial()
+    const mesh = new THREE.Mesh(geometry, material)
+    
+    bg.scene.clear()
+    bg.assets = undefined
+    bg.assets = {
+      type: 'text',
+      geometry: geometry,
+      material: material,
+      mesh: mesh
+    }
+
+    bg.scene.add(mesh)
+  });
+
 }
 
 export function loadCube() {
@@ -69,7 +115,7 @@ export function loadCube() {
   const mesh = new THREE.Mesh( geometry, material )
 
   bg.scene.clear()
-
+  bg.assets = undefined
   bg.assets = {
     type: 'cube',
     geometry: geometry,

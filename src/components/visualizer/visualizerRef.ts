@@ -10,7 +10,7 @@ visualizerRef.id = 'visualizer'
 let activeVideo = videoQueue.getNext().element
 
 let count = 0
-const max = 3
+const max = 4
 
 export function resizeVisualizer(width: number, height: number) {
   videoQueue.resize(width, height)
@@ -32,6 +32,9 @@ setInterval(() => {
   } else if (count % max === 1) {
     visualizerRef.appendChild(threeJSQueue.getNext().renderer.domElement)
     threeJSQueue.loadCube()
+  } else if (count % max === 2) {
+    visualizerRef.appendChild(threeJSQueue.getNext().renderer.domElement)
+    threeJSQueue.loadText("feel with me")
   } else {
     console.log("Black Screen")
   }
