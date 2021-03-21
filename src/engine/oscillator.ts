@@ -45,7 +45,7 @@ export function GetValueFromPhase(lfo: Lfo, phase: Normalized) {
     : Flip(Skew(baseValue, lfo.skew), lfo.flip)
 }
 
-function Skew(value: Normalized, skew: Normalized) {
+export function Skew(value: Normalized, skew: Normalized) {
   // first, skew the normalized skew value so it ranges from 0 to 100
   const factor = getBaseLog(.5, .0099)
   const deNormalizedSkew = Math.pow(skew, factor) * 100 + 0.01

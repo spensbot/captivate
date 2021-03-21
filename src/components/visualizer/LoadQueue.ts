@@ -11,8 +11,6 @@ export default class LoadQueue<Type> {
     this.items = Array(COUNT).fill(0).map(_ => createElement())
     this.active = 0
     this.bg = 1
-
-    console.log(this.items)
   }
 
   next() {

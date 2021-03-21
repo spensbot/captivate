@@ -1,27 +1,32 @@
 import React, { useState } from 'react'
 // Possible Universe Logos
-import GridOnIcon from '@material-ui/icons/GridOn';
-import ViewComfyIcon from '@material-ui/icons/ViewComfy';
-import PlaylistAddIcon from '@material-ui/icons/PlaylistAdd';
-import ListIcon from '@material-ui/icons/List';
+import GridOnIcon from '@material-ui/icons/GridOn'
+import ViewComfyIcon from '@material-ui/icons/ViewComfy'
+import PlaylistAddIcon from '@material-ui/icons/PlaylistAdd'
+import ListIcon from '@material-ui/icons/List'
 // Possible Scene Editor Logos
-import LibraryMusicIcon from '@material-ui/icons/LibraryMusic';
-import MovieFilterIcon from '@material-ui/icons/MovieFilter';
-import StarBorderIcon from '@material-ui/icons/StarBorder';
-import WhatshotIcon from '@material-ui/icons/Whatshot';
+import LibraryMusicIcon from '@material-ui/icons/LibraryMusic'
+import MovieFilterIcon from '@material-ui/icons/MovieFilter'
+import StarBorderIcon from '@material-ui/icons/StarBorder'
+import WhatshotIcon from '@material-ui/icons/Whatshot'
 // Possible Video Logos
-import FeaturedVideoIcon from '@material-ui/icons/FeaturedVideo';
+import FeaturedVideoIcon from '@material-ui/icons/FeaturedVideo'
 import logoThick from '../images/Thick.png'
 // Possible Share Logos
-import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
-import CloudUploadIcon from '@material-ui/icons/CloudUpload';
+import CloudDownloadIcon from '@material-ui/icons/CloudDownload'
+import CloudUploadIcon from '@material-ui/icons/CloudUpload'
 import { makeStyles } from '@material-ui/core/styles'
+import AddIcon from '@material-ui/icons/Add'
+import { IconButton } from '@material-ui/core'
+import { next } from './visualizer/visualizerRef'
+import Slider from './base/Slider'
+import {zoom} from './visualizer/ThreeJSQueue'
 
 import { useTypedSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import { setActivePage, Page } from '../redux/guiSlice'
-import TooltipWrapper from './base/TooltipWrapper';
-import BlackoutButton from './BlackoutButton';
+import TooltipWrapper from './base/TooltipWrapper'
+import BlackoutButton from './BlackoutButton'
 
 const selectedBorder = 0.2 //rem
 
@@ -91,6 +96,12 @@ export default function MenuBar() {
       <MenuItem page={Page.SHARE} tooltipText="Share">
         <CloudUploadIcon />
       </MenuItem>
+      <IconButton onClick={next}>
+        <AddIcon />
+      </IconButton>
+      <div style={{ height: '20rem' }}>
+        <Slider radius={0.5} onChange={(newVal: number) => { zoom(newVal) } } orientation="vertical"/>
+      </div>
       <div style={{ flex: '1 0 0' }} />
       <BlackoutButton />
       {/* <img src={logoThick} style={{width: '3rem', height: '3rem', marginBottom: '0.5rem'}} /> */}

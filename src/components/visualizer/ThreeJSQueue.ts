@@ -2,6 +2,8 @@ import LoadQueue from './LoadQueue'
 import * as THREE from 'three'
 import { RealtimeState } from '../../redux/realtimeStore'
 import helvetiker from './fonts/helvetiker_regular.typeface.json'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { Skew } from '../../engine/oscillator'
 
 interface ThreeJSBase_t {
   scene: THREE.Scene
@@ -35,10 +37,17 @@ const threeJSQueue = new LoadQueue<ThreeJSBase_t>(() => {
 
 export function resize(width: number, height: number) {
   threeJSQueue.items.forEach(three => {
-    three.camera = new THREE.PerspectiveCamera( 70, width / height, 0.01, 100 );
-    three.camera.position.z = 1;
+    three.camera = new THREE.PerspectiveCamera( 70, width / height, 0.001, 1000 );
+    three.camera.position.z = 5;
   
     three.renderer.setSize( width, height );
+  })
+}
+
+export function zoom(amount: number) {
+  threeJSQueue.items.forEach(three => {
+    const newZ = Skew(amount, 0.6) * 1000;
+    three.camera.position.z = newZ;
   })
 }
 
@@ -61,8 +70,6 @@ export function update({ time, outputParams }: RealtimeState) {
     active.assets.mesh.position.setY(Y - 0.5)
     active.assets.mesh.material.transparent = true
     active.assets.mesh.material.opacity = Brightness
-
-    
   }
 
   else if (active.assets && active.assets.type === 'text') {
@@ -72,6 +79,21 @@ export function update({ time, outputParams }: RealtimeState) {
   active.renderer.render(active.scene, active.camera)
 }
 
+export function loadModel(path: string) {
+  const bg = threeJSQueue.getBackground()
+  const loader = new GLTFLoader()
+  loader.load(`file://${path}`,
+    gltf => {
+      bg.scene.clear()
+      bg.scene.add(gltf.scene)
+    },
+    undefined,
+    err => {
+      console.log(err)
+    }
+  )
+}
+  
 export function loadText(text: string) {
   console.log(helvetiker)
 
@@ -80,15 +102,19 @@ export function loadText(text: string) {
   loader.load(helvetiker, function ( font ) {
     const geometry = new THREE.TextGeometry( text, {
       font: font,
-      size: 0.5,
-      height: 0.2,
+      size: 0.1,
+      height: 0.01,
       curveSegments: 12,
       bevelEnabled: false,
       bevelThickness: 10,
       bevelSize: 8,
       bevelOffset: 0,
       bevelSegments: 5
-    });
+    })
+
+    geometry.computeBoundingBox()
+    console.log(geometry.boundingBox)
+    geometry.center()
     
     const bg = threeJSQueue.getBackground()
     const material = new THREE.MeshNormalMaterial()
