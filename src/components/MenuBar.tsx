@@ -20,7 +20,7 @@ import AddIcon from '@material-ui/icons/Add'
 import { IconButton } from '@material-ui/core'
 import { next } from './visualizer/visualizerRef'
 import Slider from './base/Slider'
-import {zoom} from './visualizer/ThreeJSQueue'
+import { setCamZ } from './visualizer/ThreeJSQueue'
 
 import { useTypedSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
@@ -100,7 +100,7 @@ export default function MenuBar() {
         <AddIcon />
       </IconButton>
       <div style={{ height: '20rem' }}>
-        <Slider radius={0.5} onChange={(newVal: number) => { zoom(newVal) } } orientation="vertical"/>
+        <Slider radius={0.5} onChange={(newVal: number) => { setCamZ(newVal) } } orientation="vertical"/>
       </div>
       <div style={{ flex: '1 0 0' }} />
       <BlackoutButton />

@@ -57,6 +57,9 @@ module.exports = {
     serialport: {
       commonjs: 'serialport',
       commonjs2: 'serialport',
-    }
+    },
+    serialport: 'commonjs serialport',
+    midi: 'commonjs midi',
+    sharp: 'commonjs sharp'
   }
 }

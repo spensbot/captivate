@@ -1,12 +1,22 @@
 import * as videoQueue from './VideoQueue'
-import { randomElement } from '../../util/helpers'
-import { store } from '../../redux/store'
 import { RealtimeState } from '../../redux/realtimeStore'
 import * as threeJSQueue from './ThreeJSQueue'
-import { ipcRenderer } from 'electron'
+import setupDrag from './drag'
+import { scale, translate, rotate } from './ThreeJSQueue'
 
 export const visualizerRef = document.createElement('div')
 visualizerRef.id = 'visualizer'
+setupDrag(visualizerRef, ({ dx, dy }, e) => {
+  if (e.metaKey) {
+    translate(dx * 10, dy * 10)
+  } else {
+    rotate(dx * 15, dy * 15)
+  }
+})
+
+visualizerRef.onwheel = e => {
+  scale(1 + e.wheelDeltaY / 1000)
+}
 
 let activeVideo = videoQueue.getNext().element
 
@@ -48,7 +58,8 @@ export function next() {
   const folder = gltfModelFolders[count % gltfModelFolders.length]
   console.log(folder)
   const modelPath = getModelPath(folder)
-  threeJSQueue.loadModel(modelPath)
+  // threeJSQueue.loadModel(modelPath)
+  threeJSQueue.loadText("Spoobi Rules")
   visualizerRef.appendChild(threeJSQueue.getNext().renderer.domElement)
   // visualizerRef.appendChild(threeJSQueue.getNext().renderer.domElement)
   // threeJSQueue.loadCube()

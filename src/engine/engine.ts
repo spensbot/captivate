@@ -8,6 +8,7 @@ import { ReduxStore } from '../redux/store'
 import { RealtimeStore, update, TimeState } from '../redux/realtimeStore'
 const NodeLink = window.require('node-link')
 import { modulateParams } from './modulationEngine'
+import * as MidiConnection from './midiConnection'
 
 let _lastFrameTime = 0
 let _engineTime = 0
@@ -24,6 +25,22 @@ export function init(store: ReduxStore, realtimeStore: RealtimeStore) {
   autoSave(_store)
   dmxEngine.init(store, realtimeStore)
   keyboardManager.init(store)
+  MidiConnection.maintain({
+    updateInterval: 1000,
+    onConnect: () => { console.log("Connect") },
+    onDisconnect: () => { console.log("Disconnect")},
+    onMessage: (message) => {
+      if (message) {
+        if (message.type === 'On') {
+          console.log(`${message.keyNumber} (${message.velocity})`)
+        } else if (message.type === 'CC') {
+          console.log(`${message.number} -> ${message.value}`)
+        }
+      } else {
+        console.log('message === null')
+      }
+    }
+  })
 
   requestAnimationFrame(engineUpdate)
 }

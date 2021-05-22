@@ -44,11 +44,47 @@ export function resize(width: number, height: number) {
   })
 }
 
-export function zoom(amount: number) {
+export function setCamZ(amount: number) {
   threeJSQueue.items.forEach(three => {
     const newZ = Skew(amount, 0.6) * 1000;
     three.camera.position.z = newZ;
   })
+}
+
+export function scale(multiple: number) {
+  threeJSQueue.getActive().scene.scale.multiplyScalar(multiple)
+}
+
+export function zoom(multiple: number) {
+
+}
+
+const materials = {
+  x: new THREE.LineBasicMaterial({ color: 0x0000ff }),
+  y: new THREE.LineBasicMaterial({ color: 0x00ff00 }),
+  z: new THREE.LineBasicMaterial({ color: 0xff0000 })
+}
+
+// function drawLine(start: THREE.Vector3, end: THREE.Vector3, material: keyof materials) {
+//   const material = 
+// }
+
+// function drawCoordinates() {
+//   const x
+//   const material = 
+//   const material = new THREE.BufferGeometry().setFromPoints([]);
+//   const x = new THREE.Line()
+// }
+
+export function translate(x: number, y: number) {
+  const cam = threeJSQueue.getActive().camera
+  threeJSQueue.getActive().scene.translateX(x)
+  threeJSQueue.getActive().scene.translateY(y)
+}
+
+export function rotate(x: number, y: number) {
+  threeJSQueue.getActive().scene.rotateX(x)
+  threeJSQueue.getActive().scene.rotateY(y)
 }
 
 export function getNext() {
@@ -73,7 +109,7 @@ export function update({ time, outputParams }: RealtimeState) {
   }
 
   else if (active.assets && active.assets.type === 'text') {
-
+    
   }
 
   active.renderer.render(active.scene, active.camera)

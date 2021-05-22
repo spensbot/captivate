@@ -10,7 +10,7 @@ function selectFiles() {
   selectVideoFiles().then(videoFiles => {
     store.dispatch(addVideos(videoFiles))
   }).catch(err => {
-    console.log(err)
+    console.error(err)
   })
 }
 
@@ -22,8 +22,6 @@ const useStyles = makeStyles({
 
 export default function VideoList() {
   const videos = useTypedSelector(state => state.gui.videos)
-
-  console.log(videos)
 
   const classes = useStyles()
 

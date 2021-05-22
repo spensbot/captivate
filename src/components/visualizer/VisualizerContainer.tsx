@@ -32,7 +32,7 @@ export default function VisualizerContainer({childElement, onResize}: Props) {
     resize()
     window.addEventListener('resize', resize);
 
-    return () => {window.removeEventListener('resize', resize)};
+    return () => { window.removeEventListener('resize', resize) };
   }, [])
 
   return (

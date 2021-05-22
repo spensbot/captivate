@@ -14,5 +14,6 @@
     "outDir": "./dist",
     "strict": true ,
     "esModuleInterop": true,
+    "typeRoots": ["./src/types"]
   }
 }
