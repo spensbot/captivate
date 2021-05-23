@@ -4,6 +4,7 @@ import ConnectionStatus from './ConnectionStatus'
 import { useRealtimeSelector } from '../redux/realtimeStore'
 import useDragBasic from './hooks/useDragBasic'
 import { incrementTempo, setLinkEnabled } from '../engine/engine'
+import styled from 'styled-components'
 
 function BPM() {
   const bpm = useRealtimeSelector(state => state.time.bpm)
@@ -43,26 +44,31 @@ function LinkButton() {
 }
 
 export default function StatusBar() {
-
-  const styles = {
-    root: {
-      display: 'flex',
-      justifyContent: 'right',
-      alignItems: 'center',
-      fontSize: `1.2rem`,
-      padding: '0.5rem 1rem',
-      // backgroundColor: '#0006',
-      borderBottom: '1px solid #fff3'
-    }
-  }
-
   return (
-    <div style={styles.root}>
+    <Root>
       <LinkButton />
       <BPM />
       <Counter2 />
       <div style={{ flex: '1 0 0' }} />
-      <ConnectionStatus />
-    </div>
+      <Connections>
+        <ConnectionStatus type={'midi'} />
+        <ConnectionStatus type={'dmx'} />
+      </Connections>
+    </Root>
   )
 }
+
+const Root = styled.div`
+  display: flex;
+  justify-content: right;
+  align-items: center;
+  font-size: 1.2rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid #fff3;
+`
+
+const Connections = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+`

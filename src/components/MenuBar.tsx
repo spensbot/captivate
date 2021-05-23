@@ -21,7 +21,7 @@ import { IconButton } from '@material-ui/core'
 import { next } from './visualizer/visualizerRef'
 import Slider from './base/Slider'
 import { setCamZ } from './visualizer/ThreeJSQueue'
-
+import BarChartIcon from '@material-ui/icons/BarChart';
 import { useTypedSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import { setActivePage, Page } from '../redux/guiSlice'
@@ -96,12 +96,15 @@ export default function MenuBar() {
       <MenuItem page={Page.SHARE} tooltipText="Share">
         <CloudUploadIcon />
       </MenuItem>
-      <IconButton onClick={next}>
+      <MenuItem page={Page.MIXER} tooltipText="DMX Mixer">
+        <BarChartIcon />
+      </MenuItem>
+      {/* <IconButton onClick={next}>
         <AddIcon />
       </IconButton>
       <div style={{ height: '20rem' }}>
         <Slider radius={0.5} onChange={(newVal: number) => { setCamZ(newVal) } } orientation="vertical"/>
-      </div>
+      </div> */}
       <div style={{ flex: '1 0 0' }} />
       <BlackoutButton />
       {/* <img src={logoThick} style={{width: '3rem', height: '3rem', marginBottom: '0.5rem'}} /> */}

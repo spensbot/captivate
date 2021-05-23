@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import SliderBase from './SliderBase'
 import SliderCursor from './SliderCursor'
+import styled from 'styled-components'
 
 interface Params {
   value?: number
@@ -8,9 +9,10 @@ interface Params {
   orientation: 'vertical' | 'horizontal'
   onChange: (newVal: number) => void
   color?: string
+  disabled?: boolean
 }
 
-export default function Slider({ value, radius, orientation, onChange, color }: Params) {
+export default function Slider({ value, radius, orientation, onChange, color, disabled }: Params) {
   const [localVal, setLocalVal] = useState(0.0)
 
   const localOnChange = (newVal: number) => {
@@ -22,7 +24,11 @@ export default function Slider({ value, radius, orientation, onChange, color }: 
 
   return (
     <SliderBase radius={radius} orientation={orientation} onChange={localOnChange}>
-      <SliderCursor value={value === undefined ? localVal : value} radius={radius} orientation={orientation} color={color}/>
+      <SliderCursor value={value === undefined ? localVal : value} radius={radius} orientation={orientation} color={disabled ? '#fff5' : color}/>
     </SliderBase>
   )
 }
+
+const Root = styled.div`
+  
+`

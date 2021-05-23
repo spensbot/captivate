@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { number } from 'yup/lib/locale';
 import { Fixture, FixtureType, Universe, fixtureTypes, fixtureTypesByID, getTestUniverse } from '../engine/dmxFixtures';
 import {clampNormalized} from '../util/helpers'
 
@@ -8,6 +9,7 @@ export interface DmxState {
   fixtureTypesByID: {[id: string]: FixtureType}
   editedFixture: null | string
   selectedFixture: null | number
+  overwrites: number[]
 }
 
 interface SetFixtureWindowPayload {
@@ -33,7 +35,8 @@ const initialDmxState: DmxState = {
   fixtureTypes: fixtureTypes,
   fixtureTypesByID: fixtureTypesByID,
   editedFixture: null,
-  selectedFixture: null
+  selectedFixture: null,
+  overwrites: []
 }
 
 export const dmxSlice = createSlice({
@@ -104,6 +107,9 @@ export const dmxSlice = createSlice({
         state.fixtureTypes.splice(index, 1);
       }
       delete state.fixtureTypesByID[payload]
+    },
+    setOverwrite: (state, { payload }: PayloadAction<{ index: number, value: number }>) => {
+      state.overwrites[payload.index] = payload.value
     }
   },
 });
@@ -119,7 +125,8 @@ export const {
   removeFixture,
   addFixtureType,
   updateFixtureType,
-  deleteFixtureType
+  deleteFixtureType,
+  setOverwrite,
 } = dmxSlice.actions;
 
 export default dmxSlice.reducer;

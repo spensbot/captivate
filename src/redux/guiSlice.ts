@@ -4,7 +4,8 @@ export enum Page {
   UNIVERSE,
   MODULATION,
   VIDEO,
-  SHARE
+  SHARE,
+  MIXER
 }
 
 interface State_t {

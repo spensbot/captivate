@@ -3,6 +3,7 @@ import Video from './pages/Visualizer'
 import Modulation from './pages/Scenes'
 import Universe from './pages/Universe'
 import Share from './pages/Share'
+import Mixer from './pages/Mixer'
 import MenuBar from './MenuBar'
 import { useTypedSelector } from '../redux/store'
 import { Page } from '../redux/guiSlice'
@@ -28,6 +29,7 @@ export default function App() {
     if (activePage == Page.UNIVERSE) return (<Universe />)
     if (activePage == Page.VIDEO) return (<Video />)
     if (activePage == Page.SHARE) return (<Share />)
+    if (activePage == Page.MIXER) return (<Mixer />)
   }
 
   return (

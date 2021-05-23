@@ -2,14 +2,9 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import ConnectionStatus from '../components/ConnectionStatus';
 
 type ConnectionStatus = {
-  isConnected: boolean
-  path: string | null
-  isTroubleshoot: boolean
-}
-const initialStatus: ConnectionStatus = {
-  isConnected: false,
-  path: null,
-  isTroubleshoot: false
+  isConnected?: boolean
+  path?: string
+  isTroubleshoot?: boolean
 }
 
 type InitialState = {
@@ -17,8 +12,8 @@ type InitialState = {
   midi: ConnectionStatus
 }
 const initialState: InitialState = {
-  dmx: initialStatus,
-  midi: initialStatus
+  dmx: {},
+  midi: {}
 }
 
 export const connectionsSlice = createSlice({
@@ -28,7 +23,7 @@ export const connectionsSlice = createSlice({
     setDmx: (state, action: PayloadAction<ConnectionStatus>) => {
       state.dmx = action.payload
     },
-    setMidi: (state, action) => {
+    setMidi: (state, action: PayloadAction<ConnectionStatus>) => {
       state.midi = action.payload
     } 
   },
