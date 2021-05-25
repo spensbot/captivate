@@ -19,8 +19,8 @@ export default function ConnectionStatus({type}: Props) {
   const color = connection.isConnected ? theme.palette.success : theme.palette.error
 
   const onClick = type === 'dmx'
-    ? () => dispatch(setIsEditing(!isEditing))
-    : () => { }
+    ? () => { }
+    : () => dispatch(setIsEditing(!isEditing))
 
   return (
     <Root>

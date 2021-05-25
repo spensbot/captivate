@@ -16,7 +16,7 @@ export default function SplitPane({type='vertical', rem=1, initialSplit=0.5, sty
   const [split, setSplit] = useState(initialSplit)
 
   const [dragContainer, onMouseDown] = useDragMapped(({x, y}) => {
-    setSplit(v ? x : y)
+    setSplit(v ? x : 1-y)
   })
 
   const styles: {[key: string]: React.CSSProperties} = {

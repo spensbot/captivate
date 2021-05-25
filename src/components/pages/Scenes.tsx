@@ -33,7 +33,7 @@ export default function Scenes() {
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <Modulators />
             <ParamsControl />
-            <VideoList />
+            {/* <VideoList /> */}
           </div>
         </div>
       </SplitPane>

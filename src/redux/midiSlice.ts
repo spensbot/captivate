@@ -27,7 +27,7 @@ export interface MidiActionControlled {
 interface MidiState {
   listening?: MidiAction
   isEditing: boolean
-  byInputID: { [controlID: string]: MidiActionControlled | undefined } // note70, cc50, etc.
+  byInputID: { [inputID: string]: MidiActionControlled | undefined } // note70, cc50, etc.
   byActionID: { [actionID: string]: MidiActionControlled | undefined } // setAutoSceneBombacity, setActiveSceneIndex0, etc.
 }
 

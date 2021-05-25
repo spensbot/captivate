@@ -29,7 +29,7 @@ export default function MidiOverlay({ children, action }: Props) {
       {children}
       { isEditing &&
         <Overlay selected={isListening} onClick={onClick}>
-          {controlledAction?.controlID}
+          {controlledAction?.inputID}
         </Overlay>
       }
     </Root>
