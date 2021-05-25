@@ -1,63 +1,67 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 
-interface MidiActionBase {
-  control: string
-}
-
-interface SetActiveSceneIndex extends MidiActionBase {
+interface SetActiveSceneIndex {
   type: 'setActiveSceneIndex'
   index: number
 }
 
-interface SetAutoSceneBombacity extends MidiActionBase {
+interface SetAutoSceneBombacity {
   type: 'setAutoSceneBombacity'
   bombacity: number
 }
 
-type MidiAction = SetActiveSceneIndex | SetAutoSceneBombacity
+export type MidiAction = SetActiveSceneIndex | SetAutoSceneBombacity
 
-type MidiState = {
-  listening?: MidiAction
-  byControl: { [source: string]: MidiAction } // note70, cc50, etc.
-  byActionType: {
-    setActiveSceneIndex: SetActiveSceneIndex[]
-    setAutoSceneBombacity?: SetAutoSceneBombacity
+export function getActionID(action: MidiAction) {
+  if (action.type === 'setActiveSceneIndex') {
+    return action.type + action.index.toString()
   }
+  return action.type
+}
+
+export interface MidiActionControlled {
+  inputID: string
+  action: MidiAction
+}
+
+interface MidiState {
+  listening?: MidiAction
+  isEditing: boolean
+  byInputID: { [controlID: string]: MidiActionControlled | undefined } // note70, cc50, etc.
+  byActionID: { [actionID: string]: MidiActionControlled | undefined } // setAutoSceneBombacity, setActiveSceneIndex0, etc.
 }
 
 const initialState: MidiState = {
-  byControl: {},
-  byActionType: {
-    setActiveSceneIndex: [],
-  }
+  isEditing: false,
+  byInputID: {},
+  byActionID: {}
 }
 
 export const midiSlice = createSlice({
   name: 'midi',
   initialState: initialState,
   reducers: {
-    addSetActiveSceneIndex: (state, { payload }: PayloadAction<SetActiveSceneIndex>) => {
-      state.byControl[payload.control] = payload
-      state.byActionType.setActiveSceneIndex[payload.index] = payload
-    },
-    addSetAutoSceneBombacity: (state, { payload }: PayloadAction<SetAutoSceneBombacity>) => {
-      state.byControl[payload.control] = payload
-      state.byActionType.setAutoSceneBombacity = payload
+    addAction: (state, { payload }: PayloadAction<MidiActionControlled>) => {
+      state.byInputID[payload.inputID] = payload
+      state.byActionID[getActionID(payload.action)] = payload
     },
     listen: (state, { payload }: PayloadAction<MidiAction>) => {
       state.listening = payload
     },
     stopListening: (state, { payload }: PayloadAction<undefined>) => {
       delete state.listening
+    },
+    setIsEditing: (state, { payload }: PayloadAction<boolean>) => {
+      state.isEditing = payload
     }
   },
-});
+})
 
 export const {
-  addSetActiveSceneIndex,
-  addSetAutoSceneBombacity,
+  addAction,
   listen,
-  stopListening
-} = midiSlice.actions;
+  stopListening,
+  setIsEditing
+} = midiSlice.actions
 
-export default midiSlice.reducer;
+export default midiSlice.reducer

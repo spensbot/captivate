@@ -4,12 +4,14 @@ import { useSelector, TypedUseSelectorHook } from 'react-redux'
 import dmxReducer from './dmxSlice'
 import guiReducer from './guiSlice'
 import scenesReducer from './scenesSlice'
+import midiReducer from './midiSlice'
 
 const baseReducer = combineReducers({
   connections: connectionsReducer,
   dmx: dmxReducer,
   gui: guiReducer,
-  scenes: scenesReducer
+  scenes: scenesReducer,
+  midi: midiReducer
 })
 
 export type ReduxState = ReturnType<typeof baseReducer>

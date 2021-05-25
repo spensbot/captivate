@@ -8,7 +8,9 @@ import { ReduxStore } from '../redux/store'
 import { RealtimeStore, update, TimeState } from '../redux/realtimeStore'
 const NodeLink = window.require('node-link')
 import { modulateParams } from './modulationEngine'
-import * as MidiConnection from './midiConnection'
+import maintainMidiConnection from './midiConnection'
+import { addAction } from '../redux/midiSlice'
+import { setActiveSceneIndex, setAutoSceneBombacity } from "../redux/scenesSlice"
 
 let _lastFrameTime = 0
 let _engineTime = 0
@@ -25,16 +27,33 @@ export function init(store: ReduxStore, realtimeStore: RealtimeStore) {
   autoSave(_store)
   dmxEngine.init(store, realtimeStore)
   keyboardManager.init(store)
-  MidiConnection.maintain({
+  maintainMidiConnection({
     updateInterval: 1000,
     onConnect: () => { console.log("Connect") },
     onDisconnect: () => { console.log("Disconnect")},
-    onMessage: (message) => {
-      if (message) {
-        if (message.type === 'On') {
-          console.log(`${message.keyNumber} (${message.velocity})`)
-        } else if (message.type === 'CC') {
-          console.log(`${message.number} -> ${message.value}`)
+    onMessage: (input) => {
+      if (input) {
+        const state = store.getState().midi
+        if (state.isEditing) {
+          if (state.listening) {
+            store.dispatch(addAction({
+              inputID: input.id,
+              action: state.listening
+            }))
+          }
+        } else {
+          const action = state.byInputID[input.id]?.action
+          if (action) {
+            if (action.type === 'setActiveSceneIndex') {
+              store.dispatch(setActiveSceneIndex(action.index))
+            } else if (action.type === 'setAutoSceneBombacity') {
+              if (input.value === undefined) {
+                console.error('input.value === undefined')
+                return
+              }
+              store.dispatch(setAutoSceneBombacity(input.value))
+            }
+          }
         }
       } else {
         console.log('message === null')

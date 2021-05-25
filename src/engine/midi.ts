@@ -1,6 +1,6 @@
 import { Message } from 'midi'
 
-export type MidiMessage = NoteOn | NoteOff | ControlChange | null
+export type MidiMessage = NoteOn | NoteOff | ControlChange
 interface Note {
   keyNumber: number
   velocity: number
@@ -13,7 +13,7 @@ interface ControlChange {
   value: number
 }
 
-export function parseMessage([status, data1, data2]: Message): MidiMessage {
+export function parseMessage([status, data1, data2]: Message): MidiMessage | null {
   const [messageType, channel] = getHexDigits(status)
 
   if (messageType === 8) return {

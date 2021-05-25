@@ -3,7 +3,7 @@ import { useTypedSelector } from '../redux/store'
 import styled from 'styled-components'
 import { useTheme } from '@material-ui/core/styles'
 import { useDispatch } from 'react-redux'
-import { toggleIsEditing } from '../redux/midiSlice'
+import { setIsEditing } from '../redux/midiSlice'
 
 interface Props {
   type: 'midi' | 'dmx'
@@ -11,14 +11,15 @@ interface Props {
 
 export default function ConnectionStatus({type}: Props) {
 
-  const connection = useTypedSelector(state => state.connections[type]);
+  const connection = useTypedSelector(state => state.connections[type])
+  const isEditing = useTypedSelector(state => state.midi.isEditing)
   const dispatch = useDispatch()
   const theme = useTheme()
   
   const color = connection.isConnected ? theme.palette.success : theme.palette.error
 
   const onClick = type === 'dmx'
-    ? () => dispatch(toggleIsEditing())
+    ? () => dispatch(setIsEditing(!isEditing))
     : () => { }
 
   return (

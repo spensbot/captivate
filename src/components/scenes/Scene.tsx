@@ -8,6 +8,7 @@ import { IconButton } from '@material-ui/core'
 import CloseIcon from '@material-ui/icons/Close'
 import AddIcon from '@material-ui/icons/Add'
 import Slider from '../base/Slider'
+import MidiOverlay from '../base/MidiOverlay'
 
 const baseStyle: React.CSSProperties = {
   padding: '0.5rem',
@@ -63,57 +64,34 @@ export function Scene({ index, id }: { index: number, id: string }) {
   }
 
   return (
-    <div style={style} onClick={() => { dispatch(setActiveScene(id)) }}>
-      <div style={{
-        width: '1rem',
-        fontSize: '0.7rem',
-        marginLeft: '-0.3rem',
-        marginRight: '0.5rem',
-        textAlign: 'right',
-      }}>{index + 1}</div>
-      { isActive ? (
-        <div style={{flex: '1 0 auto'}}>
-          <input style={{ border: 'none', color: '#fff', backgroundColor: '#fff1', width: '100%', marginBottom: '0.5rem', fontSize: '1rem' }} type="text" value={name} onChange={onNameChange} />
-          <Slider value={bombacity} radius={0.3} orientation="horizontal" onChange={onBombacityChange} />
-        </div>
-      ) : (
-        <>
-        <div>{name}</div>
-        <div style={{flex: '1 0 0'}} />
-        <IconButton aria-label="delete scene" size="small" onClick={onRemoveScene}>
-          <CloseIcon />
-        </IconButton>
-        </>
-      )}
-    </div>
+    <MidiOverlay action={{type: 'setActiveSceneIndex', index: index}}>
+      <div style={style} onClick={() => { dispatch(setActiveScene(id)) }}>
+        <div style={{
+          width: '1rem',
+          fontSize: '0.7rem',
+          marginLeft: '-0.3rem',
+          marginRight: '0.5rem',
+          textAlign: 'right',
+        }}>{index + 1}</div>
+        { isActive ? (
+          <div style={{flex: '1 0 auto'}}>
+            <input style={{ border: 'none', color: '#fff', backgroundColor: '#fff1', width: '100%', marginBottom: '0.5rem', fontSize: '1rem' }} type="text" value={name} onChange={onNameChange} />
+            <Slider value={bombacity} radius={0.3} orientation="horizontal" onChange={onBombacityChange} />
+          </div>
+        ) : (
+          <>
+          <div>{name}</div>
+          <div style={{flex: '1 0 0'}} />
+          <IconButton aria-label="delete scene" size="small" onClick={onRemoveScene}>
+            <CloseIcon />
+          </IconButton>
+          </>
+        )}
+      </div>
+    </MidiOverlay>
   )
 }
 
-// function DisabledScene() {
-
-//   return (
-//     <div style={styles.root} className={`${classes.root} ${isSelected ? classes.selected : null}`} onClick={() => { dispatch(setActiveScene(id))} }>
-//       <IconButton aria-label="delete" size="small" onClick={e => {
-//         e.stopPropagation()
-//         dispatch(removeScene({ index: index }))
-//       }}>
-//         <CloseIcon />
-//       </IconButton>
-//     </div>
-//   )
-// }
-
-// function EnabledScene() {
-//   const dispatch = useDispatch()
-//   const bombacity = useTypedSelector(state => state.scenes.byId[id].bombacity)
-//   const name = useTypedSelector(state => state.scenes.byId[id].name)
-
-//   return (
-//     <div style={styles.root} className={`${classes.root} ${isSelected ? classes.selected : null}`} >
-
-//     </div>
-//   )
-// }
 
 export function NewScene() {
   const dispatch = useDispatch()
