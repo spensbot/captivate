@@ -3,17 +3,57 @@ import styled from 'styled-components'
 import AddIcon from '@material-ui/icons/Add'
 import { IconButton } from '@material-ui/core'
 import { useDispatch } from 'react-redux'
+import { setGroups, setSelectedFixtureGroups } from '../../redux/dmxSlice'
+import { useTypedSelector } from '../../redux/store'
+import Input from '../base/Input'
+import Toggle from '../base/Toggle'
 
 interface Props {
 
 }
 
-export default function Groups({  }: Props) {
+export default function Groups({ }: Props) {
   const dispatch = useDispatch()
+  const groups = useTypedSelector(state => state.dmx.groups)
+  const activeFixtureGroups = useTypedSelector(state => {
+    const i = state.dmx.selectedFixture
+    if (i === null) return null
+    return state.dmx.universe[i]?.groups
+  })
 
-  const items = [].map(() => {
+  const items = groups.map((group, i) => {
+
+    const onChange = (newVal: string) => {
+      const groupsCopy = [...groups]
+      if (newVal === '') {
+        groupsCopy.splice(i, 1)
+      } else {
+        groupsCopy[i] = newVal
+      }
+      dispatch(setGroups(groupsCopy))
+    }
+
+    let toggle = null
+
+    if (activeFixtureGroups !== null) {
+      const match = activeFixtureGroups.findIndex(fixtureGroup => fixtureGroup === group)
+      const toggleOn = match !== -1
+  
+      const toggleOnClick = () => {
+        console.log(match)
+        const activeFixtureGroupsCopy = [...activeFixtureGroups]
+        toggleOn ? activeFixtureGroupsCopy.splice(match, 1) : activeFixtureGroupsCopy.push(group)
+        dispatch(setSelectedFixtureGroups(activeFixtureGroupsCopy))
+      }
+
+      toggle = <Toggle isOn={toggleOn} onChange={toggleOnClick} />
+    }
+
     return (
-      <Item></Item>
+      <Item key={i}>
+        <Input value={group} onChange={onChange} />
+        {toggle}
+      </Item>
     )
   })
 
@@ -21,8 +61,8 @@ export default function Groups({  }: Props) {
     <Root>
       <Header>
         <Title>Groups</Title>
-        <div style={{ flex: '1 0 0' }} />
-        <IconButton onClick={() => { }}>
+        <Spacer />
+        <IconButton onClick={() => dispatch(setGroups([...groups, 'New Group']))}>
           <AddIcon />
         </IconButton>
       </Header>
@@ -49,6 +89,9 @@ const Header = styled.div`
 const Items = styled.div`
   overflow: scroll;
   height: auto;
+  & > * {
+    margin-bottom: 0.5rem;
+  }
 `
 
 const Title = styled.div`
@@ -56,5 +99,8 @@ const Title = styled.div`
 `
 
 const Item = styled.div`
-
+  display: flex;
+  align-items: center;
 `
+
+const Spacer = styled.div`flex: 1 0 0;`

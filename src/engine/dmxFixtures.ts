@@ -167,21 +167,22 @@ export interface Fixture {
   ch: number
   type: string // FixtureType id
   window: Window2D_t
+  groups: string[] 
 }
 
 export type Universe = Fixture[]
 
 export function getTestUniverse(): Universe {
   return [
-    { ch: 1, type: '4', window: {x: {pos: 0.5, width: 0.0}, y: {pos: 0.6, width: 0.0}} },
-    { ch: 8, type: '3', window: {x: {pos: 0.5, width: 0.0}} },
-    { ch: 11, type: '2', window: {x: {pos: 0.0, width: 0.0}} },
-    { ch: 12, type: '2', window: {x: {pos: 0.33, width: 0.0}} },
-    { ch: 13, type: '2', window: {x: {pos: 0.66, width: 0.0}} },
-    { ch: 14, type: '2', window: {x: {pos: 1.0, width: 0.0}} },
-    { ch: 15, type: '1', window: {x: {pos: 0.8333, width: 0.0}} },
-    { ch: 23, type: '1', window: {x: { pos: 0.1666, width: 0.0 }} },
-    { ch: 35, type: '5', window: {}}
+    { ch: 1, type: '4', window: {x: {pos: 0.5, width: 0.0}, y: {pos: 0.6, width: 0.0}}, groups: [] },
+    { ch: 8, type: '3', window: {x: {pos: 0.5, width: 0.0}}, groups: [] },
+    { ch: 11, type: '2', window: {x: {pos: 0.0, width: 0.0}}, groups: [] },
+    { ch: 12, type: '2', window: {x: {pos: 0.33, width: 0.0}}, groups: [] },
+    { ch: 13, type: '2', window: {x: {pos: 0.66, width: 0.0}}, groups: [] },
+    { ch: 14, type: '2', window: {x: {pos: 1.0, width: 0.0}}, groups: [] },
+    { ch: 15, type: '1', window: {x: {pos: 0.8333, width: 0.0}}, groups: [] },
+    { ch: 23, type: '1', window: {x: { pos: 0.1666, width: 0.0 }}, groups: [] },
+    { ch: 35, type: '5', window: {}, groups: [] }
   ]
 }
 

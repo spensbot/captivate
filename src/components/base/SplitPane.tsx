@@ -1,22 +1,25 @@
 import React, { useState } from 'react'
 import useDragMapped from '../hooks/useDragMapped'
+import { clamp } from '../../util/helpers'
 
 type Props = {
   type: 'vertical' | 'horizontal'
   rem: number
   initialSplit: number
-
+  min?: number
+  max?: number
   style: React.CSSProperties
   children: React.ReactElement[]
 }
 
-export default function SplitPane({type='vertical', rem=1, initialSplit=0.5, style, children}: Props) {
+export default function SplitPane({type='vertical', rem=1, initialSplit=0.5, min, max, style, children}: Props) {
   const v = type === 'vertical'
 
   const [split, setSplit] = useState(initialSplit)
 
-  const [dragContainer, onMouseDown] = useDragMapped(({x, y}) => {
-    setSplit(v ? x : 1-y)
+  const [dragContainer, onMouseDown] = useDragMapped(({ x, y }) => {
+    const newSplit = v ? x : 1 - y
+    setSplit(clamp(newSplit, min || 0, max || 1))
   })
 
   const styles: {[key: string]: React.CSSProperties} = {

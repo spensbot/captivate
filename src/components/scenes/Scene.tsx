@@ -9,6 +9,7 @@ import CloseIcon from '@material-ui/icons/Close'
 import AddIcon from '@material-ui/icons/Add'
 import Slider from '../base/Slider'
 import MidiOverlay from '../base/MidiOverlay'
+import Input from '../base/Input'
 
 const baseStyle: React.CSSProperties = {
   padding: '0.5rem',
@@ -75,7 +76,7 @@ export function Scene({ index, id }: { index: number, id: string }) {
         }}>{index + 1}</div>
         { isActive ? (
           <div style={{flex: '1 0 auto'}}>
-            <input style={{ border: 'none', color: '#fff', backgroundColor: '#fff1', width: '100%', marginBottom: '0.5rem', fontSize: '1rem' }} type="text" value={name} onChange={onNameChange} />
+            <Input type="text" value={name} onChange={onNameChange} />
             <Slider value={bombacity} radius={0.3} orientation="horizontal" onChange={onBombacityChange} />
           </div>
         ) : (

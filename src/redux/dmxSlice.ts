@@ -1,5 +1,4 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { number } from 'yup/lib/locale';
 import { Fixture, FixtureType, Universe, fixtureTypes, fixtureTypesByID, getTestUniverse } from '../engine/dmxFixtures';
 import {clampNormalized} from '../util/helpers'
 
@@ -10,6 +9,7 @@ export interface DmxState {
   editedFixture: null | string
   selectedFixture: null | number
   overwrites: number[]
+  groups: string[]
 }
 
 interface SetFixtureWindowPayload {
@@ -36,7 +36,8 @@ const initialDmxState: DmxState = {
   fixtureTypesByID: fixtureTypesByID,
   editedFixture: null,
   selectedFixture: null,
-  overwrites: []
+  overwrites: [],
+  groups: []
 }
 
 export const dmxSlice = createSlice({
@@ -84,12 +85,18 @@ export const dmxSlice = createSlice({
         window.y.width = clampNormalized(window.y.width + payload.dHeight) 
       }
     },
-    // addFixture: (state, {payload}: PayloadAction<AddFixturePayload>) => {
-    //   state.universe[payload.channel] = payload.fixture
-    // },
-    // removeFixture: (state, {payload}: PayloadAction<number>) => {
-    //   state.universe[payload] = null
-    // },
+    setSelectedFixtureGroups: (state, { payload }: PayloadAction<string[]>) => {
+      const i = state.selectedFixture
+      if (i === null) {
+        console.error('i === null')
+        return
+      }
+      if (state.universe[i] === undefined) {
+        console.warn(state.universe[i] === undefined)
+        return
+      }
+      state.universe[i].groups = payload
+    },
     setEditedFixture: (state, {payload}: PayloadAction<null|string >) => {
       state.editedFixture = payload
     },
@@ -110,6 +117,9 @@ export const dmxSlice = createSlice({
     },
     setOverwrite: (state, { payload }: PayloadAction<{ index: number, value: number }>) => {
       state.overwrites[payload.index] = payload.value
+    },
+    setGroups: (state, { payload }: PayloadAction<string[]>) => {
+      state.groups = payload
     }
   },
 });
@@ -120,6 +130,7 @@ export const {
   setEditedFixture,
   setFixtureWindow,
   setFixtureWindowEnabled,
+  setSelectedFixtureGroups,
   incrementFixtureWindow,
   addFixture,
   removeFixture,
@@ -127,6 +138,7 @@ export const {
   updateFixtureType,
   deleteFixtureType,
   setOverwrite,
+  setGroups
 } = dmxSlice.actions;
 
 export default dmxSlice.reducer;

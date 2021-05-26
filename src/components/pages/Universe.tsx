@@ -14,9 +14,9 @@ export default function Universe() {
 
   return (
     <>
-      <SplitPane style={{height: '100vh', width: '100%'}} type="vertical" initialSplit={0.30} rem={0.5}>
+      <SplitPane style={{height: '100vh', width: '100%'}} type="vertical" initialSplit={0.30} rem={0.5} min={0.2} max={0.6}>
         <div style={styles.root}>
-          <SplitPane style={{height: '100%', width: '100%'}} type="horizontal" initialSplit={0.5} rem={0.5}>
+          <SplitPane style={{height: '100%', width: '100%'}} type="horizontal" initialSplit={0.5} rem={0.5} min={0.25} max={0.75}>
             <MyFixtures />
             <Groups />
           </SplitPane>

@@ -7,10 +7,10 @@ import { addFixtureType, resetDmxState } from '../../redux/dmxSlice'
 import { useDispatch } from 'react-redux'
 import { initFixtureType } from '../../engine/dmxFixtures'
 import SaveIcon from '@material-ui/icons/Save'
-import GetAppIcon from '@material-ui/icons/GetApp'
 import PublishIcon from '@material-ui/icons/Publish'
 import { saveFile, loadFile, captivateFileFilters } from '../../util/saveload_renderer'
 import { store } from '../../redux/store'
+import styled from 'styled-components'
 
 function loadUniverse() {
   loadFile('Load Universe', [captivateFileFilters.dmx]).then(string => {
@@ -43,29 +43,53 @@ export default function MyFixtures() {
   })
 
   return (
-    <div style={{
-      height: '100%', padding: '0.5rem', backgroundColor: '#0003', borderRight: '1px solid #fff3', display: 'flex',
-      flexDirection: 'column'
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center' }}>
-        <div style={{ fontSize: '1.5rem' }}>Fixtures</div>
-        <div style={{ flex: '1 0 0' }} />
+    <Root>
+      <Header>
+        <Title>Fixtures</Title>
+        <Spacer />
         <IconButton onClick={saveUniverse}>
           <SaveIcon />
         </IconButton>
         <IconButton onClick={loadUniverse}>
           <PublishIcon />
         </IconButton>
-      </div>
-      <div style={{overflow: 'scroll', height: 'auto'}}>
+      </Header>
+      <Items style={{overflow: 'scroll', height: 'auto'}}>
         {elements}
         <IconButton style={{ color: '#fff' }} onClick={() => {
           dispatch(addFixtureType(initFixtureType()))
         }}>
           <AddIcon />
         </IconButton>
-      </div>
-    </div>
+      </Items>
+    </Root>
   )
 }
 
+const Root = styled.div`
+  height: 100%;
+  padding: 0.5rem;
+  background-color: #0003;
+  border-right: 1px solid #fff3;
+  display: flex;
+  flex-direction: column;
+`
+
+const Header = styled.div`
+  display: flex;
+  align-items: center;
+`
+
+const Items = styled.div`
+  overflow: scroll;
+  height: auto;
+`
+
+const Title = styled.div`
+  font-size: 1.3rem;
+  
+`
+
+const Spacer = styled.div`flex: 1 0 0;`
+
+const Item = styled.div``

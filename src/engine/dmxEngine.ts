@@ -15,7 +15,7 @@ function connectionStatusUpdate(isConnected: boolean, path: string | null) {
   if (_store.getState().connections.dmx.isConnected != isConnected) {
     _store.dispatch(setDmx({
       isConnected: isConnected,
-      path: path,
+      path: path ?? undefined,
       isTroubleshoot: false
     }));
   }
@@ -84,7 +84,7 @@ export default function setDMX(params: Params, dmxState: DmxState, blackout: boo
   
     universe.forEach(fixture => {
       const fixtureType = fixtureTypes[fixture.type]
-  
+
       if (params.Epicness >= fixtureType.epicness) {
         fixtureType.channels.forEach((channel, offset) => {
           const dmxOut = getDmxValue(channel, params, colors, fixture.window, movingWindow)
@@ -96,6 +96,5 @@ export default function setDMX(params: Params, dmxState: DmxState, blackout: boo
         })
       }
     })
-
   }
 }
