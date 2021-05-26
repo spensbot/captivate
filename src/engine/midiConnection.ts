@@ -25,7 +25,7 @@ function getInput(msg: MidiMessage): MidiInput {
 interface Options {
   updateInterval: number
   onMessage: (message: MidiInput | null) => void
-  onConnect: () => void
+  onConnect: (deviceName: string) => void
   onDisconnect: () => void
 }
 
@@ -57,6 +57,6 @@ function updateInput(input: Input, options: Options) {
   
     input.openPort(0)
 
-    options.onConnect()
+    options.onConnect(input.getPortName(0))
   }
 }

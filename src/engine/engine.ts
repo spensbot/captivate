@@ -10,6 +10,7 @@ const NodeLink = window.require('node-link')
 import { modulateParams } from './modulationEngine'
 import maintainMidiConnection from './midiConnection'
 import { addAction } from '../redux/midiSlice'
+import { setMidi } from '../redux/connectionsSlice'
 import { setActiveSceneIndex, setAutoSceneBombacity } from "../redux/scenesSlice"
 import { syncAndUpdate } from './randomizer'
 
@@ -30,8 +31,8 @@ export function init(store: ReduxStore, realtimeStore: RealtimeStore) {
   keyboardManager.init(store)
   maintainMidiConnection({
     updateInterval: 1000,
-    onConnect: () => { console.log("Connect") },
-    onDisconnect: () => { console.log("Disconnect")},
+    onConnect: (deviceName) => { store.dispatch(setMidi({isConnected: true, path: deviceName}))},
+    onDisconnect: () => { store.dispatch(setMidi({isConnected: false}))},
     onMessage: (input) => {
       if (input) {
         const state = store.getState().midi

@@ -45,8 +45,8 @@ export function Scene({ index, id }: { index: number, id: string }) {
   const bombacity = useTypedSelector(state => state.scenes.byId[id].bombacity)
   const name = useTypedSelector(state => state.scenes.byId[id].name)
 
-  const onNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch(setActiveSceneName(e.target.value))
+  const onNameChange = (newVal: string) => {
+    dispatch(setActiveSceneName(newVal))
   }
   
   const onBombacityChange = (val: number) => { 

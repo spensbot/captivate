@@ -25,7 +25,8 @@ export default function Randomizer({ }: Props) {
 }
 
 const Root = styled.div`
-
+  padding: 1rem;
+  width: 20rem;
 `
 
 const Title = styled.div`

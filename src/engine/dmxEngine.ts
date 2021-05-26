@@ -93,9 +93,9 @@ export default function setDMX(params: Params, dmxState: DmxState, blackout: boo
 
       if (params.Epicness >= fixtureType.epicness) {
         fixtureType.channels.forEach((channel, offset) => {
-          const dmxOut = getDmxValue(channel, params, colors, fixture.window, movingWindow)
-          const dmxOutRandomized = applyRandomization(dmxOut, randomizerState[i], params.Randomize)
-          dmxConnection.updateChannel(fixture.ch + offset, dmxOutRandomized);
+          let dmxOut = getDmxValue(channel, params, colors, fixture.window, movingWindow)
+          dmxOut = applyRandomization(dmxOut, randomizerState[i], params.Randomize)
+          dmxConnection.updateChannel(fixture.ch + offset, dmxOut)
         })
       } else {
         fixtureType.channels.forEach((channel, offset) => {
