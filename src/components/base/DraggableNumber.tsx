@@ -7,7 +7,7 @@ type Props = {
   min: number
   max: number
   onChange: (newVal: number) => void
-  style: React.CSSProperties
+  style?: React.CSSProperties
 }
 
 // This is really bad react behavior... But IDK what else to do

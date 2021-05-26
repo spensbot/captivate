@@ -12,7 +12,8 @@ export enum ParamKey {
   Height = "Height",
   Black = "Black",
   Epicness = "Epicness",
-  Strobe = "Strobe"
+  Strobe = "Strobe",
+  Randomize = "Randomize"
 }
 
 export type Params = { [key in ParamKey]: Normalized }
@@ -30,7 +31,8 @@ export function initParams(): Params {
     [ParamKey.Height]: 1.0,
     [ParamKey.Black]: 0.5,
     [ParamKey.Epicness]: 0.5,
-    [ParamKey.Strobe]: 0.0
+    [ParamKey.Strobe]: 0.0,
+    [ParamKey.Randomize]: 0.0
   }
 }
 
@@ -45,7 +47,8 @@ export function initModulation(): Params {
     [ParamKey.Height]: 0.5,
     [ParamKey.Black]: 0.5,
     [ParamKey.Epicness]: 0.5,
-    [ParamKey.Strobe]: 0.5
+    [ParamKey.Strobe]: 0.5,
+    [ParamKey.Randomize]: 0.5
   }
 }
 
@@ -59,5 +62,6 @@ export const paramsList = [
   ParamKey.Height,
   ParamKey.Black,
   ParamKey.Epicness,
-  ParamKey.Strobe
+  ParamKey.Strobe,
+  ParamKey.Randomize
 ]

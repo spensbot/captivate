@@ -5,14 +5,14 @@ import styled from 'styled-components'
 
 interface Params {
   value?: number
-  radius: number
+  radius?: number
   orientation: 'vertical' | 'horizontal'
   onChange: (newVal: number) => void
   color?: string
   disabled?: boolean
 }
 
-export default function Slider({ value, radius, orientation, onChange, color, disabled }: Params) {
+export default function Slider({ value, radius = 0.4, orientation, onChange, color, disabled }: Params) {
   const [localVal, setLocalVal] = useState(0.0)
 
   const localOnChange = (newVal: number) => {

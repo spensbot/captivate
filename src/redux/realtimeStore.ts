@@ -2,6 +2,7 @@ import { configureStore, PayloadAction } from '@reduxjs/toolkit'
 import { createDispatchHook, createSelectorHook, TypedUseSelectorHook } from 'react-redux'
 import { initParams } from '../engine/params';
 import React from 'react'
+import { initRandomizerState } from '../engine/randomizer'
 
 export interface TimeState {
   bpm: number
@@ -27,7 +28,8 @@ function initTime(): TimeState {
 
 const initState = {
   outputParams: initParams(),
-  time: initTime()
+  time: initTime(),
+  randomizer: initRandomizerState()
 }
 
 export type RealtimeState = typeof initState

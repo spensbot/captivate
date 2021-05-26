@@ -5,6 +5,7 @@ import Modulators from '../scenes/Modulators'
 import SceneSelection from '../scenes/SceneSelection'
 import SplitPane from '../base/SplitPane'
 import VideoList from '../visualizer/VideoList'
+import Randomizer from '../scenes/Randomizer'
 
 export default function Scenes() {
   const styles: { [key: string]: React.CSSProperties } = {
@@ -34,6 +35,7 @@ export default function Scenes() {
             <Modulators />
             <ParamsControl />
             {/* <VideoList /> */}
+            <Randomizer />
           </div>
         </div>
       </SplitPane>

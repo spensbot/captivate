@@ -18,3 +18,8 @@ export function randomElement<Type>(items: Type[]) {
 export function getFilename(path: string) {
   return path.substring(path.lastIndexOf("/") + 1);
 }
+
+export function lerp(start: number, stop: number, amt: number) {
+  const delta = stop - start
+  return start + delta * amt
+}

@@ -1,8 +1,9 @@
 import { ReduxState } from '../redux/store'
-import {initFixtureType} from '../engine/dmxFixtures'
+import { initFixtureType } from '../engine/dmxFixtures'
+import { initRandomizerOptions } from '../engine/randomizer'
 
 export default function (oldState: ReduxState) {
-  const {gui, dmx} = oldState
+  const {gui, dmx, scenes} = oldState
   if (gui.videos === undefined) gui.videos = []
   if (gui.text === undefined) gui.text = []
   if (dmx.overwrites === undefined) dmx.overwrites = []
@@ -19,6 +20,9 @@ export default function (oldState: ReduxState) {
   dmx.fixtureTypes.forEach(ftId => {
     const ft = dmx.fixtureTypesByID[ftId]
     if (ft === undefined) dmx.fixtureTypesByID[ftId] = initFixtureType()
+  })
+  scenes.ids.forEach(id => {
+    if (scenes.byId[id].randomizer === undefined) scenes.byId[id].randomizer = initRandomizerOptions()
   })
   return oldState
 }

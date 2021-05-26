@@ -11,6 +11,7 @@ import { modulateParams } from './modulationEngine'
 import maintainMidiConnection from './midiConnection'
 import { addAction } from '../redux/midiSlice'
 import { setActiveSceneIndex, setAutoSceneBombacity } from "../redux/scenesSlice"
+import { syncAndUpdate } from './randomizer'
 
 let _lastFrameTime = 0
 let _engineTime = 0
@@ -88,6 +89,7 @@ function engineUpdate(currentTime: number) {
   timeState.quantum = 4.0
 
   const state = _store.getState()
+  const realtimeState = _realtimeStore.getState()
   
   if (state.scenes.active && state.scenes.byId[state.scenes.active]) {
     const scene = state.scenes.byId[state.scenes.active]
@@ -96,7 +98,8 @@ function engineUpdate(currentTime: number) {
   
     const newRealtimeState = {
       time: timeState,
-      outputParams: outputParams
+      outputParams: outputParams,
+      randomizer: syncAndUpdate(realtimeState.randomizer, state.dmx.universe, timeState, scene.randomizer)
     }
   
     _realtimeStore.dispatch(update(newRealtimeState))

@@ -5,6 +5,7 @@ import { ParamKey, PartialParams } from '../engine/params'
 import { clampNormalized, clamp } from '../util/helpers'
 import { initModulator } from '../engine/modulationEngine'
 import { nanoid } from 'nanoid'
+import { RandomizerOptions } from '../engine/randomizer'
 
 export interface AutoScene_t {
   enabled: boolean,
@@ -157,6 +158,11 @@ export const scenesSlice = createSlice({
           scene.baseParams[key] = clampNormalized(scene.baseParams[key] + value)
         })
       }
+    },
+    setRandomizer: (state, {payload}: PayloadAction<{ key: keyof RandomizerOptions, value: number }>) => {
+      modifyActiveScene(state, scene => {
+        scene.randomizer[payload.key] = payload.value
+      })
     }
   },
 });
@@ -181,7 +187,8 @@ export const {
   addModulator,
   removeModulator,
   setModulation,
-  resetModulator
+  resetModulator,
+  setRandomizer
 } = scenesSlice.actions;
 
 export default scenesSlice.reducer;

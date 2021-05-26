@@ -1,11 +1,13 @@
 import { Params, initParams } from './params'
 import { Modulator, initModulator } from './modulationEngine'
+import { RandomizerOptions, initRandomizerOptions } from '../engine/randomizer'
 
 export interface Scene_t {
   name: string,
   bombacity: number,
   modulators: Modulator[],
-  baseParams: Params
+  baseParams: Params,
+  randomizer: RandomizerOptions
 }
 
 export function initScene(): Scene_t {
@@ -13,6 +15,7 @@ export function initScene(): Scene_t {
     name: '',
     bombacity: 0,
     modulators: [initModulator()],
-    baseParams: initParams()
+    baseParams: initParams(),
+    randomizer: initRandomizerOptions()
   }
 }

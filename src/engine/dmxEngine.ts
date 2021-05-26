@@ -7,7 +7,9 @@ import { DmxState } from '../redux/dmxSlice'
 import { RealtimeStore } from '../redux/realtimeStore'
 import { ReduxStore } from '../redux/store'
 import { setDmx } from '../redux/connectionsSlice'
-
+import { Point } from '../engine/randomizer'
+import { lerp } from '../util/helpers'
+ 
 let _realtimeStore: RealtimeStore
 let _store: ReduxStore
 
@@ -29,7 +31,7 @@ export function init(store: ReduxStore, realtimeStore: RealtimeStore) {
 }
 
 const writeDMX = () => {  
-  setDMX(_realtimeStore.getState().outputParams, _store.getState().dmx, _store.getState().gui.blackout)
+  setDMX(_realtimeStore.getState().outputParams, _store.getState().dmx, _store.getState().gui.blackout, _realtimeStore.getState().randomizer)
 }
 
 function getWindowMultiplier2D(fixtureWindow: Window2D_t, movingWindow: Window2D_t) {
@@ -67,7 +69,11 @@ function getMovingWindow(params: Params): Window2D_t {
   }
 }
 
-export default function setDMX(params: Params, dmxState: DmxState, blackout: boolean) {
+function applyRandomization(value: number, point: Point, randomizationAmount: number) {
+  return lerp(value, value * point.level, randomizationAmount)
+}
+
+export default function setDMX(params: Params, dmxState: DmxState, blackout: boolean, randomizerState: Point[]) {
   const universe = dmxState.universe
   const fixtureTypes = dmxState.fixtureTypesByID
 
@@ -82,13 +88,14 @@ export default function setDMX(params: Params, dmxState: DmxState, blackout: boo
     const colors = getColors(params);
     const movingWindow = getMovingWindow(params);
   
-    universe.forEach(fixture => {
+    universe.forEach((fixture, i) => {
       const fixtureType = fixtureTypes[fixture.type]
 
       if (params.Epicness >= fixtureType.epicness) {
         fixtureType.channels.forEach((channel, offset) => {
           const dmxOut = getDmxValue(channel, params, colors, fixture.window, movingWindow)
-          dmxConnection.updateChannel(fixture.ch + offset, dmxOut);
+          const dmxOutRandomized = applyRandomization(dmxOut, randomizerState[i], params.Randomize)
+          dmxConnection.updateChannel(fixture.ch + offset, dmxOutRandomized);
         })
       } else {
         fixtureType.channels.forEach((channel, offset) => {

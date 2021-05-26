@@ -13,7 +13,8 @@ export default function ParamsControl() {
       <XYpad />
       <ParamSlider paramKey={ ParamKey.Black}/>
       <ParamSlider paramKey={ ParamKey.Strobe }/>
-      <ParamSlider paramKey={ ParamKey.Epicness }/>
+      <ParamSlider paramKey={ParamKey.Epicness} />
+      <ParamSlider paramKey={ ParamKey.Randomize } />
     </div>
   )
 }
