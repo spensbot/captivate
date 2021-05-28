@@ -24,7 +24,7 @@ import { setCamZ } from './visualizer/ThreeJSQueue'
 import BarChartIcon from '@material-ui/icons/BarChart';
 import { useTypedSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
-import { setActivePage, Page } from '../redux/guiSlice'
+import { setActivePage } from '../redux/guiSlice'
 import TooltipWrapper from './base/TooltipWrapper'
 import BlackoutButton from './BlackoutButton'
 
@@ -78,25 +78,25 @@ export default function MenuBar() {
 
   return (
     <div className={classes.root}>
-      <MenuItem page={Page.UNIVERSE} tooltipText="DMX Setup">
+      <MenuItem page='Universe' tooltipText="DMX Setup">
         {/* <ViewComfyIcon /> */}
         {/* <PlaylistAddIcon /> */}
         <ListIcon />
       </MenuItem>
-      <MenuItem page={Page.MODULATION} tooltipText="Scene Editor">
+      <MenuItem page='Modulation' tooltipText="Scene Editor">
         {/* <WhatshotIcon /> */}
         <MovieFilterIcon />
         {/* <StarBorderIcon /> */}
       </MenuItem>
-      <MenuItem page={Page.VIDEO} tooltipText="Visualizer" paddingRem={0.6}>
+      <MenuItem page='Video' tooltipText="Visualizer" paddingRem={0.6}>
         {/* <FeaturedVideoIcon /> */}
         {/* <MovieFilterIcon /> */}
         <img src={logoThick} style={{width: '2.3rem', height: '2.3rem', margin: '0'}} />
       </MenuItem>
-      <MenuItem page={Page.SHARE} tooltipText="Share">
+      <MenuItem page='Share' tooltipText="Share">
         <CloudUploadIcon />
       </MenuItem>
-      <MenuItem page={Page.MIXER} tooltipText="DMX Mixer">
+      <MenuItem page='Mixer' tooltipText="DMX Mixer">
         <BarChartIcon />
       </MenuItem>
       {/* <IconButton onClick={next}>

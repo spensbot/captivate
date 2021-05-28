@@ -36,3 +36,4 @@ function testArray() {
 
   array.forEach((val, index) => console.log(`[${index}] -> ${val}`))
 }
+

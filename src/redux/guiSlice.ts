@@ -1,22 +1,16 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-export enum Page {
-  UNIVERSE,
-  MODULATION,
-  VIDEO,
-  SHARE,
-  MIXER
-}
+export type Page = 'Universe' | 'Modulation' | 'Video' | 'Share' | 'Mixer'
 
-interface State_t {
+export interface GuiState {
   activePage: Page,
   blackout: boolean,
   videos: string[],
   text: string[]
 }
 
-const initState: State_t = {
-  activePage: Page.UNIVERSE,
+const initState: GuiState = {
+  activePage: 'Universe',
   blackout: false,
   videos: [ "" ],
   text: [ "feel with me", "Sailing To Mars" ]

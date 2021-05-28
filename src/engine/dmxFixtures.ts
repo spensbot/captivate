@@ -10,37 +10,21 @@ export const DMX_DEFAULT_VALUE = 0;
 export type DmxChannel = number // 1 - 512
 export type DmxValue = number // 0 - 255
 
-export enum ChannelType {
-  Color = 'color',
-  Master = 'master',
-  Strobe = 'strobe',
-  Speed = 'speed',
-  Pos = 'pos',
-  Width = 'width',
-  Other = 'constant',
-}
+export type ChannelType = 'color' | 'master' | 'strobe' | 'speed' | 'pos' | 'width' | 'other'
 
-export const channelTypes = [
-  ChannelType.Master,
-  ChannelType.Color,
-  ChannelType.Strobe,
-  // ChannelType.Speed,
-  // ChannelType.Pos,
-  // ChannelType.Width,
-  ChannelType.Other
-]
+export const channelTypes = [ 'master', 'color', 'strobe', 'other', 'speed', 'pos', 'width', 'other' ]
 
 type ChannelMaster = {
-  type: ChannelType.Master
+  type: 'master'
 }
 
 type ChannelColor = {
-  type: ChannelType.Color
+  type: 'color'
   color: Color
 }
 
 type ChannelStrobe = {
-  type: ChannelType.Strobe
+  type: 'strobe'
   default_strobe: DmxValue
   default_solid: DmxValue
 }
@@ -60,7 +44,7 @@ type ChannelStrobe = {
 // }
 
 type ChannelOther = {
-  type: ChannelType.Other
+  type: 'other'
   default: DmxValue
 }
 
@@ -80,14 +64,14 @@ const parFixture : FixtureType = {
   name: "Par",
   epicness: 0.3,
   channels: [
-    { type: ChannelType.Master },
-    { type: ChannelType.Color, color: Color.Red },
-    { type: ChannelType.Color, color: Color.Green },
-    { type: ChannelType.Color, color: Color.Blue },
-    { type: ChannelType.Color, color: Color.White },
-    { type: ChannelType.Other, default: 0 },
-    { type: ChannelType.Strobe, default_solid: 0, default_strobe: 255 },
-    { type: ChannelType.Other, default: 0 }
+    { type: 'master' },
+    { type: 'color', color: 'red' },
+    { type: 'color', color: 'green' },
+    { type: 'color', color: 'blue' },
+    { type: 'color', color: 'white' },
+    { type: 'other', default: 0 },
+    { type: 'strobe', default_solid: 0, default_strobe: 255 },
+    { type: 'other', default: 0 }
   ]
 }
 
@@ -96,7 +80,7 @@ const stringLightFixture : FixtureType = {
   name: "Light String",
   epicness: 0.3,
   channels: [
-    { type: ChannelType.Master },
+    { type: 'master' },
   ]
 }
 
@@ -106,9 +90,9 @@ const strobeFixture : FixtureType = {
   name: "Strobe",
   epicness: 0.8,
   channels: [
-    { type: ChannelType.Master },
-    { type: ChannelType.Strobe, default_solid: 0, default_strobe: 251 },
-    { type: ChannelType.Other, default: 0 },
+    { type: 'master' },
+    { type: 'strobe', default_solid: 0, default_strobe: 251 },
+    { type: 'other', default: 0 },
   ]
 }
 
@@ -118,13 +102,13 @@ const derbyFixture : FixtureType = {
   name: "Derby",
   epicness: 0,
   channels: [
-    { type: ChannelType.Master },
-    { type: ChannelType.Color, color: Color.Red },
-    { type: ChannelType.Color, color: Color.Green },
-    { type: ChannelType.Color, color: Color.Blue },
-    { type: ChannelType.Strobe, default_solid: 0, default_strobe: 220 },
-    { type: ChannelType.Other, default: 130 },
-    { type: ChannelType.Other, default: 0 },
+    { type: 'master' },
+    { type: 'color', color: 'red' },
+    { type: 'color', color: 'green' },
+    { type: 'color', color: 'blue' },
+    { type: 'strobe', default_solid: 0, default_strobe: 220 },
+    { type: 'other', default: 130 },
+    { type: 'other', default: 0 },
   ]
 }
 
@@ -134,7 +118,7 @@ const laserFixture: FixtureType = {
   name: 'EL-400',
   epicness: 0.5,
   channels: [
-    { type: ChannelType.Master }
+    { type: 'master' }
   ]
 }
 

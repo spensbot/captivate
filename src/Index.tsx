@@ -11,6 +11,8 @@ import { createMuiTheme } from '@material-ui/core/styles';
 import root from './util/prepareDOM'
 import { ThemeProvider } from '@material-ui/core'
 
+import '../tests/test'
+
 engine.init(store, realtimeStore)
 
 const theme = createMuiTheme({

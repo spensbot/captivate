@@ -1,21 +1,9 @@
 import { Normalized } from '../types/baseTypes'
 import { Params } from './params'
 
-export enum Color {
-  Red = 'red',
-  Green = 'green',
-  Blue = 'blue',
-  White = 'white',
-  Black = 'black'
-}
+export type Color = 'red' | 'green' | 'blue' | 'white' | 'black'
 
-export const colorList = [
-  Color.Red,
-  Color.Green,
-  Color.Blue,
-  Color.White,
-  Color.Black
-]
+export const colorList = ['red', 'green', 'blue', 'white', 'black']
 
 export type Colors = { [key in Color]: Normalized }
 
@@ -68,11 +56,11 @@ export function getColors(params: Params): Colors {
   const [r, g, b] = hsv2rgb(params.Hue, params.Saturation, 1.0)
 
   return {
-    [Color.Red]: r,
-    [Color.Green]: g,
-    [Color.Blue]: b,
-    [Color.Black]: params.Black,
+    red: r,
+    green: g,
+    blue: b,
+    black: params.Black,
     // The min of r g b represents a little bit of white
-    [Color.White]: Math.min(r, g, b)
+    white: Math.min(r, g, b)
   }
 }

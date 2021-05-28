@@ -24,7 +24,7 @@ export interface MidiActionControlled {
   action: MidiAction
 }
 
-interface MidiState {
+export interface MidiState {
   listening?: MidiAction
   isEditing: boolean
   byInputID: { [inputID: string]: MidiActionControlled | undefined } // note70, cc50, etc.

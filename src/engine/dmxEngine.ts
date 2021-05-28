@@ -49,13 +49,13 @@ function getWindowMultiplier(fixtureWindow?: Window, movingWindow?: Window) {
 
 function getDmxValue(fixtureChannel: FixtureChannel, params: Params, colors: Colors, fixtureWindow: Window2D_t, movingWindow: Window2D_t): DmxValue {
   switch (fixtureChannel.type) {
-    case ChannelType.Master:
+    case 'master':
       return params.Brightness * DMX_MAX_VALUE * getWindowMultiplier2D(fixtureWindow, movingWindow);
-    case ChannelType.Other:
+    case 'other':
       return fixtureChannel.default;
-    case ChannelType.Color:
+    case 'color':
       return colors[fixtureChannel.color] * DMX_MAX_VALUE
-    case ChannelType.Strobe:
+    case 'strobe':
       return (params.Strobe > 0.5) ? fixtureChannel.default_strobe : fixtureChannel.default_solid
     default:
       return 0

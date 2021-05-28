@@ -1,6 +1,6 @@
 import Divider from '../base/Divider'
 import React from 'react'
-import {colorList, Color} from '../../engine/dmxColors'
+import { colorList } from '../../engine/dmxColors'
 import { ChannelType, FixtureChannel, channelTypes } from '../../engine/dmxFixtures'
 import DoneIcon from '@material-ui/icons/Done';
 import { IconButton, TextField } from '@material-ui/core';
@@ -75,9 +75,9 @@ export default function MyFixtureEditing({ id }: Props) {
   }
 
   function getChannelFields(fixtureChannel: FixtureChannel, index: number) {
-    if (fixtureChannel.type === ChannelType.Master)
+    if (fixtureChannel.type === 'master')
       return null
-    if (fixtureChannel.type === ChannelType.Color)
+    if (fixtureChannel.type === 'color')
       return (
         <>
           <Select labelId={index + "color label"} id={index + "color"} value={fixtureChannel.color} style={{ alignSelf: 'flex-end' }}
@@ -86,15 +86,15 @@ export default function MyFixtureEditing({ id }: Props) {
               formik.setValues(formik.values)
             }}
           >
-            <MenuItem value={Color.Red}>{Color.Red}</MenuItem>
-            <MenuItem value={Color.Green}>{Color.Green}</MenuItem>
-            <MenuItem value={Color.Blue}>{Color.Blue}</MenuItem>
-            <MenuItem value={Color.White}>{Color.White}</MenuItem>
-            <MenuItem value={Color.Black}>{Color.Black}</MenuItem>
+            <MenuItem value={'red'}>{'red'}</MenuItem>
+            <MenuItem value={'green'}>{'green'}</MenuItem>
+            <MenuItem value={'blue'}>{'blue'}</MenuItem>
+            <MenuItem value={'white'}>{'white'}</MenuItem>
+            <MenuItem value={'black'}>{'black'}</MenuItem>
           </Select>
         </>
       )
-    if (fixtureChannel.type === ChannelType.Strobe)
+    if (fixtureChannel.type === 'strobe')
       return (
         <>
           <TextField style={{width: '4rem', marginRight: '0.5rem'}} size="small" id="default_strobe" name="default_strobe" label="Strobe"
@@ -117,7 +117,7 @@ export default function MyFixtureEditing({ id }: Props) {
           />
         </>
       )
-    if (fixtureChannel.type === ChannelType.Other)
+    if (fixtureChannel.type === 'other')
       return (
         <TextField style={{width: '4rem'}} size="small" id="default" name="default" label="Default"
           value={fixtureChannel.default}
@@ -150,10 +150,10 @@ export default function MyFixtureEditing({ id }: Props) {
             }}
             style={{margin: '-0.2rem 0.5rem 0 0', alignSelf: 'flex-end'}}
           >
-            <MenuItem value={ChannelType.Master}>{ChannelType.Master}</MenuItem>
-            <MenuItem value={ChannelType.Color}>{ChannelType.Color}</MenuItem>
-            <MenuItem value={ChannelType.Strobe}>{ChannelType.Strobe}</MenuItem>
-            <MenuItem value={ChannelType.Other}>{ChannelType.Other}</MenuItem>
+            <MenuItem value={'master'}>{'master'}</MenuItem>
+            <MenuItem value={'color'}>{'color'}</MenuItem>
+            <MenuItem value={'strobe'}>{'strobe'}</MenuItem>
+            <MenuItem value={'other'}>{'other'}</MenuItem>
           </Select>
           {getChannelFields(fixtureChannel, index)}
         </div>
@@ -193,7 +193,7 @@ export default function MyFixtureEditing({ id }: Props) {
               <span style={{fontSize: '1.3rem', marginRight: '0.5rem'}}>Channels</span>
               <IconButton size='small' style={{ marginRight: '0.5rem' }} onClick={
                 () => {
-                  formik.setValues({ ...formik.values, channels: [...formik.values.channels, { type: ChannelType.Master }] })
+                  formik.setValues({ ...formik.values, channels: [...formik.values.channels, { type: 'master' }] })
                 }
               }>
                 <AddIcon />

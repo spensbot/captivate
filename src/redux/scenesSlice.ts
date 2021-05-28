@@ -13,7 +13,7 @@ export interface AutoScene_t {
   period: number
 }
 
-export interface SceneState_t {
+export interface SceneState {
   ids: string[],
   byId: {[key: string]: Scene_t},
   active: string,
@@ -22,7 +22,7 @@ export interface SceneState_t {
 
 const initID = nanoid()
 
-const initState: SceneState_t = {
+const initState: SceneState = {
   ids: [initID],
   byId: {
     [initID]: initScene()
@@ -49,7 +49,7 @@ interface SetModulationPayload {
   value: number
 }
 
-function modifyActiveScene(state: SceneState_t, callback: (scene: Scene_t) => void) {
+function modifyActiveScene(state: SceneState, callback: (scene: Scene_t) => void) {
   if (state.active && state.byId[state.active]) {
     callback(state.byId[state.active])
   }
@@ -68,7 +68,7 @@ export const scenesSlice = createSlice({
     setAutoScenePeriod: (state, { payload }: PayloadAction<number>) => {
       state.auto.period = payload
     },
-    resetScenesState: (state, { payload }: PayloadAction<SceneState_t>) => {
+    resetScenesState: (state, { payload }: PayloadAction<SceneState>) => {
       state.active = payload.active
       state.byId = payload.byId
       state.ids = payload.ids

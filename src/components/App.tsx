@@ -6,7 +6,6 @@ import Share from './pages/Share'
 import Mixer from './pages/Mixer'
 import MenuBar from './MenuBar'
 import { useTypedSelector } from '../redux/store'
-import { Page } from '../redux/guiSlice'
 
 export default function App() {
   const activePage = useTypedSelector(state => state.gui.activePage)
@@ -19,17 +18,17 @@ export default function App() {
     },
     activePage: {
       flex: '1 1 auto',
-      overflow: activePage === Page.VIDEO ? undefined : 'auto',
+      overflow: activePage === 'Video' ? undefined : 'auto',
       height: '100%',
     }
   }
 
   function getActivePage() {
-    if (activePage == Page.MODULATION) return (<Modulation />)
-    if (activePage == Page.UNIVERSE) return (<Universe />)
-    if (activePage == Page.VIDEO) return (<Video />)
-    if (activePage == Page.SHARE) return (<Share />)
-    if (activePage == Page.MIXER) return (<Mixer />)
+    if (activePage == 'Modulation') return (<Modulation />)
+    if (activePage == 'Universe') return (<Universe />)
+    if (activePage == 'Video') return (<Video />)
+    if (activePage == 'Share') return (<Share />)
+    if (activePage == 'Mixer') return (<Mixer />)
   }
 
   return (
