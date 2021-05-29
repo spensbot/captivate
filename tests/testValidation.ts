@@ -1,4 +1,4 @@
-import {validate, string, number} from '../src/util/validate'
+import {validateSchema, string, number} from '../src/util/validate'
 
 interface Mixed { req: string, opt?: string }
 
@@ -7,7 +7,8 @@ interface Test extends Mixed {
   number: number,
   object: Mixed,
   primitiveArray: number[],
-  objectArray: Mixed[]
+  objectArray: Mixed[],
+  nestedArray: Mixed[][]
 }
 
 const tests: { [key: string]: Test } = {
@@ -19,7 +20,8 @@ const tests: { [key: string]: Test } = {
       req: 'a'
     },
     primitiveArray: [],
-    objectArray: []
+    objectArray: [],
+    nestedArray: [[]]
   },
   testInvalidComplete: {
     string: 2,
@@ -31,7 +33,8 @@ const tests: { [key: string]: Test } = {
       opt: false
     },
     primitiveArray: [0, 1, 2, 3],
-    objectArray: [{ req: 'a', opt: 'a' }]
+    objectArray: [{ req: 'a', opt: 'a' }],
+    nestedArray: [[]]
   },
   testInvalidIncomplete: {
 
@@ -46,11 +49,14 @@ const tests: { [key: string]: Test } = {
       opt: 'a'
     },
     primitiveArray: [0, 1, 2, 3],
-    objectArray: [{ req: 'a', opt: 'a' }]
+    objectArray: [{ req: 'a', opt: 'a' }],
+    nestedArray: [
+      [{ req: 'a' }]
+    ]
   }
 }
 
-const validateTest = validate<Test>({
+const validateTest = validateSchema<Test>({
   string: string(),
   number: number(),
   req: string(),
@@ -60,7 +66,11 @@ const validateTest = validate<Test>({
     opt: string()
   },
   primitiveArray: [number()],
-  objectArray: [{req: string(), opt: string()}]
+  objectArray: [{ req: string(), opt: string() }],
+  nestedArray: [[{
+    req: string(),
+    opt: string()
+  }]]
 }, {
   string: 'a',
   number: 0,
@@ -69,7 +79,8 @@ const validateTest = validate<Test>({
     req: 'a'
   },
   primitiveArray: [1],
-  objectArray: [{req: 'a'}]
+  objectArray: [{ req: 'a' }],
+  nestedArray: [[]]
 })
 
 function test(testKey: keyof typeof tests) {

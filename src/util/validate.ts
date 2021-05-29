@@ -1,30 +1,61 @@
 type MaybeError = string | void
 type Validate<T> = (val: T) => MaybeError
-// type WrappedValidate<T> = ['***', Validate<T>]
-type WrappedValidate<T> = { '***': Validate<T>, def?: T }
-type WrapValidate<T> = (validate?: Validate<T>, def?: T) => WrappedValidate<T>
+type Node<T> = { validate: Validate<T>, schema?: Schema<T> }
+type WrappedValidate<T> = { '***': Node<T>[] }
+type WrapValidate<T> = (validate?: Validate<T>) => WrappedValidate<T>
 
-export const string: WrapValidate<string> = (validate, def) => {
+export const string: WrapValidate<string> = (validate) => {
   return {
-    '***': val => {
-      if (typeof val !== 'string') return 'not a string'
-      if (validate) return validate(val)
-    },
-    def: def
+    '***': [{
+      validate: val => {
+        if (typeof val !== 'string') return 'not a string'
+        if (validate) return validate(val)
+      }
+    }]
   }
 }
 
-export const number: WrapValidate<number> = (validate, def) => {
+export const number: WrapValidate<number> = (validate) => {
   return {
-    '***': val => {
-      if (isNaN(val)) return 'not a number'
-      if (validate) return validate(val)
-    },
-    def: def
+    '***': [{
+      validate: val => {
+        if (isNaN(val)) return 'not a number'
+        if (validate) return validate(val)
+      }
+    }]
   }
 }
 
-// type ValidateObject<T> = (schema: Schema<T>, defaults: T) => (obj: T) => {errors?: string[], valid: T}
+export function nullable<T>(validate?: Validate<T>): WrappedValidate<T> {
+  return {
+    '***': [{
+      validate: val => {
+        if (val === null) return
+        if (validate) return validate(val)
+      }
+    }]
+  }
+}
+
+export function variant<T>(validateList: WrappedValidate<T>[]): WrappedValidate<T> {
+  return {
+    '***': validateList.map(wrappedValidate => wrappedValidate["***"]).flat()
+  }
+}
+
+export function object<T>(schema: Schema<T>, validate?: Validate<T>): WrappedValidate<T> {
+  return {
+    '***': [{
+      validate: val => {
+        if (val === null) return 'is null'
+        if (Array.isArray(val)) return 'is array'
+        if (typeof val !== 'object') return `is ${typeof val}`
+        if (validate) return validate(val)
+      },
+      schema: schema
+    }]
+  }
+}
 
 function isObject(obj: any) {
   return obj === Object(obj);
@@ -40,18 +71,18 @@ function ret<T>(fixed: T, errors?: Errors<T>) {
   }
 }
 
-export function validate<T>(schema: Schema<T>, defaults: T): (obj: any) => {errors?: any, fixed: T} {
+export function validateSchema<T>(schema: Schema<T>, defalt: T): (obj: any) => {err?: any, fixed: T} {
   return obj => {
 
-    if (obj === undefined) return ret(defaults, 'is undefined')
-    if (obj === null) return ret(defaults, 'is null')
+    if (obj === undefined) return ret(defalt, 'is undefined')
+    if (obj === null) return ret(defalt, 'is null')
 
     const fixed: Partial<T> = {}
     const errors: any = {}
 
     for (const key in schema) {
       const schemaVal = schema[key]
-      const defaultVal = defaults[key]
+      const defaultVal = defalt[key]
       const val = obj[key]
 
       // Array 
@@ -82,27 +113,35 @@ export function validate<T>(schema: Schema<T>, defaults: T): (obj: any) => {erro
       // Object
       } else if (isObject(schemaVal)) {
         if (schemaVal['***'] === undefined) {
-          const valSchema = schemaVal
-          const res = validate(valSchema, defaultVal)(val)
-          errors[key] = res.errors
+          const subSchema = schemaVal
+          const res = validateSchema(subSchema, defaultVal)(val)
+          if (res.errors !== undefined) {
+            errors[key] = res.errors
+          }
           fixed[key] = res.fixed
         }
         
         // Primitive
         else { 
           const validatePrimitive = schemaVal['***']
-          const def = schemaVal.def
-          if (validatePrimitive(val)) {
-            errors[key] = validatePrimitive(val)
-            fixed[key] = defaults[key]
+          if (val === undefined) {
+            if (defaultVal !== undefined) {
+              errors[key] = 'Does not exist'
+              fixed[key] = defaultVal
+            }
           } else {
-            fixed[key] = defaults[key]
+            if (validatePrimitive(val)) {
+              errors[key] = validatePrimitive(val)
+              fixed[key] = defaultVal
+            } else {
+              fixed[key] = val
+            }
           }
         }
       }
     }
 
-    return {fixed: fixed as T, errors: errors}
+    return {fixed: fixed as T, errors: Object.keys(errors).length === 0 ? undefined : errors}
   }
 }
 
@@ -119,7 +158,7 @@ type SchemaFromRequired<T> = {
     ? WrappedValidate<T[Key]>
     : SchemaFromRequired<T[Key]>
 }
-type Schema<T> = SchemaFromRequired<Required_Recursive<T>>
+export type Schema<T> = SchemaFromRequired<Required_Recursive<T>>
 
 type Errors<T> = {
   [Key in keyof T]+?: T[Key] extends string | number | boolean
