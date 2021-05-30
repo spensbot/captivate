@@ -1,11 +1,11 @@
 type MaybeError = string | void
 type Validate<T> = (val: T) => MaybeError
-type Node<T> = { validate: Validate<T>, schema?: Schema<T> }
-type WrappedValidate<T> = { '***': Node<T>[] }
-type WrapValidate<T> = (validate?: Validate<T>) => WrappedValidate<T>
-type ValidateSchemaResult<T> = {err?: any, fixed: T }
+type ValidatePkg<T> = { validate: Validate<T>, schema?: Schema<T> }
+type SchemaNode<T> = { '***': ValidatePkg<T>[] }
+type MakeSchemaNode<T> = (validate?: Validate<T>) => SchemaNode<T>
+type ValidateSchemaResult<T> = {err?: any, fixed?: T }
 
-export const string: WrapValidate<string> = (validate) => {
+export const string: MakeSchemaNode<string> = (validate) => {
   return {
     '***': [{
       validate: val => {
@@ -16,7 +16,7 @@ export const string: WrapValidate<string> = (validate) => {
   }
 }
 
-export const number: WrapValidate<number> = (validate) => {
+export const number: MakeSchemaNode<number> = (validate) => {
   return {
     '***': [{
       validate: val => {
@@ -27,7 +27,7 @@ export const number: WrapValidate<number> = (validate) => {
   }
 }
 
-export function nullable<T>(validate?: Validate<T>): WrappedValidate<T> {
+export function nullable<T>(validate?: Validate<T>): SchemaNode<T> {
   return {
     '***': [{
       validate: val => {
@@ -38,13 +38,13 @@ export function nullable<T>(validate?: Validate<T>): WrappedValidate<T> {
   }
 }
 
-export function variant<T>(validateList: WrappedValidate<T>[]): WrappedValidate<T> {
+export function variant<T>(validateList: SchemaNode<T>[]): SchemaNode<T> {
   return {
     '***': validateList.map(wrappedValidate => wrappedValidate["***"]).flat()
   }
 }
 
-export function object<T>(schema: Schema<T>, validate?: Validate<T>): WrappedValidate<T> {
+export function object<T>(schema: Schema<T>, validate?: Validate<T>): SchemaNode<T> {
   return {
     '***': [{
       validate: val => {
@@ -58,124 +58,164 @@ export function object<T>(schema: Schema<T>, validate?: Validate<T>): WrappedVal
   }
 }
 
-function isObject(obj: any) {
-  return obj === Object(obj);
+function isObject(val: any) {
+  return val === Object(val);
 }
-function isArray(obj: any) {
-  return Array.isArray(obj)
+function isArray(val: any) {
+  return Array.isArray(val)
 }
 
-function ret<T>(fixed: T, err?: Errors<T>) {
+function ret<T>(fixed?: T, err?: Errors<T>) {
   return {
     fixed: fixed,
     err: err
   }
 }
 
-function validateSchemaNodes<T>(nodes: Node<T>[], defalt: T, val: any): ValidateSchemaResult<T> {
-  if (nodes.length < 1) {
+function clearArraysNested(array: any[]) {
+  if (isArray(array[0])) {
+    return [clearArraysNested(array[0])]
+  }
+  return []
+}
+
+// OPTIONS
+// val dne &
+//   default exists -> {default, err}
+//   default dne -> {_,_}
+// Val is valid -> {val, _}
+// Val is invalid &
+//   default exists -> {default, err}
+//   default dne -> {_, err}
+
+function validatePrimitive<T>(validate: Validate<T>, defalt: T | undefined, val: any): ValidateSchemaResult<T> {
+  if (validate(val)) {
+    if (defalt === undefined) {
+      return {err: validate(val)}
+    } else {
+      return {err: validate(val), fixed: defalt}
+    }
+  } else {
+    return { fixed: val }
+  }
+}
+
+function validatePackage<T>({schema, validate}: ValidatePkg<T>, defalt: T | undefined, val: any): ValidateSchemaResult<T> {
+  if (val === undefined) {
+    if (defalt === undefined) {
+      return {}
+    } else {
+      return {err: 'Does not exist', fixed: defalt}
+    }
+  } else {
+    if (schema === undefined) {
+      return validatePrimitive(validate, defalt, val)
+    } else {
+      return validateSchema(schema, defalt, val)
+    }
+  }
+}
+
+function validateSchemaNode<T>(node: SchemaNode<T>, defalt: T | undefined, val: any): ValidateSchemaResult<T> {
+  const pkgs = node["***"]
+
+  if (pkgs.length < 1) {
     console.error('No schema node given!')
     return {fixed: defalt}
-  } else if (nodes.length > 1) {
-    for (const node of nodes) {
-      const res = validateSchemaNode(node, defalt, val)
+  } else if (pkgs.length > 1) {
+    for (const pkg of pkgs) {
+      const res = validatePackage(pkg, defalt, val)
       if (res.err === undefined)
         return {fixed: val}
     }
     return {err: `matched no variant type`, fixed: defalt}
   } else {
-    return validateSchemaNode(nodes[0], defalt, val)
+    return validatePackage(pkgs[0], defalt, val)
   }
 }
 
-function validateSchemaNode<T>({validate, schema}: Node<T>, defalt: T, val: any): ValidateSchemaResult<T> {
-  if (val === undefined) {
-    if (defalt !== undefined) {
-      return {err: 'Does not exist', fixed: defalt}
-    } else {
-      // TODO: This probably isn't right
-      return {fixed: val}
-    }
-  } else {
-    if (schema === undefined) {
-      if (validate(val)) {
-        return {err: validate(val), fixed: defalt}
-      } else {
-        return { fixed: val }
-      }
-    } else {
-      return validateSchema(schema, defalt)(val)
-    }
+// OPTIONS
+// The schema array should contain a single element. It can be one of the following
+//  - SchemaNode
+//  - Array
+//  - Object
+// Regardless, each value in the array should be checked for validity based on the schema type. 
+//   Anything that is invalid should be fixed or replaced with the default.
+
+function validateSchemaArray<T>(schemaArray: T[], defaltArray: T[] | undefined, valArray: any): ValidateSchemaResult<T[]> {
+  const fixedArray: T[] = []
+  const errArray: Errors<T>[] = []
+  const defalt = defaltArray?.[0]
+
+  if (valArray === undefined) return { fixed: defaltArray && clearArraysNested(defaltArray), err: 'does not exist'}
+  // TODO: Make fixed array return correct number of nested arrays.
+  if (!isArray(valArray)) return { fixed: defaltArray && clearArraysNested(defaltArray), err: 'is not array' }
+
+  const schema = schemaArray[0]
+  if (schema === undefined) {
+    const err = 'Schema error!: All Arrays must have a single schema element'
+    console.error(err)
+    return {err: err, fixed: fixedArray}
   }
+
+  const validateItem = isArray(schema)
+    ? validateSchemaArray
+    : (schema['***'] === undefined)
+      ? validateSchema
+      : validateSchemaNode
+
+  valArray.forEach((val, i) => {
+    const res = validateItem(schema, defalt, val)
+    if (res.fixed !== undefined) fixedArray.push(res.fixed)
+    if (res.err !== undefined) errArray[i] = res.err
+  })
+
+  return {fixed: fixedArray, err: errArray.length > 0 ? errArray : undefined}
 }
 
-function validateSchemaArray<T>(schemaArray: T[], defalt: T, val: any): ValidateSchemaResult<T> {
-  // fixed[key] = []
-  // if (!isArray(val)) {
-  //   errors[key] = 'is not array'
-  // } else {
-  //   const schemaItem = schemaVal[0]
-  //   if (schemaItem['***'] === undefined) { // Object
-  //     const validateItem = schemaItem['***']
-  //     val.forEach((item, i) => {
-  //       if (validateItem(item)) {
-  //         errors[key][i] = validateItem(item)
-  //         fixed[key][i] = defalts[key][i]
-  //       } else {
-  //         fixed[key][i] = item
-  //       }
-  //     })
-  //   } else {
-  //     const itemSchema = schemaItem
-  //     val.forEach((item, i) => {
-  //       const {errors, fixed} = 
-  //     })
-  //   }
-  // }
-  return {fixed: defalt}
-}
+function validateSchema<T>(schema: Schema<T>, defalt: T | undefined, obj: any): ValidateSchemaResult<T> {
+  if (obj === undefined) return ret(defalt, 'does not exist')
+  if (obj === null) return ret(defalt, 'is null')
 
-export function validateSchema<T>(schema: Schema<T>, defalt: T): (obj: any) => ValidateSchemaResult<T> {
-  return obj => {
+  const fixed: Partial<T> = {}
+  const errors: any = {}
 
-    if (obj === undefined) return ret(defalt, 'is undefined')
-    if (obj === null) return ret(defalt, 'is null')
+  for (const key in schema) {
+    const schemaVal = schema[key]
+    const defaltVal = defalt?.[key]
+    const val = obj[key]
+    let res: ValidateSchemaResult<any> | null = null
 
-    const fixed: Partial<T> = {}
-    const errors: any = {}
+    if (isArray(schemaVal)) {
+      res = validateSchemaArray(schemaVal, defaltVal, val)
 
-    for (const key in schema) {
-      const schemaVal = schema[key]
-      const defaltVal = defalt[key]
-      const val = obj[key]
-      let res: ValidateSchemaResult<any> | null = null
-
-      if (isArray(schemaVal)) {
-        res = validateSchemaArray(schemaVal, defaltVal, val)
-
-      } else if (isObject(schemaVal)) {
-        if (schemaVal['***'] === undefined) {
-          res = validateSchema(schemaVal, defaltVal)(val)
-        }
-        else {
-          res = validateSchemaNodes(schemaVal['***'], defaltVal, val)
-        }
+    } else if (isObject(schemaVal)) {
+      if (schemaVal['***'] === undefined) {
+        res = validateSchema(schemaVal, defaltVal, val)
       }
+      else {
+        res = validateSchemaNode(schemaVal, defaltVal, val)
+      }
+    }
 
-      if (res === null) {
-        console.error('res === null')
-      } else {
-        if (res.err !== undefined) {
-          errors[key] = res.err
-        }
+    if (res === null) {
+      console.error('res === null')
+    } else {
+      if (res.err !== undefined) {
+        errors[key] = res.err
+      }
+      if (res.fixed !== undefined) {
         fixed[key] = res.fixed
       }
     }
-
-    return {fixed: fixed as T, errors: Object.keys(errors).length === 0 ? undefined : errors}
   }
+
+  return {fixed: fixed as T, err: Object.keys(errors).length === 0 ? undefined : errors}
 }
 
+export function makeValidate<T>(schema: Schema<T>, makeDefalt: () => T): (val: any) => ValidateSchemaResult<T> {
+  return val => validateSchema(schema, makeDefalt(), val)
+}
 
 type Required_Recursive<T> = {
   [Key in keyof T]-?: Required_Recursive<T[Key]>
@@ -186,8 +226,8 @@ type Optional_Recursive<T> = {
 
 type SchemaFromRequired<T> = {
   [Key in keyof T]: T[Key] extends string | number | boolean
-    ? WrappedValidate<T[Key]>
-    : SchemaFromRequired<T[Key]> | WrappedValidate<T[Key]>
+    ? SchemaNode<T[Key]>
+    : SchemaFromRequired<T[Key]> | SchemaNode<T[Key]>
 }
 export type Schema<T> = SchemaFromRequired<Required_Recursive<T>>
 

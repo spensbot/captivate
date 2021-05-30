@@ -1,4 +1,4 @@
-import {validateSchema, string, number} from '../src/util/validate'
+import {makeValidate, string, number, nullable, variant, object} from '../src/util/validate'
 
 interface Mixed { req: string, opt?: string }
 
@@ -23,22 +23,6 @@ const tests: { [key: string]: Test } = {
     objectArray: [],
     nestedArray: [[]]
   },
-  testInvalidComplete: {
-    string: 2,
-    number: 'a',
-    req: 3,
-    opt: 4,
-    object: {
-      req: true,
-      opt: false
-    },
-    primitiveArray: [0, 1, 2, 3],
-    objectArray: [{ req: 'a', opt: 'a' }],
-    nestedArray: [[]]
-  },
-  testInvalidIncomplete: {
-
-  },
   testValidComplete: {
     string: 'a',
     number: 0,
@@ -53,10 +37,26 @@ const tests: { [key: string]: Test } = {
     nestedArray: [
       [{ req: 'a' }]
     ]
-  }
+  },
+  testInvalidComplete: {
+    string: 2,
+    number: 'a',
+    req: 3,
+    opt: 4,
+    object: {
+      req: true,
+      opt: false
+    },
+    primitiveArray: [0, 1, 2, 3],
+    objectArray: [{ req: 'a', opt: 'a' }],
+    nestedArray: [[{ req: 'a'}, {req: 'a', opt: 'b'}, 1, "hello"]]
+  },
+  testInvalidIncomplete: {
+
+  },
 }
 
-const validateTest = validateSchema<Test>({
+const validateTest = makeValidate<Test>({
   string: string(),
   number: number(),
   req: string(),
@@ -71,7 +71,7 @@ const validateTest = validateSchema<Test>({
     req: string(),
     opt: string()
   }]]
-}, {
+}, () => ({
   string: 'a',
   number: 0,
   req: 'a',
@@ -80,8 +80,8 @@ const validateTest = validateSchema<Test>({
   },
   primitiveArray: [1],
   objectArray: [{ req: 'a' }],
-  nestedArray: [[]]
-})
+  nestedArray: [[{ req: 'a' }]]
+}))
 
 function test(testKey: keyof typeof tests) {
   console.log(`Testing ${testKey}`)
