@@ -1,14 +1,15 @@
-import {makeValidate, string, number, nullable, variant, object} from '../src/util/validate'
+import {makeValidate, string, number, nullable, union, object, Schema} from '../src/util/validate'
 
 interface Mixed { req: string, opt?: string }
-
+const mixedSchema: Schema<Mixed> = {req: string(), opt: string()}
+  
 interface Test extends Mixed {
   string: string,
   number: number,
   object: Mixed,
   primitiveArray: number[],
   objectArray: Mixed[],
-  nestedArray: Mixed[][]
+  nestedArray: Mixed[][],
 }
 
 const tests: { [key: string]: Test } = {
@@ -47,8 +48,8 @@ const tests: { [key: string]: Test } = {
       req: true,
       opt: false
     },
-    primitiveArray: [0, 1, 2, 3],
-    objectArray: [{ req: 'a', opt: 'a' }],
+    primitiveArray: ['a', [], null, undefined],
+    objectArray: [1, 'b'],
     nestedArray: [[{ req: 'a'}, {req: 'a', opt: 'b'}, 1, "hello"]]
   },
   testInvalidIncomplete: {
@@ -88,9 +89,41 @@ function test(testKey: keyof typeof tests) {
   console.log(validateTest(tests[testKey]))
 }
 
+interface Test2 {
+  nullable: null | Mixed,
+  union: Mixed | { hello: number },
+  primitiveUnionArray: Array<number | string | null>
+}
+
+const test2: Test2 = {
+  nullable: null,
+  union: { hello: 5 },
+  primitiveUnionArray: [1, '2', null]
+}
+
+const test2Invalid: any = {
+  nullable: 8,
+  union: 'asdf',
+  primitiveUnionArray: [[], {}, 1]
+}
+
+const validateTest2 = makeValidate<Test2>({
+  nullable: union(nullable(), object(mixedSchema)),
+  union: union(object(mixedSchema), object({hello: number()})),
+  primitiveUnionArray: [union(number(), string(), nullable())]
+}, () => ({
+  nullable: null,
+  union: { hello: 0 },
+  primitiveUnionArray: 'okay'
+}))
+
 export default () => {
   test('testValidMinimum')
   test('testValidComplete')
   test('testInvalidComplete')
   test('testInvalidIncomplete')
+  console.log('test2')
+  console.log(validateTest2(test2))
+  console.log('test2Invalid')
+  console.log(validateTest2(test2Invalid))
 }

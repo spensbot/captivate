@@ -29,34 +29,89 @@ interface Options {
   onDisconnect: () => void
 }
 
-export default function maintain(options: Options) {
-  const input = new Input()
+const refInput = new Input()
+// const inputs: Input[] = []
+const inputs: Inputs = {}
+type Inputs = { [portName: string]: Input }
 
+export default function maintain(options: Options) {
   setInterval(() => {
-    updateInput(input, options)
+    updateInputs(options)
   }, options.updateInterval)
 }
 
-function updateInput(input: Input, options: Options) {
-  const portCount = input.getPortCount()
-
-  if (input.isPortOpen()) {
-    // input.closePort()
-  } else if (portCount === 0) {
-  } else {
-    for (let i = 0; i < portCount; i++) {
-      console.log(input.getPortName(i))
+function updateInputs(options: Options) {
+  const portCount = refInput.getPortCount()
+  const activePortNames: string[] = []
+  
+  for (let i = 0; i < portCount; i++) {
+    const portName = refInput.getPortName(i)
+    activePortNames.push(portName)
+    if (inputs[portName] === undefined) {
+      inputs[portName] = newInput(i, options)
     }
-  
-    input.on('message', (dt, message) => {
-      const midiMessage = parseMessage(message)
-      if (midiMessage) options.onMessage(getInput(midiMessage))
-      // I think dt is the seconds since the last message
-      // I'm not sure what that's good for yet?
-    })
-  
-    input.openPort(0)
+  }
 
-    options.onConnect(input.getPortName(0))
+  for (const oldPortName in inputs) {
+    if (activePortNames.find(activePortName => activePortName === oldPortName) === undefined) {
+      delete inputs[oldPortName]
+      console.log(`Removing Midi Connection: ${oldPortName}`)
+      options.onDisconnect()
+    }
   }
 }
+
+function newInput(index: number, options: Options) {
+  const input = new Input()
+
+  input.on('message', (dt, message) => {
+    const midiMessage = parseMessage(message)
+    if (midiMessage) options.onMessage(getInput(midiMessage))
+    // I think dt is the seconds since the last message
+    // I'm not sure what that's good for yet?
+  })
+
+  input.openPort(index)
+
+  console.log(`New Midi connection: ${input.getPortName(index)}`)
+  options.onConnect(input.getPortName(index))
+
+  return input
+}
+
+
+// function updateInputs(options: Options) {
+//   const portCount = refInput.getPortCount()
+  
+//   while (inputs.length < portCount) {
+//     inputs.push(new Input())
+//   }
+//   while (inputs.length > portCount) {
+//     inputs.pop()
+//     if (inputs.length === 0) {
+//       options.onDisconnect()
+//       console.log('All Midi Devices Disconnected')
+//     }
+//   }
+
+//   inputs.forEach((input, index) => {
+//     updateInput(input, index, options)
+//   })
+// }
+
+// function newInput(input: Input, index: number, options: Options) {
+//   if (!input.isPortOpen()) {
+  
+//     input.on('message', (dt, message) => {
+//       const midiMessage = parseMessage(message)
+//       if (midiMessage) options.onMessage(getInput(midiMessage))
+//       // I think dt is the seconds since the last message
+//       // I'm not sure what that's good for yet?
+//     })
+  
+//     input.openPort(index)
+
+//     console.log(`New Midi connection: ${input.getPortName(index)}`)
+//     options.onConnect(input.getPortName(index))
+//   }
+// }

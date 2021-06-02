@@ -1,3 +1,4 @@
 import testValidation from './testValidation'
 
-testValidation()
+// Sad day, I'm giving up on this for now :/
+// testValidation()

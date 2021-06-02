@@ -17,7 +17,8 @@ function createWindow() {
     backgroundColor: '#191622',
     webPreferences: {
       nodeIntegration: true,
-      webSecurity: devMode ? false : true
+      webSecurity: devMode ? false : true,
+      backgroundThrottling: false
     }
   })
 

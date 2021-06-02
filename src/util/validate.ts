@@ -38,7 +38,7 @@ export function nullable<T>(validate?: Validate<T>): SchemaNode<T> {
   }
 }
 
-export function variant<T>(validateList: SchemaNode<T>[]): SchemaNode<T> {
+export function union<T>(...validateList: SchemaNode<T>[]): SchemaNode<T> {
   return {
     '***': validateList.map(wrappedValidate => wrappedValidate["***"]).flat()
   }
@@ -72,7 +72,7 @@ function ret<T>(fixed?: T, err?: Errors<T>) {
   }
 }
 
-function clearArraysNested(array: any[]) {
+function clearArraysNested(array: any): any {
   if (isArray(array[0])) {
     return [clearArraysNested(array[0])]
   }
@@ -128,7 +128,7 @@ function validateSchemaNode<T>(node: SchemaNode<T>, defalt: T | undefined, val: 
       if (res.err === undefined)
         return {fixed: val}
     }
-    return {err: `matched no variant type`, fixed: defalt}
+    return {err: `matched no union type`, fixed: defalt}
   } else {
     return validatePackage(pkgs[0], defalt, val)
   }

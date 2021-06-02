@@ -48,8 +48,9 @@ const Overlay = styled.div<{selected: boolean}>`
   right: 0;
   cursor: pointer;
   border: ${props => props.selected && '1px solid white'};
-  background: #3f37;
+  background: #56fd56b7;
   display: flex;
   justify-content: center;
   align-items: center;
+  color: black;
 `
