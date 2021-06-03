@@ -100,11 +100,13 @@ export default function (oldState: ReduxState) {
     if (ft === undefined) dmx.fixtureTypesByID[ftId] = initFixtureType()
   })
   scenes.ids.forEach(id => {
-    if (scenes.byId[id].randomizer === undefined) scenes.byId[id].randomizer = initRandomizerOptions()
-    if (scenes.byId[id].baseParams.Randomize === undefined) scenes.byId[id].baseParams.Randomize = 0
-    scenes.byId[id].modulators.forEach(modulator => {
+    const scene = scenes.byId[id]
+    if (scene.randomizer === undefined) scene.randomizer = initRandomizerOptions()
+    if (scene.baseParams.Randomize === undefined) scene.baseParams.Randomize = 0
+    scene.modulators.forEach(modulator => {
       if (modulator.modulation.Randomize === undefined) modulator.modulation.Randomize = 0.5
     })
+    if (scene.groups === undefined) scene.groups = []
   })
   return oldState
 }

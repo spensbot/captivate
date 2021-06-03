@@ -38,7 +38,7 @@ export function nullable<T>(validate?: Validate<T>): SchemaNode<T> {
   }
 }
 
-export function union<T>(...validateList: SchemaNode<T>[]): SchemaNode<T> {
+export function union(...validateList: SchemaNode<any>[]): SchemaNode<any> {
   return {
     '***': validateList.map(wrappedValidate => wrappedValidate["***"]).flat()
   }
@@ -219,7 +219,7 @@ export function makeValidate<T>(schema: Schema<T>, makeDefalt: () => T): (val: a
 
 type Required_Recursive<T> = {
   [Key in keyof T]-?: Required_Recursive<T[Key]>
-};
+}
 type Optional_Recursive<T> = {
   [Key in keyof T]+?: Optional_Recursive<T[Key]>
 }

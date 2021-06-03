@@ -7,7 +7,8 @@ export interface Scene_t {
   bombacity: number,
   modulators: Modulator[],
   baseParams: Params,
-  randomizer: RandomizerOptions
+  randomizer: RandomizerOptions,
+  groups: string[]
 }
 
 export function initScene(): Scene_t {
@@ -16,6 +17,7 @@ export function initScene(): Scene_t {
     bombacity: 0,
     modulators: [initModulator()],
     baseParams: initParams(),
-    randomizer: initRandomizerOptions()
+    randomizer: initRandomizerOptions(),
+    groups: []
   }
 }
