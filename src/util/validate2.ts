@@ -4,13 +4,14 @@ interface NodeBase<T> { validate: Validate<T> }
 interface NodePrimitive<T> extends NodeBase<T> { type: 'primitive' }
 interface NodeArray<T> extends NodeBase<T> { type: 'array', fixItem: (val: any) => Fixed<any> }
 interface NodeObject<T> extends NodeBase<T> { type: 'object', schema: Schema<T> }
-interface NodeUnion { type: 'union', nodes: SchemaNode<any>[]}
-type SchemaNode<T> = NodePrimitive<T> | NodeArray<T> | NodeObject<T> | NodeUnion
+interface NodeUnion<T> { type: 'union', nodes: SchemaNode<T>[] }
+type SchemaNode<T> = NodePrimitive<T> | NodeArray<T> | NodeObject<T> | NodeUnion<T>
 type Fixed<T> = { err?: Errors<T>, fixed?: T }
 
 function fixPrimitive<T>(node: NodePrimitive<T>, val: any, defalt?: T): Fixed<T> {
-  if (node.validate(val)) return {
-    err: node.validate(val),
+  const err = node.validate(val)
+  if (err) return {
+    err: err,
     fixed: defalt
   }
   return {
@@ -51,8 +52,9 @@ function fixObject<T>(node: NodeObject<T>, obj: any, defalt?: T): Fixed<T> {
   const err: Errors<T> = {}
   const fixed: Partial<T> = {}
 
-  if (node.validate(obj)) return {
-    err: node.validate(obj),
+  const objectErr = node.validate(obj)
+  if (objectErr) return {
+    err: objectErr,
     fixed: defalt
   }
 
@@ -88,8 +90,9 @@ export function object<T>(schema: Schema<T>, validate?: Validate<T>): SchemaNode
 }
 
 function fixArray<T>(node: NodeArray<T[]>, array: any): Fixed<T[]> {
-  if (node.validate(array)) return {
-    err: node.validate(array),
+  const arrayErr = node.validate(array)
+  if (arrayErr) return {
+    err: arrayErr,
     fixed: []
   }
 
@@ -124,7 +127,7 @@ export function array<T>(node: SchemaNode<T>, validate?: Validate<T[]>): SchemaN
   }
 }
 
-function fixUnion(node: NodeUnion, val: any, defalt: any) {
+function fixUnion<T>(node: NodeUnion<T>, val: any, defalt: any) {
   for (const subNode of node.nodes) {
     const res = fix(subNode, val, defalt)
     if (res.err === undefined) {
@@ -140,16 +143,21 @@ function fixUnion(node: NodeUnion, val: any, defalt: any) {
   }
 }
 
-export function union(...validateList: (SchemaNode<any> | any)[]): SchemaNode<any>[] {
-  return validateList.map<SchemaNode<any>>(val => {
-    if (isObject(val)) {
-      if (val.validate === undefined) {
+export function union<T>(...validateList: (SchemaNode<any> | any)[]): SchemaNode<T> {
+  return {
+    type: 'union',
+    nodes: validateList.map<SchemaNode<T>>(val => {
+      if (isObject(val)) {
+        if (val.validate === undefined) {
+          console.error(`Bad value passed to union(). Primitive or SchemaNode required`)
+        } else {
+          return val
+        }
+      } else {
         return equal(val)
       }
-    } else {
-      return val
-    }
-  })
+    })
+  }
 }
 
 type Errors<T> = {
@@ -157,7 +165,7 @@ type Errors<T> = {
 } | string
 
 type Schema<T> = {
-  [Key in keyof T]-?: SchemaNode<Required<T>[Key]> | NodeUnion
+  [Key in keyof T]-?: SchemaNode<Required<T>[Key]>
 }
 
 function fix<T>(node: SchemaNode<T>, val: any, defalt?: T): Fixed<T> {

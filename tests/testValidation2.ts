@@ -95,28 +95,29 @@ function test(testKey: keyof typeof tests) {
 interface Test2 {
   nullable: null | Mixed,
   union: Mixed | { hello: number },
-  // primitiveUnionArray: Array<number | string | null>
+  primitiveUnionArray: Array<number | string | null>
 }
 
 const test2: Test2 = {
   nullable: null,
   union: { hello: 5 },
-  // primitiveUnionArray: [1, '2', null]
+  primitiveUnionArray: [1, '2', null]
 }
 
 const test2Invalid: any = {
   nullable: 8,
   union: 'asdf',
-  // primitiveUnionArray: [[], {}, 1]
+  primitiveUnionArray: [[], {}, 1]
 }
 
 const fixTest2 = makeFix<Test2>(object({
   nullable: union(null, mixedSchema),
-  union: union(mixedSchema, object({hello: number()}))
+  union: union(mixedSchema, object({ hello: number() })),
+  primitiveUnionArray: array(union(number(), string(), null))
 }), () => ({
   nullable: null,
   union: { hello: 0 },
-  // primitiveUnionArray: 'okay'
+  primitiveUnionArray: []
 }))
 
 export default () => {

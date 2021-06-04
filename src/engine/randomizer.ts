@@ -36,7 +36,7 @@ function initPoint(): Point {
 }
 
 export function initRandomizerState(): RandomizerState {
-  return Array(length).map(val => initPoint())
+  return []
 }
 
 export function syncAndUpdate(state: RandomizerState, array: any[], ts: TimeState, options: RandomizerOptions) {
