@@ -1,17 +1,24 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { initScene, Scene_t } from '../engine/scene_t'
+import { initScene, Scene_t, sceneSchema } from '../engine/scene_t'
 import { LfoShape } from '../engine/oscillator'
 import { ParamKey, PartialParams } from '../engine/params'
 import { clampNormalized, clamp } from '../util/helpers'
 import { initModulator } from '../engine/modulationEngine'
 import { nanoid } from 'nanoid'
 import { RandomizerOptions } from '../engine/randomizer'
+import { string, number, union, object, boolean, array, equal, map } from '../util/validate'
 
 export interface AutoScene_t {
   enabled: boolean,
   bombacity: number,
   period: number
 }
+
+const autoSceneSchema = object<AutoScene_t>({
+  enabled: boolean(),
+  bombacity: number(),
+  period: number()
+})
 
 export interface SceneState {
   ids: string[],
@@ -20,18 +27,27 @@ export interface SceneState {
   auto: AutoScene_t
 }
 
+export const sceneStateSchema = object<SceneState>({
+  ids: array(string()),
+  byId: map(sceneSchema),
+  active: string(),
+  auto: autoSceneSchema,
+})
+
 const initID = nanoid()
 
-const initState: SceneState = {
-  ids: [initID],
-  byId: {
-    [initID]: initScene()
-  },
-  active: initID,
-  auto: {
-    enabled: false,
-    bombacity: 0,
-    period: 1
+export function initSceneState(): SceneState {
+  return {
+    ids: [initID],
+    byId: {
+      [initID]: initScene()
+    },
+    active: initID,
+    auto: {
+      enabled: false,
+      bombacity: 0,
+      period: 1
+    }
   }
 }
 
@@ -57,7 +73,7 @@ function modifyActiveScene(state: SceneState, callback: (scene: Scene_t) => void
 
 export const scenesSlice = createSlice({
   name: 'scenes',
-  initialState: initState,
+  initialState: initSceneState(),
   reducers: {
     setAutoSceneEnabled: (state, { payload }: PayloadAction<boolean>) => {
       state.auto.enabled = payload

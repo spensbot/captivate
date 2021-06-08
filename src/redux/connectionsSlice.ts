@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import ConnectionStatus from '../components/ConnectionStatus';
+import { string, number, union, object, boolean, array } from '../util/validate'
 
 type ConnectionStatus = {
   isConnected?: boolean
@@ -7,18 +7,32 @@ type ConnectionStatus = {
   isTroubleshoot?: boolean
 }
 
-type InitialState = {
+type ConnectionsState = {
   dmx: ConnectionStatus
   midi: ConnectionStatus
 }
-const initialState: InitialState = {
-  dmx: {},
-  midi: {}
+
+const connectionStatusSchema = object<ConnectionStatus>({
+  isConnected: boolean(),
+  path: string(),
+  isTroubleshoot: boolean()
+})
+
+export const connectionsSchema = object<ConnectionsState>({
+  dmx: connectionStatusSchema,
+  midi: connectionStatusSchema
+})
+
+export function initConnectionsState(): ConnectionsState {
+  return {
+    dmx: {},
+    midi: {}
+  }
 }
 
 export const connectionsSlice = createSlice({
   name: 'connections',
-  initialState: initialState,
+  initialState: initConnectionsState(),
   reducers: {
     setDmx: (state, action: PayloadAction<ConnectionStatus>) => {
       state.dmx = action.payload

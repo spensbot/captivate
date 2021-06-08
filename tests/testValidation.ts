@@ -1,4 +1,4 @@
-import {makeValidate, string, number, nullable, union, object, Schema} from '../src/util/validate'
+import {makeValidate, string, number, nullable, union, object, Schema} from '../src/util/validateOld'
 
 interface Mixed { req: string, opt?: string }
 const mixedSchema: Schema<Mixed> = {req: string(), opt: string()}

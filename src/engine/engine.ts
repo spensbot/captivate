@@ -2,9 +2,9 @@ import * as graphicsEngine from "./graphicsEngine"
 import * as visualizerRef from '../components/visualizer/visualizerRef'
 import * as dmxEngine from './dmxEngine'
 import * as keyboardManager from './keyboardManager'
-import { autoSave } from '../util/saveload_renderer'
 import handleAutoScene from './autoScene'
 import { ReduxStore } from '../redux/store'
+import { autoSave } from '../util/saveload_renderer'
 import { RealtimeStore, update, TimeState } from '../redux/realtimeStore'
 const NodeLink = window.require('node-link')
 import { modulateParams } from './modulationEngine'

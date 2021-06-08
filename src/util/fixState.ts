@@ -1,112 +1,68 @@
 import { ReduxState } from '../redux/store'
-import { initFixtureType } from '../engine/dmxFixtures'
-import { initRandomizerOptions } from '../engine/randomizer'
-// import { object, number, string, array, SchemaOf } from 'yup'
-// import { DmxState } from '../redux/dmxSlice'
-// import { GuiState } from '../redux/guiSlice'
-// import { MidiState } from '../redux/midiSlice'
-// import { SceneState } from '../redux/scenesSlice'
+import { string, number, union, object, array, makeFix } from '../util/validate'
+import { initConnectionsState, connectionsSchema } from '../redux/connectionsSlice'
+import { initDmxState, dmxStateSchema, DmxState } from '../redux/dmxSlice'
+import { initGuiState, guiStateShema } from '../redux/guiSlice'
+import { initMidiState, midiStateSchema } from '../redux/midiSlice'
+import { initSceneState, sceneStateSchema } from '../redux/scenesSlice'
 
+console.log('Running fixState.ts')
 
-// const stateSchema = object({
-//   dmx: object(),
-//   gui: object(),
-//   midi: object(),
-//   scenes: object()
-// })
+console.log('dmxStateSchema', dmxStateSchema)
+// console.log('getDmxStateSchema()', getDmxStateSchema())
 
-// const dmxSchema: SchemaOf<DmxState> = object({
-//   universe: array(),
-//   fixtureTypes: object(),
-//   fixtureTypesByID: object(),
-//   editedFixture: object(),
-//   selectedFixture: object(),
-//   overwrites: object(),
-//   groups: object()
-// })
+const reduxStateSchema = object<ReduxState>({
+  connections: connectionsSchema,
+  dmx: dmxStateSchema,
+  midi: midiStateSchema,
+  scenes: sceneStateSchema,
+  gui: guiStateShema
+})
 
+console.log('reduxStateSchema', reduxStateSchema)
 
-const stateDefaults: ReduxState = {
-  connections: {
-    dmx: {
-      isConnected: false
-    },
-    midi: {
-      isConnected: false
-    },
-  },
-  dmx: {
-    universe: [{
-      ch: 0,
-      type: '1',
-      window: {},
-      groups: []
-    }],
-    fixtureTypes: [],
-    fixtureTypesByID: {a: {
-      id: '',
-      name: '',
-      epicness: 0,
-      channels: [{
-        type: 'color',
-        color: 'white'
-      }]
-    }},
-    editedFixture: null,
-    selectedFixture: null,
-    overwrites: [],
-    groups: []
-  },
-  gui: {
-    activePage: 'Universe',
-    blackout: false,
-    videos: [],
-    text: []
-  },
-  scenes: {
-    ids: [],
-    byId: {},
-    active: '1',
-    auto: {
-      enabled: false,
-      bombacity: 0,
-      period: 4
-    }
-  },
-  midi: {
-    isEditing: false,
-    byActionID: {},
-    byInputID: {}
-  }
-}
+const fixState = makeFix<ReduxState>(reduxStateSchema, () => ({
+  connections: initConnectionsState(),
+  dmx: initDmxState(),
+  midi: initMidiState(),
+  scenes: initSceneState(),
+  gui: initGuiState()
+}))
 
 export default function (oldState: ReduxState) {
-  const {gui, dmx, scenes} = oldState
-  if (gui.videos === undefined) gui.videos = []
-  if (gui.text === undefined) gui.text = []
-  if (dmx.overwrites === undefined) dmx.overwrites = []
-  if (dmx.groups === undefined) dmx.groups = []
-  dmx.universe.forEach(fixture => {
-    if (fixture.groups === undefined) fixture.groups = []
-    if (dmx.fixtureTypesByID[fixture.type] === undefined) {
-      dmx.fixtureTypes.push(fixture.type)
-      const newFt = initFixtureType()
-      newFt.id = fixture.type
-      dmx.fixtureTypesByID[fixture.type] = newFt
-    }
-  })
-  dmx.fixtureTypes.forEach(ftId => {
-    const ft = dmx.fixtureTypesByID[ftId]
-    if (ft === undefined) dmx.fixtureTypesByID[ftId] = initFixtureType()
-  })
-  scenes.ids.forEach(id => {
-    const scene = scenes.byId[id]
-    if (scene.randomizer === undefined) scene.randomizer = initRandomizerOptions()
-    if (scene.baseParams.Randomize === undefined) scene.baseParams.Randomize = 0
-    scene.modulators.forEach(modulator => {
-      if (modulator.modulation.Randomize === undefined) modulator.modulation.Randomize = 0.5
-    })
-    if (scene.groups === undefined) scene.groups = []
-  })
+  console.log('oldState', oldState)
+  oldState.connections = initConnectionsState()
+  const { fixed, err } = fixState(oldState)
+  console.log('fixed', fixed)
+  console.log('err', err)
   return oldState
+
+  // const {gui, dmx, scenes} = oldState
+  // if (gui.videos === undefined) gui.videos = []
+  // if (gui.text === undefined) gui.text = []
+  // if (dmx.overwrites === undefined) dmx.overwrites = []
+  // if (dmx.groups === undefined) dmx.groups = []
+  // dmx.universe.forEach(fixture => {
+  //   if (fixture.groups === undefined) fixture.groups = []
+  //   if (dmx.fixtureTypesByID[fixture.type] === undefined) {
+  //     dmx.fixtureTypes.push(fixture.type)
+  //     const newFt = initFixtureType()
+  //     newFt.id = fixture.type
+  //     dmx.fixtureTypesByID[fixture.type] = newFt
+  //   }
+  // })
+  // dmx.fixtureTypes.forEach(ftId => {
+  //   const ft = dmx.fixtureTypesByID[ftId]
+  //   if (ft === undefined) dmx.fixtureTypesByID[ftId] = initFixtureType()
+  // })
+  // scenes.ids.forEach(id => {
+  //   const scene = scenes.byId[id]
+  //   if (scene.randomizer === undefined) scene.randomizer = initRandomizerOptions()
+  //   if (scene.baseParams.Randomize === undefined) scene.baseParams.Randomize = 0
+  //   scene.modulators.forEach(modulator => {
+  //     if (modulator.modulation.Randomize === undefined) modulator.modulation.Randomize = 0.5
+  //   })
+  //   if (scene.groups === undefined) scene.groups = []
+  // })
+  // return oldState
 }

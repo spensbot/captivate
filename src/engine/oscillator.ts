@@ -1,4 +1,5 @@
 import { Normalized } from "../types/baseTypes";
+import { string, number, union, object, boolean, array, equal, map } from '../util/validate'
 
 export enum LfoShape {
   Sin,
@@ -13,6 +14,15 @@ export interface Lfo {
   flip: Normalized
   period: number // beats
 }
+
+export const lfoSchema = object<Lfo>({
+  shape: union(LfoShape.Sin, LfoShape.Ramp),
+  skew: number(),
+  symmetricSkew: number(),
+  phaseShift: number(),
+  flip: number(),
+  period: number()
+})
 
 export function GetSin() {
   return {

@@ -1,4 +1,15 @@
-import { string, number, union, object, array, makeFix } from '../src/util/validate2'
+import { string, number, union, object, array, makeFix } from '../src/util/validate'
+
+export default () => {
+  test('testValidMinimum')
+  test('testValidComplete')
+  test('testInvalidComplete')
+  test('testInvalidIncomplete')
+  console.log('test2')
+  console.log(fixTest2(test2))
+  console.log('test2Invalid')
+  console.log(fixTest2(test2Invalid))
+}
 
 interface Mixed {
   req: string,
@@ -120,13 +131,10 @@ const fixTest2 = makeFix<Test2>(object({
   primitiveUnionArray: []
 }))
 
-export default () => {
-  test('testValidMinimum')
-  test('testValidComplete')
-  test('testInvalidComplete')
-  test('testInvalidIncomplete')
-  console.log('test2')
-  console.log(fixTest2(test2))
-  console.log('test2Invalid')
-  console.log(fixTest2(test2Invalid))
-}
+// const fixState = makeFix<ReduxState>(, () => ({
+//   connections: initConnectionsState(),
+//   dmx: initDmxState(),
+//   midi: initMidiState(),
+//   scenes: initSceneState(),
+//   gui: initGuiState()
+// }

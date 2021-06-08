@@ -1,10 +1,10 @@
 import React from 'react'
 import { render } from 'react-dom'
 import { Provider } from 'react-redux'
+import * as engine from './engine/engine'
 import { store } from './redux/store'
 import { realtimeStore, realtimeContext } from './redux/realtimeStore'
 import App from './components/App'
-import * as engine from './engine/engine'
 import {GlobalStyle} from './styles/GlobalStyle'
 import Helmet from 'react-helmet';
 import { createMuiTheme } from '@material-ui/core/styles';
@@ -12,6 +12,8 @@ import root from './util/prepareDOM'
 import { ThemeProvider } from '@material-ui/core'
 
 import '../tests/test'
+
+console.log('Running Index.tsx')
 
 engine.init(store, realtimeStore)
 

@@ -1,16 +1,29 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
+import { string, number, union, object, boolean, array, equal, map } from '../util/validate'
 
 interface SetActiveSceneIndex {
   type: 'setActiveSceneIndex'
   index: number
 }
 
+const setActiveSceneIndexSchema = object<SetActiveSceneIndex>({
+  type: equal('setActiveSceneIndex'),
+  index: number()
+})
+
 interface SetAutoSceneBombacity {
   type: 'setAutoSceneBombacity'
   bombacity: number
 }
 
+const setAutoSceneBombacitySchema = object<SetAutoSceneBombacity>({
+  type: equal('setAutoSceneBombacity'),
+  bombacity: number()
+})
+
 export type MidiAction = SetActiveSceneIndex | SetAutoSceneBombacity
+
+const midiActionSchema = union<MidiAction>(setActiveSceneIndexSchema, setAutoSceneBombacitySchema)
 
 export function getActionID(action: MidiAction) {
   if (action.type === 'setActiveSceneIndex') {
@@ -24,6 +37,11 @@ export interface MidiActionControlled {
   action: MidiAction
 }
 
+const midiActionControlledSchema = object<MidiActionControlled>({
+  inputID: string(),
+  action: midiActionSchema
+})
+
 export interface MidiState {
   listening?: MidiAction
   isEditing: boolean
@@ -31,15 +49,24 @@ export interface MidiState {
   byActionID: { [actionID: string]: MidiActionControlled | undefined } // setAutoSceneBombacity, setActiveSceneIndex0, etc.
 }
 
-const initialState: MidiState = {
-  isEditing: false,
-  byInputID: {},
-  byActionID: {}
+export const midiStateSchema = object<MidiState>({
+  listening: midiActionSchema,
+  isEditing: boolean(),
+  byInputID: map(union(undefined, midiActionControlledSchema)),
+  byActionID: map(union(undefined, midiActionControlledSchema))
+})
+
+export function initMidiState(): MidiState {
+  return {
+    isEditing: false,
+    byInputID: {},
+    byActionID: {}
+  }
 }
 
 export const midiSlice = createSlice({
   name: 'midi',
-  initialState: initialState,
+  initialState: initMidiState(),
   reducers: {
     addAction: (state, { payload }: PayloadAction<MidiActionControlled>) => {
       state.byInputID[payload.inputID] = payload

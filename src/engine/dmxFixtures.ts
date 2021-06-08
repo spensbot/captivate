@@ -1,7 +1,7 @@
-import { Window2D_t } from '../types/baseTypes'
+import { Window, Window2D_t } from '../types/baseTypes'
 import { Color } from './dmxColors'
 import { nanoid } from 'nanoid'
-import Universe from '../components/pages/Universe';
+import { string, number, union, object, boolean, array, equal } from '../util/validate'
 
 export const DMX_MAX_VALUE = 255;
 export const DMX_NUM_CHANNELS = 512;
@@ -57,6 +57,37 @@ export type FixtureType = {
   manufacturer?: string
   channels: FixtureChannel[]
 }
+
+const windowSchema = object<Window>({
+  pos: number(),
+  width: number()
+})
+
+const window2DSchema = object<Window2D_t>({
+  x: windowSchema,
+  y: windowSchema
+})
+
+export const fixtureSchema = object<Fixture>({
+  ch: number(),
+  type: string(),
+  window: window2DSchema,
+  groups: array(string())
+})
+
+export const fixtureTypeSchema = object<FixtureType>({
+  id: string(),
+  name: string(),
+  epicness: number(),
+  manufacturer: string(),
+  channels: array(union(
+    object<ChannelMaster>({ type: equal('master') }),
+    object<ChannelColor>({ type: equal('color'), color: union('red', 'green', 'blue', 'white', 'black') }),
+    object<ChannelStrobe>({ type: equal('strobe'), default_strobe: number(), default_solid: number() }),
+    object<ChannelOther>({ type: equal('other'), default: number() })
+  ))
+})
+
 
 const parFixture : FixtureType = {
   id: "1",

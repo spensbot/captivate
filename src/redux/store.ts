@@ -6,6 +6,9 @@ import guiReducer from './guiSlice'
 import scenesReducer from './scenesSlice'
 import midiReducer from './midiSlice'
 
+console.log('Running store.ts')
+console.log("connectionsReducer", connectionsReducer)
+
 const baseReducer = combineReducers({
   connections: connectionsReducer,
   dmx: dmxReducer,

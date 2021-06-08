@@ -1,6 +1,9 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Fixture, FixtureType, Universe, fixtureTypes, fixtureTypesByID, getTestUniverse } from '../engine/dmxFixtures';
-import {clampNormalized} from '../util/helpers'
+import { Fixture, FixtureType, Universe, fixtureTypes, fixtureTypesByID, getTestUniverse, fixtureSchema, fixtureTypeSchema } from '../engine/dmxFixtures';
+import { clampNormalized } from '../util/helpers'
+import { string, number, union, object, boolean, array, map } from '../util/validate'
+
+console.log('Running dmxSlice.ts')
 
 export interface DmxState {
   universe: Universe
@@ -11,6 +14,18 @@ export interface DmxState {
   overwrites: number[]
   groups: string[]
 }
+
+export const dmxStateSchema = object<DmxState>({
+  universe: array(fixtureSchema),
+  fixtureTypes: array(string()),
+  fixtureTypesByID: map(fixtureTypeSchema),
+  editedFixture: union(null, string()),
+  selectedFixture: union(null, number()),
+  overwrites: array(number()),
+  groups: array(string())
+})
+
+console.log('dmxStateSchema', dmxStateSchema)
 
 interface SetFixtureWindowPayload {
   x: number
@@ -30,19 +45,21 @@ interface SetFixtureWindowEnabledPayload {
   isEnabled: boolean
 }
 
-const initialDmxState: DmxState = {
-  universe: getTestUniverse(),
-  fixtureTypes: fixtureTypes,
-  fixtureTypesByID: fixtureTypesByID,
-  editedFixture: null,
-  selectedFixture: null,
-  overwrites: [],
-  groups: []
+export function initDmxState(): DmxState {
+  return {
+    universe: getTestUniverse(),
+    fixtureTypes: fixtureTypes,
+    fixtureTypesByID: fixtureTypesByID,
+    editedFixture: null,
+    selectedFixture: null,
+    overwrites: [],
+    groups: []
+  }
 }
 
 export const dmxSlice = createSlice({
   name: 'dmx',
-  initialState: initialDmxState,
+  initialState: initDmxState(),
   reducers: {
     resetDmxState: (state, { payload }: PayloadAction<DmxState>) => {
       state = payload
