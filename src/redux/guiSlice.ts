@@ -10,7 +10,7 @@ export interface GuiState {
   text: string[]
 }
 
-export const guiStateShema = object<GuiState>({
+export const guiStateSchema = object<GuiState>({
   activePage: union('Universe', 'Modulation', 'Video', 'Share', 'Mixer'),
   blackout: boolean(),
   videos: array(string()),

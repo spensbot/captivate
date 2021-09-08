@@ -101,7 +101,7 @@ const parFixture : FixtureType = {
     { type: 'color', color: 'blue' },
     { type: 'color', color: 'white' },
     { type: 'other', default: 0 },
-    { type: 'strobe', default_solid: 0, default_strobe: 255 },
+    { type: 'strobe', default_solid: 0, default_strobe: 241 },
     { type: 'other', default: 0 }
   ]
 }
@@ -122,7 +122,7 @@ const strobeFixture : FixtureType = {
   epicness: 0.8,
   channels: [
     { type: 'master' },
-    { type: 'strobe', default_solid: 0, default_strobe: 251 },
+    { type: 'strobe', default_solid: 0, default_strobe: 250 },
     { type: 'other', default: 0 },
   ]
 }
@@ -137,7 +137,7 @@ const derbyFixture : FixtureType = {
     { type: 'color', color: 'red' },
     { type: 'color', color: 'green' },
     { type: 'color', color: 'blue' },
-    { type: 'strobe', default_solid: 0, default_strobe: 220 },
+    { type: 'strobe', default_solid: 0, default_strobe: 199 },
     { type: 'other', default: 130 },
     { type: 'other', default: 0 },
   ]
@@ -150,6 +150,39 @@ const laserFixture: FixtureType = {
   epicness: 0.5,
   channels: [
     { type: 'master' }
+  ]
+}
+
+const vBar: FixtureType = {
+  id: '6',
+  manufacturer: 'American DJ',
+  name: 'VBar',
+  epicness: 0.7,
+  channels: [
+    { type: 'color', color: 'red' },
+    { type: 'color', color: 'green' },
+    { type: 'color', color: 'blue' },
+    { type: 'color', color: 'red' },
+    { type: 'master' },
+    { type: 'strobe', default_solid: 0, default_strobe: 218 },
+    { type: 'other', default: 0 }
+  ]
+}
+
+const venuePar: FixtureType = {
+  id: '7',
+  manufacturer: 'Venue',
+  name: 'ThinTri 64',
+  epicness: 0.7,
+  channels: [
+    { type: 'color', color: 'red' },
+    { type: 'color', color: 'green' },
+    { type: 'color', color: 'blue' },
+    { type: 'other', default: 0 },
+    { type: 'strobe', default_solid: 0, default_strobe: 247 },
+    { type: 'other', default: 0 },
+    { type: 'master' },
+    { type: 'other', default: 0 }
   ]
 }
 
@@ -167,7 +200,9 @@ export const fixtureTypes = [
   '2',
   '3',
   '4',
-  '5'
+  '5',
+  '6',
+  '7'
 ]
 
 export const fixtureTypesByID = {
@@ -175,7 +210,9 @@ export const fixtureTypesByID = {
   '2': stringLightFixture,
   '3': strobeFixture,
   '4': derbyFixture,
-  '5': laserFixture
+  '5': laserFixture,
+  '6': vBar,
+  '7': venuePar
 }
 
 export interface Fixture {
@@ -191,13 +228,19 @@ export function getTestUniverse(): Universe {
   return [
     { ch: 1, type: '4', window: {x: {pos: 0.5, width: 0.0}, y: {pos: 0.6, width: 0.0}}, groups: [] },
     { ch: 8, type: '3', window: {x: {pos: 0.5, width: 0.0}}, groups: [] },
-    { ch: 11, type: '2', window: {x: {pos: 0.0, width: 0.0}}, groups: [] },
-    { ch: 12, type: '2', window: {x: {pos: 0.33, width: 0.0}}, groups: [] },
-    { ch: 13, type: '2', window: {x: {pos: 0.66, width: 0.0}}, groups: [] },
-    { ch: 14, type: '2', window: {x: {pos: 1.0, width: 0.0}}, groups: [] },
-    { ch: 15, type: '1', window: {x: {pos: 0.8333, width: 0.0}}, groups: [] },
-    { ch: 23, type: '1', window: {x: { pos: 0.1666, width: 0.0 }}, groups: [] },
-    { ch: 35, type: '5', window: {}, groups: [] }
+    // { ch: 11, type: '2', window: {x: {pos: 0.0, width: 0.0}}, groups: [] },
+    // { ch: 12, type: '2', window: {x: {pos: 0.33, width: 0.0}}, groups: [] },
+    // { ch: 13, type: '2', window: {x: {pos: 0.66, width: 0.0}}, groups: [] },
+    // { ch: 14, type: '2', window: {x: {pos: 1.0, width: 0.0}}, groups: [] },
+    { ch: 15, type: '1', window: {x: {pos: 0.15, width: 0.0}}, groups: [] },
+    { ch: 23, type: '1', window: { x: { pos: 0.30, width: 0.0 } }, groups: [] },
+    { ch: 31, type: '1', window: { x: { pos: 0.70, width: 0.0 } }, groups: [] },
+    { ch: 39, type: '1', window: { x: { pos: 0.86, width: 0.0 } }, groups: [] },
+    { ch: 47, type: '6', window: { x: { pos: 0.0, width: 0.0 } }, groups: [] },
+    { ch: 54, type: '6', window: { x: { pos: 1.0, width: 0.0 } }, groups: [] },
+    { ch: 61, type: '7', window: { x: { pos: 0.0, width: 0.0 } }, groups: [] },
+    { ch: 69, type: '7', window: { x: { pos: 1.0, width: 0.0 }}, groups: [] },
+    // { ch: 128, type: '5', window: {}, groups: [] }
   ]
 }
 

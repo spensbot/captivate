@@ -1,10 +1,11 @@
 import { ReduxState } from '../redux/store'
-import { string, number, union, object, array, makeFix } from '../util/validate'
+import { string, number, union, object, array, makeFix, equal } from '../util/validate'
 import { initConnectionsState, connectionsSchema } from '../redux/connectionsSlice'
 import { initDmxState, dmxStateSchema, DmxState } from '../redux/dmxSlice'
-import { initGuiState, guiStateShema } from '../redux/guiSlice'
+import { initGuiState, guiStateSchema } from '../redux/guiSlice'
 import { initMidiState, midiStateSchema } from '../redux/midiSlice'
 import { initSceneState, sceneStateSchema } from '../redux/scenesSlice'
+import { $CombinedState } from 'redux'
 
 console.log('Running fixState.ts')
 
@@ -16,7 +17,8 @@ const reduxStateSchema = object<ReduxState>({
   dmx: dmxStateSchema,
   midi: midiStateSchema,
   scenes: sceneStateSchema,
-  gui: guiStateShema
+  gui: guiStateSchema,
+  [$CombinedState]: undefined
 })
 
 console.log('reduxStateSchema', reduxStateSchema)

@@ -20,11 +20,11 @@ const videoFileFilters: Electron.FileFilter[] = [
 ]
 
 function refreshLastSession(store: ReduxStore) {
-  const cachedState = localStorage.getItem(CACHED_STATE_KEY);
-  if (!!cachedState) {
-    const lastState: ReduxState = fixState( JSON.parse(cachedState) )
-    store.dispatch(resetState(lastState))
-  }
+  // const cachedState = localStorage.getItem(CACHED_STATE_KEY);
+  // if (!!cachedState) {
+  //   const lastState: ReduxState = fixState( JSON.parse(cachedState) )
+  //   store.dispatch(resetState(lastState))
+  // }
 }
 
 function saveState(state: ReduxState) {

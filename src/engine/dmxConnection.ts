@@ -55,6 +55,8 @@ export async function maintainConnection() {
     console.log(`Connected to device at path: ${path}`);
   }
 
+  console.log('Trying DMX connection')
+
   setTimeout(maintainConnection, 1000)
 }
 
