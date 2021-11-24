@@ -7,9 +7,9 @@ interface Props {
 
 export default function Window2D({window2D}: Props) {
 
-  const x = window2D.x?.pos || 0.5
+  const x = window2D.x === undefined ? 0.5 : window2D.x.pos
   const width = window2D.x?.width || 0
-  const y = window2D.y?.pos || 0.5
+  const y = window2D.y === undefined ? 0.5 : window2D.y.pos
   const height = window2D.y?.width || 0
 
   const styles: {[key: string]: React.CSSProperties} = {
