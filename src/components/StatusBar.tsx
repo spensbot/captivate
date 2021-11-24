@@ -5,6 +5,7 @@ import { useRealtimeSelector } from '../redux/realtimeStore'
 import useDragBasic from './hooks/useDragBasic'
 import { incrementTempo, setLinkEnabled } from '../engine/engine'
 import styled from 'styled-components'
+import MidiOverlay from './base/MidiOverlay'
 
 function BPM() {
   const bpm = useRealtimeSelector(state => state.time.bpm)
@@ -16,9 +17,11 @@ function BPM() {
   })
 
   return (
-    <div ref={dragContainer} onMouseDown={onMouseDown} style={{ margin: '0 1rem 0 0', cursor: 'nesw-resize', userSelect: 'none' }}>
-      {`${Math.round(bpm)} BPM`}
-    </div>
+    <MidiOverlay action={{type: 'setBpm'}}>
+      <div ref={dragContainer} onMouseDown={onMouseDown} style={{ margin: '0 1rem 0 0', cursor: 'nesw-resize', userSelect: 'none' }}>
+        {`${Math.round(bpm)} BPM`}
+      </div>
+    </MidiOverlay>
   )
 }
 

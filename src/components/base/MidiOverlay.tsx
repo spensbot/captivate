@@ -7,9 +7,10 @@ import { useDispatch } from 'react-redux'
 interface Props {
   children: React.ReactNode
   action: MidiAction
+  style?: React.CSSProperties
 }
 
-export default function MidiOverlay({ children, action }: Props) {
+export default function MidiOverlay({ children, action, style }: Props) {
   const isEditing = useTypedSelector(state => state.midi.isEditing)
   const controlledAction = useTypedSelector(
     state => { return state.midi.byActionID[getActionID(action)] || null }
@@ -25,7 +26,7 @@ export default function MidiOverlay({ children, action }: Props) {
   }
 
   return (
-    <Root>
+    <Root style={style}>
       {children}
       { isEditing &&
         <Overlay selected={isListening} onClick={onClick}>

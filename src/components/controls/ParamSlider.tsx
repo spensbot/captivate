@@ -6,6 +6,7 @@ import {useTypedSelector} from '../../redux/store'
 import { useDispatch } from 'react-redux'
 import { setBaseParams } from '../../redux/scenesSlice'
 import ParamCursor from './ParamCursor'
+import MidiOverlay from '../base/MidiOverlay'
 
 interface Props {
   paramKey: ParamKey
@@ -23,7 +24,7 @@ export default function ParamSlider({ paramKey }: Props) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '10rem', marginRight: '1rem' }}>
+    <MidiOverlay action={{ type: 'setBaseParam', paramKey: paramKey }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '10rem', marginRight: '1rem' }}>
       <div style={{ flex: '1 0 10rem' }}>
         <SliderBase orientation="vertical" radius={radius} onChange={onChange}>
           <ParamCursor orientation="vertical" paramKey={paramKey} radius={radius} />
@@ -31,6 +32,6 @@ export default function ParamSlider({ paramKey }: Props) {
         </SliderBase>
       </div>
       <div style={{ marginTop: '1rem' }}>{paramKey}</div>
-    </div>
+    </MidiOverlay>
   )
 }

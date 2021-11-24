@@ -11,7 +11,7 @@ import { modulateParams } from './modulationEngine'
 import maintainMidiConnection from './midiConnection'
 import { addAction } from '../redux/midiSlice'
 import { setMidi } from '../redux/connectionsSlice'
-import { setActiveSceneIndex, setAutoSceneBombacity } from "../redux/scenesSlice"
+import { setActiveSceneIndex, setAutoSceneBombacity, setBaseParams, setMaster } from "../redux/scenesSlice"
 import { syncAndUpdate } from './randomizer'
 
 let _lastFrameTime = 0
@@ -46,14 +46,29 @@ export function init(store: ReduxStore, realtimeStore: RealtimeStore) {
         } else {
           const action = state.byInputID[input.id]?.action
           if (action) {
+            // console.log("byActionID", store.getState().midi.byActionID)
+            // console.log("byInputID", store.getState().midi.byInputID)
             if (action.type === 'setActiveSceneIndex') {
               store.dispatch(setActiveSceneIndex(action.index))
             } else if (action.type === 'setAutoSceneBombacity') {
-              if (input.value === undefined) {
-                console.error('input.value === undefined')
-                return
+              if (input.value !== undefined) {
+                store.dispatch(setAutoSceneBombacity(input.value))
               }
-              store.dispatch(setAutoSceneBombacity(input.value))
+            } else if (action.type === 'setMaster') {
+              if (input.value !== undefined) {
+                store.dispatch(setMaster(input.value / 127))
+              }
+            } else if (action.type === 'setBaseParam') {
+              if (input.value !== undefined) {
+                store.dispatch(setBaseParams({
+                  [action.paramKey]: input.value / 127
+                }))
+              }
+            } else if (action.type === 'setBpm') {
+              if (input.value !== undefined) {
+                const newTempo = input.value / 127 * 70 + 70
+                if (_nodeLink) _nodeLink.setTempo(newTempo)
+              }
             }
           }
         }

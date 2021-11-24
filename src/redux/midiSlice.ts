@@ -14,26 +14,25 @@ const setActiveSceneIndexSchema = object<SetActiveSceneIndex>({
 
 interface SetAutoSceneBombacity {
   type: 'setAutoSceneBombacity'
-  bombacity: number
 }
 
 const setAutoSceneBombacitySchema = object<SetAutoSceneBombacity>({
-  type: equal('setAutoSceneBombacity'),
-  bombacity: number()
+  type: equal('setAutoSceneBombacity')
 })
 
 interface SetMaster {
   type: 'setMaster'
-  val: number
+}
+interface SetBpm {
+  type: 'setBpm'
 }
 
 interface SetBaseParam {
   type: 'setBaseParam'
   paramKey: ParamKey
-  val: number
 }
 
-export type MidiAction = SetActiveSceneIndex | SetAutoSceneBombacity | SetMaster | SetBaseParam
+export type MidiAction = SetActiveSceneIndex | SetAutoSceneBombacity | SetMaster | SetBaseParam | SetBpm
 
 const midiActionSchema = union<MidiAction>(setActiveSceneIndexSchema, setAutoSceneBombacitySchema)
 
@@ -60,8 +59,8 @@ const midiActionControlledSchema = object<MidiActionControlled>({
 export interface MidiState {
   listening?: MidiAction
   isEditing: boolean
-  byInputID: { [inputID: string]: MidiActionControlled | undefined } // note70, cc50, etc.
-  byActionID: { [actionID: string]: MidiActionControlled | undefined } // setAutoSceneBombacity, setActiveSceneIndex0, etc.
+  byInputID: { [inputID: string]: MidiActionControlled } // note70, cc50, etc.
+  byActionID: { [actionID: string]: MidiActionControlled } // setAutoSceneBombacity, setActiveSceneIndex0, etc.
 }
 
 export const midiStateSchema = object<MidiState>({
@@ -86,6 +85,15 @@ export const midiSlice = createSlice({
     addAction: (state, { payload }: PayloadAction<MidiActionControlled>) => {
       state.byInputID[payload.inputID] = payload
       state.byActionID[getActionID(payload.action)] = payload
+      const activeInputIds = new Set<string>()
+      for (const [actionID, value] of Object.entries(state.byActionID)) {
+        activeInputIds.add(value.inputID)
+      }
+      for (const inputId in state.byInputID) {
+        if (!activeInputIds.has(inputId)) {
+          delete state.byInputID[inputId]
+        }
+      }
     },
     listen: (state, { payload }: PayloadAction<MidiAction>) => {
       state.listening = payload

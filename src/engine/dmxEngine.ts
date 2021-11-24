@@ -31,7 +31,7 @@ export function init(store: ReduxStore, realtimeStore: RealtimeStore) {
 }
 
 const writeDMX = () => {  
-  setDMX(_realtimeStore.getState().outputParams, _store.getState().dmx, _store.getState().gui.blackout, _realtimeStore.getState().randomizer)
+  setDMX(_store.getState().scenes.master, _realtimeStore.getState().outputParams, _store.getState().dmx, _store.getState().gui.blackout, _realtimeStore.getState().randomizer)
 }
 
 function getWindowMultiplier2D(fixtureWindow: Window2D_t, movingWindow: Window2D_t) {
@@ -47,10 +47,10 @@ function getWindowMultiplier(fixtureWindow?: Window, movingWindow?: Window) {
   return 1.0 // Don't affect light values if the moving window or fixture position haven't been assigned.
 }
 
-function getDmxValue(fixtureChannel: FixtureChannel, params: Params, colors: Colors, fixtureWindow: Window2D_t, movingWindow: Window2D_t): DmxValue {
+function getDmxValue(master: number, fixtureChannel: FixtureChannel, params: Params, colors: Colors, fixtureWindow: Window2D_t, movingWindow: Window2D_t): DmxValue {
   switch (fixtureChannel.type) {
     case 'master':
-      return params.Brightness * DMX_MAX_VALUE * getWindowMultiplier2D(fixtureWindow, movingWindow);
+      return params.Brightness * DMX_MAX_VALUE * getWindowMultiplier2D(fixtureWindow, movingWindow) * master;
     case 'other':
       return fixtureChannel.default;
     case 'color':
@@ -73,7 +73,7 @@ function applyRandomization(value: number, point: Point, randomizationAmount: nu
   return lerp(value, value * point.level, randomizationAmount)
 }
 
-export default function setDMX(params: Params, dmxState: DmxState, blackout: boolean, randomizerState: Point[]) {
+export default function setDMX(master: number, params: Params, dmxState: DmxState, blackout: boolean, randomizerState: Point[]) {
   const universe = dmxState.universe
   const fixtureTypes = dmxState.fixtureTypesByID
 
@@ -93,7 +93,7 @@ export default function setDMX(params: Params, dmxState: DmxState, blackout: boo
 
       if (params.Epicness >= fixtureType.epicness) {
         fixtureType.channels.forEach((channel, offset) => {
-          let dmxOut = getDmxValue(channel, params, colors, fixture.window, movingWindow)
+          let dmxOut = getDmxValue(master, channel, params, colors, fixture.window, movingWindow)
           dmxOut = applyRandomization(dmxOut, randomizerState[i], params.Randomize)
           dmxConnection.updateChannel(fixture.ch + offset, dmxOut)
         })

@@ -1,6 +1,5 @@
 import React from 'react'
 import { ParamKey } from '../../engine/params'
-import MySlider from '../base/MySlider'
 import HsvPad from './HsvPad'
 import ParamSlider from './ParamSlider'
 import XYpad from './XYpad'

@@ -209,7 +209,8 @@ export const {
   removeModulator,
   setModulation,
   resetModulator,
-  setRandomizer
+  setRandomizer,
+  setMaster
 } = scenesSlice.actions;
 
 export default scenesSlice.reducer;

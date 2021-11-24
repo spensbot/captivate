@@ -16,17 +16,15 @@ import logoThick from '../images/Thick.png'
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload'
 import CloudUploadIcon from '@material-ui/icons/CloudUpload'
 import { makeStyles } from '@material-ui/core/styles'
-import AddIcon from '@material-ui/icons/Add'
-import { IconButton } from '@material-ui/core'
-import { next } from './visualizer/visualizerRef'
 import Slider from './base/Slider'
-import { setCamZ } from './visualizer/ThreeJSQueue'
 import BarChartIcon from '@material-ui/icons/BarChart';
 import { useTypedSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
-import { setActivePage } from '../redux/guiSlice'
+import { setActivePage, Page } from '../redux/guiSlice'
+import { setMaster } from '../redux/scenesSlice'
 import TooltipWrapper from './base/TooltipWrapper'
 import BlackoutButton from './BlackoutButton'
+import MasterSlider from './controls/MasterSlider'
 
 const selectedBorder = 0.2 //rem
 
@@ -53,6 +51,7 @@ const useStyles = makeStyles({
 
 export default function MenuBar() {
   const activePage = useTypedSelector(state => state.gui.activePage)
+  const master = useTypedSelector(state => state.scenes.master)
   const dispatch = useDispatch()
 
   const setPage = (newPage: Page) => {
@@ -99,15 +98,8 @@ export default function MenuBar() {
       <MenuItem page='Mixer' tooltipText="DMX Mixer">
         <BarChartIcon />
       </MenuItem>
-      {/* <IconButton onClick={next}>
-        <AddIcon />
-      </IconButton>
-      <div style={{ height: '20rem' }}>
-        <Slider radius={0.5} onChange={(newVal: number) => { setCamZ(newVal) } } orientation="vertical"/>
-      </div> */}
-      <div style={{ flex: '1 0 0' }} />
+      <MasterSlider />
       <BlackoutButton />
-      {/* <img src={logoThick} style={{width: '3rem', height: '3rem', marginBottom: '0.5rem'}} /> */}
     </div>
   )
 }
