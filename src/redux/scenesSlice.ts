@@ -24,15 +24,16 @@ export interface SceneState {
   ids: string[],
   byId: {[key: string]: Scene_t},
   active: string,
-  auto: AutoScene_t
+  auto: AutoScene_t,
+  master: number
 }
 
-export const sceneStateSchema = object<SceneState>({
-  ids: array(string()),
-  byId: map(sceneSchema),
-  active: string(),
-  auto: autoSceneSchema,
-})
+// export const sceneStateSchema = object<SceneState>({
+//   ids: array(string()),
+//   byId: map(sceneSchema),
+//   active: string(),
+//   auto: autoSceneSchema,
+// })
 
 const initID = nanoid()
 
@@ -47,7 +48,8 @@ export function initSceneState(): SceneState {
       enabled: false,
       bombacity: 0,
       period: 1
-    }
+    },
+    master: 1
   }
 }
 
@@ -179,6 +181,9 @@ export const scenesSlice = createSlice({
       modifyActiveScene(state, scene => {
         scene.randomizer[payload.key] = payload.value
       })
+    },
+    setMaster: (state, { payload }: PayloadAction<number>) => {
+      state.master = payload
     }
   },
 });

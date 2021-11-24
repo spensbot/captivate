@@ -68,7 +68,7 @@
     "express": "^4.17.1",
     "formik": "^2.2.6",
     "lodash.throttle": "^4.1.1",
-    "midi": "^1.0.4",
+    "midi": "^2.0.0",
     "nanoid": "^3.1.20",
     "node-link": "file:../../Dev/node-link",
     "react": "^16.13.1",
@@ -79,7 +79,7 @@
     "react-split-pane": "^0.1.92",
     "redux": "^4.0.5",
     "regenerator-runtime": "^0.13.7",
-    "serialport": "^9.0.2",
+    "serialport": "^9.2.1",
     "styled-components": "^5.3.0",
     "three": "^0.122.0",
     "yup": "^0.32.8"

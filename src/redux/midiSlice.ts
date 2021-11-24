@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { string, number, union, object, boolean, array, equal, map } from '../util/validate'
+import { ParamKey } from '../engine/params'
 
 interface SetActiveSceneIndex {
   type: 'setActiveSceneIndex'
@@ -21,13 +22,27 @@ const setAutoSceneBombacitySchema = object<SetAutoSceneBombacity>({
   bombacity: number()
 })
 
-export type MidiAction = SetActiveSceneIndex | SetAutoSceneBombacity
+interface SetMaster {
+  type: 'setMaster'
+  val: number
+}
+
+interface SetBaseParam {
+  type: 'setBaseParam'
+  paramKey: ParamKey
+  val: number
+}
+
+export type MidiAction = SetActiveSceneIndex | SetAutoSceneBombacity | SetMaster | SetBaseParam
 
 const midiActionSchema = union<MidiAction>(setActiveSceneIndexSchema, setAutoSceneBombacitySchema)
 
 export function getActionID(action: MidiAction) {
   if (action.type === 'setActiveSceneIndex') {
     return action.type + action.index.toString()
+  }
+  if (action.type === 'setBaseParam') {
+    return action.type + action.paramKey
   }
   return action.type
 }
