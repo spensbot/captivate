@@ -110,10 +110,8 @@ export const midiSlice = createSlice({
     listen: (state, { payload }: PayloadAction<MidiAction>) => {
       state.listening = payload
     },
-    stopListening: (state, { payload }: PayloadAction<undefined>) => {
-      delete state.listening
-    },
     setIsEditing: (state, { payload }: PayloadAction<boolean>) => {
+      delete state.listening
       state.isEditing = payload
     }
   },
@@ -123,7 +121,6 @@ export const {
   setButtonAction,
   setSliderAction,
   listen,
-  stopListening,
   setIsEditing
 } = midiSlice.actions
 
