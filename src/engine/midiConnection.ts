@@ -3,11 +3,11 @@ import { parseMessage, MidiMessage } from './midi'
 
 interface MidiInput {
   id: string
-  value?: number
+  message: MidiMessage
 }
 
 function getInputID(msg: MidiMessage): string {
-  if (msg.type === 'On' || msg.type === 'Off') return 'note' + msg.keyNumber.toString()
+  if (msg.type === 'On' || msg.type === 'Off') return 'note' + msg.number.toString()
   if (msg.type === 'CC') return 'cc' + msg.number
   return 'unknown'
 }
@@ -18,7 +18,7 @@ function getInput(msg: MidiMessage): MidiInput {
   if (msg.type === 'CC') value = msg.value
   return {
     id: getInputID(msg),
-    value: value
+    message: msg
   }
 }
 

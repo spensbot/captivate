@@ -8,7 +8,7 @@ import { IconButton } from '@material-ui/core'
 import CloseIcon from '@material-ui/icons/Close'
 import AddIcon from '@material-ui/icons/Add'
 import Slider from '../base/Slider'
-import MidiOverlay from '../base/MidiOverlay'
+import {ButtonMidiOverlay} from '../base/MidiOverlay'
 import Input from '../base/Input'
 
 const baseStyle: React.CSSProperties = {
@@ -65,7 +65,7 @@ export function Scene({ index, id }: { index: number, id: string }) {
   }
 
   return (
-    <MidiOverlay action={{type: 'setActiveSceneIndex', index: index}}>
+    <ButtonMidiOverlay action={{type: 'setActiveSceneIndex', index: index}}>
       <div style={style} onClick={() => { dispatch(setActiveScene(id)) }}>
         <div style={{
           width: '1rem',
@@ -89,7 +89,7 @@ export function Scene({ index, id }: { index: number, id: string }) {
           </>
         )}
       </div>
-    </MidiOverlay>
+    </ButtonMidiOverlay>
   )
 }
 

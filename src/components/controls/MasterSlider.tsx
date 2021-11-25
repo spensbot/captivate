@@ -3,7 +3,7 @@ import Slider from '../base/Slider'
 import { useTypedSelector } from '../../redux/store'
 import { useDispatch } from 'react-redux'
 import { setMaster } from '../../redux/scenesSlice'
-import MidiOverlay from '../base/MidiOverlay'
+import {SliderMidiOverlay} from '../base/MidiOverlay'
 
 
 export default function MasterSlider() {
@@ -11,8 +11,8 @@ export default function MasterSlider() {
   const dispatch = useDispatch()
 
   return (
-    <MidiOverlay action={{ type: 'setMaster' }} style={{flex: '1 0 auto', width: '80%', marginBottom: '1rem', padding: '1rem 0'}}>
+    <SliderMidiOverlay action={{ type: 'setMaster' }} style={{flex: '1 0 auto', width: '80%', marginBottom: '1rem', padding: '1rem 0'}}>
       <Slider value={master} radius={0.5} onChange={(newVal: number) => { dispatch(setMaster(newVal)) } } orientation="vertical"/>
-    </MidiOverlay>
+    </SliderMidiOverlay>
   )
 }

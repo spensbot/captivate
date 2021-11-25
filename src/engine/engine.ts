@@ -9,7 +9,7 @@ import { RealtimeStore, update, TimeState } from '../redux/realtimeStore'
 const NodeLink = window.require('node-link')
 import { modulateParams } from './modulationEngine'
 import maintainMidiConnection from './midiConnection'
-import { addAction } from '../redux/midiSlice'
+import { getActionID, setButtonAction, setSliderAction, SliderAction } from '../redux/midiSlice'
 import { setMidi } from '../redux/connectionsSlice'
 import { setActiveSceneIndex, setAutoSceneBombacity, setBaseParams, setMaster } from "../redux/scenesSlice"
 import { syncAndUpdate } from './randomizer'
@@ -38,36 +38,96 @@ export function init(store: ReduxStore, realtimeStore: RealtimeStore) {
         const state = store.getState().midi
         if (state.isEditing) {
           if (state.listening) {
-            store.dispatch(addAction({
-              inputID: input.id,
-              action: state.listening
-            }))
+            if (state.listening.type === 'setActiveSceneIndex') {
+              store.dispatch(setButtonAction({
+                inputID: input.id,
+                action: state.listening
+              }))
+            } else {
+              if (input.message.type === 'CC') {
+                store.dispatch(setSliderAction({
+                  inputID: input.id,
+                  action: state.listening,
+                  options: {
+                    type: 'cc',
+                    min: 0,
+                    max: 1
+                  }
+                }))
+              } else if (input.message.type === 'On') {
+                const actionId = getActionID(state.listening)
+                const existing: SliderAction | undefined = state.sliderActions[actionId]
+                if (existing && existing.inputID === input.id && existing.options.type === 'note') {
+                  const existBeh = existing.options.behavior
+                  store.dispatch(setSliderAction({
+                    ...existing,
+                    options: {
+                      ...existing.options,
+                      behavior: existBeh === 'velocity' ? 'toggle' : existBeh === 'toggle' ? 'hold' : 'velocity'
+                    }
+                  }))
+                } else {
+                  store.dispatch(setSliderAction({
+                    inputID: input.id,
+                    action: state.listening,
+                    options: {
+                      type: 'note',
+                      min: 0,
+                      max: 1,
+                      behavior: 'velocity'
+                    }
+                  }))
+                }
+              }
+            }
           }
         } else {
-          const action = state.byInputID[input.id]?.action
-          if (action) {
-            // console.log("byActionID", store.getState().midi.byActionID)
-            // console.log("byInputID", store.getState().midi.byInputID)
-            if (action.type === 'setActiveSceneIndex') {
-              store.dispatch(setActiveSceneIndex(action.index))
-            } else if (action.type === 'setAutoSceneBombacity') {
-              if (input.value !== undefined) {
-                store.dispatch(setAutoSceneBombacity(input.value))
-              }
-            } else if (action.type === 'setMaster') {
-              if (input.value !== undefined) {
-                store.dispatch(setMaster(input.value / 127))
-              }
-            } else if (action.type === 'setBaseParam') {
-              if (input.value !== undefined) {
+          const buttonAction = Object.entries(state.buttonActions).find(([actionId, action]) => action.inputID === input.id )?.[1]
+          if (buttonAction) {
+            if (buttonAction.action.type === 'setActiveSceneIndex') {
+              store.dispatch(setActiveSceneIndex(buttonAction.action.index));
+            }
+          }
+          console.log(input.id)
+          console.log(state.sliderActions)
+          const sliderAction = Object.entries(state.sliderActions).find(([actionId, action]) => action.inputID === input.id )?.[1]
+          if (sliderAction) {
+            console.log('made it')
+            const setNewVal = (newVal: number) => {
+              if (sliderAction.action.type === 'setAutoSceneBombacity') {
+                store.dispatch(setAutoSceneBombacity(newVal))
+              } else if (sliderAction.action.type === 'setMaster') {
+                store.dispatch(setMaster(newVal))
+              } else if (sliderAction.action.type === 'setBaseParam') {
                 store.dispatch(setBaseParams({
-                  [action.paramKey]: input.value / 127
-                }))
-              }
-            } else if (action.type === 'setBpm') {
-              if (input.value !== undefined) {
-                const newTempo = input.value / 127 * 70 + 70
+                    [sliderAction.action.paramKey]: newVal
+                  }))
+              } else if (sliderAction.action.type === 'setBpm') {
+                const newTempo = newVal * 70 + 70
                 if (_nodeLink) _nodeLink.setTempo(newTempo)
+              }
+            }
+            const op = sliderAction.options
+            const range = op.max - op.min
+            if (op.type === 'cc') {
+              if (input.message.type === 'CC') {
+                setNewVal(op.min + input.message.value / 127 * range)
+              }
+            } else if (op.type === 'note') {
+              if (op.behavior === 'velocity') {
+                if (input.message.type === 'On') {
+                  setNewVal(op.min + input.message.velocity / 127 * range)
+                }
+              } else if (op.behavior === 'hold') {
+                if (input.message.type === 'On') {
+                  setNewVal(op.max)
+                } else if (input.message.type === 'Off') {
+                  setNewVal(op.min)
+                }
+              } else if (op.behavior === 'toggle') {
+                if (input.message.type === 'On') {
+                  setNewVal(op.max)
+                }
               }
             }
           }

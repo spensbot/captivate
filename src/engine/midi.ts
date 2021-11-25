@@ -2,10 +2,12 @@ import { Message } from 'midi'
 
 export type MidiMessage = NoteOn | NoteOff | ControlChange
 interface Note {
-  keyNumber: number
+  number: number
+}
+interface NoteOn extends Note {
+  type: 'On',
   velocity: number
 }
-interface NoteOn extends Note { type: 'On' }
 interface NoteOff extends Note { type: 'Off' }
 interface ControlChange {
   type: 'CC'
@@ -18,12 +20,11 @@ export function parseMessage([status, data1, data2]: Message): MidiMessage | nul
 
   if (messageType === 8) return {
     type: 'Off',
-    keyNumber: data1,
-    velocity: data2
+    number: data1
   }
   if (messageType === 9) return {
     type: 'On',
-    keyNumber: data1,
+    number: data1,
     velocity: data2
   }
   if (messageType === 11) return {
