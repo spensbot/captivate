@@ -6,12 +6,11 @@ import {SliderMidiOverlay} from './MidiOverlay'
 
 interface XYProps {
   children: React.ReactNode
-  actionX: MidiAction
-  actionY: MidiAction
+  actions: MidiAction[]
   style?: React.CSSProperties
 }
 
-export default function MidiOverlay_xy({ children, actionX, actionY, style }: XYProps) {
+export default function MidiOverlay_xy({ children, actions, style }: XYProps) {
   const isEditing = useTypedSelector(state => state.midi.isEditing)
 
   const overlayStyle: React.CSSProperties = { width: '100%', height: '100%' }
@@ -21,8 +20,9 @@ export default function MidiOverlay_xy({ children, actionX, actionY, style }: XY
       {children}
       {isEditing &&
         <Overlay>
-        <Container><SliderMidiOverlay action={actionX} style={overlayStyle}/></Container>
-        <Container><SliderMidiOverlay action={actionY} style={overlayStyle}/></Container>
+        {actions.map(action => <Container><SliderMidiOverlay action={action} style={overlayStyle}/></Container>)}
+        {/* <Container><SliderMidiOverlay action={actionX} style={overlayStyle}/></Container>
+        <Container><SliderMidiOverlay action={actionY} style={overlayStyle}/></Container> */}
         </Overlay>
       }
     </Root>
@@ -40,12 +40,13 @@ const Overlay = styled.div`
   left: 0;
   right: 0;
   display: flex;
-  margin: 0.5rem;
+  align-items: stretch;
+  flex-wrap: wrap;
+  margin: 0.25rem 0 0.25rem 0.5rem;
   margin-right: 0;
 `
 
 const Container = styled.div`
-  flex: 1 0 0;
-  height: 100%;
-  margin-right: 0.5rem;
+  flex: 1 0 40%;
+  margin: 0.25rem 0.5rem 0.25rem 0;
 `

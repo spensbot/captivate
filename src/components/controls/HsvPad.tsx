@@ -8,7 +8,7 @@ export default function HsvPad() {
 
   return (
     <div style={{ width: 200 }}>
-      <MidiOverlay_xy actionX={{type: 'setBaseParam', paramKey: ParamKey.Saturation}} actionY={{type: 'setBaseParam', paramKey: ParamKey.Brightness}}>
+      <MidiOverlay_xy actions={[{type: 'setBaseParam', paramKey: ParamKey.Saturation}, {type: 'setBaseParam', paramKey: ParamKey.Brightness}]}>
         <SVpad />
       </MidiOverlay_xy>
       <Hue />

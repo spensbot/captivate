@@ -25,4 +25,9 @@ export const GlobalStyle = createGlobalStyle`
   .fullscreen-video {
     object-fit: cover;
   }
+
+  *::-webkit-scrollbar {
+    display: none;
+  }
+
 `
