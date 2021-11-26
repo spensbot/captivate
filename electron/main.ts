@@ -45,14 +45,14 @@ function createWindow() {
 app.on('ready', createWindow)
   .whenReady()
   .then(() => {
-    if (devMode) {
-      installExtension(REACT_DEVELOPER_TOOLS)
-        .then((name) => console.log(`Added Extension:  ${name}`))
-        .catch((err) => console.log('An error occurred: ', err))
-      installExtension(REDUX_DEVTOOLS)
-        .then((name) => console.log(`Added Extension:  ${name}`))
-        .catch((err) => console.log('An error occurred: ', err))
-    }
+    // if (devMode) {
+    //   installExtension(REACT_DEVELOPER_TOOLS)
+    //     .then((name) => console.log(`Added Extension:  ${name}`))
+    //     .catch((err) => console.log('An error occurred: ', err))
+    //   installExtension(REDUX_DEVTOOLS)
+    //     .then((name) => console.log(`Added Extension:  ${name}`))
+    //     .catch((err) => console.log('An error occurred: ', err))
+    // }
   })
 
 // This allows serialport to be imported via window.require('serialport')

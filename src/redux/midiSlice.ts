@@ -11,7 +11,8 @@ interface SliderControl_cc extends Range {
 }
 interface SliderControl_note extends Range {
   type: 'note'
-  behavior: 'velocity' | 'toggle' | 'hold'
+  value: 'velocity' | 'max'
+  mode: 'toggle' | 'hold'
 }
 type SliderControlOptions = SliderControl_cc | SliderControl_note
 
@@ -101,10 +102,16 @@ export const midiSlice = createSlice({
   name: 'midi',
   initialState: initMidiState(),
   reducers: {
-    setButtonAction: (state, { payload }: PayloadAction<{inputID: string, action: MidiAction}>) => {
+    setButtonAction: (state, { payload }: PayloadAction<{ inputID: string, action: MidiAction }>) => {
+      for (let [actionID, buttonAction] of Object.entries(state.buttonActions)) {
+        if (buttonAction.inputID === payload.inputID) delete state.buttonActions[actionID]
+      }
       state.buttonActions[getActionID(payload.action)] = payload
     },
-    setSliderAction: (state, { payload }: PayloadAction<{inputID: string, action: MidiAction, options: SliderControlOptions}>) => {
+    setSliderAction: (state, { payload }: PayloadAction<{ inputID: string, action: MidiAction, options: SliderControlOptions }>) => {
+      for (let [actionID, sliderAction] of Object.entries(state.sliderActions)) {
+        if (sliderAction.inputID === payload.inputID) delete state.sliderActions[actionID]
+      }
       state.sliderActions[getActionID(payload.action)] = payload
     },
     listen: (state, { payload }: PayloadAction<MidiAction>) => {
