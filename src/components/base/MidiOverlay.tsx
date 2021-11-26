@@ -1,6 +1,6 @@
 import React from 'react'
 import styled from 'styled-components'
-import { getActionID, MidiAction, listen,  setButtonAction, setSliderAction } from '../../redux/midiSlice'
+import { getActionID, MidiAction, listen,  setButtonAction, setSliderAction, SliderControl } from '../../redux/midiSlice'
 import { useTypedSelector } from '../../redux/store'
 import { useDispatch } from 'react-redux'
 import DraggableNumber from './DraggableNumber'
@@ -74,14 +74,32 @@ export function SliderMidiOverlay({ children, action, style }: Props) {
     }))
   }
 
+  const onClickMode = () => {
+    dispatch(setSliderAction({
+      ...controlledAction,
+      options: {
+        ...controlledAction.options,
+        mode: controlledAction.options.mode === 'hold' ? 'toggle' : 'hold'
+      }
+    }))
+  }
+
+  const onClickValue = () => {
+    dispatch(setSliderAction({
+      ...controlledAction,
+      options: {
+        ...controlledAction.options,
+        value: controlledAction.options.value === 'max' ? 'velocity' : 'max'
+      }
+    }))
+  }
+
   const minMaxStyle: React.CSSProperties = {
     padding: '0.1rem 0.2rem',
     margin: '0.2rem',
     color: 'white',
     backgroundColor: '#0009'
   }
-
-  
 
   return (
     <Root style={style}>
@@ -96,8 +114,8 @@ export function SliderMidiOverlay({ children, action, style }: Props) {
             <DraggableNumber type="continuous" style={minMaxStyle} value={controlledAction.options.max} min={controlledAction.options.min} max={1} onChange={onChangeMax} />
           </MinMax>
           {controlledAction.options.type === 'note' && <>
-            <Button fontSize="0.8rem" label={controlledAction.options.mode} onClick={() => {}}/>
-            <Button fontSize="0.8rem" label={controlledAction.options.value} onClick={() => {}} />
+            <Button fontSize="0.8rem" label={controlledAction.options.mode} onClick={onClickMode}/>
+            <Button fontSize="0.8rem" label={controlledAction.options.value} onClick={onClickValue} />
           </>}
           </>}
           </Wrapper>

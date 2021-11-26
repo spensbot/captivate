@@ -14,7 +14,7 @@ interface SliderControl_note extends Range {
   value: 'velocity' | 'max'
   mode: 'toggle' | 'hold'
 }
-type SliderControlOptions = SliderControl_cc | SliderControl_note
+export type SliderControlOptions = SliderControl_cc | SliderControl_note
 
 interface SetActiveSceneIndex {
   type: 'setActiveSceneIndex'
@@ -103,15 +103,11 @@ export const midiSlice = createSlice({
   initialState: initMidiState(),
   reducers: {
     setButtonAction: (state, { payload }: PayloadAction<{ inputID: string, action: MidiAction }>) => {
-      for (let [actionID, buttonAction] of Object.entries(state.buttonActions)) {
-        if (buttonAction.inputID === payload.inputID) delete state.buttonActions[actionID]
-      }
+      clearInputID(state, payload.inputID)
       state.buttonActions[getActionID(payload.action)] = payload
     },
     setSliderAction: (state, { payload }: PayloadAction<{ inputID: string, action: MidiAction, options: SliderControlOptions }>) => {
-      for (let [actionID, sliderAction] of Object.entries(state.sliderActions)) {
-        if (sliderAction.inputID === payload.inputID) delete state.sliderActions[actionID]
-      }
+      clearInputID(state, payload.inputID)
       state.sliderActions[getActionID(payload.action)] = payload
     },
     listen: (state, { payload }: PayloadAction<MidiAction>) => {
@@ -123,6 +119,15 @@ export const midiSlice = createSlice({
     }
   },
 })
+
+function clearInputID(state: MidiState, inputID: string) {
+  for (let [actionID, buttonAction] of Object.entries(state.buttonActions)) {
+    if (buttonAction.inputID === inputID) delete state.buttonActions[actionID]
+  }
+  for (let [actionID, sliderAction] of Object.entries(state.sliderActions)) {
+    if (sliderAction.inputID === inputID) delete state.sliderActions[actionID]
+  }
+}
 
 export const {
   setButtonAction,
