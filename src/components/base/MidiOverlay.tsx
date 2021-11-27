@@ -1,6 +1,6 @@
 import React from 'react'
 import styled from 'styled-components'
-import { getActionID, MidiAction, listen,  setButtonAction, setSliderAction, SliderControl } from '../../redux/midiSlice'
+import { getActionID, MidiAction, listen,  setButtonAction, setSliderAction } from '../../redux/midiSlice'
 import { useTypedSelector } from '../../redux/store'
 import { useDispatch } from 'react-redux'
 import DraggableNumber from './DraggableNumber'

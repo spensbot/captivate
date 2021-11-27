@@ -1,6 +1,6 @@
 import React from 'react'
 import styled from 'styled-components'
-import { MidiAction } from '../../redux/midiSlice'
+import { getActionID, MidiAction } from '../../redux/midiSlice'
 import { useTypedSelector } from '../../redux/store'
 import {SliderMidiOverlay} from './MidiOverlay'
 
@@ -20,9 +20,9 @@ export default function MidiOverlay_xy({ children, actions, style }: XYProps) {
       {children}
       {isEditing &&
         <Overlay>
-        {actions.map(action => <Container><SliderMidiOverlay action={action} style={overlayStyle}/></Container>)}
-        {/* <Container><SliderMidiOverlay action={actionX} style={overlayStyle}/></Container>
-        <Container><SliderMidiOverlay action={actionY} style={overlayStyle}/></Container> */}
+          {actions.map(action => <Container key={getActionID(action)}><SliderMidiOverlay action={action} style={overlayStyle}/></Container>)}
+          {/* <Container><SliderMidiOverlay action={actionX} style={overlayStyle}/></Container>
+          <Container><SliderMidiOverlay action={actionY} style={overlayStyle}/></Container> */}
         </Overlay>
       }
     </Root>

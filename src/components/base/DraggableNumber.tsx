@@ -31,11 +31,12 @@ export default function DraggableNumber({ type="snap", withMetaKey="continuous",
     console.log(d)
 
     const adjust_continuous = () => {
-      globalValue += d
+      globalValue += d / 2
     }
     const adjust_snap = () => {
+      // console.log(`${globalValue} + ${globalMovement}`)
       if (Number.isInteger(globalValue)) {
-        globalMovement += d*2
+        globalMovement += d
         if (globalMovement > 1) {
           globalValue += 1
           globalMovement = 0
@@ -48,7 +49,7 @@ export default function DraggableNumber({ type="snap", withMetaKey="continuous",
         //   "Snap" to the next integer
         const floor = Math.floor(globalValue)
         const ceil = Math.ceil(globalValue)
-        globalValue += d*2
+        globalValue += d
         if (globalValue > ceil) {
           globalValue = ceil
         } else if (globalValue < floor) {
@@ -70,8 +71,6 @@ export default function DraggableNumber({ type="snap", withMetaKey="continuous",
         adjust_continuous()
       }
     }
-
-    globalValue += d
 
     globalValue = clamp(globalValue, min, max)
 
