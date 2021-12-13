@@ -9,7 +9,6 @@ export interface DmxState {
   fixtureTypesByID: {[id: string]: FixtureType}
   editedFixture: null | string
   selectedFixture: null | number
-  overwrites: number[]
   groups: string[]
 }
 
@@ -19,7 +18,6 @@ export const dmxStateSchema = object<DmxState>({
   fixtureTypesByID: map(fixtureTypeSchema),
   editedFixture: union(null, string()),
   selectedFixture: union(null, number()),
-  overwrites: array(number()),
   groups: array(string())
 })
 
@@ -48,7 +46,6 @@ export function initDmxState(): DmxState {
     fixtureTypesByID: fixtureTypesByID,
     editedFixture: null,
     selectedFixture: null,
-    overwrites: [],
     groups: []
   }
 }
@@ -128,9 +125,6 @@ export const dmxSlice = createSlice({
       }
       delete state.fixtureTypesByID[payload]
     },
-    setOverwrite: (state, { payload }: PayloadAction<{ index: number, value: number }>) => {
-      state.overwrites[payload.index] = payload.value
-    },
     setGroups: (state, { payload }: PayloadAction<string[]>) => {
       state.groups = payload
     }
@@ -150,7 +144,6 @@ export const {
   addFixtureType,
   updateFixtureType,
   deleteFixtureType,
-  setOverwrite,
   setGroups
 } = dmxSlice.actions;
 

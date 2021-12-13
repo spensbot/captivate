@@ -136,3 +136,5 @@ function sendUniverse() {
     });
   }
 }
+
+export function getDmxBuffer() { return universe }

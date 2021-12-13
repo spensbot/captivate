@@ -1,11 +1,12 @@
 import * as graphicsEngine from "./graphicsEngine"
 import * as visualizerRef from '../components/visualizer/visualizerRef'
 import * as dmxEngine from './dmxEngine'
+import { getDmxBuffer } from './dmxConnection'
 import * as keyboardManager from './keyboardManager'
 import handleAutoScene from './autoScene'
 import { ReduxStore } from '../redux/store'
 import { autoSave } from '../util/saveload_renderer'
-import { RealtimeStore, update, TimeState } from '../redux/realtimeStore'
+import { RealtimeStore, update, TimeState, RealtimeState } from '../redux/realtimeStore'
 const NodeLink = window.require('node-link')
 import { modulateParams } from './modulationEngine'
 import maintainMidiConnection from './midiConnection'
@@ -176,11 +177,17 @@ function engineUpdate(currentTime: number) {
     const scene = state.scenes.byId[state.scenes.active]
     
     const outputParams = modulateParams(timeState.beats, scene)
+
+    const dmxOut: number[] = []
+    for (let i=0; i<512; i++) {
+      dmxOut[i] = getDmxBuffer()[i+1]
+    }
   
-    const newRealtimeState = {
+    const newRealtimeState: RealtimeState = {
       time: timeState,
       outputParams: outputParams,
-      randomizer: syncAndUpdate(realtimeState.randomizer, state.dmx.universe, timeState, scene.randomizer)
+      randomizer: syncAndUpdate(realtimeState.randomizer, state.dmx.universe, timeState, scene.randomizer),
+      dmxOut: dmxOut
     }
   
     _realtimeStore.dispatch(update(newRealtimeState))

@@ -3,11 +3,11 @@ import styled from 'styled-components'
 import Slider from '../base/Slider'
 import { useTypedSelector } from '../../redux/store'
 import { useDispatch } from 'react-redux'
-import { setOverwrite } from '../../redux/dmxSlice'
 import ArrowBackIosIcon from '@material-ui/icons/ArrowBackIos'
 import ArrowForwardIosIcon from '@material-ui/icons/ArrowForwardIos'
-import { TextField, IconButton } from '@material-ui/core'
-import { setPageIndex, setChannelsPerPage } from '../../redux/mixerSlice'
+import { TextField, IconButton, Button } from '@material-ui/core'
+import { setPageIndex, setChannelsPerPage, setOverwrite, clearOverwrites } from '../../redux/mixerSlice'
+import { useRealtimeSelector } from '../../redux/realtimeStore'
 
 const MAX_DMX = 512
 
@@ -53,6 +53,7 @@ function Header() {
       {_s.pageIndex + 1}
       <IconButton disabled={!canGoForward} onClick={() => dispatch(setPageIndex(_s.pageIndex + 1))}><ArrowForwardIosIcon /></IconButton>
       <TextField value={_s.channelsPerPage.toString()} onChange={e => dispatch(setChannelsPerPage(parseInt(e.target.value)))} type="number"/>
+      <Button onClick={() => dispatch(clearOverwrites())}>Reset Overwrites</Button>
     </HeaderRoot>
   )
 }
@@ -60,17 +61,14 @@ function Header() {
 const HeaderRoot = styled.div`
   display: flex;
   align-items: center;
-`
-
-// HeaderItem
-const HI = styled.div`
-  display: flex;
-  justify-content: center;
-  min-width: 1rem;
+  & > * {
+    margin-right: 1rem;
+  }
 `
 
 function LabelledSlider({ index }: { index: number }) {
-  const val: number | undefined = useTypedSelector(state => state.dmx.overwrites[index])
+  const overwrite: number | undefined = useTypedSelector(state => state.mixer.overwrites[index])
+  const output: number = useRealtimeSelector(state => state.dmxOut[index])
   const dispatch = useDispatch()
 
   const onChange = (newVal: number) => {
@@ -79,7 +77,7 @@ function LabelledSlider({ index }: { index: number }) {
 
   return (
     <Col>
-      <Slider value={val} radius={0.5} onChange={onChange} orientation="vertical" disabled={val === undefined}></Slider>
+      <Slider value={overwrite !== undefined ? overwrite : output / 255} radius={0.5} onChange={onChange} orientation="vertical" disabled={overwrite === undefined}></Slider>
       <Label>{(index + 1).toString()}</Label>
     </Col>
   )

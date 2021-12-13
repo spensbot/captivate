@@ -26,10 +26,15 @@ function initTime(): TimeState {
   }
 }
 
+function initDmxOut(): number[] {
+  return Array(512).fill(0)
+}
+
 const initState = {
   outputParams: initParams(),
   time: initTime(),
-  randomizer: initRandomizerState()
+  randomizer: initRandomizerState(),
+  dmxOut: initDmxOut()
 }
 
 export type RealtimeState = typeof initState

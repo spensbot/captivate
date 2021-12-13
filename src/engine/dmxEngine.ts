@@ -4,8 +4,8 @@ import { Params } from './params'
 import { Colors, getColors } from './dmxColors'
 import { DmxValue, DMX_MAX_VALUE, FixtureChannel, ChannelType, DMX_DEFAULT_VALUE, channelTypes } from './dmxFixtures'
 import { DmxState } from '../redux/dmxSlice'
-import { RealtimeStore } from '../redux/realtimeStore'
-import { ReduxStore } from '../redux/store'
+import { RealtimeStore, RealtimeState } from '../redux/realtimeStore'
+import { ReduxStore, ReduxState } from '../redux/store'
 import { setDmx } from '../redux/connectionsSlice'
 import { Point } from '../engine/randomizer'
 import { lerp } from '../util/helpers'
@@ -31,7 +31,7 @@ export function init(store: ReduxStore, realtimeStore: RealtimeStore) {
 }
 
 const writeDMX = () => {  
-  setDMX(_store.getState().scenes.master, _realtimeStore.getState().outputParams, _store.getState().dmx, _store.getState().gui.blackout, _realtimeStore.getState().randomizer)
+  setDMX(_store.getState(), _realtimeStore.getState())
 }
 
 function getWindowMultiplier2D(fixtureWindow: Window2D_t, movingWindow: Window2D_t) {
@@ -73,11 +73,11 @@ function applyRandomization(value: number, point: Point, randomizationAmount: nu
   return lerp(value, value * point.level, randomizationAmount)
 }
 
-export default function setDMX(master: number, params: Params, dmxState: DmxState, blackout: boolean, randomizerState: Point[]) {
-  const universe = dmxState.universe
-  const fixtureTypes = dmxState.fixtureTypesByID
+export default function setDMX(_s: ReduxState, _rs: RealtimeState) {
+  const universe = _s.dmx.universe
+  const fixtureTypes = _s.dmx.fixtureTypesByID
 
-  if (blackout) {
+  if (_s.gui.blackout) {
 
     for (let channel = 1; channel < 513; channel++) {
       dmxConnection.updateChannel(channel, DMX_DEFAULT_VALUE)
@@ -85,16 +85,30 @@ export default function setDMX(master: number, params: Params, dmxState: DmxStat
 
   } else {
 
-    const colors = getColors(params);
-    const movingWindow = getMovingWindow(params);
+    const colors = getColors(_rs.outputParams);
+    const movingWindow = getMovingWindow(_rs.outputParams);
   
     universe.forEach((fixture, i) => {
       const fixtureType = fixtureTypes[fixture.type]
+      
+      fixtureType.channels.forEach((channel, offset) => {
+        const outputChannel = fixture.ch + offset
+        const overwrite = _s.mixer.overwrites[outputChannel - 1]
+        if (overwrite !== undefined) {
+          dmxConnection.updateChannel(outputChannel, overwrite * DMX_MAX_VALUE)
+        } else if (_rs.outputParams.Epicness >= fixtureType.epicness) {
+          let dmxOut = getDmxValue(_s.scenes.master, channel, _rs.outputParams, colors, fixture.window, movingWindow)
+          dmxOut = applyRandomization(dmxOut, _rs.randomizer[i], _rs.outputParams.Randomize)
+          dmxConnection.updateChannel(outputChannel, dmxOut)
+        } else {
+          dmxConnection.updateChannel(outputChannel, DMX_DEFAULT_VALUE)
+        }
+      })
 
-      if (params.Epicness >= fixtureType.epicness) {
+      if (_rs.outputParams.Epicness >= fixtureType.epicness) {
         fixtureType.channels.forEach((channel, offset) => {
-          let dmxOut = getDmxValue(master, channel, params, colors, fixture.window, movingWindow)
-          dmxOut = applyRandomization(dmxOut, randomizerState[i], params.Randomize)
+          let dmxOut = getDmxValue(_s.scenes.master, channel, _rs.outputParams, colors, fixture.window, movingWindow)
+          dmxOut = applyRandomization(dmxOut, _rs.randomizer[i], _rs.outputParams.Randomize)
           dmxConnection.updateChannel(fixture.ch + offset, dmxOut)
         })
       } else {
