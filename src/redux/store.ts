@@ -5,16 +5,15 @@ import dmxReducer from './dmxSlice'
 import guiReducer from './guiSlice'
 import scenesReducer from './scenesSlice'
 import midiReducer from './midiSlice'
-
-console.log('Running store.ts')
-console.log("connectionsReducer", connectionsReducer)
+import mixerReducer from './mixerSlice'
 
 const baseReducer = combineReducers({
   connections: connectionsReducer,
   dmx: dmxReducer,
   gui: guiReducer,
   scenes: scenesReducer,
-  midi: midiReducer
+  midi: midiReducer,
+  mixer: mixerReducer
 })
 
 export type ReduxState = ReturnType<typeof baseReducer>

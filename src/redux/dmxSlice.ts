@@ -3,8 +3,6 @@ import { Fixture, FixtureType, Universe, fixtureTypes, fixtureTypesByID, getTest
 import { clampNormalized } from '../util/helpers'
 import { string, number, union, object, boolean, array, map } from '../util/validate'
 
-console.log('Running dmxSlice.ts')
-
 export interface DmxState {
   universe: Universe
   fixtureTypes: string[]
@@ -24,8 +22,6 @@ export const dmxStateSchema = object<DmxState>({
   overwrites: array(number()),
   groups: array(string())
 })
-
-console.log('dmxStateSchema', dmxStateSchema)
 
 interface SetFixtureWindowPayload {
   x: number

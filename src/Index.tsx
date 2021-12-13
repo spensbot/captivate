@@ -13,8 +13,6 @@ import { ThemeProvider } from '@material-ui/core'
 
 import '../tests/test'
 
-console.log('Running Index.tsx')
-
 engine.init(store, realtimeStore)
 
 const theme = createTheme({

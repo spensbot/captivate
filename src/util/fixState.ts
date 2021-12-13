@@ -7,21 +7,6 @@ import { initMidiState, midiStateSchema } from '../redux/midiSlice'
 import { initSceneState, sceneStateSchema } from '../redux/scenesSlice'
 import { $CombinedState } from 'redux'
 
-console.log('Running fixState.ts')
-
-console.log('dmxStateSchema', dmxStateSchema)
-// console.log('getDmxStateSchema()', getDmxStateSchema())
-
-const reduxStateSchema = object<ReduxState>({
-  connections: connectionsSchema,
-  dmx: dmxStateSchema,
-  midi: midiStateSchema,
-  scenes: sceneStateSchema,
-  gui: guiStateSchema,
-  [$CombinedState]: undefined
-})
-
-console.log('reduxStateSchema', reduxStateSchema)
 
 const fixState = makeFix<ReduxState>(reduxStateSchema, () => ({
   connections: initConnectionsState(),
@@ -32,11 +17,6 @@ const fixState = makeFix<ReduxState>(reduxStateSchema, () => ({
 }))
 
 export default function (oldState: ReduxState) {
-  console.log('oldState', oldState)
-  oldState.connections = initConnectionsState()
-  const { fixed, err } = fixState(oldState)
-  console.log('fixed', fixed)
-  console.log('err', err)
   return oldState
 
   // const {gui, dmx, scenes} = oldState

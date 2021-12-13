@@ -92,9 +92,9 @@ export default function MenuBar() {
         {/* <MovieFilterIcon /> */}
         <img src={logoThick} style={{width: '2.3rem', height: '2.3rem', margin: '0'}} />
       </MenuItem>
-      <MenuItem page='Share' tooltipText="Share">
+      {/* <MenuItem page='Share' tooltipText="Share">
         <CloudUploadIcon />
-      </MenuItem>
+      </MenuItem> */}
       <MenuItem page='Mixer' tooltipText="DMX Mixer">
         <BarChartIcon />
       </MenuItem>

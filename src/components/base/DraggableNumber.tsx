@@ -28,13 +28,10 @@ export default function DraggableNumber({ type="snap", withMetaKey="continuous",
     const dy = - e.movementY
     const d = (dx + dy) / speedAdjust
 
-    console.log(d)
-
     const adjust_continuous = () => {
       globalValue += d / 2
     }
     const adjust_snap = () => {
-      // console.log(`${globalValue} + ${globalMovement}`)
       if (Number.isInteger(globalValue)) {
         globalMovement += d
         if (globalMovement > 1) {

@@ -45,7 +45,6 @@ function realtimeStoreReducer(state = initState, action: PayloadAction<any>) {
   if (action.type === 'update') {
     return action.payload
   }
-  console.log(action.type)
   return state
 }
 
