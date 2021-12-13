@@ -1,4 +1,5 @@
 import React from 'react'
+import styled from 'styled-components'
 import Video from './pages/Visualizer'
 import Modulation from './pages/Scenes'
 import Universe from './pages/Universe'
@@ -6,22 +7,10 @@ import Share from './pages/Share'
 import Mixer from './pages/Mixer'
 import MenuBar from './MenuBar'
 import { useTypedSelector } from '../redux/store'
+import FullscreenOverlay from './FullscreenOverlay'
 
 export default function App() {
   const activePage = useTypedSelector(state => state.gui.activePage)
-
-  const styles: { [key: string]: React.CSSProperties } = {
-    root: {
-      display: 'flex',
-      flexDirection: 'row',
-      height: '100vh'
-    },
-    activePage: {
-      flex: '1 1 auto',
-      overflow: activePage === 'Video' ? undefined : 'auto',
-      height: '100%',
-    }
-  }
 
   function getActivePage() {
     if (activePage == 'Modulation') return (<Modulation />)
@@ -32,11 +21,24 @@ export default function App() {
   }
 
   return (
-    <div style={styles.root}>
+    <Root>
       <MenuBar />
-      <div style={styles.activePage}>
+      <PageWrapper style={{overflow: activePage === 'Video' ? undefined : 'auto'}}>
         {getActivePage()}
-      </div>
-    </div>
+      </PageWrapper>
+      <FullscreenOverlay />
+    </Root>
   )
 }
+
+const Root = styled.div`
+  display: flex;
+  position: relative;
+  flex-direction: row;
+  height: 100vh;
+`
+
+const PageWrapper = styled.div`
+  flex: 1 1 auto;
+  height: '100%';
+`

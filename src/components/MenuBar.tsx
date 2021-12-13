@@ -1,4 +1,6 @@
 import React, { useState } from 'react'
+import styled from 'styled-components'
+import zIndexes from '../util/zIndexes'
 // Possible Universe Logos
 import GridOnIcon from '@material-ui/icons/GridOn'
 import ViewComfyIcon from '@material-ui/icons/ViewComfy'
@@ -28,27 +30,6 @@ import MasterSlider from './controls/MasterSlider'
 
 const selectedBorder = 0.2 //rem
 
-const useStyles = makeStyles({
-  root: {
-    display: 'flex',
-    flexDirection: 'column',
-    backgroundColor: '#ffffff08',
-    alignItems: 'center'
-  },
-  item: {
-    cursor: 'pointer',
-    opacity: 0.5,
-    filter: 'grayscale(100%)',
-    '&:hover': {
-      filter: 'grayscale(0%)',
-      opacity: 1
-    }
-  },
-  selectedItem: {
-    borderLeft: `${selectedBorder}rem solid #fff`
-  }
-})
-
 export default function MenuBar() {
   const activePage = useTypedSelector(state => state.gui.activePage)
   const master = useTypedSelector(state => state.scenes.master)
@@ -60,23 +41,21 @@ export default function MenuBar() {
     }
   }
 
-  const classes = useStyles()
-
   function MenuItem({ page, tooltipText, paddingRem = 1, children }: { page: Page, tooltipText: string, paddingRem?: number, children: React.ReactNode }) {
     const isActive = activePage === page
     const p = paddingRem
     const padding = isActive ? `${p}rem ${p}rem ${p}rem ${p - selectedBorder}rem` : `${p}rem`
     return (
       <TooltipWrapper text={tooltipText}>
-        <div style={{padding: padding}} className={activePage === page ? classes.selectedItem : classes.item} onClick={setPage(page)}>
+        <Item selected={activePage === page} style={{padding: padding}} onClick={setPage(page)}>
           {children}
-        </div>
+        </Item>
       </TooltipWrapper>
     )
   }
 
   return (
-    <div className={classes.root}>
+    <Root>
       <MenuItem page='Universe' tooltipText="DMX Setup">
         {/* <ViewComfyIcon /> */}
         {/* <PlaylistAddIcon /> */}
@@ -98,8 +77,32 @@ export default function MenuBar() {
       <MenuItem page='Mixer' tooltipText="DMX Mixer">
         <BarChartIcon />
       </MenuItem>
+      <Spacer />
       <MasterSlider />
       <BlackoutButton />
-    </div>
+    </Root>
   )
 }
+
+const Root = styled.div`
+  z-index: ${zIndexes.leftMenu};
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff08;
+  align-items: center;
+`
+
+const Item = styled.div<{selected: boolean}>`
+  cursor: pointer;
+  opacity: 0.5;
+  filter: grayscale(100%);
+  border-left: ${props => props.selected && '0.2rem solid #fff'};
+  :hover {
+    filter: grayscale(0%);
+    opacity: 1;
+  }
+`
+
+const Spacer = styled.div`
+  flex: 1 0 0;
+`

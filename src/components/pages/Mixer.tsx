@@ -53,7 +53,7 @@ function Header() {
       {_s.pageIndex + 1}
       <IconButton disabled={!canGoForward} onClick={() => dispatch(setPageIndex(_s.pageIndex + 1))}><ArrowForwardIosIcon /></IconButton>
       <TextField value={_s.channelsPerPage.toString()} onChange={e => dispatch(setChannelsPerPage(parseInt(e.target.value)))} type="number"/>
-      <Button onClick={() => dispatch(clearOverwrites())}>Reset Overwrites</Button>
+      <Button variant="outlined" onClick={() => dispatch(clearOverwrites())}>Reset Overwrites</Button>
     </HeaderRoot>
   )
 }

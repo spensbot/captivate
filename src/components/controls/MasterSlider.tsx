@@ -11,7 +11,7 @@ export default function MasterSlider() {
   const dispatch = useDispatch()
 
   return (
-    <SliderMidiOverlay action={{ type: 'setMaster' }} style={{flex: '1 0 auto', width: '80%', marginBottom: '1rem', padding: '1rem 0'}}>
+    <SliderMidiOverlay action={{ type: 'setMaster' }} style={{flex: '0 1 35rem', width: '80%', marginBottom: '1rem', padding: '1rem 0', maxHeight: '20rem'}}>
       <Slider value={master} radius={0.5} onChange={(newVal: number) => { dispatch(setMaster(newVal)) } } orientation="vertical"/>
     </SliderMidiOverlay>
   )

@@ -19,5 +19,6 @@
     "pkgs",
     "startcode",
     "xking"
-  ]
+  ],
+  "editor.tabSize": 2
 }
