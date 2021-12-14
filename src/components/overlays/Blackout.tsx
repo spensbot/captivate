@@ -1,33 +1,12 @@
 import React from 'react'
 import styled from 'styled-components'
-import { useTypedSelector } from '../redux/store'
-import zIndexes from '../util/zIndexes'
+import { useTypedSelector } from '../../redux/store'
 
-interface Props {
+export default function Blackout() {
+  const isOn = useTypedSelector(state => state.gui.blackout)
 
-}
+  if (!isOn) return null
 
-export default function FullscreenOverlay({ }: Props) {
-  const blackout = useTypedSelector(state => state.gui.blackout)
-
-  return (
-    // null
-    <Root onClick={e => {}}>
-      {blackout && <Blackout />}
-    </Root>
-  )
-}
-
-const Root = styled.div`
-  z-index: ${zIndexes.fullscreenOverlay};
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: 0;
-`
-
-function Blackout() {
   return (
     <BRoot>
       <BText>

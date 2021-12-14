@@ -7,7 +7,7 @@ import Share from './pages/Share'
 import Mixer from './pages/Mixer'
 import MenuBar from './MenuBar'
 import { useTypedSelector } from '../redux/store'
-import FullscreenOverlay from './FullscreenOverlay'
+import FullscreenOverlay from './overlays/FullscreenOverlay'
 
 export default function App() {
   const activePage = useTypedSelector(state => state.gui.activePage)

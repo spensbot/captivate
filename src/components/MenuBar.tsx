@@ -1,29 +1,13 @@
-import React, { useState } from 'react'
+import React from 'react'
 import styled from 'styled-components'
 import zIndexes from '../util/zIndexes'
-// Possible Universe Logos
-import GridOnIcon from '@material-ui/icons/GridOn'
-import ViewComfyIcon from '@material-ui/icons/ViewComfy'
-import PlaylistAddIcon from '@material-ui/icons/PlaylistAdd'
 import ListIcon from '@material-ui/icons/List'
-// Possible Scene Editor Logos
-import LibraryMusicIcon from '@material-ui/icons/LibraryMusic'
 import MovieFilterIcon from '@material-ui/icons/MovieFilter'
-import StarBorderIcon from '@material-ui/icons/StarBorder'
-import WhatshotIcon from '@material-ui/icons/Whatshot'
-// Possible Video Logos
-import FeaturedVideoIcon from '@material-ui/icons/FeaturedVideo'
 import logoThick from '../images/Thick.png'
-// Possible Share Logos
-import CloudDownloadIcon from '@material-ui/icons/CloudDownload'
-import CloudUploadIcon from '@material-ui/icons/CloudUpload'
-import { makeStyles } from '@material-ui/core/styles'
-import Slider from './base/Slider'
 import BarChartIcon from '@material-ui/icons/BarChart';
 import { useTypedSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import { setActivePage, Page } from '../redux/guiSlice'
-import { setMaster } from '../redux/scenesSlice'
 import TooltipWrapper from './base/TooltipWrapper'
 import BlackoutButton from './BlackoutButton'
 import MasterSlider from './controls/MasterSlider'
