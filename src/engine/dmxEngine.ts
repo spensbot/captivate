@@ -98,7 +98,9 @@ export default function setDMX(_s: ReduxState, _rs: RealtimeState) {
           dmxConnection.updateChannel(outputChannel, overwrite * DMX_MAX_VALUE)
         } else if (_rs.outputParams.Epicness >= fixtureType.epicness) {
           let dmxOut = getDmxValue(_s.scenes.master, channel, _rs.outputParams, colors, fixture.window, movingWindow)
-          dmxOut = applyRandomization(dmxOut, _rs.randomizer[i], _rs.outputParams.Randomize)
+          if (channel.type === 'master') {
+            dmxOut = applyRandomization(dmxOut, _rs.randomizer[i], _rs.outputParams.Randomize)
+          }
           dmxConnection.updateChannel(outputChannel, dmxOut)
         } else {
           dmxConnection.updateChannel(outputChannel, DMX_DEFAULT_VALUE)
