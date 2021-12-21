@@ -16,7 +16,6 @@ const selectedBorder = 0.2 //rem
 
 export default function MenuBar() {
   const activePage = useTypedSelector(state => state.gui.activePage)
-  const master = useTypedSelector(state => state.scenes.master)
   const dispatch = useDispatch()
 
   const setPage = (newPage: Page) => {
