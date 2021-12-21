@@ -83,7 +83,7 @@ export function init(store: ReduxStore, realtimeStore: RealtimeStore) {
         } else {
           const buttonAction = Object.entries(midiState.buttonActions).find(([actionId, action]) => action.inputID === input.id )?.[1]
           if (buttonAction) {
-            if (input.message.type === 'On') {
+            if (input.message.type !== 'Off') {
               if (buttonAction.action.type === 'setActiveSceneIndex') {
                 store.dispatch(setActiveSceneIndex(buttonAction.action.index));
               }
