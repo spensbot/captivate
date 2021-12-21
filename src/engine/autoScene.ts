@@ -1,12 +1,27 @@
 import { ReduxStore } from '../redux/store'
 import { TimeState } from '../redux/realtimeStore'
-import { setActiveScene } from '../redux/scenesSlice'
+import { setActiveScene, SceneState } from '../redux/scenesSlice'
+
+let _lastUserModifiedBeats = 0;
+let _lastScene = "";
 
 export default function handleAutoScene(store: ReduxStore, timeState: TimeState) {
-  const {auto, active} = store.getState().scenes
+  const { auto, active } = store.getState().scenes
+
+  if (active !== _lastScene) {
+    _lastScene = active
+    _lastUserModifiedBeats = timeState.beats
+  }
 
   if (auto.enabled && isNewScene(timeState, auto.period)) {
-    setRandomScene(active, auto.bombacity, store)
+    const beatsPerScene = timeState.quantum * auto.period
+    if (timeState.beats - _lastUserModifiedBeats > beatsPerScene) {
+      const newSceneId = getRandomSceneId(active, auto.bombacity, store.getState().scenes)
+      if (newSceneId) {
+        store.dispatch(setActiveScene(newSceneId))
+        _lastScene = newSceneId
+      }
+    }
   }
 }
 
@@ -19,8 +34,7 @@ function isNewScene(ts: TimeState, autoScenePeriod: number): boolean {
 
 const MAX_DIF = 0.5
 
-function setRandomScene(activeScene: string, bombacity: number, store: ReduxStore) {
-  const scenes = store.getState().scenes
+function getRandomSceneId(activeScene: string, bombacity: number, scenes: SceneState) {
   const byId = scenes.byId
   const closest = scenes.ids.filter(id => {
     return Math.abs(bombacity - byId[id].bombacity) < MAX_DIF
@@ -49,5 +63,5 @@ function setRandomScene(activeScene: string, bombacity: number, store: ReduxStor
     accum += weight
   }
 
-  if (newID) store.dispatch(setActiveScene(newID))
+  return newID
 }
