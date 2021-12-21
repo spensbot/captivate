@@ -7,6 +7,7 @@ import { initModulator } from '../engine/modulationEngine'
 import { nanoid } from 'nanoid'
 import { RandomizerOptions } from '../engine/randomizer'
 import { string, number, union, object, boolean, array, equal, map } from '../util/validate'
+import cloneDeep from 'lodash.clonedeep'
 
 export interface AutoScene_t {
   enabled: boolean,
@@ -158,7 +159,7 @@ export const scenesSlice = createSlice({
       })
     },
     setModulation: (state, { payload }: PayloadAction<SetModulationPayload>) => {
-      const {index, param, value} = payload
+      const { index, param, value } = payload
       modifyActiveScene(state, scene => {
         scene.modulators[index].modulation[param] = value
       })
@@ -177,13 +178,22 @@ export const scenesSlice = createSlice({
         })
       }
     },
-    setRandomizer: (state, {payload}: PayloadAction<{ key: keyof RandomizerOptions, value: number }>) => {
+    setRandomizer: (state, { payload }: PayloadAction<{ key: keyof RandomizerOptions, value: number }>) => {
       modifyActiveScene(state, scene => {
         scene.randomizer[payload.key] = payload.value
       })
     },
     setMaster: (state, { payload }: PayloadAction<number>) => {
       state.master = payload
+    },
+    reorderScene: (state, { payload }: PayloadAction<{fromIndex: number, toIndex: number}>) => {
+      let element = state.ids.splice(payload.fromIndex, 1)[0];
+      state.ids.splice(payload.toIndex, 0, element);
+    },
+    copyActiveScene: (state, { payload }: PayloadAction<undefined>) => {
+      const id = nanoid()
+      state.ids.push(id)
+      state.byId[id] = cloneDeep(state.byId[state.active])
     }
   },
 });
@@ -210,7 +220,9 @@ export const {
   setModulation,
   resetModulator,
   setRandomizer,
-  setMaster
+  setMaster,
+  reorderScene,
+  copyActiveScene
 } = scenesSlice.actions;
 
 export default scenesSlice.reducer;

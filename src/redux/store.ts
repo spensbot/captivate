@@ -34,7 +34,13 @@ const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (state, action) => 
   return baseReducer(state, action)
 }
 
-export const store = createStore(rootReducer)
+export const store = configureStore({
+  reducer: rootReducer,
+  middleware: (getDefaultMiddleware) => getDefaultMiddleware({
+    serializableCheck: false,
+    immutableCheck: false
+  }),
+})
 
 export type ReduxStore = typeof store
 export type ReduxDispatch = typeof store.dispatch

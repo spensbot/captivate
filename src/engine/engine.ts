@@ -22,6 +22,8 @@ let _store: ReduxStore
 let _realtimeStore: RealtimeStore
 let _nodeLink: typeof NodeLink
 
+let _lastMidiTime = Date.now()
+
 export function init(store: ReduxStore, realtimeStore: RealtimeStore) {
   _store = store
   _realtimeStore = realtimeStore
@@ -35,6 +37,8 @@ export function init(store: ReduxStore, realtimeStore: RealtimeStore) {
     onConnect: (deviceName) => { store.dispatch(setMidi({isConnected: true, path: deviceName}))},
     onDisconnect: () => { store.dispatch(setMidi({isConnected: false}))},
     onMessage: (input) => {
+      console.log(`Midi dt: ${Date.now() - _lastMidiTime}ms`)
+      _lastMidiTime = Date.now()
       if (input) {
         const midiState = store.getState().midi
         if (midiState.isEditing) {

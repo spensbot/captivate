@@ -1,7 +1,7 @@
 import React from 'react'
 import { useTypedSelector } from '../../redux/store'
 import { useDispatch } from 'react-redux'
-import { setActiveScene, addScene, removeScene, setActiveSceneBombacity, setActiveSceneName } from '../../redux/scenesSlice'
+import { setActiveScene, addScene, removeScene, setActiveSceneBombacity, setActiveSceneName, copyActiveScene } from '../../redux/scenesSlice'
 import { nanoid } from 'nanoid'
 import { initScene } from '../../engine/scene_t'
 import { IconButton } from '@material-ui/core'
@@ -10,6 +10,9 @@ import AddIcon from '@material-ui/icons/Add'
 import Slider from '../base/Slider'
 import {ButtonMidiOverlay} from '../base/MidiOverlay'
 import Input from '../base/Input'
+import { Draggable } from 'react-beautiful-dnd'
+import DragHandleIcon from '@material-ui/icons/DragHandle'
+import CopyIcon from '@material-ui/icons/FileCopy'
 
 const baseStyle: React.CSSProperties = {
   padding: '0.5rem',
@@ -65,43 +68,57 @@ export function Scene({ index, id }: { index: number, id: string }) {
   }
 
   return (
-    <ButtonMidiOverlay action={{type: 'setActiveSceneIndex', index: index}}>
-      <div style={style} onClick={() => { dispatch(setActiveScene(id)) }}>
-        <div style={{
-          width: '1rem',
-          fontSize: '0.7rem',
-          marginLeft: '-0.3rem',
-          marginRight: '0.5rem',
-          textAlign: 'right',
-        }}>{index + 1}</div>
-        { isActive ? (
-          <div style={{flex: '1 0 auto'}}>
-            <Input type="text" value={name} onChange={onNameChange} />
-            <Slider value={bombacity} radius={0.3} orientation="horizontal" onChange={onBombacityChange} />
-          </div>
-        ) : (
-          <>
-          <div>{name}</div>
-          <div style={{flex: '1 0 0'}} />
-          <IconButton aria-label="delete scene" size="small" onClick={onRemoveScene}>
-            <CloseIcon />
-          </IconButton>
-          </>
-        )}
-      </div>
-    </ButtonMidiOverlay>
+    <Draggable draggableId={id} index={index}>  
+      {provided => (
+        <div ref={provided.innerRef} {...provided.draggableProps}>
+          <ButtonMidiOverlay action={{ type: 'setActiveSceneIndex', index: index }}>
+            <div style={style} onClick={() => { dispatch(setActiveScene(id)) }}>
+              <div style={{
+                width: '1rem',
+                fontSize: '0.7rem',
+                marginLeft: '-0.3rem',
+                marginRight: '0.5rem',
+                textAlign: 'right',
+              }}>{index + 1}</div>
+              { isActive ? (
+                <div style={{flex: '1 0 auto'}}>
+                  <Input value={name} onChange={onNameChange} />
+                  <Slider value={bombacity} radius={0.3} orientation="horizontal" onChange={onBombacityChange} />
+                </div>
+              ) : (
+                <>
+                <div>{name}</div>
+                <div style={{flex: '1 0 0'}} />
+                <div {...provided.dragHandleProps}>
+                  <DragHandleIcon />
+                </div>
+                <IconButton aria-label="delete scene" size="small" onClick={onRemoveScene}>
+                  <CloseIcon />
+                </IconButton>
+                </>
+              )}
+            </div>
+          </ButtonMidiOverlay>
+        </div>
+      )}
+    </Draggable>
   )
 }
 
 
 export function NewScene() {
   const dispatch = useDispatch()
-  const onClick = () => {
+  const onNew = () => {
     dispatch(addScene({ id: nanoid(), scene: initScene() }))
   }
+  const onCopy = () => {
+    dispatch(copyActiveScene())
+  }
+
   return (
-    <div style={baseStyle} onClick={onClick}>
-      <AddIcon />
+    <div style={baseStyle}>
+      <IconButton onClick={onNew}><AddIcon /></IconButton>
+      <IconButton onClick={onCopy}><CopyIcon /></IconButton>
     </div>
   )
 }

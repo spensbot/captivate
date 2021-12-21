@@ -56,7 +56,11 @@ function realtimeStoreReducer(state = initState, action: PayloadAction<any>) {
 export const realtimeContext = React.createContext(null)
 
 export const realtimeStore = configureStore({
-  reducer: realtimeStoreReducer
+  reducer: realtimeStoreReducer,
+  middleware: (getDefaultMiddleware) => getDefaultMiddleware({
+    serializableCheck: false,
+    immutableCheck: false
+  })
 })
 
 export type RealtimeStore = typeof realtimeStore

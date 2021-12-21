@@ -48,7 +48,10 @@ function updateInputs(options: Options) {
     const portName = refInput.getPortName(i)
     activePortNames.push(portName)
     if (inputs[portName] === undefined) {
-      inputs[portName] = newInput(i, options)
+      //TODO: (Spenser) better ability to disable midi inputs
+      if (portName !== 'DDJ-SB3') {
+        inputs[portName] = newInput(i, options)
+      }
     }
   }
 

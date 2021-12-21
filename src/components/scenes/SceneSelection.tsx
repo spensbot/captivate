@@ -1,18 +1,17 @@
 import React from 'react'
-import { useTypedSelector } from '../../redux/store'
-import { resetScenesState, SceneState_t } from '../../redux/scenesSlice'
+import { resetScenesState, SceneState } from '../../redux/scenesSlice'
 import { IconButton } from '@material-ui/core'
 import { store } from '../../redux/store'
 import { loadFile, saveFile, captivateFileFilters } from '../../util/saveload_renderer'
 import SaveIcon from '@material-ui/icons/Save'
 import PublishIcon from '@material-ui/icons/Publish'
 import AutoScene from './AutoScene'
-import {Scene, NewScene} from './Scene'
+import ScenesList from './ScenesList'
 
 function loadScenes() {
   loadFile('Load Scenes', [captivateFileFilters.scenes]).then(string => {
     console.log(string)
-    const newScenes: SceneState_t = JSON.parse(string)
+    const newScenes: SceneState = JSON.parse(string)
     store.dispatch(resetScenesState(newScenes))
   }).catch(err => {
     console.log(err)
@@ -32,8 +31,6 @@ function saveScenes() {
 }
 
 export default function SceneSelection() {
-  const sceneIds = useTypedSelector(state => state.scenes.ids)
-
   return (
     <div style={{
       backgroundColor: '#0003', padding: '0.5rem', height: '100%', borderRight: '1px solid #fff3',
@@ -50,14 +47,7 @@ export default function SceneSelection() {
         </IconButton>
       </div>
       <AutoScene />
-      <div style={{ flex: '0 1 auto', overflow: 'scroll' }}>
-        {sceneIds.map((id, index) => {
-          return (
-            <Scene key={index} index={index} id={id} />
-          )
-        })}
-        <NewScene />
-      </div>
+      <ScenesList />
     </div>
   )
 }
