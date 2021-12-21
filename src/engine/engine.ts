@@ -83,8 +83,10 @@ export function init(store: ReduxStore, realtimeStore: RealtimeStore) {
         } else {
           const buttonAction = Object.entries(midiState.buttonActions).find(([actionId, action]) => action.inputID === input.id )?.[1]
           if (buttonAction) {
-            if (buttonAction.action.type === 'setActiveSceneIndex') {
-              store.dispatch(setActiveSceneIndex(buttonAction.action.index));
+            if (input.message.type === 'On') {
+              if (buttonAction.action.type === 'setActiveSceneIndex') {
+                store.dispatch(setActiveSceneIndex(buttonAction.action.index));
+              }
             }
           }
           const sliderAction = Object.entries(midiState.sliderActions).find(([actionId, action]) => action.inputID === input.id)?.[1]
