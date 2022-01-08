@@ -31,8 +31,8 @@
     ]
   },
   "build": {
-    "productName": "ElectronReact",
-    "appId": "org.erb.ElectronReact",
+    "productName": "Captivate",
+    "appId": "com.sailingtomars.Captivate",
     "asar": true,
     "asarUnpack": "**\\*.{node,dll}",
     "files": [
@@ -215,15 +215,19 @@
     "@emotion/styled": "^11.6.0",
     "@mui/icons-material": "^5.2.5",
     "@mui/material": "^5.2.7",
+    "@reduxjs/toolkit": "^1.7.1",
+    "@types/styled-components": "^5.1.19",
     "electron-debug": "^3.2.0",
     "electron-log": "^4.4.4",
     "electron-updater": "^4.6.4",
     "history": "^5.2.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
+    "react-redux": "^7.2.6",
     "react-router-dom": "^6.2.1",
     "redux": "^4.1.2",
-    "regenerator-runtime": "^0.13.9"
+    "regenerator-runtime": "^0.13.9",
+    "styled-components": "^5.3.3"
   },
   "devEngines": {
     "node": ">=14.x",
