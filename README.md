@@ -15,7 +15,7 @@ With integrated [Ableton Link](https://www.ableton.com/en/link/) technology, cap
 ## Create once, Perform anywhere
 Since all dmx channels boil down to the same parameters, captivate scenes can play on any lighting setup. Add and remove fixtures, or change venues with ease.
 ## Share your Creations
-We live in an open source world. Share your best scenes and creations with other captivate users.
+We live in an open source world. Share your best scenes and creations with other captivate users!
 ## More Info
 Thanks to [this repo](https://github.com/diego3g/electron-typescript-react) for the electron/react boilerplate
 
