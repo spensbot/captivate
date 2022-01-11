@@ -1,4 +1,3 @@
-import React from 'react'
 import Slider from '../base/Slider'
 import { useTypedSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'

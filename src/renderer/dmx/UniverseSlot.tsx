@@ -1,43 +1,10 @@
-import React from 'react'
+import styled from 'styled-components'
 import { useTypedSelector } from '../redux/store'
 import { Fixture } from '../../engine/dmxFixtures'
-import { makeStyles } from '@mui/material/styles'
 import { Slot_t } from './MyUniverse'
 import { useDispatch } from 'react-redux'
 import { setSelectedFixture, setFixtureWindowEnabled } from '../redux/dmxSlice'
 import ToggleButton from '../base/ToggleButton'
-
-const height = 4
-const width = 6
-
-const useStyles = makeStyles({
-  root: {
-    height: `${height}rem`,
-    padding: '0.5rem',
-    minWidth: `${width}rem`,
-    marginRight: '0.3rem',
-    marginBottom: '0.3rem',
-    color: '#fff8',
-  },
-  gap: {
-    backgroundColor: '#000',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fixture: {
-    backgroundColor: '#0004',
-    '&:hover': {
-      color: '#fffc',
-    },
-    cursor: 'pointer',
-  },
-  selected: {
-    padding: '0.4rem',
-    border: '0.1rem solid #fffa',
-    color: '#fffc',
-  },
-})
 
 function ChannelSpan({ start, count }: { start: number; count: number }) {
   const end = start + count - 1
@@ -60,21 +27,19 @@ function ChannelSpan({ start, count }: { start: number; count: number }) {
 }
 
 function GapSlot({ ch, count }: { ch: number; count: number }) {
-  const classes = useStyles()
   const start = ch
   // const end = start + count - 1
   // const channelString = (count > 1) ? `${start} ... ${end}` : `${start}`
   return (
-    <div className={`${classes.root} ${classes.gap}`}>
+    <Gap>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <ChannelSpan start={start} count={count} />
       </div>
-    </div>
+    </Gap>
   )
 }
 
 function FixtureSlot({ fixture, index }: { fixture: Fixture; index: number }) {
-  const classes = useStyles()
   const fixtureType = useTypedSelector(
     (state) => state.dmx.fixtureTypesByID[fixture.type]
   )
@@ -95,10 +60,12 @@ function FixtureSlot({ fixture, index }: { fixture: Fixture; index: number }) {
     }
   }
   return (
-    <div
-      className={`${classes.root} ${classes.fixture} ${
-        isSelected ? classes.selected : null
-      }`}
+    <Fixture_
+      style={{
+        padding: '0.4rem',
+        border: '0.1rem solid #fffa',
+        color: '#fffc',
+      }}
       onClick={() => {
         dispatch(setSelectedFixture(index))
       }}
@@ -127,7 +94,7 @@ function FixtureSlot({ fixture, index }: { fixture: Fixture; index: number }) {
           {fixtureType.manufacturer}
         </div>
       )}
-    </div>
+    </Fixture_>
   )
 }
 
@@ -139,3 +106,32 @@ export default function UniverseSlot({ slot }: { slot: Slot_t }) {
       return <FixtureSlot fixture={slot.fixture} index={slot.index} />
   }
 }
+
+const height = 4
+const width = 6
+
+const Gap = styled.div`
+  height: ${height}rem;
+  padding: 0.5rem;
+  min-width: ${width}rem;
+  margin-right: 0.3rem;
+  margin-bottom: 0.3rem;
+  color: #fff8;
+  background-color: '#000';
+  display: 'flex';
+  justify-content: 'center';
+  align-items: 'center';
+`
+const Fixture_ = styled.div`
+  height: ${height}rem;
+  padding: 0.5rem;
+  min-width: ${width}rem;
+  margin-right: 0.3rem;
+  margin-bottom: 0.3rem;
+  color: #fff8;
+  background-color: '#0004';
+  :hover {
+    color: #fffc;
+  }
+  cursor: pointer;
+`

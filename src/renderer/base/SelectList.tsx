@@ -1,25 +1,31 @@
-import React from 'react'
 import styled from 'styled-components'
 import wrapClick from './wrapClick'
 
 interface Props<T extends string> {
-  list: T[],
-  selected: T,
+  list: T[]
+  selected: T
   setSelected: (val: T) => void
   style?: React.CSSProperties
 }
 
-export default function SelectList<T extends string>({list, selected, setSelected, style}: Props<T>) { 
+export default function SelectList<T extends string>({
+  list,
+  selected,
+  setSelected,
+  style,
+}: Props<T>) {
   return (
     <Root style={style}>
-      { list.map(item => (
-        <Item key={`${item}`} 
+      {list.map((item) => (
+        <Item
+          key={`${item}`}
           selected={item === selected}
-          onClick={wrapClick(() => setSelected(item))}>
+          onClick={wrapClick(() => setSelected(item))}
+        >
           {`${item}`}
         </Item>
       ))}
-    </Root> 
+    </Root>
   )
 }
 
@@ -30,13 +36,19 @@ interface MultiSelectProps<T extends string> {
   style?: React.CSSProperties
 }
 
-export function MultiSelectList<T extends string> ({list, selected, setSelected, style}: MultiSelectProps<T>) {
+export function MultiSelectList<T extends string>({
+  list,
+  selected,
+  setSelected,
+  style,
+}: MultiSelectProps<T>) {
   return (
     <Root style={style}>
-      { list.map(item => (
-        <Item key={`${item}`} 
+      {list.map((item) => (
+        <Item
+          key={`${item}`}
           selected={selected.has(item)}
-          onClick={e => {
+          onClick={(e) => {
             let newSelected
             if (e.metaKey) {
               newSelected = new Set(selected)
@@ -45,11 +57,12 @@ export function MultiSelectList<T extends string> ({list, selected, setSelected,
               newSelected = new Set([item])
             }
             setSelected(newSelected)
-          }}>
-            {`${item}`}
+          }}
+        >
+          {`${item}`}
         </Item>
       ))}
-    </Root> 
+    </Root>
   )
 }
 
@@ -57,10 +70,10 @@ const Root = styled.div`
   display: flex;
 `
 
-const Item = styled.div<{selected: boolean}>`
-  margin-right: ${props => props.theme.spacing(0.5)};
-  padding: ${props => props.theme.spacing(0.2)};
-  opacity: ${props => props.selected ? 1 : 0.5};
+const Item = styled.div<{ selected: boolean }>`
+  margin-right: ${(props) => props.theme.spacing(0.5)};
+  padding: ${(props) => props.theme.spacing(0.2)};
+  opacity: ${(props) => (props.selected ? 1 : 0.5)};
   cursor: pointer;
   &:last-child {
     margin-bottom: 0;

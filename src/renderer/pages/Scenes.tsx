@@ -1,5 +1,5 @@
 import React from 'react'
-import StatusBar from '../StatusBar'
+import StatusBar from '../menu/StatusBar'
 import ParamsControl from '../controls/ParamsControl'
 import Modulators from '../scenes/Modulators'
 import SceneSelection from '../scenes/SceneSelection'
@@ -13,21 +13,26 @@ export default function Scenes() {
     root: {
       display: 'flex',
       flexDirection: 'column',
-      height: '100%', 
+      height: '100%',
     },
     splitContainer: {
       flex: '1 1 auto',
-      overflow: 'auto'
+      overflow: 'auto',
     },
     splitPane: {
-      height: '100%'
-    }
+      height: '100%',
+    },
   }
 
   return (
     <div style={styles.root}>
       <StatusBar />
-      <SplitPane style={styles.splitContainer} type="vertical" initialSplit={0.30} rem={0.5}>
+      <SplitPane
+        style={styles.splitContainer}
+        type="vertical"
+        initialSplit={0.3}
+        rem={0.5}
+      >
         <div style={styles.splitPane}>
           <SceneSelection />
         </div>

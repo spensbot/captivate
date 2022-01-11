@@ -12,12 +12,11 @@ export default function App() {
   const activePage = useTypedSelector((state) => state.gui.activePage)
 
   function getActivePage() {
-    return <Universe />
-    // if (activePage == 'Modulation') return <Modulation />
-    // if (activePage == 'Universe') return <Universe />
-    // if (activePage == 'Video') return <Video />
-    // if (activePage == 'Share') return <Share />
-    // if (activePage == 'Mixer') return <Mixer />
+    if (activePage == 'Modulation') return <Modulation />
+    if (activePage == 'Universe') return <Universe />
+    if (activePage == 'Video') return <Video />
+    if (activePage == 'Share') return <Share />
+    if (activePage == 'Mixer') return <Mixer />
   }
 
   return (

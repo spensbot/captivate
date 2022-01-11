@@ -27,9 +27,10 @@ export default function Cursor({
       width: `${radius * 2}rem`,
       height: `${radius * 2}rem`,
       borderRadius: '50%',
-      border: `1.5px solid ${color}`,
+      border: `${thickness}px solid ${color}`,
       transform: `translate(-${radius}rem, -${radius}rem)`,
       cursor: onClick ? 'pointer' : undefined,
+      boxSizing: 'border-box',
     },
   }
 

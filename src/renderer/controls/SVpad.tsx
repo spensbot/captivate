@@ -2,19 +2,18 @@ import React from 'react'
 import useDragMapped from '../hooks/useDragMapped'
 import { useDispatch } from 'react-redux'
 import { setBaseParams } from '../redux/scenesSlice'
-import { ParamKey } from '../../engine/params'
 import SVCursor from './SVCursor'
 import { useRealtimeSelector } from '../redux/realtimeStore'
 
 export default function SVpad() {
-  const hue = useRealtimeSelector((state) => state.outputParams.Hue)
+  const hue = useRealtimeSelector((state) => state.outputParams.hue)
   const dispatch = useDispatch()
 
   const [dragContainer, onMouseDown] = useDragMapped(({ x, y }) => {
     dispatch(
       setBaseParams({
-        [ParamKey.Saturation]: x,
-        [ParamKey.Brightness]: y,
+        saturation: x,
+        brightness: y,
       })
     )
   })

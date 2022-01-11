@@ -1,6 +1,6 @@
-import React, {useRef, useEffect} from 'react'
+import React, { useRef, useEffect } from 'react'
 import FPS from '../visualizer/FPS'
-import {visualizerRef, resizeVisualizer} from '../visualizer/visualizerRef'
+import { visualizerRef, resizeVisualizer } from '../visualizer/visualizerRef'
 
 export default function Visualizer() {
   const styles: { [key: string]: React.CSSProperties } = {
@@ -8,7 +8,7 @@ export default function Visualizer() {
       width: '100vw',
       height: '100vh',
       position: 'relative',
-      backgroundColor: '#000'
+      backgroundColor: '#000',
     },
   }
 
@@ -28,8 +28,10 @@ export default function Visualizer() {
     }
     resize()
     window.addEventListener('resize', resize)
-  
-    return () => {window.removeEventListener('resize', resize)};
+
+    return () => {
+      window.removeEventListener('resize', resize)
+    }
   }, [])
 
   return (

@@ -6,23 +6,23 @@ import { useTypedSelector } from '../redux/store'
 import SliderCursor from './SliderCursor'
 
 interface Props {
-  paramKey: Param
+  param: Param
   orientation: 'vertical' | 'horizontal'
 }
 
 const THICK = 0.8 // rem
 const thick = `${THICK}rem`
 
-export default function MySlider({ paramKey, orientation }: Props) {
+export default function MySlider({ param, orientation }: Props) {
   const paramBase = useTypedSelector(
-    (state) => state.scenes.byId[state.scenes.active].baseParams[paramKey]
+    (state) => state.scenes.byId[state.scenes.active].baseParams[param]
   )
   const dispatch = useDispatch()
 
   const [dragContainer, onMouseDown] = useDragMapped(({ x, y }) => {
     dispatch(
       setBaseParams({
-        [paramKey]: y,
+        [param]: y,
       })
     )
   })
@@ -61,7 +61,7 @@ export default function MySlider({ paramKey, orientation }: Props) {
     <div style={styles.root}>
       <div style={styles.track} ref={dragContainer} onMouseDown={onMouseDown}>
         <div style={styles.cursor} />
-        <SliderCursor paramKey={paramKey} orientation={orientation} />
+        <SliderCursor orientation={orientation} />
       </div>
     </div>
   )

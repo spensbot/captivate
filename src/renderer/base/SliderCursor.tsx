@@ -15,7 +15,7 @@ export default function SliderCursor({
 }: Props) {
   const percent = value * 100
   const v = orientation === 'vertical'
-  const r = `${radius}rem`
+  const r = `${radius * 2}rem`
   const d = `${radius * 2}rem`
 
   return (
@@ -30,6 +30,7 @@ export default function SliderCursor({
         border: border ? '2px solid ' + color : undefined,
         backgroundColor: border ? undefined : color,
         transform: `translate(${v ? 0 : -radius}rem, ${v ? radius : 0}rem)`,
+        boxSizing: 'border-box',
       }}
     />
   )

@@ -1,4 +1,3 @@
-import React from 'react'
 import styled from 'styled-components'
 import { Scene, NewScene } from './Scene'
 import { useTypedSelector } from '../redux/store'

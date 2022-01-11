@@ -2,11 +2,11 @@ import React from 'react'
 import { resetScenesState, SceneState } from '../redux/scenesSlice'
 import { IconButton } from '@mui/material'
 import { store } from '../redux/store'
-// import {
-//   loadFile,
-//   saveFile,
-//   captivateFileFilters,
-// } from '../../util/saveload_renderer'
+import {
+  loadFile,
+  saveFile,
+  captivateFileFilters,
+} from '../../util/saveload_renderer'
 import SaveIcon from '@mui/icons-material/Save'
 import PublishIcon from '@mui/icons-material/Publish'
 import AutoScene from './AutoScene'

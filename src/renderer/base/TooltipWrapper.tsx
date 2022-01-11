@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 
 interface Props {
   children: React.ReactNode
@@ -9,7 +9,6 @@ interface Props {
 const delay = 1000
 
 export default function TooltipWrapper({ children, text, style = {} }: Props) {
-
   const [visible, setVisible] = useState(false)
   const [timeoutRef, setTimeoutRef] = useState(0)
   useEffect(() => {
@@ -19,9 +18,11 @@ export default function TooltipWrapper({ children, text, style = {} }: Props) {
   })
 
   function onMouseEnter() {
-    setTimeoutRef(setTimeout(() => {
-      setVisible(true)
-    }, delay))
+    setTimeoutRef(
+      setTimeout(() => {
+        setVisible(true)
+      }, delay)
+    )
   }
 
   function onMouseLeave() {
@@ -50,13 +51,17 @@ export default function TooltipWrapper({ children, text, style = {} }: Props) {
       // backgroundColor: '#000',
       // border: '1px solid #222',
       // borderRadius: '0.5rem',
-    }
+    },
   }
 
   return (
-    <div style={{ ...style, ...styles.root }} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
+    <div
+      style={{ ...style, ...styles.root }}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
       {children}
-      { visible ? <span style={styles.tooltip}>{text}</span> : null }
+      {visible ? <span style={styles.tooltip}>{text}</span> : null}
     </div>
   )
 }

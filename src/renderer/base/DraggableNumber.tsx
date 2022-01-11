@@ -1,4 +1,3 @@
-import React, { useState } from 'react'
 import { clamp } from '../../util/util'
 import useDragBasic from '../hooks/useDragBasic'
 

@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react'
-import { useRef } from 'react'
+import { useEffect, useState } from 'react'
 import styled from 'styled-components'
-import zIndexes from '../../util/zIndexes'
+import zIndexes from '../zIndexes'
 import wrapClick from './wrapClick'
 
 interface Button {
@@ -16,7 +15,13 @@ interface Props<T> {
   extraButton?: Button
 }
 
-export default function Select<T>({value, options, onChange, width='7rem', extraButton}: Props<T>) {
+export default function Select<T>({
+  value,
+  options,
+  onChange,
+  width = '7rem',
+  extraButton,
+}: Props<T>) {
   const [isOpen, setIsOpen] = useState<boolean>(false)
 
   function optionOnClick(option: T) {
@@ -27,7 +32,7 @@ export default function Select<T>({value, options, onChange, width='7rem', extra
 
   useEffect(() => {
     if (isOpen) {
-      const clickAwayListener =  (e: MouseEvent) => {
+      const clickAwayListener = (e: MouseEvent) => {
         setIsOpen(false)
       }
       document.addEventListener('click', clickAwayListener)
@@ -40,40 +45,53 @@ export default function Select<T>({value, options, onChange, width='7rem', extra
   return (
     <Root width={width}>
       <Value onClick={wrapClick(() => setIsOpen(!isOpen))}>{value}</Value>
-      { isOpen && (
+      {isOpen && (
         <Options>
           {options.map((option, i) => {
-            return option === value ? null : <Option key={i} onClick={wrapClick(optionOnClick(option))}>{option}</Option>
+            return option === value ? null : (
+              <Option key={i} onClick={wrapClick(optionOnClick(option))}>
+                {option}
+              </Option>
+            )
           })}
-          { extraButton && <Option onClick={extraButton.onClick} style={{borderTop: `1px solid #777`}}>{extraButton.label}</Option>}
+          {extraButton && (
+            <Option
+              onClick={extraButton.onClick}
+              style={{ borderTop: `1px solid #777` }}
+            >
+              {extraButton.label}
+            </Option>
+          )}
         </Options>
       )}
     </Root>
   )
 }
 
-const Root = styled.div<{width: string}>`
+const Root = styled.div<{ width: string }>`
   position: relative;
-  width: ${props => props.width};
+  width: ${(props) => props.width};
 `
 
 const ViewerValue = styled.span`
   font-size: 0.9rem;
   padding: 0.1rem 0.3rem;
-  background-color: ${props => props.theme.colors.background.tertiary};
-  border-bottom: 1px solid ${props => props.theme.colors.divider};
+  background-color: ${(props) => props.theme.colors.background.tertiary};
+  border-bottom: 1px solid ${(props) => props.theme.colors.divider};
 `
 
 const Value = styled.div`
-  padding: ${props => props.theme.spacing(0.2)} ${props => props.theme.spacing(0.5)};
+  padding: ${(props) => props.theme.spacing(0.2)}
+    ${(props) => props.theme.spacing(0.5)};
   cursor: pointer;
-  background-color: ${props => props.theme.colors.background.tertiary};
-  border: 1px solid ${props => props.theme.colors.divider};
-  border-radius: ${props => props.theme.border.radius};
+  background-color: ${(props) => props.theme.colors.background.tertiary};
+  border: 1px solid ${(props) => props.theme.colors.divider};
+  border-radius: ${(props) => props.theme.border.radius};
 `
 
 const Option = styled.div`
-  padding: ${props => props.theme.spacing(0.2)} ${props => props.theme.spacing(0.5)};
+  padding: ${(props) => props.theme.spacing(0.2)}
+    ${(props) => props.theme.spacing(0.5)};
   cursor: pointer;
   :hover {
     background-color: #7772;
@@ -81,13 +99,14 @@ const Option = styled.div`
 `
 
 const Options = styled.div`
-  /* padding: ${props => props.theme.spacing(0.2)} ${props => props.theme.spacing(0.5)}; */
+  /* padding: ${(props) => props.theme.spacing(0.2)} ${(props) =>
+    props.theme.spacing(0.5)}; */
   position: absolute;
   top: 110%;
   left: 0%;
   width: 100%;
-  background-color: ${props => props.theme.colors.background.tertiary};
-  border: 1px solid ${props => props.theme.colors.divider};
-  border-radius: ${props => props.theme.border.radius};
+  background-color: ${(props) => props.theme.colors.background.tertiary};
+  border: 1px solid ${(props) => props.theme.colors.divider};
+  border-radius: ${(props) => props.theme.border.radius};
   z-index: ${zIndexes.popups};
 `

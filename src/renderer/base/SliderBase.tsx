@@ -1,4 +1,3 @@
-import React from 'react'
 import useDragMapped from '../hooks/useDragMapped'
 
 interface Props {
@@ -9,12 +8,17 @@ interface Props {
 }
 
 // SliderBase displays the track and handles dragging
-export default function SliderBase({ orientation, radius, onChange, children }: Props) {
+export default function SliderBase({
+  orientation,
+  radius,
+  onChange,
+  children,
+}: Props) {
   const r = `${radius}rem`
   const d = `${radius * 2}rem`
   const v = orientation === 'vertical'
 
-  const [dragContainer, onMouseDown] = useDragMapped(({x, y}) => {
+  const [dragContainer, onMouseDown] = useDragMapped(({ x, y }) => {
     onChange(v ? y : x)
   })
 
@@ -25,13 +29,13 @@ export default function SliderBase({ orientation, radius, onChange, children }: 
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      padding: `${v ? radius : 0}rem ${v ? 0 : radius}rem`
+      padding: `${v ? radius : 0}rem ${v ? 0 : radius}rem`,
     },
     dragArea: {
       position: 'relative',
       width: v ? d : '100%',
       height: v ? '100%' : d,
-      margin: 0
+      margin: 0,
     },
     track: {
       position: 'absolute',
@@ -46,7 +50,11 @@ export default function SliderBase({ orientation, radius, onChange, children }: 
 
   return (
     <div style={styles.root}>
-      <div style={styles.dragArea} ref={dragContainer} onMouseDown={onMouseDown}>
+      <div
+        style={styles.dragArea}
+        ref={dragContainer}
+        onMouseDown={onMouseDown}
+      >
         <div style={styles.track} />
         {children}
       </div>

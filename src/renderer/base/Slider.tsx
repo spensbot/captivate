@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import SliderBase from './SliderBase'
 import SliderCursor from './SliderCursor'
 import styled from 'styled-components'
@@ -12,7 +12,14 @@ interface Params {
   disabled?: boolean
 }
 
-export default function Slider({ value, radius = 0.4, orientation, onChange, color, disabled }: Params) {
+export default function Slider({
+  value,
+  radius = 0.4,
+  orientation,
+  onChange,
+  color,
+  disabled,
+}: Params) {
   const [localVal, setLocalVal] = useState(0.0)
 
   const localOnChange = (newVal: number) => {
@@ -23,12 +30,19 @@ export default function Slider({ value, radius = 0.4, orientation, onChange, col
   }
 
   return (
-    <SliderBase radius={radius} orientation={orientation} onChange={localOnChange}>
-      <SliderCursor value={value === undefined ? localVal : value} radius={radius} orientation={orientation} color={disabled ? '#fff5' : color}/>
+    <SliderBase
+      radius={radius}
+      orientation={orientation}
+      onChange={localOnChange}
+    >
+      <SliderCursor
+        value={value === undefined ? localVal : value}
+        radius={radius}
+        orientation={orientation}
+        color={disabled ? '#fff5' : color}
+      />
     </SliderBase>
   )
 }
 
-const Root = styled.div`
-  
-`
+const Root = styled.div``

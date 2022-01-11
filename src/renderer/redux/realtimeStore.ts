@@ -7,9 +7,18 @@ import {
 } from 'react-redux'
 import React from 'react'
 import { initTimeState } from '../../engine/TimeState'
+import { initParams } from '../../engine/params'
+import { initRandomizerState } from '../../engine/randomizer'
+
+function initDmxOut(): number[] {
+  return Array(512).fill(0)
+}
 
 const initState = {
+  outputParams: initParams(),
   time: initTimeState(),
+  randomizer: initRandomizerState(),
+  dmxOut: initDmxOut(),
 }
 
 export type RealtimeState = typeof initState

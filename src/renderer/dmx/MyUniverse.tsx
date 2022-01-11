@@ -1,4 +1,3 @@
-import React from 'react'
 import { Universe, Fixture } from '../../engine/dmxFixtures'
 import { useTypedSelector } from '../redux/store'
 import FixturePlacement from './FixturePlacement'
