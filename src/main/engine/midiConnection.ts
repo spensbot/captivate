@@ -23,7 +23,7 @@ function getInput(msg: MidiMessage): MidiInput {
   }
 }
 
-interface Options {
+interface Config {
   updateInterval: number
   onMessage: (message: MidiInput | null) => void
   onConnect: (deviceName: string) => void
@@ -35,13 +35,13 @@ const refInput = new Input()
 const inputs: Inputs = {}
 type Inputs = { [portName: string]: Input }
 
-export function maintain(options: Options) {
+export function maintain(config: Config) {
   setInterval(() => {
-    updateInputs(options)
-  }, options.updateInterval)
+    updateInputs(config)
+  }, config.updateInterval)
 }
 
-function updateInputs(options: Options) {
+function updateInputs(config: Config) {
   const portCount = refInput.getPortCount()
   const activePortNames: string[] = []
 
@@ -51,7 +51,7 @@ function updateInputs(options: Options) {
     if (inputs[portName] === undefined) {
       //TODO: (Spenser) better ability to disable midi inputs
       if (portName !== 'DDJ-SB3') {
-        inputs[portName] = newInput(i, options)
+        inputs[portName] = newInput(i, config)
       }
     }
   }
@@ -64,17 +64,17 @@ function updateInputs(options: Options) {
     ) {
       delete inputs[oldPortName]
       console.log(`Removing Midi Connection: ${oldPortName}`)
-      options.onDisconnect()
+      config.onDisconnect()
     }
   }
 }
 
-function newInput(index: number, options: Options) {
+function newInput(index: number, config: Config) {
   const input = new Input()
 
   input.on('message', (dt, message) => {
     const midiMessage = parseMessage(message)
-    if (midiMessage) options.onMessage(getInput(midiMessage))
+    if (midiMessage) config.onMessage(getInput(midiMessage))
     // I think dt is the seconds since the last message
     // I'm not sure what that's good for yet?
   })
@@ -82,7 +82,7 @@ function newInput(index: number, options: Options) {
   input.openPort(index)
 
   console.log(`New Midi connection: ${input.getPortName(index)}`)
-  options.onConnect(input.getPortName(index))
+  config.onConnect(input.getPortName(index))
 
   return input
 }

@@ -18,6 +18,7 @@ import MenuBuilder from './menu'
 import { resolveHtmlPath } from './util'
 import * as DmxConnection from './engine/dmxConnection'
 import * as MidiConnection from './engine/midiConnection'
+import * as LinkConnection from './engine/linkConnection'
 
 DmxConnection.maintain({
   update_ms: 1000,
@@ -35,6 +36,8 @@ MidiConnection.maintain({
   onMessage: (message) => console.log(`Midi Message: ${message?.id}`),
   onDisconnect: () => {},
 })
+
+LinkConnection.maintain()
 
 export default class AppUpdater {
   constructor() {

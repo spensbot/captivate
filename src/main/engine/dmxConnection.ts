@@ -14,30 +14,30 @@ const DMX_SEND_INTERVAL = 1000 / 40
 let _readyToWrite = true
 let _connection: null | SerialPort = null
 let _intervalHandle: NodeJS.Timer
-let _options: Options
+let _config: Config
 
-interface Options {
+interface Config {
   update_ms: number
   onUpdate: (path: string | null) => void
   calculateChannels: () => number[]
 }
 
-export function maintain(options: Options) {
-  _options = options
+export function maintain(config: Config) {
+  _config = config
   maintainConnection()
 }
 
 async function maintainConnection() {
   if (_connection) {
-    _options.onUpdate(_connection.path)
-    setTimeout(maintainConnection, _options.update_ms * 5)
+    _config.onUpdate(_connection.path)
+    setTimeout(maintainConnection, _config.update_ms * 5)
   } else {
-    _options.onUpdate(null)
+    _config.onUpdate(null)
     const path = await getFirstDmxUsbProPath()
     if (path) {
       connect(path)
     }
-    setTimeout(maintainConnection, _options.update_ms)
+    setTimeout(maintainConnection, _config.update_ms)
   }
 }
 
@@ -77,7 +77,7 @@ function connect(path: string) {
 function start() {
   console.log('Sending DMX...')
   _intervalHandle = setInterval(() => {
-    sendUniverse(_options.calculateChannels())
+    sendUniverse(_config.calculateChannels())
   }, DMX_SEND_INTERVAL)
 }
 
