@@ -17,9 +17,23 @@ import log from 'electron-log'
 import MenuBuilder from './menu'
 import { resolveHtmlPath } from './util'
 import * as DmxConnection from './engine/dmxConnection'
+import * as MidiConnection from './engine/midiConnection'
 
-DmxConnection.init((isConnected, path) => {
-  console.log(`spenser ${isConnected}: ${path}`)
+DmxConnection.maintain({
+  update_ms: 1000,
+  onUpdate: (path) => {
+    console.log(path ? `Dmx connected: ${path}` : `Dmx not connected`)
+  },
+  calculateChannels: () => {
+    return new Array(512).fill(0)
+  },
+})
+
+MidiConnection.maintain({
+  updateInterval: 1000,
+  onConnect: (deviceName) => console.log(`Midi connected: ${deviceName}`),
+  onMessage: (message) => console.log(`Midi Message: ${message?.id}`),
+  onDisconnect: () => {},
 })
 
 export default class AppUpdater {

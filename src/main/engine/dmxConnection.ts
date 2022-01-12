@@ -9,15 +9,37 @@ const ENTTEC_PRO_END_OF_MSG = 0xe7
 const ENTTEC_PRO_SEND_DMX_RQ = 0x06
 // var ENTTEC_PRO_RECV_DMX_PKT = 0x05;
 
-type u8 = number
+const DMX_SEND_INTERVAL = 1000 / 40
 
-const interval = 1000 / 40
+let _readyToWrite = true
+let _connection: null | SerialPort = null
+let _intervalHandle: NodeJS.Timer
+let _options: Options
 
-const universe = Buffer.alloc(513, 0)
+interface Options {
+  update_ms: number
+  onUpdate: (path: string | null) => void
+  calculateChannels: () => number[]
+}
 
-let readyToWrite = true
-let connection: null | SerialPort = null
-let intervalHandle: NodeJS.Timer
+export function maintain(options: Options) {
+  _options = options
+  maintainConnection()
+}
+
+async function maintainConnection() {
+  if (_connection) {
+    _options.onUpdate(_connection.path)
+    setTimeout(maintainConnection, _options.update_ms * 5)
+  } else {
+    _options.onUpdate(null)
+    const path = await getFirstDmxUsbProPath()
+    if (path) {
+      connect(path)
+    }
+    setTimeout(maintainConnection, _options.update_ms)
+  }
+}
 
 function isDmxUsbPro(port: SerialPort.PortInfo) {
   return port.manufacturer === 'DMXking.com'
@@ -32,35 +54,8 @@ async function getFirstDmxUsbProPath() {
   return null
 }
 
-let _statusUpdate: (isConnected: boolean, path: string | null) => void
-
-export function init(statusUpdate: typeof _statusUpdate) {
-  _statusUpdate = statusUpdate
-  maintainConnection()
-}
-
-async function maintainConnection() {
-  if (connection) {
-    _statusUpdate(true, connection.path)
-    setTimeout(maintainConnection, 5000)
-    return
-  }
-
-  _statusUpdate(false, null)
-
-  const path = await getFirstDmxUsbProPath()
-  if (path) {
-    connect(path)
-    console.log(`Connected to device at path: ${path}`)
-  }
-
-  console.log('Trying DMX connection')
-
-  setTimeout(maintainConnection, 1000)
-}
-
 function connect(path: string) {
-  connection = new SerialPort(
+  _connection = new SerialPort(
     path,
     {
       baudRate: 250000,
@@ -71,7 +66,7 @@ function connect(path: string) {
     (err: any) => {
       if (err) {
         console.warn('Serialport connection failed', err)
-        connection = null
+        _connection = null
       } else {
         start()
       }
@@ -81,9 +76,9 @@ function connect(path: string) {
 
 function start() {
   console.log('Sending DMX...')
-  intervalHandle = setInterval(() => {
-    sendUniverse()
-  }, interval)
+  _intervalHandle = setInterval(() => {
+    sendUniverse(_options.calculateChannels())
+  }, DMX_SEND_INTERVAL)
 }
 
 // function stop() {
@@ -99,43 +94,29 @@ function start() {
 //   }
 // }
 
-export function updateAll(values: u8[]) {
-  values.forEach((value, index) => {
-    universe[index] = value
-  })
-}
+function sendUniverse(universe: number[]) {
+  if (_connection?.writable && _readyToWrite) {
+    const universeBuffer = Buffer.alloc(513, 0)
+    universe.forEach((value, index) => (universeBuffer[index + 1] = value))
 
-export function updateChannel(channel: number, value: u8) {
-  universe[channel] = value
-}
-
-function sendUniverse() {
-  if (!connection) return
-  if (!connection.writable) return
-
-  if (readyToWrite) {
     const hdr = Buffer.from([
       ENTTEC_PRO_START_OF_MSG,
       ENTTEC_PRO_SEND_DMX_RQ,
-      universe.length & 0xff,
-      (universe.length >> 8) & 0xff,
+      universeBuffer.length & 0xff,
+      (universeBuffer.length >> 8) & 0xff,
       ENTTEC_PRO_DMX_STARTCODE,
     ])
 
     const msg = Buffer.concat([
       hdr,
-      universe.slice(1),
+      universeBuffer.slice(1),
       Buffer.from([ENTTEC_PRO_END_OF_MSG]),
     ])
 
-    readyToWrite = false
-    connection.write(msg)
-    connection.drain(() => {
-      readyToWrite = true
+    _readyToWrite = false
+    _connection.write(msg)
+    _connection.drain(() => {
+      _readyToWrite = true
     })
   }
-}
-
-export function getDmxBuffer() {
-  return universe
 }
