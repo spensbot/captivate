@@ -16,9 +16,11 @@ let _connection: null | SerialPort = null
 let _intervalHandle: NodeJS.Timer
 let _config: Config
 
+export type UpdatePayload = string | null
+
 interface Config {
   update_ms: number
-  onUpdate: (path: string | null) => void
+  onUpdate: (path: UpdatePayload) => void
   calculateChannels: () => number[]
 }
 

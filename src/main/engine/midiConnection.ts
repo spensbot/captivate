@@ -23,11 +23,13 @@ function getInput(msg: MidiMessage): MidiInput {
   }
 }
 
+export type UpdatePayload = string[]
+export type MessagePayload = MidiMessage
+
 interface Config {
-  updateInterval: number
-  onMessage: (message: MidiInput | null) => void
-  onConnect: (deviceName: string) => void
-  onDisconnect: () => void
+  update_ms: number
+  onUpdate: (activeDevices: UpdatePayload) => void
+  onMessage: (message: MessagePayload) => void
 }
 
 const refInput = new Input()
@@ -38,7 +40,7 @@ type Inputs = { [portName: string]: Input }
 export function maintain(config: Config) {
   setInterval(() => {
     updateInputs(config)
-  }, config.updateInterval)
+  }, config.update_ms)
 }
 
 function updateInputs(config: Config) {
@@ -64,9 +66,10 @@ function updateInputs(config: Config) {
     ) {
       delete inputs[oldPortName]
       console.log(`Removing Midi Connection: ${oldPortName}`)
-      config.onDisconnect()
     }
   }
+
+  config.onUpdate(activePortNames)
 }
 
 function newInput(index: number, config: Config) {
@@ -74,7 +77,7 @@ function newInput(index: number, config: Config) {
 
   input.on('message', (dt, message) => {
     const midiMessage = parseMessage(message)
-    if (midiMessage) config.onMessage(getInput(midiMessage))
+    if (midiMessage) config.onMessage(midiMessage)
     // I think dt is the seconds since the last message
     // I'm not sure what that's good for yet?
   })
@@ -82,7 +85,6 @@ function newInput(index: number, config: Config) {
   input.openPort(index)
 
   console.log(`New Midi connection: ${input.getPortName(index)}`)
-  config.onConnect(input.getPortName(index))
 
   return input
 }
