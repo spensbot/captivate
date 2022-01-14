@@ -14,14 +14,16 @@ function initDmxOut(): number[] {
   return Array(512).fill(0)
 }
 
-const initState = {
-  outputParams: initParams(),
-  time: initTimeState(),
-  randomizer: initRandomizerState(),
-  dmxOut: initDmxOut(),
+export function initRealtimeState() {
+  return {
+    outputParams: initParams(),
+    time: initTimeState(),
+    randomizer: initRandomizerState(),
+    dmxOut: initDmxOut(),
+  }
 }
 
-export type RealtimeState = typeof initState
+export type RealtimeState = ReturnType<typeof initRealtimeState>
 
 export function update(newRealtimeStore: RealtimeState) {
   return {
@@ -30,7 +32,10 @@ export function update(newRealtimeStore: RealtimeState) {
   }
 }
 
-function realtimeStoreReducer(state = initState, action: PayloadAction<any>) {
+function realtimeStoreReducer(
+  state = initRealtimeState(),
+  action: PayloadAction<any>
+) {
   if (action.type === 'update') {
     return action.payload
   }
