@@ -35,6 +35,8 @@ const ipc_callbacks = ipc_setup({
   },
 })
 
+ipc_callbacks.send_control_state(store.getState())
+
 store.subscribe(() => ipc_callbacks.send_control_state(store.getState()))
 
 render(

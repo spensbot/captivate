@@ -16,6 +16,7 @@ import { autoUpdater } from 'electron-updater'
 import log from 'electron-log'
 import MenuBuilder from './menu'
 import { resolveHtmlPath } from './util'
+import { start } from './engine/engine'
 
 export default class AppUpdater {
   constructor() {
@@ -73,8 +74,8 @@ const createWindow = async () => {
 
   mainWindow = new BrowserWindow({
     show: false,
-    width: 1024,
-    height: 728,
+    width: 1300,
+    height: 900,
     icon: getAssetPath('icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -106,6 +107,8 @@ const createWindow = async () => {
     event.preventDefault()
     shell.openExternal(url)
   })
+
+  start(mainWindow.webContents)
 
   // Remove this if your app does not use auto updates
   // eslint-disable-next-line

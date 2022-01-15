@@ -27,6 +27,9 @@ interface Config {
 export function maintain(config: Config) {
   _config = config
   maintainConnection()
+  _intervalHandle = setInterval(() => {
+    sendUniverse(_config.calculateChannels())
+  }, DMX_SEND_INTERVAL)
 }
 
 async function maintainConnection() {
@@ -78,9 +81,6 @@ function connect(path: string) {
 
 function start() {
   console.log('Sending DMX...')
-  _intervalHandle = setInterval(() => {
-    sendUniverse(_config.calculateChannels())
-  }, DMX_SEND_INTERVAL)
 }
 
 // function stop() {

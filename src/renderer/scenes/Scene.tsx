@@ -109,6 +109,9 @@ export function Scene({ index, id }: { index: number; id: string }) {
                     orientation="horizontal"
                     onChange={onBombacityChange}
                   />
+                  <div {...provided.dragHandleProps}>
+                    <DragHandleIcon />
+                  </div>
                 </div>
               ) : (
                 <>

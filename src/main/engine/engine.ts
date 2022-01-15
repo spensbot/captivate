@@ -28,37 +28,42 @@ import {
 } from '../../engine/dmxFixtures'
 
 let _nodeLink = new NodeLink()
-let _ipcCallbacks: ReturnType<typeof ipcSetup> | null
-let _controlState: ReduxState | null
+let _ipcCallbacks: ReturnType<typeof ipcSetup> | null = null
+let _controlState: ReduxState | null = null
 let _lastFrameTime = 0
 let _lastRandomizerState = initRandomizerState()
 
 export function start(renderer: WebContents) {
   _ipcCallbacks = ipcSetup({
     renderer: renderer,
-    on_new_control_state: (newState) => (_controlState = newState),
+    on_new_control_state: (newState) => {
+      _controlState = newState
+    },
   })
 }
 
 DmxConnection.maintain({
-  update_ms: 1000,
+  update_ms: 5000,
   onUpdate: (path) => {
-    console.log(path ? `Dmx connected: ${path}` : `Dmx not connected`)
+    if (_ipcCallbacks !== null) _ipcCallbacks.send_dmx_connection_update(path)
   },
   calculateChannels: () => {
     let realtimeState = calculateRealtimeState()
     if (_ipcCallbacks !== null) _ipcCallbacks.send_time_state(realtimeState)
-    return calculateRealtimeState().dmxOut
+    return realtimeState.dmxOut
   },
 })
 
 MidiConnection.maintain({
-  update_ms: 1000,
+  update_ms: 5000,
   onUpdate: (activeDevices) => {
-    console.log(`Midi Devices: ${activeDevices}`)
+    if (_ipcCallbacks !== null)
+      _ipcCallbacks.send_midi_connection_update(activeDevices)
   },
-  onMessage: (message) =>
-    console.log(`Midi Message: ${message.type} | ${message.number}`),
+  onMessage: (message) => {
+    console.log(`Midi Message: ${message.type} | ${message.number}`)
+    // if (_ipcCallbacks !== null) _ipcCallbacks.send_midi_message(message)
+  },
 })
 
 function getWindowMultiplier2D(
@@ -178,7 +183,8 @@ function calculateRealtimeState(): RealtimeState {
   const dt = currentTime - _lastFrameTime
 
   if (dt < 10 || _ipcCallbacks === null || _controlState === null) {
-    return initRealtimeState()
+    let rs = initRealtimeState()
+    return rs
   }
 
   _lastFrameTime = currentTime

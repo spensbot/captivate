@@ -1,4 +1,5 @@
-import { ipcRenderer } from 'electron'
+// import { ipcRenderer } from 'electron'
+// const { ipcRenderer } = require('electron')
 // const electron = window.require('electron')
 // const ipcRenderer = electron.ipcRenderer
 import ipc_channels from '../engine/ipc_channels'
@@ -19,32 +20,31 @@ let _config: Config
 export function ipc_setup(config: Config) {
   _config = config
 
-  ipcRenderer.on(
+  window.electron.ipcRenderer.on(
     ipc_channels.dmx_connection_update,
-    (e, payload: dmxConnection.UpdatePayload) =>
+    (payload: dmxConnection.UpdatePayload) =>
       _config.on_dmx_connection_update(payload)
   )
 
-  ipcRenderer.on(
+  window.electron.ipcRenderer.on(
     ipc_channels.midi_connection_update,
-    (e, payload: midiConnection.UpdatePayload) =>
+    (payload: midiConnection.UpdatePayload) =>
       _config.on_midi_connection_update(payload)
   )
 
-  ipcRenderer.on(
+  window.electron.ipcRenderer.on(
     ipc_channels.new_midi_message,
-    (e, message: midiConnection.MessagePayload) =>
-      _config.on_midi_message(message)
+    (message: midiConnection.MessagePayload) => _config.on_midi_message(message)
   )
 
-  ipcRenderer.on(
+  window.electron.ipcRenderer.on(
     ipc_channels.new_time_state,
-    (e, realtimeState: RealtimeState) => _config.on_time_state(realtimeState)
+    (realtimeState: RealtimeState) => _config.on_time_state(realtimeState)
   )
 
   return {
     send_control_state: (state: ReduxState) => {
-      ipcRenderer.send(ipc_channels.new_control_state, state)
+      window.electron.ipcRenderer.send(ipc_channels.new_control_state, state)
     },
   }
 }
