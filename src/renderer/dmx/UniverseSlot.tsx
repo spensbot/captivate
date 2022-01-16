@@ -1,12 +1,19 @@
 import styled from 'styled-components'
 import { useTypedSelector } from '../redux/store'
-import { Fixture } from '../../engine/dmxFixtures'
+import { Fixture, FixtureType } from '../../engine/dmxFixtures'
 import { Slot_t } from './MyUniverse'
 import { useDispatch } from 'react-redux'
-import { setSelectedFixture, setFixtureWindowEnabled } from '../redux/dmxSlice'
+import {
+  setSelectedFixture,
+  setFixtureWindowEnabled,
+  addFixture,
+  removeFixture,
+} from '../redux/dmxSlice'
 import ToggleButton from '../base/ToggleButton'
-import IconButton from '@mui/material/IconButton'
-import AddIcon from '@mui/icons-material/Add'
+import Popup from '../base/Popup'
+import { useState } from 'react'
+import { TextField, Button } from '@mui/material'
+import { clamp } from '../../util/util'
 
 function ChannelSpan({ start, count }: { start: number; count: number }) {
   const end = start + count - 1
@@ -29,13 +36,56 @@ function ChannelSpan({ start, count }: { start: number; count: number }) {
 }
 
 function GapSlot({ ch, count }: { ch: number; count: number }) {
-  const start = ch
-  // const end = start + count - 1
-  // const channelString = (count > 1) ? `${start} ... ${end}` : `${start}`
+  const [popupOpen, setPopupOpen] = useState(false)
+  const [inputCh, setInputCh] = useState(ch)
+  const dispatch = useDispatch()
+  console.log(`inputCh: ${inputCh} | popupOpen: ${popupOpen}`)
+  const dmxState = useTypedSelector((state) => state.dmx)
+  const applicableFixtures = dmxState.fixtureTypes
+    .map((id) => dmxState.fixtureTypesByID[id])
+    .filter((ft) => ft.channels.length <= count - (inputCh - ch))
+
   return (
-    <Slot style={{ backgroundColor: '#000a' }}>
+    <Slot
+      style={{ backgroundColor: '#000a' }}
+      onClick={(e) => {
+        console.log('setPopupOpen(true)')
+        if (!e.defaultPrevented) {
+          setPopupOpen(true)
+        }
+      }}
+    >
+      {popupOpen && (
+        <Popup title="Add Fixture" onClose={() => setPopupOpen(false)}>
+          <TextField
+            label="Channel"
+            value={inputCh.toString()}
+            size="small"
+            onChange={(e) =>
+              setInputCh(clamp(parseInt(e.target.value), ch, ch + count - 1))
+            }
+            type="number"
+          />
+          {applicableFixtures.map((ft) => (
+            <FixtureChoice
+              fixtureType={ft}
+              onClick={() => {
+                setPopupOpen(false)
+                dispatch(
+                  addFixture({
+                    ch: inputCh,
+                    type: ft.id,
+                    window: {},
+                    groups: [],
+                  })
+                )
+              }}
+            />
+          ))}
+        </Popup>
+      )}
       <GSRoot>
-        <ChannelSpan start={start} count={count} />
+        <ChannelSpan start={ch} count={count} />
       </GSRoot>
     </Slot>
   )
@@ -46,6 +96,31 @@ const GSRoot = styled.div`
   align-items: center;
   width: 100%;
   height: 100%;
+`
+
+function FixtureChoice({
+  fixtureType,
+  onClick,
+}: {
+  fixtureType: FixtureType
+  onClick: () => void
+}) {
+  return (
+    <RCRoot onClick={onClick}>
+      {fixtureType.name} ({fixtureType.manufacturer})
+    </RCRoot>
+  )
+}
+
+const RCRoot = styled.div`
+  font-size: 1rem;
+  padding: 0.5rem 0;
+  margin-top: 0.5rem;
+  color: ${(props) => props.theme.colors.text.secondary};
+  cursor: pointer;
+  :hover {
+    color: ${(props) => props.theme.colors.text.primary};
+  }
 `
 
 function FixtureSlot({ fixture, index }: { fixture: Fixture; index: number }) {
@@ -132,4 +207,5 @@ const Slot = styled.div`
     color: #fffc;
   }
   box-sizing: border-box;
+  position: relative;
 `

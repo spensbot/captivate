@@ -59,6 +59,7 @@ export const dmxSlice = createSlice({
     },
     addFixture: (state, { payload }: PayloadAction<Fixture>) => {
       state.universe.push(payload)
+      state.universe.sort((a, b) => a.ch - b.ch)
     },
     removeFixture: (state, { payload }: PayloadAction<number>) => {
       state.universe.splice(payload, 1)
