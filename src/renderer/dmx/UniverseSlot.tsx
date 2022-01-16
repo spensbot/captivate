@@ -12,7 +12,8 @@ import {
 import ToggleButton from '../base/ToggleButton'
 import Popup from '../base/Popup'
 import { useState } from 'react'
-import { TextField, Button } from '@mui/material'
+import { TextField, IconButton } from '@mui/material'
+import RemoveIcon from '@mui/icons-material/Remove'
 import { clamp } from '../../util/util'
 
 function ChannelSpan({ start, count }: { start: number; count: number }) {
@@ -20,17 +21,8 @@ function ChannelSpan({ start, count }: { start: number; count: number }) {
   return count == 1 ? (
     <div style={{ fontSize: '0.8rem' }}>{start}</div>
   ) : (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        fontSize: '0.8rem',
-      }}
-    >
-      <div>{start}</div>
-      <div>-</div>
-      <div>{end}</div>
+    <div>
+      {start} - {end}
     </div>
   )
 }
@@ -154,7 +146,14 @@ function FixtureSlot({ fixture, index }: { fixture: Fixture; index: number }) {
         <div>{fixtureType.name}</div>
       </div>
       {isSelected ? (
-        <div style={{ display: 'flex', fontSize: '0.9rem', zIndex: 1 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            fontSize: '0.9rem',
+            zIndex: 1,
+          }}
+        >
           <ToggleButton
             isEnabled={!!fixture.window.x}
             onClick={setWindowEnabled('x', !fixture.window.x)}
@@ -167,6 +166,9 @@ function FixtureSlot({ fixture, index }: { fixture: Fixture; index: number }) {
           >
             Y
           </ToggleButton>
+          <IconButton onClick={() => dispatch(removeFixture(index))}>
+            <RemoveIcon />
+          </IconButton>
         </div>
       ) : (
         <div style={{ fontSize: '0.8rem', color: 'fff7' }}>
