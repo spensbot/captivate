@@ -29,6 +29,7 @@ export default function Window2D2({ window2D, onClick }: Props) {
       backgroundColor: color,
       transform: `translate(-${radius}rem, -${radius}rem)`,
       cursor: onClick ? 'pointer' : undefined,
+      boxSizing: 'border-box',
     },
   }
 

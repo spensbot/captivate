@@ -1,4 +1,3 @@
-import React from 'react'
 import styled from 'styled-components'
 import Slider from '../base/Slider'
 import { useTypedSelector } from '../redux/store'
@@ -13,6 +12,7 @@ import {
   clearOverwrites,
 } from '../redux/mixerSlice'
 import { useRealtimeSelector } from '../redux/realtimeStore'
+import StatusBar from '../menu/StatusBar'
 
 const MAX_DMX = 512
 
@@ -28,6 +28,7 @@ export default function Mixer() {
 
   return (
     <Root>
+      <StatusBar />
       <Header />
       <SliderWrapper>
         {dmxIndexes.map((i) => (
@@ -82,9 +83,8 @@ function Header() {
 const HeaderRoot = styled.div`
   display: flex;
   align-items: center;
-  & > * {
-    margin-right: 1rem;
-  }
+  margin-top: 1rem;
+  margin-left: 1rem;
 `
 
 function LabelledSlider({ index }: { index: number }) {

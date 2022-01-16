@@ -2,6 +2,7 @@ import HsvPad from './HsvPad'
 import ParamSlider from './ParamSlider'
 import XYpad from './XYpad'
 import MidiOverlay_xy from '../base/MidiOverlay_xy'
+import styled from 'styled-components'
 
 export default function ParamsControl() {
   return (
@@ -14,6 +15,7 @@ export default function ParamsControl() {
       }}
     >
       <HsvPad />
+      <Spacer />
       <MidiOverlay_xy
         actions={[
           { type: 'setBaseParam', paramKey: 'x' },
@@ -24,10 +26,15 @@ export default function ParamsControl() {
       >
         <XYpad />
       </MidiOverlay_xy>
-      <ParamSlider paramKey={'black '} />
-      <ParamSlider paramKey={'strobe'} />
-      <ParamSlider paramKey={'epicness'} />
-      <ParamSlider paramKey={'randomize'} />
+      <Spacer />
+      <ParamSlider param={'black'} />
+      <ParamSlider param={'strobe'} />
+      <ParamSlider param={'epicness'} />
+      <ParamSlider param={'randomize'} />
     </div>
   )
 }
+
+const Spacer = styled.div`
+  width: 1rem;
+`

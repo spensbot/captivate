@@ -7,6 +7,7 @@ import SplitPane from '../base/SplitPane'
 import VideoList from '../visualizer/VideoList'
 import Randomizer from '../scenes/Randomizer'
 import Groups from '../scenes/Groups'
+import styled from 'styled-components'
 
 export default function Scenes() {
   const styles: { [key: string]: React.CSSProperties } = {
@@ -25,7 +26,7 @@ export default function Scenes() {
   }
 
   return (
-    <div style={styles.root}>
+    <Root>
       <StatusBar />
       <SplitPane
         style={styles.splitContainer}
@@ -33,10 +34,10 @@ export default function Scenes() {
         initialSplit={0.3}
         rem={0.5}
       >
-        <div style={styles.splitPane}>
+        <Pane>
           <SceneSelection />
-        </div>
-        <div style={styles.splitPane}>
+        </Pane>
+        <Pane>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <Modulators />
             <ParamsControl />
@@ -44,8 +45,18 @@ export default function Scenes() {
             <Randomizer />
             <Groups />
           </div>
-        </div>
+        </Pane>
       </SplitPane>
-    </div>
+    </Root>
   )
 }
+
+const Root = styled.div`
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+`
+
+const Pane = styled.div`
+  height: 100%;
+`

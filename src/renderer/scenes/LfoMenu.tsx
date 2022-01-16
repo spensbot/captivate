@@ -41,6 +41,8 @@ export default function LfoMenu({ index }: Props) {
         labelId="lfo-shape-select-label"
         id="lfo-shape-select"
         value={lfo.shape}
+        size="small"
+        variant="standard"
         onChange={(e) =>
           dispatch(setModulatorShape({ index: index, shape: e.target.value }))
         }

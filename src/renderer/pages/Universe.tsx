@@ -3,10 +3,12 @@ import styled from 'styled-components'
 import MyFixtures from '../dmx/MyFixtures'
 import MyUniverse from '../dmx/MyUniverse'
 import Groups from '../dmx/Groups'
+import StatusBar from '../menu/StatusBar'
 
 export default function Universe() {
   return (
     <>
+      <StatusBar />
       <SplitPane
         style={{ height: '100vh', width: '100%' }}
         type="vertical"

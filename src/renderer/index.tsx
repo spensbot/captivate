@@ -13,8 +13,15 @@ import {
   update as updateRealtimeStore,
 } from './redux/realtimeStore'
 import { ipc_setup } from './ipcHandler'
+import { ThemeProvider as MuiThemeProvider } from '@emotion/react'
+import { createTheme } from '@mui/material/styles'
 
 const theme = themes.dark()
+const muiTheme = createTheme({
+  palette: {
+    mode: 'dark',
+  },
+})
 
 const ipc_callbacks = ipc_setup({
   on_dmx_connection_update: (payload) => {
@@ -43,8 +50,10 @@ render(
   <Provider store={store}>
     <Provider store={realtimeStore} context={realtimeContext}>
       <ThemeProvider theme={theme}>
-        <GlobalStyle />
-        <App />
+        <MuiThemeProvider theme={muiTheme}>
+          <GlobalStyle />
+          <App />
+        </MuiThemeProvider>
       </ThemeProvider>
     </Provider>
   </Provider>,

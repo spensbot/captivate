@@ -1,17 +1,10 @@
-import React, { useRef, useEffect } from 'react'
+import { useRef, useEffect } from 'react'
 import FPS from '../visualizer/FPS'
 import { visualizerRef, resizeVisualizer } from '../visualizer/visualizerRef'
+import styled from 'styled-components'
+import StatusBar from '../menu/StatusBar'
 
 export default function Visualizer() {
-  const styles: { [key: string]: React.CSSProperties } = {
-    root: {
-      width: '100vw',
-      height: '100vh',
-      position: 'relative',
-      backgroundColor: '#000',
-    },
-  }
-
   const ref = useRef(null)
 
   function resize() {
@@ -35,8 +28,25 @@ export default function Visualizer() {
   }, [])
 
   return (
-    <div style={styles.root} ref={ref}>
-      <FPS />
-    </div>
+    <Root>
+      <StatusBar />
+      <Window ref={ref}>
+        <FPS />
+      </Window>
+    </Root>
   )
 }
+
+const Root = styled.div`
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+`
+
+const Window = styled.div`
+  width: 100%;
+  position: relative;
+  background-color: #000;
+  flex: 1 0 0;
+`

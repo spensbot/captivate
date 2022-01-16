@@ -22,11 +22,7 @@ export default function App() {
   return (
     <Root>
       <MenuBar />
-      <PageWrapper
-        style={{ overflow: activePage === 'Video' ? undefined : 'auto' }}
-      >
-        {getActivePage()}
-      </PageWrapper>
+      <PageWrapper style={{ overflow: 'auto' }}>{getActivePage()}</PageWrapper>
       <FullscreenOverlay />
     </Root>
   )
