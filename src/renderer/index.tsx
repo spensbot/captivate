@@ -6,7 +6,6 @@ import * as themes from './theme'
 import { Provider } from 'react-redux'
 import { store } from './redux/store'
 import { setDmx, setMidi } from './redux/connectionsSlice'
-import {} from './redux/midiSlice'
 import {
   realtimeStore,
   realtimeContext,
@@ -15,7 +14,7 @@ import {
 import { ipc_setup } from './ipcHandler'
 import { ThemeProvider as MuiThemeProvider } from '@emotion/react'
 import { createTheme } from '@mui/material/styles'
-import { handleMessage } from './handleMidi'
+import { autoSave } from './saveload_renderer'
 
 const theme = themes.dark()
 const muiTheme = createTheme({
@@ -23,6 +22,8 @@ const muiTheme = createTheme({
     mode: 'dark',
   },
 })
+
+autoSave(store)
 
 const ipc_callbacks = ipc_setup({
   on_dmx_connection_update: (payload) => {
@@ -35,11 +36,11 @@ const ipc_callbacks = ipc_setup({
       setMidi({ isConnected: payload.length > 0, path: payload[0] })
     )
   },
-  on_midi_message: (message) => {
-    handleMessage(message, store, realtimeStore.getState())
-  },
   on_time_state: (realtimeState) => {
     realtimeStore.dispatch(updateRealtimeStore(realtimeState))
+  },
+  on_dispatch: (action) => {
+    store.dispatch(action)
   },
 })
 

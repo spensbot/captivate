@@ -26,12 +26,14 @@ import {
   FixtureChannel,
   DMX_DEFAULT_VALUE,
 } from '../../engine/dmxFixtures'
+import { handleMessage } from './handleMidi'
 
 let _nodeLink = new NodeLink()
 let _ipcCallbacks: ReturnType<typeof ipcSetup> | null = null
 let _controlState: ReduxState | null = null
-let _lastFrameTime = 0
 let _lastRandomizerState = initRandomizerState()
+let _realtimeState: RealtimeState = initRealtimeState()
+let _lastFrameTime = 0
 
 export function start(renderer: WebContents) {
   _ipcCallbacks = ipcSetup({
@@ -39,6 +41,7 @@ export function start(renderer: WebContents) {
     on_new_control_state: (newState) => {
       _controlState = newState
     },
+    on_user_command: (_command) => {},
   })
 }
 
@@ -48,9 +51,9 @@ DmxConnection.maintain({
     if (_ipcCallbacks !== null) _ipcCallbacks.send_dmx_connection_update(path)
   },
   calculateChannels: () => {
-    let realtimeState = calculateRealtimeState()
-    if (_ipcCallbacks !== null) _ipcCallbacks.send_time_state(realtimeState)
-    return realtimeState.dmxOut
+    let _realtimeState = calculateRealtimeState()
+    if (_ipcCallbacks !== null) _ipcCallbacks.send_time_state(_realtimeState)
+    return _realtimeState.dmxOut
   },
 })
 
@@ -61,7 +64,15 @@ MidiConnection.maintain({
       _ipcCallbacks.send_midi_connection_update(activeDevices)
   },
   onMessage: (message) => {
-    if (_ipcCallbacks !== null) _ipcCallbacks.send_midi_message(message)
+    if (_controlState !== null && _ipcCallbacks !== null) {
+      handleMessage(
+        message,
+        _controlState,
+        _realtimeState,
+        _nodeLink,
+        _ipcCallbacks.send_dispatch
+      )
+    }
   },
 })
 
@@ -188,6 +199,7 @@ function calculateRealtimeState(): RealtimeState {
 
   _lastFrameTime = currentTime
 
+  //@ts-ignore: I don't know how to tell typescript that I plan to flesh out timeState in the following 2 lines
   const timeState: TimeState = _nodeLink.getSessionInfoCurrent()
   timeState.dt = dt
   timeState.quantum = 4.0

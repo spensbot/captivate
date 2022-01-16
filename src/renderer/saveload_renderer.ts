@@ -42,21 +42,21 @@ export const autoSave = (store: ReduxStore) => {
   }, AUTO_SAVE_INTERVAL)
 }
 
-export async function loadFile(
-  title: string,
-  fileFilters: Electron.FileFilter[]
-): Promise<string> {
-  return ipcRenderer.invoke(LOAD_FILE, title, fileFilters)
-}
+// export async function loadFile(
+//   title: string,
+//   fileFilters: Electron.FileFilter[]
+// ): Promise<string> {
+//   return ipcRenderer.invoke(LOAD_FILE, title, fileFilters)
+// }
 
-export async function saveFile(
-  title: string,
-  data: string,
-  fileFilters: Electron.FileFilter[]
-): Promise<NodeJS.ErrnoException> {
-  return ipcRenderer.invoke(SAVE_FILE, title, data, fileFilters)
-}
+// export async function saveFile(
+//   title: string,
+//   data: string,
+//   fileFilters: Electron.FileFilter[]
+// ): Promise<NodeJS.ErrnoException> {
+//   return ipcRenderer.invoke(SAVE_FILE, title, data, fileFilters)
+// }
 
-export async function selectVideoFiles() {
-  return ipcRenderer.invoke(SELECT_FILES, 'Video Select', videoFileFilters)
-}
+// export async function selectVideoFiles() {
+//   return ipcRenderer.invoke(SELECT_FILES, 'Video Select', videoFileFilters)
+// }

@@ -6,7 +6,7 @@ contextBridge.exposeInMainWorld('electron', {
       ipcRenderer.send('ipc-example', 'ping')
     },
     send(channel, ...args) {
-      const validChannels = ['new_control_state']
+      const validChannels = ['new_control_state', 'user_command']
       if (validChannels.includes(channel)) {
         ipcRenderer.send(channel, ...args)
       } else {
@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld('electron', {
         'new_midi_message',
         'dmx_connection_update',
         'midi_connection_update',
+        'dispatch',
       ]
       if (validChannels.includes(channel)) {
         // Deliberately strip event as it includes `sender`

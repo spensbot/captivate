@@ -1,18 +1,20 @@
-import { MidiMessage } from '../engine/midi'
-import { ReduxStore } from './redux/store'
-import { RealtimeState } from './redux/realtimeStore'
+import { MidiMessage } from '../../engine/midi'
+import { ReduxState } from '../../renderer/redux/store'
+import { RealtimeState } from '../../renderer/redux/realtimeStore'
 import {
   setButtonAction,
   setSliderAction,
   getActionID,
   SliderAction,
-} from './redux/midiSlice'
+} from '../../renderer/redux/midiSlice'
 import {
   setActiveSceneIndex,
   setAutoSceneBombacity,
   setMaster,
   setBaseParams,
-} from './redux/scenesSlice'
+} from '../../renderer/redux/scenesSlice'
+import NodeLink from 'node-link'
+import { PayloadAction } from '@reduxjs/toolkit'
 
 interface MidiInput {
   id: string
@@ -27,9 +29,6 @@ function getInputID(msg: MidiMessage): string {
 }
 
 function getInput(msg: MidiMessage): MidiInput {
-  let value = undefined
-  if (msg.type === 'On') value = msg.velocity
-  if (msg.type === 'CC') value = msg.value
   return {
     id: getInputID(msg),
     message: msg,
@@ -38,15 +37,17 @@ function getInput(msg: MidiMessage): MidiInput {
 
 export function handleMessage(
   message: MidiMessage,
-  store: ReduxStore,
-  rt_state: RealtimeState
+  state: ReduxState,
+  rt_state: RealtimeState,
+  nodeLink: NodeLink,
+  dispatch: (action: PayloadAction<any>) => void
 ) {
   const input = getInput(message)
-  const midiState = store.getState().midi
+  const midiState = state.midi
 
   if (midiState.isEditing && midiState.listening) {
     if (midiState.listening.type === 'setActiveSceneIndex') {
-      store.dispatch(
+      dispatch(
         setButtonAction({
           inputID: input.id,
           action: midiState.listening,
@@ -54,7 +55,7 @@ export function handleMessage(
       )
     } else {
       if (input.message.type === 'CC') {
-        store.dispatch(
+        dispatch(
           setSliderAction({
             inputID: input.id,
             action: midiState.listening,
@@ -76,7 +77,7 @@ export function handleMessage(
         ) {
           // if the note is already set, do nothing
         } else {
-          store.dispatch(
+          dispatch(
             setSliderAction({
               inputID: input.id,
               action: midiState.listening,
@@ -99,7 +100,7 @@ export function handleMessage(
     if (buttonAction) {
       if (input.message.type !== 'Off') {
         if (buttonAction.action.type === 'setActiveSceneIndex') {
-          store.dispatch(setActiveSceneIndex(buttonAction.action.index))
+          dispatch(setActiveSceneIndex(buttonAction.action.index))
         }
       }
     }
@@ -109,7 +110,6 @@ export function handleMessage(
     if (sliderAction) {
       const action = sliderAction.action
       const getOldVal = () => {
-        const state = store.getState()
         if (action.type === 'setAutoSceneBombacity') {
           return state.scenes.auto.bombacity
         } else if (action.type === 'setBpm') {
@@ -124,18 +124,18 @@ export function handleMessage(
       }
       const setNewVal = (newVal: number) => {
         if (action.type === 'setAutoSceneBombacity') {
-          store.dispatch(setAutoSceneBombacity(newVal))
+          dispatch(setAutoSceneBombacity(newVal))
         } else if (action.type === 'setMaster') {
-          store.dispatch(setMaster(newVal))
+          dispatch(setMaster(newVal))
         } else if (action.type === 'setBaseParam') {
-          store.dispatch(
+          dispatch(
             setBaseParams({
               [action.paramKey]: newVal,
             })
           )
         } else if (action.type === 'setBpm') {
           const newTempo = newVal * 70 + 70
-          // if (_nodeLink) _nodeLink.setTempo(newTempo)
+          nodeLink.setTempo(newTempo)
         }
       }
       const op = sliderAction.options
