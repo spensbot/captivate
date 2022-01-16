@@ -1,4 +1,3 @@
-import React from 'react'
 import styled from 'styled-components'
 import AddIcon from '@mui/icons-material/Add'
 import { IconButton } from '@mui/material'

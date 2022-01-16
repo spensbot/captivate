@@ -5,6 +5,8 @@ import { Slot_t } from './MyUniverse'
 import { useDispatch } from 'react-redux'
 import { setSelectedFixture, setFixtureWindowEnabled } from '../redux/dmxSlice'
 import ToggleButton from '../base/ToggleButton'
+import IconButton from '@mui/material/IconButton'
+import AddIcon from '@mui/icons-material/Add'
 
 function ChannelSpan({ start, count }: { start: number; count: number }) {
   const end = start + count - 1
@@ -31,13 +33,20 @@ function GapSlot({ ch, count }: { ch: number; count: number }) {
   // const end = start + count - 1
   // const channelString = (count > 1) ? `${start} ... ${end}` : `${start}`
   return (
-    <Gap>
-      <div style={{ display: 'flex', alignItems: 'center' }}>
+    <Slot style={{ backgroundColor: '#000a' }}>
+      <GSRoot>
         <ChannelSpan start={start} count={count} />
-      </div>
-    </Gap>
+      </GSRoot>
+    </Slot>
   )
 }
+
+const GSRoot = styled.div`
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+`
 
 function FixtureSlot({ fixture, index }: { fixture: Fixture; index: number }) {
   const fixtureType = useTypedSelector(
@@ -60,12 +69,7 @@ function FixtureSlot({ fixture, index }: { fixture: Fixture; index: number }) {
     }
   }
   return (
-    <Fixture_
-      style={{
-        padding: '0.4rem',
-        border: '0.1rem solid #fffa',
-        color: '#fffc',
-      }}
+    <Slot
       onClick={() => {
         dispatch(setSelectedFixture(index))
       }}
@@ -94,7 +98,7 @@ function FixtureSlot({ fixture, index }: { fixture: Fixture; index: number }) {
           {fixtureType.manufacturer}
         </div>
       )}
-    </Fixture_>
+    </Slot>
   )
 }
 
@@ -107,10 +111,10 @@ export default function UniverseSlot({ slot }: { slot: Slot_t }) {
   }
 }
 
-const height = 4
-const width = 6
+const height = 5
+const width = 7
 
-const Gap = styled.div`
+const Slot = styled.div`
   height: ${height}rem;
   padding: 0.5rem;
   min-width: ${width}rem;
@@ -121,17 +125,11 @@ const Gap = styled.div`
   display: 'flex';
   justify-content: 'center';
   align-items: 'center';
-`
-const Fixture_ = styled.div`
-  height: ${height}rem;
-  padding: 0.5rem;
-  min-width: ${width}rem;
-  margin-right: 0.3rem;
-  margin-bottom: 0.3rem;
-  color: #fff8;
-  background-color: '#0004';
+  border: 1px solid #fff8;
   :hover {
+    border: 1px solid #fffc;
+    cursor: pointer;
     color: #fffc;
   }
-  cursor: pointer;
+  box-sizing: border-box;
 `
