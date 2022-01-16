@@ -149,7 +149,7 @@ function calculateDmx(
         const outputChannel = fixture.ch + offset
         const overwrite = _s.mixer.overwrites[outputChannel - 1]
         if (overwrite !== undefined) {
-          channels[outputChannel] = overwrite * DMX_MAX_VALUE
+          channels[outputChannel - 1] = overwrite * DMX_MAX_VALUE
         } else if (outputParams.epicness >= fixtureType.epicness) {
           let dmxOut = getDmxValue(
             _s.scenes.master,
@@ -166,9 +166,9 @@ function calculateDmx(
               outputParams.randomize
             )
           }
-          channels[outputChannel] = dmxOut
+          channels[outputChannel - 1] = dmxOut
         } else {
-          channels[outputChannel] = DMX_DEFAULT_VALUE
+          channels[outputChannel - 1] = DMX_DEFAULT_VALUE
         }
       })
     })
