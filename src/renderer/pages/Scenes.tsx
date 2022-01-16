@@ -33,6 +33,8 @@ export default function Scenes() {
         type="vertical"
         initialSplit={0.3}
         rem={0.5}
+        min={0.2}
+        max={0.5}
       >
         <Pane>
           <SceneSelection />

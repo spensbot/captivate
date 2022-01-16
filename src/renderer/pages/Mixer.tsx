@@ -2,9 +2,7 @@ import styled from 'styled-components'
 import Slider from '../base/Slider'
 import { useTypedSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
-import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos'
-import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos'
-import { TextField, IconButton, Button } from '@mui/material'
+import { TextField, Button } from '@mui/material'
 import {
   setPageIndex,
   setChannelsPerPage,
@@ -50,30 +48,44 @@ const SliderWrapper = styled.div`
 function Header() {
   const dispatch = useDispatch()
   const _s = useTypedSelector((state) => state.mixer)
+  const hasOverwrites = useTypedSelector(
+    (state) => state.mixer.overwrites.length > 0
+  )
   const canGoBack = _s.pageIndex > 0
   const canGoForward = (_s.pageIndex + 1) * _s.channelsPerPage < MAX_DMX
 
   return (
     <HeaderRoot>
-      <IconButton
+      <Button
+        variant="outlined"
         disabled={!canGoBack}
         onClick={() => dispatch(setPageIndex(_s.pageIndex - 1))}
       >
-        <ArrowBackIosIcon />
-      </IconButton>
+        {'<'}
+      </Button>
+      <S />
       {_s.pageIndex + 1}
-      <IconButton
+      <S />
+      <Button
+        variant="outlined"
         disabled={!canGoForward}
         onClick={() => dispatch(setPageIndex(_s.pageIndex + 1))}
       >
-        <ArrowForwardIosIcon />
-      </IconButton>
+        {'>'}
+      </Button>
+      <S />
       <TextField
         value={_s.channelsPerPage.toString()}
+        size="small"
         onChange={(e) => dispatch(setChannelsPerPage(parseInt(e.target.value)))}
         type="number"
       />
-      <Button variant="outlined" onClick={() => dispatch(clearOverwrites())}>
+      <S />
+      <Button
+        disabled={!hasOverwrites}
+        variant="contained"
+        onClick={() => dispatch(clearOverwrites())}
+      >
         Reset Overwrites
       </Button>
     </HeaderRoot>
@@ -85,6 +97,10 @@ const HeaderRoot = styled.div`
   align-items: center;
   margin-top: 1rem;
   margin-left: 1rem;
+`
+
+const S = styled.div`
+  width: 1rem;
 `
 
 function LabelledSlider({ index }: { index: number }) {

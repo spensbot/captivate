@@ -61,8 +61,7 @@ MidiConnection.maintain({
       _ipcCallbacks.send_midi_connection_update(activeDevices)
   },
   onMessage: (message) => {
-    console.log(`Midi Message: ${message.type} | ${message.number}`)
-    // if (_ipcCallbacks !== null) _ipcCallbacks.send_midi_message(message)
+    if (_ipcCallbacks !== null) _ipcCallbacks.send_midi_message(message)
   },
 })
 

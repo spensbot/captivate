@@ -15,6 +15,7 @@ import {
 import { ipc_setup } from './ipcHandler'
 import { ThemeProvider as MuiThemeProvider } from '@emotion/react'
 import { createTheme } from '@mui/material/styles'
+import { handleMessage } from './handleMidi'
 
 const theme = themes.dark()
 const muiTheme = createTheme({
@@ -35,7 +36,7 @@ const ipc_callbacks = ipc_setup({
     )
   },
   on_midi_message: (message) => {
-    console.log(`Midi Message ${message}`)
+    handleMessage(message, store, realtimeStore.getState())
   },
   on_time_state: (realtimeState) => {
     realtimeStore.dispatch(updateRealtimeStore(realtimeState))

@@ -1,4 +1,3 @@
-import React from 'react'
 import { LfoShape } from '../../engine/oscillator'
 import { useDispatch } from 'react-redux'
 import { useTypedSelector } from '../redux/store'
@@ -44,7 +43,12 @@ export default function LfoMenu({ index }: Props) {
         size="small"
         variant="standard"
         onChange={(e) =>
-          dispatch(setModulatorShape({ index: index, shape: e.target.value }))
+          dispatch(
+            setModulatorShape({
+              index: index,
+              shape: e.target.value as LfoShape,
+            })
+          )
         }
       >
         <MenuItem value={LfoShape.Ramp}>Ramp</MenuItem>

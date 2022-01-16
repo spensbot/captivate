@@ -1,28 +1,6 @@
 import { Input } from 'midi'
 import { parseMessage, MidiMessage } from '../../engine/midi'
 
-interface MidiInput {
-  id: string
-  message: MidiMessage
-}
-
-function getInputID(msg: MidiMessage): string {
-  if (msg.type === 'On' || msg.type === 'Off')
-    return 'note' + msg.number.toString()
-  if (msg.type === 'CC') return 'cc' + msg.number
-  return 'unknown'
-}
-
-function getInput(msg: MidiMessage): MidiInput {
-  let value = undefined
-  if (msg.type === 'On') value = msg.velocity
-  if (msg.type === 'CC') value = msg.value
-  return {
-    id: getInputID(msg),
-    message: msg,
-  }
-}
-
 export type UpdatePayload = string[]
 export type MessagePayload = MidiMessage
 
