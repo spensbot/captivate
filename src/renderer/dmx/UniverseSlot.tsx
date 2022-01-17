@@ -31,7 +31,6 @@ function GapSlot({ ch, count }: { ch: number; count: number }) {
   const [popupOpen, setPopupOpen] = useState(false)
   const [inputCh, setInputCh] = useState(ch)
   const dispatch = useDispatch()
-  console.log(`inputCh: ${inputCh} | popupOpen: ${popupOpen}`)
   const dmxState = useTypedSelector((state) => state.dmx)
   const applicableFixtures = dmxState.fixtureTypes
     .map((id) => dmxState.fixtureTypesByID[id])
@@ -41,7 +40,6 @@ function GapSlot({ ch, count }: { ch: number; count: number }) {
     <Slot
       style={{ backgroundColor: '#000a' }}
       onClick={(e) => {
-        console.log('setPopupOpen(true)')
         if (!e.defaultPrevented) {
           setPopupOpen(true)
         }
@@ -60,6 +58,7 @@ function GapSlot({ ch, count }: { ch: number; count: number }) {
           />
           {applicableFixtures.map((ft) => (
             <FixtureChoice
+              key={ft.id}
               fixtureType={ft}
               onClick={() => {
                 setPopupOpen(false)
