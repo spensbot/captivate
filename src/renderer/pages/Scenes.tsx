@@ -45,7 +45,7 @@ export default function Scenes() {
             <ParamsControl />
             {/* <VideoList /> */}
             <Randomizer />
-            <Groups />
+            {/* <Groups /> */}
           </div>
         </Pane>
       </SplitPane>

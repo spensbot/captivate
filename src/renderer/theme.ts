@@ -28,9 +28,9 @@ export function dark(): Theme_t {
     ...light(),
     colors: {
       bg: {
-        primary: '#222',
-        darker: '#111',
-        lighter: '#333',
+        primary: 'hsl(0, 0%, 15%)',
+        darker: 'hsl(0, 0%, 14%)',
+        lighter: 'hsl(0, 0%, 20%)',
       },
       divider: '#777',
       text: {

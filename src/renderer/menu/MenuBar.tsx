@@ -90,7 +90,7 @@ const Root = styled.div`
   z-index: ${zIndexes.leftMenu};
   display: flex;
   flex-direction: column;
-  background-color: #ffffff08;
+  background-color: ${(props) => props.theme.colors.bg.lighter};
   align-items: center;
 `
 

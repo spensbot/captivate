@@ -18,7 +18,8 @@ export default function Universe() {
         max={0.6}
       >
         <SplitRoot>
-          <SplitPane
+          <MyFixtures />
+          {/* <SplitPane
             style={{ height: '100%', width: '100%' }}
             type="horizontal"
             initialSplit={0.5}
@@ -28,7 +29,7 @@ export default function Universe() {
           >
             <MyFixtures />
             <Groups />
-          </SplitPane>
+          </SplitPane> */}
         </SplitRoot>
         <SplitRoot>
           <MyUniverse />

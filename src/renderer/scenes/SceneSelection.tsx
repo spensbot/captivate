@@ -7,6 +7,7 @@ import {
   saveFile,
   captivateFileFilters,
 } from '../../util/saveload_renderer'
+import styled from 'styled-components'
 import SaveIcon from '@mui/icons-material/Save'
 import PublishIcon from '@mui/icons-material/Publish'
 import AutoScene from './AutoScene'
@@ -39,17 +40,8 @@ function saveScenes() {
 
 export default function SceneSelection() {
   return (
-    <div
-      style={{
-        backgroundColor: '#0003',
-        padding: '0.5rem',
-        height: '100%',
-        borderRight: '1px solid #fff3',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center' }}>
+    <Root>
+      <Header>
         <div style={{ fontSize: '1.5rem' }}>Scenes</div>
         <div style={{ flex: '1 0 0' }} />
         <IconButton onClick={saveScenes}>
@@ -58,9 +50,23 @@ export default function SceneSelection() {
         <IconButton onClick={loadScenes}>
           <PublishIcon />
         </IconButton>
-      </div>
+      </Header>
       <AutoScene />
       <ScenesList />
-    </div>
+    </Root>
   )
 }
+
+const Root = styled.div`
+  background-color: ${(props) => props.theme.colors.bg.darker};
+  padding: 0.5rem;
+  height: 100%;
+  border-right: 1px solid #fff3;
+  display: flex;
+  flex-direction: column;
+`
+
+const Header = styled.div`
+  display: flex;
+  align-items: center;
+`

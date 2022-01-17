@@ -72,7 +72,7 @@ export default function MyFixtures() {
 const Root = styled.div`
   height: 100%;
   padding: 0.5rem;
-  background-color: #0003;
+  background-color: ${(props) => props.theme.colors.bg.darker};
   border-right: 1px solid #fff3;
   display: flex;
   flex-direction: column;
