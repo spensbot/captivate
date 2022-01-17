@@ -1,24 +1,29 @@
-import { useEffect, useRef } from 'react'
+import React, { useEffect, useRef } from 'react'
 
 export interface MappedPos {
-  x: number,
-  y: number,
-  dx: number,
+  x: number
+  y: number
+  dx: number
   dy: number
 }
 
-export default function useDragMapped(onChange: (mappedPos: MappedPos, e: React.MouseEvent) => void){
+type Ref = React.MutableRefObject<any>
+type MouseEventHandler = React.MouseEventHandler<HTMLDivElement>
+
+export default function useDragMapped(
+  onChange: (mappedPos: MappedPos, e: React.MouseEvent) => void
+): [Ref, MouseEventHandler] {
   const dragContainer = useRef()
 
-  const onMouseMove = (e: React.MouseEvent) => {
+  const onMouseMove: MouseEventHandler = (e: React.MouseEvent) => {
     update(e)
   }
 
-  const onMouseUp = (e: React.MouseEvent) => {
+  const onMouseUp: MouseEventHandler = (_e: React.MouseEvent) => {
     stopListening()
   }
 
-  const onMouseLeave = (e: React.MouseEvent) => {
+  const onMouseLeave: MouseEventHandler = (_e: React.MouseEvent) => {
     stopListening()
   }
 
@@ -34,20 +39,24 @@ export default function useDragMapped(onChange: (mappedPos: MappedPos, e: React.
     document.body.removeEventListener('mouseleave', onMouseLeave)
   }
 
-  const onMouseDown = (e:React.MouseEvent) => {
+  const onMouseDown: MouseEventHandler = (e: React.MouseEvent) => {
     e.preventDefault()
     update(e)
     startListening()
   }
 
   const update = (e: React.MouseEvent) => {
-    const {width, height, left, top, right, bottom} = dragContainer.current.getBoundingClientRect()
-    onChange ({
-      x: getRatio(e.clientX, left, right, width),
-      y: 1 - getRatio(e.clientY, top, bottom, height),
-      dx: e.movementX / width,
-      dy: - e.movementY / height
-    }, e)
+    const { width, height, left, top, right, bottom } =
+      dragContainer.current.getBoundingClientRect()
+    onChange(
+      {
+        x: getRatio(e.clientX, left, right, width),
+        y: 1 - getRatio(e.clientY, top, bottom, height),
+        dx: e.movementX / width,
+        dy: -e.movementY / height,
+      },
+      e
+    )
   }
 
   function clamp(val: number, min: number, max: number) {
@@ -66,8 +75,5 @@ export default function useDragMapped(onChange: (mappedPos: MappedPos, e: React.
     }
   }, [])
 
-  return [
-    dragContainer,
-    onMouseDown
-  ]
+  return [dragContainer, onMouseDown]
 }

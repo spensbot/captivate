@@ -1,7 +1,7 @@
 import { TimeState, isNewPeriod, Beats } from './TimeState'
+import { indexArray } from '../util/util'
 
 type Normalized = number
-type Millis = number
 
 export interface Point {
   level: Normalized
@@ -10,21 +10,18 @@ export interface Point {
 
 export type RandomizerState = Point[]
 
-export function initRandomizerOptions(): RandomizerOptions {
+export function initRandomizerOptions() {
   return {
-    firePeriod: 1,
-    triggersPerFire: 1,
+    triggerPeriod: 1,
+    triggerDensity: 0.3,
     riseTime: 20,
     fallTime: 300,
+    envelopeRatio: 0.1,
+    envelopeDuration: 500,
   }
 }
 
-export interface RandomizerOptions {
-  firePeriod: Beats
-  triggersPerFire: number
-  riseTime: Millis
-  fallTime: Millis
-}
+export type RandomizerOptions = ReturnType<typeof initRandomizerOptions>
 
 function initPoint(): Point {
   return {
@@ -39,42 +36,54 @@ export function initRandomizerState(): RandomizerState {
 
 export function syncAndUpdate(
   state: RandomizerState,
-  array: any[],
+  size: number,
   ts: TimeState,
   options: RandomizerOptions
 ) {
-  return update(sync(state, array), ts, options)
+  return update(sync(state, size), ts, options)
 }
 
-function sync(state: RandomizerState, array: any[]) {
-  let syncedState = state
-  if (state.length !== array.length) {
-    if (state.length > array.length) {
-      syncedState = state.slice(0, array.length)
-    } else {
-      syncedState = [...state]
-      while (syncedState.length < array.length) {
-        syncedState.push(initPoint())
-      }
-    }
-  }
+// returns a new randomizerState with the desired size. Growing or shrinking as necessary
+function sync(state: RandomizerState, size: number) {
+  const syncedState: Point[] = []
+  Array(size)
+    .fill(0)
+    .forEach((_, i) => {
+      let oldState = state[i]
+      syncedState[i] = oldState ?? initPoint()
+    })
   return syncedState
 }
 
-function pickRandomIndexes(randCount: number, array: any[]) {
-  const randoms: number[] = []
+// returns the desired amount of random indexes
+function pickRandomIndexes(randCount: number, size: number) {
+  const randomIndexes: number[] = []
+  const availableIndexes = Array.from(Array(size).keys())
   for (let i = 0; i < randCount; i++) {
-    const randomIndex = Math.floor(Math.random() * array.length)
-    randoms.push(randomIndex)
+    // Old method
+    // const randomIndex = Math.floor(Math.random() * size)
+    // randomIndexes.push(randomIndex)
+
+    const index = Math.floor(Math.random() * availableIndexes.length)
+    const randomIndex = availableIndexes[index]
+    availableIndexes.splice(index, 1)
+    randomIndexes.push(randomIndex)
   }
-  return randoms
+  return randomIndexes
 }
 
 function update(
   state: RandomizerState,
   ts: TimeState,
-  { firePeriod, triggersPerFire, riseTime, fallTime }: RandomizerOptions
+  {
+    triggerPeriod,
+    triggerDensity,
+    envelopeRatio,
+    envelopeDuration,
+  }: RandomizerOptions
 ) {
+  const riseTime = envelopeDuration * envelopeRatio
+  const fallTime = envelopeDuration - riseTime
   const nextState = state.map<Point>(({ level, rising }) => {
     if (rising) {
       const newLevel = level + ts.dt / riseTime
@@ -98,10 +107,13 @@ function update(
     }
   })
 
-  if (isNewPeriod(ts, firePeriod))
-    pickRandomIndexes(triggersPerFire, state).forEach(
-      (i) => (nextState[i].rising = true)
+  if (isNewPeriod(ts, triggerPeriod)) {
+    let randCount = Math.ceil(state.length * triggerDensity)
+    if (randCount === 0 && state.length > 0) randCount = 1
+    pickRandomIndexes(randCount, state.length).forEach(
+      (index) => (nextState[index].rising = true)
     )
+  }
 
   return nextState
 }

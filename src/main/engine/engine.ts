@@ -137,6 +137,7 @@ function applyRandomization(
   randomizationAmount: number
 ) {
   return lerp(value, value * point.level, randomizationAmount)
+  // return value
 }
 
 function calculateDmx(
@@ -217,7 +218,7 @@ function calculateRealtimeState(): RealtimeState {
 
     _lastRandomizerState = syncAndUpdate(
       _lastRandomizerState,
-      _controlState.dmx.universe,
+      _controlState.dmx.universe.length,
       timeState,
       scene.randomizer
     )

@@ -1,17 +1,22 @@
 import { useEffect, useRef } from 'react'
 
-export default function useDragBasic(onChange: (e: React.MouseEvent) => void) {
-  const dragContainer = useRef<HTMLElement>()
+type Ref = React.MutableRefObject<any>
+type MouseEventHandler = React.MouseEventHandler<HTMLDivElement>
 
-  const onMouseMove = (e: React.MouseEvent) => {
+export default function useDragBasic(
+  onChange: (e: React.MouseEvent) => void
+): [Ref, MouseEventHandler] {
+  const dragContainer = useRef()
+
+  const onMouseMove: MouseEventHandler = (e: React.MouseEvent) => {
     update(e)
   }
 
-  const onMouseUp = (_e: React.MouseEvent) => {
+  const onMouseUp: MouseEventHandler = (_e: React.MouseEvent) => {
     stopListening()
   }
 
-  const onMouseLeave = (_e: React.MouseEvent) => {
+  const onMouseLeave: MouseEventHandler = (_e: React.MouseEvent) => {
     stopListening()
   }
 

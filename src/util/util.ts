@@ -23,3 +23,7 @@ export function lerp(start: number, stop: number, amt: number) {
   const delta = stop - start
   return start + delta * amt
 }
+
+export function indexArray(length: number) {
+  return Array.from(Array(length).keys())
+}

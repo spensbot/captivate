@@ -1,4 +1,3 @@
-import React from 'react'
 import { GetValueFromPhase } from '../../engine/oscillator'
 import { useDispatch } from 'react-redux'
 import useDragBasic from '../hooks/useDragBasic'

@@ -5,7 +5,6 @@ import Modulators from '../scenes/Modulators'
 import SceneSelection from '../scenes/SceneSelection'
 import SplitPane from '../base/SplitPane'
 import VideoList from '../visualizer/VideoList'
-import Randomizer from '../scenes/Randomizer'
 import Groups from '../scenes/Groups'
 import styled from 'styled-components'
 
@@ -40,11 +39,18 @@ export default function Scenes() {
           <SceneSelection />
         </Pane>
         <Pane>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              padding: '1rem',
+            }}
+          >
             <Modulators />
+            <Sp />
             <ParamsControl />
             {/* <VideoList /> */}
-            <Randomizer />
+
             {/* <Groups /> */}
           </div>
         </Pane>
@@ -61,4 +67,8 @@ const Root = styled.div`
 
 const Pane = styled.div`
   height: 100%;
+`
+
+const Sp = styled.div`
+  height: 1rem;
 `

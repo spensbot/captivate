@@ -16,7 +16,6 @@ export default function Modulators() {
         display: 'flex',
         flexDirection: 'row',
         overflow: 'scroll',
-        padding: '1rem',
         maxWidth: '100%',
       }}
     >

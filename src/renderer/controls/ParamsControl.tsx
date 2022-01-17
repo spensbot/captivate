@@ -3,6 +3,7 @@ import ParamSlider from './ParamSlider'
 import XYpad from './XYpad'
 import MidiOverlay_xy from '../base/MidiOverlay_xy'
 import styled from 'styled-components'
+import Randomizer from './Randomizer'
 
 export default function ParamsControl() {
   return (
@@ -11,7 +12,6 @@ export default function ParamsControl() {
         flex: '0 0 auto',
         display: 'flex',
         flexDirection: 'row',
-        margin: '0 1rem',
       }}
     >
       <HsvPad />
@@ -31,6 +31,7 @@ export default function ParamsControl() {
       <ParamSlider param={'strobe'} />
       <ParamSlider param={'epicness'} />
       <ParamSlider param={'randomize'} />
+      <Randomizer />
     </div>
   )
 }

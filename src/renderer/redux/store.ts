@@ -9,6 +9,7 @@ import { useSelector, TypedUseSelectorHook } from 'react-redux'
 import dmxReducer from './dmxSlice'
 import guiReducer from './guiSlice'
 import scenesReducer from './scenesSlice'
+import { Scene_t } from '../../engine/scene_t'
 import midiReducer from './midiSlice'
 import mixerReducer from './mixerSlice'
 
@@ -54,3 +55,9 @@ export const store = configureStore({
 export type ReduxStore = typeof store
 export type ReduxDispatch = typeof store.dispatch
 export const useTypedSelector: TypedUseSelectorHook<ReduxState> = useSelector
+
+export function useActiveScene<T>(getVal: (scene: Scene_t) => T) {
+  return useTypedSelector((state) =>
+    getVal(state.scenes.byId[state.scenes.active])
+  )
+}

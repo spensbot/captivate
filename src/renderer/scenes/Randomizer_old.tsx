@@ -1,4 +1,3 @@
-import React from 'react'
 import styled from 'styled-components'
 import DraggableNumber from '../base/DraggableNumber'
 import { useDispatch } from 'react-redux'
@@ -13,8 +12,8 @@ export default function Randomizer({}: Props) {
   return (
     <Root>
       <Title>Randomizer Settings</Title>
-      <RandomizerControl option={'firePeriod'} />
-      <RandomizerControl option={'triggersPerFire'} />
+      <RandomizerControl option={'triggerPeriod'} />
+      <RandomizerControl option={'triggerDensity'} />
       <RandomizerControl option={'riseTime'} />
       <RandomizerControl option={'fallTime'} />
     </Root>
@@ -46,7 +45,7 @@ function RandomizerControl({ option }: { option: keyof RandomizerOptions }) {
   return (
     <Row>
       <Label>{option}</Label>
-      {option === 'firePeriod' || option === 'triggersPerFire' ? (
+      {option === 'triggerPeriod' || option === 'triggerDensity' ? (
         <DraggableNumber value={val} min={0} max={4} onChange={onChange} />
       ) : (
         <Slider

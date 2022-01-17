@@ -11,6 +11,7 @@ interface Props {
   max: number
   onChange: (newVal: number) => void
   style?: React.CSSProperties
+  suffix?: string
 }
 
 // This is really bad react behavior... But IDK what else to do
@@ -26,6 +27,7 @@ export default function DraggableNumber({
   max,
   onChange,
   style,
+  suffix,
 }: Props) {
   const speedAdjust = 500 / (max - min)
 
@@ -90,6 +92,8 @@ export default function DraggableNumber({
     type === 'snap' && Number.isInteger(value)
       ? value.toString()
       : value.toFixed(2)
+
+  if (suffix) valueString += suffix
 
   return (
     <div
