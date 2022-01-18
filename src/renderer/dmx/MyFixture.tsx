@@ -15,6 +15,8 @@ import Input from '../base/Input'
 import Slider from '@mui/material/Slider'
 import styled from 'styled-components'
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever'
+import FixtureChannels from './FixtureChannels'
+import { Button } from '@mui/material'
 
 type Props = {
   id: string
@@ -105,11 +107,15 @@ export default function MyFixture({ id }: Props) {
               )
             }
           />
-          {isDeletable && (
-            <IconButton onClick={() => dispatch(deleteFixtureType(id))}>
-              <DeleteForeverIcon />
-            </IconButton>
-          )}
+          <FixtureChannels fixtureID={id} />
+          <Button
+            size="small"
+            disabled={!isDeletable}
+            variant="contained"
+            onClick={() => dispatch(deleteFixtureType(id))}
+          >
+            Delete Fixture
+          </Button>
         </Body>
       )}
       <Divider color={'#7773'} marginY="0rem" />
@@ -130,4 +136,5 @@ const Header = styled.div`
 
 const Body = styled.div`
   padding: 0.5rem;
+  border-left: 2px solid #fffa;
 `

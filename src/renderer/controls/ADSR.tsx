@@ -1,4 +1,4 @@
-import styled from '@emotion/styled'
+import styled from 'styled-components'
 import DraggableNumber from '../base/DraggableNumber'
 import { lerp } from '../../util/util'
 import useDragMapped from '../hooks/useDragMapped'

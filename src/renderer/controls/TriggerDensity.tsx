@@ -1,4 +1,4 @@
-import styled from '@emotion/styled'
+import styled from 'styled-components'
 import { useActiveScene } from '../redux/store'
 import Slider from '../base/Slider'
 import { useDispatch } from 'react-redux'

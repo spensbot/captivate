@@ -97,5 +97,3 @@ const Title = styled.div`
 const Spacer = styled.div`
   flex: 1 0 0;
 `
-
-const Item = styled.div``

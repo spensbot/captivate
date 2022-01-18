@@ -55,6 +55,31 @@ export type FixtureChannel =
   | ChannelStrobe
   | ChannelOther
 
+export function initFixtureChannel(
+  type?: FixtureChannel['type']
+): FixtureChannel {
+  if (type === 'color') {
+    return {
+      type: type,
+      color: 'white',
+    }
+  } else if (type === 'other') {
+    return {
+      type: type,
+      default: 0,
+    }
+  } else if (type === 'strobe') {
+    return {
+      type: type,
+      default_solid: 0,
+      default_strobe: 255,
+    }
+  }
+  return {
+    type: 'master',
+  }
+}
+
 export type FixtureType = {
   id: string
   name: string

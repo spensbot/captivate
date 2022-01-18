@@ -10,6 +10,16 @@ export function clamp(val: number, min: number, max: number) {
   return val
 }
 
+export function clampMaybe(val: number, min?: number, max?: number) {
+  if (min !== undefined) {
+    if (val < min) return min
+  }
+  if (max !== undefined) {
+    if (val > max) return max
+  }
+  return val
+}
+
 export function randomElement<Type>(items: Type[]) {
   const randIndex = Math.floor(Math.random() * items.length)
   return items[randIndex]

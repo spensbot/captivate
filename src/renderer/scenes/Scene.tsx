@@ -140,8 +140,9 @@ const Root = styled.div`
   display: flex;
   align-items: center;
   color: #fffa;
-  border-radius: 10px;
+  border-radius: 7px;
   box-sizing: border-box;
+  border: 1px solid #7777;
   :hover {
     border: 1px solid;
     cursor: pointer;

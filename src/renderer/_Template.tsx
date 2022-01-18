@@ -1,17 +1,9 @@
-import styled from '@emotion/styled'
+import styled from 'styled-components'
 
-interface Props {
-
-}
+interface Props {}
 
 export default function _({}: Props) {
-    return (
-        <Root>
-
-        </Root>
-    )
+  return <Root></Root>
 }
 
-const Root = styled.div`
-    
-`
+const Root = styled.div``
