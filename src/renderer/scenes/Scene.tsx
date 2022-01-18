@@ -31,7 +31,7 @@ function getColor(bombacity: number) {
   const hueStart = 250
   const hueRange = 110 // 170
   const hue = (hueStart + bombacity * hueRange) % 360
-  return `hsl(${hue}, ${50}%, ${50}%)`
+  return `hsl(${hue}, ${40}%, ${50}%)`
 }
 
 export function Scene({ index, id }: { index: number; id: string }) {
@@ -60,7 +60,7 @@ export function Scene({ index, id }: { index: number; id: string }) {
   }
 
   if (isActive) {
-    style.border = '1px solid #fffa'
+    style.border = '2px solid'
     style.color = '#fffc'
   }
 
@@ -135,13 +135,17 @@ export function NewScene() {
 }
 
 const Root = styled.div`
-  padding: 0 0.5rem;
+  padding: 0.5rem;
   margin-bottom: 0.3rem;
   display: flex;
   align-items: center;
   color: #fffa;
-  height: 3rem;
   border-radius: 10px;
+  box-sizing: border-box;
+  :hover {
+    border: 1px solid;
+    cursor: pointer;
+  }
 `
 
 const Number = styled.div`
@@ -158,5 +162,5 @@ const Column = styled.div`
 `
 
 const Sp = styled.div`
-  height: 0.3rem;
+  height: 0.5rem;
 `

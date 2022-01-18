@@ -94,12 +94,16 @@ export const scenesSlice = createSlice({
     ) => {
       state.ids.push(payload.id)
       state.byId[payload.id] = payload.scene
+      state.active = payload.id
     },
     removeScene: (state, { payload }: PayloadAction<{ index: number }>) => {
       const id = state.ids[payload.index]
       state.ids.splice(payload.index, 1)
       delete state.byId[id]
-      state.active = state.ids[0]
+      // This is necessary in a world where you can delete the active scene... Which you currently can't
+      // if (state.active === id) {
+      //   state.active = state.ids[0]
+      // }
     },
     setActiveScene: (state, { payload }: PayloadAction<string>) => {
       state.active = payload

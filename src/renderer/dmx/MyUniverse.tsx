@@ -47,7 +47,7 @@ export default function MyUniverse() {
           index: i,
         })
 
-        if (f1.ch - (f0_endCh + 1) > 1) {
+        if (f1.ch - (f0_endCh + 0) > 1) {
           slots.push({
             kind: 'gap',
             ch: f0_endCh + 1,
@@ -72,6 +72,12 @@ export default function MyUniverse() {
           count: 512 - lastChannel,
         })
       }
+    } else {
+      slots.push({
+        kind: 'gap',
+        ch: 1,
+        count: 512,
+      })
     }
 
     return slots
@@ -83,12 +89,17 @@ export default function MyUniverse() {
 
   return (
     <Root>
-      <div style={{ fontSize: '1.5rem', margin: '0 0 0.5rem' }}>Universe</div>
+      <Header>Universe</Header>
       <Slots>{elements}</Slots>
       <FixturePlacement />
     </Root>
   )
 }
+
+const Header = styled.div`
+  font-size: ${(props) => props.theme.font.size.h1};
+  margin: 0 0 0.5rem;
+`
 
 const Root = styled.div`
   padding: 1rem;

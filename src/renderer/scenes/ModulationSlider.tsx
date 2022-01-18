@@ -1,16 +1,16 @@
-import React from 'react'
 import { useDispatch } from 'react-redux'
-import { ParamKey } from '../../engine/params'
+import { Param } from '../../engine/params'
 import { useTypedSelector } from '../redux/store'
 import { setModulation } from '../redux/scenesSlice'
 import useDragMapped from '../hooks/useDragMapped'
+import styled from 'styled-components'
 
 export default function ModulationSlider({
   index,
   param,
 }: {
   index: number
-  param: ParamKey
+  param: Param
 }) {
   const amount = useTypedSelector(
     (state) =>
@@ -21,32 +21,35 @@ export default function ModulationSlider({
     dispatch(setModulation({ param: param, index: index, value: x }))
   })
 
-  const style: React.CSSProperties = {
-    position: 'relative',
-    userSelect: 'none',
-    textAlign: 'center',
-    backgroundColor: '#ffffff08',
-    border: '1px solid #fff1',
-    color: '#fff7',
-    fontSize: '0.8rem',
-  }
-
   const width = Math.abs(amount - 0.5)
   const left = amount > 0.5 ? 0.5 : amount
 
   return (
-    <div ref={dragContainer} onMouseDown={onMouseDown} style={style}>
+    <Root ref={dragContainer} onMouseDown={onMouseDown}>
       {param}
-      <div
+      <Amount
         style={{
-          backgroundColor: '#aaf3',
-          position: 'absolute',
-          top: 0,
           left: `${left * 100}%`,
-          bottom: 0,
           width: `${width * 100}%`,
         }}
-      ></div>
-    </div>
+      ></Amount>
+    </Root>
   )
 }
+
+const Root = styled.div`
+  position: relative;
+  user-select: none;
+  text-align: center;
+  background-color: #ffffff08;
+  border-bottom: 1px solid #fff1;
+  color: #fff7;
+  font-size: 0.8rem;
+`
+
+const Amount = styled.div`
+  background-color: #aaf3;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+`

@@ -14,6 +14,7 @@ import Popup from '../base/Popup'
 import { useState } from 'react'
 import { TextField, IconButton } from '@mui/material'
 import RemoveIcon from '@mui/icons-material/Remove'
+import AddIcon from '@mui/icons-material/Add'
 import { clamp } from '../../util/util'
 
 function ChannelSpan({ start, count }: { start: number; count: number }) {
@@ -77,6 +78,9 @@ function GapSlot({ ch, count }: { ch: number; count: number }) {
       )}
       <GSRoot>
         <ChannelSpan start={ch} count={count} />
+        <GSAdd>
+          <AddIcon />
+        </GSAdd>
       </GSRoot>
     </Slot>
   )
@@ -84,9 +88,25 @@ function GapSlot({ ch, count }: { ch: number; count: number }) {
 
 const GSRoot = styled.div`
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   width: 100%;
   height: 100%;
+  position: relative;
+`
+
+const GSAdd = styled.div`
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  :hover {
+    opacity: 1;
+  }
 `
 
 function FixtureChoice({
@@ -134,11 +154,17 @@ function FixtureSlot({ fixture, index }: { fixture: Fixture; index: number }) {
       )
     }
   }
+  const style = isSelected
+    ? {
+        border: '2px solid white',
+      }
+    : undefined
   return (
     <Slot
       onClick={() => {
         dispatch(setSelectedFixture(index))
       }}
+      style={style}
     >
       <ChannelSpan start={start} count={count} />
       <div style={{ display: 'flex', alignItems: 'center' }}>

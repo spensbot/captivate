@@ -16,7 +16,7 @@ export default function FPS() {
       style={{
         position: 'absolute',
         fontSize: '0.9rem',
-        padding: '0.5rem',
+        padding: '1rem',
         cursor: 'pointer',
         color: color,
         userSelect: 'none',
