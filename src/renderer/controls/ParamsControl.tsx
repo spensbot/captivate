@@ -7,15 +7,9 @@ import Randomizer from './Randomizer'
 
 export default function ParamsControl() {
   return (
-    <div
-      style={{
-        flex: '0 0 auto',
-        display: 'flex',
-        flexDirection: 'row',
-      }}
-    >
+    <Root>
       <HsvPad />
-      <Spacer />
+      <Sp />
       <MidiOverlay_xy
         actions={[
           { type: 'setBaseParam', paramKey: 'x' },
@@ -26,16 +20,23 @@ export default function ParamsControl() {
       >
         <XYpad />
       </MidiOverlay_xy>
-      <Spacer />
+      <Sp />
+      <Randomizer />
+      <Sp />
       <ParamSlider param={'black'} />
       <ParamSlider param={'strobe'} />
       <ParamSlider param={'epicness'} />
       <ParamSlider param={'randomize'} />
-      <Randomizer />
-    </div>
+    </Root>
   )
 }
 
-const Spacer = styled.div`
-  width: 1rem;
+const Root = styled.div`
+  /* flex: 0 0 auto; */
+  display: flex;
+  flex-direction: row;
+`
+
+const Sp = styled.div`
+  min-width: 1rem;
 `

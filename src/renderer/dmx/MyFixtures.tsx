@@ -2,7 +2,7 @@ import { useTypedSelector } from '../redux/store'
 import MyFixture from './MyFixture'
 import AddIcon from '@mui/icons-material/Add'
 import { IconButton } from '@mui/material'
-import { addFixtureType, resetDmxState } from '../redux/dmxSlice'
+import { addFixtureType } from '../redux/dmxSlice'
 import { useDispatch } from 'react-redux'
 import { initFixtureType } from '../../engine/dmxFixtures'
 import SaveIcon from '@mui/icons-material/Save'
@@ -71,16 +71,18 @@ export default function MyFixtures() {
 
 const Root = styled.div`
   height: 100%;
-  padding: 0.5rem;
+  padding: 1rem;
   background-color: ${(props) => props.theme.colors.bg.darker};
-  border-right: 1px solid #fff3;
+  border-right: 1px solid ${(props) => props.theme.colors.divider};
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 `
 
 const Header = styled.div`
   display: flex;
   align-items: center;
+  margin-top: -0.3rem;
 `
 
 const Items = styled.div`
@@ -89,7 +91,7 @@ const Items = styled.div`
 `
 
 const Title = styled.div`
-  font-size: 1.3rem;
+  font-size: ${(props) => props.theme.font.size.h1};
 `
 
 const Spacer = styled.div`

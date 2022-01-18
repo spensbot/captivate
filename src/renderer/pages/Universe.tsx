@@ -7,10 +7,10 @@ import StatusBar from '../menu/StatusBar'
 
 export default function Universe() {
   return (
-    <>
+    <Root>
       <StatusBar />
       <SplitPane
-        style={{ height: '100vh', width: '100%' }}
+        style={{ height: '100%', width: '100%' }}
         type="vertical"
         initialSplit={0.3}
         rem={0.5}
@@ -35,9 +35,15 @@ export default function Universe() {
           <MyUniverse />
         </SplitRoot>
       </SplitPane>
-    </>
+    </Root>
   )
 }
+
+const Root = styled.div`
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+`
 
 const SplitRoot = styled.div`
   height: 100%;

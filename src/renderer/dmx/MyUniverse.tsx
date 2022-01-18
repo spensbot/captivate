@@ -2,6 +2,7 @@ import { Universe, Fixture } from '../../engine/dmxFixtures'
 import { useTypedSelector } from '../redux/store'
 import FixturePlacement from './FixturePlacement'
 import UniverseSlot from './UniverseSlot'
+import styled from 'styled-components'
 
 interface GapSlot_t {
   kind: 'gap'
@@ -81,28 +82,26 @@ export default function MyUniverse() {
   })
 
   return (
-    <div
-      style={{
-        padding: '0.5rem',
-        height: '100%',
-        maxHeight: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
+    <Root>
       <div style={{ fontSize: '1.5rem', margin: '0 0 0.5rem' }}>Universe</div>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'row',
-          alignItems: 'start',
-          flexWrap: 'wrap',
-          overflow: 'scroll',
-        }}
-      >
-        {elements}
-      </div>
+      <Slots>{elements}</Slots>
       <FixturePlacement />
-    </div>
+    </Root>
   )
 }
+
+const Root = styled.div`
+  padding: 1rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+`
+
+const Slots = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-items: start;
+  flex-wrap: wrap;
+  overflow: scroll;
+`

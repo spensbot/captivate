@@ -30,6 +30,7 @@ export default function SliderBase({
       justifyContent: 'center',
       alignItems: 'center',
       padding: `${v ? radius : 0}rem ${v ? 0 : radius}rem`,
+      boxSizing: 'border-box',
     },
     dragArea: {
       position: 'relative',

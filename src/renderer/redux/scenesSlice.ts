@@ -99,6 +99,7 @@ export const scenesSlice = createSlice({
       const id = state.ids[payload.index]
       state.ids.splice(payload.index, 1)
       delete state.byId[id]
+      state.active = state.ids[0]
     },
     setActiveScene: (state, { payload }: PayloadAction<string>) => {
       state.active = payload
@@ -223,9 +224,11 @@ export const scenesSlice = createSlice({
       state.ids.splice(payload.toIndex, 0, element)
     },
     copyActiveScene: (state, _: PayloadAction<undefined>) => {
-      const id = nanoid()
-      state.ids.push(id)
-      state.byId[id] = cloneDeep(state.byId[state.active])
+      if (state.active) {
+        const id = nanoid()
+        state.ids.push(id)
+        state.byId[id] = cloneDeep(state.byId[state.active])
+      }
     },
   },
 })

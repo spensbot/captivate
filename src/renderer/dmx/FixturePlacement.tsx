@@ -1,4 +1,4 @@
-import React from 'react'
+import styled from 'styled-components'
 import { useTypedSelector } from '../redux/store'
 import FixtureCursor from './FixtureCursor'
 import useDragMapped from '../hooks/useDragMapped'
@@ -58,16 +58,7 @@ export default function FixturePlacement() {
   }
 
   return (
-    <div
-      style={{
-        backgroundColor: '#0007',
-        width: '100%',
-        height: '60%',
-        overflow: 'hidden',
-        padding: '0.5rem',
-        flex: '1 0 50%',
-      }}
-    >
+    <Root>
       <div
         ref={dragContainer}
         onMouseDown={onMouseDown}
@@ -77,6 +68,14 @@ export default function FixturePlacement() {
         <div style={styles.horizontal} />
         {cursors}
       </div>
-    </div>
+    </Root>
   )
 }
+
+const Root = styled.div`
+  background-color: #0007;
+  height: 60%;
+  overflow: hidden;
+  padding: 0.5rem;
+  flex: 1 0 50%;
+`

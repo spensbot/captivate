@@ -1,4 +1,4 @@
-import React from 'react'
+import styled from 'styled-components'
 import { useTypedSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import {
@@ -20,21 +20,6 @@ import Input from '../base/Input'
 import { Draggable } from 'react-beautiful-dnd'
 import DragHandleIcon from '@mui/icons-material/DragHandle'
 import CopyIcon from '@mui/icons-material/FileCopy'
-
-const baseStyle: React.CSSProperties = {
-  padding: '0.5rem',
-  marginRight: '0.3rem',
-  marginBottom: '0.3rem',
-  display: 'flex',
-  alignItems: 'center',
-  color: '#fffa',
-}
-
-const activeStyle: React.CSSProperties = {
-  ...baseStyle,
-  border: '0.1rem solid #fffa',
-  color: '#fffc',
-}
 
 function getColor(bombacity: number) {
   // const min = 100
@@ -70,10 +55,13 @@ export function Scene({ index, id }: { index: number; id: string }) {
     dispatch(removeScene({ index: index }))
   }
 
-  let style = isActive ? activeStyle : baseStyle
-  style = {
-    ...style,
+  let style: React.CSSProperties = {
     backgroundColor: getColor(bombacity),
+  }
+
+  if (isActive) {
+    style.border = '1px solid #fffa'
+    style.color = '#fffc'
   }
 
   return (
@@ -83,43 +71,28 @@ export function Scene({ index, id }: { index: number; id: string }) {
           <ButtonMidiOverlay
             action={{ type: 'setActiveSceneIndex', index: index }}
           >
-            <div
+            <Root
               style={style}
               onClick={() => {
                 dispatch(setActiveScene(id))
               }}
             >
-              <div
-                style={{
-                  width: '1rem',
-                  fontSize: '0.7rem',
-                  marginLeft: '-0.3rem',
-                  marginRight: '0.5rem',
-                  textAlign: 'right',
-                }}
-              >
-                {index + 1}
-              </div>
+              <Number>{index + 1}</Number>
               {isActive ? (
-                <div style={{ flex: '1 0 auto' }}>
+                <Column>
                   <Input value={name} onChange={onNameChange} />
+                  <Sp />
                   <Slider
                     value={bombacity}
                     radius={0.3}
                     orientation="horizontal"
                     onChange={onBombacityChange}
                   />
-                  <div {...provided.dragHandleProps}>
-                    <DragHandleIcon />
-                  </div>
-                </div>
+                </Column>
               ) : (
                 <>
                   <div>{name}</div>
                   <div style={{ flex: '1 0 0' }} />
-                  <div {...provided.dragHandleProps}>
-                    <DragHandleIcon />
-                  </div>
                   <IconButton
                     aria-label="delete scene"
                     size="small"
@@ -129,7 +102,10 @@ export function Scene({ index, id }: { index: number; id: string }) {
                   </IconButton>
                 </>
               )}
-            </div>
+              <div {...provided.dragHandleProps}>
+                <DragHandleIcon />
+              </div>
+            </Root>
           </ButtonMidiOverlay>
         </div>
       )}
@@ -147,13 +123,40 @@ export function NewScene() {
   }
 
   return (
-    <div style={baseStyle}>
+    <Root>
       <IconButton onClick={onNew}>
         <AddIcon />
       </IconButton>
       <IconButton onClick={onCopy}>
         <CopyIcon />
       </IconButton>
-    </div>
+    </Root>
   )
 }
+
+const Root = styled.div`
+  padding: 0 0.5rem;
+  margin-bottom: 0.3rem;
+  display: flex;
+  align-items: center;
+  color: #fffa;
+  height: 3rem;
+  border-radius: 10px;
+`
+
+const Number = styled.div`
+  width: 1rem;
+  font-size: 0.7rem;
+  margin-left: -0.3rem;
+  margin-right: 1rem;
+  text-align: right;
+`
+
+const Column = styled.div`
+  flex: 1 0 auto;
+  margin-right: 1rem;
+`
+
+const Sp = styled.div`
+  height: 0.3rem;
+`

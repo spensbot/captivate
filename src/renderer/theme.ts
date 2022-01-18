@@ -11,10 +11,15 @@ export function light() {
         darker: '#ddd',
         lighter: '#fff',
       },
-      divider: '#777',
+      divider: '#999',
       text: {
         primary: '#111',
         secondary: '#777',
+      },
+    },
+    font: {
+      size: {
+        h1: '1.4rem',
       },
     },
     spacing: (units: Number) => `${units}rem`,
@@ -32,7 +37,7 @@ export function dark(): Theme_t {
         darker: 'hsl(0, 0%, 14%)',
         lighter: 'hsl(0, 0%, 20%)',
       },
-      divider: '#777',
+      divider: '#555',
       text: {
         primary: '#eee',
         secondary: '#777',

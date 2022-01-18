@@ -42,8 +42,8 @@ export default function SceneSelection() {
   return (
     <Root>
       <Header>
-        <div style={{ fontSize: '1.5rem' }}>Scenes</div>
-        <div style={{ flex: '1 0 0' }} />
+        Scenes
+        <Sp />
         <IconButton onClick={saveScenes}>
           <SaveIcon />
         </IconButton>
@@ -51,7 +51,9 @@ export default function SceneSelection() {
           <PublishIcon />
         </IconButton>
       </Header>
+      <Sp2 />
       <AutoScene />
+      <Sp2 />
       <ScenesList />
     </Root>
   )
@@ -59,14 +61,25 @@ export default function SceneSelection() {
 
 const Root = styled.div`
   background-color: ${(props) => props.theme.colors.bg.darker};
-  padding: 0.5rem;
+  padding: 1rem;
   height: 100%;
-  border-right: 1px solid #fff3;
+  border-right: 1px solid ${(props) => props.theme.colors.divider};
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 `
 
 const Header = styled.div`
   display: flex;
   align-items: center;
+  margin-top: -0.3rem;
+  font-size: ${(props) => props.theme.font.size.h1};
+`
+
+const Sp = styled.div`
+  flex: 1 0 0;
+`
+
+const Sp2 = styled.div`
+  height: 0.5rem;
 `

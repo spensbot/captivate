@@ -13,35 +13,16 @@ const divCount = 20
 const gapRatio = 0.5
 
 export default function TriggerDensity({}: Props) {
-  const triggerDensity = useActiveScene(
-    (scene) => scene.randomizer.triggerDensity
-  )
-  const dispatch = useDispatch()
-
   return (
     <Root>
       <Visualizer />
-      <div style={{ paddingRight: '1rem' }}>
-        <Slider
-          value={triggerDensity}
-          orientation="horizontal"
-          onChange={(newVal) =>
-            dispatch(
-              setRandomizer({
-                key: 'triggerDensity',
-                value: newVal,
-              })
-            )
-          }
-        />
-      </div>
     </Root>
   )
 }
 
 const Root = styled.div`
   flex: 1 0 0;
-  border-right: 1px solid white;
+  padding: 0.3rem;
 `
 
 function Visualizer() {
@@ -79,7 +60,7 @@ function Visualizer() {
 
 const VRoot = styled.div`
   display: flex;
-  height: 2rem;
+  height: 100%;
 `
 
 const Div = styled.div`

@@ -3,6 +3,7 @@ import { useDispatch } from 'react-redux'
 import { setBaseParams, incrementBaseParams } from '../redux/scenesSlice'
 import XYCursor from './XYCursor'
 import XYWindow from './XYWindow'
+import styled from 'styled-components'
 
 export default function XYpad() {
   const dispatch = useDispatch()
@@ -26,22 +27,25 @@ export default function XYpad() {
   })
 
   const styles: { [key: string]: React.CSSProperties } = {
-    root: {
-      position: 'relative',
-      width: '200px',
-      height: '180px',
-      background: `#000`,
-      overflow: 'hidden',
-    },
+    root: {},
   }
 
   return (
-    <div style={styles.root} ref={dragContainer} onMouseDown={onMouseDown}>
+    <Root ref={dragContainer} onMouseDown={onMouseDown}>
       <div style={styles.white}>
         <div style={styles.black}></div>
         <XYCursor />
         <XYWindow />
       </div>
-    </div>
+    </Root>
   )
 }
+
+const Root = styled.div`
+  position: relative;
+  width: 200px;
+  height: 180px;
+  background: #000;
+  overflow: hidden;
+  border: 1px solid ${(props) => props.theme.colors.divider};
+`
