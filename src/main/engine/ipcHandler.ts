@@ -1,6 +1,6 @@
 import { ipcMain, WebContents } from 'electron'
 import ipcChannels, { UserCommand } from '../../engine/ipc_channels'
-import { ReduxState } from '../../renderer/redux/store'
+import { CleanReduxState } from '../../renderer/redux/store'
 import { RealtimeState } from '../../renderer/redux/realtimeStore'
 import * as dmxConnection from './dmxConnection'
 import * as midiConnection from './midiConnection'
@@ -8,7 +8,7 @@ import { PayloadAction } from '@reduxjs/toolkit'
 
 interface Config {
   renderer: WebContents
-  on_new_control_state: (new_state: ReduxState) => void
+  on_new_control_state: (new_state: CleanReduxState) => void
   on_user_command: (command: UserCommand) => void
 }
 
@@ -17,7 +17,7 @@ let _config: Config
 export function ipcSetup(config: Config) {
   _config = config
 
-  ipcMain.on(ipcChannels.new_control_state, (_e, new_state: ReduxState) =>
+  ipcMain.on(ipcChannels.new_control_state, (_e, new_state: CleanReduxState) =>
     _config.on_new_control_state(new_state)
   )
 

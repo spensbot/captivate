@@ -1,4 +1,4 @@
-import { useTypedSelector } from '../redux/store'
+import { useDmxSelector } from '../redux/store'
 import MyFixture from './MyFixture'
 import AddIcon from '@mui/icons-material/Add'
 import { IconButton } from '@mui/material'
@@ -36,7 +36,7 @@ function saveUniverse() {
 }
 
 export default function MyFixtures() {
-  const fixtureTypes = useTypedSelector((state) => state.dmx.fixtureTypes)
+  const fixtureTypes = useDmxSelector((state) => state.fixtureTypes)
   const dispatch = useDispatch()
   const elements = fixtureTypes.map((fixtureTypeID) => {
     return <MyFixture key={fixtureTypeID} id={fixtureTypeID} />

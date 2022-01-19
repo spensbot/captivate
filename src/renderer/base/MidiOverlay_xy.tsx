@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 import { getActionID, MidiAction } from '../redux/midiSlice'
-import { useTypedSelector } from '../redux/store'
+import { useMidiSelector } from '../redux/store'
 import { SliderMidiOverlay } from './MidiOverlay'
 
 interface XYProps {
@@ -10,7 +10,7 @@ interface XYProps {
 }
 
 export default function MidiOverlay_xy({ children, actions, style }: XYProps) {
-  const isEditing = useTypedSelector((state) => state.midi.isEditing)
+  const isEditing = useMidiSelector((state) => state.isEditing)
 
   const overlayStyle: React.CSSProperties = { width: '100%', height: '100%' }
 

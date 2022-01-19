@@ -1,6 +1,6 @@
 import { LfoShape } from '../../engine/oscillator'
 import { useDispatch } from 'react-redux'
-import { useTypedSelector } from '../redux/store'
+import { useActiveScene } from '../redux/store'
 import {
   resetModulator,
   removeModulator,
@@ -21,9 +21,7 @@ type Props = {
 export default function LfoMenu({ index }: Props) {
   const dispatch = useDispatch()
 
-  const lfo = useTypedSelector(
-    (state) => state.scenes.byId[state.scenes.active].modulators[index].lfo
-  )
+  const lfo = useActiveScene((activeScene) => activeScene.modulators[index].lfo)
 
   return (
     <div

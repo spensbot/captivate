@@ -3,7 +3,7 @@
 // const electron = window.require('electron')
 // const ipcRenderer = electron.ipcRenderer
 import ipc_channels, { UserCommand } from '../engine/ipc_channels'
-import { ReduxState } from './redux/store'
+import { CleanReduxState } from './redux/store'
 import { RealtimeState } from './redux/realtimeStore'
 import * as dmxConnection from '../main/engine/dmxConnection'
 import * as midiConnection from '../main/engine/midiConnection'
@@ -45,8 +45,8 @@ export function ipc_setup(config: Config) {
   )
 
   return {
-    send_control_state: (state: ReduxState) => {
-      ipcRenderer.send(ipc_channels.new_control_state, state)
+    send_control_state: (cleanState: CleanReduxState) => {
+      ipcRenderer.send(ipc_channels.new_control_state, cleanState)
     },
     send_user_command: (command: UserCommand) => {
       ipcRenderer.send(ipc_channels.user_command, command)

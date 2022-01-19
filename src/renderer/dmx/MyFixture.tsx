@@ -1,19 +1,15 @@
 import React from 'react'
-import EditIcon from '@mui/icons-material/Edit'
 import { IconButton } from '@mui/material'
-import { useTypedSelector } from '../redux/store'
+import { useDmxSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import {
   setEditedFixture,
-  addFixtureType,
   updateFixtureType,
   deleteFixtureType,
 } from '../redux/dmxSlice'
-import MyFixtureEditing from './MyFixtureEditing'
 import Input from '../base/Input'
 import Slider from '@mui/material/Slider'
 import styled from 'styled-components'
-import DeleteForeverIcon from '@mui/icons-material/DeleteForever'
 import FixtureChannels from './FixtureChannels'
 import { Button } from '@mui/material'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
@@ -23,12 +19,12 @@ type Props = {
 }
 
 export default function MyFixture({ id }: Props) {
-  const ft = useTypedSelector((state) => state.dmx.fixtureTypesByID[id])
-  const isInUse = useTypedSelector(
+  const ft = useDmxSelector((state) => state.fixtureTypesByID[id])
+  const isInUse = useDmxSelector(
     (state) =>
-      state.dmx.universe.find((fixture) => fixture.type === ft.id) !== undefined
+      state.universe.find((fixture) => fixture.type === ft.id) !== undefined
   )
-  const isEditing = useTypedSelector((state) => state.dmx.editedFixture === id)
+  const isEditing = useDmxSelector((state) => state.editedFixture === id)
   const dispatch = useDispatch()
 
   const styles: { [key: string]: React.CSSProperties } = {
@@ -113,7 +109,7 @@ export default function MyFixture({ id }: Props) {
             min={0}
             max={1}
             valueLabelDisplay="off"
-            onChange={(e, newVal) =>
+            onChange={(_e, newVal) =>
               dispatch(
                 updateFixtureType({
                   ...ft,

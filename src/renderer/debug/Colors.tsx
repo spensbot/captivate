@@ -1,12 +1,12 @@
 import React from 'react'
-import { useTypedSelector } from '../redux/store'
+import { useActiveScene } from '../redux/store'
 import { hsl2rgb, hsv2rgb, hsi2rgb } from '../../engine/dmxColors'
 
 const dp = 1
 
 export default function Colors() {
-  const { Hue, Saturation, Brightness } = useTypedSelector(
-    (state) => state.scenes.byId[state.scenes.active].baseParams
+  const { hue, saturation, brightness } = useActiveScene(
+    (activeScene) => activeScene.baseParams
   )
 
   const styles: { [key: string]: React.CSSProperties } = {}
@@ -21,14 +21,14 @@ export default function Colors() {
 
   return (
     <div>
-      <div>{`H: ${Hue.toFixed(dp)} S: ${Saturation.toFixed(
+      <div>{`H: ${hue.toFixed(dp)} S: ${saturation.toFixed(
         dp
-      )} V: ${Brightness.toFixed(dp)}`}</div>
+      )} V: ${brightness.toFixed(dp)}`}</div>
       <hr />
-      {rgbDiv('L', hsl2rgb(Hue, Saturation, Brightness))}
-      {rgbDiv('V', hsv2rgb(Hue, Saturation, Brightness))}
-      {rgbDiv('I', hsi2rgb(Hue, Saturation, Brightness))}
-      {rgbDiv('B', hsv2rgb(Hue, Saturation, 1.0))}
+      {rgbDiv('L', hsl2rgb(hue, saturation, brightness))}
+      {rgbDiv('V', hsv2rgb(hue, saturation, brightness))}
+      {rgbDiv('I', hsi2rgb(hue, saturation, brightness))}
+      {rgbDiv('B', hsv2rgb(hue, saturation, 1.0))}
     </div>
   )
 }

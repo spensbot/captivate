@@ -1,5 +1,5 @@
 import { MidiMessage } from '../../engine/midi'
-import { ReduxState } from '../../renderer/redux/store'
+import { CleanReduxState } from '../../renderer/redux/store'
 import { RealtimeState } from '../../renderer/redux/realtimeStore'
 import {
   setButtonAction,
@@ -37,7 +37,7 @@ function getInput(msg: MidiMessage): MidiInput {
 
 export function handleMessage(
   message: MidiMessage,
-  state: ReduxState,
+  state: CleanReduxState,
   rt_state: RealtimeState,
   nodeLink: NodeLink,
   dispatch: (action: PayloadAction<any>) => void

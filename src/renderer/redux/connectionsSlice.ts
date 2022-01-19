@@ -6,7 +6,7 @@ type ConnectionStatus = {
   isTroubleshoot?: boolean
 }
 
-type ConnectionsState = {
+export type ConnectionsState = {
   dmx: ConnectionStatus
   midi: ConnectionStatus
 }

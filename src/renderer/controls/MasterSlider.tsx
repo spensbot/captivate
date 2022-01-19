@@ -1,11 +1,11 @@
 import Slider from '../base/Slider'
-import { useTypedSelector } from '../redux/store'
+import { useScenesSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import { setMaster } from '../redux/scenesSlice'
 import { SliderMidiOverlay } from '../base/MidiOverlay'
 
 export default function MasterSlider() {
-  const master = useTypedSelector((state) => state.scenes.master)
+  const master = useScenesSelector((state) => state.master)
   const dispatch = useDispatch()
 
   return (

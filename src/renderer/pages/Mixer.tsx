@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 import Slider from '../base/Slider'
-import { useTypedSelector } from '../redux/store'
+import { useTypedSelector, useDmxSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import { TextField, Button } from '@mui/material'
 import {
@@ -65,7 +65,7 @@ function Header() {
         {'<'}
       </Button>
       <S />
-      {_s.pageIndex + 1}
+      <Page>{_s.pageIndex + 1}</Page>
       <S />
       <Button
         variant="outlined"
@@ -100,6 +100,10 @@ const HeaderRoot = styled.div`
   margin-left: 1rem;
 `
 
+const Page = styled.span`
+  font-size: 1.1rem;
+`
+
 const S = styled.div`
   width: 1rem;
 `
@@ -119,12 +123,12 @@ function LabelledSlider({ index }: { index: number }) {
   const overwrite: number | undefined = useTypedSelector(
     (state) => state.mixer.overwrites[index]
   )
-  const [status, fixtureIndex]: [Status_t, number | null] = useTypedSelector(
+  const [status, fixtureIndex]: [Status_t, number | null] = useDmxSelector(
     (state) => {
       let i = 0
-      for (const f of state.dmx.universe) {
+      for (const f of state.universe) {
         const endChannel =
-          f.ch + state.dmx.fixtureTypesByID[f.type].channels.length - 1
+          f.ch + state.fixtureTypesByID[f.type].channels.length - 1
         if (ch == f.ch) {
           if (ch == endChannel) {
             return ['single', i]

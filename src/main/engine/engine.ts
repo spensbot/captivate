@@ -3,7 +3,7 @@ import * as MidiConnection from './midiConnection'
 import NodeLink from 'node-link'
 import { ipcSetup } from './ipcHandler'
 import { WebContents } from 'electron'
-import { ReduxState } from '../../renderer/redux/store'
+import { CleanReduxState } from '../../renderer/redux/store'
 import {
   RealtimeState,
   initRealtimeState,
@@ -30,7 +30,7 @@ import { handleMessage } from './handleMidi'
 
 let _nodeLink = new NodeLink()
 let _ipcCallbacks: ReturnType<typeof ipcSetup> | null = null
-let _controlState: ReduxState | null = null
+let _controlState: CleanReduxState | null = null
 let _lastRandomizerState = initRandomizerState()
 let _realtimeState: RealtimeState = initRealtimeState()
 let _lastFrameTime = 0
@@ -141,7 +141,7 @@ function applyRandomization(
 }
 
 function calculateDmx(
-  _s: ReduxState,
+  _s: CleanReduxState,
   outputParams: Params,
   randomizerState: RandomizerState
 ): number[] {

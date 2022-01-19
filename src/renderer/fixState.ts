@@ -1,19 +1,20 @@
 import { ReduxState } from '../redux/store'
-import { string, number, union, object, array, makeFix, equal } from '../util/validate'
-import { initConnectionsState, connectionsSchema } from '../redux/connectionsSlice'
+import {
+  initConnectionsState,
+  connectionsSchema,
+} from '../redux/connectionsSlice'
 import { initDmxState, dmxStateSchema, DmxState } from '../redux/dmxSlice'
 import { initGuiState, guiStateSchema } from '../redux/guiSlice'
 import { initMidiState, midiStateSchema } from '../redux/midiSlice'
 import { initSceneState, sceneStateSchema } from '../redux/scenesSlice'
 import { $CombinedState } from 'redux'
 
-
 const fixState = makeFix<ReduxState>(reduxStateSchema, () => ({
   connections: initConnectionsState(),
   dmx: initDmxState(),
   midi: initMidiState(),
   scenes: initSceneState(),
-  gui: initGuiState()
+  gui: initGuiState(),
 }))
 
 export default function (oldState: ReduxState) {

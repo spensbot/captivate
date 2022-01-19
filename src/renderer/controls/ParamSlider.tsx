@@ -1,7 +1,7 @@
 import { Param } from '../../engine/params'
 import SliderBase from '../base/SliderBase'
 import SliderCursor from '../base/SliderCursor'
-import { useTypedSelector } from '../redux/store'
+import { useScenesSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import { setBaseParams } from '../redux/scenesSlice'
 import ParamCursor from './ParamCursor'
@@ -14,8 +14,8 @@ interface Props {
 export default function ParamSlider({ param }: Props) {
   const radius = 0.4
 
-  const value = useTypedSelector(
-    (state) => state.scenes.byId[state.scenes.active].baseParams[param]
+  const value = useScenesSelector(
+    (state) => state.byId[state.active].baseParams[param]
   )
   const dispatch = useDispatch()
   const onChange = (newVal: number) => {

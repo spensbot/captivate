@@ -4,7 +4,7 @@ import GlobalStyle from './GlobalStyle'
 import App from './App'
 import * as themes from './theme'
 import { Provider } from 'react-redux'
-import { store } from './redux/store'
+import { store, getCleanReduxState } from './redux/store'
 import { setDmx, setMidi } from './redux/connectionsSlice'
 import {
   realtimeStore,
@@ -44,9 +44,11 @@ const ipc_callbacks = ipc_setup({
   },
 })
 
-ipc_callbacks.send_control_state(store.getState())
+ipc_callbacks.send_control_state(getCleanReduxState(store.getState()))
 
-store.subscribe(() => ipc_callbacks.send_control_state(store.getState()))
+store.subscribe(() =>
+  ipc_callbacks.send_control_state(getCleanReduxState(store.getState()))
+)
 
 render(
   <Provider store={store}>

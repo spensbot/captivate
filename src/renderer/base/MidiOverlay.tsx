@@ -3,10 +3,9 @@ import {
   getActionID,
   MidiAction,
   listen,
-  setButtonAction,
   setSliderAction,
 } from '../redux/midiSlice'
-import { useTypedSelector } from '../redux/store'
+import { useMidiSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import DraggableNumber from './DraggableNumber'
 import Button from './Button'
@@ -18,13 +17,13 @@ interface Props {
 }
 
 export function ButtonMidiOverlay({ children, action, style }: Props) {
-  const isEditing = useTypedSelector((state) => state.midi.isEditing)
-  const controlledAction = useTypedSelector((state) => {
-    return state.midi.buttonActions[getActionID(action)] || null
+  const isEditing = useMidiSelector((state) => state.isEditing)
+  const controlledAction = useMidiSelector((state) => {
+    return state.buttonActions[getActionID(action)] || null
   })
-  const isListening = useTypedSelector((state) => {
-    if (!state.midi.listening) return false
-    return getActionID(state.midi.listening) === getActionID(action)
+  const isListening = useMidiSelector((state) => {
+    if (!state.listening) return false
+    return getActionID(state.listening) === getActionID(action)
   })
   const dispatch = useDispatch()
 
@@ -45,13 +44,13 @@ export function ButtonMidiOverlay({ children, action, style }: Props) {
 }
 
 export function SliderMidiOverlay({ children, action, style }: Props) {
-  const isEditing = useTypedSelector((state) => state.midi.isEditing)
-  const controlledAction = useTypedSelector((state) => {
-    return state.midi.sliderActions[getActionID(action)] || null
+  const isEditing = useMidiSelector((state) => state.isEditing)
+  const controlledAction = useMidiSelector((state) => {
+    return state.sliderActions[getActionID(action)] || null
   })
-  const isListening = useTypedSelector((state) => {
-    if (!state.midi.listening) return false
-    return getActionID(state.midi.listening) === getActionID(action)
+  const isListening = useMidiSelector((state) => {
+    if (!state.listening) return false
+    return getActionID(state.listening) === getActionID(action)
   })
   const dispatch = useDispatch()
 

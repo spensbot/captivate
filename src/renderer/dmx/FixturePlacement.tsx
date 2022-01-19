@@ -1,13 +1,13 @@
 import styled from 'styled-components'
-import { useTypedSelector } from '../redux/store'
+import { useDmxSelector } from '../redux/store'
 import FixtureCursor from './FixtureCursor'
 import useDragMapped from '../hooks/useDragMapped'
 import { useDispatch } from 'react-redux'
 import { setFixtureWindow, incrementFixtureWindow } from '../redux/dmxSlice'
 
 export default function FixturePlacement() {
-  const universe = useTypedSelector((state) => state.dmx.universe)
-  const selectedFixture = useTypedSelector((state) => state.dmx.selectedFixture)
+  const universe = useDmxSelector((state) => state.universe)
+  const selectedFixture = useDmxSelector((state) => state.selectedFixture)
   const dispatch = useDispatch()
 
   const [dragContainer, onMouseDown] = useDragMapped(({ x, y, dx, dy }, e) => {

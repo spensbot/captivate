@@ -1,4 +1,4 @@
-import { useTypedSelector } from '../redux/store'
+import { useTypedSelector, useMidiSelector } from '../redux/store'
 import styled from 'styled-components'
 import { useDispatch } from 'react-redux'
 import { setIsEditing } from '../redux/midiSlice'
@@ -9,7 +9,7 @@ interface Props {
 
 export default function ConnectionStatus({ type }: Props) {
   const connection = useTypedSelector((state) => state.connections[type])
-  const isEditing = useTypedSelector((state) => state.midi.isEditing)
+  const isEditing = useMidiSelector((state) => state.isEditing)
   const dispatch = useDispatch()
 
   const color = connection.isConnected ? '#0f0' : '#f00'

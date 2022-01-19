@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import { useTypedSelector } from '../redux/store'
+import { useDmxSelector } from '../redux/store'
 import { Fixture, FixtureType } from '../../engine/dmxFixtures'
 import { Slot_t } from './MyUniverse'
 import { useDispatch } from 'react-redux'
@@ -32,7 +32,7 @@ function GapSlot({ ch, count }: { ch: number; count: number }) {
   const [popupOpen, setPopupOpen] = useState(false)
   const [inputCh, setInputCh] = useState(ch)
   const dispatch = useDispatch()
-  const dmxState = useTypedSelector((state) => state.dmx)
+  const dmxState = useDmxSelector((state) => state)
   const applicableFixtures = dmxState.fixtureTypes
     .map((id) => dmxState.fixtureTypesByID[id])
     .filter((ft) => ft.channels.length <= count - (inputCh - ch))
@@ -135,10 +135,10 @@ const RCRoot = styled.div`
 `
 
 function FixtureSlot({ fixture, index }: { fixture: Fixture; index: number }) {
-  const fixtureType = useTypedSelector(
-    (state) => state.dmx.fixtureTypesByID[fixture.type]
+  const fixtureType = useDmxSelector(
+    (state) => state.fixtureTypesByID[fixture.type]
   )
-  const selectedFixture = useTypedSelector((state) => state.dmx.selectedFixture)
+  const selectedFixture = useDmxSelector((state) => state.selectedFixture)
   const dispatch = useDispatch()
   const count = fixtureType.channels.length
   const start = fixture.ch

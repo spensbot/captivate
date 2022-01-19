@@ -1,7 +1,7 @@
 import Slider from '../base/Slider'
 import React from 'react'
 import { useDispatch } from 'react-redux'
-import { useTypedSelector } from '../redux/store'
+import { useScenesSelector } from '../redux/store'
 import {
   setAutoSceneEnabled,
   setAutoSceneBombacity,
@@ -11,8 +11,8 @@ import DraggableNumber from '../base/DraggableNumber'
 
 export default function AutoScene() {
   const dispatch = useDispatch()
-  const { enabled, bombacity, period } = useTypedSelector(
-    (state) => state.scenes.auto
+  const { enabled, bombacity, period } = useScenesSelector(
+    (state) => state.auto
   )
 
   const enabledColor = '#3d5a'

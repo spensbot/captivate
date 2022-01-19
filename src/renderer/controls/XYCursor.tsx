@@ -1,5 +1,5 @@
 import { useRealtimeSelector } from '../redux/realtimeStore'
-import { useTypedSelector } from '../redux/store'
+import { useActiveScene } from '../redux/store'
 import Cursor from '../base/Cursor'
 
 export default function XYCursor() {
@@ -7,9 +7,7 @@ export default function XYCursor() {
   const xOut = outputParams.x
   const yOut = outputParams.y
 
-  const baseParams = useTypedSelector(
-    (state) => state.scenes.byId[state.scenes.active].baseParams
-  )
+  const baseParams = useActiveScene((activeScene) => activeScene.baseParams)
   const x = baseParams.x
   const y = baseParams.y
 

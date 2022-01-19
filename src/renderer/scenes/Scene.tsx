@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import { useTypedSelector } from '../redux/store'
+import { useScenesSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import {
   setActiveScene,
@@ -35,10 +35,10 @@ function getColor(bombacity: number) {
 }
 
 export function Scene({ index, id }: { index: number; id: string }) {
-  const isActive = useTypedSelector((state) => state.scenes.active === id)
+  const isActive = useScenesSelector((state) => state.active === id)
   const dispatch = useDispatch()
-  const bombacity = useTypedSelector((state) => state.scenes.byId[id].bombacity)
-  const name = useTypedSelector((state) => state.scenes.byId[id].name)
+  const bombacity = useScenesSelector((state) => state.byId[id].bombacity)
+  const name = useScenesSelector((state) => state.byId[id].name)
 
   const onNameChange = (newVal: string) => {
     dispatch(setActiveSceneName(newVal))

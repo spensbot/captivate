@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 import { Scene, NewScene } from './Scene'
-import { useTypedSelector } from '../redux/store'
+import { useScenesSelector } from '../redux/store'
 import { DragDropContext, Droppable } from 'react-beautiful-dnd'
 import { useDispatch } from 'react-redux'
 import { reorderScene } from '../redux/scenesSlice'
@@ -8,7 +8,7 @@ import { reorderScene } from '../redux/scenesSlice'
 interface Props {}
 
 export default function ScenesList({}: Props) {
-  const sceneIds = useTypedSelector((state) => state.scenes.ids)
+  const sceneIds = useScenesSelector((state) => state.ids)
   const dispatch = useDispatch()
 
   return (

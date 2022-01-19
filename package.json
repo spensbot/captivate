@@ -235,6 +235,7 @@
     "react-redux": "^7.2.6",
     "react-router-dom": "^6.2.1",
     "redux": "^4.1.2",
+    "redux-undo": "^1.0.1",
     "regenerator-runtime": "^0.13.9",
     "styled-components": "^5.3.3",
     "three": "^0.136.0"

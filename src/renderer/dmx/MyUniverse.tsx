@@ -1,5 +1,5 @@
 import { Universe, Fixture } from '../../engine/dmxFixtures'
-import { useTypedSelector } from '../redux/store'
+import { useDmxSelector } from '../redux/store'
 import FixturePlacement from './FixturePlacement'
 import UniverseSlot from './UniverseSlot'
 import styled from 'styled-components'
@@ -19,10 +19,8 @@ interface FixtureSlot_t {
 export type Slot_t = GapSlot_t | FixtureSlot_t
 
 export default function MyUniverse() {
-  const universe = useTypedSelector((state) => state.dmx.universe)
-  const fixtureTypesByID = useTypedSelector(
-    (state) => state.dmx.fixtureTypesByID
-  )
+  const universe = useDmxSelector((state) => state.universe)
+  const fixtureTypesByID = useDmxSelector((state) => state.fixtureTypesByID)
 
   function getSlots(universe: Universe): Slot_t[] {
     const slots: Slot_t[] = []

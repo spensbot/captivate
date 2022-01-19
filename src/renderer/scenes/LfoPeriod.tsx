@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useDispatch } from 'react-redux'
-import { useTypedSelector } from '../redux/store'
+import { useActiveScene } from '../redux/store'
 import { setPeriod } from '../redux/scenesSlice'
 import DraggableNumber from '../base/DraggableNumber'
 
@@ -12,9 +12,8 @@ type Props = {
 let movement = 0
 
 export default function LfoPeriod({ index }: Props) {
-  const period = useTypedSelector(
-    (state) =>
-      state.scenes.byId[state.scenes.active].modulators[index].lfo.period
+  const period = useActiveScene(
+    (activeScene) => activeScene.modulators[index].lfo.period
   )
   const periodString = Number.isInteger(period)
     ? period.toString()

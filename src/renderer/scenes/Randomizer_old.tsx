@@ -1,7 +1,7 @@
 import styled from 'styled-components'
 import DraggableNumber from '../base/DraggableNumber'
 import { useDispatch } from 'react-redux'
-import { useTypedSelector } from '../redux/store'
+import { useActiveScene } from '../redux/store'
 import { setRandomizer } from '../redux/scenesSlice'
 import { RandomizerOptions } from '../../engine/randomizer'
 import Slider from '../base/Slider'
@@ -29,9 +29,7 @@ const Title = styled.div``
 
 function RandomizerControl({ option }: { option: keyof RandomizerOptions }) {
   const dispatch = useDispatch()
-  const val = useTypedSelector(
-    (state) => state.scenes.byId[state.scenes.active].randomizer[option]
-  )
+  const val = useActiveScene((activeScene) => activeScene.randomizer[option])
 
   const onChange = (newVal: number) => {
     dispatch(

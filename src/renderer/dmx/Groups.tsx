@@ -3,7 +3,7 @@ import AddIcon from '@mui/icons-material/Add'
 import { IconButton } from '@mui/material'
 import { useDispatch } from 'react-redux'
 import { setGroups, setSelectedFixtureGroups } from '../redux/dmxSlice'
-import { useTypedSelector } from '../redux/store'
+import { useDmxSelector } from '../redux/store'
 import Input from '../base/Input'
 import Toggle from '../base/Toggle'
 
@@ -11,11 +11,11 @@ interface Props {}
 
 export default function Groups({}: Props) {
   const dispatch = useDispatch()
-  const groups = useTypedSelector((state) => state.dmx.groups)
-  const activeFixtureGroups = useTypedSelector((state) => {
-    const i = state.dmx.selectedFixture
+  const groups = useDmxSelector((state) => state.groups)
+  const activeFixtureGroups = useDmxSelector((state) => {
+    const i = state.selectedFixture
     if (i === null) return null
-    return state.dmx.universe[i]?.groups
+    return state.universe[i]?.groups
   })
 
   const items = groups.map((group, i) => {

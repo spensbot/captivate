@@ -1,14 +1,13 @@
 import React from 'react'
 import { useDispatch } from 'react-redux'
-import { useTypedSelector } from '../redux/store'
+import { useDmxSelector } from '../redux/store'
 import Cursor from '../base/Cursor'
 import { setSelectedFixture } from '../redux/dmxSlice'
-import Window2D from '../base/Window2D'
 import Window2D2 from '../base/Window2D2'
 
 export default function FixtureCursor({ index }: { index: number }) {
-  const fixture = useTypedSelector((state) => state.dmx.universe[index])
-  const selectedFixture = useTypedSelector((state) => state.dmx.selectedFixture)
+  const fixture = useDmxSelector((state) => state.universe[index])
+  const selectedFixture = useDmxSelector((state) => state.selectedFixture)
   const dispatch = useDispatch()
 
   const isSelected = selectedFixture === index

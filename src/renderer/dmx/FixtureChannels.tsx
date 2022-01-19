@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import { useTypedSelector } from '../redux/store'
+import { useDmxSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import { indexArray } from '../../util/util'
 import Select from '../base/Select'
@@ -18,7 +18,6 @@ import {
 import { IconButton } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import RemoveIcon from '@mui/icons-material/Remove'
-import DragHandleIcon from '@mui/icons-material/DragHandle'
 
 interface Props {
   fixtureID: string
@@ -26,11 +25,11 @@ interface Props {
 }
 
 export default function FixtureChannels({ fixtureID, isInUse }: Props) {
-  const channelCount = useTypedSelector(
-    (state) => state.dmx.fixtureTypesByID[fixtureID].channels.length
+  const channelCount = useDmxSelector(
+    (state) => state.fixtureTypesByID[fixtureID].channels.length
   )
-  const hasMaster = useTypedSelector((state) =>
-    state.dmx.fixtureTypesByID[fixtureID].channels.find(
+  const hasMaster = useDmxSelector((state) =>
+    state.fixtureTypesByID[fixtureID].channels.find(
       (ch) => ch.type === 'master'
     )
       ? true
@@ -69,6 +68,7 @@ export default function FixtureChannels({ fixtureID, isInUse }: Props) {
             key={channelIndex}
             fixtureID={fixtureID}
             channelIndex={channelIndex}
+            hasMaster={hasMaster}
           />
         ))}
       </Channels>
@@ -95,20 +95,27 @@ const Channels = styled.div`
 interface Props2 {
   fixtureID: string
   channelIndex: number
+  hasMaster: boolean
 }
 
-function Channel({ fixtureID, channelIndex }: Props2) {
-  const ch = useTypedSelector(
-    (state) => state.dmx.fixtureTypesByID[fixtureID].channels[channelIndex]
+function Channel({ fixtureID, channelIndex, hasMaster }: Props2) {
+  const ch = useDmxSelector(
+    (state) => state.fixtureTypesByID[fixtureID].channels[channelIndex]
   )
   const dispatch = useDispatch()
 
   return (
     <Root2>
+      {channelIndex + 1}
+      <Sp2 />
       <Select
         label="Channel Type"
         val={ch.type}
-        items={channelTypes}
+        items={
+          hasMaster && ch.type !== 'master'
+            ? channelTypes.slice(1)
+            : channelTypes
+        }
         onChange={(newType) =>
           dispatch(
             editFixtureChannel({
@@ -120,7 +127,12 @@ function Channel({ fixtureID, channelIndex }: Props2) {
         }
       />
       <Sp2 />
-      <Fields ch={ch} fixtureID={fixtureID} channelIndex={channelIndex} />
+      <Fields
+        ch={ch}
+        fixtureID={fixtureID}
+        channelIndex={channelIndex}
+        hasMaster={hasMaster}
+      />
       <Sp />
       <IconButton
         onClick={() =>
