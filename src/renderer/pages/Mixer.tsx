@@ -106,13 +106,13 @@ const S = styled.div`
 
 function getColor(index: number | null) {
   if (index !== null) {
-    const hue = (40 + index * 30) % 360
+    const hue = (40 + index * 50) % 360
     return `hsla(${hue}, 100%, 30%, 0.5)`
   }
   return '#0000'
 }
 
-type Status_t = 'begin' | 'mid' | 'end' | 'none'
+type Status_t = 'single' | 'begin' | 'mid' | 'end' | 'none'
 
 function LabelledSlider({ index }: { index: number }) {
   const ch = index + 1
@@ -123,9 +123,15 @@ function LabelledSlider({ index }: { index: number }) {
     (state) => {
       let i = 0
       for (const f of state.dmx.universe) {
-        if (ch == f.ch) return ['begin', i]
         const endChannel =
           f.ch + state.dmx.fixtureTypesByID[f.type].channels.length - 1
+        if (ch == f.ch) {
+          if (ch == endChannel) {
+            return ['single', i]
+          } else {
+            return ['begin', i]
+          }
+        }
         if (ch == endChannel) return ['end', i]
         if (ch > f.ch && ch < endChannel) return ['mid', i]
         i += 1
@@ -202,6 +208,11 @@ const Status = styled.div`
 `
 
 const statusStyles: { [key in Status_t]: React.CSSProperties } = {
+  single: {
+    borderRadius: '1rem',
+    left: '0.2rem',
+    right: '0.2rem',
+  },
   begin: {
     borderTopLeftRadius: '1rem',
     borderBottomLeftRadius: '1rem',

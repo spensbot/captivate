@@ -23,10 +23,9 @@ export const channelTypes = [
   'color',
   'strobe',
   'other',
-  'speed',
-  'pos',
-  'width',
-  'other',
+  // 'speed',
+  // 'pos',
+  // 'width',
 ]
 
 type ChannelMaster = {

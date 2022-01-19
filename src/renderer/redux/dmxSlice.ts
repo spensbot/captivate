@@ -37,15 +37,6 @@ interface SetFixtureWindowEnabledPayload {
   isEnabled: boolean
 }
 
-interface FixtureChannelPayload {
-  id: string
-}
-
-interface UpdateFixtureChannelPayload extends FixtureChannelPayload {
-  channelIndex: number
-  newChannel: FixtureChannel
-}
-
 export function initDmxState(): DmxState {
   return {
     universe: getTestUniverse(),
@@ -141,27 +132,57 @@ export const dmxSlice = createSlice({
     },
     addFixtureChannel: (
       state,
-      { payload }: PayloadAction<FixtureChannelPayload>
+      {
+        payload,
+      }: PayloadAction<{
+        fixtureID: string
+        newChannel: FixtureChannel
+      }>
     ) => {
-      state.fixtureTypesByID[payload.id].channels.push({
-        type: 'master',
-      })
+      state.fixtureTypesByID[payload.fixtureID].channels.push(
+        payload.newChannel
+      )
     },
     editFixtureChannel: (
       state,
-      { payload }: PayloadAction<UpdateFixtureChannelPayload>
+      {
+        payload,
+      }: PayloadAction<{
+        fixtureID: string
+        channelIndex: number
+        newChannel: FixtureChannel
+      }>
     ) => {
-      state.fixtureTypesByID[payload.id].channels[payload.channelIndex] =
+      state.fixtureTypesByID[payload.fixtureID].channels[payload.channelIndex] =
         payload.newChannel
     },
     removeFixtureChannel: (
       state,
-      { payload }: PayloadAction<FixtureChannelPayload>
+      {
+        payload,
+      }: PayloadAction<{
+        fixtureID: string
+        channelIndex: number
+      }>
     ) => {
-      const index = state.fixtureTypes.findIndex((ft) => ft === payload.id)
-      state.fixtureTypes.splice(index, 1)
-      delete state.fixtureTypesByID[payload.id]
-      state.editedFixture = null
+      state.fixtureTypesByID[payload.fixtureID].channels.splice(
+        payload.channelIndex,
+        1
+      )
+    },
+    reorderFixtureChannel: (
+      state,
+      {
+        payload,
+      }: PayloadAction<{
+        fixtureID: string
+        fromIndex: number
+        toIndex: number
+      }>
+    ) => {
+      const fixture = state.fixtureTypesByID[payload.fixtureID]
+      let element = fixture.channels.splice(payload.fromIndex, 1)[0]
+      fixture.channels.splice(payload.toIndex, 0, element)
     },
     deleteFixtureType: (state, { payload }: PayloadAction<string>) => {
       let index = state.fixtureTypes.indexOf(payload)
@@ -169,6 +190,7 @@ export const dmxSlice = createSlice({
         state.fixtureTypes.splice(index, 1)
       }
       delete state.fixtureTypesByID[payload]
+      state.editedFixture = null
     },
     setGroups: (state, { payload }: PayloadAction<string[]>) => {
       state.groups = payload
@@ -192,6 +214,7 @@ export const {
   addFixtureChannel,
   editFixtureChannel,
   removeFixtureChannel,
+  reorderFixtureChannel,
   setGroups,
 } = dmxSlice.actions
 

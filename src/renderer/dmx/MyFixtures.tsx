@@ -77,6 +77,7 @@ const Root = styled.div`
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  overflow: auto;
 `
 
 const Header = styled.div`

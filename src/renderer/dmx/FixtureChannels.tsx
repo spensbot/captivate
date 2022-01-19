@@ -10,7 +10,11 @@ import {
 } from '../../engine/dmxFixtures'
 import { colorList, Color } from '../../engine/dmxColors'
 import NumberField from '../base/NumberField'
-import { editFixtureChannel } from '../redux/dmxSlice'
+import {
+  editFixtureChannel,
+  addFixtureChannel,
+  removeFixtureChannel,
+} from '../redux/dmxSlice'
 import { IconButton } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import RemoveIcon from '@mui/icons-material/Remove'
@@ -18,47 +22,80 @@ import DragHandleIcon from '@mui/icons-material/DragHandle'
 
 interface Props {
   fixtureID: string
+  isInUse: boolean
 }
 
-export default function FixtureChannels({ fixtureID }: Props) {
+export default function FixtureChannels({ fixtureID, isInUse }: Props) {
   const channelCount = useTypedSelector(
     (state) => state.dmx.fixtureTypesByID[fixtureID].channels.length
   )
+  const hasMaster = useTypedSelector((state) =>
+    state.dmx.fixtureTypesByID[fixtureID].channels.find(
+      (ch) => ch.type === 'master'
+    )
+      ? true
+      : false
+  )
+  const dispatch = useDispatch()
 
   const indexes = indexArray(channelCount)
 
+  const addChannelButton = isInUse ? null : (
+    <IconButton>
+      <AddIcon
+        onClick={() =>
+          dispatch(
+            addFixtureChannel({
+              fixtureID: fixtureID,
+              newChannel: hasMaster
+                ? initFixtureChannel('other')
+                : initFixtureChannel('master'),
+            })
+          )
+        }
+      />
+    </IconButton>
+  )
+
   return (
     <Root>
-      <Title>
-        Channels
-        <IconButton>
-          <AddIcon />
-        </IconButton>
-      </Title>
-      {indexes.map((channelIndex) => (
-        <Channel
-          key={channelIndex}
-          fixtureID={fixtureID}
-          channelIndex={channelIndex}
-        />
-      ))}
+      <Header>
+        <Title>Channels</Title>
+        {addChannelButton}
+      </Header>
+      <Channels>
+        {indexes.map((channelIndex) => (
+          <Channel
+            key={channelIndex}
+            fixtureID={fixtureID}
+            channelIndex={channelIndex}
+          />
+        ))}
+      </Channels>
     </Root>
   )
 }
 
 const Root = styled.div``
 
-const Title = styled.div`
+const Header = styled.div`
   display: flex;
   align-items: center;
+`
+
+const Title = styled.span`
+  font-size: 1.2rem;
+  margin: 0.5rem 0;
+`
+
+const Channels = styled.div`
+  background-color: ${(props) => props.theme.colors.bg.darker};
 `
 
 interface Props2 {
   fixtureID: string
   channelIndex: number
 }
-
-const fieldWidth = '8rem'
 
 function Channel({ fixtureID, channelIndex }: Props2) {
   const ch = useTypedSelector(
@@ -75,7 +112,7 @@ function Channel({ fixtureID, channelIndex }: Props2) {
         onChange={(newType) =>
           dispatch(
             editFixtureChannel({
-              id: fixtureID,
+              fixtureID: fixtureID,
               channelIndex: channelIndex,
               newChannel: initFixtureChannel(newType),
             })
@@ -85,10 +122,18 @@ function Channel({ fixtureID, channelIndex }: Props2) {
       <Sp2 />
       <Fields ch={ch} fixtureID={fixtureID} channelIndex={channelIndex} />
       <Sp />
-      <IconButton>
+      <IconButton
+        onClick={() =>
+          dispatch(
+            removeFixtureChannel({
+              fixtureID: fixtureID,
+              channelIndex: channelIndex,
+            })
+          )
+        }
+      >
         <RemoveIcon />
       </IconButton>
-      <DragHandleIcon />
     </Root2>
   )
 }
@@ -96,6 +141,7 @@ function Channel({ fixtureID, channelIndex }: Props2) {
 const Root2 = styled.div`
   display: flex;
   align-items: center;
+  margin-bottom: 0.5rem;
 `
 
 const Sp = styled.div`
@@ -116,7 +162,7 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
   function updateChannel(newChannel: FixtureChannel) {
     dispatch(
       editFixtureChannel({
-        id: fixtureID,
+        fixtureID: fixtureID,
         channelIndex: channelIndex,
         newChannel: newChannel,
       })
@@ -143,6 +189,7 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
     return (
       <NumberField
         val={ch.default}
+        label="Default"
         min={1}
         max={255}
         onChange={(newVal) =>
@@ -158,6 +205,7 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
       <>
         <NumberField
           val={ch.default_solid}
+          label="Solid"
           min={1}
           max={255}
           onChange={(newVal) =>
@@ -170,6 +218,7 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
         <Sp2 />
         <NumberField
           val={ch.default_strobe}
+          label="Strobe"
           min={1}
           max={255}
           onChange={(newVal) =>

@@ -1,4 +1,3 @@
-import Divider from '../base/Divider'
 import React from 'react'
 import EditIcon from '@mui/icons-material/Edit'
 import { IconButton } from '@mui/material'
@@ -17,6 +16,7 @@ import styled from 'styled-components'
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever'
 import FixtureChannels from './FixtureChannels'
 import { Button } from '@mui/material'
+import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 
 type Props = {
   id: string
@@ -24,9 +24,9 @@ type Props = {
 
 export default function MyFixture({ id }: Props) {
   const ft = useTypedSelector((state) => state.dmx.fixtureTypesByID[id])
-  const isDeletable = useTypedSelector(
+  const isInUse = useTypedSelector(
     (state) =>
-      state.dmx.universe.find((fixture) => fixture.type === ft.id) === undefined
+      state.dmx.universe.find((fixture) => fixture.type === ft.id) !== undefined
   )
   const isEditing = useTypedSelector((state) => state.dmx.editedFixture === id)
   const dispatch = useDispatch()
@@ -54,20 +54,33 @@ export default function MyFixture({ id }: Props) {
   // }
 
   return (
-    <Root>
-      <Header onClick={() => dispatch(setEditedFixture(isEditing ? null : id))}>
-        {ft.name ? <span style={styles.name}>{ft.name}</span> : null}
-        {ft.manufacturer ? (
-          <span style={styles.manufacturer}>{ft.manufacturer}</span>
-        ) : null}
-        <div style={styles.spacer} />
-        <span style={styles.channelCount}>{ft.channels.length}</span>
-        <span style={styles.manufacturer}>ch</span>
-        {/* <IconButton onClick={() => dispatch(setEditedFixture(id))}>
+    <Root
+      style={
+        isEditing
+          ? {
+              border: '2px solid white',
+              backgroundColor: '#7771',
+              padding: '1rem',
+            }
+          : undefined
+      }
+    >
+      {!isEditing ? (
+        <Header
+          onClick={() => dispatch(setEditedFixture(isEditing ? null : id))}
+        >
+          {ft.name ? <span style={styles.name}>{ft.name}</span> : null}
+          {ft.manufacturer ? (
+            <span style={styles.manufacturer}>{ft.manufacturer}</span>
+          ) : null}
+          <div style={styles.spacer} />
+          <span style={styles.channelCount}>{ft.channels.length}</span>
+          <span style={styles.manufacturer}>ch</span>
+          {/* <IconButton onClick={() => dispatch(setEditedFixture(id))}>
           <EditIcon />
         </IconButton> */}
-      </Header>
-      {isEditing && (
+        </Header>
+      ) : (
         <Body>
           <Input
             value={ft.name}
@@ -80,6 +93,7 @@ export default function MyFixture({ id }: Props) {
               )
             }
           />
+          <Sp2 />
           <Input
             value={ft.manufacturer || ''}
             onChange={(newVal) =>
@@ -91,13 +105,14 @@ export default function MyFixture({ id }: Props) {
               )
             }
           />
+          <Sp2 />
           <Slider
             id="epicness"
             value={ft.epicness}
             step={0.01}
             min={0}
             max={1}
-            valueLabelDisplay="auto"
+            valueLabelDisplay="off"
             onChange={(e, newVal) =>
               dispatch(
                 updateFixtureType({
@@ -107,10 +122,19 @@ export default function MyFixture({ id }: Props) {
               )
             }
           />
-          <FixtureChannels fixtureID={id} />
+          <FixtureChannels fixtureID={id} isInUse={isInUse} />
+          <Sp />
+          <IconButton
+            onClick={() => {
+              dispatch(setEditedFixture(null))
+            }}
+            style={{ marginRight: '1rem' }}
+          >
+            <ExpandLessIcon />
+          </IconButton>
           <Button
             size="small"
-            disabled={!isDeletable}
+            disabled={isInUse}
             variant="contained"
             onClick={() => dispatch(deleteFixtureType(id))}
           >
@@ -118,13 +142,19 @@ export default function MyFixture({ id }: Props) {
           </Button>
         </Body>
       )}
-      <Divider color={'#7773'} marginY="0rem" />
     </Root>
   )
 }
 
 const Root = styled.div`
   padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-radius: 5px;
+  border: 1px solid #0000;
+  :hover {
+    /* background-color: #7775; */
+    border: 1px solid ${(props) => props.theme.colors.divider};
+  }
 `
 
 const Header = styled.div`
@@ -134,7 +164,13 @@ const Header = styled.div`
   cursor: pointer;
 `
 
-const Body = styled.div`
-  padding: 0.5rem;
-  border-left: 2px solid #fffa;
+const Body = styled.div``
+
+const Sp = styled.div`
+  height: 1rem;
+  flex: 1 0 0;
+`
+
+const Sp2 = styled.div`
+  height: 0.5rem;
 `
