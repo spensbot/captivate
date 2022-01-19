@@ -2,7 +2,6 @@ import SplitPane from '../base/SplitPane'
 import styled from 'styled-components'
 import MyFixtures from '../dmx/MyFixtures'
 import MyUniverse from '../dmx/MyUniverse'
-import Groups from '../dmx/Groups'
 import StatusBar from '../menu/StatusBar'
 
 export default function Universe() {
@@ -10,7 +9,7 @@ export default function Universe() {
     <Root>
       <StatusBar />
       <SplitPane
-        style={{ height: '100%', width: '100%' }}
+        style={{ flex: '1 0 0', overflow: 'auto' }}
         type="vertical"
         initialSplit={0.3}
         rem={0.5}
@@ -47,4 +46,5 @@ const Root = styled.div`
 
 const SplitRoot = styled.div`
   height: 100%;
+  overflow: auto;
 `

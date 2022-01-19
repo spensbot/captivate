@@ -37,6 +37,8 @@ function Visualizer() {
     randomizerOptions
   )
 
+  console.log(persistedState.current.slice(0, 4))
+
   const divsAndGaps = Array(divCount * 2 - 1)
     .fill(0)
     .map((_v, i) => {
