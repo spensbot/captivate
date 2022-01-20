@@ -45,5 +45,22 @@ contextBridge.exposeInMainWorld('electron', {
         )
       }
     },
+    invoke(channel, ...args) {
+      const validChannels = ['save_file', 'load_file']
+      if (validChannels.includes(channel)) {
+        return ipcRenderer.invoke(channel, ...args)
+      } else {
+        return Promise.reject(
+          `Tried to ipc invoke through an invalid channel: ${channel}`
+        )
+      }
+    },
   },
 })
+
+// export async function loadFile(
+//   title: string,
+//   fileFilters: Electron.FileFilter[]
+// ): Promise<string> {
+//   return ipcRenderer.invoke(LOAD_FILE, title, fileFilters)
+// }

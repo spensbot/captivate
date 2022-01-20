@@ -5,6 +5,8 @@ export default {
   new_control_state: 'new_control_state',
   user_command: 'user_command',
   dispatch: 'dispatch',
+  load_file: 'load_file',
+  save_file: 'save_file',
 } as const
 
 // Add types if we ever need to send commands from the renderer to main

@@ -7,6 +7,7 @@ import useDragBasic from '../hooks/useDragBasic'
 // import { incrementTempo, setLinkEnabled } from '../engine/engine'
 import styled from 'styled-components'
 import { SliderMidiOverlay } from '../base/MidiOverlay'
+import UndoRedo from 'renderer/controls/UndoRedo'
 
 function BPM() {
   const bpm = useRealtimeSelector((state) => state.time.bpm)
@@ -66,6 +67,7 @@ export default function StatusBar() {
       <LinkButton />
       <BPM />
       <Counter2 />
+      <UndoRedo />
       <div style={{ flex: '1 0 0' }} />
       <Connections>
         <ConnectionStatus type={'midi'} />

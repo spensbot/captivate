@@ -40,19 +40,19 @@ export default function FixtureChannels({ fixtureID, isInUse }: Props) {
   const indexes = indexArray(channelCount)
 
   const addChannelButton = isInUse ? null : (
-    <IconButton>
-      <AddIcon
-        onClick={() =>
-          dispatch(
-            addFixtureChannel({
-              fixtureID: fixtureID,
-              newChannel: hasMaster
-                ? initFixtureChannel('other')
-                : initFixtureChannel('master'),
-            })
-          )
-        }
-      />
+    <IconButton
+      onClick={() =>
+        dispatch(
+          addFixtureChannel({
+            fixtureID: fixtureID,
+            newChannel: hasMaster
+              ? initFixtureChannel('other')
+              : initFixtureChannel('master'),
+          })
+        )
+      }
+    >
+      <AddIcon />
     </IconButton>
   )
 

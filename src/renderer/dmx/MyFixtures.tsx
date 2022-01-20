@@ -2,37 +2,37 @@ import { useDmxSelector } from '../redux/store'
 import MyFixture from './MyFixture'
 import AddIcon from '@mui/icons-material/Add'
 import { IconButton } from '@mui/material'
-import { addFixtureType } from '../redux/dmxSlice'
+import { addFixtureType, resetDmxState } from '../redux/dmxSlice'
 import { useDispatch } from 'react-redux'
 import { initFixtureType } from '../../engine/dmxFixtures'
 import SaveIcon from '@mui/icons-material/Save'
 import PublishIcon from '@mui/icons-material/Publish'
-// import { saveFile, loadFile, captivateFileFilters } from '../saveload_renderer'
-// import { store } from '../redux/store'
+import { saveFile, loadFile, captivateFileFilters } from '../saveload_renderer'
+import { store } from '../redux/store'
 import styled from 'styled-components'
 
 function loadUniverse() {
-  // loadFile('Load Universe', [captivateFileFilters.dmx])
-  //   .then((string) => {
-  //     const newUniverse = JSON.parse(string)
-  //     store.dispatch(resetDmxState(newUniverse))
-  //   })
-  //   .catch((err) => {
-  //     console.log(err)
-  //   })
+  loadFile('Load Universe', [captivateFileFilters.dmx])
+    .then((string) => {
+      const newUniverse = JSON.parse(string)
+      store.dispatch(resetDmxState(newUniverse))
+    })
+    .catch((err) => {
+      console.log(err)
+    })
 }
 
 function saveUniverse() {
-  // const data = JSON.stringify(store.getState().dmx)
-  // saveFile('Save Universe', data, [captivateFileFilters.dmx])
-  //   .then((err) => {
-  //     if (err) {
-  //       console.log(err)
-  //     }
-  //   })
-  //   .catch((err) => {
-  //     console.log(err)
-  //   })
+  const data = JSON.stringify(store.getState().dmx)
+  saveFile('Save Universe', data, [captivateFileFilters.dmx])
+    .then((err) => {
+      if (err) {
+        console.log(err)
+      }
+    })
+    .catch((err) => {
+      console.log(err)
+    })
 }
 
 export default function MyFixtures() {

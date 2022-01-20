@@ -1,9 +1,12 @@
-import { ipcRenderer } from 'electron'
-import { ReduxStore, ReduxState, resetState } from './redux/store'
+import {
+  ReduxStore,
+  CleanReduxState,
+  resetState,
+  getCleanReduxState,
+} from './redux/store'
+import ipcChannels from '../engine/ipc_channels'
 import fixState from './fixState'
 
-const LOAD_FILE = 'load-file'
-const SAVE_FILE = 'save-file'
 const SELECT_FILES = 'select-files'
 const CACHED_STATE_KEY = 'cached-state'
 const AUTO_SAVE_INTERVAL = 1000 // ms
@@ -23,39 +26,42 @@ function refreshLastSession(store: ReduxStore) {
   const cachedState = localStorage.getItem(CACHED_STATE_KEY)
   if (!!cachedState) {
     // const lastState: ReduxState = fixState( JSON.parse(cachedState) )
-    const lastState: ReduxState = JSON.parse(cachedState)
+    const lastState: CleanReduxState = JSON.parse(cachedState)
     store.dispatch(resetState(lastState))
   }
 }
 
-function saveState(state: ReduxState) {
+function saveState(state: CleanReduxState) {
   if (!!state) {
     localStorage.setItem(CACHED_STATE_KEY, JSON.stringify(state))
   }
 }
 
 export const autoSave = (store: ReduxStore) => {
-  // refreshLastSession(store)
+  refreshLastSession(store)
 
   setInterval(() => {
-    saveState(store.getState())
+    saveState(getCleanReduxState(store.getState()))
   }, AUTO_SAVE_INTERVAL)
 }
 
-// export async function loadFile(
-//   title: string,
-//   fileFilters: Electron.FileFilter[]
-// ): Promise<string> {
-//   return ipcRenderer.invoke(LOAD_FILE, title, fileFilters)
-// }
+// @ts-ignore: Typescript doesn't recognize the globals set in "src/main/preload.js"
+const ipcRenderer = window.electron.ipcRenderer
 
-// export async function saveFile(
-//   title: string,
-//   data: string,
-//   fileFilters: Electron.FileFilter[]
-// ): Promise<NodeJS.ErrnoException> {
-//   return ipcRenderer.invoke(SAVE_FILE, title, data, fileFilters)
-// }
+export async function loadFile(
+  title: string,
+  fileFilters: Electron.FileFilter[]
+): Promise<string> {
+  return ipcRenderer.invoke(ipcChannels.load_file, title, fileFilters)
+}
+
+export async function saveFile(
+  title: string,
+  data: string,
+  fileFilters: Electron.FileFilter[]
+): Promise<NodeJS.ErrnoException> {
+  return ipcRenderer.invoke(ipcChannels.save_file, title, data, fileFilters)
+}
 
 // export async function selectVideoFiles() {
 //   return ipcRenderer.invoke(SELECT_FILES, 'Video Select', videoFileFilters)

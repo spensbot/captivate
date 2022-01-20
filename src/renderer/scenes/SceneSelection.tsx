@@ -1,12 +1,7 @@
-import React from 'react'
 import { resetScenesState, SceneState } from '../redux/scenesSlice'
 import { IconButton } from '@mui/material'
 import { store } from '../redux/store'
-import {
-  loadFile,
-  saveFile,
-  captivateFileFilters,
-} from '../../util/saveload_renderer'
+import { loadFile, saveFile, captivateFileFilters } from '../saveload_renderer'
 import styled from 'styled-components'
 import SaveIcon from '@mui/icons-material/Save'
 import PublishIcon from '@mui/icons-material/Publish'
@@ -14,28 +9,28 @@ import AutoScene from './AutoScene'
 import ScenesList from './ScenesList'
 
 function loadScenes() {
-  // loadFile('Load Scenes', [captivateFileFilters.scenes])
-  //   .then((string) => {
-  //     console.log(string)
-  //     const newScenes: SceneState = JSON.parse(string)
-  //     store.dispatch(resetScenesState(newScenes))
-  //   })
-  //   .catch((err) => {
-  //     console.log(err)
-  //   })
+  loadFile('Load Scenes', [captivateFileFilters.scenes])
+    .then((string) => {
+      console.log(string)
+      const newScenes: SceneState = JSON.parse(string)
+      store.dispatch(resetScenesState(newScenes))
+    })
+    .catch((err) => {
+      console.log(err)
+    })
 }
 
 function saveScenes() {
-  // const data = JSON.stringify(store.getState().scenes)
-  // saveFile('Save Scenes', data, [captivateFileFilters.scenes])
-  //   .then((err) => {
-  //     if (err) {
-  //       console.log(err)
-  //     }
-  //   })
-  //   .catch((err) => {
-  //     console.log(err)
-  //   })
+  const data = JSON.stringify(store.getState().scenes)
+  saveFile('Save Scenes', data, [captivateFileFilters.scenes])
+    .then((err) => {
+      if (err) {
+        console.log(err)
+      }
+    })
+    .catch((err) => {
+      console.log(err)
+    })
 }
 
 export default function SceneSelection() {
