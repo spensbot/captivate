@@ -1,0 +1,3 @@
+[submodule "Node-Link"]
+	path = Node-Link
+	url = git@github.com:spensbot/Node-Link.git

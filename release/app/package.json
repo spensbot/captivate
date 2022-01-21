@@ -16,7 +16,7 @@
   "dependencies": {
     "midi": "^2.0.0",
     "serialport": "^9.2.8",
-    "node-link": "file:../../../node-link"
+    "node-link": "file:../../Node-Link"
   },
   "license": "MIT"
 }
