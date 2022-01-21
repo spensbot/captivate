@@ -32,12 +32,12 @@ Since all dmx channels boil down to the same parameters, captivate scenes can pl
 
 We live in an open source world. Share your best scenes and creations with other captivate users!
 
-## More Info
+## Developer Notes
+
+This repo contains submodules. Be sure to run `git sumodule update --init --recursive` after cloning.
+
+Captivate has several binary dependencies (serialport, midi, node-link). It will not run until these are built against Electron's node version: `npm run rebuild`
 
 Thanks to [this repo](https://github.com/electron-react-boilerplate/electron-react-boilerplate) for the electron/react boilerplate
-
-## Dev Notes
-
-REBUILD! Binary dependencies (serialport, midi, node-link) are `npm install`ed in the ./release/app folder. You must run `npm rebuild` from that folder
 
 [MIT License](https://github.com/spensbot/Captivate2/blob/master/LICENSE)
