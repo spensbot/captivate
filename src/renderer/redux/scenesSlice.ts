@@ -14,10 +14,12 @@ export interface AutoScene_t {
   period: number
 }
 
+type SceneID = string
+
 export interface SceneState {
-  ids: string[]
-  byId: { [key: string]: Scene_t }
-  active: string
+  ids: SceneID[]
+  byId: { [key: SceneID]: Scene_t }
+  active: SceneID
   auto: AutoScene_t
   master: number
 }
