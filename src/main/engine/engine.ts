@@ -1,8 +1,8 @@
+import { WebContents } from 'electron'
 import * as DmxConnection from './dmxConnection'
 import * as MidiConnection from './midiConnection'
 import NodeLink from 'node-link'
 import { ipcSetup } from './ipcHandler'
-import { WebContents } from 'electron'
 import { CleanReduxState } from '../../renderer/redux/store'
 import {
   RealtimeState,
