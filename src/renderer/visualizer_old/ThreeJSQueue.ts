@@ -63,17 +63,6 @@ const materials = {
   z: new THREE.LineBasicMaterial({ color: 0xff0000 }),
 }
 
-// function drawLine(start: THREE.Vector3, end: THREE.Vector3, material: keyof materials) {
-//   const material =
-// }
-
-// function drawCoordinates() {
-//   const x
-//   const material =
-//   const material = new THREE.BufferGeometry().setFromPoints([]);
-//   const x = new THREE.Line()
-// }
-
 export function translate(x: number, y: number) {
   const cam = threeJSQueue.getActive().camera
   threeJSQueue.getActive().scene.translateX(x)

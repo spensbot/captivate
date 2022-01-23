@@ -1,23 +1,30 @@
 import { useRef, useEffect } from 'react'
-import FPS from '../visualizer/FPS'
-import { visualizerRef, resizeVisualizer } from '../visualizer/visualizerRef'
+import FPS from '../visualizer_old/FPS'
+import VisualizerManager from '../visualizer/VisualizerManager'
 import styled from 'styled-components'
 import StatusBar from '../menu/StatusBar'
+import { useRealtimeSelector } from '../redux/realtimeStore'
+
+const visualizer = new VisualizerManager()
 
 export default function Visualizer() {
   const ref = useRef(null)
 
+  const state = useRealtimeSelector((state) => state)
+
+  visualizer.update(state)
+
   function resize() {
     const element = ref.current
     if (element !== null) {
-      resizeVisualizer(element.clientWidth, element.clientHeight)
+      visualizer.resize(element.clientWidth, element.clientHeight)
     }
   }
 
   useEffect(() => {
     const element = ref.current
     if (element !== null) {
-      element.appendChild(visualizerRef)
+      element.appendChild(visualizer.getElement())
     }
     resize()
     window.addEventListener('resize', resize)

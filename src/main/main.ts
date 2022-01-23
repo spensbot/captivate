@@ -16,7 +16,7 @@ import { autoUpdater } from 'electron-updater'
 import log from 'electron-log'
 import MenuBuilder from './menu'
 import { resolveHtmlPath } from './util'
-import { start } from './engine/engine'
+import { start, stop } from './engine/engine'
 
 export default class AppUpdater {
   constructor() {
@@ -96,6 +96,7 @@ const createWindow = async () => {
   })
 
   mainWindow.on('closed', () => {
+    stop()
     mainWindow = null
   })
 

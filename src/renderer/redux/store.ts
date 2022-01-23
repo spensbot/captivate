@@ -12,7 +12,7 @@ import scenesReducer, { SceneState } from './scenesSlice'
 import { Scene_t } from '../../engine/scene_t'
 import midiReducer, { MidiState } from './midiSlice'
 import mixerReducer, { MixerState } from './mixerSlice'
-import undoable, { StateWithHistory } from 'redux-undo'
+import undoable, { ActionTypes, StateWithHistory } from 'redux-undo'
 
 export interface UndoActionTypes {
   undo: string
@@ -57,13 +57,28 @@ const baseReducer = combineReducers({
 export type ReduxState = ReturnType<typeof baseReducer>
 
 const RESET_STATE = 'reset-state'
-
+const RESET_UNIVERSE = 'reset-universe'
+const RESET_SCENES = 'reset-scenes'
 export function resetState(
   newState: CleanReduxState
 ): PayloadAction<CleanReduxState> {
   return {
     type: RESET_STATE,
     payload: newState,
+  }
+}
+export function resetUniverse(newDmxState: DmxState): PayloadAction<DmxState> {
+  return {
+    type: RESET_UNIVERSE,
+    payload: newDmxState,
+  }
+}
+export function resetScenes(
+  newSceneState: SceneState
+): PayloadAction<SceneState> {
+  return {
+    type: RESET_SCENES,
+    payload: newSceneState,
   }
 }
 
@@ -79,6 +94,7 @@ const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (
   state,
   action
 ) => {
+  if (state === undefined) return baseReducer(state, action)
   if (action.type === RESET_STATE) {
     const cs: CleanReduxState = action.payload
     return {
@@ -88,6 +104,24 @@ const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (
       scenes: initUndoState(cs.scenes),
       midi: initUndoState(cs.midi),
       mixer: cs.mixer,
+    }
+  } else if (action.type === RESET_UNIVERSE) {
+    const us: DmxState = action.payload
+    return {
+      ...state,
+      dmx: {
+        ...state.dmx,
+        present: us,
+      },
+    }
+  } else if (action.type === RESET_SCENES) {
+    const ss: SceneState = action.payload
+    return {
+      ...state,
+      scenes: {
+        ...state.scenes,
+        present: ss,
+      },
     }
   }
   return baseReducer(state, action)

@@ -31,8 +31,9 @@ function updateInputs(config: Config) {
     if (inputs[portName] === undefined) {
       //TODO: (Spenser) better ability to disable midi inputs
       {
-        // if (portName !== 'DDJ-SB3') {
-        inputs[portName] = newInput(i, config)
+        if (portName !== 'DDJ-SB3') {
+          inputs[portName] = newInput(i, config)
+        }
       }
     }
   }

@@ -45,6 +45,10 @@ export function start(renderer: WebContents) {
   })
 }
 
+export function stop() {
+  _ipcCallbacks = null
+}
+
 DmxConnection.maintain({
   update_ms: 5000,
   onUpdate: (path) => {

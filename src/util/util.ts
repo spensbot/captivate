@@ -37,3 +37,12 @@ export function lerp(start: number, stop: number, amt: number) {
 export function indexArray(length: number) {
   return Array.from(Array(length).keys())
 }
+
+export function testSpeed(f: () => void, count: number, name: string) {
+  const array = Array(count).fill(0)
+  const startTime = Date.now()
+  array.forEach(f)
+  const endTime = Date.now()
+  const duration = endTime - startTime
+  console.log(`${name}: ${duration / count}ms per call`)
+}

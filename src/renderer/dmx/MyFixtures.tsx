@@ -2,20 +2,20 @@ import { useDmxSelector } from '../redux/store'
 import MyFixture from './MyFixture'
 import AddIcon from '@mui/icons-material/Add'
 import { IconButton } from '@mui/material'
-import { addFixtureType, resetDmxState } from '../redux/dmxSlice'
+import { addFixtureType, DmxState } from '../redux/dmxSlice'
 import { useDispatch } from 'react-redux'
 import { initFixtureType } from '../../engine/dmxFixtures'
 import SaveIcon from '@mui/icons-material/Save'
 import PublishIcon from '@mui/icons-material/Publish'
 import { saveFile, loadFile, captivateFileFilters } from '../saveload_renderer'
-import { store } from '../redux/store'
+import { store, resetUniverse } from '../redux/store'
 import styled from 'styled-components'
 
 function loadUniverse() {
   loadFile('Load Universe', [captivateFileFilters.dmx])
-    .then((string) => {
-      const newUniverse = JSON.parse(string)
-      store.dispatch(resetDmxState(newUniverse))
+    .then((serializedDmxState) => {
+      const newDmxState: DmxState = JSON.parse(serializedDmxState)
+      store.dispatch(resetUniverse(newDmxState))
     })
     .catch((err) => {
       console.log(err)
@@ -23,8 +23,9 @@ function loadUniverse() {
 }
 
 function saveUniverse() {
-  const data = JSON.stringify(store.getState().dmx)
-  saveFile('Save Universe', data, [captivateFileFilters.dmx])
+  const dmxState: DmxState = store.getState().dmx.present
+  const serializedDmxState = JSON.stringify(dmxState)
+  saveFile('Save Universe', serializedDmxState, [captivateFileFilters.dmx])
     .then((err) => {
       if (err) {
         console.log(err)

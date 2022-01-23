@@ -4,7 +4,7 @@ import ParamsControl from '../controls/ParamsControl'
 import Modulators from '../scenes/Modulators'
 import SceneSelection from '../scenes/SceneSelection'
 import SplitPane from '../base/SplitPane'
-import VideoList from '../visualizer/VideoList'
+import VideoList from '../visualizer_old/VideoList'
 import Groups from '../scenes/Groups'
 import styled from 'styled-components'
 

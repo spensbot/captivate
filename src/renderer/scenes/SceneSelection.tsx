@@ -1,6 +1,6 @@
-import { resetScenesState, SceneState } from '../redux/scenesSlice'
+import { SceneState } from '../redux/scenesSlice'
 import { IconButton } from '@mui/material'
-import { store } from '../redux/store'
+import { store, resetScenes } from '../redux/store'
 import { loadFile, saveFile, captivateFileFilters } from '../saveload_renderer'
 import styled from 'styled-components'
 import SaveIcon from '@mui/icons-material/Save'
@@ -10,10 +10,9 @@ import ScenesList from './ScenesList'
 
 function loadScenes() {
   loadFile('Load Scenes', [captivateFileFilters.scenes])
-    .then((string) => {
-      console.log(string)
-      const newScenes: SceneState = JSON.parse(string)
-      store.dispatch(resetScenesState(newScenes))
+    .then((serializedSceneState) => {
+      const newScenes: SceneState = JSON.parse(serializedSceneState)
+      store.dispatch(resetScenes(newScenes))
     })
     .catch((err) => {
       console.log(err)
@@ -21,8 +20,9 @@ function loadScenes() {
 }
 
 function saveScenes() {
-  const data = JSON.stringify(store.getState().scenes)
-  saveFile('Save Scenes', data, [captivateFileFilters.scenes])
+  const sceneState: SceneState = store.getState().scenes.present
+  const serializedSceneState = JSON.stringify(sceneState)
+  saveFile('Save Scenes', serializedSceneState, [captivateFileFilters.scenes])
     .then((err) => {
       if (err) {
         console.log(err)

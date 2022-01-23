@@ -4,9 +4,9 @@ import * as threeJSQueue from './ThreeJSQueue'
 import setupDrag from './drag'
 import { scale, translate, rotate } from './ThreeJSQueue'
 
-export const visualizerRef = document.createElement('div')
-visualizerRef.id = 'visualizer'
-setupDrag(visualizerRef, ({ dx, dy }, e) => {
+export const visualizerElement = document.createElement('div')
+visualizerElement.id = 'visualizer'
+setupDrag(visualizerElement, ({ dx, dy }, e) => {
   if (e.metaKey) {
     translate(dx * 10, dy * 10)
   } else {
@@ -14,7 +14,7 @@ setupDrag(visualizerRef, ({ dx, dy }, e) => {
   }
 })
 
-visualizerRef.onwheel = (e) => {
+visualizerElement.onwheel = (e) => {
   scale(1 + e.wheelDeltaY / 1000)
 }
 
@@ -54,32 +54,31 @@ function getModelPath(folderName: string) {
 }
 
 export function next() {
-  visualizerRef.innerHTML = ''
+  visualizerElement.innerHTML = ''
   const folder = gltfModelFolders[count % gltfModelFolders.length]
   console.log(folder)
   const modelPath = getModelPath(folder)
   // threeJSQueue.loadModel(modelPath)
-  threeJSQueue.loadText('Spoobi Rules')
-  visualizerRef.appendChild(threeJSQueue.getNext().renderer.domElement)
-  // visualizerRef.appendChild(threeJSQueue.getNext().renderer.domElement)
-  // threeJSQueue.loadCube()
+  // threeJSQueue.loadText('Spoobi Rules')
+  threeJSQueue.loadCube()
+  visualizerElement.appendChild(threeJSQueue.getNext().renderer.domElement)
   count++
 }
 
 // setInterval(() => {
-//   visualizerRef.innerHTML = ''
+//   visualizerElement.innerHTML = ''
 
 //   if (count % max === 0) {
 //     activeVideo = videoQueue.getNext().element
-//     visualizerRef.appendChild(activeVideo)
+//     visualizerElement.appendChild(activeVideo)
 //     activeVideo.play()
 //     activeVideo.playbackRate = 1.0
 //     videoQueue.loadBackground(randomElement(store.getState().gui.videos))
 //   } else if (count % max === 1) {
-//     visualizerRef.appendChild(threeJSQueue.getNext().renderer.domElement)
+//     visualizerElement.appendChild(threeJSQueue.getNext().renderer.domElement)
 //     threeJSQueue.loadCube()
 //   } else if (count % max === 2) {
-//     visualizerRef.appendChild(threeJSQueue.getNext().renderer.domElement)
+//     visualizerElement.appendChild(threeJSQueue.getNext().renderer.domElement)
 //     threeJSQueue.loadText("feel with me")
 //   } else {
 //     console.log("Black Screen")
