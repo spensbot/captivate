@@ -4,15 +4,17 @@ import VisualizerManager from '../visualizer/VisualizerManager'
 import styled from 'styled-components'
 import StatusBar from '../menu/StatusBar'
 import { useRealtimeSelector } from '../redux/realtimeStore'
+import { useTypedSelector } from '../redux/store'
 
 const visualizer = new VisualizerManager()
 
 export default function Visualizer() {
   const ref = useRef(null)
 
-  const state = useRealtimeSelector((state) => state)
+  const state = useTypedSelector((state) => state)
+  const rs = useRealtimeSelector((rs) => rs)
 
-  visualizer.update(state)
+  visualizer.update(rs, state)
 
   function resize() {
     const element = ref.current

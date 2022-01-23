@@ -46,3 +46,12 @@ export function testSpeed(f: () => void, count: number, name: string) {
   const duration = endTime - startTime
   console.log(`${name}: ${duration / count}ms per call`)
 }
+
+export function random(min: number, max?: number) {
+  if (max === undefined) {
+    return min * Math.random()
+  } else {
+    let range = max - min
+    return min + Math.random() * range
+  }
+}
