@@ -5,48 +5,21 @@ import VisualizerBase from './VisualizerBase'
 import { random } from '../../util/util'
 import { isNewPeriod } from '../../engine/TimeState'
 import { Skew } from '../../engine/oscillator'
-import convert from 'color-convert'
+import { Strobe, colorFromHSV } from './animations'
 
 const RADIUS = 2
 const ARRAY = Array(50).fill(0)
 const RATIO_MIN = 0.02
 const RATIO_MAX = 0.1
 
-const STROBE_MS = 50
-
-class StrobeState {
-  // Resets to 1, then is decremented according to strobe speed
-  countdown: number = 1
-  isOn: boolean = true
-
-  //dt: ms
-  //speed: number between 0 and 1
-  update(dt: number, speed: number) {
-    if (speed < 0.1) {
-      this.isOn = true
-      this.countdown = 1
-    } else {
-      this.countdown -= (speed * dt) / STROBE_MS
-      if (this.countdown < 0.1) {
-        this.isOn = !this.isOn
-        this.countdown = 1
-      }
-    }
-    return this.isOn ? 1 : 0
-  }
-}
-
-const initStrobeState = () => ({ countdown: 1, isOn: true })
-
 export default class _ extends VisualizerBase {
   readonly type = 'Spheres'
   private sphere: THREE.Mesh
   private spheres: THREE.Mesh[]
-  private strobe: StrobeState
+  private strobe: Strobe = new Strobe()
 
   constructor() {
     super()
-    this.strobe = new StrobeState()
     const geometry = new THREE.SphereGeometry(RADIUS, 40, 40)
     const material = new THREE.MeshBasicMaterial({
       color: 0x333333,
@@ -72,21 +45,21 @@ export default class _ extends VisualizerBase {
   }
 
   update(rs: RealtimeState, _state: ReduxState): void {
-    const bombacity =
-      _state.scenes.present.byId[_state.scenes.present.active].bombacity
+    const scenes = _state.scenes.present
+    const bombacity = scenes.byId[scenes.active].bombacity
 
     const params = rs.outputParams
-    const color = convert.hsv.hex([
-      params.hue * 360,
-      params.saturation * 50,
+
+    const color = colorFromHSV(
+      params.hue,
+      params.saturation / 2,
       params.brightness *
-        100 *
         bombacity *
-        this.strobe.update(rs.time.dt, rs.outputParams.strobe),
-    ])
+        this.strobe.update(rs.time.dt, rs.outputParams.strobe)
+    )
 
     this.sphere.material = new THREE.MeshBasicMaterial({
-      color: Number('0x' + color),
+      color: color,
     })
 
     if (isNewPeriod(rs.time, 1)) {

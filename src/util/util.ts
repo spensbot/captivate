@@ -50,8 +50,11 @@ export function testSpeed(f: () => void, count: number, name: string) {
 export function random(min: number, max?: number) {
   if (max === undefined) {
     return min * Math.random()
-  } else {
-    let range = max - min
-    return min + Math.random() * range
   }
+  let range = max - min
+  return min + Math.random() * range
+}
+
+export function randomBool() {
+  return Math.random() > 0.5
 }
