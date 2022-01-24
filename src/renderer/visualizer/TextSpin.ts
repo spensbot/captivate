@@ -1,7 +1,5 @@
 import * as THREE from 'three'
-import { RealtimeState } from '../redux/realtimeStore'
-import { ReduxState } from '../redux/store'
-import VisualizerBase from './VisualizerBase'
+import VisualizerBase, { UpdateResource } from './VisualizerBase'
 import { textMesh, textOutlineMesh } from './text'
 import { Spin, Wobble, Strobe, colorFromHSV } from './animations'
 
@@ -40,23 +38,20 @@ export default class TextSpin extends VisualizerBase {
     this.scene.add(this.outline)
   }
 
-  update(_rt: RealtimeState, _state: ReduxState): void {
-    const dt = _rt.time.dt
-    const params = _rt.outputParams
-    const scenes = _state.scenes.present
-    const bombacity = scenes.byId[scenes.active].bombacity
-    this.text.rotation.y = this.spin.update(dt, bombacity)
+  update({ time, params, scene }: UpdateResource): void {
+    const bombacity = scene.bombacity
+    this.text.rotation.y = this.spin.update(time.dt, bombacity)
     const color = colorFromHSV(
       params.hue,
       params.saturation * 1,
       params.brightness *
         (bombacity / 2 + 0.5) *
-        this.strobe.update(dt, _rt.outputParams.strobe)
+        this.strobe.update(time.dt, params.strobe)
     )
     this.text.material = new THREE.MeshBasicMaterial({
       color: color,
       side: THREE.DoubleSide,
     })
-    this.outline.rotation.y = this.wobble.update(dt, bombacity)
+    this.outline.rotation.y = this.wobble.update(time.dt, bombacity)
   }
 }

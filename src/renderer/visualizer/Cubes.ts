@@ -1,7 +1,5 @@
 import * as THREE from 'three'
-import { RealtimeState } from '../redux/realtimeStore'
-import { ReduxState } from '../redux/store'
-import VisualizerBase from './VisualizerBase'
+import VisualizerBase, { UpdateResource } from './VisualizerBase'
 import { random } from '../../util/util'
 import { Vector3 } from 'three'
 import { Spin, Strobe, colorFromHSV } from './animations'
@@ -20,12 +18,11 @@ class RandomCube {
     scene.add(this.mesh)
   }
 
-  update(rt: RealtimeState, _state: ReduxState) {
-    const scenes = _state.scenes.present
-    const bombacity = scenes.byId[scenes.active].bombacity
+  update({ scene, time }: UpdateResource) {
+    const bombacity = scene.bombacity
     this.mesh.rotateOnAxis(
       this.axis,
-      (rt.time.dt * Skew(bombacity, 0.6) + 0.5) / 200
+      (time.dt * Skew(bombacity, 0.6) + 0.5) / 200
     )
   }
 }
@@ -55,20 +52,13 @@ export default class Cubes extends VisualizerBase {
     }
   }
 
-  update(rt: RealtimeState, state: ReduxState): void {
-    this.cubes.forEach((cube) => cube.update(rt, state))
-    this.light.position.x = rt.outputParams.x * 10 - 5
-    this.light.position.y = rt.outputParams.y * 8 - 4
-    this.light.intensity = this.strobe.update(
-      rt.time.dt,
-      rt.outputParams.strobe
-    )
+  update(res: UpdateResource): void {
+    this.cubes.forEach((cube) => cube.update(res))
+    this.light.position.x = res.params.x * 10 - 5
+    this.light.position.y = res.params.y * 8 - 4
+    this.light.intensity = this.strobe.update(res.time.dt, res.params.strobe)
     this.light.color = new THREE.Color(
-      colorFromHSV(
-        rt.outputParams.hue,
-        rt.outputParams.saturation,
-        rt.outputParams.brightness
-      )
+      colorFromHSV(res.params.hue, res.params.saturation, res.params.brightness)
     )
   }
 }

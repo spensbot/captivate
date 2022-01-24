@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react'
-import FPS from '../visualizer_old/FPS'
+import FPS from '../visualizer/FPS'
 import VisualizerManager from '../visualizer/VisualizerManager'
 import styled from 'styled-components'
 import StatusBar from '../menu/StatusBar'

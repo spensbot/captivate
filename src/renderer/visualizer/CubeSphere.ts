@@ -1,7 +1,5 @@
 import * as THREE from 'three'
-import { RealtimeState } from '../redux/realtimeStore'
-import { ReduxState } from '../redux/store'
-import VisualizerBase from './VisualizerBase'
+import VisualizerBase, { UpdateResource } from './VisualizerBase'
 import { random } from '../../util/util'
 import { Vector3 } from 'three'
 
@@ -25,8 +23,8 @@ class RandomCube {
     scene.add(this.mesh)
   }
 
-  update(rt: RealtimeState, _state: ReduxState) {
-    this.mesh.rotateOnAxis(this.axis, rt.time.dt / 10000)
+  update({ time }: UpdateResource) {
+    this.mesh.rotateOnAxis(this.axis, time.dt / 10000)
   }
 }
 
@@ -39,7 +37,7 @@ export default class CubeSphere extends VisualizerBase {
     this.cubes = ARRAY.map((_) => new RandomCube(this.scene))
   }
 
-  update(rt: RealtimeState, state: ReduxState): void {
-    this.cubes.forEach((cube) => cube.update(rt, state))
+  update(res: UpdateResource): void {
+    this.cubes.forEach((cube) => cube.update(res))
   }
 }

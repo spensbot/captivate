@@ -23,7 +23,13 @@ export default class VisualizerManager {
   }
 
   update(rt: RealtimeState, state: ReduxState) {
-    this.active.update(rt, state)
+    const scenes = state.scenes.present
+    this.active.update({
+      params: rt.outputParams,
+      time: rt.time,
+      scene: scenes.byId[scenes.active],
+      master: scenes.master,
+    })
     this.renderer.render(...this.active.getRenderInputs())
   }
 

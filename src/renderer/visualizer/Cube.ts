@@ -1,7 +1,5 @@
 import * as THREE from 'three'
-import { RealtimeState } from '../redux/realtimeStore'
-import { ReduxState } from '../redux/store'
-import VisualizerBase from './VisualizerBase'
+import VisualizerBase, { UpdateResource } from './VisualizerBase'
 
 export default class Cube extends VisualizerBase {
   readonly type = 'Cube'
@@ -15,8 +13,8 @@ export default class Cube extends VisualizerBase {
     this.scene.add(this.cube)
   }
 
-  update(rt: RealtimeState, _state: ReduxState): void {
-    this.cube.rotation.x = rt.time.beats
-    this.cube.rotation.y = rt.time.beats
+  update({ time }: UpdateResource): void {
+    this.cube.rotation.x = time.beats
+    this.cube.rotation.y = time.beats
   }
 }

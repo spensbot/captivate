@@ -1,7 +1,5 @@
 import * as THREE from 'three'
-import { RealtimeState } from '../redux/realtimeStore'
-import { ReduxState } from '../redux/store'
-import VisualizerBase from './VisualizerBase'
+import VisualizerBase, { UpdateResource } from './VisualizerBase'
 import { random } from '../../util/util'
 import { isNewPeriod } from '../../engine/TimeState'
 import { Skew } from '../../engine/oscillator'
@@ -44,25 +42,20 @@ export default class _ extends VisualizerBase {
     })
   }
 
-  update(rs: RealtimeState, _state: ReduxState): void {
-    const scenes = _state.scenes.present
-    const bombacity = scenes.byId[scenes.active].bombacity
-
-    const params = rs.outputParams
+  update({ params, scene, time }: UpdateResource): void {
+    const bombacity = scene.bombacity
 
     const color = colorFromHSV(
       params.hue,
       params.saturation / 2,
-      params.brightness *
-        bombacity *
-        this.strobe.update(rs.time.dt, rs.outputParams.strobe)
+      params.brightness * bombacity * this.strobe.update(time.dt, params.strobe)
     )
 
     this.sphere.material = new THREE.MeshBasicMaterial({
       color: color,
     })
 
-    if (isNewPeriod(rs.time, 1)) {
+    if (isNewPeriod(time, 1)) {
       this.spheres.forEach((sphere) => {
         sphere.material = new THREE.MeshBasicMaterial({
           color: 0xffffff,
@@ -70,7 +63,7 @@ export default class _ extends VisualizerBase {
       })
     }
 
-    const dr = (rs.time.dt / 500) * (Skew(bombacity, 0.6) + 0.01)
+    const dr = (time.dt / 500) * (Skew(bombacity, 0.6) + 0.01)
     this.spheres.forEach((sphere) => {
       sphere.rotation.x += dr
       sphere.rotation.y += dr
