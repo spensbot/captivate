@@ -1,12 +1,12 @@
 import * as THREE from 'three'
-import { Font, FontType, fonts } from './fonts'
+import { FontType } from './fonts'
 import VisualizerBase, { UpdateResource } from './VisualizerBase'
 import shaders from './shaders'
 import { particles } from './particles'
-import { textOutlineShapesAndHoles } from './text'
+import { textOutlineShapesAndHoles, textBounds } from './text'
 import { colorFromHSV, distance } from './animations'
 import { isNewPeriod } from '../../engine/TimeState'
-import { random, randomElement } from 'util/util'
+import { random } from 'util/util'
 import { gravity, ParticleState, Physics } from './particlePhysics'
 
 const attrib = {
@@ -16,10 +16,10 @@ const attrib = {
 }
 
 interface Config {
-  text: string
+  text: string[]
   textSize: number
   fontType: FontType
-  particlesPerLetter: number
+  particleCount: number
   particleSize: number
   particleColor: number
   physics: Physics
@@ -34,6 +34,7 @@ export default class TextParticles extends VisualizerBase {
   config: Config
   planeArea: THREE.Mesh
   planeGeometry: THREE.PlaneGeometry
+  activeTextIndex = 0
 
   constructor(config: Config) {
     super()
@@ -62,13 +63,22 @@ export default class TextParticles extends VisualizerBase {
       colorFromHSV(params.hue, params.saturation, params.brightness)
     )
 
-    if (isNewPeriod(time, 16)) {
-      console.log('NEW PERIOD')
-      this.particleStates.forEach((pState) => {
-        pState.x = pState.ix
-        pState.y = pState.iy
-        pState.vx = this.throw()
-        pState.vy = this.throw()
+    if (isNewPeriod(time, 8)) {
+      const { text, textSize, fontType, particleCount } = this.config
+      this.activeTextIndex += 1
+      if (this.activeTextIndex >= text.length) this.activeTextIndex = 0
+      const points = getShapePoints(
+        text[this.activeTextIndex],
+        textSize,
+        particleCount,
+        fontType
+      )
+      console.log('point.length', points.length)
+      this.particleStates.forEach((pState, i) => {
+        pState.ix = points[i]?.x ?? 0
+        pState.iy = points[i]?.y ?? 0
+        // pState.vx = this.throw()
+        // pState.vy = this.throw()
       })
     }
 
@@ -78,8 +88,7 @@ export default class TextParticles extends VisualizerBase {
       const { x, y, ix, iy, vx, vy } = gravity(
         dt_seconds,
         pState,
-        this.config.physics,
-        i === 0
+        this.config.physics
       )
       pState.x = x
       pState.y = y
@@ -98,47 +107,27 @@ export default class TextParticles extends VisualizerBase {
   }
 
   createParticles() {
-    const { text, textSize, fontType, particlesPerLetter, particleSize } =
+    const { text, textSize, fontType, particleCount, particleSize } =
       this.config
-    let { shapes, holes } = textOutlineShapesAndHoles(text, textSize, fontType)
+    const points = getShapePoints(text[0], textSize, particleCount, fontType)
 
-    // Prep shader attributes
-    let points: THREE.Vector3[] = []
     let colors: number[] = []
     let sizes: number[] = []
 
-    for (const shape of shapes) {
-      const particleCount = shape.getLength() * particlesPerLetter
-      let shapePoints = shape.getSpacedPoints(particleCount)
-      shapePoints.forEach(({ x, y }) => {
-        const point = new THREE.Vector3(x, y, 0)
-        points.push(point)
-        this.particleStates.push({
-          x: x,
-          y: y,
-          ix: x,
-          iy: y,
-          vx: this.throw(),
-          vy: this.throw(),
-        })
-        colors.push(1, 1, 1)
-        sizes.push(particleSize)
+    points.forEach(({ x, y }) => {
+      colors.push(1, 1, 1)
+      sizes.push(particleSize)
+      this.particleStates.push({
+        x: x,
+        y: y,
+        ix: x,
+        iy: y,
+        vx: 0,
+        vy: 0,
       })
-    }
-
-    const geo = new THREE.ShapeGeometry(shapes)
-    geo.computeBoundingBox()
-    geo.center()
-    const bb = geo.boundingBox
-    let x_offset = 0
-    let y_offset = 0
-    if (bb) {
-      x_offset = -(bb.max.x - bb.min.x) / 2
-      y_offset = (bb.max.y - bb.min.y) / 4
-    }
+    })
 
     let geoParticles = new THREE.BufferGeometry().setFromPoints(points)
-    geoParticles.translate(x_offset, y_offset, 0)
 
     geoParticles.setAttribute(
       attrib.color,
@@ -173,4 +162,51 @@ export default class TextParticles extends VisualizerBase {
   // createRenderer() {
   //   this.renderer.outputEncoding = THREE.sRGBEncoding
   // }
+}
+
+function particlesPerPath(
+  particleCount: number,
+  paths: Array<THREE.Shape | THREE.Path>
+) {
+  const totalLength = paths.reduce((accum, path) => accum + path.getLength(), 0)
+
+  let usedParticles = 0
+  const ret: number[] = []
+  for (let i = 0; i < paths.length - 1; i++) {
+    const path = paths[i]
+    const particles = (path.getLength() / totalLength) * particleCount
+    ret.push(particles)
+    usedParticles += particles
+  }
+  const remaining = particleCount - usedParticles
+  ret.push(remaining)
+  return ret
+}
+
+function getShapePoints(
+  text: string,
+  textSize: number,
+  pointCount: number,
+  fontType: FontType
+) {
+  let { shapes } = textOutlineShapesAndHoles(text, textSize, fontType)
+
+  let points: THREE.Vector3[] = []
+
+  const { width, height } = textBounds(text, textSize, fontType)
+  const xOffset = -width / 2
+  const yOffset = height / 2
+
+  const particleCounts = particlesPerPath(pointCount, shapes)
+
+  shapes.forEach((shape, i) => {
+    let shapePoints = shape.getSpacedPoints(particleCounts[i])
+    shapePoints.forEach(({ x, y }) => {
+      x += xOffset
+      y += yOffset
+      const point = new THREE.Vector3(x, y, 0)
+      points.push(point)
+    })
+  })
+  return points
 }

@@ -43,15 +43,14 @@ export type Physics = Gravity
 export function gravity(
   dt: number,
   { x, y, ix, iy, vx, vy }: ParticleState,
-  { gravity, drag }: Gravity,
-  print: boolean
+  { gravity, drag }: Gravity
 ): ParticleState {
   const { dx, dy, distance, nx, ny } = positionInfo(x, y, ix, iy)
   const { speed, nvx, nvy } = velocityInfo(vx, vy)
 
   //acceleration
-  const aGrav = gravity / ((distance ^ 2) + 0.01)
-  const aDrag = drag * (speed ^ 2) // (distance + 0.7)
+  const aGrav = gravity // ((distance ^ 2) + 0.01)
+  const aDrag = (drag * (speed ^ 2)) / (distance + 0.6)
   let ax = 0
   let ay = 0
   ax += nx * aGrav
@@ -59,16 +58,16 @@ export function gravity(
   ax -= nvx * aDrag
   ay -= nvy * aDrag
 
-  if (print) {
-    console.log(
-      `x: ${x.toFixed(3)}  vx: ${vx.toFixed(5)}  ax: ${ax.toFixed(7)}`
-    )
-    console.log(
-      ` ==> x: ${(x + vx * dt).toFixed(5)}  vx: ${(vx + ax * dt).toFixed(7)}`
-    )
-    // console.log(`pos: (${x}, ${y}) veloc: (${vx}, ${vy}) accel: (${ax}, ${ay})`)
-    // console.log(` ==> pos: (${x + vx * dt}, ${y + vy * dt}) veloc: (${vx}, ${vy}) accel: (${ax}, ${ay})`)
-  }
+  // if (print) {
+  // console.log(
+  //   `x: ${x.toFixed(3)}  vx: ${vx.toFixed(5)}  ax: ${ax.toFixed(7)}`
+  // )
+  // console.log(
+  //   ` ==> x: ${(x + vx * dt).toFixed(5)}  vx: ${(vx + ax * dt).toFixed(7)}`
+  // )
+  // console.log(`pos: (${x}, ${y}) veloc: (${vx}, ${vy}) accel: (${ax}, ${ay})`)
+  // console.log(` ==> pos: (${x + vx * dt}, ${y + vy * dt}) veloc: (${vx}, ${vy}) accel: (${ax}, ${ay})`)
+  // }
 
   return {
     x: x + vx * dt,

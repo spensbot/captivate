@@ -19,16 +19,16 @@ export default class VisualizerManager {
     this.renderer = new THREE.WebGLRenderer()
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     this.active = new TextParticles({
-      text: 'FEEL',
+      text: ['FEEL', 'WITH', 'ME', 'FEEL\nWITH\nME'],
       fontType: 'zsd',
       textSize: 2,
       particleColor: 0xffffff,
       particleSize: 0.1,
-      particlesPerLetter: 200,
+      particleCount: 10000,
       physics: {
         type: 'gravity',
-        gravity: 1,
-        drag: 0.1,
+        gravity: 15,
+        drag: 3,
       },
       throwVelocity: 0.5,
     })

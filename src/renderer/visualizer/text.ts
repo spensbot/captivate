@@ -24,6 +24,24 @@ export function textMesh(
   }
 }
 
+export function textBounds(text: string, size: number, fontType: FontType) {
+  let shapes = fonts[fontType].generateShapes(text, size)
+  let geometry = new THREE.ShapeGeometry(shapes)
+  geometry.computeBoundingBox()
+  const bb = geometry.boundingBox
+  if (bb) {
+    return {
+      width: bb.max.x - bb.min.x,
+      height: (bb.max.y - bb.min.y) / 2,
+    }
+  } else {
+    return {
+      width: 0,
+      height: 0,
+    }
+  }
+}
+
 //Shapes are the font shapes. Paths are the holes (if any)
 export function textOutlineShapesAndHoles(
   text: string,
