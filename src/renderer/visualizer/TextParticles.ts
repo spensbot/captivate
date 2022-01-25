@@ -4,6 +4,9 @@ import VisualizerBase, { UpdateResource } from './VisualizerBase'
 import shaders from './shaders'
 import { particles } from './particles'
 import { textOutlineShapesAndHoles } from './text'
+import { colorFromHSV, distance } from './animations'
+import { isNewPeriod } from '../../engine/TimeState'
+import { random } from 'util/util'
 
 const attrib = {
   position: 'position',
@@ -50,12 +53,42 @@ export default class TextParticles extends VisualizerBase {
     this.createParticles()
   }
 
-  update({ time }: UpdateResource): void {
-    // console.log(this.particles.geometry.attributes)
-    // console.log(this.particles.geometry.attributes.position)
-    // console.log(this.particles.geometry.attributes.customColor)
-    // console.log(this.particles.geometry.attributes.size)
-    // const pos = this.particles.geometry.attributes.position
+  update({ time, params }: UpdateResource): void {
+    const pos = this.particles.geometry.attributes.position
+    const color = this.particles.geometry.attributes.customColor
+    const size = this.particles.geometry.attributes.size
+    if (pos === undefined) return
+
+    const d = time.beats / 2.0
+
+    const c = d % 1.0
+    console.log(c)
+    const col = new THREE.Color(
+      colorFromHSV(params.hue, params.saturation, params.brightness)
+    )
+
+    let ease = time.dt / 5000
+
+    this.startPoints.forEach((init, i) => {
+      const x = pos.getX(i)
+      const y = pos.getY(i)
+      if (isNewPeriod(time, 1)) {
+        pos.setXY(i, init.x + random(-0.2, 0.2), init.y + random(-0.2, 0.2))
+      } else {
+        let dx = init.x - x
+        let dy = init.y - y
+        dx = dx < ease ? dx : ease
+        dy = dy < ease ? dy : ease
+        pos.setXY(i, x + dx, y + dy)
+      }
+      const delta = distance(init.x, init.y, x, y)
+      size.setX(i, delta + this.config.particleSize)
+
+      color.setXYZ(i, col.r, col.g, col.b)
+    })
+    pos.needsUpdate = true
+    color.needsUpdate = true
+    size.needsUpdate = true
     // const startPos =
     // if (pos === undefined) return
     // for (let i = 0; i < pos.count; i++) {
@@ -79,18 +112,29 @@ export default class TextParticles extends VisualizerBase {
     let sizes: number[] = []
 
     for (const shape of shapes) {
-      let shapePoints = shape.getSpacedPoints(particlesPerLetter)
+      const particleCount = shape.getLength() * particlesPerLetter
+      let shapePoints = shape.getSpacedPoints(particleCount)
       shapePoints.forEach((shapePoint) => {
         const point = new THREE.Vector3(shapePoint.x, shapePoint.y, 0)
         points.push(point)
+        this.startPoints.push(point.clone())
         colors.push(this.colorChange.r, this.colorChange.g, this.colorChange.b)
         sizes.push(particleSize)
       })
     }
 
+    const geo = new THREE.ShapeGeometry(shapes)
+    geo.computeBoundingBox()
+    const bb = geo.boundingBox
+    let x_offset = 0
+    let y_offset = 0
+    if (bb) {
+      x_offset = -(bb.max.x - bb.min.x) / 2
+      y_offset = (bb.max.y - bb.min.y) / 4
+    }
+
     let geoParticles = new THREE.BufferGeometry().setFromPoints(points)
-    // TODO
-    // geoParticles.translate(xMid, yMid, 0)
+    geoParticles.translate(x_offset, y_offset, 0)
 
     geoParticles.setAttribute(
       attrib.color,
@@ -116,9 +160,6 @@ export default class TextParticles extends VisualizerBase {
 
     this.particles = new THREE.Points(geoParticles, material)
     this.scene.add(this.particles)
-
-    this.geometryCopy = new THREE.BufferGeometry()
-    this.geometryCopy.copy(this.particles.geometry)
   }
 
   // createRenderer() {

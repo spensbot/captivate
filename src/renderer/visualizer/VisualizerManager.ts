@@ -23,7 +23,7 @@ export default class VisualizerManager {
       fontType: 'zsd',
       textSize: 1,
       particleColor: 0xffffff,
-      particleSize: 0.1,
+      particleSize: 0.07,
       particlesPerLetter: 100,
     })
   }
