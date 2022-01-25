@@ -2,11 +2,14 @@ import * as THREE from 'three'
 import { RealtimeState } from '../redux/realtimeStore'
 import { ReduxState } from '../redux/store'
 import VisualizerBase from './VisualizerBase'
-import Cube from './Cube'
 import Spheres from './Spheres'
-import TextRandom from './TextSpin'
+import TextSpin from './TextSpin'
 import Cubes from './Cubes'
 import CubeSphere from './CubeSphere'
+import TextParticles from './TextParticles'
+
+type Visualizer = Spheres | TextSpin | Cubes | CubeSphere | TextParticles
+type VisualizerType = Visualizer['type']
 
 export default class VisualizerManager {
   private renderer: THREE.WebGLRenderer // The renderer is the only THREE class that actually takes a while to instantiate (>3ms)
@@ -15,7 +18,14 @@ export default class VisualizerManager {
   constructor() {
     this.renderer = new THREE.WebGLRenderer()
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-    this.active = new Cubes()
+    this.active = new TextParticles({
+      text: 'FEEL\nWITH\nME',
+      fontType: 'zsd',
+      textSize: 1,
+      particleColor: 0xffffff,
+      particleSize: 0.1,
+      particlesPerLetter: 100,
+    })
   }
 
   getElement() {

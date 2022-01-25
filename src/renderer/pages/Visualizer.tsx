@@ -48,7 +48,7 @@ export default function Visualizer() {
 
 const Root = styled.div`
   width: 100%;
-  height: 100%;
+  height: 100vh;
   display: flex;
   flex-direction: column;
 `
@@ -57,5 +57,6 @@ const Window = styled.div`
   width: 100%;
   position: relative;
   background-color: #000;
-  flex: 1 0 0;
+  flex: 1 1 0;
+  overflow: auto;
 `

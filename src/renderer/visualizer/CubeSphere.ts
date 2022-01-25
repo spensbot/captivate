@@ -29,7 +29,7 @@ class RandomCube {
 }
 
 export default class CubeSphere extends VisualizerBase {
-  readonly type = 'Cubes'
+  readonly type = 'CubeSphere'
   private cubes: RandomCube[]
 
   constructor() {

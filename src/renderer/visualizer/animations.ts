@@ -11,13 +11,9 @@ export function distance(x1: number, y1: number, x2: number, y2: number) {
 }
 
 export function visibleSizeAtZ(depth: number, camera: PerspectiveCamera) {
-  const cameraOffset = camera.position.z
-  if (depth < cameraOffset) depth -= cameraOffset
-  else depth += cameraOffset
-
+  const distanceFromCamera = camera.position.z - depth
   const vFOV = (camera.fov * Math.PI) / 180
-
-  const height = 2 * Math.tan(vFOV / 2) * Math.abs(depth)
+  const height = 2 * Math.tan(vFOV / 2) * distanceFromCamera
 
   return {
     width: height * camera.aspect,

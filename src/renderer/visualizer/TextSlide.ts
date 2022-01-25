@@ -7,7 +7,7 @@ const TEXT = 'FEEL WITH ME'
 const SIZE = 1
 
 export default class TextSlide extends VisualizerBase {
-  readonly type = 'Text'
+  readonly type = 'TextSlide'
   particle: THREE.Texture | null = null
   text: THREE.Mesh
   outline: THREE.Group

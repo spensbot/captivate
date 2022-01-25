@@ -11,7 +11,7 @@ void main() {
   gl_Position = projectionMatrix * mvPosition;
 }
 `,
-  particleShader: `
+  particleFragment: `
 uniform vec3 color;
 uniform sampler2D pointTexture;
 

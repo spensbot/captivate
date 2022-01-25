@@ -21,8 +21,8 @@ function initRandomText() {
   }
 }
 
-export default class TextSpin extends VisualizerBase {
-  readonly type = 'Text'
+export default class TextRandom extends VisualizerBase {
+  readonly type = 'TextRandom'
   particle: THREE.Texture | null = null
   text: THREE.Mesh
   outline: THREE.Group

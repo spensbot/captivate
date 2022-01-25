@@ -1,6 +1,6 @@
 import * as THREE from 'three'
-import { fonts, fontTypes, Font, FontType } from './fonts'
-import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader'
+import { fonts, FontType } from './fonts'
+import { SVGLoader, StrokeStyle } from 'three/examples/jsm/loaders/SVGLoader'
 
 // Creates a centered Mesh of the given text
 export function textMesh(
@@ -24,13 +24,12 @@ export function textMesh(
   }
 }
 
-export function textOutlineMesh(
+//Shapes are the font shapes. Paths are the holes (if any)
+export function textOutlineShapesAndHoles(
   text: string,
   size: number,
-  fontType: FontType,
-  material: THREE.Material
+  fontType: FontType
 ) {
-  material.side = THREE.DoubleSide
   const holes = []
   const shapes = fonts[fontType].generateShapes(text, size)
   for (const shape of shapes) {
@@ -41,20 +40,47 @@ export function textOutlineMesh(
     }
   }
   console.log(`shapes.length: ${shapes.length} | holes.length:${holes.length}`)
-  //@ts-ignore: Three.js examples recommend this: https://github.com/mrdoob/three.js/blob/master/examples/webgl_geometry_text_stroke.html
-  shapes.push.apply(shapes, holes)
+  // const shapesAndPaths: Array<THREE.Shape | THREE.Path> = shapes
+  // shapesAndPaths.push.apply(shapesAndPaths, holes)
+  return {
+    shapes: shapes,
+    holes: holes,
+  }
+}
+
+export function textOutlineGroup(
+  text: string,
+  size: number,
+  fontType: FontType,
+  material: THREE.Material
+) {
+  const { shapes, holes } = textOutlineShapesAndHoles(text, size, fontType)
+  material.side = THREE.DoubleSide
   const style = SVGLoader.getStrokeStyle(
     0.02,
     new THREE.Color(0xff00ff).getStyle()
   )
   const strokeText = new THREE.Group()
   for (const shape of shapes) {
-    const points = shape.getPoints().map((p) => new THREE.Vector3(p.x, p.y, 0))
-    const geometry = SVGLoader.pointsToStroke(points, style)
-    strokeText.add(new THREE.Mesh(geometry, material))
+    strokeText.add(shapeOrHoleMesh(shape, style, material))
+  }
+  for (const hole of holes) {
+    strokeText.add(shapeOrHoleMesh(hole, style, material))
   }
   return {
     material: material,
     group: strokeText,
   }
+}
+
+function shapeOrHoleMesh(
+  shapeOrHole: THREE.Shape | THREE.Path,
+  style: StrokeStyle,
+  material: THREE.Material
+) {
+  const points = shapeOrHole
+    .getPoints()
+    .map((p) => new THREE.Vector3(p.x, p.y, 0))
+  const geometry = SVGLoader.pointsToStroke(points, style)
+  return new THREE.Mesh(geometry, material)
 }

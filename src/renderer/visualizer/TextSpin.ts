@@ -1,13 +1,13 @@
 import * as THREE from 'three'
 import VisualizerBase, { UpdateResource } from './VisualizerBase'
-import { textMesh, textOutlineMesh } from './text'
+import { textMesh, textOutlineGroup } from './text'
 import { Spin, Wobble, Strobe, colorFromHSV } from './animations'
 
 const TEXT = 'FEEL\nWITH\nME'
 const SIZE = 1
 
 export default class TextSpin extends VisualizerBase {
-  readonly type = 'Text'
+  readonly type = 'TextSpin'
   particle: THREE.Texture | null = null
   text: THREE.Mesh
   outline: THREE.Group
@@ -27,7 +27,7 @@ export default class TextSpin extends VisualizerBase {
       new THREE.MeshBasicMaterial()
     )
     this.text = text.mesh
-    const outline = textOutlineMesh(
+    const outline = textOutlineGroup(
       TEXT,
       SIZE,
       'helvetiker_bold',
