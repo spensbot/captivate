@@ -4,31 +4,19 @@ import ParamsControl from '../controls/ParamsControl'
 import Modulators from '../scenes/Modulators'
 import SceneSelection from '../scenes/SceneSelection'
 import SplitPane from '../base/SplitPane'
-import VideoList from '../visualizer_old/VideoList'
-import Groups from '../scenes/Groups'
 import styled from 'styled-components'
 
 export default function Scenes() {
-  const styles: { [key: string]: React.CSSProperties } = {
-    root: {
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100%',
-    },
-    splitContainer: {
-      flex: '1 1 auto',
-      overflow: 'auto',
-    },
-    splitPane: {
-      height: '100%',
-    },
+  const splitPaneStyle: React.CSSProperties = {
+    flex: '1 1 auto',
+    overflow: 'auto',
   }
 
   return (
     <Root>
       <StatusBar />
       <SplitPane
-        style={styles.splitContainer}
+        style={splitPaneStyle}
         type="vertical"
         initialSplit={0.3}
         rem={0.5}
@@ -49,9 +37,6 @@ export default function Scenes() {
             <Modulators />
             <Sp />
             <ParamsControl />
-            {/* <VideoList /> */}
-
-            {/* <Groups /> */}
           </div>
         </Pane>
       </SplitPane>

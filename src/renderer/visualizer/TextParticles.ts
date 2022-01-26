@@ -59,9 +59,7 @@ export default class TextParticles extends VisualizerBase {
     const size = this.particles.geometry.attributes.size
     if (pos === undefined) return
 
-    const col = new THREE.Color(
-      colorFromHSV(params.hue, params.saturation, params.brightness)
-    )
+    const col = new THREE.Color(colorFromHSV(params.hue, 1, params.brightness))
 
     if (isNewPeriod(time, 8)) {
       const { text, textSize, fontType, particleCount } = this.config

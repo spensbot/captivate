@@ -5,6 +5,8 @@ import styled from 'styled-components'
 import StatusBar from '../menu/StatusBar'
 import { useRealtimeSelector } from '../redux/realtimeStore'
 import { useTypedSelector } from '../redux/store'
+import SplitPane from '../base/SplitPane'
+import VisualizerSceneSelection from '../visualizer/VisualizerSceneSelection'
 
 const visualizer = new VisualizerManager()
 
@@ -36,12 +38,31 @@ export default function Visualizer() {
     }
   }, [])
 
+  const splitPaneStyle: React.CSSProperties = {
+    flex: '1 1 auto',
+    overflow: 'auto',
+  }
+
   return (
     <Root>
       <StatusBar />
-      <Window ref={ref}>
-        <FPS />
-      </Window>
+      <SplitPane
+        style={splitPaneStyle}
+        type="vertical"
+        initialSplit={0.3}
+        rem={0.5}
+        min={0.2}
+        max={0.5}
+      >
+        <Pane>
+          <VisualizerSceneSelection />
+        </Pane>
+        <Pane>
+          <Window ref={ref}>
+            <FPS />
+          </Window>
+        </Pane>
+      </SplitPane>
     </Root>
   )
 }
@@ -59,4 +80,8 @@ const Window = styled.div`
   background-color: #000;
   flex: 1 1 0;
   overflow: auto;
+`
+
+const Pane = styled.div`
+  height: 100%;
 `

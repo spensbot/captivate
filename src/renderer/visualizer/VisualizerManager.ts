@@ -18,10 +18,21 @@ export default class VisualizerManager {
   constructor() {
     this.renderer = new THREE.WebGLRenderer()
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    this.renderer.outputEncoding = THREE.sRGBEncoding
     this.active = new TextParticles({
-      text: ['FEEL', 'WITH', 'ME', 'FEEL\nWITH\nME'],
+      text: [
+        'CAPTIVATE',
+        'YOUR',
+        'AUDIENCE',
+        'BE\nHERE\nNOW',
+        'FEEL',
+        'WITH',
+        'ME',
+        'FEEL\nWITH\nME',
+        "IT's\nOK",
+      ], //['FEEL', 'WITH', 'ME', 'FEEL\nWITH\nME'],
       fontType: 'zsd',
-      textSize: 2,
+      textSize: 1.5,
       particleColor: 0xffffff,
       particleSize: 0.1,
       particleCount: 10000,

@@ -15,7 +15,6 @@ export interface AutoScene_t {
 }
 
 type SceneID = string
-
 export interface SceneState {
   ids: SceneID[]
   byId: { [key: SceneID]: Scene_t }
