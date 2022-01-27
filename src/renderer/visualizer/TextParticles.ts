@@ -53,7 +53,7 @@ export default class TextParticles extends VisualizerBase {
     this.createParticles()
   }
 
-  update({ time, params }: UpdateResource): void {
+  update(dt: number, { time, params }: UpdateResource): void {
     const pos = this.particles.geometry.attributes.position
     const color = this.particles.geometry.attributes.customColor
     const size = this.particles.geometry.attributes.size
@@ -80,7 +80,7 @@ export default class TextParticles extends VisualizerBase {
       })
     }
 
-    const dt_seconds = time.dt / 1000
+    const dt_seconds = dt / 1000
 
     this.particleStates.forEach((pState, i) => {
       const { x, y, ix, iy, vx, vy } = gravity(

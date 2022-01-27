@@ -18,12 +18,9 @@ class RandomCube {
     scene.add(this.mesh)
   }
 
-  update({ scene, time }: UpdateResource) {
+  update(dt: number, { scene }: UpdateResource) {
     const bombacity = scene.bombacity
-    this.mesh.rotateOnAxis(
-      this.axis,
-      (time.dt * Skew(bombacity, 0.6) + 0.5) / 200
-    )
+    this.mesh.rotateOnAxis(this.axis, (dt * Skew(bombacity, 0.6) + 0.5) / 200)
   }
 }
 
@@ -52,11 +49,11 @@ export default class Cubes extends VisualizerBase {
     }
   }
 
-  update(res: UpdateResource): void {
-    this.cubes.forEach((cube) => cube.update(res))
+  update(dt: number, res: UpdateResource): void {
+    this.cubes.forEach((cube) => cube.update(dt, res))
     this.light.position.x = res.params.x * 10 - 5
     this.light.position.y = res.params.y * 8 - 4
-    this.light.intensity = this.strobe.update(res.time.dt, res.params.strobe)
+    this.light.intensity = this.strobe.update(dt, res.params.strobe)
     this.light.color = new THREE.Color(
       colorFromHSV(res.params.hue, res.params.saturation, res.params.brightness)
     )

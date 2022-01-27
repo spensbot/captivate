@@ -1,6 +1,6 @@
 import path from 'path'
 import { app, BrowserWindow } from 'electron'
-import html from '../../display/html'
+import { resolveHtmlPath } from './util'
 
 export interface VisualizerContainer {
   visualizer: BrowserWindow | null
@@ -30,7 +30,8 @@ export default async (visualizerContainer: VisualizerContainer) => {
     },
   })
 
-  visualizerContainer.visualizer.loadURL(`data:text/html;charset=utf-8,${html}`)
+  visualizerContainer.visualizer.loadURL(resolveHtmlPath('index.html'))
+  // visualizerContainer.visualizer.loadURL(`data:text/html;charset=utf-8,${html}`)
 
   visualizerContainer.visualizer.on('ready-to-show', () => {
     if (!visualizerContainer.visualizer) {

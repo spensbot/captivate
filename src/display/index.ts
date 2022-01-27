@@ -5,6 +5,7 @@ import { ipcSetup } from './ipcHandler'
 
 const vm = new VisualizerManager()
 let visualizerState: VisualizerState | null = null
+let lastUpdateTime: number | null = null
 
 ipcSetup({
   onNewVisualizerState: (newState) => {
@@ -20,7 +21,13 @@ window.onresize = () => {
 
 function animate() {
   if (visualizerState) {
-    vm.update(visualizerState)
+    const now = Date.now()
+    let dt = 0
+    if (lastUpdateTime !== null) {
+      dt = now - lastUpdateTime
+    }
+    lastUpdateTime = now
+    vm.update(dt, visualizerState)
   }
   requestAnimationFrame(animate)
 }

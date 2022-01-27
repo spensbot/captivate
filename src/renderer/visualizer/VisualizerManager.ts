@@ -53,9 +53,9 @@ export default class VisualizerManager {
     return this.renderer.domElement
   }
 
-  update(visualizerState: VisualizerState) {
+  update(dt: number, visualizerState: VisualizerState) {
     const control = visualizerState.state.control
-    this.active.update({
+    this.active.update(dt, {
       params: visualizerState.rt.outputParams,
       time: visualizerState.rt.time,
       scene: control.light.byId[control.light.active],

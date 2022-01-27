@@ -10,6 +10,7 @@ import SceneSelection from '../scenes/SceneSelection'
 import OpenVisualizerButton from 'renderer/visualizer/OpenVisualizerButton'
 
 const visualizer = new VisualizerManager()
+let lastUpdateTime: number | null = null
 
 export default function Visualizer() {
   const ref = useRef(null)
@@ -17,7 +18,15 @@ export default function Visualizer() {
   const state = useTypedSelector((state) => state)
   const rs = useRealtimeSelector((rs) => rs)
 
-  visualizer.update({
+  let dt = 0
+
+  const now = Date.now()
+  if (lastUpdateTime !== null) {
+    dt = now - lastUpdateTime
+  }
+  lastUpdateTime = now
+
+  visualizer.update(dt, {
     rt: rs,
     state: getCleanReduxState(state),
   })

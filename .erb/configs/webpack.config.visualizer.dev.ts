@@ -17,46 +17,28 @@ if (process.env.NODE_ENV === 'production') {
   checkNodeEnv('development')
 }
 
-const port = process.env.PORT || 1212
-const manifest = path.resolve(webpackPaths.dllPath, 'renderer.json')
-const requiredByDLLConfig = module.parent!.filename.includes(
-  'webpack.config.renderer.dev.dll'
-)
-
-/**
- * Warn if the DLL is not built
- */
-if (
-  !requiredByDLLConfig &&
-  !(fs.existsSync(webpackPaths.dllPath) && fs.existsSync(manifest))
-) {
-  console.log(
-    chalk.black.bgYellow.bold(
-      'The DLL files are missing. Sit back while we build them for you with "npm run build-dll"'
-    )
-  )
-  execSync('npm run postinstall')
-}
+const port = process.env.PORT || 1213
 
 const configuration: webpack.Configuration = {
   devtool: 'inline-source-map',
 
   mode: 'development',
 
-  target: ['web', 'electron-renderer'],
+  target: ['web'],
+  // target: ['web', 'electron-renderer'],
 
   entry: [
     `webpack-dev-server/client?http://localhost:${port}/dist`,
     'webpack/hot/only-dev-server',
     'core-js',
     'regenerator-runtime/runtime',
-    path.join(webpackPaths.srcRendererPath, 'index.tsx'),
+    path.join(webpackPaths.srcVisualizerPath, 'index.ts'),
   ],
 
   output: {
-    path: webpackPaths.distRendererPath,
+    path: webpackPaths.distVisualizerPath,
     publicPath: '/',
-    filename: 'renderer.dev.js',
+    filename: 'visualizer.dev.js',
     library: {
       type: 'umd',
     },
@@ -98,16 +80,6 @@ const configuration: webpack.Configuration = {
     ],
   },
   plugins: [
-    ...(requiredByDLLConfig
-      ? []
-      : [
-          new webpack.DllReferencePlugin({
-            context: webpackPaths.dllPath,
-            manifest: require(manifest),
-            sourceType: 'var',
-          }),
-        ]),
-
     new NodePolyfillPlugin(),
 
     new webpack.NoEmitOnErrorsPlugin(),
@@ -132,11 +104,9 @@ const configuration: webpack.Configuration = {
       debug: true,
     }),
 
-    new ReactRefreshWebpackPlugin(),
-
     new HtmlWebpackPlugin({
       filename: path.join('index.html'),
-      template: path.join(webpackPaths.srcRendererPath, 'index.ejs'),
+      template: path.join(webpackPaths.srcVisualizerPath, 'index.ejs'),
       minify: {
         collapseWhitespace: true,
         removeAttributeQuotes: true,
@@ -165,16 +135,6 @@ const configuration: webpack.Configuration = {
     },
     historyApiFallback: {
       verbose: true,
-    },
-    onBeforeSetupMiddleware() {
-      console.log('Starting Main Process...')
-      spawn('npm', ['run', 'start:main'], {
-        shell: true,
-        env: process.env,
-        stdio: 'inherit',
-      })
-        .on('close', (code: number) => process.exit(code!))
-        .on('error', (spawnError) => console.error(spawnError))
     },
   },
 }

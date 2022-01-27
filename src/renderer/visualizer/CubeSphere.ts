@@ -23,8 +23,8 @@ class RandomCube {
     scene.add(this.mesh)
   }
 
-  update({ time }: UpdateResource) {
-    this.mesh.rotateOnAxis(this.axis, time.dt / 10000)
+  update(dt: number, {}: UpdateResource) {
+    this.mesh.rotateOnAxis(this.axis, dt / 10000)
   }
 }
 
@@ -37,7 +37,7 @@ export default class CubeSphere extends VisualizerBase {
     this.cubes = ARRAY.map((_) => new RandomCube(this.scene))
   }
 
-  update(res: UpdateResource): void {
-    this.cubes.forEach((cube) => cube.update(res))
+  update(dt: number, res: UpdateResource): void {
+    this.cubes.forEach((cube) => cube.update(dt, res))
   }
 }

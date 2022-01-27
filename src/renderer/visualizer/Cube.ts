@@ -13,7 +13,7 @@ export default class Cube extends VisualizerBase {
     this.scene.add(this.cube)
   }
 
-  update({ time }: UpdateResource): void {
+  update(_dt: number, { time }: UpdateResource): void {
     this.cube.rotation.x = time.beats
     this.cube.rotation.y = time.beats
   }

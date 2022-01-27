@@ -42,13 +42,13 @@ export default class _ extends VisualizerBase {
     })
   }
 
-  update({ params, scene, time }: UpdateResource): void {
+  update(dt: number, { params, scene, time }: UpdateResource): void {
     const bombacity = scene.bombacity
 
     const color = colorFromHSV(
       params.hue,
       params.saturation / 2,
-      params.brightness * bombacity * this.strobe.update(time.dt, params.strobe)
+      params.brightness * bombacity * this.strobe.update(dt, params.strobe)
     )
 
     this.sphere.material = new THREE.MeshBasicMaterial({
@@ -63,7 +63,7 @@ export default class _ extends VisualizerBase {
       })
     }
 
-    const dr = (time.dt / 500) * (Skew(bombacity, 0.6) + 0.01)
+    const dr = (dt / 500) * (Skew(bombacity, 0.6) + 0.01)
     this.spheres.forEach((sphere) => {
       sphere.rotation.x += dr
       sphere.rotation.y += dr
