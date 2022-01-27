@@ -11,7 +11,7 @@ import {
   realtimeContext,
   update as updateRealtimeStore,
 } from './redux/realtimeStore'
-import { ipc_setup } from './ipcHandler'
+import { ipc_setup, send_control_state } from './ipcHandler'
 import { ThemeProvider as MuiThemeProvider } from '@emotion/react'
 import { createTheme } from '@mui/material/styles'
 import { autoSave } from './saveload_renderer'
@@ -44,11 +44,9 @@ const ipc_callbacks = ipc_setup({
   },
 })
 
-ipc_callbacks.send_control_state(getCleanReduxState(store.getState()))
+send_control_state(getCleanReduxState(store.getState()))
 
-store.subscribe(() =>
-  ipc_callbacks.send_control_state(getCleanReduxState(store.getState()))
-)
+store.subscribe(() => send_control_state(getCleanReduxState(store.getState())))
 
 render(
   <Provider store={store}>

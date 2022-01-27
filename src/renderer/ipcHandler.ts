@@ -1,7 +1,3 @@
-// import { ipcRenderer } from 'electron'
-// const { ipcRenderer } = require('electron')
-// const electron = window.require('electron')
-// const ipcRenderer = electron.ipcRenderer
 import ipc_channels, { UserCommand } from '../engine/ipc_channels'
 import { CleanReduxState } from './redux/store'
 import { RealtimeState } from './redux/realtimeStore'
@@ -43,13 +39,14 @@ export function ipc_setup(config: Config) {
   ipcRenderer.on(ipc_channels.dispatch, (action: PayloadAction<any>) =>
     _config.on_dispatch(action)
   )
+}
 
-  return {
-    send_control_state: (cleanState: CleanReduxState) => {
-      ipcRenderer.send(ipc_channels.new_control_state, cleanState)
-    },
-    send_user_command: (command: UserCommand) => {
-      ipcRenderer.send(ipc_channels.user_command, command)
-    },
-  }
+export function send_control_state(cleanState: CleanReduxState) {
+  ipcRenderer.send(ipc_channels.new_control_state, cleanState)
+}
+export function send_user_command(command: UserCommand) {
+  ipcRenderer.send(ipc_channels.user_command, command)
+}
+export function send_open_visualizer() {
+  ipcRenderer.send(ipc_channels.open_visualizer)
 }

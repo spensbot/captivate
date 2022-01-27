@@ -4,9 +4,10 @@ import VisualizerManager from '../visualizer/VisualizerManager'
 import styled from 'styled-components'
 import StatusBar from '../menu/StatusBar'
 import { useRealtimeSelector } from '../redux/realtimeStore'
-import { useTypedSelector } from '../redux/store'
+import { useTypedSelector, getCleanReduxState } from '../redux/store'
 import SplitPane from '../base/SplitPane'
 import SceneSelection from '../scenes/SceneSelection'
+import OpenVisualizerButton from 'renderer/visualizer/OpenVisualizerButton'
 
 const visualizer = new VisualizerManager()
 
@@ -16,7 +17,10 @@ export default function Visualizer() {
   const state = useTypedSelector((state) => state)
   const rs = useRealtimeSelector((rs) => rs)
 
-  visualizer.update(rs, state)
+  visualizer.update({
+    rt: rs,
+    state: getCleanReduxState(state),
+  })
 
   function resize() {
     const element = ref.current
@@ -60,6 +64,7 @@ export default function Visualizer() {
         <Pane>
           <Window ref={ref}>
             <FPS />
+            <OpenVisualizerButton />
           </Window>
         </Pane>
       </SplitPane>

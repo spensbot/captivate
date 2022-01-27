@@ -1,16 +1,21 @@
 import { ipcMain, WebContents, dialog } from 'electron'
 import ipcChannels, { UserCommand } from '../../engine/ipc_channels'
+import ipcChannelsVisualizer from '../../display/ipcChannels'
 import { CleanReduxState } from '../../renderer/redux/store'
 import { RealtimeState } from '../../renderer/redux/realtimeStore'
 import * as dmxConnection from './dmxConnection'
 import * as midiConnection from './midiConnection'
 import { PayloadAction } from '@reduxjs/toolkit'
 import { promises } from 'fs'
+import { VisualizerState } from '../../renderer/visualizer/VisualizerManager'
+import { VisualizerContainer } from './createVisualizerWindow'
 
 interface Config {
   renderer: WebContents
+  visualizerContainer: VisualizerContainer
   on_new_control_state: (new_state: CleanReduxState) => void
   on_user_command: (command: UserCommand) => void
+  on_open_visualizer: () => void
 }
 
 let _config: Config
@@ -26,6 +31,10 @@ export function ipcSetup(config: Config) {
     _config.on_user_command(command)
   })
 
+  ipcMain.on(ipcChannels.open_visualizer, (_e) => {
+    _config.on_open_visualizer()
+  })
+
   return {
     send_dmx_connection_update: (payload: dmxConnection.UpdatePayload) =>
       _config.renderer.send(ipcChannels.dmx_connection_update, payload),
@@ -35,6 +44,15 @@ export function ipcSetup(config: Config) {
       _config.renderer.send(ipcChannels.new_time_state, time_state),
     send_dispatch: (action: PayloadAction<any>) =>
       _config.renderer.send(ipcChannels.dispatch, action),
+    send_visualizer_state: (payload: VisualizerState) => {
+      const visualizer = _config.visualizerContainer.visualizer
+      if (visualizer) {
+        visualizer.webContents.send(
+          ipcChannelsVisualizer.new_visualizer_state,
+          payload
+        )
+      }
+    },
   }
 }
 

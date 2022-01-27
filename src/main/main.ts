@@ -16,7 +16,8 @@ import { autoUpdater } from 'electron-updater'
 import log from 'electron-log'
 import MenuBuilder from './menu'
 import { resolveHtmlPath } from './util'
-import { start, stop } from './engine/engine'
+import * as engine from './engine/engine'
+import { VisualizerContainer } from './engine/createVisualizerWindow'
 
 export default class AppUpdater {
   constructor() {
@@ -27,6 +28,9 @@ export default class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null
+let visualizerContainer: VisualizerContainer = {
+  visualizer: null,
+}
 
 ipcMain.on('ipc-example', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`
@@ -96,7 +100,7 @@ const createWindow = async () => {
   })
 
   mainWindow.on('closed', () => {
-    stop()
+    engine.stop()
     mainWindow = null
   })
 
@@ -109,7 +113,7 @@ const createWindow = async () => {
     shell.openExternal(url)
   })
 
-  start(mainWindow.webContents)
+  engine.start(mainWindow.webContents, visualizerContainer)
 
   // Remove this if your app does not use auto updates
   // eslint-disable-next-line

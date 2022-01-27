@@ -27,6 +27,9 @@ import {
   DMX_DEFAULT_VALUE,
 } from '../../engine/dmxFixtures'
 import { handleMessage } from './handleMidi'
+import openVisualizerWindow, {
+  VisualizerContainer,
+} from './createVisualizerWindow'
 
 let _nodeLink = new NodeLink()
 let _ipcCallbacks: ReturnType<typeof ipcSetup> | null = null
@@ -35,13 +38,21 @@ let _lastRandomizerState = initRandomizerState()
 let _realtimeState: RealtimeState = initRealtimeState()
 let _lastFrameTime = 0
 
-export function start(renderer: WebContents) {
+export function start(
+  renderer: WebContents,
+  visualizerContainer: VisualizerContainer
+) {
   _ipcCallbacks = ipcSetup({
     renderer: renderer,
+    visualizerContainer: visualizerContainer,
     on_new_control_state: (newState) => {
       _controlState = newState
     },
     on_user_command: (_command) => {},
+    on_open_visualizer: () => {
+      console.log('on_open_visualizer')
+      openVisualizerWindow(visualizerContainer)
+    },
   })
 }
 
@@ -56,7 +67,15 @@ DmxConnection.maintain({
   },
   calculateChannels: () => {
     let _realtimeState = calculateRealtimeState()
-    if (_ipcCallbacks !== null) _ipcCallbacks.send_time_state(_realtimeState)
+    if (_ipcCallbacks !== null) {
+      _ipcCallbacks.send_time_state(_realtimeState)
+      if (_controlState !== null) {
+        _ipcCallbacks.send_visualizer_state({
+          rt: _realtimeState,
+          state: _controlState,
+        })
+      }
+    }
     return _realtimeState.dmxOut
   },
 })

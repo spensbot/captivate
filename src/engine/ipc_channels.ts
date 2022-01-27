@@ -7,6 +7,7 @@ export default {
   dispatch: 'dispatch',
   load_file: 'load_file',
   save_file: 'save_file',
+  open_visualizer: 'open_visualizer',
 } as const
 
 // Add types if we ever need to send commands from the renderer to main

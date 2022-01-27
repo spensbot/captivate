@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { RealtimeState } from '../redux/realtimeStore'
-import { ReduxState } from '../redux/store'
+import { CleanReduxState } from '../redux/store'
 import VisualizerBase from './VisualizerBase'
 import Spheres from './Spheres'
 import TextSpin from './TextSpin'
@@ -10,6 +10,10 @@ import TextParticles from './TextParticles'
 
 type Visualizer = Spheres | TextSpin | Cubes | CubeSphere | TextParticles
 type VisualizerType = Visualizer['type']
+export interface VisualizerState {
+  rt: RealtimeState
+  state: CleanReduxState
+}
 
 export default class VisualizerManager {
   private renderer: THREE.WebGLRenderer // The renderer is the only THREE class that actually takes a while to instantiate (>3ms)
@@ -49,11 +53,11 @@ export default class VisualizerManager {
     return this.renderer.domElement
   }
 
-  update(rt: RealtimeState, state: ReduxState) {
-    const control = state.control.present
+  update(visualizerState: VisualizerState) {
+    const control = visualizerState.state.control
     this.active.update({
-      params: rt.outputParams,
-      time: rt.time,
+      params: visualizerState.rt.outputParams,
+      time: visualizerState.rt.time,
       scene: control.light.byId[control.light.active],
       master: control.master,
     })
@@ -63,5 +67,7 @@ export default class VisualizerManager {
   resize(width: number, height: number) {
     this.active.resize(width, height)
     this.renderer.setSize(width, height)
+    this.renderer.info.reset()
+    this.renderer.clear(true, true, true)
   }
 }

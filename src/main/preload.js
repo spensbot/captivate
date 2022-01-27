@@ -6,7 +6,11 @@ contextBridge.exposeInMainWorld('electron', {
       ipcRenderer.send('ipc-example', 'ping')
     },
     send(channel, ...args) {
-      const validChannels = ['new_control_state', 'user_command']
+      const validChannels = [
+        'new_control_state',
+        'user_command',
+        'open_visualizer',
+      ]
       if (validChannels.includes(channel)) {
         ipcRenderer.send(channel, ...args)
       } else {
@@ -22,6 +26,9 @@ contextBridge.exposeInMainWorld('electron', {
         'dmx_connection_update',
         'midi_connection_update',
         'dispatch',
+        'new_control_state',
+        'new_time_state',
+        'new_visualizer_state',
       ]
       if (validChannels.includes(channel)) {
         // Deliberately strip event as it includes `sender`
@@ -57,10 +64,3 @@ contextBridge.exposeInMainWorld('electron', {
     },
   },
 })
-
-// export async function loadFile(
-//   title: string,
-//   fileFilters: Electron.FileFilter[]
-// ): Promise<string> {
-//   return ipcRenderer.invoke(LOAD_FILE, title, fileFilters)
-// }
