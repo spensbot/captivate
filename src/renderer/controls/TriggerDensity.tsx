@@ -1,8 +1,5 @@
 import styled from 'styled-components'
-import { useActiveScene } from '../redux/store'
-import Slider from '../base/Slider'
-import { useDispatch } from 'react-redux'
-import { setRandomizer } from '../redux/scenesSlice'
+import { useActiveLightScene } from '../redux/store'
 import { initRandomizerState, syncAndUpdate } from '../../engine/randomizer'
 import { useRealtimeSelector } from 'renderer/redux/realtimeStore'
 import { useRef } from 'react'
@@ -27,7 +24,7 @@ const Root = styled.div`
 
 function Visualizer() {
   const persistedState = useRef(initRandomizerState())
-  const randomizerOptions = useActiveScene((scene) => scene.randomizer)
+  const randomizerOptions = useActiveLightScene((scene) => scene.randomizer)
   const timeState = useRealtimeSelector((rs) => rs.time)
 
   persistedState.current = syncAndUpdate(

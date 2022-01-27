@@ -1,14 +1,16 @@
 import styled from 'styled-components'
 import { Scene, NewScene } from './Scene'
-import { useScenesSelector } from '../redux/store'
+import { useControlSelector } from '../redux/store'
 import { DragDropContext, Droppable } from 'react-beautiful-dnd'
 import { useDispatch } from 'react-redux'
-import { reorderScene } from '../redux/scenesSlice'
+import { reorderScene, SceneType } from '../redux/controlSlice'
 
-interface Props {}
+interface Props {
+  sceneType: SceneType
+}
 
-export default function ScenesList({}: Props) {
-  const sceneIds = useScenesSelector((state) => state.ids)
+export default function ScenesList({ sceneType }: Props) {
+  const sceneIds = useControlSelector((control) => control[sceneType].ids)
   const dispatch = useDispatch()
 
   return (
@@ -19,8 +21,11 @@ export default function ScenesList({}: Props) {
           if (res.destination.index === res.source.index) return
           dispatch(
             reorderScene({
-              fromIndex: res.source.index,
-              toIndex: res.destination.index,
+              sceneType: sceneType,
+              val: {
+                fromIndex: res.source.index,
+                toIndex: res.destination.index,
+              },
             })
           )
         }}
@@ -29,14 +34,16 @@ export default function ScenesList({}: Props) {
           {(provided) => (
             <div ref={provided.innerRef} {...provided.droppableProps}>
               {sceneIds.map((id, index) => {
-                return <Scene key={id} index={index} id={id} />
+                return (
+                  <Scene sceneType={sceneType} key={id} index={index} id={id} />
+                )
               })}
               {provided.placeholder}
             </div>
           )}
         </Droppable>
       </DragDropContext>
-      <NewScene />
+      <NewScene sceneType={sceneType} />
     </Root>
   )
 }

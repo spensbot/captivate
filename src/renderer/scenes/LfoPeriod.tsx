@@ -1,23 +1,16 @@
-import React, { useState } from 'react'
 import { useDispatch } from 'react-redux'
-import { useActiveScene } from '../redux/store'
-import { setPeriod } from '../redux/scenesSlice'
+import { useActiveLightScene } from '../redux/store'
+import { setPeriod } from '../redux/controlSlice'
 import DraggableNumber from '../base/DraggableNumber'
 
 type Props = {
   index: number
 }
 
-// This is really bad react behavior... But IDK what else to do
-let movement = 0
-
 export default function LfoPeriod({ index }: Props) {
-  const period = useActiveScene(
+  const period = useActiveLightScene(
     (activeScene) => activeScene.modulators[index].lfo.period
   )
-  const periodString = Number.isInteger(period)
-    ? period.toString()
-    : period.toFixed(2)
 
   const dispatch = useDispatch()
 

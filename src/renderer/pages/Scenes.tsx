@@ -24,7 +24,7 @@ export default function Scenes() {
         max={0.5}
       >
         <Pane>
-          <SceneSelection />
+          <SceneSelection sceneType="light" />
         </Pane>
         <Pane>
           <div

@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import SliderBase from './SliderBase'
 import SliderCursor from './SliderCursor'
-import styled from 'styled-components'
 
 interface Params {
   value?: number
@@ -44,5 +43,3 @@ export default function Slider({
     </SliderBase>
   )
 }
-
-const Root = styled.div``

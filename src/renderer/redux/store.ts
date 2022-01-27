@@ -4,31 +4,35 @@ import {
   Reducer,
   PayloadAction,
 } from '@reduxjs/toolkit'
-import connectionsReducer, { ConnectionsState } from './connectionsSlice'
+import connectionsReducer from './connectionsSlice'
 import { useSelector, TypedUseSelectorHook } from 'react-redux'
 import dmxReducer, { DmxState } from './dmxSlice'
-import guiReducer, { GuiState } from './guiSlice'
-import scenesReducer, { SceneState } from './scenesSlice'
-import { Scene_t } from '../../engine/scene_t'
+import guiReducer from './guiSlice'
+import controlReducer, {
+  ControlState,
+  VisualScene_t,
+  SceneType,
+} from './controlSlice'
+import { LightScene_t } from '../../engine/LightScene'
 import midiReducer, { MidiState } from './midiSlice'
-import mixerReducer, { MixerState } from './mixerSlice'
-import undoable, { ActionTypes, StateWithHistory } from 'redux-undo'
+import mixerReducer from './mixerSlice'
+import undoable, { StateWithHistory } from 'redux-undo'
 
 export interface UndoActionTypes {
   undo: string
   redo: string
 }
 
-export type UndoGroup = 'dmx' | 'scenes' | 'midi'
+export type UndoGroup = 'dmx' | 'control' | 'midi'
 
 export const undoActionTypes: { [key in UndoGroup]: UndoActionTypes } = {
   dmx: {
     undo: 'DMX_UNDO',
     redo: 'DMX_REDO',
   },
-  scenes: {
-    undo: 'SCENES_UNDO',
-    redo: 'SCENES_REDO',
+  control: {
+    undo: 'CONTROL_UNDO',
+    redo: 'CONTROL_REDO',
   },
   midi: {
     undo: 'MIDI_UNDO',
@@ -43,9 +47,9 @@ const baseReducer = combineReducers({
     redoType: undoActionTypes.dmx.redo,
   }),
   gui: guiReducer,
-  scenes: undoable(scenesReducer, {
-    undoType: undoActionTypes.scenes.undo,
-    redoType: undoActionTypes.scenes.redo,
+  control: undoable(controlReducer, {
+    undoType: undoActionTypes.control.undo,
+    redoType: undoActionTypes.control.redo,
   }),
   midi: undoable(midiReducer, {
     undoType: undoActionTypes.midi.undo,
@@ -58,7 +62,6 @@ export type ReduxState = ReturnType<typeof baseReducer>
 
 const RESET_STATE = 'reset-state'
 const RESET_UNIVERSE = 'reset-universe'
-const RESET_SCENES = 'reset-scenes'
 export function resetState(
   newState: CleanReduxState
 ): PayloadAction<CleanReduxState> {
@@ -71,14 +74,6 @@ export function resetUniverse(newDmxState: DmxState): PayloadAction<DmxState> {
   return {
     type: RESET_UNIVERSE,
     payload: newDmxState,
-  }
-}
-export function resetScenes(
-  newSceneState: SceneState
-): PayloadAction<SceneState> {
-  return {
-    type: RESET_SCENES,
-    payload: newSceneState,
   }
 }
 
@@ -101,7 +96,7 @@ const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (
       connections: cs.connections,
       dmx: initUndoState(cs.dmx),
       gui: cs.gui,
-      scenes: initUndoState(cs.scenes),
+      control: initUndoState(cs.control),
       midi: initUndoState(cs.midi),
       mixer: cs.mixer,
     }
@@ -112,15 +107,6 @@ const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (
       dmx: {
         ...state.dmx,
         present: us,
-      },
-    }
-  } else if (action.type === RESET_SCENES) {
-    const ss: SceneState = action.payload
-    return {
-      ...state,
-      scenes: {
-        ...state.scenes,
-        present: ss,
       },
     }
   }
@@ -145,7 +131,7 @@ export function getCleanReduxState(state: ReduxState) {
     connections: state.connections,
     dmx: state.dmx.present,
     gui: state.gui,
-    scenes: state.scenes.present,
+    control: state.control.present,
     midi: state.midi.present,
     mixer: state.mixer,
   }
@@ -153,13 +139,34 @@ export function getCleanReduxState(state: ReduxState) {
 
 export type CleanReduxState = ReturnType<typeof getCleanReduxState>
 
-export function useScenesSelector<T>(getVal: (scenes: SceneState) => T) {
-  return useTypedSelector((state) => getVal(state.scenes.present))
+export function useControlSelector<T>(getVal: (scenes: ControlState) => T) {
+  return useTypedSelector((state) => getVal(state.control.present))
 }
 
-export function useActiveScene<T>(getVal: (scene: Scene_t) => T) {
+export function useActiveScene<T>(
+  sceneType: SceneType,
+  getVal: (scene: LightScene_t | VisualScene_t) => T
+) {
   return useTypedSelector((state) =>
-    getVal(state.scenes.present.byId[state.scenes.present.active])
+    getVal(
+      state.control.present[sceneType].byId[
+        state.control.present[sceneType].active
+      ]
+    )
+  )
+}
+
+export function useActiveLightScene<T>(getVal: (scene: LightScene_t) => T) {
+  return useTypedSelector((state) =>
+    getVal(state.control.present.light.byId[state.control.present.light.active])
+  )
+}
+
+export function useActiveVisualScene<T>(getVal: (scene: VisualScene_t) => T) {
+  return useTypedSelector((state) =>
+    getVal(
+      state.control.present.visual.byId[state.control.present.visual.active]
+    )
   )
 }
 

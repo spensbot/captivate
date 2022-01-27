@@ -47,8 +47,8 @@ const Root = styled.div`
 `
 
 const Modal = styled.div`
-  background-color: ${(props) => props.theme.colors.background.primary};
-  box-shadow: ${(props) => props.theme.shadow(5)};
+  background-color: ${(props) => props.theme.colors.bg.primary};
+  box-shadow: 'this wont work'
   padding: ${(props) => props.theme.spacing(5)};
   & > * {
     margin-bottom: ${(props) => props.theme.spacing(1)};

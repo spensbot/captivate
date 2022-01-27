@@ -6,7 +6,7 @@ import StatusBar from '../menu/StatusBar'
 import { useRealtimeSelector } from '../redux/realtimeStore'
 import { useTypedSelector } from '../redux/store'
 import SplitPane from '../base/SplitPane'
-import VisualizerSceneSelection from '../visualizer/VisualizerSceneSelection'
+import SceneSelection from '../scenes/SceneSelection'
 
 const visualizer = new VisualizerManager()
 
@@ -55,7 +55,7 @@ export default function Visualizer() {
         max={0.5}
       >
         <Pane>
-          <VisualizerSceneSelection />
+          <SceneSelection sceneType="visual" />
         </Pane>
         <Pane>
           <Window ref={ref}>

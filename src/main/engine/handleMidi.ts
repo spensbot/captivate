@@ -12,7 +12,7 @@ import {
   setAutoSceneBombacity,
   setMaster,
   setBaseParams,
-} from '../../renderer/redux/scenesSlice'
+} from '../../renderer/redux/controlSlice'
 import NodeLink from 'node-link'
 import { PayloadAction } from '@reduxjs/toolkit'
 
@@ -100,7 +100,12 @@ export function handleMessage(
     if (buttonAction) {
       if (input.message.type !== 'Off') {
         if (buttonAction.action.type === 'setActiveSceneIndex') {
-          dispatch(setActiveSceneIndex(buttonAction.action.index))
+          dispatch(
+            setActiveSceneIndex({
+              sceneType: 'light',
+              val: buttonAction.action.index,
+            })
+          )
         }
       }
     }
@@ -111,20 +116,24 @@ export function handleMessage(
       const action = sliderAction.action
       const getOldVal = () => {
         if (action.type === 'setAutoSceneBombacity') {
-          return state.scenes.auto.bombacity
+          return state.control.light.auto.bombacity
         } else if (action.type === 'setBpm') {
           return rt_state.time.bpm
         } else if (action.type === 'setBaseParam') {
-          return state.scenes.byId[state.scenes.active].baseParams[
-            action.paramKey
-          ]
+          return state.control.light.byId[state.control.light.active]
+            .baseParams[action.paramKey]
         } else if (action.type === 'setMaster') {
-          return state.scenes.master
+          return state.control.master
         } else return 0
       }
       const setNewVal = (newVal: number) => {
         if (action.type === 'setAutoSceneBombacity') {
-          dispatch(setAutoSceneBombacity(newVal))
+          dispatch(
+            setAutoSceneBombacity({
+              sceneType: 'light',
+              val: newVal,
+            })
+          )
         } else if (action.type === 'setMaster') {
           dispatch(setMaster(newVal))
         } else if (action.type === 'setBaseParam') {

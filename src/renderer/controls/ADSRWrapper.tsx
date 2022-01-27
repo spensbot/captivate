@@ -1,12 +1,12 @@
 import ADSR, { Control } from './ADSR'
-import { useActiveScene } from '../redux/store'
-import { setRandomizer } from '../redux/scenesSlice'
+import { useActiveLightScene } from '../redux/store'
+import { setRandomizer } from '../redux/controlSlice'
 import { useDispatch } from 'react-redux'
 
 interface Props {}
 
 export default function ADSRWrapper({}: Props) {
-  const state = useActiveScene((scene) => scene.randomizer)
+  const state = useActiveLightScene((scene) => scene.randomizer)
   const dispatch = useDispatch()
 
   const ratio: Control = {

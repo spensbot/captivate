@@ -1,59 +1,57 @@
 import Slider from '../base/Slider'
-import React from 'react'
+import styled from 'styled-components'
 import { useDispatch } from 'react-redux'
-import { useScenesSelector } from '../redux/store'
+import { useControlSelector } from '../redux/store'
 import {
   setAutoSceneEnabled,
   setAutoSceneBombacity,
   setAutoScenePeriod,
-} from '../redux/scenesSlice'
+  SceneType,
+} from '../redux/controlSlice'
 import DraggableNumber from '../base/DraggableNumber'
 
-export default function AutoScene() {
+export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
   const dispatch = useDispatch()
-  const { enabled, bombacity, period } = useScenesSelector(
-    (state) => state.auto
+  const { enabled, bombacity, period } = useControlSelector(
+    (control) => control[sceneType].auto
   )
 
-  const enabledColor = '#3d5a'
-
-  const styles: { [key: string]: React.CSSProperties } = {
-    root: {
-      display: 'flex',
-      alignItems: 'center',
-      marginBottom: '0.5rem',
-    },
-    button: {
-      backgroundColor: enabled ? enabledColor : '#fff3',
-      color: enabled ? '#eee' : '#fff9',
-      borderRadius: '0.3rem',
-      padding: '0.1rem 0.3rem',
-      cursor: 'pointer',
-      fontSize: '0.9rem',
-      marginRight: '0.5rem',
-    },
-    slider: {
-      flex: '1 0 auto',
-      margin: '0 1rem',
-    },
-  }
-
   const onBombacityChange = (newVal: number) => {
-    dispatch(setAutoSceneBombacity(newVal))
+    dispatch(
+      setAutoSceneBombacity({
+        sceneType: sceneType,
+        val: newVal,
+      })
+    )
   }
 
   const onPeriodChange = (newVal: number) => {
-    dispatch(setAutoScenePeriod(newVal))
+    dispatch(
+      setAutoScenePeriod({
+        sceneType: sceneType,
+        val: newVal,
+      })
+    )
   }
 
   return (
-    <div style={styles.root}>
-      <div
-        style={styles.button}
-        onClick={() => dispatch(setAutoSceneEnabled(!enabled))}
+    <Root>
+      <Button
+        style={{
+          backgroundColor: enabled ? '#3d5a' : '#fff3',
+          color: enabled ? '#eee' : '#fff9',
+        }}
+        onClick={() =>
+          dispatch(
+            setAutoSceneEnabled({
+              sceneType: sceneType,
+              val: !enabled,
+            })
+          )
+        }
       >
         auto
-      </div>
+      </Button>
       <DraggableNumber
         value={period}
         min={1}
@@ -65,7 +63,7 @@ export default function AutoScene() {
           color: enabled ? '#fff' : '#fff5',
         }}
       />
-      <div style={styles.slider}>
+      <SliderWrapper>
         {/* <Slider value={bombacity} min={0} max={0} step={0.01} orientation="horizontal"
           onChange={(e, value) => dispatch(setAutoSceneBombacity(value))}
         /> */}
@@ -76,7 +74,26 @@ export default function AutoScene() {
           onChange={onBombacityChange}
           color={enabled ? '#3d5e' : undefined}
         />
-      </div>
-    </div>
+      </SliderWrapper>
+    </Root>
   )
 }
+
+const Root = styled.div`
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+`
+
+const Button = styled.div`
+  border-radius: 0.3rem;
+  padding: 0.1rem 0.3rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  margin-right: 0.5rem;
+`
+
+const SliderWrapper = styled.div`
+  flex: 1 0 auto;
+  margin: 0 1rem;
+`

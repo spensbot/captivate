@@ -1,16 +1,18 @@
 import styled from 'styled-components'
-import { useScenesSelector } from '../redux/store'
+import { useControlSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import {
   setActiveScene,
-  addScene,
+  newScene,
   removeScene,
   setActiveSceneBombacity,
   setActiveSceneName,
   copyActiveScene,
-} from '../redux/scenesSlice'
+  SceneType,
+  initVisualScene,
+} from '../redux/controlSlice'
 import { nanoid } from 'nanoid'
-import { initScene } from '../../engine/scene_t'
+import { initLightScene } from '../../engine/LightScene'
 import { IconButton } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import AddIcon from '@mui/icons-material/Add'
@@ -34,25 +36,50 @@ function getColor(bombacity: number) {
   return `hsl(${hue}, ${40}%, ${50}%)`
 }
 
-export function Scene({ index, id }: { index: number; id: string }) {
-  const isActive = useScenesSelector((state) => state.active === id)
+interface Props {
+  sceneType: SceneType
+  index: number
+  id: string
+}
+
+export function Scene({ sceneType, index, id }: Props) {
+  const isActive = useControlSelector(
+    (control) => control[sceneType].active === id
+  )
   const dispatch = useDispatch()
-  const bombacity = useScenesSelector((state) => state.byId[id].bombacity)
-  const name = useScenesSelector((state) => state.byId[id].name)
+  const bombacity = useControlSelector(
+    (control) => control[sceneType].byId[id].bombacity
+  )
+  const name = useControlSelector((control) => control[sceneType].byId[id].name)
 
   const onNameChange = (newVal: string) => {
-    dispatch(setActiveSceneName(newVal))
+    dispatch(
+      setActiveSceneName({
+        sceneType: sceneType,
+        val: newVal,
+      })
+    )
   }
 
-  const onBombacityChange = (val: number) => {
-    dispatch(setActiveSceneBombacity(val))
+  const onBombacityChange = (newVal: number) => {
+    dispatch(
+      setActiveSceneBombacity({
+        sceneType: sceneType,
+        val: newVal,
+      })
+    )
   }
 
   const onRemoveScene = (
     e: React.MouseEvent<HTMLButtonElement, MouseEvent>
   ) => {
     e.stopPropagation()
-    dispatch(removeScene({ index: index }))
+    dispatch(
+      removeScene({
+        sceneType: sceneType,
+        val: { index: index },
+      })
+    )
   }
 
   let style: React.CSSProperties = {
@@ -74,7 +101,12 @@ export function Scene({ index, id }: { index: number; id: string }) {
             <Root
               style={style}
               onClick={() => {
-                dispatch(setActiveScene(id))
+                dispatch(
+                  setActiveScene({
+                    sceneType: sceneType,
+                    val: id,
+                  })
+                )
               }}
             >
               <Number>{index + 1}</Number>
@@ -113,13 +145,13 @@ export function Scene({ index, id }: { index: number; id: string }) {
   )
 }
 
-export function NewScene() {
+export function NewScene({ sceneType }: { sceneType: SceneType }) {
   const dispatch = useDispatch()
   const onNew = () => {
-    dispatch(addScene({ id: nanoid(), scene: initScene() }))
+    dispatch(newScene(sceneType))
   }
   const onCopy = () => {
-    dispatch(copyActiveScene())
+    dispatch(copyActiveScene(sceneType))
   }
 
   return (

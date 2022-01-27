@@ -2,7 +2,7 @@ import { Params, initParams } from './params'
 import { Modulator, initModulator } from './modulation'
 import { RandomizerOptions, initRandomizerOptions } from './randomizer'
 
-export interface Scene_t {
+export interface LightScene_t {
   name: string
   bombacity: number
   modulators: Modulator[]
@@ -11,9 +11,9 @@ export interface Scene_t {
   groups: string[]
 }
 
-export function initScene(): Scene_t {
+export function initLightScene(): LightScene_t {
   return {
-    name: '',
+    name: 'Name',
     bombacity: 0,
     modulators: [initModulator()],
     baseParams: initParams(),

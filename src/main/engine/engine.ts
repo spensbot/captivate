@@ -168,7 +168,7 @@ function calculateDmx(
           channels[outputChannel - 1] = overwrite * DMX_MAX_VALUE
         } else if (outputParams.epicness >= fixtureType.epicness) {
           let dmxOut = getDmxValue(
-            _s.scenes.master,
+            _s.control.master,
             channel,
             outputParams,
             colors,
@@ -209,12 +209,9 @@ function calculateRealtimeState(): RealtimeState {
   timeState.dt = dt
   timeState.quantum = 4.0
 
-  if (
-    _controlState.scenes.active &&
-    _controlState.scenes.byId[_controlState.scenes.active]
-  ) {
-    const scene = _controlState.scenes.byId[_controlState.scenes.active]
-
+  const scene =
+    _controlState.control.light.byId[_controlState.control.light.active]
+  if (scene) {
     const outputParams = modulateParams(timeState.beats, scene)
 
     // Todo: (Spenser)

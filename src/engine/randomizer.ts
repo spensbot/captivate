@@ -1,5 +1,4 @@
-import { TimeState, isNewPeriod, Beats } from './TimeState'
-import { indexArray } from '../util/util'
+import { TimeState, isNewPeriod } from './TimeState'
 
 type Normalized = number
 

@@ -1,7 +1,7 @@
 import { useRealtimeSelector } from '../redux/realtimeStore'
 import Cursor from '../base/Cursor'
 import { GetValueFromPhase, GetPhase } from '../../engine/oscillator'
-import { useActiveScene } from '../redux/store'
+import { useActiveLightScene } from '../redux/store'
 
 export default function LfoCursor({
   index,
@@ -11,7 +11,9 @@ export default function LfoCursor({
   padding: number
 }) {
   const time = useRealtimeSelector((state) => state.time)
-  const lfo = useActiveScene((activeScene) => activeScene.modulators[index].lfo)
+  const lfo = useActiveLightScene(
+    (activeScene) => activeScene.modulators[index].lfo
+  )
   const phase = GetPhase(lfo, time.beats)
   const value = GetValueFromPhase(lfo, phase)
 

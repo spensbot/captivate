@@ -1,11 +1,11 @@
 import Slider from '../base/Slider'
-import { useScenesSelector } from '../redux/store'
+import { useControlSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
-import { setMaster } from '../redux/scenesSlice'
+import { setMaster } from '../redux/controlSlice'
 import { SliderMidiOverlay } from '../base/MidiOverlay'
 
 export default function MasterSlider() {
-  const master = useScenesSelector((state) => state.master)
+  const master = useControlSelector((state) => state.master)
   const dispatch = useDispatch()
 
   return (

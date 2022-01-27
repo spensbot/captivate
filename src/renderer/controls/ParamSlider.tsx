@@ -1,9 +1,9 @@
 import { Param } from '../../engine/params'
 import SliderBase from '../base/SliderBase'
 import SliderCursor from '../base/SliderCursor'
-import { useScenesSelector } from '../redux/store'
+import { useActiveLightScene } from '../redux/store'
 import { useDispatch } from 'react-redux'
-import { setBaseParams } from '../redux/scenesSlice'
+import { setBaseParams } from '../redux/controlSlice'
 import ParamCursor from './ParamCursor'
 import { SliderMidiOverlay } from '../base/MidiOverlay'
 
@@ -14,9 +14,7 @@ interface Props {
 export default function ParamSlider({ param }: Props) {
   const radius = 0.4
 
-  const value = useScenesSelector(
-    (state) => state.byId[state.active].baseParams[param]
-  )
+  const value = useActiveLightScene((scene) => scene.baseParams[param])
   const dispatch = useDispatch()
   const onChange = (newVal: number) => {
     dispatch(

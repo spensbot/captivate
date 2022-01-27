@@ -1,3 +1,7 @@
+#vscode
+.vscode
+.VSCodeCounter
+
 # Logs
 logs
 *.log

@@ -1,8 +1,8 @@
 import { GetValueFromPhase } from '../../engine/oscillator'
 import { useDispatch } from 'react-redux'
 import useDragBasic from '../hooks/useDragBasic'
-import { incrementModulator } from '../redux/scenesSlice'
-import { useActiveScene } from '../redux/store'
+import { incrementModulator } from '../redux/controlSlice'
+import { useActiveLightScene } from '../redux/store'
 
 type Props = {
   index: number
@@ -43,7 +43,7 @@ export default function LfoVisualizer({
     )
   })
 
-  const modulator = useActiveScene(
+  const modulator = useActiveLightScene(
     (activeScene) => activeScene.modulators[index]
   )
 

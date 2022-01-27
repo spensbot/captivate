@@ -1,7 +1,5 @@
 import * as THREE from 'three'
-import { RealtimeState } from '../redux/realtimeStore'
-import { ReduxState } from '../redux/store'
-import { Scene_t } from '../../engine/scene_t'
+import { LightScene_t } from '../../engine/LightScene'
 import { visibleSizeAtZ } from './animations'
 import { Params } from '../../engine/params'
 import { TimeState } from '../../engine/TimeState'
@@ -9,7 +7,7 @@ import { TimeState } from '../../engine/TimeState'
 export interface UpdateResource {
   time: TimeState
   params: Params
-  scene: Scene_t
+  scene: LightScene_t
   master: number
 }
 

@@ -1,19 +1,19 @@
 import styled from 'styled-components'
 import ADSRWrapper from './ADSRWrapper'
-import { useActiveScene } from '../redux/store'
+import { useActiveLightScene } from '../redux/store'
 import TriggerDensity from './TriggerDensity'
 import DraggableNumber from '../base/DraggableNumber'
 import { useDispatch } from 'react-redux'
-import { setRandomizer } from '../redux/scenesSlice'
+import { setRandomizer } from '../redux/controlSlice'
 import Slider from '../base/Slider'
 
 interface Props {}
 
 export default function Randomizer({}: Props) {
-  const triggerPeriod = useActiveScene(
+  const triggerPeriod = useActiveLightScene(
     (scene) => scene.randomizer.triggerPeriod
   )
-  const triggerDensity = useActiveScene(
+  const triggerDensity = useActiveLightScene(
     (scene) => scene.randomizer.triggerDensity
   )
   const dispatch = useDispatch()

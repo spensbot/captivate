@@ -183,7 +183,8 @@ const venuePar: FixtureType = {
 export function initFixtureType(): FixtureType {
   return {
     id: nanoid(),
-    name: '',
+    name: 'Name',
+    manufacturer: 'Manufacturer',
     epicness: 0,
     channels: [],
   }

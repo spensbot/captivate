@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import VisualizerBase, { UpdateResource } from './VisualizerBase'
 import { random } from '../../util/util'
 import { Vector3 } from 'three'
-import { Spin, Strobe, colorFromHSV } from './animations'
+import { Strobe, colorFromHSV } from './animations'
 import { Skew } from '../../engine/oscillator'
 
 class RandomCube {

@@ -1,6 +1,6 @@
 import useDragMapped from '../hooks/useDragMapped'
 import { useDispatch } from 'react-redux'
-import { setBaseParams, incrementBaseParams } from '../redux/scenesSlice'
+import { setBaseParams, incrementBaseParams } from '../redux/controlSlice'
 import XYCursor from './XYCursor'
 import XYWindow from './XYWindow'
 import styled from 'styled-components'

@@ -1,7 +1,7 @@
 import { useDispatch } from 'react-redux'
 import { Param } from '../../engine/params'
-import { useActiveScene } from '../redux/store'
-import { setModulation } from '../redux/scenesSlice'
+import { useActiveLightScene } from '../redux/store'
+import { setModulation } from '../redux/controlSlice'
 import useDragMapped from '../hooks/useDragMapped'
 import styled from 'styled-components'
 
@@ -12,7 +12,7 @@ export default function ModulationSlider({
   index: number
   param: Param
 }) {
-  const amount = useActiveScene(
+  const amount = useActiveLightScene(
     (activeScene) => activeScene.modulators[index].modulation[param]
   )
   const dispatch = useDispatch()

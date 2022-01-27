@@ -1,6 +1,6 @@
 import { Params, initModulation, paramsList, Param } from './params'
 import { Lfo, GetValue, GetRamp } from './oscillator'
-import { Scene_t } from './scene_t'
+import { LightScene_t } from './LightScene'
 import { clampNormalized } from '../util/util'
 
 export interface Modulator {
@@ -15,7 +15,7 @@ export function initModulator() {
   }
 }
 
-export function modulateParams(beats: number, scene: Scene_t) {
+export function modulateParams(beats: number, scene: LightScene_t) {
   const modulatedParams: Params = { ...scene.baseParams }
 
   const modValues = scene.modulators.map((modulator) => {

@@ -17,6 +17,8 @@ export default function App() {
     if (activePage == 'Video') return <Video />
     if (activePage == 'Share') return <Share />
     if (activePage == 'Mixer') return <Mixer />
+    console.error(`Bad activePage value: ${activePage}`)
+    return null
   }
 
   return (

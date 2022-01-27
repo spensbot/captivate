@@ -1,9 +1,9 @@
-import { useActiveScene } from '../redux/store'
+import { useActiveLightScene } from '../redux/store'
 import ModulatorControl from './ModulatorControl'
 import NewModulator from './NewModulator'
 
 export default function Modulators() {
-  const modulatorCount = useActiveScene(
+  const modulatorCount = useActiveLightScene(
     (activeScene) => activeScene.modulators.length
   )
 

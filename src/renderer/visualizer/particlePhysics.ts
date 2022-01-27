@@ -45,7 +45,7 @@ export function gravity(
   { x, y, ix, iy, vx, vy }: ParticleState,
   { gravity, drag }: Gravity
 ): ParticleState {
-  const { dx, dy, distance, nx, ny } = positionInfo(x, y, ix, iy)
+  const { distance, nx, ny } = positionInfo(x, y, ix, iy)
   const { speed, nvx, nvy } = velocityInfo(vx, vy)
 
   //acceleration

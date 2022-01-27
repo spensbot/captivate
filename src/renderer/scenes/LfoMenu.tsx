@@ -1,11 +1,11 @@
 import { LfoShape } from '../../engine/oscillator'
 import { useDispatch } from 'react-redux'
-import { useActiveScene } from '../redux/store'
+import { useActiveLightScene } from '../redux/store'
 import {
   resetModulator,
   removeModulator,
   setModulatorShape,
-} from '../redux/scenesSlice'
+} from '../redux/controlSlice'
 import CloseIcon from '@mui/icons-material/Close'
 import IconButton from '@mui/material/IconButton'
 import MenuItem from '@mui/material/MenuItem'
@@ -21,7 +21,9 @@ type Props = {
 export default function LfoMenu({ index }: Props) {
   const dispatch = useDispatch()
 
-  const lfo = useActiveScene((activeScene) => activeScene.modulators[index].lfo)
+  const lfo = useActiveLightScene(
+    (activeScene) => activeScene.modulators[index].lfo
+  )
 
   return (
     <div

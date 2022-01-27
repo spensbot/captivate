@@ -159,7 +159,6 @@ function LabelledSlider({ index }: { index: number }) {
         orientation="vertical"
         disabled={overwrite === undefined}
       ></Slider>
-      {/* <OldLabel>{ch.toString()}</OldLabel> */}
       <Div>
         <Status
           style={{
@@ -203,9 +202,6 @@ const Status = styled.div`
 
   height: 100%;
 
-  /* height: 10%;
-  bottom: 0%; */
-
   left: 0;
   right: 0;
   border: 1px solid #fff7;
@@ -239,12 +235,3 @@ const statusStyles: { [key in Status_t]: React.CSSProperties } = {
     border: 'none',
   },
 }
-
-const OldLabel = styled.div`
-  color: #fff7;
-  font-size: 0.8rem;
-  width: 100%;
-  text-align: center;
-  margin-top: 0.5rem;
-  margin-bottom: 1rem;
-`

@@ -1,6 +1,6 @@
 import useDragMapped from '../hooks/useDragMapped'
 import { useDispatch } from 'react-redux'
-import { setBaseParams } from '../redux/scenesSlice'
+import { setBaseParams } from '../redux/controlSlice'
 
 export default function Hue() {
   const dispatch = useDispatch()

@@ -1,5 +1,5 @@
 import { useRealtimeSelector } from '../redux/realtimeStore'
-import { useScenesSelector } from '../redux/store'
+import { useControlSelector } from '../redux/store'
 import Cursor from '../base/Cursor'
 
 export default function SVCursor() {
@@ -7,7 +7,7 @@ export default function SVCursor() {
   let xOut = outputParams.saturation
   let yOut = outputParams.brightness
 
-  // const baseParams = useScenesSelector(
+  // const baseParams = useControlSelector(
   //   (state) => state.byId[state.active].baseParams
   // )
   // const x = baseParams.saturation

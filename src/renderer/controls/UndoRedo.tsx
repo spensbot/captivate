@@ -40,8 +40,8 @@ function redoAction(group: UndoGroup) {
 
 function getGroup(state: ReduxState): UndoGroup | null {
   if (state.gui.activePage === 'Universe') return 'dmx'
-  else if (state.gui.activePage === 'Modulation')
-    return state.midi.present.isEditing ? 'midi' : 'scenes'
+  else if (state.gui.activePage === 'Modulation' || 'Video')
+    return state.midi.present.isEditing ? 'midi' : 'control'
   return null
 }
 
