@@ -175,17 +175,17 @@ const configuration: webpack.Configuration = {
       })
         .on('close', (code: number) => process.exit(code!))
         .on('error', (spawnError) => console.error(spawnError))
-      // spawn('npm', ['run', 'start:visualizer'], {
-      //   shell: true,
-      //   env: process.env,
-      //   stdio: 'inherit',
-      // })
-      //   .on('close', (code) =>
-      //     console.log(`visualizer dev server closed with code: ${code}`)
-      //   )
-      //   .on('error', (err) =>
-      //     console.error(`visualizer dev server err: ${err}`)
-      //   )
+      spawn('npm', ['run', 'start:visualizer'], {
+        shell: true,
+        env: process.env,
+        stdio: 'inherit',
+      })
+        .on('close', (code) =>
+          console.log(`visualizer dev server closed with code: ${code}`)
+        )
+        .on('error', (err) =>
+          console.error(`visualizer dev server err: ${err}`)
+        )
     },
   },
 }

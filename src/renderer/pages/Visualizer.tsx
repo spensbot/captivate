@@ -8,6 +8,7 @@ import { useTypedSelector, getCleanReduxState } from '../redux/store'
 import SplitPane from '../base/SplitPane'
 import SceneSelection from '../scenes/SceneSelection'
 import OpenVisualizerButton from 'renderer/visualizer/OpenVisualizerButton'
+import VisualizerSceneEditor from 'renderer/visualizer/VisualizerSceneEditor'
 
 const visualizer = new VisualizerManager()
 let lastUpdateTime: number | null = null
@@ -52,7 +53,7 @@ export default function Visualizer() {
   }, [])
 
   const splitPaneStyle: React.CSSProperties = {
-    flex: '1 1 auto',
+    flex: '1 1 0',
     overflow: 'auto',
   }
 
@@ -75,6 +76,7 @@ export default function Visualizer() {
             <FPS />
             <OpenVisualizerButton />
           </Window>
+          <VisualizerSceneEditor />
         </Pane>
       </SplitPane>
     </Root>
@@ -89,11 +91,10 @@ const Root = styled.div`
 `
 
 const Window = styled.div`
-  width: 100%;
   position: relative;
   background-color: #000;
   flex: 1 1 0;
-  overflow: auto;
+  height: 60vh;
 `
 
 const Pane = styled.div`

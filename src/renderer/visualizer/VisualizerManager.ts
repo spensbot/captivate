@@ -28,6 +28,8 @@ export default class VisualizerManager {
   private renderer: THREE.WebGLRenderer // The renderer is the only THREE class that actually takes a while to instantiate (>3ms)
   private active: VisualizerBase
   private config: VisualizerConfig
+  private width = 0
+  private height = 0
 
   constructor() {
     this.renderer = new THREE.WebGLRenderer()
@@ -42,11 +44,13 @@ export default class VisualizerManager {
   }
 
   update(dt: number, res: VisualizerResource) {
+    this.renderer.clear()
     const control = res.state.control
     const config = control.visual.byId[control.visual.active].config
     if (!equal(config, this.config)) {
       this.config = config
       this.active = constructVisualizer(this.config)
+      this.active.resize(this.width, this.height)
     }
 
     this.active.update(dt, {
@@ -59,9 +63,10 @@ export default class VisualizerManager {
   }
 
   resize(width: number, height: number) {
+    this.width = width
+    this.height = height
+    this.renderer.clear()
     this.active.resize(width, height)
     this.renderer.setSize(width, height)
-    this.renderer.info.reset()
-    this.renderer.clear(true, true, true)
   }
 }
