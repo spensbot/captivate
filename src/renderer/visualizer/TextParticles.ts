@@ -15,7 +15,8 @@ const attrib = {
   size: 'size',
 }
 
-interface Config {
+export interface TextParticlesConfig {
+  type: 'TextParticles'
   text: string[]
   textSize: number
   fontType: FontType
@@ -26,17 +27,44 @@ interface Config {
   throwVelocity: number
 }
 
+export function initTextParticlesConfig(): TextParticlesConfig {
+  return {
+    type: 'TextParticles',
+    text: [
+      'CAPTIVATE',
+      'YOUR',
+      'AUDIENCE',
+      'BE\nHERE\nNOW',
+      'FEEL',
+      'WITH',
+      'ME',
+      'FEEL\nWITH\nME',
+      "IT's\nOK",
+    ],
+    fontType: 'zsd',
+    textSize: 1.5,
+    particleColor: 0xffffff,
+    particleSize: 0.1,
+    particleCount: 10000,
+    physics: {
+      type: 'gravity',
+      gravity: 15,
+      drag: 3,
+    },
+    throwVelocity: 0.5,
+  }
+}
+
 export default class TextParticles extends VisualizerBase {
-  readonly type = 'TextParticles'
   particleTexture = particles.circle
   particles = new THREE.Points()
   particleStates: ParticleState[] = []
-  config: Config
+  config: TextParticlesConfig
   planeArea: THREE.Mesh
   planeGeometry: THREE.PlaneGeometry
   activeTextIndex = 0
 
-  constructor(config: Config) {
+  constructor(config: TextParticlesConfig) {
     super()
     this.config = config
     this.planeGeometry = new THREE.PlaneGeometry()

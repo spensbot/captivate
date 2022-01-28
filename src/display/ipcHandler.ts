@@ -1,8 +1,8 @@
 import ipc_channels from './ipcChannels'
-import { VisualizerState } from '../renderer/visualizer/VisualizerManager'
+import { VisualizerResource } from '../renderer/visualizer/VisualizerManager'
 
 interface Config {
-  onNewVisualizerState: (visualizerState: VisualizerState) => void
+  onNewVisualizerResource: (visualizerState: VisualizerResource) => void
 }
 
 let _config: Config
@@ -15,6 +15,6 @@ export function ipcSetup(config: Config) {
 
   ipcRenderer.on(
     ipc_channels.new_visualizer_state,
-    (payload: VisualizerState) => _config.onNewVisualizerState(payload)
+    (payload: VisualizerResource) => _config.onNewVisualizerResource(payload)
   )
 }

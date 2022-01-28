@@ -10,8 +10,17 @@ const ARRAY = Array(50).fill(0)
 const RATIO_MIN = 0.02
 const RATIO_MAX = 0.1
 
+export interface SpheresConfig {
+  type: 'Spheres'
+}
+
+export function initSpheresConfig(): SpheresConfig {
+  return {
+    type: 'Spheres',
+  }
+}
+
 export default class _ extends VisualizerBase {
-  readonly type = 'Spheres'
   private sphere: THREE.Mesh
   private spheres: THREE.Mesh[]
   private strobe: Strobe = new Strobe()

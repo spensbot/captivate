@@ -7,16 +7,22 @@ import { initModulator } from '../../engine/modulation'
 import { nanoid } from 'nanoid'
 import { RandomizerOptions } from '../../engine/randomizer'
 import cloneDeep from 'lodash.clonedeep'
+import {
+  initVisualizerConfig,
+  VisualizerConfig,
+} from '../visualizer/VisualizerConfig'
 
 export interface VisualScene_t {
   name: string
   bombacity: number
+  config: VisualizerConfig
 }
 
 export function initVisualScene(): VisualScene_t {
   return {
     name: 'Name',
     bombacity: 0,
+    config: initVisualizerConfig('TextParticles'),
   }
 }
 
@@ -323,6 +329,12 @@ export const scenesSlice = createSlice({
     resetVisualScenes: (state, { payload }: PayloadAction<VisualScenes_t>) => {
       state.visual = payload
     },
+    setVisualSceneConfig: (
+      state,
+      { payload }: PayloadAction<VisualizerConfig>
+    ) => {
+      state.visual.byId[state.visual.active].config = payload
+    },
   },
 })
 
@@ -358,6 +370,7 @@ export const {
 
   // VISUAL SCENES
   resetVisualScenes,
+  setVisualSceneConfig,
 } = scenesSlice.actions
 
 export default scenesSlice.reducer

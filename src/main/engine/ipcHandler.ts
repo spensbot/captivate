@@ -7,7 +7,7 @@ import * as dmxConnection from './dmxConnection'
 import * as midiConnection from './midiConnection'
 import { PayloadAction } from '@reduxjs/toolkit'
 import { promises } from 'fs'
-import { VisualizerState } from '../../renderer/visualizer/VisualizerManager'
+import { VisualizerResource } from '../../renderer/visualizer/VisualizerManager'
 import { VisualizerContainer } from './createVisualizerWindow'
 
 interface Config {
@@ -44,7 +44,7 @@ export function ipcSetup(config: Config) {
       _config.renderer.send(ipcChannels.new_time_state, time_state),
     send_dispatch: (action: PayloadAction<any>) =>
       _config.renderer.send(ipcChannels.dispatch, action),
-    send_visualizer_state: (payload: VisualizerState) => {
+    send_visualizer_state: (payload: VisualizerResource) => {
       const visualizer = _config.visualizerContainer.visualizer
       if (visualizer) {
         visualizer.webContents.send(

@@ -5,6 +5,16 @@ import { Vector3 } from 'three'
 
 const ARRAY = Array(20).fill(0)
 
+export interface CubeSphereConfig {
+  type: 'CubeSphere'
+}
+
+export function initCubeSphereConfig(): CubeSphereConfig {
+  return {
+    type: 'CubeSphere',
+  }
+}
+
 class RandomCube {
   mesh: THREE.Mesh
   axis: Vector3
@@ -29,7 +39,6 @@ class RandomCube {
 }
 
 export default class CubeSphere extends VisualizerBase {
-  readonly type = 'CubeSphere'
   private cubes: RandomCube[]
 
   constructor() {

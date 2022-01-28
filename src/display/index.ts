@@ -1,14 +1,14 @@
 import VisualizerManager, {
-  VisualizerState,
+  VisualizerResource,
 } from '../renderer/visualizer/VisualizerManager'
 import { ipcSetup } from './ipcHandler'
 
 const vm = new VisualizerManager()
-let visualizerState: VisualizerState | null = null
+let visualizerState: VisualizerResource | null = null
 let lastUpdateTime: number | null = null
 
 ipcSetup({
-  onNewVisualizerState: (newState) => {
+  onNewVisualizerResource: (newState) => {
     visualizerState = newState
   },
 })

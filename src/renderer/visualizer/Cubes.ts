@@ -5,6 +5,16 @@ import { Vector3 } from 'three'
 import { Strobe, colorFromHSV } from './animations'
 import { Skew } from '../../engine/oscillator'
 
+export interface CubesConfig {
+  type: 'Cubes'
+}
+
+export function initCubesConfig(): CubesConfig {
+  return {
+    type: 'Cubes',
+  }
+}
+
 class RandomCube {
   private mesh: THREE.Mesh
   private axis: Vector3
@@ -25,7 +35,6 @@ class RandomCube {
 }
 
 export default class Cubes extends VisualizerBase {
-  readonly type = 'Cubes'
   private cubes: RandomCube[]
   private light: THREE.PointLight
   private strobe: Strobe = new Strobe()

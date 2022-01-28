@@ -2,15 +2,10 @@ import * as THREE from 'three'
 import { RealtimeState } from '../redux/realtimeStore'
 import { CleanReduxState } from '../redux/store'
 import VisualizerBase from './VisualizerBase'
-import Spheres from './Spheres'
-import TextSpin from './TextSpin'
-import Cubes from './Cubes'
-import CubeSphere from './CubeSphere'
-import TextParticles from './TextParticles'
+import { VisualizerConfig, constructVisualizer } from './VisualizerConfig'
+import equal from 'deep-equal'
 
-type Visualizer = Spheres | TextSpin | Cubes | CubeSphere | TextParticles
-type VisualizerType = Visualizer['type']
-export interface VisualizerState {
+export interface VisualizerResource {
   rt: RealtimeState
   state: CleanReduxState
 }
@@ -18,46 +13,32 @@ export interface VisualizerState {
 export default class VisualizerManager {
   private renderer: THREE.WebGLRenderer // The renderer is the only THREE class that actually takes a while to instantiate (>3ms)
   private active: VisualizerBase
+  private config: VisualizerConfig
 
-  constructor() {
+  constructor(res: VisualizerResource) {
     this.renderer = new THREE.WebGLRenderer()
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     this.renderer.outputEncoding = THREE.sRGBEncoding
-    this.active = new TextParticles({
-      text: [
-        'CAPTIVATE',
-        'YOUR',
-        'AUDIENCE',
-        'BE\nHERE\nNOW',
-        'FEEL',
-        'WITH',
-        'ME',
-        'FEEL\nWITH\nME',
-        "IT's\nOK",
-      ], //['FEEL', 'WITH', 'ME', 'FEEL\nWITH\nME'],
-      fontType: 'zsd',
-      textSize: 1.5,
-      particleColor: 0xffffff,
-      particleSize: 0.1,
-      particleCount: 10000,
-      physics: {
-        type: 'gravity',
-        gravity: 15,
-        drag: 3,
-      },
-      throwVelocity: 0.5,
-    })
+    const visual = res.state.control.visual
+    this.config = visual.byId[visual.active].config
+    this.active = constructVisualizer(this.config)
   }
 
   getElement() {
     return this.renderer.domElement
   }
 
-  update(dt: number, visualizerState: VisualizerState) {
-    const control = visualizerState.state.control
+  update(dt: number, res: VisualizerResource) {
+    const control = res.state.control
+    const config = control.visual.byId[control.visual.active].config
+    if (!equal(config, this.config)) {
+      this.config = config
+      this.active = constructVisualizer(this.config)
+    }
+
     this.active.update(dt, {
-      params: visualizerState.rt.outputParams,
-      time: visualizerState.rt.time,
+      params: res.rt.outputParams,
+      time: res.rt.time,
       scene: control.light.byId[control.light.active],
       master: control.master,
     })

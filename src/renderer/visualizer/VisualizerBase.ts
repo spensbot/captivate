@@ -13,11 +13,10 @@ export interface UpdateResource {
 
 // This abstract class is an interface and should never contain members (except for type) or a constructor
 export default abstract class VisualizerBase {
-  abstract readonly type: string
   protected scene: THREE.Scene
   protected camera: THREE.PerspectiveCamera
 
-  abstract update(res: UpdateResource): void
+  abstract update(dt: number, res: UpdateResource): void
 
   constructor() {
     this.scene = new THREE.Scene()

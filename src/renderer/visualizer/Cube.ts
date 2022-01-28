@@ -1,8 +1,10 @@
 import * as THREE from 'three'
 import VisualizerBase, { UpdateResource } from './VisualizerBase'
 
+export interface CubeConfig {
+  type: 'Cube'
+}
 export default class Cube extends VisualizerBase {
-  readonly type = 'Cube'
   private cube: THREE.Mesh
 
   constructor() {
