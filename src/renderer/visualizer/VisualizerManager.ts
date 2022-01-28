@@ -2,12 +2,26 @@ import * as THREE from 'three'
 import { RealtimeState } from '../redux/realtimeStore'
 import { CleanReduxState } from '../redux/store'
 import VisualizerBase from './VisualizerBase'
-import { VisualizerConfig, constructVisualizer } from './VisualizerConfig'
+import { VisualizerConfig, initVisualizerConfig } from './VisualizerConfig'
 import equal from 'deep-equal'
+import Spheres from './Spheres'
+import TextSpin from './TextSpin'
+import Cubes from './Cubes'
+import CubeSphere from './CubeSphere'
+import TextParticles from './TextParticles'
 
 export interface VisualizerResource {
   rt: RealtimeState
   state: CleanReduxState
+}
+
+export function constructVisualizer(config: VisualizerConfig): VisualizerBase {
+  if (config.type === 'CubeSphere') return new CubeSphere()
+  if (config.type === 'Cubes') return new Cubes()
+  if (config.type === 'Spheres') return new Spheres()
+  if (config.type === 'TextParticles') return new TextParticles(config)
+  if (config.type === 'TextSpin') return new TextSpin()
+  return new Spheres()
 }
 
 export default class VisualizerManager {
@@ -15,12 +29,11 @@ export default class VisualizerManager {
   private active: VisualizerBase
   private config: VisualizerConfig
 
-  constructor(res: VisualizerResource) {
+  constructor() {
     this.renderer = new THREE.WebGLRenderer()
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     this.renderer.outputEncoding = THREE.sRGBEncoding
-    const visual = res.state.control.visual
-    this.config = visual.byId[visual.active].config
+    this.config = initVisualizerConfig('Spheres')
     this.active = constructVisualizer(this.config)
   }
 

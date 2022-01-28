@@ -6,16 +6,6 @@ import { Spin, Wobble, Strobe, colorFromHSV } from './animations'
 const TEXT = 'FEEL\nWITH\nME'
 const SIZE = 1
 
-export interface TextSpinConfig {
-  type: 'TextSpin'
-}
-
-export function initTextSpinConfig(): TextSpinConfig {
-  return {
-    type: 'TextSpin',
-  }
-}
-
 export default class TextSpin extends VisualizerBase {
   particle: THREE.Texture | null = null
   text: THREE.Mesh

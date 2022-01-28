@@ -13,11 +13,6 @@ export const fonts = {
   helvetiker_reg: new FontLoader().parse(helvetiker_reg),
 } as const
 
-export type FontType = keyof typeof fonts
-
-//@ts-ignore: I know this works, but I'm not sure how to prove that to TS?
-export const fontTypes: FontType[] = Array.from(Object.keys(fonts))
-
 export { Font } from 'three/examples/jsm/loaders/FontLoader'
 
 console.log(`Fonts loaded in ${Date.now() - _start}ms`)

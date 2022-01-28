@@ -1,5 +1,6 @@
 import * as THREE from 'three'
-import { fonts, FontType } from './fonts'
+import { fonts } from './fonts'
+import { FontType } from './FontType'
 import { SVGLoader, StrokeStyle } from 'three/examples/jsm/loaders/SVGLoader'
 
 // Creates a centered Mesh of the given text
