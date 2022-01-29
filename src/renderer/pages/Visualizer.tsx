@@ -3,8 +3,8 @@ import FPS from '../visualizer/FPS'
 import VisualizerManager from '../visualizer/VisualizerManager'
 import styled from 'styled-components'
 import StatusBar from '../menu/StatusBar'
-import { useRealtimeSelector } from '../redux/realtimeStore'
-import { useTypedSelector, getCleanReduxState } from '../redux/store'
+import { useRealtimeSelector, realtimeStore } from '../redux/realtimeStore'
+import { store, useTypedSelector, getCleanReduxState } from '../redux/store'
 import SplitPane from '../base/SplitPane'
 import SceneSelection from '../scenes/SceneSelection'
 import OpenVisualizerButton from 'renderer/visualizer/OpenVisualizerButton'
@@ -12,6 +12,22 @@ import VisualizerSceneEditor from 'renderer/visualizer/VisualizerSceneEditor'
 
 const visualizer = new VisualizerManager()
 let lastUpdateTime: number | null = null
+
+function animateVisualizer() {
+  const now = Date.now()
+  let dt = 0
+  if (lastUpdateTime !== null) {
+    dt = now - lastUpdateTime
+  }
+  lastUpdateTime = now
+  visualizer.update(dt, {
+    rt: realtimeStore.getState(),
+    state: getCleanReduxState(store.getState()),
+  })
+  requestAnimationFrame(animateVisualizer)
+}
+
+animateVisualizer()
 
 export default function Visualizer() {
   const ref = useRef(null)

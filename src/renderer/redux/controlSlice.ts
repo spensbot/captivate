@@ -11,6 +11,7 @@ import {
   initVisualizerConfig,
   VisualizerConfig,
 } from '../visualizer/VisualizerConfig'
+import { MidiState, initMidiState, midiActions } from './midiState'
 
 export interface VisualScene_t {
   name: string
@@ -52,6 +53,7 @@ interface ScenesStateBundle {
 export type SceneType = keyof ScenesStateBundle
 
 export interface ControlState extends ScenesStateBundle {
+  midi: MidiState
   master: number
 }
 
@@ -75,6 +77,7 @@ export function initControlState(): ControlState {
   return {
     light: initScenesState(initLightScene()),
     visual: initScenesState(initVisualScene()),
+    midi: initMidiState(),
     master: 1,
   }
 }
@@ -335,6 +338,15 @@ export const scenesSlice = createSlice({
     ) => {
       state.visual.byId[state.visual.active].config = payload
     },
+
+    // =====================   MIDI   ===========================================
+    midiListen: (state, action) => midiActions.listen(state.midi, action),
+    midiSetButtonAction: (state, action) =>
+      midiActions.setButtonAction(state.midi, action),
+    midiSetIsEditing: (state, action) =>
+      midiActions.setIsEditing(state.midi, action),
+    midiSetSliderAction: (state, action) =>
+      midiActions.setSliderAction(state.midi, action),
   },
 })
 
@@ -371,6 +383,12 @@ export const {
   // VISUAL SCENES
   resetVisualScenes,
   setVisualSceneConfig,
+
+  // MIDI
+  midiListen,
+  midiSetButtonAction,
+  midiSetIsEditing,
+  midiSetSliderAction,
 } = scenesSlice.actions
 
 export default scenesSlice.reducer

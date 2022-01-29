@@ -1,7 +1,7 @@
 import { useTypedSelector, useMidiSelector } from '../redux/store'
 import styled from 'styled-components'
 import { useDispatch } from 'react-redux'
-import { setIsEditing } from '../redux/midiSlice'
+import { midiSetIsEditing } from '../redux/controlSlice'
 
 interface Props {
   type: 'midi' | 'dmx'
@@ -15,7 +15,7 @@ export default function ConnectionStatus({ type }: Props) {
   const color = connection.isConnected ? '#0f0' : '#f00'
 
   const onClick =
-    type === 'dmx' ? () => {} : () => dispatch(setIsEditing(!isEditing))
+    type === 'dmx' ? () => {} : () => dispatch(midiSetIsEditing(!isEditing))
 
   return (
     <Root>

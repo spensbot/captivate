@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit'
+import { PayloadAction } from '@reduxjs/toolkit'
 import { Param } from '../../engine/params'
 
 interface Range {
@@ -20,18 +20,9 @@ interface SetActiveSceneIndex {
   index: number
 }
 
-// const setActiveSceneIndexSchema = object<SetActiveSceneIndex>({
-//   type: equal('setActiveSceneIndex'),
-//   index: number()
-// })
-
 interface SetAutoSceneBombacity {
   type: 'setAutoSceneBombacity'
 }
-
-// const setAutoSceneBombacitySchema = object<SetAutoSceneBombacity>({
-//   type: equal('setAutoSceneBombacity')
-// })
 
 interface SetMaster {
   type: 'setMaster'
@@ -52,8 +43,6 @@ export type MidiAction =
   | SetBaseParam
   | SetBpm
 
-// const midiActionSchema = union<MidiAction>(setActiveSceneIndexSchema, setAutoSceneBombacitySchema)
-
 export function getActionID(action: MidiAction) {
   if (action.type === 'setActiveSceneIndex') {
     return action.type + action.index.toString()
@@ -72,27 +61,14 @@ export interface SliderAction extends ButtonAction {
   options: SliderControlOptions
 }
 
-// const midiActionControlledSchema = object<MidiActionControlled>({
-//   inputID: string(),
-//   action: midiActionSchema
-// })
-
 // ActionID = setAutoSceneBombacity, setActiveSceneIndex0, etc.
 // InputID = note70, cc50, etc.
 export interface MidiState {
   listening?: MidiAction
   isEditing: boolean
-  // byInputID: { [inputID: string]: MidiActionControlled }
   buttonActions: { [actionID: string]: ButtonAction }
   sliderActions: { [actionID: string]: SliderAction }
 }
-
-// export const midiStateSchema = object<MidiState>({
-//   listening: midiActionSchema,
-//   isEditing: boolean(),
-//   byInputID: map(union(undefined, midiActionControlledSchema)),
-//   byActionID: map(union(undefined, midiActionControlledSchema))
-// })
 
 export function initMidiState(): MidiState {
   return {
@@ -102,39 +78,35 @@ export function initMidiState(): MidiState {
   }
 }
 
-export const midiSlice = createSlice({
-  name: 'midi',
-  initialState: initMidiState(),
-  reducers: {
-    setButtonAction: (
-      state,
-      { payload }: PayloadAction<{ inputID: string; action: MidiAction }>
-    ) => {
-      clearInputID(state, payload.inputID)
-      state.buttonActions[getActionID(payload.action)] = payload
-    },
-    setSliderAction: (
-      state,
-      {
-        payload,
-      }: PayloadAction<{
-        inputID: string
-        action: MidiAction
-        options: SliderControlOptions
-      }>
-    ) => {
-      clearInputID(state, payload.inputID)
-      state.sliderActions[getActionID(payload.action)] = payload
-    },
-    listen: (state, { payload }: PayloadAction<MidiAction>) => {
-      state.listening = payload
-    },
-    setIsEditing: (state, { payload }: PayloadAction<boolean>) => {
-      delete state.listening
-      state.isEditing = payload
-    },
+export const midiActions = {
+  setButtonAction: (
+    state: MidiState,
+    { payload }: PayloadAction<{ inputID: string; action: MidiAction }>
+  ) => {
+    clearInputID(state, payload.inputID)
+    state.buttonActions[getActionID(payload.action)] = payload
   },
-})
+  setSliderAction: (
+    state: MidiState,
+    {
+      payload,
+    }: PayloadAction<{
+      inputID: string
+      action: MidiAction
+      options: SliderControlOptions
+    }>
+  ) => {
+    clearInputID(state, payload.inputID)
+    state.sliderActions[getActionID(payload.action)] = payload
+  },
+  listen: (state: MidiState, { payload }: PayloadAction<MidiAction>) => {
+    state.listening = payload
+  },
+  setIsEditing: (state: MidiState, { payload }: PayloadAction<boolean>) => {
+    delete state.listening
+    state.isEditing = payload
+  },
+}
 
 function clearInputID(state: MidiState, inputID: string) {
   for (let [actionID, buttonAction] of Object.entries(state.buttonActions)) {
@@ -145,7 +117,13 @@ function clearInputID(state: MidiState, inputID: string) {
   }
 }
 
-export const { setButtonAction, setSliderAction, listen, setIsEditing } =
-  midiSlice.actions
+// export const midiSlice = createSlice({
+//   name: 'midi',
+//   initialState: initMidiState(),
+//   reducers: {},
+// })
 
-export default midiSlice.reducer
+// export const { setButtonAction, setSliderAction, listen, setIsEditing } =
+//   midiSlice.actions
+
+// export default midiSlice.reducer

@@ -14,16 +14,16 @@ import controlReducer, {
   SceneType,
 } from './controlSlice'
 import { LightScene_t } from '../../engine/LightScene'
-import midiReducer, { MidiState } from './midiSlice'
 import mixerReducer from './mixerSlice'
 import undoable, { StateWithHistory } from 'redux-undo'
+import { MidiState } from './midiState'
 
 export interface UndoActionTypes {
   undo: string
   redo: string
 }
 
-export type UndoGroup = 'dmx' | 'control' | 'midi'
+export type UndoGroup = 'dmx' | 'control'
 
 export const undoActionTypes: { [key in UndoGroup]: UndoActionTypes } = {
   dmx: {
@@ -33,10 +33,6 @@ export const undoActionTypes: { [key in UndoGroup]: UndoActionTypes } = {
   control: {
     undo: 'CONTROL_UNDO',
     redo: 'CONTROL_REDO',
-  },
-  midi: {
-    undo: 'MIDI_UNDO',
-    redo: 'MIDI_REDO',
   },
 } as const
 
@@ -51,10 +47,6 @@ const baseReducer = combineReducers({
     undoType: undoActionTypes.control.undo,
     redoType: undoActionTypes.control.redo,
   }),
-  midi: undoable(midiReducer, {
-    undoType: undoActionTypes.midi.undo,
-    redoType: undoActionTypes.midi.redo,
-  }),
   mixer: mixerReducer,
 })
 
@@ -62,6 +54,7 @@ export type ReduxState = ReturnType<typeof baseReducer>
 
 const RESET_STATE = 'reset-state'
 const RESET_UNIVERSE = 'reset-universe'
+const RESET_CONTROL = 'reset-control'
 export function resetState(
   newState: CleanReduxState
 ): PayloadAction<CleanReduxState> {
@@ -74,6 +67,14 @@ export function resetUniverse(newDmxState: DmxState): PayloadAction<DmxState> {
   return {
     type: RESET_UNIVERSE,
     payload: newDmxState,
+  }
+}
+export function resetControl(
+  newControlState: ControlState
+): PayloadAction<ControlState> {
+  return {
+    type: RESET_CONTROL,
+    payload: newControlState,
   }
 }
 
@@ -91,14 +92,13 @@ const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (
 ) => {
   if (state === undefined) return baseReducer(state, action)
   if (action.type === RESET_STATE) {
-    const cs: CleanReduxState = action.payload
+    const cleanState: CleanReduxState = action.payload
     return {
-      connections: cs.connections,
-      dmx: initUndoState(cs.dmx),
-      gui: cs.gui,
-      control: initUndoState(cs.control),
-      midi: initUndoState(cs.midi),
-      mixer: cs.mixer,
+      connections: cleanState.connections,
+      dmx: initUndoState(cleanState.dmx),
+      gui: cleanState.gui,
+      control: initUndoState(cleanState.control),
+      mixer: cleanState.mixer,
     }
   } else if (action.type === RESET_UNIVERSE) {
     const us: DmxState = action.payload
@@ -108,6 +108,12 @@ const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (
         ...state.dmx,
         present: us,
       },
+    }
+  } else if (action.type === RESET_CONTROL) {
+    const cs: ControlState = action.payload
+    return {
+      ...state,
+      control: initUndoState(cs),
     }
   }
   return baseReducer(state, action)
@@ -132,7 +138,6 @@ export function getCleanReduxState(state: ReduxState) {
     dmx: state.dmx.present,
     gui: state.gui,
     control: state.control.present,
-    midi: state.midi.present,
     mixer: state.mixer,
   }
 }
@@ -175,5 +180,5 @@ export function useDmxSelector<T>(getVal: (dmx: DmxState) => T) {
 }
 
 export function useMidiSelector<T>(getVal: (midi: MidiState) => T) {
-  return useTypedSelector((state) => getVal(state.midi.present))
+  return useTypedSelector((state) => getVal(state.control.present.midi))
 }

@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import { getActionID, MidiAction } from '../redux/midiSlice'
+import { getActionID, MidiAction } from '../redux/midiState'
 import { useMidiSelector } from '../redux/store'
 import { SliderMidiOverlay } from './MidiOverlay'
 

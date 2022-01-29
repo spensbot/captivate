@@ -1,10 +1,6 @@
 import styled from 'styled-components'
-import {
-  getActionID,
-  MidiAction,
-  listen,
-  setSliderAction,
-} from '../redux/midiSlice'
+import { getActionID, MidiAction } from '../redux/midiState'
+import { midiListen, midiSetSliderAction } from '../redux/controlSlice'
 import { useMidiSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import DraggableNumber from './DraggableNumber'
@@ -28,7 +24,7 @@ export function ButtonMidiOverlay({ children, action, style }: Props) {
   const dispatch = useDispatch()
 
   const onClick = () => {
-    dispatch(listen(action))
+    dispatch(midiListen(action))
   }
 
   return (
@@ -55,12 +51,12 @@ export function SliderMidiOverlay({ children, action, style }: Props) {
   const dispatch = useDispatch()
 
   const onClick = () => {
-    dispatch(listen(action))
+    dispatch(midiListen(action))
   }
 
   const onChangeMin = (newVal: number) => {
     dispatch(
-      setSliderAction({
+      midiSetSliderAction({
         ...controlledAction,
         options: {
           ...controlledAction.options,
@@ -72,7 +68,7 @@ export function SliderMidiOverlay({ children, action, style }: Props) {
 
   const onChangeMax = (newVal: number) => {
     dispatch(
-      setSliderAction({
+      midiSetSliderAction({
         ...controlledAction,
         options: {
           ...controlledAction.options,
@@ -84,7 +80,7 @@ export function SliderMidiOverlay({ children, action, style }: Props) {
 
   const onClickMode = () => {
     dispatch(
-      setSliderAction({
+      midiSetSliderAction({
         ...controlledAction,
         options: {
           ...controlledAction.options,
@@ -96,7 +92,7 @@ export function SliderMidiOverlay({ children, action, style }: Props) {
 
   const onClickValue = () => {
     dispatch(
-      setSliderAction({
+      midiSetSliderAction({
         ...controlledAction,
         options: {
           ...controlledAction.options,

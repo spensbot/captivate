@@ -1,10 +1,6 @@
-import {
-  LightScenes_t,
-  resetLightScenes,
-  SceneType,
-} from '../redux/controlSlice'
+import { SceneType, ControlState } from '../redux/controlSlice'
 import { IconButton } from '@mui/material'
-import { store } from '../redux/store'
+import { store, resetControl } from '../redux/store'
 import { loadFile, saveFile, captivateFileFilters } from '../saveload_renderer'
 import styled from 'styled-components'
 import SaveIcon from '@mui/icons-material/Save'
@@ -12,34 +8,32 @@ import PublishIcon from '@mui/icons-material/Publish'
 import AutoScene from './AutoScene'
 import ScenesList from './ScenesList'
 
+type SaveType = ControlState
+
 function loadScenes() {
-  // loadFile('Load Scenes', [captivateFileFilters.scenes])
-  //   .then((serializedLightScenes) => {
-  //     const newScenes: ControlState = JSON.parse(serializedLightScenes)
-  //     store.dispatch(resetLightScenes(newScenes))
-  //   })
-  //   .catch((err) => {
-  //     console.log(err)
-  //   })
+  loadFile('Load Scenes', [captivateFileFilters.scenes])
+    .then((serializedControlState) => {
+      const newControlState: SaveType = JSON.parse(serializedControlState)
+      store.dispatch(resetControl(newControlState))
+    })
+    .catch((err) => {
+      console.log(err)
+    })
 }
 
 function saveScenes() {
-  // const controlState: ControlState = store.getState().scenes.present
-  // const serializedControlState = JSON.stringify(controlState)
-  // saveFile('Save Scenes', serializedControlState, [captivateFileFilters.scenes])
-  //   .then((err) => {
-  //     if (err) {
-  //       console.log(err)
-  //     }
-  //   })
-  //   .catch((err) => {
-  //     console.log(err)
-  //   })
+  const controlState: SaveType = store.getState().control.present
+  const serializedControlState = JSON.stringify(controlState)
+  saveFile('Save Scenes', serializedControlState, [captivateFileFilters.scenes])
+    .then((err) => {
+      if (err) {
+        console.log(err)
+      }
+    })
+    .catch((err) => {
+      console.log(err)
+    })
 }
-
-function loadVisualizerScenes() {}
-
-function saveVisualizerScenes() {}
 
 export default function SceneSelection({
   sceneType,
@@ -51,14 +45,10 @@ export default function SceneSelection({
       <Header>
         {`${sceneType === 'light' ? 'Light' : 'Visual'} Scenes`}
         <Sp />
-        <IconButton
-          onClick={sceneType === 'light' ? saveScenes : saveVisualizerScenes}
-        >
+        <IconButton onClick={saveScenes}>
           <SaveIcon />
         </IconButton>
-        <IconButton
-          onClick={sceneType === 'light' ? loadScenes : loadVisualizerScenes}
-        >
+        <IconButton onClick={loadScenes}>
           <PublishIcon />
         </IconButton>
       </Header>

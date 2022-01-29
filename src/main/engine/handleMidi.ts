@@ -1,12 +1,11 @@
 import { MidiMessage } from '../../engine/midi'
 import { CleanReduxState } from '../../renderer/redux/store'
 import { RealtimeState } from '../../renderer/redux/realtimeStore'
+import { getActionID, SliderAction } from '../../renderer/redux/midiState'
 import {
-  setButtonAction,
-  setSliderAction,
-  getActionID,
-  SliderAction,
-} from '../../renderer/redux/midiSlice'
+  midiSetButtonAction,
+  midiSetSliderAction,
+} from '../../renderer/redux/controlSlice'
 import {
   setActiveSceneIndex,
   setAutoSceneBombacity,
@@ -43,12 +42,12 @@ export function handleMessage(
   dispatch: (action: PayloadAction<any>) => void
 ) {
   const input = getInput(message)
-  const midiState = state.midi
+  const midiState = state.control.midi
 
   if (midiState.isEditing && midiState.listening) {
     if (midiState.listening.type === 'setActiveSceneIndex') {
       dispatch(
-        setButtonAction({
+        midiSetButtonAction({
           inputID: input.id,
           action: midiState.listening,
         })
@@ -56,7 +55,7 @@ export function handleMessage(
     } else {
       if (input.message.type === 'CC') {
         dispatch(
-          setSliderAction({
+          midiSetSliderAction({
             inputID: input.id,
             action: midiState.listening,
             options: {
@@ -78,7 +77,7 @@ export function handleMessage(
           // if the note is already set, do nothing
         } else {
           dispatch(
-            setSliderAction({
+            midiSetSliderAction({
               inputID: input.id,
               action: midiState.listening,
               options: {
