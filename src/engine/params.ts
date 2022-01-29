@@ -15,6 +15,7 @@ export function initParams() {
 }
 export type Params = ReturnType<typeof initParams>
 export type Param = keyof Params
+
 export const paramsList: Param[] = [
   'hue',
   'saturation',
@@ -29,8 +30,8 @@ export const paramsList: Param[] = [
   'randomize',
 ]
 
-export function initModulation(): Params {
-  const params = initParams()
-  paramsList.forEach((param) => (params[param] = 0.5))
-  return params
+export type Modulation = Partial<Params>
+
+export function initModulation(): Modulation {
+  return {}
 }

@@ -1,11 +1,11 @@
-import { Params, initModulation, paramsList, Param } from './params'
+import { Params, initModulation, paramsList, Param, Modulation } from './params'
 import { Lfo, GetValue, GetRamp } from './oscillator'
 import { LightScene_t } from './LightScene'
 import { clampNormalized } from '../util/util'
 
 export interface Modulator {
   lfo: Lfo
-  modulation: Params
+  modulation: Modulation
 }
 
 export function initModulator() {
@@ -42,11 +42,15 @@ function modulateParam(
 ) {
   return clampNormalized(
     modulators.reduce((sum: number, modulator, index) => {
-      const modAmountMapped = modulator.modulation[paramKey] * 2 - 1 // from -1 to 1
-      const modValueMapped = modValues[index] * 2 - 1 // from -1 to 1
-      const addedModulation = (modAmountMapped * modValueMapped) / 2 // from -0.5 to -0.5
-
-      return sum + addedModulation
+      const modAmount = modulator.modulation[paramKey]
+      if (modAmount === undefined) {
+        return sum
+      } else {
+        const modAmountMapped = modAmount * 2 - 1 // from -1 to 1
+        const modValueMapped = modValues[index] * 2 - 1 // from -1 to 1
+        const addedModulation = (modAmountMapped * modValueMapped) / 2 // from -0.5 to -0.5
+        return sum + addedModulation
+      }
     }, baseParam)
   )
 }

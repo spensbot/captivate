@@ -93,7 +93,7 @@ interface IncrementModulatorPayload {
 interface SetModulationPayload {
   index: number
   param: Param
-  value: number
+  value: number | undefined
 }
 
 function modifyActiveLightScene(
