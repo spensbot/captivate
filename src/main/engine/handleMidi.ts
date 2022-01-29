@@ -22,8 +22,8 @@ interface MidiInput {
 
 function getInputID(msg: MidiMessage): string {
   if (msg.type === 'On' || msg.type === 'Off')
-    return 'note' + msg.number.toString()
-  if (msg.type === 'CC') return 'cc' + msg.number
+    return msg.channel + 'note' + msg.number.toString()
+  if (msg.type === 'CC') return msg.channel + 'cc' + msg.number
   return 'unknown'
 }
 
