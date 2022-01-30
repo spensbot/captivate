@@ -9,10 +9,7 @@ import {
   setActiveSceneName,
   copyActiveScene,
   SceneType,
-  initVisualScene,
 } from '../redux/controlSlice'
-import { nanoid } from 'nanoid'
-import { initLightScene } from '../../engine/LightScene'
 import { IconButton } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import AddIcon from '@mui/icons-material/Add'
@@ -24,12 +21,6 @@ import DragHandleIcon from '@mui/icons-material/DragHandle'
 import CopyIcon from '@mui/icons-material/FileCopy'
 
 function getColor(bombacity: number) {
-  // const min = 100
-  // const range = 100
-  // const r = min + bombacity * range
-  // const g = min
-  // const b = min + (1-bombacity) * range
-  // return `rgb(${r}, ${g}, ${b})`
   const hueStart = 250
   const hueRange = 110 // 170
   const hue = (hueStart + bombacity * hueRange) % 360
@@ -96,7 +87,11 @@ export function Scene({ sceneType, index, id }: Props) {
       {(provided) => (
         <div ref={provided.innerRef} {...provided.draggableProps}>
           <ButtonMidiOverlay
-            action={{ type: 'setActiveSceneIndex', index: index }}
+            action={{
+              type: 'setActiveSceneIndex',
+              sceneType: sceneType,
+              index: index,
+            }}
           >
             <Root
               style={style}

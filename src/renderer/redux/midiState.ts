@@ -1,5 +1,6 @@
 import { PayloadAction } from '@reduxjs/toolkit'
 import { Param } from '../../engine/params'
+import { SceneType } from './controlSlice'
 
 interface Range {
   min: number
@@ -17,6 +18,7 @@ export type SliderControlOptions = SliderControl_cc | SliderControl_note
 
 interface SetActiveSceneIndex {
   type: 'setActiveSceneIndex'
+  sceneType: SceneType
   index: number
 }
 
@@ -43,9 +45,11 @@ export type MidiAction =
   | SetBaseParam
   | SetBpm
 
+// must uniquely identify an action (for use in a hash table)
+// does not need to be human readable. Just unique for a given action
 export function getActionID(action: MidiAction) {
   if (action.type === 'setActiveSceneIndex') {
-    return action.type + action.index.toString()
+    return action.type + action.sceneType + action.index.toString()
   }
   if (action.type === 'setBaseParam') {
     return action.type + action.paramKey

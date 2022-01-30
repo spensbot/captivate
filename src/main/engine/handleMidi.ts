@@ -20,6 +20,8 @@ interface MidiInput {
   message: MidiMessage
 }
 
+// must uniquely identify a midi message source (for use in a hash table)
+// does not need to be human readable. Just unique for a given action
 function getInputID(msg: MidiMessage): string {
   if (msg.type === 'On' || msg.type === 'Off')
     return msg.channel + 'note' + msg.number.toString()
@@ -101,7 +103,7 @@ export function handleMessage(
         if (buttonAction.action.type === 'setActiveSceneIndex') {
           dispatch(
             setActiveSceneIndex({
-              sceneType: 'light',
+              sceneType: buttonAction.action.sceneType,
               val: buttonAction.action.index,
             })
           )
