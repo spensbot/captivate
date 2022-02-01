@@ -20,6 +20,7 @@ export default class TextParticles extends VisualizerBase {
   particles = new THREE.Points()
   particleStates: ParticleState[] = []
   config: TextParticlesConfig
+  material: THREE.ShaderMaterial
   planeArea: THREE.Mesh
   planeGeometry: THREE.PlaneGeometry
   activeTextIndex = 0
@@ -29,6 +30,7 @@ export default class TextParticles extends VisualizerBase {
     this.config = config
     this.planeGeometry = new THREE.PlaneGeometry()
     const material = new THREE.MeshBasicMaterial()
+    this.material = new THREE.ShaderMaterial()
     this.planeArea = new THREE.Mesh(this.planeGeometry, material)
     this.planeArea.visible = false
     this.scene.add(this.planeArea)
@@ -90,6 +92,8 @@ export default class TextParticles extends VisualizerBase {
     pos.needsUpdate = true
     color.needsUpdate = true
     size.needsUpdate = true
+
+    this.material.needsUpdate = true
   }
 
   createParticles() {
@@ -124,7 +128,7 @@ export default class TextParticles extends VisualizerBase {
       new THREE.Float32BufferAttribute(sizes, 1)
     )
 
-    const material = new THREE.ShaderMaterial({
+    this.material = new THREE.ShaderMaterial({
       uniforms: {
         color: { value: new THREE.Color(0xffffff) },
         pointTexture: { value: this.particleTexture },
@@ -137,7 +141,7 @@ export default class TextParticles extends VisualizerBase {
       transparent: true,
     })
 
-    this.particles = new THREE.Points(geoParticles, material)
+    this.particles = new THREE.Points(geoParticles, this.material)
     this.scene.add(this.particles)
   }
 

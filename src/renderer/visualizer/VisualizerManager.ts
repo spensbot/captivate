@@ -48,6 +48,7 @@ export default class VisualizerManager {
     const control = res.state.control
     const config = control.visual.byId[control.visual.active].config
     if (!equal(config, this.config)) {
+      console.log('changed')
       this.config = config
       this.active = constructVisualizer(this.config)
       this.active.resize(this.width, this.height)

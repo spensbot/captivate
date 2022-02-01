@@ -6,6 +6,7 @@ import * as themes from './theme'
 import { Provider } from 'react-redux'
 import { store, getCleanReduxState } from './redux/store'
 import { setDmx, setMidi } from './redux/connectionsSlice'
+import { setActiveSceneIndex } from './redux/controlSlice'
 import {
   realtimeStore,
   realtimeContext,
@@ -15,6 +16,7 @@ import { ipc_setup, send_control_state } from './ipcHandler'
 import { ThemeProvider as MuiThemeProvider } from '@emotion/react'
 import { createTheme } from '@mui/material/styles'
 import { autoSave } from './saveload_renderer'
+import { getUndoGroup, undoAction, redoAction } from './controls/UndoRedo'
 
 const theme = themes.dark()
 const muiTheme = createTheme({
@@ -47,6 +49,37 @@ const ipc_callbacks = ipc_setup({
 send_control_state(getCleanReduxState(store.getState()))
 
 store.subscribe(() => send_control_state(getCleanReduxState(store.getState())))
+
+document.onkeydown = (e) => {
+  const asInt = parseInt(e.key)
+  if (asInt !== NaN) {
+    if (asInt === 0) {
+      store.dispatch(
+        setActiveSceneIndex({
+          sceneType: 'light',
+          val: 10,
+        })
+      )
+    } else {
+      store.dispatch(
+        setActiveSceneIndex({
+          sceneType: 'light',
+          val: asInt - 1,
+        })
+      )
+    }
+  }
+  if (e.metaKey && e.key === 'z') {
+    const group = getUndoGroup(store.getState())
+    if (group !== null) {
+      if (e.shiftKey) {
+        store.dispatch(redoAction(group))
+      } else {
+        store.dispatch(undoAction(group))
+      }
+    }
+  }
+}
 
 render(
   <Provider store={store}>

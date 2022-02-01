@@ -74,7 +74,7 @@ export function Scene({ sceneType, index, id }: Props) {
   }
 
   let style: React.CSSProperties = {
-    backgroundColor: getColor(bombacity),
+    backgroundColor: sceneType === 'light' ? getColor(bombacity) : undefined,
   }
 
   if (isActive) {
@@ -108,13 +108,17 @@ export function Scene({ sceneType, index, id }: Props) {
               {isActive ? (
                 <Column>
                   <Input value={name} onChange={onNameChange} />
-                  <Sp />
-                  <Slider
-                    value={bombacity}
-                    radius={0.3}
-                    orientation="horizontal"
-                    onChange={onBombacityChange}
-                  />
+                  {sceneType === 'light' && (
+                    <>
+                      <Sp />
+                      <Slider
+                        value={bombacity}
+                        radius={0.3}
+                        orientation="horizontal"
+                        onChange={onBombacityChange}
+                      />
+                    </>
+                  )}
                 </Column>
               ) : (
                 <>
@@ -170,6 +174,8 @@ const Root = styled.div`
   border-radius: 7px;
   box-sizing: border-box;
   border: 1px solid #7777;
+  background-color: ${(props) => props.theme.colors.bg.lighter};
+  height: 3.4rem;
   :hover {
     border: 1px solid;
     cursor: pointer;

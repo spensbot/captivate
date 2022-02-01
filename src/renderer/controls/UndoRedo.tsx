@@ -3,7 +3,6 @@ import {
   useTypedSelector,
   undoActionTypes,
   UndoGroup,
-  store,
   ReduxState,
 } from '../redux/store'
 import { useDispatch } from 'react-redux'
@@ -13,39 +12,26 @@ import IconButton from '@mui/material/IconButton'
 
 interface Props {}
 
-document.onkeydown = (ev) => {
-  if (ev.metaKey && ev.key === 'z') {
-    const group = getGroup(store.getState())
-    if (group !== null) {
-      if (ev.shiftKey) {
-        store.dispatch(redoAction(group))
-      } else {
-        store.dispatch(undoAction(group))
-      }
-    }
-  }
-}
-
-function undoAction(group: UndoGroup) {
+export function undoAction(group: UndoGroup) {
   return {
     type: undoActionTypes[group].undo,
   }
 }
 
-function redoAction(group: UndoGroup) {
+export function redoAction(group: UndoGroup) {
   return {
     type: undoActionTypes[group].redo,
   }
 }
 
-function getGroup(state: ReduxState): UndoGroup | null {
+export function getUndoGroup(state: ReduxState): UndoGroup | null {
   if (state.gui.activePage === 'Universe') return 'dmx'
   else if (state.gui.activePage === 'Modulation' || 'Video') return 'control'
   return null
 }
 
 export default function UndoRedo({}: Props) {
-  const group = useTypedSelector(getGroup)
+  const group = useTypedSelector(getUndoGroup)
   const canUndo = useTypedSelector((state) =>
     group ? state[group].past.length > 0 : false
   )

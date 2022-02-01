@@ -119,7 +119,6 @@ function getWindowMultiplier(fixtureWindow?: Window, movingWindow?: Window) {
 }
 
 function getDmxValue(
-  master: number,
   fixtureChannel: FixtureChannel,
   params: Params,
   colors: Colors,
@@ -131,8 +130,7 @@ function getDmxValue(
       return (
         params.brightness *
         DMX_MAX_VALUE *
-        getWindowMultiplier2D(fixtureWindow, movingWindow) *
-        master
+        getWindowMultiplier2D(fixtureWindow, movingWindow)
       )
     case 'other':
       return fixtureChannel.default
@@ -187,7 +185,6 @@ function calculateDmx(
           channels[outputChannel - 1] = overwrite * DMX_MAX_VALUE
         } else if (outputParams.epicness >= fixtureType.epicness) {
           let dmxOut = getDmxValue(
-            _s.control.master,
             channel,
             outputParams,
             colors,
@@ -195,11 +192,12 @@ function calculateDmx(
             movingWindow
           )
           if (channel.type === 'master') {
-            dmxOut = applyRandomization(
-              dmxOut,
-              randomizerState[i],
-              outputParams.randomize
-            )
+            dmxOut =
+              applyRandomization(
+                dmxOut,
+                randomizerState[i],
+                outputParams.randomize
+              ) * _s.control.master
           }
           channels[outputChannel - 1] = dmxOut
         } else {

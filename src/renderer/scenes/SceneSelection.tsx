@@ -1,12 +1,20 @@
-import { SceneType, ControlState } from '../redux/controlSlice'
+import {
+  SceneType,
+  ControlState,
+  sortScenesByBombacity,
+  autoBombacity,
+} from '../redux/controlSlice'
 import { IconButton } from '@mui/material'
 import { store, resetControl } from '../redux/store'
 import { loadFile, saveFile, captivateFileFilters } from '../saveload_renderer'
 import styled from 'styled-components'
 import SaveIcon from '@mui/icons-material/Save'
-import PublishIcon from '@mui/icons-material/Publish'
+import FileOpenIcon from '@mui/icons-material/FileOpen'
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
+import SortIcon from '@mui/icons-material/Sort'
 import AutoScene from './AutoScene'
 import ScenesList from './ScenesList'
+import { useDispatch } from 'react-redux'
 
 type SaveType = ControlState
 
@@ -40,16 +48,31 @@ export default function SceneSelection({
 }: {
   sceneType: SceneType
 }) {
+  const dispatch = useDispatch()
+
   return (
     <Root>
       <Header>
         {`${sceneType === 'light' ? 'Light' : 'Visual'} Scenes`}
         <Sp />
+        {sceneType === 'light' && (
+          <>
+            {' '}
+            <IconButton
+              onClick={() => dispatch(sortScenesByBombacity(sceneType))}
+            >
+              <SortIcon style={{ transform: 'scaleY(-1)' }} />
+            </IconButton>
+            <IconButton onClick={() => dispatch(autoBombacity(sceneType))}>
+              <AutoAwesomeIcon />
+            </IconButton>
+          </>
+        )}
         <IconButton onClick={saveScenes}>
           <SaveIcon />
         </IconButton>
         <IconButton onClick={loadScenes}>
-          <PublishIcon />
+          <FileOpenIcon />
         </IconButton>
       </Header>
       <Sp2 />
@@ -82,5 +105,5 @@ const Sp = styled.div`
 `
 
 const Sp2 = styled.div`
-  height: 0.5rem;
+  min-height: 0.5rem;
 `

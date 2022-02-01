@@ -192,6 +192,8 @@ export const scenesSlice = createSlice({
       const scenes = state[sceneType]
       if (val > -1 && scenes.ids.length > val) {
         scenes.active = scenes.ids[val]
+      } else {
+        console.error('Tried to set the scene to an out-of-bounds index')
       }
     },
     setActiveSceneBombacity: (
@@ -227,6 +229,19 @@ export const scenesSlice = createSlice({
       const id = nanoid()
       scenes.ids.push(id)
       scenes.byId[id] = cloneDeep(scenes.byId[scenes.active])
+    },
+    sortScenesByBombacity: (state, { payload }: PayloadAction<SceneType>) => {
+      const scenes = state[payload]
+      scenes.ids.sort(
+        (idLeft, idRight) =>
+          scenes.byId[idLeft].bombacity - scenes.byId[idRight].bombacity
+      )
+    },
+    autoBombacity: (state, { payload }: PayloadAction<SceneType>) => {
+      const scenes = state[payload]
+      scenes.ids.forEach((id, i) => {
+        scenes.byId[id].bombacity = i / (scenes.ids.length - 1)
+      })
     },
 
     // =====================   LIGHT SCENES ONLY   ===========================
@@ -365,6 +380,8 @@ export const {
   setActiveSceneName,
   reorderScene,
   copyActiveScene,
+  sortScenesByBombacity,
+  autoBombacity,
 
   // LIGHT SCENES
   resetLightScenes,

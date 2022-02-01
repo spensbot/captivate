@@ -63,18 +63,20 @@ export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
           color: enabled ? '#fff' : '#fff5',
         }}
       />
-      <SliderWrapper>
-        {/* <Slider value={bombacity} min={0} max={0} step={0.01} orientation="horizontal"
+      {sceneType === 'light' && (
+        <SliderWrapper>
+          {/* <Slider value={bombacity} min={0} max={0} step={0.01} orientation="horizontal"
           onChange={(e, value) => dispatch(setAutoSceneBombacity(value))}
         /> */}
-        <Slider
-          value={bombacity}
-          radius={enabled ? 0.35 : 0.3}
-          orientation="horizontal"
-          onChange={onBombacityChange}
-          color={enabled ? '#3d5e' : undefined}
-        />
-      </SliderWrapper>
+          <Slider
+            value={bombacity}
+            radius={enabled ? 0.35 : 0.3}
+            orientation="horizontal"
+            onChange={onBombacityChange}
+            color={enabled ? '#3d5e' : undefined}
+          />
+        </SliderWrapper>
+      )}
     </Root>
   )
 }
