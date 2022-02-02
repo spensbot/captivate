@@ -8,15 +8,18 @@ import connectionsReducer from './connectionsSlice'
 import { useSelector, TypedUseSelectorHook } from 'react-redux'
 import dmxReducer, { DmxState } from './dmxSlice'
 import guiReducer from './guiSlice'
-import controlReducer, {
-  ControlState,
-  VisualScene_t,
-  SceneType,
-} from './controlSlice'
-import { LightScene_t } from '../../engine/LightScene'
+import controlReducer, { ControlState } from './controlSlice'
+import { LightScene_t } from '../../shared/Scenes'
 import mixerReducer from './mixerSlice'
 import undoable, { StateWithHistory } from 'redux-undo'
 import { MidiState } from './midiState'
+import {
+  VisualScene_t,
+  SceneType,
+  handleBadLightScene,
+  handleBadVisualScene,
+  handleBadScene,
+} from '../../shared/Scenes'
 
 export interface UndoActionTypes {
   undo: string
@@ -154,23 +157,31 @@ export function useActiveScene<T>(
 ) {
   return useTypedSelector((state) =>
     getVal(
-      state.control.present[sceneType].byId[
-        state.control.present[sceneType].active
-      ]
+      handleBadScene(
+        state.control.present[sceneType].byId[
+          state.control.present[sceneType].active
+        ]
+      )
     )
   )
 }
 
 export function useActiveLightScene<T>(getVal: (scene: LightScene_t) => T) {
   return useTypedSelector((state) =>
-    getVal(state.control.present.light.byId[state.control.present.light.active])
+    getVal(
+      handleBadLightScene(
+        state.control.present.light.byId[state.control.present.light.active]
+      )
+    )
   )
 }
 
 export function useActiveVisualScene<T>(getVal: (scene: VisualScene_t) => T) {
   return useTypedSelector((state) =>
     getVal(
-      state.control.present.visual.byId[state.control.present.visual.active]
+      handleBadVisualScene(
+        state.control.present.visual.byId[state.control.present.visual.active]
+      )
     )
   )
 }

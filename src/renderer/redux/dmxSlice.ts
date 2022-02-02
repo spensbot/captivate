@@ -7,8 +7,8 @@ import {
   fixtureTypesByID,
   getTestUniverse,
   FixtureChannel,
-} from '../../engine/dmxFixtures'
-import { clampNormalized } from '../../util/util'
+} from '../../shared/dmxFixtures'
+import { clampNormalized } from '../../shared/util'
 
 export interface DmxState {
   universe: Universe

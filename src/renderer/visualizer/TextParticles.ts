@@ -5,8 +5,8 @@ import shaders from './shaders'
 import { particles } from './particles'
 import { textOutlineShapesAndHoles, textBounds } from './text'
 import { colorFromHSV, distance } from './animations'
-import { isNewPeriod } from '../../engine/TimeState'
-import { random } from 'util/util'
+import { isNewPeriod } from '../../shared/TimeState'
+import { random } from 'shared/util'
 import { gravity, ParticleState } from './particlePhysics'
 import { TextParticlesConfig } from './TextParticlesConfig'
 
@@ -23,6 +23,7 @@ export default class TextParticles extends VisualizerBase {
   material: THREE.ShaderMaterial
   planeArea: THREE.Mesh
   planeGeometry: THREE.PlaneGeometry
+  lastBeats = 0
   activeTextIndex = 0
 
   constructor(config: TextParticlesConfig) {
@@ -51,7 +52,7 @@ export default class TextParticles extends VisualizerBase {
 
     const col = new THREE.Color(colorFromHSV(params.hue, 1, params.brightness))
 
-    if (isNewPeriod(time, 8)) {
+    if (isNewPeriod(this.lastBeats, time.beats, 8)) {
       const { text, textSize, fontType, particleCount } = this.config
       this.activeTextIndex += 1
       if (this.activeTextIndex >= text.length) this.activeTextIndex = 0
@@ -61,7 +62,6 @@ export default class TextParticles extends VisualizerBase {
         particleCount,
         fontType
       )
-      console.log('point.length', points.length)
       this.particleStates.forEach((pState, i) => {
         pState.ix = points[i]?.x ?? 0
         pState.iy = points[i]?.y ?? 0
@@ -69,6 +69,7 @@ export default class TextParticles extends VisualizerBase {
         // pState.vy = this.throw()
       })
     }
+    this.lastBeats = time.beats
 
     const dt_seconds = dt / 1000
 

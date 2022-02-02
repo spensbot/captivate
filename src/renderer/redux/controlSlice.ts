@@ -1,78 +1,29 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { initLightScene, LightScene_t } from '../../engine/LightScene'
-import { LfoShape } from '../../engine/oscillator'
-import { Param, Params } from '../../engine/params'
-import { clampNormalized, clamp } from '../../util/util'
-import { initModulator } from '../../engine/modulation'
+import { LfoShape } from '../../shared/oscillator'
+import { Param, Params } from '../../shared/params'
+import { clampNormalized, clamp } from '../../shared/util'
+import { initModulator } from '../../shared/modulation'
 import { nanoid } from 'nanoid'
-import { RandomizerOptions } from '../../engine/randomizer'
+import { RandomizerOptions } from '../../shared/randomizer'
 import cloneDeep from 'lodash.clonedeep'
-import {
-  initVisualizerConfig,
-  VisualizerConfig,
-} from '../visualizer/VisualizerConfig'
+import { VisualizerConfig } from '../visualizer/VisualizerConfig'
 import { MidiState, initMidiState, midiActions } from './midiState'
-
-export interface VisualScene_t {
-  name: string
-  bombacity: number
-  config: VisualizerConfig
-}
-
-export function initVisualScene(): VisualScene_t {
-  return {
-    name: 'Name',
-    bombacity: 0,
-    config: initVisualizerConfig('TextParticles'),
-  }
-}
-
-export interface AutoScene_t {
-  enabled: boolean
-  bombacity: number
-  period: number
-}
-
-type SceneID = string
-
-interface ScenesState<T> {
-  ids: SceneID[]
-  byId: { [key: SceneID]: T }
-  active: SceneID
-  auto: AutoScene_t
-}
-
-export type LightScenes_t = ScenesState<LightScene_t>
-export type VisualScenes_t = ScenesState<VisualScene_t>
-
-interface ScenesStateBundle {
-  light: LightScenes_t
-  visual: VisualScenes_t
-}
-
-export type SceneType = keyof ScenesStateBundle
+import {
+  ScenesStateBundle,
+  initScenesState,
+  initLightScene,
+  initVisualScene,
+  LightScene_t,
+  LightScenes_t,
+  VisualScene_t,
+  VisualScenes_t,
+  SceneType,
+} from '../../shared/Scenes'
 
 export interface ControlState extends ScenesStateBundle {
   midi: MidiState
   master: number
 }
-
-export function initScenesState<T>(defaultScene: T): ScenesState<T> {
-  const initID = nanoid()
-  return {
-    ids: [initID],
-    byId: {
-      [initID]: defaultScene,
-    },
-    active: initID,
-    auto: {
-      enabled: false,
-      bombacity: 0,
-      period: 1,
-    },
-  }
-}
-
 export function initControlState(): ControlState {
   return {
     light: initScenesState(initLightScene()),
@@ -232,15 +183,19 @@ export const scenesSlice = createSlice({
     },
     sortScenesByBombacity: (state, { payload }: PayloadAction<SceneType>) => {
       const scenes = state[payload]
-      scenes.ids.sort(
-        (idLeft, idRight) =>
-          scenes.byId[idLeft].bombacity - scenes.byId[idRight].bombacity
-      )
+      scenes.ids.sort((idLeft, idRight) => {
+        const leftScene = scenes.byId[idLeft]
+        const rightScene = scenes.byId[idRight]
+        if (leftScene && rightScene)
+          return leftScene.bombacity - rightScene.bombacity
+        return 0
+      })
     },
     autoBombacity: (state, { payload }: PayloadAction<SceneType>) => {
       const scenes = state[payload]
       scenes.ids.forEach((id, i) => {
-        scenes.byId[id].bombacity = i / (scenes.ids.length - 1)
+        const scene = scenes.byId[id]
+        if (scene) scene.bombacity = i / (scenes.ids.length - 1)
       })
     },
 
@@ -351,7 +306,8 @@ export const scenesSlice = createSlice({
       state,
       { payload }: PayloadAction<VisualizerConfig>
     ) => {
-      state.visual.byId[state.visual.active].config = payload
+      const visualScene = state.visual.byId[state.visual.active]
+      if (visualScene) visualScene.config = payload
     },
 
     // =====================   MIDI   ===========================================

@@ -1,5 +1,5 @@
 import { ipcMain, WebContents, dialog } from 'electron'
-import ipcChannels, { UserCommand } from '../../engine/ipc_channels'
+import ipcChannels, { UserCommand } from '../../shared/ipc_channels'
 import ipcChannelsVisualizer from '../../display/ipcChannels'
 import { CleanReduxState } from '../../renderer/redux/store'
 import { RealtimeState } from '../../renderer/redux/realtimeStore'

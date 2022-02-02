@@ -6,9 +6,9 @@ import {
   ReactReduxContextValue,
 } from 'react-redux'
 import React from 'react'
-import { initTimeState } from '../../engine/TimeState'
-import { initParams } from '../../engine/params'
-import { initRandomizerState } from '../../engine/randomizer'
+import { initTimeState } from '../../shared/TimeState'
+import { initParams } from '../../shared/params'
+import { initRandomizerState } from '../../shared/randomizer'
 
 function initDmxOut(): number[] {
   return Array(512).fill(0)

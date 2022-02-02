@@ -1,14 +1,14 @@
 import styled from 'styled-components'
 import { useDmxSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
-import { indexArray } from '../../util/util'
+import { indexArray } from '../../shared/util'
 import Select from '../base/Select'
 import {
   FixtureChannel,
   channelTypes,
   initFixtureChannel,
-} from '../../engine/dmxFixtures'
-import { colorList, Color } from '../../engine/dmxColors'
+} from '../../shared/dmxFixtures'
+import { colorList, Color } from '../../shared/dmxColors'
 import NumberField from '../base/NumberField'
 import {
   editFixtureChannel,

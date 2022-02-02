@@ -1,5 +1,5 @@
 import { Input } from 'midi'
-import { parseMessage, MidiMessage } from '../../engine/midi'
+import { parseMessage, MidiMessage } from '../../shared/midi'
 
 export type UpdatePayload = string[]
 export type MessagePayload = MidiMessage
@@ -55,7 +55,7 @@ function updateInputs(config: Config) {
 function newInput(index: number, config: Config) {
   const input = new Input()
 
-  input.on('message', (dt, message) => {
+  input.on('message', (_dt, message) => {
     const midiMessage = parseMessage(message)
     if (midiMessage) config.onMessage(midiMessage)
     // I think dt is the seconds since the last message

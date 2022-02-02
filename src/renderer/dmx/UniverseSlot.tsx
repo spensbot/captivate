@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 import { useDmxSelector } from '../redux/store'
-import { Fixture, FixtureType } from '../../engine/dmxFixtures'
+import { Fixture, FixtureType } from '../../shared/dmxFixtures'
 import { Slot_t } from './MyUniverse'
 import { useDispatch } from 'react-redux'
 import {
@@ -15,7 +15,7 @@ import { useState } from 'react'
 import { TextField, IconButton } from '@mui/material'
 import RemoveIcon from '@mui/icons-material/Remove'
 import AddIcon from '@mui/icons-material/Add'
-import { clamp } from '../../util/util'
+import { clamp } from '../../shared/util'
 
 function ChannelSpan({ start, count }: { start: number; count: number }) {
   const end = start + count - 1

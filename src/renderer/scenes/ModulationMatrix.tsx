@@ -1,4 +1,4 @@
-import { paramsList } from '../../engine/params'
+import { paramsList } from '../../shared/params'
 import ModulationSlider, { AddModulationButton } from './ModulationSlider'
 
 export default function ModulationMatrix({ index }: { index: number }) {

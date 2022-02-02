@@ -21,14 +21,14 @@ export type UpdatePayload = string | null
 interface Config {
   update_ms: number
   onUpdate: (path: UpdatePayload) => void
-  calculateChannels: () => number[]
+  getChannels: () => number[]
 }
 
 export function maintain(config: Config) {
   _config = config
   maintainConnection()
   _intervalHandle = setInterval(() => {
-    sendUniverse(_config.calculateChannels())
+    sendUniverse(_config.getChannels())
   }, DMX_SEND_INTERVAL)
 }
 

@@ -1,11 +1,7 @@
-import VisualizerBase from './VisualizerBase'
-import Spheres, { SpheresConfig, initSpheresConfig } from './Spheres'
+import { SpheresConfig, initSpheresConfig } from './Spheres'
 import { TextSpinConfig, initTextSpinConfig } from './TextSpinConfig'
-import Cubes, { CubesConfig, initCubesConfig } from './Cubes'
-import CubeSphere, {
-  CubeSphereConfig,
-  initCubeSphereConfig,
-} from './CubeSphere'
+import { CubesConfig, initCubesConfig } from './Cubes'
+import { CubeSphereConfig, initCubeSphereConfig } from './CubeSphere'
 import {
   TextParticlesConfig,
   initTextParticlesConfig,

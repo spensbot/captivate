@@ -1,8 +1,8 @@
 import * as THREE from 'three'
-import { LightScene_t } from '../../engine/LightScene'
+import { LightScene_t } from '../../shared/Scenes'
 import { visibleSizeAtZ } from './animations'
-import { Params } from '../../engine/params'
-import { TimeState } from '../../engine/TimeState'
+import { Params } from '../../shared/params'
+import { TimeState } from '../../shared/TimeState'
 
 export interface UpdateResource {
   time: TimeState

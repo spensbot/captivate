@@ -1,5 +1,5 @@
 import { useRealtimeSelector } from '../redux/realtimeStore'
-import { Param } from '../../engine/params'
+import { Param } from '../../shared/params'
 import SliderCursor from '../base/SliderCursor'
 
 interface Props {

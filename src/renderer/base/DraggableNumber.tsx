@@ -1,4 +1,4 @@
-import { clamp } from '../../util/util'
+import { clamp } from '../../shared/util'
 import useDragBasic from '../hooks/useDragBasic'
 
 type Type = 'continuous' | 'snap'

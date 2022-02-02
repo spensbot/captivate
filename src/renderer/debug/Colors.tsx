@@ -1,6 +1,6 @@
 import React from 'react'
 import { useActiveScene } from '../redux/store'
-import { hsl2rgb, hsv2rgb, hsi2rgb } from '../../engine/dmxColors'
+import { hsl2rgb, hsv2rgb, hsi2rgb } from '../../shared/dmxColors'
 
 const dp = 1
 

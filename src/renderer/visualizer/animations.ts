@@ -1,6 +1,6 @@
 import { PerspectiveCamera } from 'three'
 import convert from 'color-convert'
-import { Skew } from '../../engine/oscillator'
+import { Skew } from '../../shared/oscillator'
 
 export function colorFromHSV(h: number, s: number, v: number) {
   return Number('0x' + convert.hsv.hex([h * 360, s * 50, v * 100]))

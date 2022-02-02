@@ -34,12 +34,13 @@ export function initRandomizerState(): RandomizerState {
 }
 
 export function syncAndUpdate(
+  beatsLast: number,
   state: RandomizerState,
   size: number,
   ts: TimeState,
   options: RandomizerOptions
 ) {
-  return update(sync(state, size), ts, options)
+  return update(beatsLast, sync(state, size), ts, options)
 }
 
 // returns a new randomizerState with the desired size. Growing or shrinking as necessary
@@ -72,6 +73,7 @@ function pickRandomIndexes(randCount: number, size: number) {
 }
 
 function update(
+  beatsLast: number,
   state: RandomizerState,
   ts: TimeState,
   {
@@ -106,7 +108,7 @@ function update(
     }
   })
 
-  if (isNewPeriod(ts, triggerPeriod)) {
+  if (isNewPeriod(beatsLast, ts.beats, triggerPeriod)) {
     let randCount = Math.ceil(state.length * triggerDensity)
     if (randCount === 0 && state.length > 0) randCount = 1
     pickRandomIndexes(randCount, state.length).forEach(

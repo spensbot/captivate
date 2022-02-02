@@ -1,6 +1,6 @@
 import { PayloadAction } from '@reduxjs/toolkit'
-import { Param } from '../../engine/params'
-import { SceneType } from './controlSlice'
+import { Param } from '../../shared/params'
+import { SceneType } from '.../../shared/Scenes'
 
 interface Range {
   min: number

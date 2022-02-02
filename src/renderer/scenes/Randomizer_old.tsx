@@ -3,7 +3,7 @@ import DraggableNumber from '../base/DraggableNumber'
 import { useDispatch } from 'react-redux'
 import { useActiveLightScene } from '../redux/store'
 import { setRandomizer } from '../redux/controlSlice'
-import { RandomizerOptions } from '../../engine/randomizer'
+import { RandomizerOptions } from '../../shared/randomizer'
 import Slider from '../base/Slider'
 
 interface Props {}

@@ -1,4 +1,4 @@
-import { Param } from '../../engine/params'
+import { Param } from '../../shared/params'
 import SliderBase from '../base/SliderBase'
 import SliderCursor from '../base/SliderCursor'
 import { useActiveLightScene } from '../redux/store'

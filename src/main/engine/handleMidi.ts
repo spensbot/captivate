@@ -1,12 +1,10 @@
-import { MidiMessage } from '../../engine/midi'
+import { MidiMessage } from '../../shared/midi'
 import { CleanReduxState } from '../../renderer/redux/store'
 import { RealtimeState } from '../../renderer/redux/realtimeStore'
 import { getActionID, SliderAction } from '../../renderer/redux/midiState'
 import {
   midiSetButtonAction,
   midiSetSliderAction,
-} from '../../renderer/redux/controlSlice'
-import {
   setActiveSceneIndex,
   setAutoSceneBombacity,
   setMaster,
@@ -121,8 +119,11 @@ export function handleMessage(
         } else if (action.type === 'setBpm') {
           return rt_state.time.bpm
         } else if (action.type === 'setBaseParam') {
-          return state.control.light.byId[state.control.light.active]
-            .baseParams[action.paramKey]
+          return (
+            state.control.light.byId[state.control.light.active]?.baseParams[
+              action.paramKey
+            ] || 0.5
+          )
         } else if (action.type === 'setMaster') {
           return state.control.master
         } else return 0

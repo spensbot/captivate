@@ -25,6 +25,12 @@ export function randomElement<Type>(items: Type[]) {
   return items[randIndex]
 }
 
+export function randomElementExcludeCurrent<T>(items: T[], current: T) {
+  const possibilities = items.filter((item) => item !== current)
+  if (possibilities.length < 1) return current
+  return randomElement(possibilities)
+}
+
 export function getFilename(path: string) {
   return path.substring(path.lastIndexOf('/') + 1)
 }

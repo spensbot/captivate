@@ -9,6 +9,7 @@ import TextSpin from './TextSpin'
 import Cubes from './Cubes'
 import CubeSphere from './CubeSphere'
 import TextParticles from './TextParticles'
+import { handleBadLightScene } from '../../shared/Scenes'
 
 export interface VisualizerResource {
   rt: RealtimeState
@@ -46,9 +47,10 @@ export default class VisualizerManager {
   update(dt: number, res: VisualizerResource) {
     this.renderer.clear()
     const control = res.state.control
-    const config = control.visual.byId[control.visual.active].config
+    const config = control.visual.byId[control.visual.active]?.config || {
+      type: 'Cubes',
+    }
     if (!equal(config, this.config)) {
-      console.log('changed')
       this.config = config
       this.active = constructVisualizer(this.config)
       this.active.resize(this.width, this.height)
@@ -57,7 +59,7 @@ export default class VisualizerManager {
     this.active.update(dt, {
       params: res.rt.outputParams,
       time: res.rt.time,
-      scene: control.light.byId[control.light.active],
+      scene: handleBadLightScene(control.light.byId[control.light.active]),
       master: control.master,
     })
     this.renderer.render(...this.active.getRenderInputs())

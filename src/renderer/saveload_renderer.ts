@@ -4,8 +4,7 @@ import {
   resetState,
   getCleanReduxState,
 } from './redux/store'
-import ipcChannels from '../engine/ipc_channels'
-import fixState from './fixState'
+import ipcChannels from '../shared/ipc_channels'
 
 const SELECT_FILES = 'select-files'
 const CACHED_STATE_KEY = 'cached-state'
@@ -38,7 +37,7 @@ function saveState(state: CleanReduxState) {
 }
 
 export const autoSave = (store: ReduxStore) => {
-  refreshLastSession(store)
+  // refreshLastSession(store)
 
   setInterval(() => {
     saveState(getCleanReduxState(store.getState()))

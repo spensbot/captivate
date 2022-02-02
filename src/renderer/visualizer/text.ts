@@ -58,9 +58,6 @@ export function textOutlineShapesAndHoles(
       }
     }
   }
-  console.log(`shapes.length: ${shapes.length} | holes.length:${holes.length}`)
-  // const shapesAndPaths: Array<THREE.Shape | THREE.Path> = shapes
-  // shapesAndPaths.push.apply(shapesAndPaths, holes)
   return {
     shapes: shapes,
     holes: holes,

@@ -1,8 +1,8 @@
 import * as THREE from 'three'
 import VisualizerBase, { UpdateResource } from './VisualizerBase'
-import { random } from '../../util/util'
-import { isNewPeriod } from '../../engine/TimeState'
-import { Skew } from '../../engine/oscillator'
+import { random } from '../../shared/util'
+import { isNewPeriod } from '../../shared/TimeState'
+import { Skew } from '../../shared/oscillator'
 import { Strobe, colorFromHSV } from './animations'
 
 const RADIUS = 2
@@ -24,6 +24,7 @@ export default class _ extends VisualizerBase {
   private sphere: THREE.Mesh
   private spheres: THREE.Mesh[]
   private strobe: Strobe = new Strobe()
+  private lastBeats = 0
 
   constructor() {
     super()
@@ -64,13 +65,14 @@ export default class _ extends VisualizerBase {
       color: color,
     })
 
-    if (isNewPeriod(time, 1)) {
+    if (isNewPeriod(this.lastBeats, time.beats, 1)) {
       this.spheres.forEach((sphere) => {
         sphere.material = new THREE.MeshBasicMaterial({
           color: 0xffffff,
         })
       })
     }
+    this.lastBeats = time.beats
 
     const dr = (dt / 500) * (Skew(bombacity, 0.6) + 0.01)
     this.spheres.forEach((sphere) => {

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useDispatch } from 'react-redux'
-import { Param, paramsList } from '../../engine/params'
+import { Param, paramsList } from '../../shared/params'
 import { useActiveLightScene } from '../redux/store'
 import { setModulation } from '../redux/controlSlice'
 import useDragMapped from '../hooks/useDragMapped'

@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 import { useActiveLightScene } from '../redux/store'
-import { initRandomizerState, syncAndUpdate } from '../../engine/randomizer'
+import { initRandomizerState, syncAndUpdate } from '../../shared/randomizer'
 import { useRealtimeSelector } from 'renderer/redux/realtimeStore'
 import { useRef } from 'react'
 
@@ -22,17 +22,21 @@ const Root = styled.div`
   padding: 0.3rem;
 `
 
+let _lastBeats = 0
+
 function Visualizer() {
   const persistedState = useRef(initRandomizerState())
   const randomizerOptions = useActiveLightScene((scene) => scene.randomizer)
   const timeState = useRealtimeSelector((rs) => rs.time)
 
   persistedState.current = syncAndUpdate(
+    _lastBeats,
     persistedState.current,
     divCount,
     timeState,
     randomizerOptions
   )
+  _lastBeats = timeState.beats
 
   const divsAndGaps = Array(divCount * 2 - 1)
     .fill(0)

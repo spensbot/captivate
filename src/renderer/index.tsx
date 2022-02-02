@@ -10,6 +10,7 @@ import { setActiveSceneIndex } from './redux/controlSlice'
 import {
   realtimeStore,
   realtimeContext,
+  initRealtimeState,
   update as updateRealtimeStore,
 } from './redux/realtimeStore'
 import { ipc_setup, send_control_state } from './ipcHandler'
@@ -24,10 +25,11 @@ const muiTheme = createTheme({
     mode: 'dark',
   },
 })
+let _frequentlyUpdatedRealtimeState = initRealtimeState()
 
 autoSave(store)
 
-const ipc_callbacks = ipc_setup({
+ipc_setup({
   on_dmx_connection_update: (payload) => {
     store.dispatch(
       setDmx({ isConnected: !!payload, path: payload || undefined })
@@ -38,13 +40,20 @@ const ipc_callbacks = ipc_setup({
       setMidi({ isConnected: payload.length > 0, path: payload[0] })
     )
   },
-  on_time_state: (realtimeState) => {
-    realtimeStore.dispatch(updateRealtimeStore(realtimeState))
+  on_time_state: (newRealtimeState) => {
+    _frequentlyUpdatedRealtimeState = newRealtimeState
   },
   on_dispatch: (action) => {
     store.dispatch(action)
   },
 })
+
+function animateRealtimeState() {
+  realtimeStore.dispatch(updateRealtimeStore(_frequentlyUpdatedRealtimeState))
+  requestAnimationFrame(animateRealtimeState)
+}
+
+animateRealtimeState()
 
 send_control_state(getCleanReduxState(store.getState()))
 
