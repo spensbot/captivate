@@ -37,7 +37,7 @@ function saveState(state: CleanReduxState) {
 }
 
 export const autoSave = (store: ReduxStore) => {
-  // refreshLastSession(store)
+  refreshLastSession(store)
 
   setInterval(() => {
     saveState(getCleanReduxState(store.getState()))
