@@ -2,6 +2,7 @@
 
 import 'regenerator-runtime'
 import SerialPort from 'serialport'
+import { ConnectionStatus, Devices } from '../../shared/connection'
 
 const ENTTEC_PRO_DMX_STARTCODE = 0x00
 const ENTTEC_PRO_START_OF_MSG = 0x7e
@@ -16,12 +17,13 @@ let _connection: null | SerialPort = null
 let _intervalHandle: NodeJS.Timer
 let _config: Config
 
-export type UpdatePayload = string | null
+export type UpdatePayload = ConnectionStatus
 
 interface Config {
   update_ms: number
   onUpdate: (path: UpdatePayload) => void
   getChannels: () => number[]
+  getConnectable: () => Devices
 }
 
 export function maintain(config: Config) {
@@ -33,30 +35,28 @@ export function maintain(config: Config) {
 }
 
 async function maintainConnection() {
+  const availablePorts = await SerialPort.list()
+  const availablePaths = availablePorts.map((port) => port.path)
   if (_connection) {
-    _config.onUpdate(_connection.path)
+    _config.onUpdate({
+      connected: [_connection.path],
+      available: availablePaths,
+    })
     setTimeout(maintainConnection, _config.update_ms * 5)
   } else {
-    _config.onUpdate(null)
-    const path = await getFirstDmxUsbProPath()
-    if (path) {
-      connect(path)
+    _config.onUpdate({
+      connected: [],
+      available: availablePaths,
+    })
+    const connectable = _config.getConnectable()
+    const portToConnect = availablePorts.find(
+      (port) => connectable.find((c) => c === port.path) !== undefined
+    )
+    if (portToConnect) {
+      connect(portToConnect.path)
     }
     setTimeout(maintainConnection, _config.update_ms)
   }
-}
-
-function isDmxUsbPro(port: SerialPort.PortInfo) {
-  return port.manufacturer === 'DMXking.com'
-}
-
-async function getFirstDmxUsbProPath() {
-  const ports = await SerialPort.list()
-  const dmxDevices = ports.filter(isDmxUsbPro)
-  if (dmxDevices.length > 0) {
-    return dmxDevices[0].path
-  }
-  return null
 }
 
 function connect(path: string) {

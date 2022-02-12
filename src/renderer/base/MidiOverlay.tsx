@@ -1,7 +1,7 @@
 import styled from 'styled-components'
-import { getActionID, MidiAction } from '../redux/midiState'
+import { getActionID, MidiAction } from '../redux/deviceState'
 import { midiListen, midiSetSliderAction } from '../redux/controlSlice'
-import { useMidiSelector } from '../redux/store'
+import { useDeviceSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import DraggableNumber from './DraggableNumber'
 import Button from './Button'
@@ -13,11 +13,11 @@ interface Props {
 }
 
 export function ButtonMidiOverlay({ children, action, style }: Props) {
-  const isEditing = useMidiSelector((state) => state.isEditing)
-  const controlledAction = useMidiSelector((state) => {
+  const isEditing = useDeviceSelector((state) => state.isEditing)
+  const controlledAction = useDeviceSelector((state) => {
     return state.buttonActions[getActionID(action)] || null
   })
-  const isListening = useMidiSelector((state) => {
+  const isListening = useDeviceSelector((state) => {
     if (!state.listening) return false
     return getActionID(state.listening) === getActionID(action)
   })
@@ -40,11 +40,11 @@ export function ButtonMidiOverlay({ children, action, style }: Props) {
 }
 
 export function SliderMidiOverlay({ children, action, style }: Props) {
-  const isEditing = useMidiSelector((state) => state.isEditing)
-  const controlledAction = useMidiSelector((state) => {
+  const isEditing = useDeviceSelector((state) => state.isEditing)
+  const controlledAction = useDeviceSelector((state) => {
     return state.sliderActions[getActionID(action)] || null
   })
-  const isListening = useMidiSelector((state) => {
+  const isListening = useDeviceSelector((state) => {
     if (!state.listening) return false
     return getActionID(state.listening) === getActionID(action)
   })

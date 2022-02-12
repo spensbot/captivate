@@ -10,6 +10,10 @@ const SELECT_FILES = 'select-files'
 const CACHED_STATE_KEY = 'cached-state'
 const AUTO_SAVE_INTERVAL = 1000 // ms
 
+function fixState(state: CleanReduxState): CleanReduxState {
+  return state
+}
+
 export const captivateFileFilters = {
   dmx: { name: 'captivate dmx', extensions: ['.cap_dmx'] },
   scenes: { name: 'captivate scenes', extensions: ['.cap_scenes'] },
@@ -25,7 +29,7 @@ function refreshLastSession(store: ReduxStore) {
   const cachedState = localStorage.getItem(CACHED_STATE_KEY)
   if (!!cachedState) {
     // const lastState: ReduxState = fixState( JSON.parse(cachedState) )
-    const lastState: CleanReduxState = JSON.parse(cachedState)
+    const lastState: CleanReduxState = fixState(JSON.parse(cachedState))
     store.dispatch(resetState(lastState))
   }
 }
@@ -37,7 +41,7 @@ function saveState(state: CleanReduxState) {
 }
 
 export const autoSave = (store: ReduxStore) => {
-  refreshLastSession(store)
+  // refreshLastSession(store)
 
   setInterval(() => {
     saveState(getCleanReduxState(store.getState()))

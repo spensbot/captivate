@@ -1,26 +1,21 @@
-import { useTypedSelector, useMidiSelector } from '../redux/store'
+import { useTypedSelector } from '../redux/store'
 import styled from 'styled-components'
-import { useDispatch } from 'react-redux'
-import { midiSetIsEditing } from '../redux/controlSlice'
 
 interface Props {
   type: 'midi' | 'dmx'
 }
 
 export default function ConnectionStatus({ type }: Props) {
-  const connection = useTypedSelector((state) => state.connections[type])
-  const isEditing = useMidiSelector((state) => state.isEditing)
-  const dispatch = useDispatch()
+  const isConnected = useTypedSelector(
+    (state) => state.gui[type].connected.length > 0
+  )
 
-  const color = connection.isConnected ? '#0f0' : '#f00'
-
-  const onClick =
-    type === 'dmx' ? () => {} : () => dispatch(midiSetIsEditing(!isEditing))
+  const color = isConnected ? '#0f0' : '#f00'
 
   return (
     <Root>
       <Text>{type}</Text>
-      <Button style={{ backgroundColor: color }} onClick={onClick}></Button>
+      <Square style={{ backgroundColor: color }} />
     </Root>
   )
 }
@@ -36,9 +31,8 @@ const Text = styled.span`
   color: #fff7;
 `
 
-const Button = styled.div`
+const Square = styled.div`
   width: 0.6rem;
   height: 0.6rem;
-  cursor: pointer;
   margin-left: 0.5rem;
 `

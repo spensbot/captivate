@@ -6,8 +6,8 @@ import {
   setAutoSceneEnabled,
   setAutoSceneBombacity,
   setAutoScenePeriod,
-  SceneType,
 } from '../redux/controlSlice'
+import { SceneType } from '../../shared/Scenes'
 import DraggableNumber from '../base/DraggableNumber'
 
 export default function AutoScene({ sceneType }: { sceneType: SceneType }) {

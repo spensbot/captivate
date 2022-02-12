@@ -5,7 +5,7 @@ import App from './App'
 import * as themes from './theme'
 import { Provider } from 'react-redux'
 import { store, getCleanReduxState } from './redux/store'
-import { setDmx, setMidi } from './redux/connectionsSlice'
+import { setDmx, setMidi } from './redux/guiSlice'
 import { setActiveSceneIndex } from './redux/controlSlice'
 import {
   realtimeStore,
@@ -31,14 +31,10 @@ autoSave(store)
 
 ipc_setup({
   on_dmx_connection_update: (payload) => {
-    store.dispatch(
-      setDmx({ isConnected: !!payload, path: payload || undefined })
-    )
+    store.dispatch(setDmx(payload))
   },
   on_midi_connection_update: (payload) => {
-    store.dispatch(
-      setMidi({ isConnected: payload.length > 0, path: payload[0] })
-    )
+    store.dispatch(setMidi(payload))
   },
   on_time_state: (newRealtimeState) => {
     _frequentlyUpdatedRealtimeState = newRealtimeState

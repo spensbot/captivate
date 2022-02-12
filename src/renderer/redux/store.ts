@@ -4,7 +4,6 @@ import {
   Reducer,
   PayloadAction,
 } from '@reduxjs/toolkit'
-import connectionsReducer from './connectionsSlice'
 import { useSelector, TypedUseSelectorHook } from 'react-redux'
 import dmxReducer, { DmxState } from './dmxSlice'
 import guiReducer from './guiSlice'
@@ -12,7 +11,7 @@ import controlReducer, { ControlState } from './controlSlice'
 import { LightScene_t } from '../../shared/Scenes'
 import mixerReducer from './mixerSlice'
 import undoable, { StateWithHistory } from 'redux-undo'
-import { MidiState } from './midiState'
+import { DeviceState } from './deviceState'
 import {
   VisualScene_t,
   SceneType,
@@ -40,7 +39,6 @@ export const undoActionTypes: { [key in UndoGroup]: UndoActionTypes } = {
 } as const
 
 const baseReducer = combineReducers({
-  connections: connectionsReducer,
   dmx: undoable(dmxReducer, {
     undoType: undoActionTypes.dmx.undo,
     redoType: undoActionTypes.dmx.redo,
@@ -97,7 +95,6 @@ const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (
   if (action.type === RESET_STATE) {
     const cleanState: CleanReduxState = action.payload
     return {
-      connections: cleanState.connections,
       dmx: initUndoState(cleanState.dmx),
       gui: cleanState.gui,
       control: initUndoState(cleanState.control),
@@ -137,7 +134,6 @@ export const useTypedSelector: TypedUseSelectorHook<ReduxState> = useSelector
 
 export function getCleanReduxState(state: ReduxState) {
   return {
-    connections: state.connections,
     dmx: state.dmx.present,
     gui: state.gui,
     control: state.control.present,
@@ -190,6 +186,6 @@ export function useDmxSelector<T>(getVal: (dmx: DmxState) => T) {
   return useTypedSelector((state) => getVal(state.dmx.present))
 }
 
-export function useMidiSelector<T>(getVal: (midi: MidiState) => T) {
-  return useTypedSelector((state) => getVal(state.control.present.midi))
+export function useDeviceSelector<T>(getVal: (midi: DeviceState) => T) {
+  return useTypedSelector((state) => getVal(state.control.present.device))
 }

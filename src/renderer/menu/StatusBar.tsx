@@ -8,6 +8,16 @@ import useDragBasic from '../hooks/useDragBasic'
 import styled from 'styled-components'
 import { SliderMidiOverlay } from '../base/MidiOverlay'
 import UndoRedo from 'renderer/controls/UndoRedo'
+import UsbIcon from '@mui/icons-material/Usb'
+import CableIcon from '@mui/icons-material/Cable'
+import SettingsIcon from '@mui/icons-material/Settings'
+import SettingsInputSvideoIcon from '@mui/icons-material/SettingsInputSvideo'
+import IconButton from '@mui/material/IconButton'
+import PianoIcon from '@mui/icons-material/Piano'
+import { useDeviceSelector, useTypedSelector } from '../redux/store'
+import { useDispatch } from 'react-redux'
+import { midiSetIsEditing } from '../redux/controlSlice'
+import { setConnectionsMenu } from '../redux/guiSlice'
 
 function BPM() {
   const bpm = useRealtimeSelector((state) => state.time.bpm)
@@ -62,6 +72,13 @@ function LinkButton() {
 }
 
 export default function StatusBar() {
+  const isEditing = useDeviceSelector((state) => state.isEditing)
+  const connectionMenu = useTypedSelector((state) => state.gui.connectionMenu)
+  const dispatch = useDispatch()
+  const midiConnected = useTypedSelector(
+    (state) => state.gui.midi.connected.length > 0
+  )
+
   return (
     <Root>
       <LinkButton />
@@ -69,10 +86,27 @@ export default function StatusBar() {
       <Counter2 />
       <UndoRedo />
       <div style={{ flex: '1 0 0' }} />
+      {midiConnected && (
+        <IconButton onClick={() => dispatch(midiSetIsEditing(!isEditing))}>
+          <PianoIcon />
+        </IconButton>
+      )}
+      <IconButton onClick={() => dispatch(setConnectionsMenu(!connectionMenu))}>
+        <UsbIcon />
+      </IconButton>
       <Connections>
         <ConnectionStatus type={'midi'} />
         <ConnectionStatus type={'dmx'} />
       </Connections>
+      {/* <IconButton>
+        <CableIcon />
+      </IconButton>
+      <IconButton>
+        <SettingsIcon />
+      </IconButton>
+      <IconButton>
+        <SettingsInputSvideoIcon />
+      </IconButton> */}
     </Root>
   )
 }

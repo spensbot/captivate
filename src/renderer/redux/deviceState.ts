@@ -1,6 +1,7 @@
 import { PayloadAction } from '@reduxjs/toolkit'
 import { Param } from '../../shared/params'
 import { SceneType } from '.../../shared/Scenes'
+import { Devices } from '../../shared/connection'
 
 interface Range {
   min: number
@@ -67,31 +68,39 @@ export interface SliderAction extends ButtonAction {
 
 // ActionID = setAutoSceneBombacity, setActiveSceneIndex0, etc.
 // InputID = note70, cc50, etc.
-export interface MidiState {
+export interface DeviceState {
   listening?: MidiAction
   isEditing: boolean
+  connectTo: {
+    midi: Devices
+    dmx: Devices
+  }
   buttonActions: { [actionID: string]: ButtonAction }
   sliderActions: { [actionID: string]: SliderAction }
 }
 
-export function initMidiState(): MidiState {
+export function initDeviceState(): DeviceState {
   return {
     isEditing: false,
     buttonActions: {},
     sliderActions: {},
+    connectTo: {
+      midi: [],
+      dmx: [],
+    },
   }
 }
 
 export const midiActions = {
   setButtonAction: (
-    state: MidiState,
+    state: DeviceState,
     { payload }: PayloadAction<{ inputID: string; action: MidiAction }>
   ) => {
     clearInputID(state, payload.inputID)
     state.buttonActions[getActionID(payload.action)] = payload
   },
   setSliderAction: (
-    state: MidiState,
+    state: DeviceState,
     {
       payload,
     }: PayloadAction<{
@@ -103,16 +112,28 @@ export const midiActions = {
     clearInputID(state, payload.inputID)
     state.sliderActions[getActionID(payload.action)] = payload
   },
-  listen: (state: MidiState, { payload }: PayloadAction<MidiAction>) => {
+  listen: (state: DeviceState, { payload }: PayloadAction<MidiAction>) => {
     state.listening = payload
   },
-  setIsEditing: (state: MidiState, { payload }: PayloadAction<boolean>) => {
+  setIsEditing: (state: DeviceState, { payload }: PayloadAction<boolean>) => {
     delete state.listening
     state.isEditing = payload
   },
+  setMidiConnectTo: (
+    state: DeviceState,
+    { payload }: PayloadAction<Devices>
+  ) => {
+    state.connectTo.midi = payload
+  },
+  setDmxConnectTo: (
+    state: DeviceState,
+    { payload }: PayloadAction<Devices>
+  ) => {
+    state.connectTo.dmx = payload
+  },
 }
 
-function clearInputID(state: MidiState, inputID: string) {
+function clearInputID(state: DeviceState, inputID: string) {
   for (let [actionID, buttonAction] of Object.entries(state.buttonActions)) {
     if (buttonAction.inputID === inputID) delete state.buttonActions[actionID]
   }
@@ -123,7 +144,7 @@ function clearInputID(state: MidiState, inputID: string) {
 
 // export const midiSlice = createSlice({
 //   name: 'midi',
-//   initialState: initMidiState(),
+//   initialState: initDeviceState(),
 //   reducers: {},
 // })
 

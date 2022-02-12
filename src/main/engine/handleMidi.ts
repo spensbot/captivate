@@ -1,7 +1,7 @@
 import { MidiMessage } from '../../shared/midi'
 import { CleanReduxState } from '../../renderer/redux/store'
 import { RealtimeState } from '../../renderer/redux/realtimeStore'
-import { getActionID, SliderAction } from '../../renderer/redux/midiState'
+import { getActionID, SliderAction } from '../../renderer/redux/deviceState'
 import {
   midiSetButtonAction,
   midiSetSliderAction,
@@ -42,7 +42,7 @@ export function handleMessage(
   dispatch: (action: PayloadAction<any>) => void
 ) {
   const input = getInput(message)
-  const midiState = state.control.midi
+  const midiState = state.control.device
 
   if (midiState.isEditing && midiState.listening) {
     if (midiState.listening.type === 'setActiveSceneIndex') {

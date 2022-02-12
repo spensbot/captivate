@@ -68,6 +68,9 @@ DmxConnection.maintain({
     if (_ipcCallbacks !== null) _ipcCallbacks.send_dmx_connection_update(path)
   },
   getChannels: () => _realtimeState.dmxOut,
+  getConnectable: () => {
+    return _controlState ? _controlState.control.device.connectTo.midi : []
+  },
 })
 
 MidiConnection.maintain({
@@ -86,6 +89,9 @@ MidiConnection.maintain({
         _ipcCallbacks.send_dispatch
       )
     }
+  },
+  getConnectable: () => {
+    return _controlState ? _controlState.control.device.connectTo.midi : []
   },
 })
 

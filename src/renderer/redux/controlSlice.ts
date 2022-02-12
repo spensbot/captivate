@@ -7,7 +7,7 @@ import { nanoid } from 'nanoid'
 import { RandomizerOptions } from '../../shared/randomizer'
 import cloneDeep from 'lodash.clonedeep'
 import { VisualizerConfig } from '../visualizer/VisualizerConfig'
-import { MidiState, initMidiState, midiActions } from './midiState'
+import { DeviceState, initDeviceState, midiActions } from './deviceState'
 import {
   ScenesStateBundle,
   initScenesState,
@@ -21,14 +21,14 @@ import {
 } from '../../shared/Scenes'
 
 export interface ControlState extends ScenesStateBundle {
-  midi: MidiState
+  device: DeviceState
   master: number
 }
 export function initControlState(): ControlState {
   return {
     light: initScenesState(initLightScene()),
     visual: initScenesState(initVisualScene()),
-    midi: initMidiState(),
+    device: initDeviceState(),
     master: 1,
   }
 }
@@ -311,13 +311,17 @@ export const scenesSlice = createSlice({
     },
 
     // =====================   MIDI   ===========================================
-    midiListen: (state, action) => midiActions.listen(state.midi, action),
+    midiListen: (state, action) => midiActions.listen(state.device, action),
     midiSetButtonAction: (state, action) =>
-      midiActions.setButtonAction(state.midi, action),
+      midiActions.setButtonAction(state.device, action),
     midiSetIsEditing: (state, action) =>
-      midiActions.setIsEditing(state.midi, action),
+      midiActions.setIsEditing(state.device, action),
     midiSetSliderAction: (state, action) =>
-      midiActions.setSliderAction(state.midi, action),
+      midiActions.setSliderAction(state.device, action),
+    dmxConnectTo: (state, action) =>
+      midiActions.setDmxConnectTo(state.device, action),
+    midiConnectTo: (state, action) =>
+      midiActions.setMidiConnectTo(state.device, action),
   },
 })
 
@@ -362,6 +366,8 @@ export const {
   midiSetButtonAction,
   midiSetIsEditing,
   midiSetSliderAction,
+  dmxConnectTo,
+  midiConnectTo,
 } = scenesSlice.actions
 
 export default scenesSlice.reducer
