@@ -69,7 +69,7 @@ DmxConnection.maintain({
   },
   getChannels: () => _realtimeState.dmxOut,
   getConnectable: () => {
-    return _controlState ? _controlState.control.device.connectTo.midi : []
+    return _controlState ? _controlState.control.device.connectable.dmx : []
   },
 })
 
@@ -91,7 +91,7 @@ MidiConnection.maintain({
     }
   },
   getConnectable: () => {
-    return _controlState ? _controlState.control.device.connectTo.midi : []
+    return _controlState ? _controlState.control.device.connectable.midi : []
   },
 })
 

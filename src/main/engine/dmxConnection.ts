@@ -2,7 +2,7 @@
 
 import 'regenerator-runtime'
 import SerialPort from 'serialport'
-import { ConnectionStatus, Devices } from '../../shared/connection'
+import { DmxConnections, DeviceId, DmxDevice_t } from '../../shared/connection'
 
 const ENTTEC_PRO_DMX_STARTCODE = 0x00
 const ENTTEC_PRO_START_OF_MSG = 0x7e
@@ -17,13 +17,29 @@ let _connection: null | SerialPort = null
 let _intervalHandle: NodeJS.Timer
 let _config: Config
 
-export type UpdatePayload = ConnectionStatus
+export type UpdatePayload = DmxConnections
 
 interface Config {
   update_ms: number
   onUpdate: (path: UpdatePayload) => void
   getChannels: () => number[]
-  getConnectable: () => Devices
+  getConnectable: () => DeviceId[]
+}
+
+function getDeviceId(port: SerialPort.PortInfo): DeviceId {
+  return port.path
+}
+
+function dmxDevice(port: SerialPort.PortInfo): DmxDevice_t {
+  return {
+    id: getDeviceId(port),
+    path: port.path,
+    manufacturer: port.manufacturer,
+    pnpId: port.pnpId,
+    productId: port.productId,
+    serialNumber: port.serialNumber,
+    vendorId: port.vendorId,
+  }
 }
 
 export function maintain(config: Config) {
@@ -36,22 +52,25 @@ export function maintain(config: Config) {
 
 async function maintainConnection() {
   const availablePorts = await SerialPort.list()
-  const availablePaths = availablePorts.map((port) => port.path)
+  const availableDevices = availablePorts
+    .filter((p) => isDmxDevice_t(p))
+    .map((p) => dmxDevice(p))
   if (_connection) {
     _config.onUpdate({
       connected: [_connection.path],
-      available: availablePaths,
+      available: availableDevices,
     })
     setTimeout(maintainConnection, _config.update_ms * 5)
   } else {
     _config.onUpdate({
       connected: [],
-      available: availablePaths,
+      available: availableDevices,
     })
     const connectable = _config.getConnectable()
     const portToConnect = availablePorts.find(
       (port) => connectable.find((c) => c === port.path) !== undefined
     )
+    console.log(`connectable: ${connectable}, portToConnect: ${portToConnect}`)
     if (portToConnect) {
       connect(portToConnect.path)
     }
@@ -81,6 +100,11 @@ function connect(path: string) {
 
 function start() {
   console.log('Sending DMX...')
+}
+
+function isDmxDevice_t(port: SerialPort.PortInfo) {
+  if (port.manufacturer?.includes('DMX')) return true
+  return false
 }
 
 // function stop() {

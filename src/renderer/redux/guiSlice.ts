@@ -1,5 +1,10 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { ConnectionStatus, initConnectionStatus } from '../../shared/connection'
+import {
+  MidiConnections,
+  DmxConnections,
+  initDmxConnections,
+  initMidiConnections,
+} from '../../shared/connection'
 
 export type Page = 'Universe' | 'Modulation' | 'Video' | 'Share' | 'Mixer'
 
@@ -7,8 +12,8 @@ export interface GuiState {
   activePage: Page
   blackout: boolean
   connectionMenu: boolean
-  midi: ConnectionStatus
-  dmx: ConnectionStatus
+  midi: MidiConnections
+  dmx: DmxConnections
 }
 
 export function initGuiState(): GuiState {
@@ -16,8 +21,8 @@ export function initGuiState(): GuiState {
     activePage: 'Universe',
     blackout: false,
     connectionMenu: false,
-    midi: initConnectionStatus(),
-    dmx: initConnectionStatus(),
+    midi: initMidiConnections(),
+    dmx: initDmxConnections(),
   }
 }
 
@@ -34,10 +39,10 @@ export const guiSlice = createSlice({
     setConnectionsMenu: (state, { payload }: PayloadAction<boolean>) => {
       state.connectionMenu = payload
     },
-    setMidi: (state, { payload }: PayloadAction<ConnectionStatus>) => {
+    setMidi: (state, { payload }: PayloadAction<MidiConnections>) => {
       state.midi = payload
     },
-    setDmx: (state, { payload }: PayloadAction<ConnectionStatus>) => {
+    setDmx: (state, { payload }: PayloadAction<DmxConnections>) => {
       state.dmx = payload
     },
   },

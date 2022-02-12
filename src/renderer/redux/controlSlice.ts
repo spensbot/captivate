@@ -318,10 +318,10 @@ export const scenesSlice = createSlice({
       midiActions.setIsEditing(state.device, action),
     midiSetSliderAction: (state, action) =>
       midiActions.setSliderAction(state.device, action),
-    dmxConnectTo: (state, action) =>
-      midiActions.setDmxConnectTo(state.device, action),
-    midiConnectTo: (state, action) =>
-      midiActions.setMidiConnectTo(state.device, action),
+    setDmxConnectable: (state, action) =>
+      midiActions.setDmxConnectable(state.device, action),
+    setMidiConnectable: (state, action) =>
+      midiActions.setMidiConnectable(state.device, action),
   },
 })
 
@@ -366,8 +366,8 @@ export const {
   midiSetButtonAction,
   midiSetIsEditing,
   midiSetSliderAction,
-  dmxConnectTo,
-  midiConnectTo,
+  setDmxConnectable,
+  setMidiConnectable,
 } = scenesSlice.actions
 
 export default scenesSlice.reducer

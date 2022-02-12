@@ -18,6 +18,38 @@ import { useDeviceSelector, useTypedSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import { midiSetIsEditing } from '../redux/controlSlice'
 import { setConnectionsMenu } from '../redux/guiSlice'
+import { ControlState } from '../redux/controlSlice'
+import { store, resetControl } from '../redux/store'
+import { loadFile, saveFile, captivateFileFilters } from '../saveload_renderer'
+import SaveIcon from '@mui/icons-material/Save'
+import FileOpenIcon from '@mui/icons-material/FileOpen'
+
+type SaveType = ControlState
+
+function loadScenes() {
+  loadFile('Load Scenes', [captivateFileFilters.scenes])
+    .then((serializedControlState) => {
+      const newControlState: SaveType = JSON.parse(serializedControlState)
+      store.dispatch(resetControl(newControlState))
+    })
+    .catch((err) => {
+      console.log(err)
+    })
+}
+
+function saveScenes() {
+  const controlState: SaveType = store.getState().control.present
+  const serializedControlState = JSON.stringify(controlState)
+  saveFile('Save Scenes', serializedControlState, [captivateFileFilters.scenes])
+    .then((err) => {
+      if (err) {
+        console.log(err)
+      }
+    })
+    .catch((err) => {
+      console.log(err)
+    })
+}
 
 function BPM() {
   const bpm = useRealtimeSelector((state) => state.time.bpm)
@@ -93,6 +125,12 @@ export default function StatusBar() {
       )}
       <IconButton onClick={() => dispatch(setConnectionsMenu(!connectionMenu))}>
         <UsbIcon />
+      </IconButton>
+      <IconButton onClick={saveScenes}>
+        <SaveIcon />
+      </IconButton>
+      <IconButton onClick={loadScenes}>
+        <FileOpenIcon />
       </IconButton>
       <Connections>
         <ConnectionStatus type={'midi'} />

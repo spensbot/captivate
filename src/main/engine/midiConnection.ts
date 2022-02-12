@@ -1,15 +1,19 @@
 import { Input } from 'midi'
 import { parseMessage, MidiMessage } from '../../shared/midi'
-import { ConnectionStatus, Devices } from '../../shared/connection'
+import {
+  MidiConnections,
+  DeviceId,
+  MidiDevice_t,
+} from '../../shared/connection'
 
-export type UpdatePayload = ConnectionStatus
+export type UpdatePayload = MidiConnections
 export type MessagePayload = MidiMessage
 
 interface Config {
   update_ms: number
   onUpdate: (activeDevices: UpdatePayload) => void
   onMessage: (message: MessagePayload) => void
-  getConnectable: () => Devices
+  getConnectable: () => DeviceId[]
 }
 
 const refInput = new Input()
@@ -25,13 +29,17 @@ export function maintain(config: Config) {
 
 function updateInputs(config: Config) {
   const portCount = refInput.getPortCount()
-  const availablePortNames: string[] = []
+  const availableMidiDevice_ts: MidiDevice_t[] = []
+  const connected: DeviceId[] = []
+  const connectable = config.getConnectable()
 
   for (let i = 0; i < portCount; i++) {
     const portName = refInput.getPortName(i)
-    availablePortNames.push(portName)
+    availableMidiDevice_ts.push({
+      id: portName,
+      name: portName,
+    })
     if (inputs[portName] === undefined) {
-      const connectable = config.getConnectable()
       if (connectable.find((c) => c === portName)) {
         inputs[portName] = newInput(i, config)
       }
@@ -40,18 +48,20 @@ function updateInputs(config: Config) {
 
   for (const oldPortName in inputs) {
     if (
-      availablePortNames.find(
-        (activePortName) => activePortName === oldPortName
-      ) === undefined
+      availableMidiDevice_ts.find((d) => d.name === oldPortName) === undefined
     ) {
       delete inputs[oldPortName]
       console.log(`Removing Midi Connection: ${oldPortName}`)
     }
   }
 
+  for (const portName in inputs) {
+    connected.push(portName)
+  }
+
   config.onUpdate({
-    available: [],
-    connected: [],
+    available: availableMidiDevice_ts,
+    connected: connected,
   })
 }
 

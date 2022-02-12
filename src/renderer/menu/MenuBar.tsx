@@ -96,8 +96,8 @@ const Root = styled.div`
 
 const Item = styled.div<{ selected: boolean }>`
   cursor: pointer;
-  opacity: 0.5;
-  filter: grayscale(100%);
+  opacity: ${(props) => (props.selected ? 1 : 0.5)};
+  filter: ${(props) => (props.selected ? `grayscale(0%)` : `grayscale(100%)`)};
   border-left: ${(props) => props.selected && '0.2rem solid #fff'};
   :hover {
     filter: grayscale(0%);
