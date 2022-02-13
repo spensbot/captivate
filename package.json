@@ -92,8 +92,8 @@
     ],
     "publish": {
       "provider": "github",
-      "owner": "electron-react-boilerplate",
-      "repo": "electron-react-boilerplate"
+      "owner": "spensbot",
+      "repo": "captivate"
     }
   },
   "repository": {
@@ -251,7 +251,7 @@
     "npm": ">=7.x"
   },
   "collective": {
-    "url": "https://opencollective.com/electron-react-boilerplate-594"
+    "url": "https://sailingtomars.com"
   },
   "browserslist": [],
   "prettier": {
