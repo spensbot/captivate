@@ -11,7 +11,7 @@
 import 'core-js/stable'
 import 'regenerator-runtime/runtime'
 import path from 'path'
-import { app, BrowserWindow, shell, ipcMain } from 'electron'
+import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import log from 'electron-log'
 import MenuBuilder from './menu'
@@ -28,6 +28,7 @@ export default class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null
+let isClosing = false
 let visualizerContainer: VisualizerContainer = {
   visualizer: null,
 }
@@ -99,10 +100,36 @@ const createWindow = async () => {
     }
   })
 
-  mainWindow.on('closed', () => {
-    engine.stop()
-    mainWindow = null
+  mainWindow.on('close', (e) => {
+    if (!isClosing) {
+      e.preventDefault()
+      if (mainWindow === null) return
+
+      dialog
+        .showMessageBox(mainWindow, {
+          message: 'Stop the show?',
+          buttons: ['Nevermind', 'Quit'],
+          cancelId: 0,
+          defaultId: 1,
+        })
+        .then(({ response }) => {
+          if (response === 1) {
+            isClosing = true
+            mainWindow?.close()
+            engine.stop()
+            mainWindow = null
+            app.quit()
+          }
+        })
+        .catch((err) => {
+          console.log(`showMessageBox err: `, err)
+        })
+    }
   })
+
+  // mainWindow.on('closed', () => {
+
+  // })
 
   const menuBuilder = new MenuBuilder(mainWindow)
   menuBuilder.buildMenu()
@@ -123,14 +150,14 @@ const createWindow = async () => {
 /**
  * Add event listeners...
  */
-
-app.on('window-all-closed', () => {
-  // Respect the OSX convention of having the application in memory even
-  // after all windows have been closed
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
+// We instead quit the app when mainWindow is closed
+// app.on('window-all-closed', () => {
+//   // Respect the OSX convention of having the application in memory even
+//   // after all windows have been closed
+//   if (process.platform !== 'darwin') {
+//     app.quit()
+//   }
+// })
 
 app
   .whenReady()
