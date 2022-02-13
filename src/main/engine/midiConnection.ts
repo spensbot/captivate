@@ -17,7 +17,6 @@ interface Config {
 }
 
 const refInput = new Input()
-// const inputs: Input[] = []
 const inputs: Inputs = {}
 type Inputs = { [portName: string]: Input }
 
@@ -47,11 +46,13 @@ function updateInputs(config: Config) {
   }
 
   for (const oldPortName in inputs) {
-    if (
-      availableMidiDevice_ts.find((d) => d.name === oldPortName) === undefined
-    ) {
+    if (!availableMidiDevice_ts.find((d) => d.name === oldPortName)) {
       delete inputs[oldPortName]
       console.log(`Removing Midi Connection: ${oldPortName}`)
+    }
+    if (!connectable.find((c) => c === oldPortName)) {
+      inputs[oldPortName].closePort()
+      delete inputs[oldPortName]
     }
   }
 

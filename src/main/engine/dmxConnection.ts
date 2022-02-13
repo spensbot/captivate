@@ -55,26 +55,31 @@ async function maintainConnection() {
   const availableDevices = availablePorts
     .filter((p) => isDmxDevice_t(p))
     .map((p) => dmxDevice(p))
-  if (_connection) {
-    _config.onUpdate({
-      connected: [_connection.path],
-      available: availableDevices,
-    })
-    setTimeout(maintainConnection, _config.update_ms * 5)
+  const connectable = _config.getConnectable()
+
+  if (_connection !== null) {
+    if (
+      !connectable.find((c) => c === _connection?.path) ||
+      !_connection.isOpen
+    ) {
+      _connection.destroy()
+      _connection = null
+    }
   } else {
-    _config.onUpdate({
-      connected: [],
-      available: availableDevices,
-    })
-    const connectable = _config.getConnectable()
     const portToConnect = availablePorts.find(
       (port) => connectable.find((c) => c === port.path) !== undefined
     )
     if (portToConnect) {
       connect(portToConnect.path)
     }
-    setTimeout(maintainConnection, _config.update_ms)
   }
+
+  _config.onUpdate({
+    connected: _connection ? [_connection.path] : [],
+    available: availableDevices,
+  })
+
+  setTimeout(maintainConnection, _config.update_ms)
 }
 
 function connect(path: string) {
@@ -95,6 +100,15 @@ function connect(path: string) {
       }
     }
   )
+  _connection.on('disconnect', (d) => {
+    console.log('disconnect', d)
+  })
+  _connection.on('error', (e) => {
+    console.log('Error', e)
+  })
+  _connection.on('close', (d) => {
+    console.log('Close', d)
+  })
 }
 
 function start() {
@@ -105,19 +119,6 @@ function isDmxDevice_t(port: SerialPort.PortInfo) {
   if (port.manufacturer?.includes('DMX')) return true
   return false
 }
-
-// function stop() {
-//   clearInterval(intervalHandle)
-// }
-
-// function close() {
-//   if (connection) {
-//     connection.close((err) => {
-//       if (err) console.log(err)
-//       else connection = null
-//     })
-//   }
-// }
 
 function sendUniverse(universe: number[]) {
   if (_connection?.writable && _readyToWrite) {
