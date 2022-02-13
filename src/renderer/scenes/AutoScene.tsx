@@ -9,6 +9,7 @@ import {
 } from '../redux/controlSlice'
 import { SceneType } from '../../shared/Scenes'
 import DraggableNumber from '../base/DraggableNumber'
+import { SliderMidiOverlay } from 'renderer/base/MidiOverlay'
 
 export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
   const dispatch = useDispatch()
@@ -64,18 +65,18 @@ export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
         }}
       />
       {sceneType === 'light' && (
-        <SliderWrapper>
-          {/* <Slider value={bombacity} min={0} max={0} step={0.01} orientation="horizontal"
-          onChange={(e, value) => dispatch(setAutoSceneBombacity(value))}
-        /> */}
+        <SliderMidiOverlay
+          action={{ type: 'setAutoSceneBombacity' }}
+          style={{ flex: '1 0 auto', marginLeft: '0.5rem', padding: '0.5rem' }}
+        >
           <Slider
             value={bombacity}
-            radius={enabled ? 0.35 : 0.3}
+            radius={enabled ? 0.5 : 0.4}
             orientation="horizontal"
             onChange={onBombacityChange}
             color={enabled ? '#3d5e' : undefined}
           />
-        </SliderWrapper>
+        </SliderMidiOverlay>
       )}
     </Root>
   )

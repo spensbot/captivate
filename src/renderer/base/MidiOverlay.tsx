@@ -1,6 +1,10 @@
 import styled from 'styled-components'
 import { getActionID, MidiAction } from '../redux/deviceState'
-import { midiListen, midiSetSliderAction } from '../redux/controlSlice'
+import {
+  midiListen,
+  midiSetSliderAction,
+  removeMidiAction,
+} from '../redux/controlSlice'
 import { useDeviceSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import DraggableNumber from './DraggableNumber'
@@ -32,7 +36,12 @@ export function ButtonMidiOverlay({ children, action, style }: Props) {
       {children}
       {isEditing && (
         <Overlay selected={isListening} onClick={onClick}>
-          {controlledAction?.inputID}
+          {controlledAction && (
+            <>
+              {controlledAction.inputID}
+              <X action={action} />
+            </>
+          )}
         </Overlay>
       )}
     </Root>
@@ -118,6 +127,7 @@ export function SliderMidiOverlay({ children, action, style }: Props) {
             {controlledAction && (
               <>
                 {controlledAction.inputID}
+                <X action={action} />
                 <MinMax>
                   <DraggableNumber
                     type="continuous"
@@ -170,7 +180,7 @@ const Overlay = styled.div<{ selected: boolean }>`
   left: 0;
   right: 0;
   cursor: pointer;
-  border: ${(props) => props.selected && '1px solid white'};
+  border: ${(props) => props.selected && '2px solid white'};
   background: #56fd56b7;
   display: flex;
   flex-wrap: wrap;
@@ -195,3 +205,13 @@ const MinMax = styled.div`
   font-size: 0.75rem;
   justify-content: center;
 `
+
+function X({ action }: { action: MidiAction }) {
+  const dispatch = useDispatch()
+  const onClick = () => dispatch(removeMidiAction(action))
+  return (
+    <div onClick={onClick} style={{ cursor: 'pointer', marginLeft: '0.5rem' }}>
+      X
+    </div>
+  )
+}

@@ -112,6 +112,14 @@ export const midiActions = {
     clearInputID(state, payload.inputID)
     state.sliderActions[getActionID(payload.action)] = payload
   },
+  removeMidiAction: (
+    state: DeviceState,
+    { payload }: PayloadAction<MidiAction>
+  ) => {
+    const actionId = getActionID(payload)
+    delete state.buttonActions[actionId]
+    delete state.sliderActions[actionId]
+  },
   listen: (state: DeviceState, { payload }: PayloadAction<MidiAction>) => {
     state.listening = payload
   },

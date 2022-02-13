@@ -4,7 +4,7 @@ import { setBlackout } from '../redux/guiSlice'
 import styled from 'styled-components'
 import zIndexes from '../zIndexes'
 import Blackout from './Blackout'
-import DmxTroubleshooter from './dmxTroubleshooter'
+import Devices from './Devices'
 
 interface Props {}
 
@@ -23,7 +23,7 @@ export default function FullscreenOverlay({}: Props) {
   if (connectionsMenu)
     return (
       <Root>
-        <DmxTroubleshooter />
+        <Devices />
       </Root>
     )
 

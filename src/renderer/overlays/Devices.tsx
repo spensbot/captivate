@@ -9,7 +9,7 @@ import { DmxDevice_t, MidiDevice_t, DeviceId } from '../../shared/connection'
 
 interface Props {}
 
-export default function DmxTroubleshooter({}: Props) {
+export default function Devices({}: Props) {
   const dispatch = useDispatch()
 
   const connectable = useControlSelector((state) => state.device.connectable)
@@ -175,9 +175,10 @@ const DeviceRoot = styled.div<Status>`
 `
 
 function NoneFound() {
-  return (
-    <DeviceRoot isConnectable={false} isConnected={false}>
-      None Found
-    </DeviceRoot>
-  )
+  return <None>None Found</None>
 }
+
+const None = styled.div`
+  padding: 0.5rem;
+  color: ${(props) => props.theme.colors.text.secondary};
+`

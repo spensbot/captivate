@@ -123,6 +123,9 @@ export default function StatusBar() {
           <PianoIcon />
         </IconButton>
       )}
+      <IconButton onClick={() => dispatch(midiSetIsEditing(!isEditing))}>
+        <PianoIcon />
+      </IconButton>
       <IconButton onClick={() => dispatch(setConnectionsMenu(!connectionMenu))}>
         <UsbIcon />
       </IconButton>
