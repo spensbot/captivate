@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import FPS from '../visualizer/FPS'
 import VisualizerManager from '../visualizer/VisualizerManager'
 import styled from 'styled-components'
@@ -12,10 +12,10 @@ import VisualizerSceneEditor from 'renderer/visualizer/VisualizerSceneEditor'
 
 const visualizer = new VisualizerManager()
 let lastUpdateTime: number | null = null
+let dt: number = 0
 
 function animateVisualizer() {
   const now = Date.now()
-  let dt = 0
   if (lastUpdateTime !== null) {
     dt = now - lastUpdateTime
   }
@@ -32,21 +32,7 @@ animateVisualizer()
 export default function Visualizer() {
   const ref = useRef(null)
 
-  const state = useTypedSelector((state) => state)
-  const rs = useRealtimeSelector((rs) => rs)
-
-  let dt = 0
-
-  const now = Date.now()
-  if (lastUpdateTime !== null) {
-    dt = now - lastUpdateTime
-  }
-  lastUpdateTime = now
-
-  visualizer.update(dt, {
-    rt: rs,
-    state: getCleanReduxState(state),
-  })
+  const rt = useRealtimeSelector((state) => state)
 
   function resize() {
     const element = ref.current
@@ -89,7 +75,7 @@ export default function Visualizer() {
         </Pane>
         <Pane>
           <Window ref={ref}>
-            <FPS />
+            <FPS dt={dt} />
             <OpenVisualizerButton />
           </Window>
           <VisualizerSceneEditor />
