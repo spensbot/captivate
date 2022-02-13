@@ -6,7 +6,7 @@ import { addFixtureType, DmxState } from '../redux/dmxSlice'
 import { useDispatch } from 'react-redux'
 import { initFixtureType } from '../../shared/dmxFixtures'
 import SaveIcon from '@mui/icons-material/Save'
-import PublishIcon from '@mui/icons-material/Publish'
+import FileOpenIcon from '@mui/icons-material/FileOpen'
 import { saveFile, loadFile, captivateFileFilters } from '../saveload_renderer'
 import { store, resetUniverse } from '../redux/store'
 import styled from 'styled-components'
@@ -52,7 +52,7 @@ export default function MyFixtures() {
           <SaveIcon />
         </IconButton>
         <IconButton onClick={loadUniverse}>
-          <PublishIcon />
+          <FileOpenIcon />
         </IconButton>
       </Header>
       <Items style={{ overflow: 'scroll', height: 'auto' }}>

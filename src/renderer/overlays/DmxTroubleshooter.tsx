@@ -20,33 +20,35 @@ export default function DmxTroubleshooter({}: Props) {
     <Root>
       <Modal>
         <Row style={{ paddingBottom: '0' }}>
-          <Title style={{ marginBottom: '0' }}>Connections</Title>
+          <Title>Connections</Title>
           <IconButton onClick={() => dispatch(setConnectionsMenu(false))}>
             <CloseIcon />
           </IconButton>
         </Row>
         <Row>
           <Pane style={{ borderRight: '1px solid #777', paddingRight: '1rem' }}>
-            <Title>Dmx</Title>
+            <SubTitle>Dmx</SubTitle>
             {dmx.available.map((device) => (
               <DmxDevice
                 key={device.id}
                 device={device}
                 connected={dmx.connected}
                 connectable={connectable.dmx}
-              ></DmxDevice>
+              />
             ))}
+            {dmx.available.length === 0 && <NoneFound />}
           </Pane>
           <Pane style={{ paddingLeft: '1rem' }}>
-            <Title>Midi</Title>
+            <SubTitle>Midi</SubTitle>
             {midi.available.map((device) => (
               <MidiDevice
                 key={device.id}
                 device={device}
                 connected={midi.connected}
                 connectable={connectable.midi}
-              ></MidiDevice>
+              />
             ))}
+            {midi.available.length === 0 && <NoneFound />}
           </Pane>
         </Row>
       </Modal>
@@ -76,11 +78,15 @@ const Row = styled.div`
 `
 
 const Pane = styled.div`
-  flex: '1 0 auto';
+  flex: '1 0 0';
 `
 
 const Title = styled.div`
-  font-size: 1.5rem;
+  font-size: 1.4rem;
+`
+
+const SubTitle = styled.div`
+  font-size: 1.1rem;
   margin-bottom: 1rem;
 `
 
@@ -167,3 +173,11 @@ const DeviceRoot = styled.div<Status>`
     text-decoration: underline;
   }
 `
+
+function NoneFound() {
+  return (
+    <DeviceRoot isConnectable={false} isConnected={false}>
+      None Found
+    </DeviceRoot>
+  )
+}

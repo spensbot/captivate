@@ -70,7 +70,6 @@ async function maintainConnection() {
     const portToConnect = availablePorts.find(
       (port) => connectable.find((c) => c === port.path) !== undefined
     )
-    console.log(`connectable: ${connectable}, portToConnect: ${portToConnect}`)
     if (portToConnect) {
       connect(portToConnect.path)
     }
