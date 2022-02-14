@@ -31,10 +31,10 @@ export type Beats = number
 export function isNewPeriod(
   beatsLast: Beats,
   beatsNow: Beats,
-  targetPeriod: Beats
+  beatsPerPeriod: Beats
 ) {
   const beatDelta = beatsNow - beatsLast
-  return beatsNow % targetPeriod < beatDelta
+  return beatsNow % beatsPerPeriod < beatDelta
 }
 
 export class PeriodTracker {

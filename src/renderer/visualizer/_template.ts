@@ -1,14 +1,22 @@
 import * as THREE from 'three'
-import { RealtimeState } from '../redux/realtimeStore'
-import { ReduxState } from '../redux/store'
-import VisualizerBase from './VisualizerBase'
+import VisualizerBase, { UpdateResource } from './VisualizerBase'
 
-export default class _ extends VisualizerBase {
-  readonly type = '_'
+export interface Config {
+  type: ''
+}
+
+export function initConfig(): Config {
+  return {
+    type: '',
+  }
+}
+
+export default class LocalMedia extends VisualizerBase {
+  readonly type = 'LocalMedia'
 
   constructor() {
     super()
   }
 
-  update(rt: RealtimeState, _state: ReduxState): void {}
+  update(dt: number, {}: UpdateResource) {}
 }

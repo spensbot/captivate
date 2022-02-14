@@ -6,6 +6,7 @@ import {
   TextParticlesConfig,
   initTextParticlesConfig,
 } from './TextParticlesConfig'
+import { LocalMediaConfig, initLocalMediaConfig } from './LocalMedia'
 
 export type VisualizerConfig =
   | SpheresConfig
@@ -13,6 +14,7 @@ export type VisualizerConfig =
   | CubesConfig
   | CubeSphereConfig
   | TextParticlesConfig
+  | LocalMediaConfig
 
 export type VisualizerType = VisualizerConfig['type']
 
@@ -22,6 +24,7 @@ export const visualizerTypeList: VisualizerType[] = [
   'Spheres',
   'TextParticles',
   'TextSpin',
+  'LocalMedia',
 ]
 
 export function initVisualizerConfig(type: VisualizerType): VisualizerConfig {
@@ -30,5 +33,6 @@ export function initVisualizerConfig(type: VisualizerType): VisualizerConfig {
   if (type === 'Spheres') return initSpheresConfig()
   if (type === 'TextParticles') return initTextParticlesConfig()
   if (type === 'TextSpin') return initTextSpinConfig()
+  if (type === 'LocalMedia') return initLocalMediaConfig()
   return initCubesConfig()
 }

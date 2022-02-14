@@ -3,12 +3,41 @@ import { LightScene_t } from '../../shared/Scenes'
 import { visibleSizeAtZ } from './animations'
 import { Params } from '../../shared/params'
 import { TimeState } from '../../shared/TimeState'
+import { isNewPeriod } from '../../shared/TimeState'
 
-export interface UpdateResource {
+export interface UpdateStuff {
   time: TimeState
   params: Params
   scene: LightScene_t
   master: number
+}
+
+export class UpdateResource {
+  time: TimeState
+  params: Params
+  scene: LightScene_t
+  master: number
+  private lastBeats: number
+
+  constructor(stuff: UpdateStuff) {
+    this.time = stuff.time
+    this.params = stuff.params
+    this.scene = stuff.scene
+    this.master = stuff.master
+    this.lastBeats = this.time.beats
+  }
+
+  update(stuff: UpdateStuff) {
+    this.lastBeats = this.time.beats
+    this.time = stuff.time
+    this.params = stuff.params
+    this.scene = stuff.scene
+    this.master = stuff.master
+  }
+
+  isNewPeriod(beatsPerPeriod: number) {
+    return isNewPeriod(this.lastBeats, this.time.beats, beatsPerPeriod)
+  }
 }
 
 // This abstract class is an interface and should never contain members (except for type) or a constructor

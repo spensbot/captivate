@@ -123,6 +123,7 @@ function isDmxDevice_t(port: SerialPort.PortInfo) {
 function sendUniverse(universe: number[]) {
   if (_connection?.writable && _readyToWrite) {
     const universeBuffer = Buffer.alloc(513, 0)
+
     universe.forEach((value, index) => (universeBuffer[index + 1] = value))
 
     const hdr = Buffer.from([

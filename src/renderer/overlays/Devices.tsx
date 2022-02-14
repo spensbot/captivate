@@ -73,12 +73,13 @@ const Modal = styled.div`
 const Row = styled.div`
   display: flex;
   padding: 1rem;
-  align-items: center;
+  align-items: stretch;
   justify-content: space-between;
 `
 
 const Pane = styled.div`
   flex: '1 0 0';
+  height: 100%;
 `
 
 const Title = styled.div`

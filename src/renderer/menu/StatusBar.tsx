@@ -30,7 +30,15 @@ function loadScenes() {
   loadFile('Load Scenes', [captivateFileFilters.scenes])
     .then((serializedControlState) => {
       const newControlState: SaveType = JSON.parse(serializedControlState)
-      store.dispatch(resetControl(newControlState))
+
+      store.dispatch(
+        resetControl({
+          device: store.getState().control.present.device,
+          master: 1,
+          light: newControlState.light,
+          visual: newControlState.visual,
+        })
+      )
     })
     .catch((err) => {
       console.log(err)
@@ -123,9 +131,6 @@ export default function StatusBar() {
           <PianoIcon />
         </IconButton>
       )}
-      <IconButton onClick={() => dispatch(midiSetIsEditing(!isEditing))}>
-        <PianoIcon />
-      </IconButton>
       <IconButton onClick={() => dispatch(setConnectionsMenu(!connectionMenu))}>
         <UsbIcon />
       </IconButton>

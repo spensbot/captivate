@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { RealtimeState } from '../redux/realtimeStore'
 import { CleanReduxState } from '../redux/store'
-import VisualizerBase from './VisualizerBase'
+import VisualizerBase, { UpdateResource } from './VisualizerBase'
 import { VisualizerConfig, initVisualizerConfig } from './VisualizerConfig'
 import equal from 'deep-equal'
 import Spheres from './Spheres'
@@ -9,6 +9,7 @@ import TextSpin from './TextSpin'
 import Cubes from './Cubes'
 import CubeSphere from './CubeSphere'
 import TextParticles from './TextParticles'
+import LocalMedia from './LocalMedia'
 import { handleBadLightScene } from '../../shared/Scenes'
 
 export interface VisualizerResource {
@@ -22,6 +23,7 @@ export function constructVisualizer(config: VisualizerConfig): VisualizerBase {
   if (config.type === 'Spheres') return new Spheres()
   if (config.type === 'TextParticles') return new TextParticles(config)
   if (config.type === 'TextSpin') return new TextSpin()
+  if (config.type === 'LocalMedia') return new LocalMedia(config)
   return new Spheres()
 }
 
@@ -31,6 +33,7 @@ export default class VisualizerManager {
   private config: VisualizerConfig
   private width = 0
   private height = 0
+  private updateResource: UpdateResource | null = null
 
   constructor() {
     this.renderer = new THREE.WebGLRenderer()
@@ -55,13 +58,19 @@ export default class VisualizerManager {
       this.active = constructVisualizer(this.config)
       this.active.resize(this.width, this.height)
     }
-
-    this.active.update(dt, {
+    const stuff = {
       params: res.rt.outputParams,
       time: res.rt.time,
       scene: handleBadLightScene(control.light.byId[control.light.active]),
       master: control.master,
-    })
+    }
+    if (this.updateResource === null) {
+      this.updateResource = new UpdateResource(stuff)
+    } else {
+      this.updateResource.update(stuff)
+    }
+
+    this.active.update(dt, this.updateResource)
     this.renderer.render(...this.active.getRenderInputs())
   }
 

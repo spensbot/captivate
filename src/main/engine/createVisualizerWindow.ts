@@ -27,6 +27,8 @@ export default async (visualizerContainer: VisualizerContainer) => {
     icon: getAssetPath('icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'visualizer_preload.js'),
+      webSecurity: false,
+      nodeIntegration: false,
     },
   })
 

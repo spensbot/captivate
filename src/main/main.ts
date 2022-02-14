@@ -84,6 +84,10 @@ const createWindow = async () => {
     icon: getAssetPath('icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      // These are disabled to allow Captivate to display local media
+      // This should be safe since Captivate doesn't run anything remote
+      webSecurity: false,
+      nodeIntegration: false,
     },
   })
 
