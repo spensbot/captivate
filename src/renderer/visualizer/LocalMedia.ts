@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import VisualizerBase, { UpdateResource } from './VisualizerBase'
+import { getVideo, pathUrl } from './loaders'
 
 const t = 'LocalMedia'
 
@@ -29,10 +30,6 @@ const getVideos = () => [
   'woman in field.mp4',
 ]
 
-function pathUrl(path: string) {
-  return `file://` + path
-}
-
 export function initLocalMediaConfig(): LocalMediaConfig {
   return {
     type: t,
@@ -43,8 +40,6 @@ export function initLocalMediaConfig(): LocalMediaConfig {
 export default class LocalMedia extends VisualizerBase {
   readonly type = t
   config: LocalMediaConfig
-  video: HTMLVideoElement
-  videoTex: THREE.VideoTexture
   light: THREE.AmbientLight
   canvas: THREE.Mesh
   activeIndex: number = 0
@@ -52,63 +47,38 @@ export default class LocalMedia extends VisualizerBase {
   constructor(config: LocalMediaConfig) {
     super()
     this.config = config
-    this.video = document.createElement('video')
-    this.videoTex = new THREE.VideoTexture(this.video)
-    this.video.muted = true
-    this.video.loop = true
+    console.log(this.config.paths)
     const geometry = new THREE.BoxGeometry(6, 4, 4)
-    const material = new THREE.MeshPhysicalMaterial({
+    const material = new THREE.MeshBasicMaterial({
       color: 0xffffff,
-      map: this.videoTex,
     })
     this.canvas = new THREE.Mesh(geometry, material)
     this.light = new THREE.AmbientLight(0xffffff, 1)
     this.scene.add(this.canvas)
     this.scene.add(this.light)
-    console.log(this.config.paths)
-    this.loadNextVideo()
   }
 
   loadNextVideo() {
     const path = this.config.paths[this.activeIndex]
-    if (path !== undefined) {
-      try {
-        console.log(path)
-        const src = pathUrl(path)
-        // const source = document.createElement('source')
-        // source.onerror = (e) => {
-        //   console.log(e)
-        // }
-        // source.src = src
-        // source.type = 'video/mp4'
-        // this.video.innerHTML = ''
-        // this.video.appendChild(source)
-        this.video.src = src
-        this.video.onerror = (e) => {
-          console.log('Video Error: ', e)
-        }
-        this.video
-          .play()
-          .then()
-          .catch((err) => {
-            console.error('Video Error: ', err)
-          })
-        this.video.onload = (e) => {
-          console.log('video load', e)
-        }
-      } catch (err) {
-        console.error('cannot find video: ', path)
-      }
-    }
 
     this.activeIndex += 1
     if (this.activeIndex >= this.config.paths.length) {
       this.activeIndex = 0
     }
+
+    getVideo(pathUrl(path))
+      .then((video) => {
+        const videoTexture = new THREE.VideoTexture(video)
+        this.canvas.material = new THREE.MeshBasicMaterial({
+          color: 0xffffff,
+          map: videoTexture,
+        })
+      })
+      .catch((err) => console.error('Video Error', err))
   }
 
-  update(dt: number, res: UpdateResource) {
-    const d = dt / 10000
+  update(_dt: number, res: UpdateResource) {
+    // const d = dt / 10000
     // this.canvas.rotation.y += d
     if (res.isNewPeriod(2)) {
       this.loadNextVideo()
