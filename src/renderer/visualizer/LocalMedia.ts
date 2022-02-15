@@ -1,12 +1,13 @@
 import * as THREE from 'three'
 import VisualizerBase, { UpdateResource } from './VisualizerBase'
-import { getVideo, pathUrl, releaseVideo } from './loaders'
+import { getVideo, pathUrl, releaseVideo, getImageTexture } from './loaders'
 
 const t = 'LocalMedia'
 
 export interface LocalMediaConfig {
   type: 'LocalMedia'
   paths: string[]
+  imagePaths: string[]
 }
 
 const base = '/Users/spensersaling/Movies/videos/'
@@ -54,6 +55,7 @@ export function initLocalMediaConfig(): LocalMediaConfig {
   return {
     type: t,
     paths: paths,
+    imagePaths: imagePaths,
   }
 }
 
@@ -64,10 +66,11 @@ export default class LocalMedia extends VisualizerBase {
   light: THREE.AmbientLight
   canvas: THREE.Mesh
   activeIndex: number = 0
+  activeImageIndex: number = 0
 
   constructor(config: LocalMediaConfig) {
     super()
-    this.config = config
+    this.config = initLocalMediaConfig()
     console.log('this.config.paths', this.config.paths)
     const geometry = new THREE.BoxGeometry(7, 4, 4)
     const material = new THREE.MeshBasicMaterial({
@@ -102,11 +105,28 @@ export default class LocalMedia extends VisualizerBase {
       .catch((err) => console.error('Video Error', err))
   }
 
+  loadNextImage() {
+    const path = this.config.imagePaths[this.activeImageIndex]
+
+    this.activeImageIndex += 1
+    if (this.activeImageIndex >= this.config.imagePaths.length) {
+      this.activeImageIndex = 0
+    }
+    getImageTexture(pathUrl(path))
+      .then((imageTexture) => {
+        this.canvas.material = new THREE.MeshBasicMaterial({
+          color: 0xffffff,
+          map: imageTexture,
+        })
+      })
+      .catch((err) => console.error('Image Error', err))
+  }
+
   update(_dt: number, res: UpdateResource) {
     // const d = dt / 10000
     // this.canvas.rotation.y += d
     if (res.isNewPeriod(2)) {
-      this.loadNextVideo()
+      this.loadNextImage()
     }
   }
 
