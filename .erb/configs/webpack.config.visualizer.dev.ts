@@ -13,7 +13,7 @@ if (process.env.NODE_ENV === 'production') {
   checkNodeEnv('development')
 }
 
-const port = process.env.PORT || 1214
+const port = process.env.PORT || 1213
 
 const configuration: webpack.Configuration = {
   devtool: 'inline-source-map',

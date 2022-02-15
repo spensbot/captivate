@@ -45,3 +45,9 @@ export async function getVideo(src: string): Promise<HTMLVideoElement> {
   await video.play()
   return video
 }
+
+export function releaseVideo(video: HTMLVideoElement) {
+  video.pause()
+  video.removeAttribute('src')
+  video.load()
+}

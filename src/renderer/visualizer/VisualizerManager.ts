@@ -39,7 +39,7 @@ export default class VisualizerManager {
     this.renderer = new THREE.WebGLRenderer()
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     this.renderer.outputEncoding = THREE.sRGBEncoding
-    this.config = initVisualizerConfig('Spheres')
+    this.config = initVisualizerConfig('LocalMedia')
     this.active = constructVisualizer(this.config)
   }
 
@@ -55,6 +55,7 @@ export default class VisualizerManager {
     }
     if (!equal(config, this.config)) {
       this.config = config
+      this.active.release()
       this.active = constructVisualizer(this.config)
       this.active.resize(this.width, this.height)
     }

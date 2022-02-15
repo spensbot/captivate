@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import VisualizerBase, { UpdateResource } from './VisualizerBase'
-import { getVideo, pathUrl } from './loaders'
+import { getVideo, pathUrl, releaseVideo } from './loaders'
 
 const t = 'LocalMedia'
 
@@ -29,17 +29,38 @@ const getVideos = () => [
   'wheat2.mp4',
   'woman in field.mp4',
 ]
+const paths = getVideos().map((filename) => base + filename)
+
+const imageBase = `/Users/spensersaling/Pictures/`
+const images = [
+  'blue_city.jpg',
+  'city.jpg',
+  'forest.jpg',
+  'hills.jpg',
+  'love.jpg',
+  'moon.jpg',
+  'mountains.jpg',
+  'old_city.jpg',
+  'plane.jpg',
+  'rave.jpg',
+  'rose.jpg',
+  'snow.jpg',
+  'snowfall.jpg',
+  'waterfall.jpg',
+]
+const imagePaths = images.map((filename) => imageBase + filename)
 
 export function initLocalMediaConfig(): LocalMediaConfig {
   return {
     type: t,
-    paths: getVideos().map((filename) => base + filename),
+    paths: paths,
   }
 }
 
 export default class LocalMedia extends VisualizerBase {
   readonly type = t
   config: LocalMediaConfig
+  video: HTMLVideoElement | null = null
   light: THREE.AmbientLight
   canvas: THREE.Mesh
   activeIndex: number = 0
@@ -47,8 +68,8 @@ export default class LocalMedia extends VisualizerBase {
   constructor(config: LocalMediaConfig) {
     super()
     this.config = config
-    console.log(this.config.paths)
-    const geometry = new THREE.BoxGeometry(6, 4, 4)
+    console.log('this.config.paths', this.config.paths)
+    const geometry = new THREE.BoxGeometry(7, 4, 4)
     const material = new THREE.MeshBasicMaterial({
       color: 0xffffff,
     })
@@ -56,6 +77,7 @@ export default class LocalMedia extends VisualizerBase {
     this.light = new THREE.AmbientLight(0xffffff, 1)
     this.scene.add(this.canvas)
     this.scene.add(this.light)
+    this.loadNextVideo()
   }
 
   loadNextVideo() {
@@ -68,6 +90,9 @@ export default class LocalMedia extends VisualizerBase {
 
     getVideo(pathUrl(path))
       .then((video) => {
+        if (this.video) releaseVideo(this.video)
+        if (this.video) this.video.remove()
+        this.video = video
         const videoTexture = new THREE.VideoTexture(video)
         this.canvas.material = new THREE.MeshBasicMaterial({
           color: 0xffffff,
@@ -83,5 +108,9 @@ export default class LocalMedia extends VisualizerBase {
     if (res.isNewPeriod(2)) {
       this.loadNextVideo()
     }
+  }
+
+  release() {
+    if (this.video) releaseVideo(this.video)
   }
 }

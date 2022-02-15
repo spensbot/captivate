@@ -65,4 +65,7 @@ export default abstract class VisualizerBase {
   visibleSizeAtZ(z: number) {
     return visibleSizeAtZ(z, this.camera)
   }
+
+  // override this if your visualizer has resources that need to be released to prevent memory leaks
+  release() {}
 }
