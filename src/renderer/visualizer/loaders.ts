@@ -50,4 +50,5 @@ export function releaseVideo(video: HTMLVideoElement) {
   video.pause()
   video.removeAttribute('src')
   video.load()
+  video.remove()
 }

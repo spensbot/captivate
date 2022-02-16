@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import VisualizerBase, { UpdateResource } from './VisualizerBase'
 import { getVideo, pathUrl, releaseVideo, getImageTexture } from './loaders'
+import LoadQueue from './LoadQueue'
 
 const t = 'LocalMedia'
 
@@ -59,62 +60,81 @@ export function initLocalMediaConfig(): LocalMediaConfig {
   }
 }
 
+interface VideoData {
+  video: HTMLVideoElement
+  videoTexture: THREE.VideoTexture
+  videoMaterial: THREE.MeshBasicMaterial
+}
+
+function releaseVideoData(vd: VideoData) {
+  releaseVideo(vd.video)
+  vd.videoMaterial.dispose()
+  vd.videoTexture.dispose()
+}
+
 export default class LocalMedia extends VisualizerBase {
   readonly type = t
   config: LocalMediaConfig
-  video: HTMLVideoElement | null = null
   light: THREE.AmbientLight
-  canvas: THREE.Mesh
-  activeIndex: number = 0
-  activeImageIndex: number = 0
+  mesh: THREE.Mesh
+  vIndex: number = 0
+  iIndex: number = 0
+  vQueue: LoadQueue<VideoData>
 
   constructor(config: LocalMediaConfig) {
     super()
     this.config = initLocalMediaConfig()
-    console.log('this.config.paths', this.config.paths)
-    const geometry = new THREE.BoxGeometry(7, 4, 4)
-    const material = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-    })
-    this.canvas = new THREE.Mesh(geometry, material)
+    this.mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(7, 4, 4),
+      new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+      })
+    )
     this.light = new THREE.AmbientLight(0xffffff, 1)
-    this.scene.add(this.canvas)
+    this.scene.add(this.mesh)
     this.scene.add(this.light)
-    this.loadNextVideo()
+    this.getNextVideo()
+    this.vQueue = new LoadQueue<VideoData>(
+      3,
+      () => this.getNextVideo(),
+      releaseVideoData,
+      (videoData) => {
+        this.mesh.material = videoData.videoMaterial
+      }
+    )
   }
 
-  loadNextVideo() {
-    const path = this.config.paths[this.activeIndex]
+  async getNextVideo(): Promise<VideoData> {
+    const path = this.config.paths[this.vIndex]
 
-    this.activeIndex += 1
-    if (this.activeIndex >= this.config.paths.length) {
-      this.activeIndex = 0
+    this.vIndex += 1
+    if (this.vIndex >= this.config.paths.length) {
+      this.vIndex = 0
     }
 
-    getVideo(pathUrl(path))
-      .then((video) => {
-        if (this.video) releaseVideo(this.video)
-        if (this.video) this.video.remove()
-        this.video = video
-        const videoTexture = new THREE.VideoTexture(video)
-        this.canvas.material = new THREE.MeshBasicMaterial({
-          color: 0xffffff,
-          map: videoTexture,
-        })
-      })
-      .catch((err) => console.error('Video Error', err))
+    const video = await getVideo(pathUrl(path))
+    const videoTexture = new THREE.VideoTexture(video)
+
+    return {
+      video: video,
+      videoTexture: videoTexture,
+      videoMaterial: new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        map: videoTexture,
+      }),
+    }
   }
 
   loadNextImage() {
-    const path = this.config.imagePaths[this.activeImageIndex]
+    const path = this.config.imagePaths[this.iIndex]
 
-    this.activeImageIndex += 1
-    if (this.activeImageIndex >= this.config.imagePaths.length) {
-      this.activeImageIndex = 0
+    this.iIndex += 1
+    if (this.iIndex >= this.config.imagePaths.length) {
+      this.iIndex = 0
     }
     getImageTexture(pathUrl(path))
       .then((imageTexture) => {
-        this.canvas.material = new THREE.MeshBasicMaterial({
+        this.mesh.material = new THREE.MeshBasicMaterial({
           color: 0xffffff,
           map: imageTexture,
         })
@@ -124,13 +144,16 @@ export default class LocalMedia extends VisualizerBase {
 
   update(_dt: number, res: UpdateResource) {
     // const d = dt / 10000
-    // this.canvas.rotation.y += d
+    // this.mesh.rotation.y += d
     if (res.isNewPeriod(2)) {
-      this.loadNextImage()
+      const videoData = this.vQueue.getNext()
+      if (videoData) {
+        this.mesh.material = videoData.videoMaterial
+      }
     }
   }
 
   release() {
-    if (this.video) releaseVideo(this.video)
+    this.vQueue.release()
   }
 }
