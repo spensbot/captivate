@@ -9,6 +9,7 @@ import SplitPane from '../base/SplitPane'
 import SceneSelection from '../scenes/SceneSelection'
 import OpenVisualizerButton from 'renderer/visualizer/OpenVisualizerButton'
 import VisualizerSceneEditor from 'renderer/visualizer/VisualizerSceneEditor'
+import PostProcessing from 'renderer/visualizer/PostProcessing'
 
 const visualizer = new VisualizerManager()
 let lastUpdateTime: number | null = null
@@ -76,7 +77,21 @@ export default function Visualizer() {
             <FPS dt={dt} />
             <OpenVisualizerButton />
           </Window>
-          <VisualizerSceneEditor />
+          <SplitPane
+            style={{ height: '100%' }}
+            type="vertical"
+            initialSplit={0.3}
+            rem={0.5}
+            min={0.2}
+            max={0.5}
+          >
+            <Pane style={{ borderRight: `1px solid #777` }}>
+              <VisualizerSceneEditor />
+            </Pane>
+            <Pane>
+              <PostProcessing />
+            </Pane>
+          </SplitPane>
         </Pane>
       </SplitPane>
     </Root>

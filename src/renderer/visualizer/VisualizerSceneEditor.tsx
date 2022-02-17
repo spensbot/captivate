@@ -29,5 +29,5 @@ export default function VisualizerSceneEditor({}: Props) {
 }
 
 const Root = styled.div`
-  margin: 1rem;
+  padding: 1rem;
 `
