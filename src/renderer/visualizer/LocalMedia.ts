@@ -93,7 +93,6 @@ export default class LocalMedia extends VisualizerBase {
     this.light = new THREE.AmbientLight(0xffffff, 1)
     this.scene.add(this.mesh)
     this.scene.add(this.light)
-    this.getNextVideo()
     this.vQueue = new LoadQueue<VideoData>(
       3,
       () => this.getNextVideo(),

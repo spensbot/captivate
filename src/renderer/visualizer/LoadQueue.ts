@@ -1,5 +1,6 @@
 interface Loading<T> {
   state: 'loading'
+  canelled?: true
   promise: Promise<T>
 }
 interface Ready<T> {
@@ -34,6 +35,10 @@ export default class LoadQueue<T> {
     let i = 0
     for (const loadable of this.queue) {
       if (i !== this.currentIndex && loadable.state === 'ready') {
+        const currentItem = this.queue[this.currentIndex]
+        if (currentItem.state === 'ready') {
+          this.releaseItem(currentItem.data)
+        }
         this.queue[this.currentIndex] = this.loadNextAndBind(this.currentIndex)
         this.currentIndex = i
         return loadable.data
@@ -54,6 +59,7 @@ export default class LoadQueue<T> {
         if (this.onFirstLoad !== null) {
           this.currentIndex = index
           this.onFirstLoad(data)
+          this.onFirstLoad = null
         }
       })
       .catch((err) => {
