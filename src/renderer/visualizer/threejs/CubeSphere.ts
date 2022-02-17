@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import VisualizerBase, { UpdateResource } from './VisualizerBase'
-import { random } from '../../shared/util'
+import { random } from '../../../shared/util'
 import { Vector3 } from 'three'
 
 const ARRAY = Array(20).fill(0)

@@ -7,7 +7,7 @@ import * as dmxConnection from './dmxConnection'
 import * as midiConnection from './midiConnection'
 import { PayloadAction } from '@reduxjs/toolkit'
 import { promises } from 'fs'
-import { VisualizerResource } from '../../renderer/visualizer/VisualizerManager'
+import { VisualizerResource } from '../../renderer/visualizer/threejs/VisualizerManager'
 import { VisualizerContainer } from './createVisualizerWindow'
 
 interface Config {

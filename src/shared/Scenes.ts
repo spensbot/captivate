@@ -5,7 +5,7 @@ import { nanoid } from 'nanoid'
 import {
   VisualizerConfig,
   initVisualizerConfig,
-} from '../renderer/visualizer/VisualizerConfig'
+} from '../renderer/visualizer/threejs/VisualizerConfig'
 
 export interface LightScene_t {
   name: string

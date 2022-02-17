@@ -1,8 +1,8 @@
 import * as THREE from 'three'
 import VisualizerBase, { UpdateResource } from './VisualizerBase'
-import { random } from '../../shared/util'
-import { isNewPeriod } from '../../shared/TimeState'
-import { Skew } from '../../shared/oscillator'
+import { random } from '../../../shared/util'
+import { isNewPeriod } from '../../../shared/TimeState'
+import { Skew } from '../../../shared/oscillator'
 import { Strobe, colorFromHSV } from './animations'
 
 const RADIUS = 2

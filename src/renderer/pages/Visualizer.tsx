@@ -1,10 +1,10 @@
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect } from 'react'
 import FPS from '../visualizer/FPS'
-import VisualizerManager from '../visualizer/VisualizerManager'
+import VisualizerManager from '../visualizer/threejs/VisualizerManager'
 import styled from 'styled-components'
 import StatusBar from '../menu/StatusBar'
-import { useRealtimeSelector, realtimeStore } from '../redux/realtimeStore'
-import { store, useTypedSelector, getCleanReduxState } from '../redux/store'
+import { realtimeStore } from '../redux/realtimeStore'
+import { store, getCleanReduxState } from '../redux/store'
 import SplitPane from '../base/SplitPane'
 import SceneSelection from '../scenes/SceneSelection'
 import OpenVisualizerButton from 'renderer/visualizer/OpenVisualizerButton'
@@ -31,8 +31,6 @@ animateVisualizer()
 
 export default function Visualizer() {
   const ref = useRef(null)
-
-  const rt = useRealtimeSelector((state) => state)
 
   function resize() {
     const element = ref.current

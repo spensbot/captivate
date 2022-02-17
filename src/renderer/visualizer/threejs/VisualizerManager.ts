@@ -1,6 +1,6 @@
 import * as THREE from 'three'
-import { RealtimeState } from '../redux/realtimeStore'
-import { CleanReduxState } from '../redux/store'
+import { RealtimeState } from '../../redux/realtimeStore'
+import { CleanReduxState } from '../../redux/store'
 import VisualizerBase, { UpdateResource } from './VisualizerBase'
 import { VisualizerConfig, initVisualizerConfig } from './VisualizerConfig'
 import equal from 'deep-equal'
@@ -10,7 +10,7 @@ import Cubes from './Cubes'
 import CubeSphere from './CubeSphere'
 import TextParticles from './TextParticles'
 import LocalMedia from './LocalMedia'
-import { handleBadLightScene } from '../../shared/Scenes'
+import { handleBadLightScene } from '../../../shared/Scenes'
 
 export interface VisualizerResource {
   rt: RealtimeState

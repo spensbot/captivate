@@ -1,4 +1,9 @@
+import { useRealtimeSelector } from '../redux/realtimeStore'
+
 export default function FPS({ dt }: { dt: number }) {
+  // This allows the FPS to update any time the realtimeState updates
+  useRealtimeSelector((state) => state)
+
   return (
     <div
       style={{

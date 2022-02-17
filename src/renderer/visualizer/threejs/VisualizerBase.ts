@@ -1,9 +1,9 @@
 import * as THREE from 'three'
-import { LightScene_t } from '../../shared/Scenes'
+import { LightScene_t } from '../../../shared/Scenes'
 import { visibleSizeAtZ } from './animations'
-import { Params } from '../../shared/params'
-import { TimeState } from '../../shared/TimeState'
-import { isNewPeriod } from '../../shared/TimeState'
+import { Params } from '../../../shared/params'
+import { TimeState } from '../../../shared/TimeState'
+import { isNewPeriod } from '../../../shared/TimeState'
 
 export interface UpdateStuff {
   time: TimeState

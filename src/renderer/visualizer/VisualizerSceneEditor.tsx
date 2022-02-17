@@ -1,7 +1,10 @@
 import styled from 'styled-components'
 import { useActiveVisualScene } from '../redux/store'
 import Select from '../base/Select'
-import { visualizerTypeList, initVisualizerConfig } from './VisualizerConfig'
+import {
+  visualizerTypeList,
+  initVisualizerConfig,
+} from './threejs/VisualizerConfig'
 import { useDispatch } from 'react-redux'
 import { setVisualSceneConfig } from '../redux/controlSlice'
 
