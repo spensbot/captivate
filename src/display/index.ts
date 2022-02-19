@@ -33,3 +33,5 @@ function animate() {
 }
 
 animate()
+
+vm.resize(window.innerWidth, window.innerHeight)

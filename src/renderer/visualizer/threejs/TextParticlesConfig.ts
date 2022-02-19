@@ -31,7 +31,7 @@ export function initTextParticlesConfig(): TextParticlesConfig {
     textSize: 1.5,
     particleColor: 0xffffff,
     particleSize: 0.15,
-    particleCount: 1000, // 15000
+    particleCount: 15000,
     physics: {
       type: 'gravity',
       gravity: 20,
