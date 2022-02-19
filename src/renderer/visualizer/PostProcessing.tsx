@@ -1,5 +1,7 @@
 import styled from 'styled-components'
 import PPItem from './PPItem'
+import IconButton from '@mui/material/IconButton'
+import AddIcon from '@mui/icons-material/Add'
 
 interface Props {}
 
@@ -10,6 +12,9 @@ export default function PostProcessing({}: Props) {
       <Items>
         <PPItem title="Dimmer" isOpen={false} listening="whatever" />
         <PPItem title="Glitch" isOpen={true} listening="whatever" />
+        <IconButton>
+          <AddIcon />
+        </IconButton>
       </Items>
     </Root>
   )
