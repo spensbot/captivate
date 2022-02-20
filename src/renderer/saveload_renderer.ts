@@ -10,7 +10,12 @@ const SELECT_FILES = 'select-files'
 const CACHED_STATE_KEY = 'cached-state'
 const AUTO_SAVE_INTERVAL = 1000 // ms
 
+// Modify this function to fix any state changes between runs
 function fixState(state: CleanReduxState): CleanReduxState {
+  Object.entries(state.control.visual.byId).forEach(([_id, scene]) => {
+    scene.effectsConfig = []
+    scene.activeEffectIndex = 0
+  })
   return state
 }
 

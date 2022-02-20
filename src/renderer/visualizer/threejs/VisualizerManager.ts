@@ -10,7 +10,9 @@ import Cubes from './Cubes'
 import CubeSphere from './CubeSphere'
 import TextParticles from './TextParticles'
 import LocalMedia from './LocalMedia'
-import { handleBadLightScene } from '../../../shared/Scenes'
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
+import effectCache from './effectCache'
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 
 export interface VisualizerResource {
   rt: RealtimeState
@@ -34,11 +36,13 @@ export default class VisualizerManager {
   private width = 0
   private height = 0
   private updateResource: UpdateResource | null = null
+  private effectComposer: EffectComposer
 
   constructor() {
     this.renderer = new THREE.WebGLRenderer()
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     this.renderer.outputEncoding = THREE.sRGBEncoding
+    this.effectComposer = new EffectComposer(this.renderer)
     this.config = initVisualizerConfig('LocalMedia')
     this.active = constructVisualizer(this.config)
   }
@@ -50,19 +54,15 @@ export default class VisualizerManager {
   update(dt: number, res: VisualizerResource) {
     this.renderer.clear()
     const control = res.state.control
-    const config = control.visual.byId[control.visual.active]?.config || {
+    const visualScene = control.visual.byId[control.visual.active]
+    const config = visualScene?.config || {
       type: 'Cubes',
     }
-    if (!equal(config, this.config)) {
-      this.config = config
-      this.active.release()
-      this.active = constructVisualizer(this.config)
-      this.active.resize(this.width, this.height)
-    }
+    const effectsConfig = visualScene?.effectsConfig || []
     const stuff = {
       params: res.rt.outputParams,
       time: res.rt.time,
-      scene: handleBadLightScene(control.light.byId[control.light.active]),
+      scene: control.light.byId[control.light.active],
       master: control.master,
     }
     if (this.updateResource === null) {
@@ -70,9 +70,22 @@ export default class VisualizerManager {
     } else {
       this.updateResource.update(stuff)
     }
+    if (!equal(config, this.config)) {
+      this.config = config
+      this.active.release()
+      this.active = constructVisualizer(this.config)
+      this.active.resize(this.width, this.height)
+      this.active.update(dt, this.updateResource)
+      this.effectComposer.reset()
+      this.effectComposer.addPass(
+        new RenderPass(...this.active.getRenderInputs())
+      )
 
-    this.active.update(dt, this.updateResource)
-    this.renderer.render(...this.active.getRenderInputs())
+      effectsConfig.forEach((effect) => {
+        this.effectComposer.addPass(effectCache[effect.type])
+      })
+    }
+    this.effectComposer.render()
   }
 
   resize(width: number, height: number) {

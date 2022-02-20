@@ -64,3 +64,16 @@ export function random(min: number, max?: number) {
 export function randomBool() {
   return Math.random() > 0.5
 }
+
+export interface ReorderParams {
+  fromIndex: number
+  toIndex: number
+}
+
+export function reorderArray<T>(
+  array: T[],
+  { fromIndex, toIndex }: ReorderParams
+) {
+  let element = array.splice(fromIndex, 1)[0]
+  array.splice(toIndex, 0, element)
+}

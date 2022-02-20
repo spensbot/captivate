@@ -5,7 +5,7 @@ import shaders from './shaders'
 import { particles } from './particles'
 import { textOutlineShapesAndHoles, textBounds } from './text'
 import { colorFromHSV, distance } from './animations'
-import { random } from 'shared/util'
+import { random } from '../../../shared/util'
 import { gravity, ParticleState } from './particlePhysics'
 import { TextParticlesConfig } from './TextParticlesConfig'
 

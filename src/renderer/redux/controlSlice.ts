@@ -1,12 +1,13 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { LfoShape } from '../../shared/oscillator'
 import { Param, Params } from '../../shared/params'
-import { clampNormalized, clamp } from '../../shared/util'
+import { clampNormalized, clamp, ReorderParams } from '../../shared/util'
 import { initModulator } from '../../shared/modulation'
 import { nanoid } from 'nanoid'
 import { RandomizerOptions } from '../../shared/randomizer'
 import cloneDeep from 'lodash.clonedeep'
-import { VisualizerConfig } from '../visualizer/VisualizerConfig'
+import { VisualizerConfig } from '../visualizer/threejs/VisualizerConfig'
+import { EffectConfig, Glitch } from '../visualizer/threejs/EffectTypes'
 import { DeviceState, initDeviceState, midiActions } from './deviceState'
 import {
   ScenesStateBundle,
@@ -19,6 +20,7 @@ import {
   VisualScenes_t,
   SceneType,
 } from '../../shared/Scenes'
+import { reorderArray } from '../../shared/util'
 
 export interface ControlState extends ScenesStateBundle {
   device: DeviceState
@@ -165,15 +167,9 @@ export const scenesSlice = createSlice({
     },
     reorderScene: (
       state,
-      {
-        payload: {
-          sceneType,
-          val: { fromIndex, toIndex },
-        },
-      }: ScopedAction<{ fromIndex: number; toIndex: number }>
+      { payload: { sceneType, val } }: ScopedAction<ReorderParams>
     ) => {
-      let element = state[sceneType].ids.splice(fromIndex, 1)[0]
-      state[sceneType].ids.splice(toIndex, 0, element)
+      reorderArray(state[sceneType].ids, val)
     },
     copyActiveScene: (state, { payload }: PayloadAction<SceneType>) => {
       const scenes = state[payload]
@@ -306,8 +302,46 @@ export const scenesSlice = createSlice({
       state,
       { payload }: PayloadAction<VisualizerConfig>
     ) => {
-      const visualScene = state.visual.byId[state.visual.active]
-      if (visualScene) visualScene.config = payload
+      modifyActiveVisualScene(state, (scene) => (scene.config = payload))
+    },
+    activeVisualSceneEffect_add: (
+      state,
+      { payload }: PayloadAction<EffectConfig>
+    ) => {
+      modifyActiveVisualScene(state, (scene) => {
+        scene.effectsConfig.push(payload)
+        scene.activeEffectIndex = scene.effectsConfig.length - 1
+      })
+    },
+    activeVisualSceneEffect_set: (
+      state,
+      { payload }: PayloadAction<EffectConfig>
+    ) => {
+      modifyActiveVisualScene(state, (scene) => {
+        scene.effectsConfig[scene.activeEffectIndex] = payload
+      })
+    },
+    activeVisualSceneEffect_remove: (state, {}: PayloadAction<undefined>) => {
+      modifyActiveVisualScene(state, (scene) => {
+        delete scene.effectsConfig[scene.activeEffectIndex]
+      })
+    },
+    activeVisualSceneEffect_reorder: (
+      state,
+      { payload }: PayloadAction<ReorderParams>
+    ) => {
+      modifyActiveVisualScene(state, (scene) => {
+        reorderArray(scene.effectsConfig, payload)
+      })
+    },
+    activeVisualScene_setActiveEffectIndex: (
+      state,
+      { payload }: PayloadAction<number>
+    ) => {
+      modifyActiveVisualScene(
+        state,
+        (scene) => (scene.activeEffectIndex = payload)
+      )
     },
 
     // =====================   MIDI   ===========================================
@@ -362,6 +396,11 @@ export const {
   // VISUAL SCENES
   resetVisualScenes,
   setVisualSceneConfig,
+  activeVisualSceneEffect_add,
+  activeVisualSceneEffect_remove,
+  activeVisualSceneEffect_reorder,
+  activeVisualScene_setActiveEffectIndex,
+  activeVisualSceneEffect_set,
 
   // MIDI
   midiListen,

@@ -6,6 +6,10 @@ import {
   VisualizerConfig,
   initVisualizerConfig,
 } from '../renderer/visualizer/threejs/VisualizerConfig'
+import {
+  EffectsConfig,
+  initEffectsConfig,
+} from '../renderer/visualizer/threejs/EffectTypes'
 
 export interface LightScene_t {
   name: string
@@ -37,6 +41,8 @@ export interface VisualScene_t {
   name: string
   bombacity: number
   config: VisualizerConfig
+  effectsConfig: EffectsConfig
+  activeEffectIndex: number
 }
 
 export function initVisualScene(): VisualScene_t {
@@ -44,6 +50,8 @@ export function initVisualScene(): VisualScene_t {
     name: 'Name',
     bombacity: 0,
     config: initVisualizerConfig('TextParticles'),
+    effectsConfig: initEffectsConfig(),
+    activeEffectIndex: 0,
   }
 }
 
@@ -69,7 +77,7 @@ type SceneID = string
 
 interface ScenesState<T> {
   ids: SceneID[]
-  byId: { [key: SceneID]: T | undefined }
+  byId: { [key: SceneID]: T }
   active: SceneID
   auto: AutoScene_t
 }

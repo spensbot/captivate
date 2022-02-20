@@ -9,7 +9,7 @@ import SplitPane from '../base/SplitPane'
 import SceneSelection from '../scenes/SceneSelection'
 import OpenVisualizerButton from 'renderer/visualizer/OpenVisualizerButton'
 import VisualizerSceneEditor from 'renderer/visualizer/VisualizerSceneEditor'
-import PostProcessing from 'renderer/visualizer/PostProcessing'
+import Effects from 'renderer/visualizer/Effects'
 
 const visualizer = new VisualizerManager()
 let lastUpdateTime: number | null = null
@@ -72,13 +72,13 @@ export default function Visualizer() {
         <Pane>
           <SceneSelection sceneType="visual" />
         </Pane>
-        <Pane>
+        <VisualizerPane>
           <Window ref={ref}>
             <FPS dt={dt} />
             <OpenVisualizerButton />
           </Window>
           <SplitPane
-            style={{ height: '100%' }}
+            style={{ flex: '0.8 0 0' }}
             type="vertical"
             initialSplit={0.3}
             rem={0.5}
@@ -89,10 +89,10 @@ export default function Visualizer() {
               <VisualizerSceneEditor />
             </Pane>
             <Pane>
-              <PostProcessing />
+              <Effects />
             </Pane>
           </SplitPane>
-        </Pane>
+        </VisualizerPane>
       </SplitPane>
     </Root>
   )
@@ -108,10 +108,16 @@ const Root = styled.div`
 const Window = styled.div`
   position: relative;
   background-color: #000;
-  flex: 1 1 0;
+  flex: 1 0 0;
   height: 60vh;
 `
 
 const Pane = styled.div`
   height: 100%;
+`
+
+const VisualizerPane = styled.div`
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 `
