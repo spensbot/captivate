@@ -52,6 +52,8 @@ export default class LoadQueue<T> {
     const promise = this.loadNext()
     promise
       .then((data) => {
+        const loadable = this.queue[index]
+        if (loadable.state === 'loading' && loadable.canelled) return
         this.queue[index] = {
           state: 'ready',
           data,
@@ -79,6 +81,8 @@ export default class LoadQueue<T> {
     this.queue.forEach((loadable) => {
       if (loadable.state === 'ready') {
         this.releaseItem(loadable.data)
+      } else {
+        loadable.canelled = true
       }
     })
   }

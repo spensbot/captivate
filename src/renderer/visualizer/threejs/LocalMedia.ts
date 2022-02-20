@@ -36,7 +36,7 @@ const videoPaths = getVideos().map((filename) => base + filename)
 
 const imageExtensions = new Set(['jpg', 'jpeg'])
 const imageBase = `/Users/spensersaling/Pictures/`
-const images = [
+const images: string[] = [
   // 'blue_city.jpg',
   // 'city.jpg',
   // 'forest.jpg',
