@@ -14,6 +14,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import effectCache from './effectCache'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { EffectsConfig, initEffectsConfig } from './EffectTypes'
+import { indexArray } from 'shared/util'
 
 export interface VisualizerResource {
   rt: RealtimeState
@@ -78,18 +79,12 @@ export default class VisualizerManager {
       !equal(effectsConfig, this.effectsConfig)
     ) {
       this.config = config
+      this.effectsConfig = effectsConfig
       this.active.release()
       this.active = constructVisualizer(this.config)
       this.active.resize(this.width, this.height)
       this.active.update(dt, this.updateResource)
-      this.effectComposer.reset()
-      this.effectComposer.addPass(
-        new RenderPass(...this.active.getRenderInputs())
-      )
-
-      effectsConfig.forEach((effect) => {
-        this.effectComposer.addPass(effectCache[effect.type])
-      })
+      this.resetEffects()
     } else {
       this.active.update(dt, this.updateResource)
     }
@@ -103,13 +98,22 @@ export default class VisualizerManager {
     this.active.resize(width, height)
     this.renderer.setSize(width, height)
 
-    this.effectComposer.reset()
+    this.resetEffects()
+  }
+
+  resetEffects() {
+    this.removeAllEffects()
     this.effectComposer.addPass(
       new RenderPass(...this.active.getRenderInputs())
     )
-
     this.effectsConfig.forEach((effect) => {
       this.effectComposer.addPass(effectCache[effect.type])
     })
+  }
+
+  removeAllEffects() {
+    this.effectComposer.passes.forEach((pass) =>
+      this.effectComposer.removePass(pass)
+    )
   }
 }

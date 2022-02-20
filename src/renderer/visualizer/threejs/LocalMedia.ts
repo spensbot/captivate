@@ -37,20 +37,20 @@ const videoPaths = getVideos().map((filename) => base + filename)
 const imageExtensions = new Set(['jpg', 'jpeg'])
 const imageBase = `/Users/spensersaling/Pictures/`
 const images = [
-  'blue_city.jpg',
-  'city.jpg',
-  'forest.jpg',
-  'hills.jpg',
-  'love.jpg',
-  'moon.jpg',
-  'mountains.jpg',
-  'old_city.jpg',
-  'plane.jpg',
-  'rave.jpg',
-  'rose.jpg',
-  'snow.jpg',
-  'snowfall.jpg',
-  'waterfall.jpg',
+  // 'blue_city.jpg',
+  // 'city.jpg',
+  // 'forest.jpg',
+  // 'hills.jpg',
+  // 'love.jpg',
+  // 'moon.jpg',
+  // 'mountains.jpg',
+  // 'old_city.jpg',
+  // 'plane.jpg',
+  // 'rave.jpg',
+  // 'rose.jpg',
+  // 'snow.jpg',
+  // 'snowfall.jpg',
+  // 'waterfall.jpg',
 ]
 const imagePaths = images.map((filename) => imageBase + filename)
 const paths = videoPaths.concat(imagePaths)
