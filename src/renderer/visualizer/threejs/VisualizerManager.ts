@@ -13,6 +13,7 @@ import LocalMedia from './LocalMedia'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
 import effectCache from './effectCache'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
+import { EffectsConfig, initEffectsConfig } from './EffectTypes'
 
 export interface VisualizerResource {
   rt: RealtimeState
@@ -33,6 +34,7 @@ export default class VisualizerManager {
   private renderer: THREE.WebGLRenderer // The renderer is the only THREE class that actually takes a while to instantiate (>3ms)
   private active: VisualizerBase
   private config: VisualizerConfig
+  private effectsConfig: EffectsConfig
   private width = 0
   private height = 0
   private updateResource: UpdateResource | null = null
@@ -44,6 +46,7 @@ export default class VisualizerManager {
     this.renderer.outputEncoding = THREE.sRGBEncoding
     this.effectComposer = new EffectComposer(this.renderer)
     this.config = initVisualizerConfig('LocalMedia')
+    this.effectsConfig = initEffectsConfig()
     this.active = constructVisualizer(this.config)
   }
 
@@ -70,7 +73,10 @@ export default class VisualizerManager {
     } else {
       this.updateResource.update(stuff)
     }
-    if (!equal(config, this.config)) {
+    if (
+      !equal(config, this.config) ||
+      !equal(effectsConfig, this.effectsConfig)
+    ) {
       this.config = config
       this.active.release()
       this.active = constructVisualizer(this.config)
@@ -84,6 +90,8 @@ export default class VisualizerManager {
       effectsConfig.forEach((effect) => {
         this.effectComposer.addPass(effectCache[effect.type])
       })
+    } else {
+      this.active.update(dt, this.updateResource)
     }
     this.effectComposer.render()
   }
@@ -94,5 +102,14 @@ export default class VisualizerManager {
     this.renderer.clear()
     this.active.resize(width, height)
     this.renderer.setSize(width, height)
+
+    this.effectComposer.reset()
+    this.effectComposer.addPass(
+      new RenderPass(...this.active.getRenderInputs())
+    )
+
+    this.effectsConfig.forEach((effect) => {
+      this.effectComposer.addPass(effectCache[effect.type])
+    })
   }
 }

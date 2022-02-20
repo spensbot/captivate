@@ -3,7 +3,7 @@ import FPS from '../visualizer/FPS'
 import VisualizerManager from '../visualizer/threejs/VisualizerManager'
 import styled from 'styled-components'
 import StatusBar from '../menu/StatusBar'
-import { realtimeStore } from '../redux/realtimeStore'
+import { realtimeStore, useRealtimeSelector } from '../redux/realtimeStore'
 import { store, getCleanReduxState } from '../redux/store'
 import SplitPane from '../base/SplitPane'
 import SceneSelection from '../scenes/SceneSelection'
@@ -32,6 +32,7 @@ animateVisualizer()
 
 export default function Visualizer() {
   const ref = useRef(null)
+  useRealtimeSelector((state) => state)
 
   function resize() {
     const element = ref.current

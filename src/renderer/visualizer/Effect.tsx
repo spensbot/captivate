@@ -4,9 +4,12 @@ import Select from '../base/Select'
 import { effectTypes } from 'renderer/visualizer/threejs/EffectTypes'
 import { useDispatch } from 'react-redux'
 import {
+  activeVisualSceneEffect_remove,
   activeVisualSceneEffect_set,
   activeVisualScene_setActiveEffectIndex,
 } from 'renderer/redux/controlSlice'
+import { IconButton } from '@mui/material'
+import CloseIcon from '@mui/icons-material/Close'
 
 interface Props {
   index: number
@@ -40,6 +43,9 @@ export default function Effect({ index }: Props) {
             )
           }
         />
+        <IconButton onClick={() => dispatch(activeVisualSceneEffect_remove())}>
+          <CloseIcon />
+        </IconButton>
       </RootOpen>
     )
   } else {
