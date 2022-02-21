@@ -39,7 +39,7 @@ export default function ActiveEffect({}: Props) {
 }
 
 const Root = styled.div`
-  padding: 0.2rem;
+  padding: 1rem;
   flex: 1 0 0;
   border-right: 1px solid ${(props) => props.theme.colors.divider};
 `

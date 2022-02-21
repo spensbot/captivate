@@ -14,6 +14,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import effectCache from './effectCache'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { EffectsConfig, initEffectsConfig } from './EffectTypes'
+import { AfterimagePass } from 'three/examples/jsm/postprocessing/AfterimagePass'
 
 export interface VisualizerResource {
   rt: RealtimeState
@@ -96,6 +97,7 @@ export default class VisualizerManager {
     this.renderer.clear()
     this.active.resize(width, height)
     this.renderer.setSize(width, height)
+    this.effectComposer.setSize(width, height)
 
     this.resetEffects()
   }
@@ -106,7 +108,11 @@ export default class VisualizerManager {
       new RenderPass(...this.active.getRenderInputs())
     )
     this.effectsConfig.forEach((effect) => {
-      this.effectComposer.addPass(effectCache[effect.type])
+      if (effect.type === 'Afterimage') {
+        effectCache[effect.type] = new AfterimagePass()
+      }
+      const pass = effectCache[effect.type]
+      this.effectComposer.addPass(pass)
     })
   }
 

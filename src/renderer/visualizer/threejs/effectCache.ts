@@ -9,7 +9,7 @@ import { FilmPass } from 'three/examples/jsm/postprocessing/FilmPass.js'
 import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass.js'
 import { HalftonePass } from 'three/examples/jsm/postprocessing/HalftonePass.js'
 import { LUTPass } from 'three/examples/jsm/postprocessing/LUTPass.js'
-// import { MaskPass } from 'three/examples/jsm/postprocessing/MaskPass.js'
+import { MaskPass } from 'three/examples/jsm/postprocessing/MaskPass.js'
 // import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js'
 // import { SAOPass } from 'three/examples/jsm/postprocessing/SAOPass.js'
 import { SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js'
@@ -21,11 +21,13 @@ import { EffectType } from './EffectTypes'
 import { Pass } from 'three/examples/jsm/postprocessing/Pass'
 import { Vector2 } from 'three'
 
-const effectCache: { [key in EffectType]: Pass } = {
+const pass = new DotScreenPass()
+
+const effectCache = {
   Glitch: new GlitchPass(),
-  AdaptiveToneMapping: new AdaptiveToneMappingPass(),
+  AdaptiveToneMapping: new AdaptiveToneMappingPass(), // Maps colors to increase bit-depth for HDR displays
   Afterimage: new AfterimagePass(),
-  Bloom: new BloomPass(),
+  // Bloom: new BloomPass(1, 1, 1),
   // Bokeh: new BokehPass(),
   Clear: new ClearPass(),
   // CubeTexture: new CubeTexturePass(),
@@ -33,7 +35,7 @@ const effectCache: { [key in EffectType]: Pass } = {
   Film: new FilmPass(),
   Halftone: new HalftonePass(1, 1, {}),
   LUT: new LUTPass({}),
-  // Mask: new MaskPass(),
+  // Mask: new MaskPass(), // I think this creates a mask layer of one scene over another
   // Outline: new OutlinePass(),
   // SAOPass: new SAOPass(),
   SMAA: new SMAAPass(1, 1),
