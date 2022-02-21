@@ -106,6 +106,7 @@ export default class LocalMedia extends VisualizerBase {
   readonly type = t
   config: LocalMediaConfig
   mesh: THREE.Mesh
+
   index: number = 0
   queue: LoadQueue<MediaData>
 
@@ -178,5 +179,6 @@ export default class LocalMedia extends VisualizerBase {
 
   dispose() {
     this.queue.dispose()
+    this.mesh.geometry.dispose()
   }
 }

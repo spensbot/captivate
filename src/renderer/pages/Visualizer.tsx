@@ -81,7 +81,7 @@ export default function Visualizer() {
           <SplitPane
             style={{ flex: '0.8 0 0' }}
             type="vertical"
-            initialSplit={0.3}
+            initialSplit={0.4}
             rem={0.5}
             min={0.2}
             max={0.5}

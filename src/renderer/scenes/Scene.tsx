@@ -8,7 +8,6 @@ import {
   setActiveSceneBombacity,
   setActiveSceneName,
   copyActiveScene,
-  SceneType,
 } from '../redux/controlSlice'
 import { IconButton } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
@@ -19,6 +18,7 @@ import Input from '../base/Input'
 import { Draggable } from 'react-beautiful-dnd'
 import DragHandleIcon from '@mui/icons-material/DragHandle'
 import CopyIcon from '@mui/icons-material/FileCopy'
+import { SceneType } from '../../shared/Scenes'
 
 function getColor(bombacity: number) {
   const hueStart = 250

@@ -18,19 +18,25 @@ export function initCubesConfig(): CubesConfig {
 class RandomCube {
   private mesh: THREE.Mesh
   private axis: Vector3
+  private material = new THREE.MeshStandardMaterial()
 
   constructor(scene: THREE.Scene, x: number, y: number) {
     const size = random(1, 1.5)
     const geometry = new THREE.BoxGeometry(size, size, size)
     this.axis = new Vector3(x, y, 0).normalize()
     geometry.translate(x, y, 0)
-    this.mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial())
+    this.mesh = new THREE.Mesh(geometry, this.material)
     scene.add(this.mesh)
   }
 
   update(dt: number, { scene }: UpdateResource) {
     const bombacity = scene.bombacity
     this.mesh.rotateOnAxis(this.axis, (dt * Skew(bombacity, 0.6) + 0.5) / 200)
+  }
+
+  dispose() {
+    this.mesh.geometry.dispose()
+    this.material.dispose()
   }
 }
 
@@ -66,5 +72,10 @@ export default class Cubes extends VisualizerBase {
     this.light.color = new THREE.Color(
       colorFromHSV(res.params.hue, res.params.saturation, res.params.brightness)
     )
+  }
+
+  dispose() {
+    this.cubes.forEach((cube) => cube.dispose())
+    this.light.dispose()
   }
 }

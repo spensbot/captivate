@@ -17,12 +17,13 @@ export function initCubeSphereConfig(): CubeSphereConfig {
 
 class RandomCube {
   mesh: THREE.Mesh
+  material = new THREE.MeshNormalMaterial()
   axis: Vector3
 
   constructor(scene: THREE.Scene) {
     const size = 3 //random(5, 5)
     const geometry = new THREE.BoxGeometry(size, size, size)
-    this.mesh = new THREE.Mesh(geometry, new THREE.MeshNormalMaterial())
+    this.mesh = new THREE.Mesh(geometry, this.material)
     this.mesh.rotation.x = random(100)
     this.mesh.rotation.y = random(100)
     this.mesh.rotation.z = random(100)
@@ -36,6 +37,11 @@ class RandomCube {
   update(dt: number, {}: UpdateResource) {
     this.mesh.rotateOnAxis(this.axis, dt / 10000)
   }
+
+  dispose() {
+    this.mesh.geometry.dispose()
+    this.material.dispose()
+  }
 }
 
 export default class CubeSphere extends VisualizerBase {
@@ -48,5 +54,9 @@ export default class CubeSphere extends VisualizerBase {
 
   update(dt: number, res: UpdateResource): void {
     this.cubes.forEach((cube) => cube.update(dt, res))
+  }
+
+  dispose() {
+    this.cubes.forEach((cube) => cube.dispose())
   }
 }

@@ -16,7 +16,6 @@ const attrib = {
 }
 
 export default class TextParticles extends VisualizerBase {
-  particleTexture = particles.circle
   particles = new THREE.Points()
   particleStates: ParticleState[] = []
   config: TextParticlesConfig
@@ -30,7 +29,18 @@ export default class TextParticles extends VisualizerBase {
     this.config = config
     this.planeGeometry = new THREE.PlaneGeometry()
     const material = new THREE.MeshBasicMaterial()
-    this.material = new THREE.ShaderMaterial()
+    this.material = new THREE.ShaderMaterial({
+      uniforms: {
+        color: { value: new THREE.Color(0xffffff) },
+        pointTexture: { value: particles.circle },
+      },
+      vertexShader: shaders.particleVertex,
+      fragmentShader: shaders.particleFragment,
+
+      blending: THREE.AdditiveBlending,
+      depthTest: false,
+      transparent: true,
+    })
     this.planeArea = new THREE.Mesh(this.planeGeometry, material)
     this.planeArea.visible = false
     this.scene.add(this.planeArea)
@@ -41,7 +51,7 @@ export default class TextParticles extends VisualizerBase {
     const size = this.visibleSizeAtZ(0)
     this.planeArea.geometry = new THREE.PlaneGeometry(size.width, size.height)
     this.scene.clear()
-    this.releaseParticles()
+    this.particles.geometry.dispose()
     this.createParticles()
   }
 
@@ -135,25 +145,11 @@ export default class TextParticles extends VisualizerBase {
       new THREE.Float32BufferAttribute(sizes, 1)
     )
 
-    this.material = new THREE.ShaderMaterial({
-      uniforms: {
-        color: { value: new THREE.Color(0xffffff) },
-        pointTexture: { value: this.particleTexture },
-      },
-      vertexShader: shaders.particleVertex,
-      fragmentShader: shaders.particleFragment,
-
-      blending: THREE.AdditiveBlending,
-      depthTest: false,
-      transparent: true,
-    })
-
     this.particles = new THREE.Points(geoParticles, this.material)
     this.scene.add(this.particles)
   }
 
   releaseParticles() {
-    this.particles.geometry.dispose()
     this.material.dispose()
   }
 
@@ -161,9 +157,11 @@ export default class TextParticles extends VisualizerBase {
     return random(-this.config.throwVelocity, this.config.throwVelocity)
   }
 
-  // createRenderer() {
-  //   this.renderer.outputEncoding = THREE.sRGBEncoding
-  // }
+  dispose() {
+    this.particles.geometry.dispose()
+    this.material.dispose()
+    this.planeGeometry.dispose()
+  }
 }
 
 function particlesPerPath(

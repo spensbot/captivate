@@ -321,9 +321,12 @@ export const scenesSlice = createSlice({
         scene.effectsConfig[scene.activeEffectIndex] = payload
       })
     },
-    activeVisualSceneEffect_remove: (state, {}: PayloadAction<undefined>) => {
+    activeVisualSceneEffect_removeIndex: (
+      state,
+      { payload }: PayloadAction<number>
+    ) => {
       modifyActiveVisualScene(state, (scene) => {
-        scene.effectsConfig.splice(scene.activeEffectIndex, 1)
+        scene.effectsConfig.splice(payload, 1)
         if (scene.activeEffectIndex >= scene.effectsConfig.length) {
           scene.activeEffectIndex = scene.effectsConfig.length - 1
         }
@@ -400,7 +403,7 @@ export const {
   resetVisualScenes,
   setVisualSceneConfig,
   activeVisualSceneEffect_add,
-  activeVisualSceneEffect_remove,
+  activeVisualSceneEffect_removeIndex,
   activeVisualSceneEffect_reorder,
   activeVisualScene_setActiveEffectIndex,
   activeVisualSceneEffect_set,
