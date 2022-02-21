@@ -75,7 +75,9 @@ function isNewScene(
   auto: AutoScene_t,
   lastUserModified: UserModified
 ): boolean {
-  const beatsPerScene = nextTimeState.quantum * auto.period
+  // TODO: (Spenser)
+  // const beatsPerScene = nextTimeState.quantum * auto.period
+  const beatsPerScene = 0.1
   if (activeScene !== lastUserModified.scene) {
     lastUserModified.scene = activeScene
     lastUserModified.beats = nextTimeState.beats

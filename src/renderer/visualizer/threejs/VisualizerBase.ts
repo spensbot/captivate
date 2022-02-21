@@ -66,6 +66,7 @@ export default abstract class VisualizerBase {
     return visibleSizeAtZ(z, this.camera)
   }
 
-  // override this if your visualizer has resources that need to be released to prevent memory leaks
-  release() {}
+  // Dispose of Geometries, Materials, Textures... Anything that has a dispose() method
+  //https://threejs.org/docs/index.html#manual/en/introduction/How-to-dispose-of-objects
+  abstract dispose(): void
 }

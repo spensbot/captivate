@@ -176,7 +176,7 @@ export default class LocalMedia extends VisualizerBase {
     }
   }
 
-  release() {
-    this.queue.release()
+  dispose() {
+    this.queue.dispose()
   }
 }

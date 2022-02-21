@@ -25,11 +25,19 @@ export function textMesh(
   }
 }
 
+export type TextMesh_t = ReturnType<typeof textMesh>
+
+export function textMesh_release(text: TextMesh_t) {
+  text.geometry.dispose()
+  text.material.dispose()
+}
+
 export function textBounds(text: string, size: number, fontType: FontType) {
   let shapes = fonts[fontType].generateShapes(text, size)
   let geometry = new THREE.ShapeGeometry(shapes)
   geometry.computeBoundingBox()
   const bb = geometry.boundingBox
+  geometry.dispose()
   if (bb) {
     return {
       width: bb.max.x - bb.min.x,
@@ -59,12 +67,12 @@ export function textOutlineShapesAndHoles(
     }
   }
   return {
-    shapes: shapes,
-    holes: holes,
+    shapes,
+    holes,
   }
 }
 
-export function textOutlineGroup(
+export function textOutline(
   text: string,
   size: number,
   fontType: FontType,
@@ -77,16 +85,29 @@ export function textOutlineGroup(
     new THREE.Color(0xff00ff).getStyle()
   )
   const strokeText = new THREE.Group()
+  const meshes: THREE.Mesh[] = []
   for (const shape of shapes) {
-    strokeText.add(shapeOrHoleMesh(shape, style, material))
+    const mesh = shapeOrHoleMesh(shape, style, material)
+    strokeText.add(mesh)
+    meshes.push(mesh)
   }
   for (const hole of holes) {
-    strokeText.add(shapeOrHoleMesh(hole, style, material))
+    const mesh = shapeOrHoleMesh(hole, style, material)
+    strokeText.add(mesh)
+    meshes.push(mesh)
   }
   return {
-    material: material,
+    material,
+    meshes,
     group: strokeText,
   }
+}
+
+export type TextOutline_t = ReturnType<typeof textOutline>
+
+export function textOutline_release(text: TextOutline_t) {
+  text.material.dispose()
+  text.meshes.forEach((mesh) => mesh.geometry.dispose())
 }
 
 function shapeOrHoleMesh(

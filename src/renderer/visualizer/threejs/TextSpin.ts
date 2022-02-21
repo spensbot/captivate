@@ -1,45 +1,48 @@
 import * as THREE from 'three'
 import VisualizerBase, { UpdateResource } from './VisualizerBase'
-import { textMesh, textOutlineGroup } from './text'
+import {
+  textMesh,
+  TextMesh_t,
+  textMesh_release,
+  textOutline,
+  TextOutline_t,
+  textOutline_release,
+} from './text'
 import { Spin, Wobble, Strobe, colorFromHSV } from './animations'
 
 const TEXT = 'FEEL\nWITH\nME'
 const SIZE = 1
 
 export default class TextSpin extends VisualizerBase {
-  particle: THREE.Texture | null = null
-  text: THREE.Mesh
-  outline: THREE.Group
-  spin: Spin = new Spin()
-  wobble: Wobble = new Wobble()
-  strobe: Strobe = new Strobe()
+  private text: TextMesh_t
+  private outline: TextOutline_t
+  private spin: Spin = new Spin()
+  private wobble: Wobble = new Wobble()
+  private strobe: Strobe = new Strobe()
 
   constructor() {
     super()
 
-    // this.scene.background = new THREE.Color(0x000000)
+    this.text = textMesh(
+      TEXT,
+      SIZE,
+      'helvetiker_bold',
+      new THREE.MeshBasicMaterial()
+    )
 
-    const text = textMesh(
+    this.outline = textOutline(
       TEXT,
       SIZE,
       'helvetiker_bold',
       new THREE.MeshBasicMaterial()
     )
-    this.text = text.mesh
-    const outline = textOutlineGroup(
-      TEXT,
-      SIZE,
-      'helvetiker_bold',
-      new THREE.MeshBasicMaterial()
-    )
-    this.outline = outline.group
-    this.scene.add(this.text)
-    this.scene.add(this.outline)
+    this.scene.add(this.text.mesh)
+    this.scene.add(this.outline.group)
   }
 
   update(dt: number, { params, scene }: UpdateResource): void {
     const bombacity = scene.bombacity
-    this.text.rotation.y = this.spin.update(dt, bombacity)
+    this.text.mesh.rotation.y = this.spin.update(dt, bombacity)
     const color = colorFromHSV(
       params.hue,
       params.saturation * 1,
@@ -51,6 +54,11 @@ export default class TextSpin extends VisualizerBase {
       color: color,
       side: THREE.DoubleSide,
     })
-    this.outline.rotation.y = this.wobble.update(dt, bombacity)
+    this.outline.group.rotation.y = this.wobble.update(dt, bombacity)
+  }
+
+  dispose() {
+    textMesh_release(this.text)
+    textOutline_release(this.outline)
   }
 }

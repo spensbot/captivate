@@ -77,7 +77,7 @@ export default class LoadQueue<T> {
     }
   }
 
-  release() {
+  dispose() {
     this.queue.forEach((loadable) => {
       if (loadable.state === 'ready') {
         this.releaseItem(loadable.data)

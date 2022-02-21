@@ -14,7 +14,6 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import effectCache from './effectCache'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { EffectsConfig, initEffectsConfig } from './EffectTypes'
-import { indexArray } from 'shared/util'
 
 export interface VisualizerResource {
   rt: RealtimeState
@@ -80,7 +79,7 @@ export default class VisualizerManager {
     ) {
       this.config = config
       this.effectsConfig = effectsConfig
-      this.active.release()
+      this.active.dispose()
       this.active = constructVisualizer(this.config)
       this.active.resize(this.width, this.height)
       this.active.update(dt, this.updateResource)

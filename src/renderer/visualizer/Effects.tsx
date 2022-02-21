@@ -29,7 +29,7 @@ export default function Effects({}: Props) {
           onClick={() =>
             dispatch(
               activeVisualSceneEffect_add({
-                type: 'glitch',
+                type: 'Glitch',
               })
             )
           }
