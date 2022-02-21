@@ -31,6 +31,17 @@ export default class LoadQueue<T> {
       .map((_, i) => this.loadNextAndBind(i))
   }
 
+  reset(newLoadNext: () => Promise<T>, newOnFirstLoad: (t: T) => void) {
+    const next = this.getNext()
+    if (next === null) {
+      this.onFirstLoad = newOnFirstLoad
+    } else {
+      newOnFirstLoad(next)
+    }
+
+    this.loadNext = newLoadNext
+  }
+
   getNext(): T | null {
     let i = 0
     for (const loadable of this.queue) {

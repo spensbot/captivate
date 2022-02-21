@@ -21,8 +21,6 @@ import { EffectType } from './EffectTypes'
 import { Pass } from 'three/examples/jsm/postprocessing/Pass'
 import { Vector2 } from 'three'
 
-const pass = new DotScreenPass()
-
 const effectCache = {
   Glitch: new GlitchPass(),
   AdaptiveToneMapping: new AdaptiveToneMappingPass(), // Maps colors to increase bit-depth for HDR displays

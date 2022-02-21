@@ -23,6 +23,7 @@ import { store, resetControl } from '../redux/store'
 import { loadFile, saveFile, captivateFileFilters } from '../saveload_renderer'
 import SaveIcon from '@mui/icons-material/Save'
 import FileOpenIcon from '@mui/icons-material/FileOpen'
+import { send_user_command } from '../ipcHandler'
 
 type SaveType = ControlState
 
@@ -65,7 +66,7 @@ function BPM() {
   const [dragContainer, onMouseDown] = useDragBasic((e) => {
     const dx = e.movementX / 3
     const dy = -e.movementY / 3
-    // incrementTempo(dx + dy)
+    send_user_command({ type: 'IncrementTempo', amount: dx + dy })
   })
 
   return (
@@ -102,7 +103,7 @@ function LinkButton() {
   return (
     <div
       onClick={() => {
-        /*setLinkEnabled(!isEnabled)*/
+        send_user_command({ type: 'SetLinkEnabled', isEnabled: !isEnabled })
       }}
       style={style}
     >

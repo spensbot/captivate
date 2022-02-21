@@ -35,7 +35,13 @@ export function start(
     on_new_control_state: (newState) => {
       _controlState = newState
     },
-    on_user_command: (_command) => {},
+    on_user_command: (command) => {
+      if (command.type === 'IncrementTempo') {
+        _nodeLink.setTempo(_realtimeState.time.bpm + command.amount)
+      } else if (command.type === 'SetLinkEnabled') {
+        _nodeLink.enable(command.isEnabled)
+      }
+    },
     on_open_visualizer: () => {
       console.log('on_open_visualizer')
       openVisualizerWindow(visualizerContainer)

@@ -10,5 +10,14 @@ export default {
   open_visualizer: 'open_visualizer',
 } as const
 
-// Add types if we ever need to send commands from the renderer to main
-export type UserCommand = null
+export interface SetLinkEnabled {
+  type: 'SetLinkEnabled'
+  isEnabled: boolean
+}
+export interface IncrementTempo {
+  type: 'IncrementTempo'
+  amount: number
+}
+
+// Redux Action-like commands Renderer -> Main
+export type UserCommand = SetLinkEnabled | IncrementTempo

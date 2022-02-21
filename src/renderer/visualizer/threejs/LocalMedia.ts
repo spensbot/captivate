@@ -2,13 +2,16 @@ import * as THREE from 'three'
 import VisualizerBase, { UpdateResource } from './VisualizerBase'
 import { getVideo, pathUrl, releaseVideo, getImageTexture } from './loaders'
 import LoadQueue from './LoadQueue'
+import { random } from '../../../shared/util'
 
 const t = 'LocalMedia'
+export type OrderType = 'Random' | 'Ordered'
+export const orderTypes: OrderType[] = ['Ordered', 'Random']
 
 export interface LocalMediaConfig {
   type: 'LocalMedia'
+  order: OrderType
   paths: string[]
-  imagePaths: string[]
 }
 
 const videoExtensions = new Set(['mp4'])
@@ -17,7 +20,7 @@ const getVideos = () => [
   'balloons.mp4',
   'bonfire.mp4',
   'cowboy.mp4',
-  'desert woman.mp4',
+  // 'desert woman.mp4',
   'fern.mp4',
   'forest.mp4',
   'forest2.mp4',
@@ -59,7 +62,7 @@ export function initLocalMediaConfig(): LocalMediaConfig {
   return {
     type: t,
     paths: paths,
-    imagePaths: imagePaths,
+    order: 'Random',
   }
 }
 
@@ -102,13 +105,16 @@ function releaseMediaData(data: MediaData) {
   data.texture.dispose()
 }
 
+// All instances of LocalMedia share a LoadQueue. Only one should exist at a time.
+// In effect, this allows subsequent LocalMedia visualizers to display immediately & on-demand
+//   at the expense of the first media being from the previously active LocalMedia visualizer.
+let sharedQueue: LoadQueue<MediaData> | null = null
+
 export default class LocalMedia extends VisualizerBase {
   readonly type = t
   config: LocalMediaConfig
   mesh: THREE.Mesh
-
   index: number = 0
-  queue: LoadQueue<MediaData>
 
   constructor(config: LocalMediaConfig) {
     super()
@@ -120,14 +126,23 @@ export default class LocalMedia extends VisualizerBase {
       })
     )
     this.scene.add(this.mesh)
-    this.queue = new LoadQueue<MediaData>(
-      3,
-      () => this.loadNext(),
-      releaseMediaData,
-      (videoData) => {
-        this.mesh.material = videoData.material
-      }
-    )
+    if (sharedQueue === null) {
+      sharedQueue = new LoadQueue<MediaData>(
+        3,
+        () => this.loadNext(),
+        releaseMediaData,
+        (mediaData) => {
+          this.mesh.material = mediaData.material
+        }
+      )
+    } else {
+      sharedQueue.reset(
+        () => this.loadNext(),
+        (mediaData) => {
+          this.mesh.material = mediaData.material
+        }
+      )
+    }
   }
 
   async loadNext(): Promise<MediaData> {
@@ -151,6 +166,7 @@ export default class LocalMedia extends VisualizerBase {
       }
     } else if (mediaType === 'video') {
       const video = await getVideo(pathUrl(path))
+      video.currentTime = randomStartTime(video.duration)
       const texture = new THREE.VideoTexture(video)
       const material = new THREE.MeshBasicMaterial({
         color: 0xffffff,
@@ -170,15 +186,29 @@ export default class LocalMedia extends VisualizerBase {
     // const d = dt / 10000
     // this.mesh.rotation.y += d
     if (res.isNewPeriod(2)) {
-      const mediaData = this.queue.getNext()
-      if (mediaData) {
-        this.mesh.material = mediaData.material
+      if (sharedQueue !== null) {
+        const mediaData = sharedQueue.getNext()
+        if (mediaData) {
+          this.mesh.material = mediaData.material
+        }
+      } else {
+        console.error(
+          `LocalMedia sharedQueue is null... That shouldn't be possible`
+        )
       }
     }
   }
 
   dispose() {
-    this.queue.dispose()
     this.mesh.geometry.dispose()
+  }
+}
+
+const MIN_PLAY_TIME = 5 // seconds
+function randomStartTime(duration: number) {
+  if (duration === NaN || duration < MIN_PLAY_TIME) {
+    return 0
+  } else {
+    return random(0, duration - MIN_PLAY_TIME)
   }
 }

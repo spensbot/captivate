@@ -67,7 +67,7 @@ export type EffectConfig =
   | Glitch
   | AdaptiveToneMapping
   | Afterimage
-  | Bloom
+  // | Bloom
   // | Bokeh
   | Clear
   // | CubeTexture
