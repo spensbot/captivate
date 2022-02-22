@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import VisualizerBase, { UpdateResource } from './VisualizerBase'
-import { getVideo, pathUrl, releaseVideo, getImageTexture } from './loaders'
+import { loadVideo, pathUrl, releaseVideo, loadImage } from './loaders'
 import LoadQueue from './LoadQueue'
 import { random } from '../../../shared/util'
 
@@ -40,20 +40,20 @@ const videoPaths = getVideos().map((filename) => base + filename)
 const imageExtensions = new Set(['jpg', 'jpeg'])
 const imageBase = `/Users/spensersaling/Pictures/`
 const images: string[] = [
-  // 'blue_city.jpg',
-  // 'city.jpg',
-  // 'forest.jpg',
-  // 'hills.jpg',
-  // 'love.jpg',
-  // 'moon.jpg',
-  // 'mountains.jpg',
-  // 'old_city.jpg',
-  // 'plane.jpg',
-  // 'rave.jpg',
-  // 'rose.jpg',
-  // 'snow.jpg',
-  // 'snowfall.jpg',
-  // 'waterfall.jpg',
+  'blue_city.jpg',
+  'city.jpg',
+  'forest.jpg',
+  'hills.jpg',
+  'love.jpg',
+  'moon.jpg',
+  'mountains.jpg',
+  'old_city.jpg',
+  'plane.jpg',
+  'rave.jpg',
+  'rose.jpg',
+  'snow.jpg',
+  'snowfall.jpg',
+  'waterfall.jpg',
 ]
 const imagePaths = images.map((filename) => imageBase + filename)
 const paths = videoPaths.concat(imagePaths)
@@ -154,7 +154,7 @@ export default class LocalMedia extends VisualizerBase {
 
     const mediaType = getMediaType(path)
     if (mediaType === 'image') {
-      const texture = await getImageTexture(pathUrl(path))
+      const { texture } = await loadImage(pathUrl(path))
       const material = new THREE.MeshBasicMaterial({
         color: 0xffffff,
         map: texture,
@@ -165,7 +165,7 @@ export default class LocalMedia extends VisualizerBase {
         material,
       }
     } else if (mediaType === 'video') {
-      const video = await getVideo(pathUrl(path))
+      const video = await loadVideo(pathUrl(path))
       video.currentTime = randomStartTime(video.duration)
       const texture = new THREE.VideoTexture(video)
       const material = new THREE.MeshBasicMaterial({
@@ -190,6 +190,8 @@ export default class LocalMedia extends VisualizerBase {
         const mediaData = sharedQueue.getNext()
         if (mediaData) {
           this.mesh.material = mediaData.material
+        } else {
+          console.warn('loadQueue empty on request')
         }
       } else {
         console.error(
