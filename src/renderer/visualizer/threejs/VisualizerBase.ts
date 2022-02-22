@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { LightScene_t } from '../../../shared/Scenes'
-import { visibleSizeAtZ } from './animations'
+import { visibleSizeAtZ } from './util'
 import { Params } from '../../../shared/params'
 import { TimeState } from '../../../shared/TimeState'
 import { isNewPeriod } from '../../../shared/TimeState'
@@ -40,7 +40,6 @@ export class UpdateResource {
   }
 }
 
-// This abstract class is an interface and should never contain members (except for type) or a constructor
 export default abstract class VisualizerBase {
   protected scene: THREE.Scene
   protected camera: THREE.PerspectiveCamera

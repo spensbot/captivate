@@ -2,7 +2,8 @@ import * as THREE from 'three'
 import VisualizerBase, { UpdateResource } from './VisualizerBase'
 import { randomRanged } from '../../../shared/util'
 import { Vector3 } from 'three'
-import { Strobe, colorFromHSV } from './animations'
+import { Strobe } from './animations'
+import { colorFromHSV } from './util'
 import { Skew } from '../../../shared/oscillator'
 
 export interface CubesConfig {

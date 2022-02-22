@@ -2,7 +2,8 @@ import * as THREE from 'three'
 import VisualizerBase, { UpdateResource } from './VisualizerBase'
 import { randomRanged } from '../../../shared/util'
 import { Skew } from '../../../shared/oscillator'
-import { Strobe, colorFromHSV } from './animations'
+import { Strobe } from './animations'
+import { colorFromHSV } from './util'
 
 const RADIUS = 2
 const RATIO_MIN = 0.02
@@ -23,7 +24,7 @@ export default class Spheres extends VisualizerBase {
   private globeMaterial: THREE.MeshBasicMaterial
   private spots: THREE.Mesh[]
   private spotMaterial: THREE.MeshBasicMaterial
-  private strobe: Strobe = new Strobe()
+  private strobe = new Strobe()
 
   constructor() {
     super()

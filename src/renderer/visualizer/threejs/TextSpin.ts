@@ -8,7 +8,8 @@ import {
   TextOutline_t,
   textOutline_release,
 } from './text'
-import { Spin, Wobble, Strobe, colorFromHSV } from './animations'
+import { Spin, Wobble, Strobe } from './animations'
+import { colorFromHSV } from './util'
 
 const TEXT = 'FEEL\nWITH\nME'
 const SIZE = 1
