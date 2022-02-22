@@ -52,7 +52,7 @@ export default function Visualizer() {
     return () => {
       window.removeEventListener('resize', resize)
     }
-  }, [])
+  }, [ref.current?.clientWidth ?? 0, ref.current?.clientHeight ?? 0])
 
   const splitPaneStyle: React.CSSProperties = {
     flex: '1 1 0',
@@ -111,6 +111,7 @@ const Window = styled.div`
   background-color: #000;
   flex: 1 0 0;
   height: 60vh;
+  overflow: auto;
 `
 
 const Pane = styled.div`

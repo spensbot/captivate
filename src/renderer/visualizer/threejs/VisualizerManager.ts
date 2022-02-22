@@ -43,7 +43,7 @@ export default class VisualizerManager {
 
   constructor() {
     this.renderer = new THREE.WebGLRenderer()
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    // this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     this.renderer.outputEncoding = THREE.sRGBEncoding
     this.effectComposer = new EffectComposer(this.renderer)
     this.config = initVisualizerConfig('LocalMedia')
@@ -85,6 +85,7 @@ export default class VisualizerManager {
       this.active.resize(this.width, this.height)
       this.active.update(dt, this.updateResource)
       this.resetEffects()
+      this.printMemory()
     } else {
       this.active.update(dt, this.updateResource)
     }
@@ -120,5 +121,14 @@ export default class VisualizerManager {
     this.effectComposer.passes.forEach((pass) =>
       this.effectComposer.removePass(pass)
     )
+  }
+
+  private printMemory() {
+    const info = this.renderer.info
+    console.log(`WebGLRenderer Info
+    Geometries: ${info.memory.geometries}
+    Textures: ${info.memory.textures}
+    Programs: ${info.programs?.length}
+    `)
   }
 }

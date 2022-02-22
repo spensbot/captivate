@@ -54,7 +54,7 @@ export default function EffectList({}: Props) {
           onClick={() =>
             dispatch(
               activeVisualSceneEffect_add({
-                type: 'Glitch',
+                type: 'Film',
               })
             )
           }

@@ -66,18 +66,23 @@ export function initLocalMediaConfig(): LocalMediaConfig {
     type: 'LocalMedia',
     paths: paths,
     order: 'Random',
-    objectFit: 'Fit',
+    objectFit: 'Cover',
   }
 }
 
-interface VideoData {
+interface MediaDataBase {
+  width: number
+  height: number
+}
+
+interface VideoData extends MediaDataBase {
   type: 'video'
   video: HTMLVideoElement
   texture: THREE.VideoTexture
   material: THREE.MeshBasicMaterial
 }
 
-interface ImageData {
+interface ImageData extends MediaDataBase {
   type: 'image'
   texture: THREE.CanvasTexture
   material: THREE.MeshBasicMaterial
@@ -117,14 +122,16 @@ let sharedQueue: LoadQueue<MediaData> | null = null
 export default class LocalMedia extends VisualizerBase {
   readonly type = 'LocalMedia'
   config: LocalMediaConfig
+  displayPlane: THREE.PlaneGeometry
   mesh: THREE.Mesh
   index: number = 0
 
   constructor(config: LocalMediaConfig) {
     super()
     this.config = initLocalMediaConfig()
+    this.displayPlane = new THREE.PlaneGeometry(1, 1)
     this.mesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(7, 7),
+      this.displayPlane,
       new THREE.MeshBasicMaterial({
         color: 0xffffff,
       })
@@ -165,7 +172,10 @@ export default class LocalMedia extends VisualizerBase {
 
     const mediaType = getMediaType(path)
     if (mediaType === 'image') {
-      const { texture } = await loadImage(pathUrl(path))
+      const {
+        texture,
+        bitmap: { width, height },
+      } = await loadImage(pathUrl(path))
       const material = new THREE.MeshBasicMaterial({
         color: 0xffffff,
         map: texture,
@@ -174,6 +184,8 @@ export default class LocalMedia extends VisualizerBase {
         type: 'image',
         texture,
         material,
+        width,
+        height,
       }
     } else if (mediaType === 'video') {
       const video = await loadVideo(pathUrl(path))
@@ -188,6 +200,8 @@ export default class LocalMedia extends VisualizerBase {
         video,
         texture,
         material,
+        width: video.width,
+        height: video.height,
       }
     }
     throw Error(`Bad File Extension: ${path}`)
@@ -201,6 +215,7 @@ export default class LocalMedia extends VisualizerBase {
         const mediaData = sharedQueue.getNext()
         if (mediaData) {
           this.mesh.material = mediaData.material
+          this.adjustDisplay(mediaData.width, mediaData.height)
         } else {
           console.warn('loadQueue empty on request')
         }
@@ -212,8 +227,43 @@ export default class LocalMedia extends VisualizerBase {
     }
   }
 
-  dispose() {
+  adjustDisplay(textureWidth: number, textureHeight: number) {
+    if (textureWidth === 0 || textureHeight === 0) return
     this.mesh.geometry.dispose()
+    let width = 7
+    let height = 7
+    const textureAR = textureWidth / textureHeight
+    const displayAR = this.camera.aspect
+    const visible = this.visibleSizeAtZ(0)
+    if (textureAR > displayAR) {
+      // Too Wide
+      if (this.config.objectFit === 'Cover') {
+        height = visible.height
+        width = height * textureAR
+      } else if (this.config.objectFit === 'Fit') {
+        width = visible.width
+        height = width / textureAR
+      }
+    } else {
+      // Too Tall
+      if (this.config.objectFit === 'Cover') {
+        width = visible.width
+        height = width / textureAR
+      } else if (this.config.objectFit === 'Fit') {
+        height = visible.height
+        width = height * textureAR
+      }
+    }
+    this.mesh.geometry = new THREE.PlaneGeometry(width, height)
+  }
+
+  // resize(width: number, height: number) {
+  //   super.resize(width, height)
+  //   this.adjustDisplay(this.)
+  // }
+
+  dispose() {
+    this.displayPlane.dispose()
   }
 }
 
