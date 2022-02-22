@@ -21,14 +21,39 @@ export function clampMaybe(val: number, min?: number, max?: number) {
 }
 
 export function randomElement<Type>(items: Type[]) {
-  const randIndex = Math.floor(Math.random() * items.length)
-  return items[randIndex]
+  return items[randomIndex(items.length)]
 }
 
+// Only intended to be used with primitives.
+// Could technically be used with objects, but it will only compare the reference
 export function randomElementExcludeCurrent<T>(items: T[], current: T) {
-  const possibilities = items.filter((item) => item !== current)
-  if (possibilities.length < 1) return current
-  return randomElement(possibilities)
+  const currentIndex = items.findIndex((item) => item === current)
+  if (currentIndex > -1) {
+    return items[randomIndexExcludeCurrent(items.length, currentIndex)]
+  } else {
+    console.error(`randomElementExcludeCurrent could not find current element`)
+    return current
+  }
+}
+
+export function randomIndex(length: number) {
+  return Math.floor(random(length))
+}
+
+export function randomIndexExcludeCurrent(
+  length: number,
+  currentIndex: number
+) {
+  const rand = randomIndex(length)
+  if (rand === currentIndex) {
+    if (rand < length - 1) {
+      return rand + 1
+    } else {
+      return 0
+    }
+  } else {
+    return rand
+  }
 }
 
 export function getFilename(path: string) {
@@ -53,10 +78,12 @@ export function testSpeed(f: () => void, count: number, name: string) {
   console.log(`${name}: ${duration / count}ms per call`)
 }
 
-export function random(min: number, max?: number) {
-  if (max === undefined) {
-    return min * Math.random()
-  }
+// random number between 0 and max
+export function random(max: number) {
+  return Math.random() * max
+}
+
+export function randomRanged(min: number, max: number) {
   let range = max - min
   return min + Math.random() * range
 }

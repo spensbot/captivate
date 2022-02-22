@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import VisualizerBase, { UpdateResource } from './VisualizerBase'
-import { random } from '../../../shared/util'
+import { randomRanged } from '../../../shared/util'
 import { Skew } from '../../../shared/oscillator'
 import { Strobe, colorFromHSV } from './animations'
 
@@ -38,13 +38,13 @@ export default class Spheres extends VisualizerBase {
     this.spots = Array(50)
       .fill(0)
       .map((_) => {
-        const r = random(RATIO_MIN, RATIO_MAX) * RADIUS
+        const r = randomRanged(RATIO_MIN, RATIO_MAX) * RADIUS
         const geometry = new THREE.SphereGeometry(r, 15, 15)
         geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(0, RADIUS, 0))
         const spot = new THREE.Mesh(geometry, this.spotMaterial)
-        spot.rotation.x = random(100)
-        spot.rotation.y = random(100)
-        spot.rotation.z = random(100)
+        spot.rotation.x = randomRanged(0, 100)
+        spot.rotation.y = randomRanged(0, 100)
+        spot.rotation.z = randomRanged(0, 100)
         this.scene.add(spot)
         return spot
       })

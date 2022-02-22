@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import VisualizerBase, { UpdateResource } from './VisualizerBase'
-import { random } from '../../../shared/util'
+import { randomRanged } from '../../../shared/util'
 import { Vector3 } from 'three'
 
 const ARRAY = Array(20).fill(0)
@@ -21,14 +21,14 @@ class RandomCube {
   axis: Vector3
 
   constructor(scene: THREE.Scene) {
-    const size = 3 //random(5, 5)
+    const size = 3 //randomRanged(5, 5)
     const geometry = new THREE.BoxGeometry(size, size, size)
     this.mesh = new THREE.Mesh(geometry, this.material)
-    this.mesh.rotation.x = random(100)
-    this.mesh.rotation.y = random(100)
-    this.mesh.rotation.z = random(100)
-    const x = random(-3, 3)
-    const y = random(-2, 2)
+    this.mesh.rotation.x = randomRanged(0, 100)
+    this.mesh.rotation.y = randomRanged(0, 100)
+    this.mesh.rotation.z = randomRanged(0, 100)
+    const x = randomRanged(-3, 3)
+    const y = randomRanged(-2, 2)
     geometry.translate(0, 0, 0)
     this.axis = new Vector3(x, y, 0).normalize()
     scene.add(this.mesh)

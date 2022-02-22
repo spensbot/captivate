@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import VisualizerBase, { UpdateResource } from './VisualizerBase'
-import { random } from '../../../shared/util'
+import { randomRanged } from '../../../shared/util'
 import { Vector3 } from 'three'
 import { Strobe, colorFromHSV } from './animations'
 import { Skew } from '../../../shared/oscillator'
@@ -21,7 +21,7 @@ class RandomCube {
   private material = new THREE.MeshStandardMaterial()
 
   constructor(scene: THREE.Scene, x: number, y: number) {
-    const size = random(1, 1.5)
+    const size = randomRanged(1, 1.5)
     const geometry = new THREE.BoxGeometry(size, size, size)
     this.axis = new Vector3(x, y, 0).normalize()
     geometry.translate(x, y, 0)

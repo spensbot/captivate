@@ -2,15 +2,18 @@ import * as THREE from 'three'
 import VisualizerBase, { UpdateResource } from './VisualizerBase'
 import { loadVideo, pathUrl, releaseVideo, loadImage } from './loaders'
 import LoadQueue from './LoadQueue'
-import { random } from '../../../shared/util'
+import { randomRanged, randomIndexExcludeCurrent } from '../../../shared/util'
 
-const t = 'LocalMedia'
 export type OrderType = 'Random' | 'Ordered'
 export const orderTypes: OrderType[] = ['Ordered', 'Random']
+
+export type ObjectFit = 'Cover' | 'Fit'
+export const objectFits: ObjectFit[] = ['Cover', 'Fit']
 
 export interface LocalMediaConfig {
   type: 'LocalMedia'
   order: OrderType
+  objectFit: ObjectFit
   paths: string[]
 }
 
@@ -60,9 +63,10 @@ const paths = videoPaths.concat(imagePaths)
 
 export function initLocalMediaConfig(): LocalMediaConfig {
   return {
-    type: t,
+    type: 'LocalMedia',
     paths: paths,
     order: 'Random',
+    objectFit: 'Fit',
   }
 }
 
@@ -111,7 +115,7 @@ function releaseMediaData(data: MediaData) {
 let sharedQueue: LoadQueue<MediaData> | null = null
 
 export default class LocalMedia extends VisualizerBase {
-  readonly type = t
+  readonly type = 'LocalMedia'
   config: LocalMediaConfig
   mesh: THREE.Mesh
   index: number = 0
@@ -120,7 +124,7 @@ export default class LocalMedia extends VisualizerBase {
     super()
     this.config = initLocalMediaConfig()
     this.mesh = new THREE.Mesh(
-      new THREE.BoxGeometry(7, 4, 4),
+      new THREE.PlaneGeometry(7, 7),
       new THREE.MeshBasicMaterial({
         color: 0xffffff,
       })
@@ -147,9 +151,16 @@ export default class LocalMedia extends VisualizerBase {
 
   async loadNext(): Promise<MediaData> {
     const path = this.config.paths[this.index]
-    this.index += 1
-    if (this.index >= this.config.paths.length) {
-      this.index = 0
+    if (this.config.order === 'Random') {
+      this.index = randomIndexExcludeCurrent(
+        this.config.paths.length,
+        this.index
+      )
+    } else {
+      this.index += 1
+      if (this.index >= this.config.paths.length) {
+        this.index = 0
+      }
     }
 
     const mediaType = getMediaType(path)
@@ -211,6 +222,6 @@ function randomStartTime(duration: number) {
   if (duration === NaN || duration < MIN_PLAY_TIME) {
     return 0
   } else {
-    return random(0, duration - MIN_PLAY_TIME)
+    return randomRanged(0, duration - MIN_PLAY_TIME)
   }
 }

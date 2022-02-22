@@ -24,7 +24,7 @@ const Root = styled.div`
 
 const Header = styled.div`
   padding: 0.3rem 0.5rem;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   border-bottom: 1px solid ${(props) => props.theme.colors.divider};
   color: ${(props) => props.theme.colors.text.secondary};
 `

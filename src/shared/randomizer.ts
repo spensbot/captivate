@@ -56,14 +56,11 @@ function sync(state: RandomizerState, size: number) {
 }
 
 // returns the desired amount of random indexes
+// Each chosen index in unique, which is why this function is so specialized
 function pickRandomIndexes(randCount: number, size: number) {
   const randomIndexes: number[] = []
   const availableIndexes = Array.from(Array(size).keys())
   for (let i = 0; i < randCount; i++) {
-    // Old method
-    // const randomIndex = Math.floor(Math.random() * size)
-    // randomIndexes.push(randomIndex)
-
     const index = Math.floor(Math.random() * availableIndexes.length)
     const randomIndex = availableIndexes[index]
     availableIndexes.splice(index, 1)

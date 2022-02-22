@@ -5,7 +5,7 @@ import shaders from './shaders'
 import { particles } from './particles'
 import { textOutlineShapesAndHoles, textBounds } from './text'
 import { colorFromHSV, distance } from './animations'
-import { random } from '../../../shared/util'
+import { randomRanged } from '../../../shared/util'
 import { gravity, ParticleState } from './particlePhysics'
 import { TextParticlesConfig } from './TextParticlesConfig'
 
@@ -154,7 +154,7 @@ export default class TextParticles extends VisualizerBase {
   }
 
   throw() {
-    return random(-this.config.throwVelocity, this.config.throwVelocity)
+    return randomRanged(-this.config.throwVelocity, this.config.throwVelocity)
   }
 
   dispose() {
