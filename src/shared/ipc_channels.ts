@@ -19,5 +19,19 @@ export interface IncrementTempo {
   amount: number
 }
 
+export interface EnableStartStopSync {
+  type: 'EnableStartStopSync'
+  isEnabled: boolean
+}
+
+export interface SetIsPlaying {
+  type: 'SetIsPlaying'
+  isPlaying: boolean
+}
+
 // Redux Action-like commands Renderer -> Main
-export type UserCommand = SetLinkEnabled | IncrementTempo
+export type UserCommand =
+  | SetLinkEnabled
+  | IncrementTempo
+  | EnableStartStopSync
+  | SetIsPlaying

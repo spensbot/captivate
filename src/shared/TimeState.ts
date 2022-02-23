@@ -4,6 +4,8 @@ export interface TimeState {
   phase: number
   numPeers: number
   isEnabled: boolean
+  isPlaying: boolean
+  isEnabledStartStopSync: boolean
   quantum: number
   dt: number
 }
@@ -15,6 +17,8 @@ export function initTimeState(): TimeState {
     phase: 0.0, // from 0.0 to quantum (from LINK)
     numPeers: 0,
     isEnabled: false,
+    isPlaying: false,
+    isEnabledStartStopSync: false,
     quantum: 4.0,
     dt: 0.0,
   }
