@@ -55,14 +55,17 @@ export function start(
   // We're currently calculating the realtimeState 90x per second.
   // The renderer should have a new realtime state to on each animation frame (assuming a refresh rate of 60 hz)
   setInterval(() => {
-    _realtimeState = calculateRealtimeState()
-    if (_ipcCallbacks !== null) {
-      _ipcCallbacks.send_time_state(_realtimeState)
-      if (_controlState !== null) {
-        _ipcCallbacks.send_visualizer_state({
-          rt: _realtimeState,
-          state: _controlState,
-        })
+    const newRealtimeState = calculateRealtimeState()
+    if (_realtimeState.time.isPlaying || newRealtimeState.time.isPlaying) {
+      _realtimeState = newRealtimeState
+      if (_ipcCallbacks !== null) {
+        _ipcCallbacks.send_time_state(_realtimeState)
+        if (_controlState !== null) {
+          _ipcCallbacks.send_visualizer_state({
+            rt: _realtimeState,
+            state: _controlState,
+          })
+        }
       }
     }
   }, 1000 / 90)
