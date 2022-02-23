@@ -14,7 +14,7 @@ export default function MasterSlider() {
       style={{
         flex: '0 1 25rem',
         width: '80%',
-        marginBottom: '1rem',
+        // marginBottom: '1rem',
         padding: '1rem 0',
         // maxHeight: '30rem',
       }}
