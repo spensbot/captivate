@@ -82,8 +82,9 @@ export default function MenuBar() {
       </MenuItem>
       <Spacer />
       <MasterSlider />
+      <div style={{ height: '0.5rem' }} />
       {/* <BlackoutButton /> */}
-      <PlayPauseButton />
+      {/* <PlayPauseButton /> */}
     </Root>
   )
 }

@@ -18,7 +18,7 @@ export default function PlayPauseButton() {
   return (
     <Root>
       <IconButton
-        size="large"
+        size="medium"
         onClick={() =>
           send_user_command({
             type: 'SetIsPlaying',
@@ -36,5 +36,4 @@ const Root = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-bottom: 0.5rem;
 `
