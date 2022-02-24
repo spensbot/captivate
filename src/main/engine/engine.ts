@@ -44,6 +44,8 @@ export function start(
         _nodeLink.enableStartStopSync(command.isEnabled)
       } else if (command.type === 'SetIsPlaying') {
         _nodeLink.setIsPlaying(command.isPlaying)
+      } else if (command.type === 'SetBPM') {
+        _nodeLink.setTempo(command.bpm)
       }
     },
     on_open_visualizer: () => {

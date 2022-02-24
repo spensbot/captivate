@@ -24,6 +24,7 @@ import { loadFile, saveFile, captivateFileFilters } from '../saveload_renderer'
 import SaveIcon from '@mui/icons-material/Save'
 import FileOpenIcon from '@mui/icons-material/FileOpen'
 import { send_user_command } from '../ipcHandler'
+import TapTempo from './TapTempo'
 
 type SaveType = ControlState
 
@@ -123,6 +124,7 @@ export default function StatusBar() {
   return (
     <Root>
       <LinkButton />
+      <TapTempo />
       <BPM />
       <Counter2 />
       <UndoRedo />
@@ -163,7 +165,7 @@ const Root = styled.div`
   justify-content: right;
   align-items: center;
   font-size: 1.2rem;
-  padding: 0.5rem 1rem;
+  padding: 0.2rem 1rem;
   border-bottom: 1px solid ${(props) => props.theme.colors.divider};
   background-color: ${(props) => props.theme.colors.bg.primary};
 `

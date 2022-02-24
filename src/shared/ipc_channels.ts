@@ -29,9 +29,15 @@ export interface SetIsPlaying {
   isPlaying: boolean
 }
 
+export interface SetBPM {
+  type: 'SetBPM'
+  bpm: number
+}
+
 // Redux Action-like commands Renderer -> Main
 export type UserCommand =
   | SetLinkEnabled
   | IncrementTempo
   | EnableStartStopSync
   | SetIsPlaying
+  | SetBPM
