@@ -125,6 +125,7 @@ export default class LocalMedia extends VisualizerBase {
   displayPlane: THREE.PlaneGeometry
   mesh: THREE.Mesh
   index: number = 0
+  lastMediaData: MediaData | null = null
 
   constructor(config: LocalMediaConfig) {
     super()
@@ -142,16 +143,12 @@ export default class LocalMedia extends VisualizerBase {
         3,
         () => this.loadNext(),
         releaseMediaData,
-        (mediaData) => {
-          this.mesh.material = mediaData.material
-        }
+        (mediaData) => this.updateMediaData(mediaData)
       )
     } else {
       sharedQueue.reset(
         () => this.loadNext(),
-        (mediaData) => {
-          this.mesh.material = mediaData.material
-        }
+        (mediaData) => this.updateMediaData(mediaData)
       )
     }
   }
@@ -200,8 +197,8 @@ export default class LocalMedia extends VisualizerBase {
         video,
         texture,
         material,
-        width: video.width,
-        height: video.height,
+        width: video.videoWidth,
+        height: video.videoHeight,
       }
     }
     throw Error(`Bad File Extension: ${path}`)
@@ -214,8 +211,7 @@ export default class LocalMedia extends VisualizerBase {
       if (sharedQueue !== null) {
         const mediaData = sharedQueue.getNext()
         if (mediaData) {
-          this.mesh.material = mediaData.material
-          this.adjustDisplay(mediaData.width, mediaData.height)
+          this.updateMediaData(mediaData)
         } else {
           console.warn('loadQueue empty on request')
         }
@@ -227,7 +223,14 @@ export default class LocalMedia extends VisualizerBase {
     }
   }
 
+  updateMediaData(newMediaData: MediaData) {
+    this.lastMediaData = newMediaData
+    this.mesh.material = newMediaData.material
+    this.adjustDisplay(newMediaData.width, newMediaData.height)
+  }
+
   adjustDisplay(textureWidth: number, textureHeight: number) {
+    console.log(`adjustDisplay w: ${textureWidth} h: ${textureHeight}`)
     if (textureWidth === 0 || textureHeight === 0) return
     this.mesh.geometry.dispose()
     let width = 7
@@ -257,10 +260,12 @@ export default class LocalMedia extends VisualizerBase {
     this.mesh.geometry = new THREE.PlaneGeometry(width, height)
   }
 
-  // resize(width: number, height: number) {
-  //   super.resize(width, height)
-  //   this.adjustDisplay(this.)
-  // }
+  resize(width: number, height: number) {
+    super.resize(width, height)
+    if (this.lastMediaData) {
+      this.adjustDisplay(this.lastMediaData.width, this.lastMediaData.height)
+    }
+  }
 
   dispose() {
     this.displayPlane.dispose()
