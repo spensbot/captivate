@@ -180,9 +180,7 @@ const configuration: webpack.Configuration = {
         env: process.env,
         stdio: 'inherit',
       })
-        .on('close', (code) =>
-          console.log(`visualizer dev server closed with code: ${code}`)
-        )
+        .on('close', (code) => process.exit(code!))
         .on('error', (err) =>
           console.error(`visualizer dev server err: ${err}`)
         )
