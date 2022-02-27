@@ -39,13 +39,15 @@ export function handleMessage(
   state: CleanReduxState,
   rt_state: RealtimeState,
   nodeLink: NodeLink,
-  dispatch: (action: PayloadAction<any>) => void
+  dispatch: (action: PayloadAction<any>) => void,
+  tapTempo: () => void
 ) {
   const input = getInput(message)
   const midiState = state.control.device
 
   if (midiState.isEditing && midiState.listening) {
-    if (midiState.listening.type === 'setActiveSceneIndex') {
+    const listenType = midiState.listening.type
+    if (listenType === 'setActiveSceneIndex' || listenType === 'tapTempo') {
       dispatch(
         midiSetButtonAction({
           inputID: input.id,
@@ -105,6 +107,8 @@ export function handleMessage(
               val: buttonAction.action.index,
             })
           )
+        } else if (buttonAction.action.type === 'tapTempo') {
+          tapTempo()
         }
       }
     }
@@ -147,6 +151,8 @@ export function handleMessage(
         } else if (action.type === 'setBpm') {
           const newTempo = newVal * 70 + 70
           nodeLink.setTempo(newTempo)
+        } else if (action.type === 'tapTempo') {
+          tapTempo()
         }
       }
       const op = sliderAction.options

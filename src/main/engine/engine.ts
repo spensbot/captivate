@@ -18,12 +18,19 @@ import openVisualizerWindow, {
 import { calculateDmx } from './dmxUtil'
 import { handleAutoScene } from '../../shared/autoScene'
 import { setActiveScene } from '../../renderer/redux/controlSlice'
+import TapTempoEngine from './TapTempoEngine'
 
 let _nodeLink = new NodeLink()
 let _ipcCallbacks: ReturnType<typeof ipcSetup> | null = null
 let _controlState: CleanReduxState | null = null
 let _realtimeState: RealtimeState = initRealtimeState()
 let _lastFrameTime = 0
+const _tapTempoEngine = new TapTempoEngine()
+function _tapTempo() {
+  _tapTempoEngine.tap(_realtimeState.time.bpm, (newBpm) => {
+    _nodeLink.setTempo(newBpm)
+  })
+}
 
 export function start(
   renderer: WebContents,
@@ -46,6 +53,8 @@ export function start(
         _nodeLink.setIsPlaying(command.isPlaying)
       } else if (command.type === 'SetBPM') {
         _nodeLink.setTempo(command.bpm)
+      } else if (command.type === 'TapTempo') {
+        _tapTempo()
       }
     },
     on_open_visualizer: () => {
@@ -101,7 +110,8 @@ MidiConnection.maintain({
         _controlState,
         _realtimeState,
         _nodeLink,
-        _ipcCallbacks.send_dispatch
+        _ipcCallbacks.send_dispatch,
+        _tapTempo
       )
     }
   },

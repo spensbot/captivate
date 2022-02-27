@@ -1,4 +1,17 @@
+import { useRef } from 'react'
+import RollingAverage from 'shared/RollingAverage'
+
+function getRollingAverage() {
+  const avg = new RollingAverage()
+  avg.setSustainSamples(30)
+  return avg
+}
+
 export default function FPS({ dt }: { dt: number }) {
+  const avg = useRef(getRollingAverage())
+
+  avg.current.push(1000 / dt)
+
   return (
     <div
       style={{
@@ -11,7 +24,7 @@ export default function FPS({ dt }: { dt: number }) {
         left: 0,
       }}
     >
-      {`${Math.floor(1000 / dt)} FPS`}
+      {`${Math.floor(avg.current.get())} FPS`}
     </div>
   )
 }

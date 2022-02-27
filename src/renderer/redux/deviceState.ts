@@ -39,12 +39,17 @@ interface SetBaseParam {
   paramKey: Param
 }
 
+interface TapTempo {
+  type: 'tapTempo'
+}
+
 export type MidiAction =
   | SetActiveSceneIndex
   | SetAutoSceneBombacity
   | SetMaster
   | SetBaseParam
   | SetBpm
+  | TapTempo
 
 // must uniquely identify an action (for use in a hash table)
 // does not need to be human readable. Just unique for a given action

@@ -56,7 +56,6 @@ export default class VisualizerManager {
   }
 
   update(dt: number, res: VisualizerResource) {
-    this.renderer.clear()
     const control = res.state.control
     const visualScene = control.visual.byId[control.visual.active]
     const config = visualScene?.config || {

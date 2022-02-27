@@ -34,6 +34,10 @@ export interface SetBPM {
   bpm: number
 }
 
+export interface TapTempo {
+  type: 'TapTempo'
+}
+
 // Redux Action-like commands Renderer -> Main
 export type UserCommand =
   | SetLinkEnabled
@@ -41,3 +45,4 @@ export type UserCommand =
   | EnableStartStopSync
   | SetIsPlaying
   | SetBPM
+  | TapTempo

@@ -51,7 +51,7 @@ export default class TextParticles extends VisualizerBase {
     const size = this.visibleSizeAtZ(0)
     this.planeArea.geometry = new THREE.PlaneGeometry(size.width, size.height)
     this.scene.clear()
-    this.particles.geometry.dispose()
+    this.releaseParticles()
     this.createParticles()
   }
 
