@@ -10,8 +10,22 @@ const SELECT_FILES = 'select-files'
 const CACHED_STATE_KEY = 'cached-state'
 const AUTO_SAVE_INTERVAL = 1000 // ms
 
-// Modify this function to fix any state changes between runs
+// Modify this function to fix any state changes between upgrades
 function fixState(state: CleanReduxState): CleanReduxState {
+  state.control.light.ids.forEach((id) => {
+    const scene = state.control.light.byId[id]
+    if (scene.autoEnabled === undefined) {
+      scene.autoEnabled = true
+    }
+  })
+
+  state.control.visual.ids.forEach((id) => {
+    const scene = state.control.visual.byId[id]
+    if (scene.autoEnabled === undefined) {
+      scene.autoEnabled = true
+    }
+  })
+
   return state
 }
 

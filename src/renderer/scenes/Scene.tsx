@@ -8,10 +8,12 @@ import {
   setActiveSceneBombacity,
   setActiveSceneName,
   copyActiveScene,
+  setActiveSceneAutoEnabled,
 } from '../redux/controlSlice'
-import { IconButton } from '@mui/material'
+import { IconButton, Switch } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import AddIcon from '@mui/icons-material/Add'
+import DisableIcon from '@mui/icons-material/DoNotDisturb'
 import Slider from '../base/Slider'
 import { ButtonMidiOverlay } from '../base/MidiOverlay'
 import Input from '../base/Input'
@@ -41,12 +43,15 @@ export function Scene({ sceneType, index, id }: Props) {
   const bombacity = useControlSelector(
     (control) => control[sceneType].byId[id].bombacity
   )
+  const autoEnabled = useControlSelector(
+    (control) => control[sceneType].byId[id].autoEnabled
+  )
   const name = useControlSelector((control) => control[sceneType].byId[id].name)
 
   const onNameChange = (newVal: string) => {
     dispatch(
       setActiveSceneName({
-        sceneType: sceneType,
+        sceneType,
         val: newVal,
       })
     )
@@ -55,7 +60,16 @@ export function Scene({ sceneType, index, id }: Props) {
   const onBombacityChange = (newVal: number) => {
     dispatch(
       setActiveSceneBombacity({
-        sceneType: sceneType,
+        sceneType,
+        val: newVal,
+      })
+    )
+  }
+
+  const onAutoEnabledChange = (newVal: boolean) => {
+    dispatch(
+      setActiveSceneAutoEnabled({
+        sceneType,
         val: newVal,
       })
     )
@@ -67,7 +81,7 @@ export function Scene({ sceneType, index, id }: Props) {
     e.stopPropagation()
     dispatch(
       removeScene({
-        sceneType: sceneType,
+        sceneType,
         val: { index: index },
       })
     )
@@ -107,7 +121,20 @@ export function Scene({ sceneType, index, id }: Props) {
               <Number>{index + 1}</Number>
               {isActive ? (
                 <Column>
-                  <Input value={name} onChange={onNameChange} />
+                  <Row>
+                    <Input value={name} onChange={onNameChange} />
+                    {/* <Switch
+                      size="small"
+                      checked={autoEnabled}
+                      onChange={(e) => onAutoEnabledChange(e.target.checked)}
+                    /> */}
+                    <Disable onClick={() => onAutoEnabledChange(!autoEnabled)}>
+                      <DisableIcon
+                        fontSize="small"
+                        style={{ opacity: autoEnabled ? 0.3 : 1 }}
+                      />
+                    </Disable>
+                  </Row>
                   {sceneType === 'light' && (
                     <>
                       <Sp />
@@ -122,8 +149,11 @@ export function Scene({ sceneType, index, id }: Props) {
                 </Column>
               ) : (
                 <>
-                  <div>{name}</div>
+                  <div style={{ color: autoEnabled ? '#fff' : 'fff7' }}>
+                    {name}
+                  </div>
                   <div style={{ flex: '1 0 0' }} />
+                  {!autoEnabled && <DisableIcon fontSize="small" />}
                   <IconButton
                     aria-label="delete scene"
                     size="small"
@@ -197,4 +227,13 @@ const Column = styled.div`
 
 const Sp = styled.div`
   height: 0.5rem;
+`
+
+const Row = styled.div`
+  display: flex;
+  align-items: center;
+`
+
+const Disable = styled.div`
+  cursor: pointer;
 `

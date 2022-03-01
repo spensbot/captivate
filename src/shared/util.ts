@@ -27,12 +27,12 @@ export function randomElement<Type>(items: Type[]) {
 // Only intended to be used with primitives.
 // Could technically be used with objects, but it will only compare the reference
 export function randomElementExcludeCurrent<T>(items: T[], current: T) {
+  if (items.length < 1) return current
   const currentIndex = items.findIndex((item) => item === current)
   if (currentIndex > -1) {
     return items[randomIndexExcludeCurrent(items.length, currentIndex)]
   } else {
-    console.error(`randomElementExcludeCurrent could not find current element`)
-    return current
+    return items[randomIndex(items.length)]
   }
 }
 

@@ -2,7 +2,7 @@ import styled from 'styled-components'
 import Slider from '../base/Slider'
 import { useTypedSelector, useDmxSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
-import { TextField, Button, IconButton, iconButtonClasses } from '@mui/material'
+import { TextField, Button, IconButton } from '@mui/material'
 import ForwardIcon from '@mui/icons-material/ArrowForward'
 import BackIcon from '@mui/icons-material/ArrowBack'
 import {

@@ -7,7 +7,7 @@ import { nanoid } from 'nanoid'
 import { RandomizerOptions } from '../../shared/randomizer'
 import cloneDeep from 'lodash.clonedeep'
 import { VisualizerConfig } from '../visualizer/threejs/VisualizerConfig'
-import { EffectConfig, Glitch } from '../visualizer/threejs/EffectTypes'
+import { EffectConfig } from '../visualizer/threejs/EffectTypes'
 import { DeviceState, initDeviceState, midiActions } from './deviceState'
 import {
   ScenesStateBundle,
@@ -155,6 +155,15 @@ export const scenesSlice = createSlice({
     ) => {
       modifyActiveScene(state, sceneType, (scene) => {
         scene.bombacity = val
+      })
+    },
+    setActiveSceneAutoEnabled: (
+      state,
+      { payload: { sceneType, val } }: ScopedAction<boolean>
+    ) => {
+      console.log('val', val)
+      modifyActiveScene(state, sceneType, (scene) => {
+        scene.autoEnabled = val
       })
     },
     setActiveSceneName: (
@@ -379,6 +388,7 @@ export const {
   setActiveScene,
   setActiveSceneIndex,
   setActiveSceneBombacity,
+  setActiveSceneAutoEnabled,
   setActiveSceneName,
   reorderScene,
   copyActiveScene,

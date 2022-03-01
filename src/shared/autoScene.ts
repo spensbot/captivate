@@ -35,7 +35,10 @@ export function handleAutoScene(
   let possibleLightIds = light.ids.filter((id) => {
     const lightScene = light.byId[id]
     if (lightScene) {
-      return Math.abs(lightScene.bombacity - light.auto.bombacity) < 0.5
+      return (
+        lightScene.autoEnabled &&
+        Math.abs(lightScene.bombacity - light.auto.bombacity) < 0.5
+      )
     }
     return false
   })
@@ -53,6 +56,13 @@ export function handleAutoScene(
     onNewLightScene(newScene)
   }
 
+  let possibleVisualIds = visual.ids.filter((id) => {
+    const visualScene = visual.byId[id]
+    if (visualScene) {
+      return visualScene.autoEnabled
+    }
+    return false
+  })
   if (
     isNewScene(
       visual.active,
