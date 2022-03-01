@@ -11,9 +11,13 @@ import {
   initEffectsConfig,
 } from '../renderer/visualizer/threejs/EffectTypes'
 
-export interface LightScene_t {
+interface Scene_base {
   name: string
   bombacity: number
+  autoEnabled: boolean
+}
+
+export interface LightScene_t extends Scene_base {
   modulators: Modulator[]
   baseParams: Params
   randomizer: RandomizerOptions
@@ -24,6 +28,7 @@ export function initLightScene(): LightScene_t {
   return {
     name: 'Name',
     bombacity: 0,
+    autoEnabled: true,
     modulators: [initModulator()],
     baseParams: initParams(),
     randomizer: initRandomizerOptions(),
@@ -37,9 +42,7 @@ export function handleBadLightScene(
   return scene || initLightScene()
 }
 
-export interface VisualScene_t {
-  name: string
-  bombacity: number
+export interface VisualScene_t extends Scene_base {
   config: VisualizerConfig
   effectsConfig: EffectsConfig
   activeEffectIndex: number
@@ -49,6 +52,7 @@ export function initVisualScene(): VisualScene_t {
   return {
     name: 'Name',
     bombacity: 0,
+    autoEnabled: true,
     config: initVisualizerConfig('TextParticles'),
     effectsConfig: initEffectsConfig(),
     activeEffectIndex: 0,

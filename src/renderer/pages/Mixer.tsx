@@ -2,7 +2,9 @@ import styled from 'styled-components'
 import Slider from '../base/Slider'
 import { useTypedSelector, useDmxSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
-import { TextField, Button } from '@mui/material'
+import { TextField, Button, IconButton, iconButtonClasses } from '@mui/material'
+import ForwardIcon from '@mui/icons-material/ArrowForward'
+import BackIcon from '@mui/icons-material/ArrowBack'
 import {
   setPageIndex,
   setChannelsPerPage,
@@ -57,23 +59,21 @@ function Header() {
 
   return (
     <HeaderRoot>
-      <Button
-        variant="outlined"
+      <IconButton
         disabled={!canGoBack}
         onClick={() => dispatch(setPageIndex(_s.pageIndex - 1))}
       >
-        {'<'}
-      </Button>
+        <BackIcon />
+      </IconButton>
       <S />
       <Page>{_s.pageIndex + 1}</Page>
       <S />
-      <Button
-        variant="outlined"
+      <IconButton
         disabled={!canGoForward}
         onClick={() => dispatch(setPageIndex(_s.pageIndex + 1))}
       >
-        {'>'}
-      </Button>
+        <ForwardIcon />
+      </IconButton>
       <S />
       <TextField
         value={_s.channelsPerPage.toString()}
