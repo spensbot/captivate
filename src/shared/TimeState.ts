@@ -5,7 +5,7 @@ export interface TimeState {
   numPeers: number
   isEnabled: boolean
   isPlaying: boolean
-  isEnabledStartStopSync: boolean
+  isStartStopSyncEnabled: boolean
   quantum: number
   dt: number
 }
@@ -18,7 +18,7 @@ export function initTimeState(): TimeState {
     numPeers: 0,
     isEnabled: false,
     isPlaying: false,
-    isEnabledStartStopSync: false,
+    isStartStopSyncEnabled: false,
     quantum: 4.0,
     dt: 0.0,
   }

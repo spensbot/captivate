@@ -2,7 +2,7 @@ import { WebContents } from 'electron'
 import * as DmxConnection from './dmxConnection'
 import * as MidiConnection from './midiConnection'
 import NodeLink from 'node-link'
-import { ipcSetup } from './ipcHandler'
+import { ipcSetup, IPC_Callbacks } from './ipcHandler'
 import { CleanReduxState } from '../../renderer/redux/store'
 import {
   RealtimeState,
@@ -21,7 +21,7 @@ import { setActiveScene } from '../../renderer/redux/controlSlice'
 import TapTempoEngine from './TapTempoEngine'
 
 let _nodeLink = new NodeLink()
-let _ipcCallbacks: ReturnType<typeof ipcSetup> | null = null
+let _ipcCallbacks: IPC_Callbacks | null = null
 let _controlState: CleanReduxState | null = null
 let _realtimeState: RealtimeState = initRealtimeState()
 let _lastFrameTime = 0
@@ -66,18 +66,23 @@ export function start(
   // We're currently calculating the realtimeState 90x per second.
   // The renderer should have a new realtime state to on each animation frame (assuming a refresh rate of 60 hz)
   setInterval(() => {
-    const newRealtimeState = calculateRealtimeState()
-    if (_realtimeState.time.isPlaying || newRealtimeState.time.isPlaying) {
-      _realtimeState = newRealtimeState
-      if (_ipcCallbacks !== null) {
-        _ipcCallbacks.send_time_state(_realtimeState)
-        if (_controlState !== null) {
-          _ipcCallbacks.send_visualizer_state({
-            rt: _realtimeState,
-            state: _controlState,
-          })
-        }
-      }
+    const nextTimeState = getNextTimeState()
+    if (
+      (nextTimeState.isPlaying || _realtimeState.time.isPlaying) &&
+      _ipcCallbacks !== null &&
+      _controlState !== null
+    ) {
+      _realtimeState = getNextRealtimeState(
+        _realtimeState,
+        nextTimeState,
+        _ipcCallbacks,
+        _controlState
+      )
+      _ipcCallbacks.send_time_state(_realtimeState)
+      _ipcCallbacks.send_visualizer_state({
+        rt: _realtimeState,
+        state: _controlState,
+      })
     }
   }, 1000 / 90)
 }
@@ -120,66 +125,64 @@ MidiConnection.maintain({
   },
 })
 
-function calculateRealtimeState(): RealtimeState {
+// Todo: Desimate dt in this context
+function getNextTimeState(): TimeState {
   let currentTime = Date.now()
   const dt = currentTime - _lastFrameTime
 
-  if (dt < 10 || _ipcCallbacks === null || _controlState === null) {
-    let rs = initRealtimeState()
-    return rs
-  }
-
   _lastFrameTime = currentTime
 
-  //@ts-ignore: I don't know how to convince typescript that I flesh out timeState in the following 2 lines
-  const timeState: TimeState = _nodeLink.getSessionInfoCurrent()
-  timeState.dt = dt
-  timeState.quantum = 4.0
+  return {
+    ..._nodeLink.getSessionInfoCurrent(),
+    dt: dt,
+    quantum: 4.0,
+  }
+}
 
+function getNextRealtimeState(
+  realtimeState: RealtimeState,
+  nextTimeState: TimeState,
+  ipcCallbacks: IPC_Callbacks,
+  controlState: CleanReduxState
+): RealtimeState {
   const scene =
-    _controlState.control.light.byId[_controlState.control.light.active]
-  if (scene) {
-    const outputParams = modulateParams(timeState.beats, scene)
+    controlState.control.light.byId[controlState.control.light.active]
+  const outputParams = modulateParams(nextTimeState.beats, scene)
 
-    const newRandomizerState = syncAndUpdate(
-      _realtimeState.time.beats,
-      _realtimeState.randomizer,
-      _controlState.dmx.universe.length,
-      timeState,
-      scene.randomizer
-    )
+  const newRandomizerState = syncAndUpdate(
+    realtimeState.time.beats,
+    realtimeState.randomizer,
+    controlState.dmx.universe.length,
+    nextTimeState,
+    scene.randomizer
+  )
 
-    handleAutoScene(
-      _realtimeState,
-      timeState,
-      _controlState,
-      (newLightScene) => {
-        if (_ipcCallbacks)
-          _ipcCallbacks.send_dispatch(
-            setActiveScene({
-              sceneType: 'light',
-              val: newLightScene,
-            })
-          )
-      },
-      (newVisualScene) => {
-        if (_ipcCallbacks)
-          _ipcCallbacks.send_dispatch(
-            setActiveScene({
-              sceneType: 'visual',
-              val: newVisualScene,
-            })
-          )
-      }
-    )
-
-    return {
-      outputParams: outputParams,
-      time: timeState,
-      randomizer: newRandomizerState,
-      dmxOut: calculateDmx(_controlState, outputParams, newRandomizerState),
+  handleAutoScene(
+    realtimeState,
+    nextTimeState,
+    controlState,
+    (newLightScene) => {
+      ipcCallbacks.send_dispatch(
+        setActiveScene({
+          sceneType: 'light',
+          val: newLightScene,
+        })
+      )
+    },
+    (newVisualScene) => {
+      ipcCallbacks.send_dispatch(
+        setActiveScene({
+          sceneType: 'visual',
+          val: newVisualScene,
+        })
+      )
     }
-  } else {
-    return initRealtimeState()
+  )
+
+  return {
+    outputParams: outputParams,
+    time: nextTimeState,
+    randomizer: newRandomizerState,
+    dmxOut: calculateDmx(controlState, outputParams, newRandomizerState),
   }
 }

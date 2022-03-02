@@ -56,6 +56,8 @@ export function ipcSetup(config: Config) {
   }
 }
 
+export type IPC_Callbacks = ReturnType<typeof ipcSetup>
+
 ipcMain.handle(
   ipcChannels.load_file,
   async (_event, title: string, fileFilters: Electron.FileFilter[]) => {

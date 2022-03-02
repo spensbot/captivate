@@ -72,7 +72,10 @@ export function handleAutoScene(
       _lastUserModified.visual
     )
   ) {
-    const newScene = randomElementExcludeCurrent(visual.ids, visual.active)
+    const newScene = randomElementExcludeCurrent(
+      possibleVisualIds,
+      visual.active
+    )
     _lastUserModified.visual.scene = newScene
     onNewVisualScene(newScene)
   }
