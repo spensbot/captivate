@@ -7,15 +7,15 @@ import { setFixtureWindow, incrementFixtureWindow } from '../redux/dmxSlice'
 
 export default function FixturePlacement() {
   const universe = useDmxSelector((state) => state.universe)
-  const selectedFixture = useDmxSelector((state) => state.selectedFixture)
+  const activeFixture = useDmxSelector((state) => state.activeFixture)
   const dispatch = useDispatch()
 
   const [dragContainer, onMouseDown] = useDragMapped(({ x, y, dx, dy }, e) => {
-    if (selectedFixture !== null) {
+    if (activeFixture !== null) {
       if (e.metaKey) {
         dispatch(
           incrementFixtureWindow({
-            index: selectedFixture,
+            index: activeFixture,
             dWidth: dx,
             dHeight: dy,
           })
@@ -23,7 +23,7 @@ export default function FixturePlacement() {
       } else {
         dispatch(
           setFixtureWindow({
-            index: selectedFixture,
+            index: activeFixture,
             x: x,
             y: y,
           })

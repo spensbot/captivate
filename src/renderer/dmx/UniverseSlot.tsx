@@ -138,11 +138,11 @@ function FixtureSlot({ fixture, index }: { fixture: Fixture; index: number }) {
   const fixtureType = useDmxSelector(
     (state) => state.fixtureTypesByID[fixture.type]
   )
-  const selectedFixture = useDmxSelector((state) => state.selectedFixture)
+  const activeFixture = useDmxSelector((state) => state.activeFixture)
   const dispatch = useDispatch()
   const count = fixtureType.channels.length
   const start = fixture.ch
-  const isSelected = selectedFixture === index
+  const isSelected = activeFixture === index
   function setWindowEnabled(dimension: 'x' | 'y', isEnabled: boolean) {
     return (e: React.MouseEvent) => {
       dispatch(

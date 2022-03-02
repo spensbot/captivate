@@ -7,6 +7,7 @@ import {
   fixtureTypesByID,
   getTestUniverse,
   FixtureChannel,
+  getSortedGroups,
 } from '../../shared/dmxFixtures'
 import { clampNormalized } from '../../shared/util'
 
@@ -14,8 +15,8 @@ export interface DmxState {
   universe: Universe
   fixtureTypes: string[]
   fixtureTypesByID: { [id: string]: FixtureType }
-  editedFixture: null | string
-  selectedFixture: null | number
+  activeFixtureType: null | string
+  activeFixture: null | number
   groups: string[]
 }
 
@@ -42,8 +43,8 @@ export function initDmxState(): DmxState {
     universe: getTestUniverse(),
     fixtureTypes: fixtureTypes,
     fixtureTypesByID: fixtureTypesByID,
-    editedFixture: null,
-    selectedFixture: null,
+    activeFixtureType: null,
+    activeFixture: null,
     groups: [],
   }
 }
@@ -52,21 +53,18 @@ export const dmxSlice = createSlice({
   name: 'dmx',
   initialState: initDmxState(),
   reducers: {
-    resetDmxState: (state, { payload }: PayloadAction<DmxState>) => {
-      state = payload
-    },
     setSelectedFixture: (state, { payload }: PayloadAction<number>) => {
-      state.selectedFixture = payload
+      state.activeFixture = payload
     },
     addFixture: (state, { payload }: PayloadAction<Fixture>) => {
       state.universe.push(payload)
       state.universe.sort((a, b) => a.ch - b.ch)
-      state.selectedFixture = state.universe.findIndex(
+      state.activeFixture = state.universe.findIndex(
         (fixture) => fixture.ch == payload.ch
       )
     },
     removeFixture: (state, { payload }: PayloadAction<number>) => {
-      state.selectedFixture = null
+      state.activeFixture = null
       state.universe.splice(payload, 1)
     },
     setFixtureWindow: (
@@ -107,25 +105,49 @@ export const dmxSlice = createSlice({
         window.y.width = clampNormalized(window.y.width + payload.dHeight)
       }
     },
-    setSelectedFixtureGroups: (state, { payload }: PayloadAction<string[]>) => {
-      const i = state.selectedFixture
+    setGroupForActiveFixture: (
+      state,
+      { payload }: PayloadAction<string | null>
+    ) => {
+      const i = state.activeFixture
       if (i === null) {
-        console.error('i === null')
+        console.error('active fixture index === null')
         return
       }
       if (state.universe[i] === undefined) {
-        console.warn(state.universe[i] === undefined)
+        console.warn('active fixture === null')
         return
       }
-      state.universe[i].groups = payload
+      if (payload === null) {
+        state.universe[i].groups = []
+      } else {
+        state.universe[i].groups = [payload]
+      }
+      state.groups = getSortedGroups(state.universe)
+    },
+    setGroupForAllFixturesOfActiveType: (
+      state,
+      { payload }: PayloadAction<string | null>
+    ) => {
+      const activeType = state.activeFixtureType
+      for (const fixture of state.universe) {
+        if (fixture.type === activeType) {
+          if (payload === null) {
+            fixture.groups = []
+          } else {
+            fixture.groups = [payload]
+          }
+        }
+      }
+      state.groups = getSortedGroups(state.universe)
     },
     setEditedFixture: (state, { payload }: PayloadAction<null | string>) => {
-      state.editedFixture = payload
+      state.activeFixtureType = payload
     },
     addFixtureType: (state, { payload }: PayloadAction<FixtureType>) => {
       state.fixtureTypes.push(payload.id)
       state.fixtureTypesByID[payload.id] = payload
-      state.editedFixture = payload.id
+      state.activeFixtureType = payload.id
     },
     updateFixtureType: (state, { payload }: PayloadAction<FixtureType>) => {
       state.fixtureTypesByID[payload.id] = payload
@@ -190,21 +212,18 @@ export const dmxSlice = createSlice({
         state.fixtureTypes.splice(index, 1)
       }
       delete state.fixtureTypesByID[payload]
-      state.editedFixture = null
-    },
-    setGroups: (state, { payload }: PayloadAction<string[]>) => {
-      state.groups = payload
+      state.activeFixtureType = null
     },
   },
 })
 
 export const {
-  resetDmxState,
   setSelectedFixture,
   setEditedFixture,
   setFixtureWindow,
   setFixtureWindowEnabled,
-  setSelectedFixtureGroups,
+  setGroupForActiveFixture,
+  setGroupForAllFixturesOfActiveType,
   incrementFixtureWindow,
   addFixture,
   removeFixture,
@@ -215,7 +234,6 @@ export const {
   editFixtureChannel,
   removeFixtureChannel,
   reorderFixtureChannel,
-  setGroups,
 } = dmxSlice.actions
 
 export default dmxSlice.reducer

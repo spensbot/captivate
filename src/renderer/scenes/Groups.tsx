@@ -13,7 +13,7 @@ export default function Groups({}: Props) {
   const dispatch = useDispatch()
   const groups = useDmxSelector((state) => state.groups)
   const activeFixtureGroups = useDmxSelector((state) => {
-    const i = state.selectedFixture
+    const i = state.activeFixture
     if (i === null) return null
     return state.universe[i]?.groups
   })

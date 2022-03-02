@@ -7,10 +7,10 @@ import Window2D2 from '../base/Window2D2'
 
 export default function FixtureCursor({ index }: { index: number }) {
   const fixture = useDmxSelector((state) => state.universe[index])
-  const selectedFixture = useDmxSelector((state) => state.selectedFixture)
+  const activeFixture = useDmxSelector((state) => state.activeFixture)
   const dispatch = useDispatch()
 
-  const isSelected = selectedFixture === index
+  const isSelected = activeFixture === index
 
   function onClick(e: React.MouseEvent) {
     e.stopPropagation()

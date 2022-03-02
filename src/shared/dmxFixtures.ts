@@ -235,3 +235,13 @@ export function getTestUniverse(): Universe {
     // { ch: 128, type: '5', window: {}, groups: [] }
   ]
 }
+
+export function getSortedGroups(universe: Universe) {
+  const groupSet: Set<string> = new Set()
+  for (const fixture of universe) {
+    for (const group of fixture.groups) {
+      groupSet.add(group)
+    }
+  }
+  return Array.from(groupSet.keys()).sort((a, b) => (a > b ? 1 : -1))
+}

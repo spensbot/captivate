@@ -13,6 +13,7 @@ import styled from 'styled-components'
 import FixtureChannels from './FixtureChannels'
 import { Button } from '@mui/material'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
+import EditGroup from './EditGroup'
 
 type Props = {
   id: string
@@ -24,7 +25,7 @@ export default function MyFixture({ id }: Props) {
     (state) =>
       state.universe.find((fixture) => fixture.type === ft.id) !== undefined
   )
-  const isEditing = useDmxSelector((state) => state.editedFixture === id)
+  const isEditing = useDmxSelector((state) => state.activeFixtureType === id)
   const dispatch = useDispatch()
 
   const styles: { [key: string]: React.CSSProperties } = {
@@ -101,6 +102,8 @@ export default function MyFixture({ id }: Props) {
               )
             }
           />
+          <Sp />
+          <EditGroup />
           <Sp2 />
           <Slider
             id="epicness"

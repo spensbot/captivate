@@ -10,7 +10,7 @@ import {
   copyActiveScene,
   setActiveSceneAutoEnabled,
 } from '../redux/controlSlice'
-import { IconButton, Switch } from '@mui/material'
+import { IconButton } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import AddIcon from '@mui/icons-material/Add'
 import DisableIcon from '@mui/icons-material/DoNotDisturb'
