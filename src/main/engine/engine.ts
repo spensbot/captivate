@@ -64,7 +64,7 @@ export function start(
   })
 
   // We're currently calculating the realtimeState 90x per second.
-  // The renderer should have a new realtime state to on each animation frame (assuming a refresh rate of 60 hz)
+  // The renderer should have a new realtime state on each animation frame (assuming a refresh rate of 60 hz)
   setInterval(() => {
     const nextTimeState = getNextTimeState()
     if (
