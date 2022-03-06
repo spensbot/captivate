@@ -19,6 +19,7 @@ import {
   VisualScene_t,
   VisualScenes_t,
   SceneType,
+  initSplitScene,
 } from '../../shared/Scenes'
 import { reorderArray } from '../../shared/util'
 
@@ -302,7 +303,44 @@ export const scenesSlice = createSlice({
         scene.randomizer[payload.key] = payload.value
       })
     },
-
+    addSplitScene: (state, {}: PayloadAction<undefined>) => {
+      modifyActiveLightScene(state, (scene) => {
+        scene.splitScenes.push(initSplitScene())
+      })
+    },
+    removeSplitSceneByIndex: (state, { payload }: PayloadAction<number>) => {
+      modifyActiveLightScene(state, (scene) => {
+        scene.splitScenes.splice(payload, 1)
+        scene.modulators.forEach((modulator) => {
+          modulator.splitModulations.splice(payload, 1)
+        })
+      })
+    },
+    addSplitSceneGroup: (
+      state,
+      {
+        payload: { group, index },
+      }: PayloadAction<{ group: string; index: number }>
+    ) => {
+      modifyActiveLightScene(state, (scene) => {
+        scene.splitScenes[index].groups.push(group)
+      })
+    },
+    removeSplitSceneGroup: (
+      state,
+      {
+        payload: { group, index },
+      }: PayloadAction<{ group: string; index: number }>
+    ) => {
+      modifyActiveLightScene(state, (scene) => {
+        const groupIndex = scene.splitScenes[index].groups.findIndex(
+          (g) => g === group
+        )
+        if (groupIndex > -1) {
+          scene.splitScenes[index].groups.splice(groupIndex, 1)
+        }
+      })
+    },
     // =====================   VISUAL SCENES ONLY   ===========================
     resetVisualScenes: (state, { payload }: PayloadAction<VisualScenes_t>) => {
       state.visual = payload
@@ -408,6 +446,10 @@ export const {
   setModulation,
   resetModulator,
   setRandomizer,
+  addSplitScene,
+  addSplitSceneGroup,
+  removeSplitSceneByIndex,
+  removeSplitSceneGroup,
 
   // VISUAL SCENES
   resetVisualScenes,

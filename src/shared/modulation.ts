@@ -6,12 +6,14 @@ import { clampNormalized } from './util'
 export interface Modulator {
   lfo: Lfo
   modulation: Modulation
+  splitModulations: Modulation[]
 }
 
-export function initModulator() {
+export function initModulator(): Modulator {
   return {
     lfo: GetRamp(),
     modulation: initModulation(),
+    splitModulations: [],
   }
 }
 

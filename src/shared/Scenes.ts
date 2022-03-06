@@ -11,17 +11,29 @@ import {
   initEffectsConfig,
 } from '../renderer/visualizer/threejs/EffectTypes'
 
+export const DEFAULT_GROUP = 'Default'
+
 interface Scene_base {
   name: string
   bombacity: number
   autoEnabled: boolean
 }
 
+export interface SplitScene_t {
+  baseParams: Params
+  groups: string[]
+}
+export function initSplitScene(): SplitScene_t {
+  return {
+    baseParams: initParams(),
+    groups: [],
+  }
+}
 export interface LightScene_t extends Scene_base {
   modulators: Modulator[]
   baseParams: Params
   randomizer: RandomizerOptions
-  groups: string[]
+  splitScenes: SplitScene_t[]
 }
 
 export function initLightScene(): LightScene_t {
@@ -32,7 +44,7 @@ export function initLightScene(): LightScene_t {
     modulators: [initModulator()],
     baseParams: initParams(),
     randomizer: initRandomizerOptions(),
-    groups: [],
+    splitScenes: [],
   }
 }
 

@@ -5,6 +5,7 @@ import Modulators from '../scenes/Modulators'
 import SceneSelection from '../scenes/SceneSelection'
 import SplitPane from '../base/SplitPane'
 import styled from 'styled-components'
+import SplitScenes from 'renderer/scenes/SplitScenes'
 
 export default function Scenes() {
   const splitPaneStyle: React.CSSProperties = {
@@ -37,6 +38,8 @@ export default function Scenes() {
             <Modulators />
             <Sp />
             <ParamsControl />
+            <Sp />
+            <SplitScenes />
           </div>
         </Pane>
       </SplitPane>

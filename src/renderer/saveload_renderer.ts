@@ -12,20 +12,16 @@ const AUTO_SAVE_INTERVAL = 1000 // ms
 
 // Modify this function to fix any state changes between upgrades
 function fixState(state: CleanReduxState): CleanReduxState {
-  state.control.light.ids.forEach((id) => {
-    const scene = state.control.light.byId[id]
-    if (scene.autoEnabled === undefined) {
-      scene.autoEnabled = true
-    }
+  const light = state.control.light
+  light.ids.forEach((id) => {
+    const scene = light.byId[id]
+    if (scene.splitScenes === undefined) scene.splitScenes = []
+    scene.modulators.forEach((modulator) => {
+      if (modulator.splitModulations === undefined)
+        modulator.splitModulations = []
+    })
   })
-
-  state.control.visual.ids.forEach((id) => {
-    const scene = state.control.visual.byId[id]
-    if (scene.autoEnabled === undefined) {
-      scene.autoEnabled = true
-    }
-  })
-
+  state.dmx.groups = []
   return state
 }
 

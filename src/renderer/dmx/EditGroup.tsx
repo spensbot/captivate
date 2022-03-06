@@ -8,6 +8,7 @@ import Popup from '../base/Popup'
 import { useDispatch } from 'react-redux'
 import { setGroupForAllFixturesOfActiveType } from '../redux/dmxSlice'
 import { Button } from '@mui/material'
+import { DEFAULT_GROUP } from 'shared/Scenes'
 
 interface Props {}
 
@@ -53,7 +54,7 @@ export default function EditGroup({}: Props) {
           <AvailableGroup
             onClick={() => dispatch(setGroupForAllFixturesOfActiveType(null))}
           >
-            Default
+            {DEFAULT_GROUP}
           </AvailableGroup>
           {availableGroups.map((group) => (
             <AvailableGroup
