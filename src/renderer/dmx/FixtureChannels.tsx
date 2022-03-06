@@ -90,6 +90,7 @@ const Title = styled.span`
 
 const Channels = styled.div`
   background-color: ${(props) => props.theme.colors.bg.darker};
+  padding: 0.5rem;
 `
 
 interface Props2 {
@@ -106,8 +107,7 @@ function Channel({ fixtureID, channelIndex, hasMaster }: Props2) {
 
   return (
     <Root2>
-      {channelIndex + 1}
-      <Sp2 />
+      <Ch>{channelIndex + 1}</Ch>
       <Select
         label="Channel Type"
         val={ch.type}
@@ -152,8 +152,14 @@ function Channel({ fixtureID, channelIndex, hasMaster }: Props2) {
 
 const Root2 = styled.div`
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   margin-bottom: 0.5rem;
+`
+
+const Ch = styled.div`
+  font-size: 1.1rem;
+  margin-bottom: 0.3rem;
+  margin-right: 0.7rem;
 `
 
 const Sp = styled.div`

@@ -79,31 +79,41 @@ export default function MyFixture({ id }: Props) {
         </Header>
       ) : (
         <Body>
-          <Input
-            value={ft.name}
-            onChange={(newVal) =>
-              dispatch(
-                updateFixtureType({
-                  ...ft,
-                  name: newVal,
-                })
-              )
-            }
-          />
-          <Sp2 />
-          <Input
-            value={ft.manufacturer || ''}
-            onChange={(newVal) =>
-              dispatch(
-                updateFixtureType({
-                  ...ft,
-                  manufacturer: newVal,
-                })
-              )
-            }
-          />
-          <Sp />
-          <EditGroup />
+          <Row>
+            <IconButton
+              onClick={() => {
+                dispatch(setEditedFixture(null))
+              }}
+              style={{ marginRight: '1rem' }}
+            >
+              <ExpandLessIcon />
+            </IconButton>
+            <div style={{ flex: '1 0 0' }}>
+              <Input
+                value={ft.name}
+                onChange={(newVal) =>
+                  dispatch(
+                    updateFixtureType({
+                      ...ft,
+                      name: newVal,
+                    })
+                  )
+                }
+              />
+              <Sp2 />
+              <Input
+                value={ft.manufacturer || ''}
+                onChange={(newVal) =>
+                  dispatch(
+                    updateFixtureType({
+                      ...ft,
+                      manufacturer: newVal,
+                    })
+                  )
+                }
+              />
+            </div>
+          </Row>
           <Sp2 />
           <Slider
             id="epicness"
@@ -123,22 +133,18 @@ export default function MyFixture({ id }: Props) {
           />
           <FixtureChannels fixtureID={id} isInUse={isInUse} />
           <Sp />
-          <IconButton
-            onClick={() => {
-              dispatch(setEditedFixture(null))
-            }}
-            style={{ marginRight: '1rem' }}
-          >
-            <ExpandLessIcon />
-          </IconButton>
-          <Button
-            size="small"
-            disabled={isInUse}
-            variant="contained"
-            onClick={() => dispatch(deleteFixtureType(id))}
-          >
-            Delete Fixture
-          </Button>
+          <Row>
+            <Button
+              size="small"
+              disabled={isInUse}
+              variant="contained"
+              onClick={() => dispatch(deleteFixtureType(id))}
+            >
+              Delete Fixture
+            </Button>
+            <div style={{ flex: '1 0 0' }} />
+            <EditGroup />
+          </Row>
         </Body>
       )}
     </Root>
@@ -146,7 +152,6 @@ export default function MyFixture({ id }: Props) {
 }
 
 const Root = styled.div`
-  padding: 0.5rem;
   margin-bottom: 0.5rem;
   border-radius: 5px;
   border: 1px solid #0000;
@@ -161,6 +166,7 @@ const Header = styled.div`
   flex-direction: row;
   align-items: center;
   cursor: pointer;
+  padding: 0.5rem;
 `
 
 const Body = styled.div``
@@ -172,4 +178,9 @@ const Sp = styled.div`
 
 const Sp2 = styled.div`
   height: 0.5rem;
+`
+
+const Row = styled.div`
+  display: flex;
+  align-items: center;
 `

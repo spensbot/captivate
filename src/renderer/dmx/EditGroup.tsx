@@ -38,7 +38,7 @@ export default function EditGroup({}: Props) {
 
   return (
     <Root>
-      {`Group: ${fixtureGroupString}`}
+      <GroupName>{`${fixtureGroupString}`}</GroupName>
       <IconButton
         size="small"
         onClick={(e) => {
@@ -85,7 +85,14 @@ export default function EditGroup({}: Props) {
 }
 
 const Root = styled.div`
-  display: relative;
+  position: relative;
+  display: flex;
+  align-items: center;
+`
+
+const GroupName = styled.div`
+  margin-right: 0.5rem;
+  font-size: 1rem;
 `
 
 const AvailableGroup = styled.div`
