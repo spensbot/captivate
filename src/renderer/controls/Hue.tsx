@@ -2,11 +2,20 @@ import useDragMapped from '../hooks/useDragMapped'
 import { useDispatch } from 'react-redux'
 import { setBaseParams } from '../redux/controlSlice'
 
-export default function Hue() {
+interface Props {
+  splitIndex: number | null
+}
+
+export default function Hue({ splitIndex }: Props) {
   const dispatch = useDispatch()
 
-  const [dragContainer, onMouseDown] = useDragMapped(({ x, y }) => {
-    dispatch(setBaseParams({ hue: x }))
+  const [dragContainer, onMouseDown] = useDragMapped(({ x }) => {
+    dispatch(
+      setBaseParams({
+        splitIndex,
+        params: { hue: x },
+      })
+    )
   })
 
   const styles: { [key: string]: React.CSSProperties } = {

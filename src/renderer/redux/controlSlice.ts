@@ -86,6 +86,11 @@ type ScopedAction<T> = PayloadAction<{
   val: T
 }>
 
+type ParamsAction = PayloadAction<{
+  splitIndex: number | null
+  params: Partial<Params>
+}>
+
 export const scenesSlice = createSlice({
   name: 'scenes',
   initialState: initControlState(),
@@ -277,18 +282,32 @@ export const scenesSlice = createSlice({
         scene.modulators[index].modulation[param] = value
       })
     },
-    setBaseParams: (state, action: PayloadAction<Partial<Params>>) => {
-      for (let [key, value] of Object.entries(action.payload)) {
+    setBaseParams: (
+      state,
+      { payload: { params, splitIndex } }: ParamsAction
+    ) => {
+      for (let [key, value] of Object.entries(params)) {
         modifyActiveLightScene(state, (scene) => {
-          scene.baseParams[key as Param] = value
+          const baseParams =
+            splitIndex === null
+              ? scene.baseParams
+              : scene.splitScenes[splitIndex].baseParams
+          baseParams[key as Param] = value
         })
       }
     },
-    incrementBaseParams: (state, action: PayloadAction<Partial<Params>>) => {
-      for (let [key, value] of Object.entries(action.payload)) {
+    incrementBaseParams: (
+      state,
+      { payload: { params, splitIndex } }: ParamsAction
+    ) => {
+      for (let [key, value] of Object.entries(params)) {
         modifyActiveLightScene(state, (scene) => {
-          scene.baseParams[key as Param] = clampNormalized(
-            scene.baseParams[key as Param] + value
+          const baseParams =
+            splitIndex === null
+              ? scene.baseParams
+              : scene.splitScenes[splitIndex].baseParams
+          baseParams[key as Param] = clampNormalized(
+            baseParams[key as Param] + value
           )
         })
       }

@@ -4,7 +4,11 @@ import MidiOverlay_xy from '../base/MidiOverlay_xy'
 import { SliderMidiOverlay } from '../base/MidiOverlay'
 import styled from 'styled-components'
 
-export default function HsvPad() {
+interface Props {
+  splitIndex: number | null
+}
+
+export default function HsvPad({ splitIndex }: Props) {
   return (
     <Root>
       <MidiOverlay_xy
@@ -13,10 +17,10 @@ export default function HsvPad() {
           { type: 'setBaseParam', paramKey: 'brightness' },
         ]}
       >
-        <SVpad />
+        <SVpad splitIndex={splitIndex} />
       </MidiOverlay_xy>
       <SliderMidiOverlay action={{ type: 'setBaseParam', paramKey: 'hue' }}>
-        <Hue />
+        <Hue splitIndex={splitIndex} />
       </SliderMidiOverlay>
     </Root>
   )

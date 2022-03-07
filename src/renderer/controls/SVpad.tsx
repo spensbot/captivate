@@ -5,15 +5,22 @@ import { setBaseParams } from '../redux/controlSlice'
 import SVCursor from './SVCursor'
 import { useRealtimeSelector } from '../redux/realtimeStore'
 
-export default function SVpad() {
+interface Props {
+  splitIndex: number | null
+}
+
+export default function SVpad({ splitIndex }: Props) {
   const hue = useRealtimeSelector((state) => state.outputParams.hue)
   const dispatch = useDispatch()
 
   const [dragContainer, onMouseDown] = useDragMapped(({ x, y }) => {
     dispatch(
       setBaseParams({
-        saturation: x,
-        brightness: y,
+        splitIndex,
+        params: {
+          saturation: x,
+          brightness: y,
+        },
       })
     )
   })

@@ -5,10 +5,14 @@ import MidiOverlay_xy from '../base/MidiOverlay_xy'
 import styled from 'styled-components'
 import Randomizer from './Randomizer'
 
-export default function ParamsControl() {
+interface Params {
+  splitIndex: number | null
+}
+
+export default function ParamsControl({ splitIndex }: Params) {
   return (
     <Root>
-      <HsvPad />
+      <HsvPad splitIndex={splitIndex} />
       <Sp />
       <MidiOverlay_xy
         actions={[
@@ -18,15 +22,15 @@ export default function ParamsControl() {
           { type: 'setBaseParam', paramKey: 'height' },
         ]}
       >
-        <XYpad />
+        <XYpad splitIndex={splitIndex} />
       </MidiOverlay_xy>
       <Sp />
-      <Randomizer />
+      <Randomizer splitIndex={splitIndex} />
       <Sp />
-      <ParamSlider param={'black'} />
-      <ParamSlider param={'strobe'} />
-      <ParamSlider param={'epicness'} />
-      <ParamSlider param={'randomize'} />
+      <ParamSlider param={'black'} splitIndex={splitIndex} />
+      <ParamSlider param={'strobe'} splitIndex={splitIndex} />
+      <ParamSlider param={'epicness'} splitIndex={splitIndex} />
+      <ParamSlider param={'randomize'} splitIndex={splitIndex} />
     </Root>
   )
 }

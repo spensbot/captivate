@@ -7,9 +7,11 @@ import { useDispatch } from 'react-redux'
 import { setRandomizer } from '../redux/controlSlice'
 import Slider from '../base/Slider'
 
-interface Props {}
+interface Props {
+  splitIndex: number | null
+}
 
-export default function Randomizer({}: Props) {
+export default function Randomizer({ splitIndex }: Props) {
   const triggerPeriod = useActiveLightScene(
     (scene) => scene.randomizer.triggerPeriod
   )

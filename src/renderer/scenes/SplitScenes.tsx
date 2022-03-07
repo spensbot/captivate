@@ -50,7 +50,7 @@ function SplitScene({ index }: Props) {
   return (
     <Root2>
       <GroupSelection splitIndex={index} />
-      <ParamsControl />
+      <ParamsControl splitIndex={index} />
     </Root2>
   )
 }

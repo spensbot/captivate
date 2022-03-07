@@ -5,22 +5,32 @@ import XYCursor from './XYCursor'
 import XYWindow from './XYWindow'
 import styled from 'styled-components'
 
-export default function XYpad() {
+interface Props {
+  splitIndex: number | null
+}
+
+export default function XYpad({ splitIndex }: Props) {
   const dispatch = useDispatch()
 
   const [dragContainer, onMouseDown] = useDragMapped(({ x, y, dx, dy }, e) => {
     if (e.metaKey) {
       dispatch(
         incrementBaseParams({
-          width: dx / 2,
-          height: dy / 2,
+          splitIndex,
+          params: {
+            width: dx / 2,
+            height: dy / 2,
+          },
         })
       )
     } else {
       dispatch(
         setBaseParams({
-          x: x,
-          y: y,
+          splitIndex,
+          params: {
+            x: x,
+            y: y,
+          },
         })
       )
     }

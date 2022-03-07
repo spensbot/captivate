@@ -9,17 +9,25 @@ import { SliderMidiOverlay } from '../base/MidiOverlay'
 
 interface Props {
   param: Param
+  splitIndex: number | null
 }
 
-export default function ParamSlider({ param }: Props) {
+export default function ParamSlider({ param, splitIndex }: Props) {
   const radius = 0.4
 
-  const value = useActiveLightScene((scene) => scene.baseParams[param])
+  const value = useActiveLightScene((scene) =>
+    splitIndex === null
+      ? scene.baseParams[param]
+      : scene.splitScenes[splitIndex].baseParams[param]
+  )
   const dispatch = useDispatch()
   const onChange = (newVal: number) => {
     dispatch(
       setBaseParams({
-        [param]: newVal,
+        splitIndex,
+        params: {
+          [param]: newVal,
+        },
       })
     )
   }

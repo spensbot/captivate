@@ -37,7 +37,7 @@ export default function Scenes() {
           >
             <Modulators />
             <Sp />
-            <ParamsControl />
+            <ParamsControl splitIndex={null} />
             <Sp />
             <SplitScenes />
           </div>
