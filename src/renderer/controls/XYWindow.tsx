@@ -1,10 +1,15 @@
-import { useRealtimeSelector } from '../redux/realtimeStore'
+import { useOutputParam } from '../redux/realtimeStore'
 import Window2D from '../base/Window2D'
 
-export default function XYWindow() {
-  const { height, width, x, y } = useRealtimeSelector(
-    (state) => state.outputParams
-  )
+interface Props {
+  splitIndex: number | null
+}
+
+export default function XYWindow({ splitIndex }: Props) {
+  const x = useOutputParam('x', splitIndex)
+  const y = useOutputParam('y', splitIndex)
+  const width = useOutputParam('width', splitIndex)
+  const height = useOutputParam('height', splitIndex)
 
   return (
     <Window2D

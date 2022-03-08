@@ -184,5 +184,10 @@ function getNextRealtimeState(
     time: nextTimeState,
     randomizer: newRandomizerState,
     dmxOut: calculateDmx(controlState, outputParams, newRandomizerState),
+    splitScenes: scene.splitScenes.map((split) => {
+      return {
+        outputParams: { ...split.baseParams },
+      }
+    }),
   }
 }

@@ -6,24 +6,31 @@ import {
   ReactReduxContextValue,
 } from 'react-redux'
 import React from 'react'
-import { initTimeState } from '../../shared/TimeState'
-import { initParams } from '../../shared/params'
-import { initRandomizerState } from '../../shared/randomizer'
+import { initTimeState, TimeState } from '../../shared/TimeState'
+import { initParams, Param, Params } from '../../shared/params'
+import { initRandomizerState, RandomizerState } from '../../shared/randomizer'
 
 function initDmxOut(): number[] {
   return Array(512).fill(0)
 }
 
-export function initRealtimeState() {
+export interface RealtimeState {
+  outputParams: Params
+  time: TimeState
+  randomizer: RandomizerState
+  dmxOut: number[]
+  splitScenes: { outputParams: Params }[]
+}
+
+export function initRealtimeState(): RealtimeState {
   return {
     outputParams: initParams(),
     time: initTimeState(),
     randomizer: initRandomizerState(),
     dmxOut: initDmxOut(),
+    splitScenes: [],
   }
 }
-
-export type RealtimeState = ReturnType<typeof initRealtimeState>
 
 export function update(newRealtimeStore: RealtimeState) {
   return {
@@ -60,3 +67,32 @@ export type RealtimeDispatch = typeof realtimeStore.dispatch
 export const useRealtimeSelector: TypedUseSelectorHook<RealtimeState> =
   createSelectorHook(realtimeContext)
 export const useRealtimeDispatch = createDispatchHook(realtimeContext)
+
+const initParamsCache = initParams()
+
+export function useOutputParam(
+  param: Param,
+  splitIndex: number | null
+): number {
+  const outputParam = useRealtimeSelector((state) => {
+    return splitIndex === null
+      ? state.outputParams[param]
+      : state.splitScenes[splitIndex]?.outputParams[param]
+  })
+  if (outputParam === undefined) {
+    return initParamsCache[param]
+  }
+  return outputParam
+}
+
+export function useOutputParams(splitIndex: number | null): Params {
+  const params = useRealtimeSelector((state) => {
+    return splitIndex === null
+      ? state.outputParams
+      : state.splitScenes[splitIndex]?.outputParams
+  })
+  if (params === undefined) {
+    return initParams()
+  }
+  return params
+}

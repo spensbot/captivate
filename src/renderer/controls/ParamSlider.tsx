@@ -45,7 +45,12 @@ export default function ParamSlider({ param, splitIndex }: Props) {
     >
       <div style={{ flex: '1 0 10rem' }}>
         <SliderBase orientation="vertical" radius={radius} onChange={onChange}>
-          <ParamCursor orientation="vertical" param={param} radius={radius} />
+          <ParamCursor
+            orientation="vertical"
+            param={param}
+            radius={radius}
+            splitIndex={splitIndex}
+          />
           <SliderCursor
             orientation="vertical"
             value={value}

@@ -1,11 +1,14 @@
-import { useRealtimeSelector } from '../redux/realtimeStore'
+import { useOutputParam } from '../redux/realtimeStore'
 import { useActiveLightScene } from '../redux/store'
 import Cursor from '../base/Cursor'
 
-export default function XYCursor() {
-  const outputParams = useRealtimeSelector((state) => state.outputParams)
-  const xOut = outputParams.x
-  const yOut = outputParams.y
+interface Props {
+  splitIndex: number | null
+}
+
+export default function XYCursor({ splitIndex }: Props) {
+  const xOut = useOutputParam('x', splitIndex)
+  const yOut = useOutputParam('y', splitIndex)
 
   const baseParams = useActiveLightScene(
     (activeScene) => activeScene.baseParams

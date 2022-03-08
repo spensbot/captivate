@@ -1,17 +1,15 @@
-import { useRealtimeSelector } from '../redux/realtimeStore'
-import { useControlSelector } from '../redux/store'
+import { useOutputParam } from '../redux/realtimeStore'
 import Cursor from '../base/Cursor'
 
-export default function SVCursor() {
-  const outputParams = useRealtimeSelector((state) => state.outputParams)
-  let xOut = outputParams.saturation
-  let yOut = outputParams.brightness
+interface Props {
+  splitIndex: number | null
+}
 
-  // const baseParams = useControlSelector(
-  //   (state) => state.byId[state.active].baseParams
-  // )
-  // const x = baseParams.saturation
-  // const y = baseParams.brightness
+export default function SVCursor({ splitIndex }: Props) {
+  const saturation = useOutputParam('saturation', splitIndex)
+  const brightness = useOutputParam('brightness', splitIndex)
+  let xOut = saturation
+  let yOut = brightness
 
   return <Cursor x={xOut} y={yOut} color="#fff" withHorizontal withVertical />
 }

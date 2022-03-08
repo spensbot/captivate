@@ -44,8 +44,8 @@ export default function XYpad({ splitIndex }: Props) {
     <Root ref={dragContainer} onMouseDown={onMouseDown}>
       <div style={styles.white}>
         <div style={styles.black}></div>
-        <XYCursor />
-        <XYWindow />
+        <XYCursor splitIndex={splitIndex} />
+        <XYWindow splitIndex={splitIndex} />
       </div>
     </Root>
   )

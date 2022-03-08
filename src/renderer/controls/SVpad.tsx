@@ -3,14 +3,14 @@ import useDragMapped from '../hooks/useDragMapped'
 import { useDispatch } from 'react-redux'
 import { setBaseParams } from '../redux/controlSlice'
 import SVCursor from './SVCursor'
-import { useRealtimeSelector } from '../redux/realtimeStore'
+import { useOutputParam } from '../redux/realtimeStore'
 
 interface Props {
   splitIndex: number | null
 }
 
 export default function SVpad({ splitIndex }: Props) {
-  const hue = useRealtimeSelector((state) => state.outputParams.hue)
+  const hue = useOutputParam('hue', splitIndex)
   const dispatch = useDispatch()
 
   const [dragContainer, onMouseDown] = useDragMapped(({ x, y }) => {
@@ -55,7 +55,7 @@ export default function SVpad({ splitIndex }: Props) {
     <div style={styles.root} ref={dragContainer} onMouseDown={onMouseDown}>
       <div style={styles.white}>
         <div style={styles.black}></div>
-        <SVCursor />
+        <SVCursor splitIndex={splitIndex} />
       </div>
     </div>
   )
