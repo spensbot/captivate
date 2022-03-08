@@ -5,11 +5,13 @@ import {
   DMX_MAX_VALUE,
   FixtureChannel,
   DMX_DEFAULT_VALUE,
+  Fixture,
 } from '../../shared/dmxFixtures'
 import { Params } from '../../shared/params'
 import { lerp } from '../../shared/util'
 import { Point, RandomizerState } from '../../shared/randomizer'
 import { CleanReduxState } from '../../renderer/redux/store'
+import { LightScene_t } from 'shared/Scenes'
 
 function getWindowMultiplier2D(
   fixtureWindow: Window2D_t,
@@ -70,53 +72,93 @@ function applyRandomization(
   randomizationAmount: number
 ) {
   return lerp(value, value * point.level, randomizationAmount)
-  // return value
+}
+
+function getSplitSceneGroups(activeScene: LightScene_t) {
+  return activeScene.splitScenes.reduce<Set<string>>((accum, splitScene) => {
+    for (const group of splitScene.groups) {
+      accum.add(group)
+    }
+    return accum
+  }, new Set())
 }
 
 export function calculateDmx(
-  _s: CleanReduxState,
+  state: CleanReduxState,
   outputParams: Params,
-  randomizerState: RandomizerState
+  randomizerState: RandomizerState,
+  splitScenes: { outputParams: Params }[]
 ): number[] {
-  const universe = _s.dmx.universe
-  const fixtureTypes = _s.dmx.fixtureTypesByID
+  const universe = state.dmx.universe
+  const fixtureTypes = state.dmx.fixtureTypesByID
 
   let channels = Array(512).fill(0)
 
-  if (!_s.gui.blackout) {
-    const colors = getColors(outputParams)
-    const movingWindow = getMovingWindow(outputParams)
+  if (!state.gui.blackout) {
+    const scenes = state.control.light
+    const activeScene = scenes.byId[scenes.active]
 
-    universe.forEach((fixture, i) => {
-      const fixtureType = fixtureTypes[fixture.type]
+    const applyFixtures = (fixtures: Fixture[], _outputParams: Params) => {
+      const colors = getColors(_outputParams)
+      const movingWindow = getMovingWindow(_outputParams)
 
-      fixtureType.channels.forEach((channel, offset) => {
-        const outputChannel = fixture.ch + offset
-        const overwrite = _s.mixer.overwrites[outputChannel - 1]
-        if (overwrite !== undefined) {
-          channels[outputChannel - 1] = overwrite * DMX_MAX_VALUE
-        } else if (outputParams.epicness >= fixtureType.epicness) {
-          let dmxOut = getDmxValue(
-            channel,
-            outputParams,
-            colors,
-            fixture.window,
-            movingWindow
-          )
-          if (channel.type === 'master') {
-            dmxOut =
-              applyRandomization(
-                dmxOut,
-                randomizerState[i],
-                outputParams.randomize
-              ) * _s.control.master
+      fixtures.forEach((fixture, i) => {
+        const fixtureType = fixtureTypes[fixture.type]
+
+        fixtureType.channels.forEach((channel, offset) => {
+          const outputChannel = fixture.ch + offset
+          const overwrite = state.mixer.overwrites[outputChannel - 1]
+          if (overwrite !== undefined) {
+            channels[outputChannel - 1] = overwrite * DMX_MAX_VALUE
+          } else if (_outputParams.epicness >= fixtureType.epicness) {
+            let dmxOut = getDmxValue(
+              channel,
+              _outputParams,
+              colors,
+              fixture.window,
+              movingWindow
+            )
+            if (channel.type === 'master') {
+              dmxOut =
+                applyRandomization(
+                  dmxOut,
+                  randomizerState[i],
+                  _outputParams.randomize
+                ) * state.control.master
+            }
+            channels[outputChannel - 1] = dmxOut
+          } else {
+            channels[outputChannel - 1] = DMX_DEFAULT_VALUE
           }
-          channels[outputChannel - 1] = dmxOut
-        } else {
-          channels[outputChannel - 1] = DMX_DEFAULT_VALUE
-        }
+        })
       })
+    }
+
+    const splitSceneGroups = getSplitSceneGroups(activeScene)
+
+    const mainSceneFixtures = universe.filter((fixture) => {
+      for (const group of fixture.groups) {
+        if (splitSceneGroups.has(group)) return false
+      }
+      return true
     })
+
+    applyFixtures(mainSceneFixtures, outputParams)
+
+    splitScenes.forEach((split, i) => {
+      const splitGroups = activeScene.splitScenes[i]?.groups
+      if (splitGroups === undefined) return
+      const splitGroupSet = new Set(splitGroups)
+      const splitSceneFixtures = universe.filter((fixture) => {
+        for (const group of fixture.groups) {
+          if (splitGroupSet.has(group)) return true
+        }
+        return false
+      })
+      applyFixtures(splitSceneFixtures, split.outputParams)
+    })
+
+    console.log(`mainSceneFixtures.length = `, mainSceneFixtures.length)
   }
 
   return channels

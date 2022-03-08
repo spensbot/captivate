@@ -21,7 +21,6 @@ function fixState(state: CleanReduxState): CleanReduxState {
         modulator.splitModulations = []
     })
   })
-  state.dmx.groups = []
   return state
 }
 
