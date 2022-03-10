@@ -1,4 +1,19 @@
-export function initParams() {
+export type Param =
+  | 'hue'
+  | 'saturation'
+  | 'brightness'
+  | 'x'
+  | 'width'
+  | 'y'
+  | 'height'
+  | 'black'
+  | 'epicness'
+  | 'strobe'
+  | 'randomize'
+  | 'xAxis'
+  | 'yAxis'
+export type Params = { [key in Param]: number }
+export function initParams(): Params {
   return {
     hue: 0.5,
     saturation: 0.5,
@@ -11,10 +26,10 @@ export function initParams() {
     epicness: 0.5,
     strobe: 0.0,
     randomize: 0.0,
+    xAxis: 0.5,
+    yAxis: 0.5,
   }
 }
-export type Params = ReturnType<typeof initParams>
-export type Param = keyof Params
 
 export const paramsList: Param[] = [
   'hue',
@@ -28,6 +43,8 @@ export const paramsList: Param[] = [
   'epicness',
   'strobe',
   'randomize',
+  'xAxis',
+  'yAxis',
 ]
 
 export type Modulation = Partial<Params>

@@ -4,6 +4,7 @@ import XYpad from './XYpad'
 import MidiOverlay_xy from '../base/MidiOverlay_xy'
 import styled from 'styled-components'
 import Randomizer from './Randomizer'
+import XYAxispad from './XYAxisPad'
 
 interface Params {
   splitIndex: number | null
@@ -24,6 +25,8 @@ export default function ParamsControl({ splitIndex }: Params) {
       >
         <XYpad splitIndex={splitIndex} />
       </MidiOverlay_xy>
+      <Sp />
+      <XYAxispad splitIndex={splitIndex} />
       <Sp />
       <Randomizer splitIndex={splitIndex} />
       <Sp />

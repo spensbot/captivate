@@ -55,7 +55,16 @@ function getDmxValue(
         ? fixtureChannel.default_strobe
         : fixtureChannel.default_solid
     case 'axis':
-      return 0
+      const { min, max, dir } = fixtureChannel
+      const range = max - min
+      if (dir === 'x') {
+        return min + params.xAxis * range
+      } else if (dir === 'y') {
+        return min + params.yAxis * range
+      } else {
+        console.error('Unhandled axis dir')
+        return 0
+      }
     case 'colorMap':
       return 0
     default:
