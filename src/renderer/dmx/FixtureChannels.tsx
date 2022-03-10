@@ -7,6 +7,8 @@ import {
   FixtureChannel,
   channelTypes,
   initFixtureChannel,
+  AxisDir,
+  axisDirList,
 } from '../../shared/dmxFixtures'
 import { colorList, Color } from '../../shared/dmxColors'
 import NumberField from '../base/NumberField'
@@ -208,7 +210,7 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
       <NumberField
         val={ch.default}
         label="Default"
-        min={1}
+        min={0}
         max={255}
         onChange={(newVal) =>
           updateChannel({
@@ -224,7 +226,7 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
         <NumberField
           val={ch.default_solid}
           label="Solid"
-          min={1}
+          min={0}
           max={255}
           onChange={(newVal) =>
             updateChannel({
@@ -237,7 +239,7 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
         <NumberField
           val={ch.default_strobe}
           label="Strobe"
-          min={1}
+          min={0}
           max={255}
           onChange={(newVal) =>
             updateChannel({
@@ -248,6 +250,50 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
         />
       </>
     )
+  } else if (ch.type === 'axis') {
+    return (
+      <>
+        <Select
+          label="dir"
+          val={ch.dir}
+          items={axisDirList}
+          onChange={(newAxisDir) =>
+            updateChannel({
+              ...ch,
+              dir: newAxisDir as AxisDir,
+            })
+          }
+        />
+        <Sp2 />
+        <NumberField
+          val={ch.min}
+          label="min"
+          min={0}
+          max={255}
+          onChange={(newVal) =>
+            updateChannel({
+              ...ch,
+              min: newVal,
+            })
+          }
+        />
+        <Sp2 />
+        <NumberField
+          val={ch.max}
+          label="max"
+          min={0}
+          max={255}
+          onChange={(newVal) =>
+            updateChannel({
+              ...ch,
+              max: newVal,
+            })
+          }
+        />
+      </>
+    )
+  } else if (ch.type === 'colorMap') {
+    return <div>coming soon</div>
   } else {
     return null
   }

@@ -54,6 +54,10 @@ function getDmxValue(
       return params.strobe > 0.5
         ? fixtureChannel.default_strobe
         : fixtureChannel.default_solid
+    case 'axis':
+      return 0
+    case 'colorMap':
+      return 0
     default:
       return 0
   }

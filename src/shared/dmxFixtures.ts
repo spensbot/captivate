@@ -9,24 +9,8 @@ export const DMX_DEFAULT_VALUE = 0
 export type DmxChannel = number // 1 - 512
 export type DmxValue = number // 0 - 255
 
-export type ChannelType =
-  | 'color'
-  | 'master'
-  | 'strobe'
-  | 'speed'
-  | 'pos'
-  | 'width'
-  | 'other'
-
-export const channelTypes = [
-  'master',
-  'color',
-  'strobe',
-  'other',
-  // 'speed',
-  // 'pos',
-  // 'width',
-]
+export type AxisDir = 'x' | 'y'
+export const axisDirList = ['x', 'y']
 
 type ChannelMaster = {
   type: 'master'
@@ -48,11 +32,38 @@ type ChannelOther = {
   default: DmxValue
 }
 
+type ChannelAxis = {
+  type: 'axis'
+  dir: AxisDir
+  min: DmxValue
+  max: DmxValue
+}
+
+type ColorMap = { max: number; hue: number }[]
+
+type ChannelColorMap = {
+  type: 'colorMap'
+  colors: ColorMap
+}
+
 export type FixtureChannel =
   | ChannelMaster
   | ChannelColor
   | ChannelStrobe
+  | ChannelAxis
+  | ChannelColorMap
   | ChannelOther
+
+export type ChannelType = FixtureChannel['type']
+
+export const channelTypes: ChannelType[] = [
+  'master',
+  'color',
+  'strobe',
+  'axis',
+  'colorMap',
+  'other',
+]
 
 export function initFixtureChannel(
   type?: FixtureChannel['type']
@@ -72,6 +83,18 @@ export function initFixtureChannel(
       type: type,
       default_solid: 0,
       default_strobe: 255,
+    }
+  } else if (type === 'axis') {
+    return {
+      type: type,
+      dir: 'x',
+      min: 1,
+      max: 255,
+    }
+  } else if (type === 'colorMap') {
+    return {
+      type: type,
+      colors: [],
     }
   }
   return {
