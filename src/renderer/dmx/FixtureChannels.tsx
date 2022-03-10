@@ -16,10 +16,15 @@ import {
   editFixtureChannel,
   addFixtureChannel,
   removeFixtureChannel,
+  addColorMapColor,
+  setColorMapColor,
+  removeColorMapColor,
 } from '../redux/dmxSlice'
 import { IconButton } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import RemoveIcon from '@mui/icons-material/Remove'
+import Add from '@mui/icons-material/Add'
+import Remove from '@mui/icons-material/Remove'
 
 interface Props {
   fixtureID: string
@@ -293,7 +298,74 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
       </>
     )
   } else if (ch.type === 'colorMap') {
-    return <div>coming soon</div>
+    return (
+      <div>
+        {ch.colors.map((color, i) => {
+          return (
+            <div key={fixtureID + channelIndex + i}>
+              <NumberField
+                val={color.max}
+                label="max"
+                min={0}
+                max={255}
+                onChange={(newMax) =>
+                  dispatch(
+                    setColorMapColor({
+                      fixtureTypeId: fixtureID,
+                      channelIndex,
+                      colorIndex: i,
+                      newColor: { max: newMax, hue: color.hue },
+                    })
+                  )
+                }
+              />
+              <Sp2 />
+              <NumberField
+                val={color.hue}
+                label="hue"
+                min={0}
+                max={1}
+                onChange={(newHue) =>
+                  dispatch(
+                    setColorMapColor({
+                      fixtureTypeId: fixtureID,
+                      channelIndex,
+                      colorIndex: i,
+                      newColor: { max: color.max, hue: newHue },
+                    })
+                  )
+                }
+                numberType="float"
+              />
+            </div>
+          )
+        })}
+        <IconButton
+          onClick={() => {
+            dispatch(
+              removeColorMapColor({
+                fixtureTypeId: fixtureID,
+                channelIndex,
+              })
+            )
+          }}
+        >
+          <Remove />
+        </IconButton>
+        <IconButton
+          onClick={() =>
+            dispatch(
+              addColorMapColor({
+                fixtureTypeId: fixtureID,
+                channelIndex,
+              })
+            )
+          }
+        >
+          <Add />
+        </IconButton>
+      </div>
+    )
   } else {
     return null
   }

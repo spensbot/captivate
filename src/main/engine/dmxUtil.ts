@@ -66,7 +66,25 @@ function getDmxValue(
         return 0
       }
     case 'colorMap':
-      return 0
+      const _colors = fixtureChannel.colors
+      const firstColor = _colors[0]
+      const hue = params.hue
+      if (firstColor && params.saturation > 0.5) {
+        const closestColor = _colors.reduce((current, color) => {
+          const currentDif = Math.min(
+            Math.abs(current.hue - hue),
+            Math.abs(current.hue - (hue - 1))
+          )
+          const dif = Math.min(
+            Math.abs(color.hue - hue),
+            Math.abs(color.hue - (hue - 1))
+          )
+          return dif < currentDif ? color : current
+        }, firstColor)
+        return closestColor.max
+      } else {
+        return 0
+      }
     default:
       return 0
   }
@@ -170,8 +188,6 @@ export function calculateDmx(
       })
       applyFixtures(splitSceneFixtures, split.outputParams)
     })
-
-    console.log(`mainSceneFixtures.length = `, mainSceneFixtures.length)
   }
 
   return channels

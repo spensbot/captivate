@@ -39,11 +39,11 @@ type ChannelAxis = {
   max: DmxValue
 }
 
-type ColorMap = { max: number; hue: number }[]
+export type ColorMapColor = { max: number; hue: number }
 
 type ChannelColorMap = {
   type: 'colorMap'
-  colors: ColorMap
+  colors: ColorMapColor[]
 }
 
 export type FixtureChannel =

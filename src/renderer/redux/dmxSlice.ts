@@ -8,6 +8,7 @@ import {
   getTestUniverse,
   FixtureChannel,
   getSortedGroups,
+  ColorMapColor,
 } from '../../shared/dmxFixtures'
 import { clampNormalized } from '../../shared/util'
 
@@ -214,6 +215,63 @@ export const dmxSlice = createSlice({
       delete state.fixtureTypesByID[payload]
       state.activeFixtureType = null
     },
+    addColorMapColor: (
+      state,
+      {
+        payload: { fixtureTypeId, channelIndex },
+      }: PayloadAction<{ fixtureTypeId: string; channelIndex: number }>
+    ) => {
+      const activeFixtureType = state.fixtureTypesByID[fixtureTypeId]
+      const channel = activeFixtureType.channels[channelIndex]
+      if (channel.type === 'colorMap') {
+        const lastColorMax = channel.colors[channel.colors.length - 1]?.max
+        channel.colors.push({
+          max: lastColorMax ?? 0,
+          hue: 0,
+        })
+      } else {
+        console.error(
+          `Tried to addColorMapColor to non-coloMap channel: ${channelIndex}`
+        )
+      }
+    },
+    removeColorMapColor: (
+      state,
+      {
+        payload: { fixtureTypeId, channelIndex },
+      }: PayloadAction<{ fixtureTypeId: string; channelIndex: number }>
+    ) => {
+      const activeFixtureType = state.fixtureTypesByID[fixtureTypeId]
+      const channel = activeFixtureType.channels[channelIndex]
+      if (channel.type === 'colorMap') {
+        channel.colors.pop()
+      } else {
+        console.error(
+          `Tried to removeColorMapColor to non-colorMap channel: ${channelIndex}`
+        )
+      }
+    },
+    setColorMapColor: (
+      state,
+      {
+        payload: { fixtureTypeId, channelIndex, colorIndex, newColor },
+      }: PayloadAction<{
+        fixtureTypeId: string
+        channelIndex: number
+        colorIndex: number
+        newColor: ColorMapColor
+      }>
+    ) => {
+      const activeFixtureType = state.fixtureTypesByID[fixtureTypeId]
+      const channel = activeFixtureType.channels[channelIndex]
+      if (channel.type === 'colorMap') {
+        channel.colors[colorIndex] = newColor
+      } else {
+        console.error(
+          `Tried to setColorMapColor to non-colorMap channel: ${channelIndex}`
+        )
+      }
+    },
   },
 })
 
@@ -234,6 +292,9 @@ export const {
   editFixtureChannel,
   removeFixtureChannel,
   reorderFixtureChannel,
+  addColorMapColor,
+  removeColorMapColor,
+  setColorMapColor,
 } = dmxSlice.actions
 
 export default dmxSlice.reducer
