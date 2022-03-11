@@ -4,6 +4,11 @@ import { setBaseParams } from '../redux/controlSlice'
 import XYAxisCursor from './XYAxisCursor'
 import styled from 'styled-components'
 import { useBaseParam } from 'renderer/redux/store'
+import ParamXButton from './ParamXButton'
+import ParamAddButton from './ParamAddButton'
+import { Param } from 'shared/params'
+
+const params: readonly Param[] = ['xAxis', 'yAxis', 'xMirror']
 
 interface Props {
   splitIndex: number | null
@@ -24,7 +29,19 @@ export default function XYAxispad({ splitIndex }: Props) {
     )
   })
 
+  const xAxis = useBaseParam('xAxis', splitIndex)
   const xMirror = useBaseParam('xMirror', splitIndex)
+  const yAxis = useBaseParam('yAxis', splitIndex)
+
+  if (xAxis === undefined || xMirror === undefined || yAxis === undefined) {
+    return (
+      <ParamAddButton
+        title="X/Y Axis"
+        splitIndex={splitIndex}
+        params={params}
+      />
+    )
+  }
 
   return (
     <Root ref={dragContainer} onMouseDown={onMouseDown}>
@@ -44,6 +61,7 @@ export default function XYAxispad({ splitIndex }: Props) {
       >
         mirror
       </MirroredButton>
+      <ParamXButton splitIndex={splitIndex} params={params} />
     </Root>
   )
 }

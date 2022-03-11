@@ -1,15 +1,21 @@
 import styled from 'styled-components'
 import ADSRWrapper from './ADSRWrapper'
-import { useActiveLightScene } from '../redux/store'
+import { useActiveLightScene, useBaseParam } from '../redux/store'
 import TriggerDensity from './TriggerDensity'
 import DraggableNumber from '../base/DraggableNumber'
 import { useDispatch } from 'react-redux'
 import { setRandomizer } from '../redux/controlSlice'
 import Slider from '../base/Slider'
+import ParamXButton from './ParamXButton'
+import ParamAddButton from './ParamAddButton'
+import { Param } from 'shared/params'
+import ParamSlider from './ParamSlider'
 
 interface Props {
   splitIndex: number | null
 }
+
+const params: readonly Param[] = ['randomize']
 
 export default function Randomizer({ splitIndex }: Props) {
   const triggerPeriod = useActiveLightScene(
@@ -19,51 +25,67 @@ export default function Randomizer({ splitIndex }: Props) {
     (scene) => scene.randomizer.triggerDensity
   )
   const dispatch = useDispatch()
+  const randomize = useBaseParam('randomize', splitIndex)
+
+  if (randomize === undefined) {
+    return (
+      <ParamAddButton
+        title="Randomizer"
+        splitIndex={splitIndex}
+        params={params}
+      />
+    )
+  }
 
   return (
-    <Root>
-      <ADSRWrapper />
-      <TriggerDensity />
-      <Row>
-        <div
-          style={{
-            flex: '1 0 0',
-            marginRight: '0.3rem',
-          }}
-        >
-          <Slider
-            value={triggerDensity}
-            orientation="horizontal"
+    <>
+      <Root>
+        <ADSRWrapper />
+        <TriggerDensity />
+        <Row>
+          <div
+            style={{
+              flex: '1 0 0',
+              marginRight: '0.3rem',
+            }}
+          >
+            <Slider
+              value={triggerDensity}
+              orientation="horizontal"
+              onChange={(newVal) =>
+                dispatch(
+                  setRandomizer({
+                    key: 'triggerDensity',
+                    value: newVal,
+                  })
+                )
+              }
+            />
+          </div>
+          <DraggableNumber
+            value={triggerPeriod}
+            min={0.05}
+            max={4}
             onChange={(newVal) =>
               dispatch(
                 setRandomizer({
-                  key: 'triggerDensity',
+                  key: 'triggerPeriod',
                   value: newVal,
                 })
               )
             }
+            style={{ height: '0.8rem' }}
           />
-        </div>
-        <DraggableNumber
-          value={triggerPeriod}
-          min={0.05}
-          max={4}
-          onChange={(newVal) =>
-            dispatch(
-              setRandomizer({
-                key: 'triggerPeriod',
-                value: newVal,
-              })
-            )
-          }
-          style={{ height: '0.8rem' }}
-        />
-      </Row>
-    </Root>
+        </Row>
+        <ParamXButton splitIndex={splitIndex} params={params} />
+      </Root>
+      <ParamSlider param={'randomize'} splitIndex={splitIndex} />
+    </>
   )
 }
 
 const Root = styled.div`
+  position: relative;
   width: fit-content;
   border: 1px solid ${(props) => props.theme.colors.divider};
   display: flex;

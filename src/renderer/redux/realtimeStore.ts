@@ -7,7 +7,7 @@ import {
 } from 'react-redux'
 import React from 'react'
 import { initTimeState, TimeState } from '../../shared/TimeState'
-import { initParams, Param, Params } from '../../shared/params'
+import { defaultOutputParams, Param, Params } from '../../shared/params'
 import { initRandomizerState, RandomizerState } from '../../shared/randomizer'
 
 function initDmxOut(): number[] {
@@ -24,7 +24,7 @@ export interface RealtimeState {
 
 export function initRealtimeState(): RealtimeState {
   return {
-    outputParams: initParams(),
+    outputParams: defaultOutputParams(),
     time: initTimeState(),
     randomizer: initRandomizerState(),
     dmxOut: initDmxOut(),
@@ -68,7 +68,7 @@ export const useRealtimeSelector: TypedUseSelectorHook<RealtimeState> =
   createSelectorHook(realtimeContext)
 export const useRealtimeDispatch = createDispatchHook(realtimeContext)
 
-const initParamsCache = initParams()
+const initParamsCache = defaultOutputParams()
 
 export function useOutputParam(
   param: Param,
@@ -92,7 +92,7 @@ export function useOutputParams(splitIndex: number | null): Params {
       : state.splitScenes[splitIndex]?.outputParams
   })
   if (params === undefined) {
-    return initParams()
+    return defaultOutputParams()
   }
   return params
 }

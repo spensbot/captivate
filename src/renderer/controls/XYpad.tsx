@@ -4,10 +4,16 @@ import { setBaseParams, incrementBaseParams } from '../redux/controlSlice'
 import XYCursor from './XYCursor'
 import XYWindow from './XYWindow'
 import styled from 'styled-components'
+import ParamXButton from './ParamXButton'
+import { useBaseParam } from 'renderer/redux/store'
+import ParamAddButton from './ParamAddButton'
+import { Param } from 'shared/params'
 
 interface Props {
   splitIndex: number | null
 }
+
+const params: readonly Param[] = ['x', 'y', 'width', 'height']
 
 export default function XYpad({ splitIndex }: Props) {
   const dispatch = useDispatch()
@@ -36,17 +42,31 @@ export default function XYpad({ splitIndex }: Props) {
     }
   })
 
-  const styles: { [key: string]: React.CSSProperties } = {
-    root: {},
+  const x = useBaseParam('x', splitIndex)
+  const y = useBaseParam('y', splitIndex)
+  const width = useBaseParam('width', splitIndex)
+  const height = useBaseParam('height', splitIndex)
+
+  if (
+    x === undefined ||
+    y === undefined ||
+    width === undefined ||
+    height === undefined
+  ) {
+    return (
+      <ParamAddButton
+        title="Position Controls"
+        splitIndex={splitIndex}
+        params={params}
+      />
+    )
   }
 
   return (
     <Root ref={dragContainer} onMouseDown={onMouseDown}>
-      <div style={styles.white}>
-        <div style={styles.black}></div>
-        <XYCursor splitIndex={splitIndex} />
-        <XYWindow splitIndex={splitIndex} />
-      </div>
+      <XYCursor splitIndex={splitIndex} />
+      <XYWindow splitIndex={splitIndex} />
+      <ParamXButton splitIndex={splitIndex} params={params} />
     </Root>
   )
 }

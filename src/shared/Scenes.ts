@@ -1,4 +1,4 @@
-import { Params, initParams } from './params'
+import { Params, initBaseParams } from './params'
 import { Modulator, initModulator } from './modulation'
 import { RandomizerOptions, initRandomizerOptions } from './randomizer'
 import { nanoid } from 'nanoid'
@@ -20,18 +20,18 @@ interface Scene_base {
 }
 
 export interface SplitScene_t {
-  baseParams: Params
+  baseParams: Partial<Params>
   groups: string[]
 }
 export function initSplitScene(): SplitScene_t {
   return {
-    baseParams: initParams(),
+    baseParams: initBaseParams(),
     groups: [],
   }
 }
 export interface LightScene_t extends Scene_base {
   modulators: Modulator[]
-  baseParams: Params
+  baseParams: Partial<Params>
   randomizer: RandomizerOptions
   splitScenes: SplitScene_t[]
 }
@@ -42,7 +42,7 @@ export function initLightScene(): LightScene_t {
     bombacity: 0,
     autoEnabled: true,
     modulators: [initModulator()],
-    baseParams: initParams(),
+    baseParams: initBaseParams(),
     randomizer: initRandomizerOptions(),
     splitScenes: [],
   }

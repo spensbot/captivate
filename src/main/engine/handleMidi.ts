@@ -145,7 +145,10 @@ export function handleMessage(
         } else if (action.type === 'setBaseParam') {
           dispatch(
             setBaseParams({
-              [action.paramKey]: newVal,
+              splitIndex: null,
+              params: {
+                [action.paramKey]: newVal,
+              },
             })
           )
         } else if (action.type === 'setBpm') {

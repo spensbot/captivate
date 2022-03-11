@@ -19,7 +19,7 @@ import {
   handleBadVisualScene,
   handleBadScene,
 } from '../../shared/Scenes'
-import { Param } from '../../shared/params'
+import { Param, Params } from '../../shared/params'
 
 export interface UndoActionTypes {
   undo: string
@@ -191,7 +191,10 @@ export function useDeviceSelector<T>(getVal: (midi: DeviceState) => T) {
   return useTypedSelector((state) => getVal(state.control.present.device))
 }
 
-export function useBaseParam(param: Param, splitIndex: number | null): number {
+export function useBaseParam(
+  param: Param,
+  splitIndex: number | null
+): number | undefined {
   const outputParam = useActiveLightScene((state) => {
     return splitIndex === null
       ? state.baseParams[param]

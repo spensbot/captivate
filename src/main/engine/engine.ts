@@ -19,6 +19,7 @@ import { calculateDmx } from './dmxUtil'
 import { handleAutoScene } from '../../shared/autoScene'
 import { setActiveScene } from '../../renderer/redux/controlSlice'
 import TapTempoEngine from './TapTempoEngine'
+import { mapUndefinedParamsToDefault } from '../../shared/params'
 
 let _nodeLink = new NodeLink()
 let _ipcCallbacks: IPC_Callbacks | null = null
@@ -181,7 +182,7 @@ function getNextRealtimeState(
 
   const splitScenes = scene.splitScenes.map((split) => {
     return {
-      outputParams: { ...split.baseParams },
+      outputParams: mapUndefinedParamsToDefault(split.baseParams),
     }
   })
 

@@ -33,13 +33,11 @@ export default function ParamsControl({ splitIndex }: Params) {
       <ParamSlider param={'black'} splitIndex={splitIndex} />
       <ParamSlider param={'strobe'} splitIndex={splitIndex} />
       <ParamSlider param={'epicness'} splitIndex={splitIndex} />
-      <ParamSlider param={'randomize'} splitIndex={splitIndex} />
     </Root>
   )
 }
 
 const Root = styled.div`
-  /* flex: 0 0 auto; */
   display: flex;
   flex-direction: row;
 `

@@ -58,6 +58,5 @@ function SplitScene({ index }: Props) {
 const Root2 = styled.div`
   border-top: 1px solid ${(props) => props.theme.colors.divider};
   margin-bottom: 1rem;
-  padding: 1rem;
   background-color: ${(props) => props.theme.colors.bg.darker};
 `
