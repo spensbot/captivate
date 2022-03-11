@@ -40,9 +40,12 @@ export default function useDragMapped(
   }
 
   const onMouseDown: MouseEventHandler = (e: React.MouseEvent) => {
-    e.preventDefault()
-    update(e)
-    startListening()
+    console.log('onMouseDown', e)
+    if (!e.defaultPrevented) {
+      e.preventDefault()
+      update(e)
+      startListening()
+    }
   }
 
   const update = (e: React.MouseEvent) => {

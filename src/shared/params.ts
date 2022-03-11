@@ -12,6 +12,8 @@ export type Param =
   | 'randomize'
   | 'xAxis'
   | 'yAxis'
+  | 'xMirror'
+
 export type Params = { [key in Param]: number }
 export function initParams(): Params {
   return {
@@ -22,12 +24,13 @@ export function initParams(): Params {
     width: 0.5,
     y: 0.5,
     height: 1.0,
-    black: 0.5,
-    epicness: 0.5,
+    black: 0.0,
+    epicness: 1.0,
     strobe: 0.0,
     randomize: 0.0,
     xAxis: 0.5,
     yAxis: 0.5,
+    xMirror: 0.0,
   }
 }
 
@@ -45,6 +48,7 @@ export const paramsList: Param[] = [
   'randomize',
   'xAxis',
   'yAxis',
+  'xMirror',
 ]
 
 export type Modulation = Partial<Params>

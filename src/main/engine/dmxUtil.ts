@@ -1,118 +1,18 @@
-import { Colors, getColors } from '../../shared/dmxColors'
-import { Window, Window2D_t } from '../../types/baseTypes'
+import { getColors } from '../../shared/dmxColors'
 import {
-  DmxValue,
   DMX_MAX_VALUE,
-  FixtureChannel,
   DMX_DEFAULT_VALUE,
   Fixture,
 } from '../../shared/dmxFixtures'
 import { Params } from '../../shared/params'
-import { lerp } from '../../shared/util'
-import { Point, RandomizerState } from '../../shared/randomizer'
+import { RandomizerState } from '../../shared/randomizer'
 import { CleanReduxState } from '../../renderer/redux/store'
-import { LightScene_t } from 'shared/Scenes'
-
-function getWindowMultiplier2D(
-  fixtureWindow: Window2D_t,
-  movingWindow: Window2D_t
-) {
-  return (
-    getWindowMultiplier(fixtureWindow.x, movingWindow.x) *
-    getWindowMultiplier(fixtureWindow.y, movingWindow.y)
-  )
-}
-
-function getWindowMultiplier(fixtureWindow?: Window, movingWindow?: Window) {
-  if (fixtureWindow && movingWindow) {
-    const distanceBetween = Math.abs(fixtureWindow.pos - movingWindow.pos) / 2
-    const reach = fixtureWindow.width / 2 + movingWindow.width / 2
-    return distanceBetween > reach ? 0.0 : 1.0 - distanceBetween / reach
-  }
-  return 1.0 // Don't affect light values if the moving window or fixture position haven't been assigned.
-}
-
-function getDmxValue(
-  fixtureChannel: FixtureChannel,
-  params: Params,
-  colors: Colors,
-  fixtureWindow: Window2D_t,
-  movingWindow: Window2D_t
-): DmxValue {
-  switch (fixtureChannel.type) {
-    case 'master':
-      return (
-        params.brightness *
-        DMX_MAX_VALUE *
-        getWindowMultiplier2D(fixtureWindow, movingWindow)
-      )
-    case 'other':
-      return fixtureChannel.default
-    case 'color':
-      return colors[fixtureChannel.color] * DMX_MAX_VALUE
-    case 'strobe':
-      return params.strobe > 0.5
-        ? fixtureChannel.default_strobe
-        : fixtureChannel.default_solid
-    case 'axis':
-      const { min, max, dir } = fixtureChannel
-      const range = max - min
-      if (dir === 'x') {
-        return min + params.xAxis * range
-      } else if (dir === 'y') {
-        return min + params.yAxis * range
-      } else {
-        console.error('Unhandled axis dir')
-        return 0
-      }
-    case 'colorMap':
-      const _colors = fixtureChannel.colors
-      const firstColor = _colors[0]
-      const hue = params.hue
-      if (firstColor && params.saturation > 0.5) {
-        const closestColor = _colors.reduce((current, color) => {
-          const currentDif = Math.min(
-            Math.abs(current.hue - hue),
-            Math.abs(current.hue - (hue - 1))
-          )
-          const dif = Math.min(
-            Math.abs(color.hue - hue),
-            Math.abs(color.hue - (hue - 1))
-          )
-          return dif < currentDif ? color : current
-        }, firstColor)
-        return closestColor.max
-      } else {
-        return 0
-      }
-    default:
-      return 0
-  }
-}
-
-function getMovingWindow(params: Params): Window2D_t {
-  return {
-    x: { pos: params.x, width: params.width },
-    y: { pos: params.y, width: params.height },
-  }
-}
-
-function applyRandomization(
-  value: number,
-  point: Point,
-  randomizationAmount: number
-) {
-  return lerp(value, value * point.level, randomizationAmount)
-}
-
-function getSplitSceneGroups(activeScene: LightScene_t) {
-  return activeScene.splitScenes.reduce<Set<string>>((accum, splitScene) => {
-    for (const group of splitScene.groups) {
-      accum.add(group)
-    }
-    return accum
-  }, new Set())
-}
+import {
+  getMovingWindow,
+  getDmxValue,
+  applyRandomization,
+  getSplitSceneGroups,
+} from '../../shared/dmxUtil'
 
 export function calculateDmx(
   state: CleanReduxState,
@@ -146,7 +46,7 @@ export function calculateDmx(
               channel,
               _outputParams,
               colors,
-              fixture.window,
+              fixture,
               movingWindow
             )
             if (channel.type === 'master') {

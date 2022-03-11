@@ -19,6 +19,7 @@ import {
   handleBadVisualScene,
   handleBadScene,
 } from '../../shared/Scenes'
+import { Param } from '../../shared/params'
 
 export interface UndoActionTypes {
   undo: string
@@ -188,4 +189,13 @@ export function useDmxSelector<T>(getVal: (dmx: DmxState) => T) {
 
 export function useDeviceSelector<T>(getVal: (midi: DeviceState) => T) {
   return useTypedSelector((state) => getVal(state.control.present.device))
+}
+
+export function useBaseParam(param: Param, splitIndex: number | null): number {
+  const outputParam = useActiveLightScene((state) => {
+    return splitIndex === null
+      ? state.baseParams[param]
+      : state.splitScenes[splitIndex].baseParams[param]
+  })
+  return outputParam
 }

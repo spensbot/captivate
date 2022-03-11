@@ -33,9 +33,11 @@ export default function useDragBasic(
   }
 
   const onMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault()
-    update(e)
-    startListening()
+    if (!e.defaultPrevented) {
+      e.preventDefault()
+      update(e)
+      startListening()
+    }
   }
 
   const update = (e: React.MouseEvent) => {
