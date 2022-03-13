@@ -1,13 +1,17 @@
-import React from 'react'
+import styled from 'styled-components'
 import useDragMapped from '../hooks/useDragMapped'
 import { useDispatch } from 'react-redux'
 import { setBaseParams } from '../redux/controlSlice'
 import SVCursor from './SVCursor'
 import { useOutputParam } from '../redux/realtimeStore'
+import ParamXButton from './ParamXButton'
+import { Param } from 'shared/params'
 
 interface Props {
   splitIndex: number | null
 }
+
+const params: readonly Param[] = ['hue', 'saturation']
 
 export default function SVpad({ splitIndex }: Props) {
   const hue = useOutputParam('hue', splitIndex)
@@ -25,38 +29,21 @@ export default function SVpad({ splitIndex }: Props) {
     )
   })
 
-  const styles: { [key: string]: React.CSSProperties } = {
-    root: {
-      position: 'relative',
-      width: '200px',
-      height: '160px',
-      background: `hsl(${hue * 360},100%, 50%)`,
-      overflow: 'hidden',
-    },
-    white: {
-      position: 'absolute',
-      background: 'linear-gradient(to right, #fff, rgba(255,255,255,0))',
-      top: '0',
-      right: '0',
-      bottom: '0',
-      left: '0',
-    },
-    black: {
-      position: 'absolute',
-      background: 'linear-gradient(to top, #000, rgba(0,0,0,0))',
-      top: '0',
-      right: '0',
-      bottom: '0',
-      left: '0',
-    },
-  }
-
   return (
-    <div style={styles.root} ref={dragContainer} onMouseDown={onMouseDown}>
-      <div style={styles.white}>
-        <div style={styles.black}></div>
-        <SVCursor splitIndex={splitIndex} />
-      </div>
-    </div>
+    <Root
+      style={{ background: `hsl(${hue * 360},100%, 50%)` }}
+      ref={dragContainer}
+      onMouseDown={onMouseDown}
+    >
+      {/* <ParamXButton splitIndex={splitIndex} params={['saturation', 'hue']} /> */}
+      <SVCursor splitIndex={splitIndex} />
+    </Root>
   )
 }
+
+const Root = styled.div`
+  position: relative;
+  width: 200px;
+  height: 160px;
+  overflow: hidden;
+`

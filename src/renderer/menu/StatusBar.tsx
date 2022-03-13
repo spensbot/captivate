@@ -29,10 +29,25 @@ import PlayPauseButton from './PlayPauseButton'
 
 type SaveType = ControlState
 
+function fixState(state: ControlState): ControlState {
+  const light = state.light
+  light.ids.forEach((id) => {
+    const scene = light.byId[id]
+    if (scene.splitScenes === undefined) scene.splitScenes = []
+    scene.modulators.forEach((modulator) => {
+      if (modulator.splitModulations === undefined)
+        modulator.splitModulations = []
+    })
+  })
+  return state
+}
+
 function loadScenes() {
   loadFile('Load Scenes', [captivateFileFilters.scenes])
     .then((serializedControlState) => {
-      const newControlState: SaveType = JSON.parse(serializedControlState)
+      const newControlState: SaveType = fixState(
+        JSON.parse(serializedControlState)
+      )
 
       store.dispatch(
         resetControl({

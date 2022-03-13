@@ -11,16 +11,7 @@ const CACHED_STATE_KEY = 'cached-state'
 const AUTO_SAVE_INTERVAL = 1000 // ms
 
 // Modify this function to fix any state changes between upgrades
-function fixState(state: CleanReduxState): CleanReduxState {
-  const light = state.control.light
-  light.ids.forEach((id) => {
-    const scene = light.byId[id]
-    if (scene.splitScenes === undefined) scene.splitScenes = []
-    scene.modulators.forEach((modulator) => {
-      if (modulator.splitModulations === undefined)
-        modulator.splitModulations = []
-    })
-  })
+export function fixState(state: CleanReduxState): CleanReduxState {
   return state
 }
 
