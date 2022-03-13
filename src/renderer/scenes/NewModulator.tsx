@@ -8,7 +8,7 @@ export default function NewModulator() {
   return (
     <div
       style={{
-        width: 70,
+        width: 200,
         alignSelf: 'stretch',
         backgroundColor: '#fff1',
         display: 'flex',

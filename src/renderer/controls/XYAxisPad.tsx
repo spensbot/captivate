@@ -5,10 +5,7 @@ import XYAxisCursor from './XYAxisCursor'
 import styled from 'styled-components'
 import { useBaseParam } from 'renderer/redux/store'
 import ParamXButton from './ParamXButton'
-import ParamAddButton from './ParamAddButton'
-import { Param } from 'shared/params'
-
-const params: readonly Param[] = ['xAxis', 'yAxis', 'xMirror']
+import { paramBundles } from './ParamAddButton'
 
 interface Props {
   splitIndex: number | null
@@ -34,13 +31,7 @@ export default function XYAxispad({ splitIndex }: Props) {
   const yAxis = useBaseParam('yAxis', splitIndex)
 
   if (xAxis === undefined || xMirror === undefined || yAxis === undefined) {
-    return (
-      <ParamAddButton
-        title="X/Y Axis"
-        splitIndex={splitIndex}
-        params={params}
-      />
-    )
+    return null
   }
 
   return (
@@ -61,7 +52,7 @@ export default function XYAxispad({ splitIndex }: Props) {
       >
         mirror
       </MirroredButton>
-      <ParamXButton splitIndex={splitIndex} params={params} />
+      <ParamXButton splitIndex={splitIndex} params={paramBundles.axis} />
     </Root>
   )
 }
@@ -73,6 +64,7 @@ const Root = styled.div`
   background: #000;
   overflow: hidden;
   border: 1px solid ${(props) => props.theme.colors.divider};
+  margin-right: 1rem;
 `
 
 const MirroredButton = styled.div<{ active: boolean }>`

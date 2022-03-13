@@ -7,7 +7,6 @@ import { useDispatch } from 'react-redux'
 import { setRandomizer } from '../redux/controlSlice'
 import Slider from '../base/Slider'
 import ParamXButton from './ParamXButton'
-import ParamAddButton from './ParamAddButton'
 import { Param } from 'shared/params'
 import ParamSlider from './ParamSlider'
 
@@ -28,13 +27,7 @@ export default function Randomizer({ splitIndex }: Props) {
   const randomize = useBaseParam('randomize', splitIndex)
 
   if (randomize === undefined) {
-    return (
-      <ParamAddButton
-        title="Randomizer"
-        splitIndex={splitIndex}
-        params={params}
-      />
-    )
+    return null
   }
 
   return (
@@ -77,7 +70,7 @@ export default function Randomizer({ splitIndex }: Props) {
             style={{ height: '0.8rem' }}
           />
         </Row>
-        <ParamXButton splitIndex={splitIndex} params={params} />
+        <ParamXButton splitIndex={splitIndex} params={['randomize']} />
       </Root>
       <ParamSlider param={'randomize'} splitIndex={splitIndex} />
     </>
@@ -91,6 +84,7 @@ const Root = styled.div`
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  margin-right: 1rem;
 `
 
 const Row = styled.div`

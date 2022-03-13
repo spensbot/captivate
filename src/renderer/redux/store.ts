@@ -195,10 +195,19 @@ export function useBaseParam(
   param: Param,
   splitIndex: number | null
 ): number | undefined {
-  const outputParam = useActiveLightScene((state) => {
+  const baseParam = useActiveLightScene((state) => {
     return splitIndex === null
       ? state.baseParams[param]
       : state.splitScenes[splitIndex].baseParams[param]
   })
-  return outputParam
+  return baseParam
+}
+
+export function useBaseParams(splitIndex: number | null): Partial<Params> {
+  const baseParams = useActiveLightScene((state) => {
+    return splitIndex === null
+      ? state.baseParams
+      : state.splitScenes[splitIndex].baseParams
+  })
+  return baseParams
 }

@@ -6,14 +6,12 @@ import XYWindow from './XYWindow'
 import styled from 'styled-components'
 import ParamXButton from './ParamXButton'
 import { useBaseParam } from 'renderer/redux/store'
-import ParamAddButton from './ParamAddButton'
-import { Param } from 'shared/params'
+import MidiOverlay_xy from '../base/MidiOverlay_xy'
+import { paramBundles } from './ParamAddButton'
 
 interface Props {
   splitIndex: number | null
 }
-
-const params: readonly Param[] = ['x', 'y', 'width', 'height']
 
 export default function XYpad({ splitIndex }: Props) {
   const dispatch = useDispatch()
@@ -53,21 +51,25 @@ export default function XYpad({ splitIndex }: Props) {
     width === undefined ||
     height === undefined
   ) {
-    return (
-      <ParamAddButton
-        title="Position Controls"
-        splitIndex={splitIndex}
-        params={params}
-      />
-    )
+    return null
   }
 
   return (
-    <Root ref={dragContainer} onMouseDown={onMouseDown}>
-      <XYCursor splitIndex={splitIndex} />
-      <XYWindow splitIndex={splitIndex} />
-      <ParamXButton splitIndex={splitIndex} params={params} />
-    </Root>
+    <MidiOverlay_xy
+      style={{ marginRight: '1rem' }}
+      actions={[
+        { type: 'setBaseParam', paramKey: 'x' },
+        { type: 'setBaseParam', paramKey: 'y' },
+        { type: 'setBaseParam', paramKey: 'width' },
+        { type: 'setBaseParam', paramKey: 'height' },
+      ]}
+    >
+      <Root ref={dragContainer} onMouseDown={onMouseDown}>
+        <XYCursor splitIndex={splitIndex} />
+        <XYWindow splitIndex={splitIndex} />
+        <ParamXButton splitIndex={splitIndex} params={paramBundles.position} />
+      </Root>
+    </MidiOverlay_xy>
   )
 }
 
