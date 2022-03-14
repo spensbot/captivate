@@ -1,6 +1,6 @@
 import IconButton from '@mui/material/IconButton'
 import AddIcon from '@mui/icons-material/Add'
-import { useState } from 'react'
+import { useState, FunctionComponent } from 'react'
 import { useBaseParams, useDmxSelector } from 'renderer/redux/store'
 import styled from 'styled-components'
 import Popup from '../base/Popup'
@@ -8,6 +8,12 @@ import { useDispatch } from 'react-redux'
 import { Param, Params, paramsList } from 'shared/params'
 import { setBaseParams } from 'renderer/redux/controlSlice'
 import { defaultOutputParams } from 'shared/params'
+import BlackLightIcon from '@mui/icons-material/LightBulb'
+import EpicnessIcon from '@mui/icons-material/LocalFireDepartment'
+import StrobeIcon from '@mui/icons-material/LightMode'
+import RandomizeIcon from '@mui/icons-material/Shuffle'
+import PositionIcon from '@mui/icons-material/PictureInPicture'
+import axisIconSrc from '../../../assets/axis.svg'
 
 interface Props {
   splitIndex: number | null
@@ -19,6 +25,19 @@ const paramBundleList: ParamBundle[] = ['axis', 'position']
 export const paramBundles: { [key in ParamBundle]: Param[] } = {
   axis: ['xAxis', 'yAxis', 'xMirror'],
   position: ['x', 'y', 'width', 'height'],
+}
+
+function Axis() {
+  return <img style={{ width: '1.5rem', height: '1.5rem' }} src={axisIconSrc} />
+}
+
+const icons: { [key in ParamBundle | Param]?: FunctionComponent } = {
+  black: () => <BlackLightIcon />,
+  strobe: () => <StrobeIcon />,
+  randomize: () => <RandomizeIcon />,
+  position: () => <PositionIcon />,
+  epicness: () => <EpicnessIcon />,
+  axis: Axis,
 }
 
 const defalt = defaultOutputParams()
@@ -79,29 +98,33 @@ export default function ParamAddButton({ splitIndex }: Props) {
       </IconButton>
       {isOpen && (
         <Popup title="Add Params" onClose={() => setIsOpen(false)}>
-          {options.map((option) => (
-            <Option
-              onClick={(e) => {
-                e.preventDefault()
-                const newParams: Partial<Params> = {}
-                if (option === 'axis' || option === 'position') {
-                  for (const param of paramBundles[option]) {
-                    newParams[param] = defalt[param]
+          {options.map((option) => {
+            const icon = icons[option]
+            return (
+              <Option
+                onClick={(e) => {
+                  e.preventDefault()
+                  const newParams: Partial<Params> = {}
+                  if (option === 'axis' || option === 'position') {
+                    for (const param of paramBundles[option]) {
+                      newParams[param] = defalt[param]
+                    }
+                  } else {
+                    newParams[option] = defalt[option]
                   }
-                } else {
-                  newParams[option] = defalt[option]
-                }
-                dispatch(
-                  setBaseParams({
-                    splitIndex,
-                    params: newParams,
-                  })
-                )
-              }}
-            >
-              {option}
-            </Option>
-          ))}
+                  dispatch(
+                    setBaseParams({
+                      splitIndex,
+                      params: newParams,
+                    })
+                  )
+                }}
+              >
+                {icon ? icon({}) : null}
+                {option}
+              </Option>
+            )
+          })}
         </Popup>
       )}
     </Root>
@@ -115,6 +138,12 @@ const Root = styled.div`
 
 const Option = styled.div`
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  & > * {
+    margin-right: 0.5rem;
+  }
   :hover {
     font-weight: bold;
   }

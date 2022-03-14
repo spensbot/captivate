@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 512 512" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1.5;">
+    <rect id="Axis-Icon" serif:id="Axis Icon" x="0" y="0" width="512" height="512" style="fill:none;"/>
+    <g id="Axis-Icon1" serif:id="Axis Icon">
+        <g>
+            <path d="M0,256L512,256" style="fill:none;"/>
+            <path d="M75,218.5L0,256L75,293.5C56.25,274.75 56.25,237.25 75,218.5Z" style="fill:white;"/>
+            <path d="M437,218.5L512,256L437,293.5C455.75,274.75 455.75,237.25 437,218.5Z" style="fill:white;"/>
+            <path d="M60,256L452,256" style="fill:none;stroke:white;stroke-width:25px;"/>
+        </g>
+        <g>
+            <path d="M256,0L256,512" style="fill:none;"/>
+            <path d="M293.5,75L256,0L218.5,75C237.25,56.25 274.75,56.25 293.5,75Z" style="fill:white;"/>
+            <path d="M293.5,437L256,512L218.5,437C237.25,455.75 274.75,455.75 293.5,437Z" style="fill:white;"/>
+            <path d="M256,60L256,452" style="fill:none;stroke:white;stroke-width:25px;"/>
+        </g>
+    </g>
+</svg>

@@ -1,36 +1,40 @@
 import { useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { Param, paramsList } from '../../shared/params'
-import { useActiveLightScene } from '../redux/store'
+import { useActiveLightScene, useBaseParams, useModParam } from '../redux/store'
 import { setModulation } from '../redux/controlSlice'
 import useDragMapped from '../hooks/useDragMapped'
 import styled from 'styled-components'
 import Popup from 'renderer/base/Popup'
+import { indexArray } from 'shared/util'
 
 interface Props {
-  index: number
+  splitIndex: number | null
+  modIndex: number
   param: Param
 }
 
-export default function ModulationSlider({ index, param }: Props) {
-  const amount = useActiveLightScene(
-    (activeScene) => activeScene.modulators[index].modulation[param]
-  )
+export default function ModulationSlider({
+  splitIndex,
+  modIndex,
+  param,
+}: Props) {
+  const modVal = useModParam(param, modIndex, splitIndex)
   const dispatch = useDispatch()
   const [dragContainer, onMouseDown] = useDragMapped(({ x }) => {
-    dispatch(setModulation({ param: param, index: index, value: x }))
+    dispatch(setModulation({ splitIndex, param, modIndex, value: x }))
   })
 
-  if (amount === undefined) {
+  if (modVal === undefined) {
     return null
   }
 
-  const width = Math.abs(amount - 0.5)
-  const left = amount > 0.5 ? 0.5 : amount
+  const width = Math.abs(modVal - 0.5)
+  const left = modVal > 0.5 ? 0.5 : modVal
 
   return (
     <Root ref={dragContainer} onMouseDown={onMouseDown}>
-      {param}
+      {splitIndex === null ? param : `Split ${splitIndex} ${param}`}
       <Amount
         style={{
           left: `${left * 100}%`,
@@ -41,7 +45,7 @@ export default function ModulationSlider({ index, param }: Props) {
   )
 }
 
-export function AddModulationButton({ index }: { index: number }) {
+export function AddModulationButton({ modIndex }: { modIndex: number }) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -56,19 +60,71 @@ export function AddModulationButton({ index }: { index: number }) {
       +
       {open && (
         <Popup title="Add Modulation" onClose={() => setOpen(false)}>
-          {paramsList.map((param) => (
-            <ParamEditor key={param + index} index={index} param={param} />
-          ))}
+          <AddModulation modIndex={modIndex} />
         </Popup>
       )}
     </Root>
   )
 }
 
-function ParamEditor({ index, param }: { index: number; param: Param }) {
-  const modVal = useActiveLightScene(
-    (scene) => scene.modulators[index].modulation[param]
+function AddModulation({ modIndex }: { modIndex: number }) {
+  const numSplits = useActiveLightScene((scene) => scene.splitScenes.length)
+
+  return (
+    <AddModRoot>
+      <ParamsGroup splitIndex={null} modIndex={modIndex} />
+      {indexArray(numSplits).map((splitIndex) => (
+        <ParamsGroup splitIndex={splitIndex} modIndex={modIndex} />
+      ))}
+    </AddModRoot>
   )
+}
+
+const AddModRoot = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+`
+
+function ParamsGroup({
+  splitIndex,
+  modIndex,
+}: {
+  splitIndex: number | null
+  modIndex: number
+}) {
+  const baseParams = useBaseParams(splitIndex)
+
+  return (
+    <Group isDefault={false}>
+      <GroupHeader>
+        {splitIndex === null ? `Default` : `Split ${splitIndex + 1}`}
+      </GroupHeader>
+      {paramsList.map((param) => {
+        if (baseParams[param] === undefined) return null
+        return (
+          <ParamEditor
+            key={splitIndex + param + modIndex}
+            modIndex={modIndex}
+            splitIndex={splitIndex}
+            param={param}
+          />
+        )
+      })}
+    </Group>
+  )
+}
+
+function ParamEditor({
+  splitIndex,
+  modIndex,
+  param,
+}: {
+  splitIndex: number | null
+  modIndex: number
+  param: Param
+}) {
+  const modVal = useModParam(param, modIndex, splitIndex)
   const dispatch = useDispatch()
 
   return (
@@ -77,8 +133,9 @@ function ParamEditor({ index, param }: { index: number; param: Param }) {
         if (param)
           dispatch(
             setModulation({
-              index: index,
-              param: param,
+              splitIndex,
+              modIndex,
+              param,
               value: modVal === undefined ? 0.5 : undefined,
             })
           )
@@ -113,4 +170,17 @@ const Item = styled.div`
   :hover {
     color: ${(props) => props.theme.colors.text.primary};
   }
+`
+
+const GroupHeader = styled.div`
+  margin-bottom: 0.2rem;
+  font-size: 0.7rem;
+  color: ${(props) => props.theme.colors.text.secondary};
+  text-decoration: underline;
+`
+
+const Group = styled.div<{ isDefault: boolean }>`
+  margin: 0 0.5rem;
+  border-top: ${(props) =>
+    props.isDefault && `1px solid ${props.theme.colors.divider}`};
 `

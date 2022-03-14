@@ -45,7 +45,8 @@ interface IncrementModulatorPayload {
 }
 
 interface SetModulationPayload {
-  index: number
+  splitIndex: number | null
+  modIndex: number
   param: Param
   value: number | undefined
 }
@@ -260,7 +261,7 @@ export const scenesSlice = createSlice({
     },
     addModulator: (state, _: PayloadAction<void>) => {
       modifyActiveLightScene(state, (scene) => {
-        scene.modulators.push(initModulator())
+        scene.modulators.push(initModulator(scene.splitScenes.length))
       })
     },
     removeModulator: (state, { payload }: PayloadAction<number>) => {
@@ -270,16 +271,21 @@ export const scenesSlice = createSlice({
     },
     resetModulator: (state, { payload }: PayloadAction<number>) => {
       modifyActiveLightScene(state, (scene) => {
-        scene.modulators[payload] = initModulator()
+        scene.modulators[payload] = initModulator(scene.splitScenes.length)
       })
     },
     setModulation: (
       state,
       { payload }: PayloadAction<SetModulationPayload>
     ) => {
-      const { index, param, value } = payload
+      const { splitIndex, modIndex, param, value } = payload
+      console.log(payload)
       modifyActiveLightScene(state, (scene) => {
-        scene.modulators[index].modulation[param] = value
+        if (splitIndex === null) {
+          scene.modulators[modIndex].modulation[param] = value
+        } else {
+          scene.modulators[modIndex].splitModulations[splitIndex][param] = value
+        }
       })
     },
     setBaseParams: (
@@ -325,6 +331,9 @@ export const scenesSlice = createSlice({
     addSplitScene: (state, {}: PayloadAction<undefined>) => {
       modifyActiveLightScene(state, (scene) => {
         scene.splitScenes.push(initSplitScene())
+        scene.modulators.forEach((modulator) => {
+          modulator.splitModulations.push({})
+        })
       })
     },
     removeSplitSceneByIndex: (state, { payload }: PayloadAction<number>) => {

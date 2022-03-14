@@ -41,7 +41,7 @@ export function initLightScene(): LightScene_t {
     name: 'Name',
     bombacity: 0,
     autoEnabled: true,
-    modulators: [initModulator()],
+    modulators: [initModulator(0)],
     baseParams: initBaseParams(),
     randomizer: initRandomizerOptions(),
     splitScenes: [],

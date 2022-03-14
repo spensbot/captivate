@@ -10,11 +10,13 @@ export interface Modulator {
   splitModulations: Modulation[]
 }
 
-export function initModulator(): Modulator {
+export function initModulator(splitCount: number): Modulator {
   return {
     lfo: GetRamp(),
     modulation: initModulation(),
-    splitModulations: [],
+    splitModulations: Array(splitCount)
+      .fill(0)
+      .map(() => ({})),
   }
 }
 

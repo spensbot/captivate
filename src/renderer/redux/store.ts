@@ -211,3 +211,18 @@ export function useBaseParams(splitIndex: number | null): Partial<Params> {
   })
   return baseParams
 }
+
+export function useModParam(
+  param: Param,
+  modIndex: number,
+  splitIndex: number | null
+) {
+  return useActiveLightScene((scene) => {
+    const modulator = scene.modulators[modIndex]
+    if (splitIndex === null) {
+      return modulator.modulation[param]
+    } else {
+      return modulator.splitModulations[splitIndex][param]
+    }
+  })
+}
