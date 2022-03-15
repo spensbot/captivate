@@ -10,12 +10,12 @@ import {
 } from '../../renderer/redux/realtimeStore'
 import { TimeState } from '../../shared/TimeState'
 import { syncAndUpdate } from '../../shared/randomizer'
-import { modulateParams } from '../../shared/modulation'
+import { getOutputParams } from '../../shared/modulation'
 import { handleMessage } from './handleMidi'
 import openVisualizerWindow, {
   VisualizerContainer,
 } from './createVisualizerWindow'
-import { calculateDmx } from './dmxUtil'
+import { calculateDmx } from './dmxEngine'
 import { handleAutoScene } from '../../shared/autoScene'
 import { setActiveScene } from '../../renderer/redux/controlSlice'
 import TapTempoEngine from './TapTempoEngine'
@@ -148,7 +148,6 @@ function getNextRealtimeState(
 ): RealtimeState {
   const scene =
     controlState.control.light.byId[controlState.control.light.active]
-  const outputParams = modulateParams(nextTimeState.beats, scene)
 
   const newRandomizerState = syncAndUpdate(
     realtimeState.time.beats,
@@ -180,9 +179,11 @@ function getNextRealtimeState(
     }
   )
 
-  const splitScenes = scene.splitScenes.map((split) => {
+  const outputParams = getOutputParams(nextTimeState.beats, scene, null)
+
+  const splitScenes = scene.splitScenes.map((_split, splitIndex) => {
     return {
-      outputParams: mapUndefinedParamsToDefault(split.baseParams),
+      outputParams: getOutputParams(nextTimeState.beats, scene, splitIndex),
     }
   })
 

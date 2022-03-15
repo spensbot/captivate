@@ -5,15 +5,15 @@
     <g id="Axis-Icon1" serif:id="Axis Icon">
         <g>
             <path d="M0,256L512,256" style="fill:none;"/>
-            <path d="M75,218.5L0,256L75,293.5C56.25,274.75 56.25,237.25 75,218.5Z" style="fill:white;"/>
-            <path d="M437,218.5L512,256L437,293.5C455.75,274.75 455.75,237.25 437,218.5Z" style="fill:white;"/>
-            <path d="M60,256L452,256" style="fill:none;stroke:white;stroke-width:25px;"/>
+            <path d="M100,206L0,256L100,306C75,281 75,231 100,206Z" style="fill:white;"/>
+            <path d="M412,206L512,256L412,306C437,281 437,231 412,206Z" style="fill:white;"/>
+            <path d="M80,256L432,256" style="fill:none;stroke:white;stroke-width:33.33px;"/>
         </g>
         <g>
             <path d="M256,0L256,512" style="fill:none;"/>
-            <path d="M293.5,75L256,0L218.5,75C237.25,56.25 274.75,56.25 293.5,75Z" style="fill:white;"/>
-            <path d="M293.5,437L256,512L218.5,437C237.25,455.75 274.75,455.75 293.5,437Z" style="fill:white;"/>
-            <path d="M256,60L256,452" style="fill:none;stroke:white;stroke-width:25px;"/>
+            <path d="M306,100L256,0L206,100C231,75 281,75 306,100Z" style="fill:white;"/>
+            <path d="M306,412L256,512L206,412C231,437 281,437 306,412Z" style="fill:white;"/>
+            <path d="M256,80L256,432" style="fill:none;stroke:white;stroke-width:33.33px;"/>
         </g>
     </g>
 </svg>
