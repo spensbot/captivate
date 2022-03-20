@@ -73,7 +73,8 @@ export default function FixtureChannels({ fixtureID, isInUse }: Props) {
             key={channelIndex}
             fixtureID={fixtureID}
             channelIndex={channelIndex}
-            hasMaster={hasMaster}
+            hasMaster
+            isInUse
           />
         ))}
       </Channels>
@@ -102,9 +103,10 @@ interface Props2 {
   fixtureID: string
   channelIndex: number
   hasMaster: boolean
+  isInUse: boolean
 }
 
-function Channel({ fixtureID, channelIndex, hasMaster }: Props2) {
+function Channel({ fixtureID, channelIndex, hasMaster, isInUse }: Props2) {
   const ch = useDmxSelector(
     (state) => state.fixtureTypesByID[fixtureID].channels[channelIndex]
   )
@@ -137,20 +139,23 @@ function Channel({ fixtureID, channelIndex, hasMaster }: Props2) {
         fixtureID={fixtureID}
         channelIndex={channelIndex}
         hasMaster={hasMaster}
+        isInUse
       />
       <Sp />
-      <IconButton
-        onClick={() =>
-          dispatch(
-            removeFixtureChannel({
-              fixtureID: fixtureID,
-              channelIndex: channelIndex,
-            })
-          )
-        }
-      >
-        <RemoveIcon />
-      </IconButton>
+      {!isInUse && (
+        <IconButton
+          onClick={() =>
+            dispatch(
+              removeFixtureChannel({
+                fixtureID: fixtureID,
+                channelIndex: channelIndex,
+              })
+            )
+          }
+        >
+          <RemoveIcon />
+        </IconButton>
+      )}
     </Root2>
   )
 }
