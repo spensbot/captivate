@@ -18,6 +18,17 @@ export default function FixtureCursor({ index }: { index: number }) {
     dispatch(setSelectedFixture(index))
   }
 
+  let x = 0.5
+  let y = 0.5
+  const window = fixture.window
+
+  if (window.x !== undefined) x = window.x.pos
+  if (window.y !== undefined) y = window.y.pos
+
+  if (isSelected) {
+    console.log(`x: ${x}, y: ${y}`)
+  }
+
   return isSelected ? (
     <div style={{ zIndex: -1 }}>
       {/* <Cursor x={fixture.window?.x?.pos || 0.5} y={fixture.window?.y?.pos || 0.5} withHorizontal withVertical color="#fffc" />
@@ -26,12 +37,7 @@ export default function FixtureCursor({ index }: { index: number }) {
     </div>
   ) : (
     <div style={{ zIndex: 1 }}>
-      <Cursor
-        onClick={onClick}
-        x={fixture.window?.x?.pos || 0.5}
-        y={fixture.window?.y?.pos || 0.5}
-        color="#fff7"
-      />
+      <Cursor onClick={onClick} x={x} y={y} color="#fff7" />
     </div>
   )
 }

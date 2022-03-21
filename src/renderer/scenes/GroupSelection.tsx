@@ -21,7 +21,7 @@ export default function GroupSelection({ splitIndex }: Props) {
   const dispatch = useDispatch()
   const [isOpen, setIsOpen] = useState(false)
   const availableGroups = [
-    DEFAULT_GROUP,
+    // DEFAULT_GROUP,
     ...useDmxSelector((dmx) => dmx.groups),
   ]
   const activeGroups = useActiveLightScene(

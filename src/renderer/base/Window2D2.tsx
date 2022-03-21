@@ -10,11 +10,11 @@ const radius = 0.5
 const color = '#fff'
 
 export default function Window2D2({ window2D, onClick }: Props) {
-  const x = window2D.x?.pos || 0.5
-  let width = window2D.x?.width || 0
+  const x = window2D.x?.pos ?? 0.5
+  let width = window2D.x?.width ?? 0
   width += 0.05
-  const y = window2D.y?.pos || 0.5
-  let height = window2D.y?.width || 0
+  const y = window2D.y?.pos ?? 0.5
+  let height = window2D.y?.width ?? 0
   height += 0.05
 
   const styles: { [key: string]: React.CSSProperties } = {
