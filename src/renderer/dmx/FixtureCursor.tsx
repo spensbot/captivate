@@ -13,17 +13,20 @@ export default function FixtureCursor({ index }: { index: number }) {
   const isSelected = activeFixture === index
 
   function onClick(e: React.MouseEvent) {
-    e.stopPropagation()
-    e.preventDefault()
-    dispatch(setSelectedFixture(index))
+    if (!e.defaultPrevented) {
+      e.preventDefault()
+      dispatch(setSelectedFixture(index))
+    }
   }
 
   let x = 0.5
   let y = 0.5
   const window = fixture.window
 
-  if (window.x !== undefined) x = window.x.pos
-  if (window.y !== undefined) y = window.y.pos
+  if (window) {
+    if (window.x !== undefined) x = window.x.pos
+    if (window.y !== undefined) y = window.y.pos
+  }
 
   if (isSelected) {
     console.log(`x: ${x}, y: ${y}`)

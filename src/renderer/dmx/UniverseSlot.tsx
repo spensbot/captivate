@@ -161,8 +161,11 @@ function FixtureSlot({ fixture, index }: { fixture: Fixture; index: number }) {
     : undefined
   return (
     <Slot
-      onClick={() => {
-        dispatch(setSelectedFixture(index))
+      onClick={(e) => {
+        if (!e.defaultPrevented) {
+          e.preventDefault()
+          dispatch(setSelectedFixture(index))
+        }
       }}
       style={style}
     >
@@ -191,7 +194,12 @@ function FixtureSlot({ fixture, index }: { fixture: Fixture; index: number }) {
           >
             Y
           </ToggleButton>
-          <IconButton onClick={() => dispatch(removeFixture(index))}>
+          <IconButton
+            onClick={(e) => {
+              e.preventDefault()
+              dispatch(removeFixture(index))
+            }}
+          >
             <RemoveIcon />
           </IconButton>
         </div>

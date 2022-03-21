@@ -10,7 +10,10 @@ export default function FixturePlacement() {
   const activeFixture = useDmxSelector((state) => state.activeFixture)
   const dispatch = useDispatch()
 
+  console.log('activeFixture', activeFixture)
+
   const [dragContainer, onMouseDown] = useDragMapped(({ x, y, dx, dy }, e) => {
+    console.log(activeFixture)
     if (activeFixture !== null) {
       if (e.metaKey) {
         dispatch(
@@ -21,6 +24,7 @@ export default function FixturePlacement() {
           })
         )
       } else {
+        console.log('activeFixture', activeFixture)
         dispatch(
           setFixtureWindow({
             index: activeFixture,

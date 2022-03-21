@@ -45,6 +45,5 @@ export default async (visualizerContainer: VisualizerContainer) => {
 
   visualizerContainer.visualizer.on('closed', () => {
     visualizerContainer.visualizer = null
-    console.log('Visualizer Closed')
   })
 }
