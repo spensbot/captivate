@@ -142,7 +142,7 @@ export default function MyFixture({ id }: Props) {
             >
               Delete Fixture
             </Button>
-            <div style={{ flex: '1 0 0' }} />
+            <div style={{ flex: '1 0 1rem' }} />
             <EditGroup />
           </Row>
         </Body>

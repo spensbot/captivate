@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import styled from 'styled-components'
 import { useDmxSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
@@ -25,6 +26,7 @@ import AddIcon from '@mui/icons-material/Add'
 import RemoveIcon from '@mui/icons-material/Remove'
 import Add from '@mui/icons-material/Add'
 import Remove from '@mui/icons-material/Remove'
+import Popup from 'renderer/base/Popup'
 
 interface Props {
   fixtureID: string
@@ -42,6 +44,7 @@ export default function FixtureChannels({ fixtureID, isInUse }: Props) {
       ? true
       : false
   )
+  const [editing, setEditing] = useState<number | null>(null)
   const dispatch = useDispatch()
 
   const indexes = indexArray(channelCount)
@@ -73,7 +76,9 @@ export default function FixtureChannels({ fixtureID, isInUse }: Props) {
             key={channelIndex}
             fixtureID={fixtureID}
             channelIndex={channelIndex}
-            hasMaster
+            editing={editing}
+            setEditing={setEditing}
+            hasMaster={hasMaster}
             isInUse
           />
         ))}
@@ -104,43 +109,31 @@ interface Props2 {
   channelIndex: number
   hasMaster: boolean
   isInUse: boolean
+  editing: number | null
+  setEditing: (ch: number | null) => void
 }
 
-function Channel({ fixtureID, channelIndex, hasMaster, isInUse }: Props2) {
+function Channel(props: Props2) {
+  const { fixtureID, channelIndex, editing, setEditing, isInUse } = props
   const ch = useDmxSelector(
     (state) => state.fixtureTypesByID[fixtureID].channels[channelIndex]
   )
   const dispatch = useDispatch()
 
+  const props3 = { ...props, ch: ch }
+
   return (
-    <Root2>
-      <Ch>{channelIndex + 1}</Ch>
-      <Select
-        label="Channel Type"
-        val={ch.type}
-        items={
-          hasMaster && ch.type !== 'master'
-            ? channelTypes.slice(1)
-            : channelTypes
+    <Root2
+      onClick={(e) => {
+        if (!e.defaultPrevented) {
+          e.preventDefault()
+          setEditing(channelIndex)
         }
-        onChange={(newType) =>
-          dispatch(
-            editFixtureChannel({
-              fixtureID: fixtureID,
-              channelIndex: channelIndex,
-              newChannel: initFixtureChannel(newType),
-            })
-          )
-        }
-      />
-      <Sp2 />
-      <Fields
-        ch={ch}
-        fixtureID={fixtureID}
-        channelIndex={channelIndex}
-        hasMaster={hasMaster}
-        isInUse
-      />
+      }}
+    >
+      <Ch>{`${channelIndex + 1}`}</Ch>
+      <Info>{`${getInfo(props3)}`}</Info>
+      <SubInfo>{getSubInfo(props3)}</SubInfo>
       <Sp />
       {!isInUse && (
         <IconButton
@@ -156,20 +149,43 @@ function Channel({ fixtureID, channelIndex, hasMaster, isInUse }: Props2) {
           <RemoveIcon />
         </IconButton>
       )}
+      {editing === channelIndex && (
+        <Popup
+          title={`Channel ${channelIndex + 1}`}
+          onClose={() => {
+            console.log('onClose')
+            setEditing(null)
+          }}
+        >
+          <PopupContent {...props3} />
+        </Popup>
+      )}
     </Root2>
   )
 }
 
 const Root2 = styled.div`
   display: flex;
-  align-items: flex-end;
-  margin-bottom: 0.5rem;
+  align-items: center;
+  padding: 0.3rem;
+  cursor: pointer;
+  :hover {
+    background-color: ${(props) => props.theme.colors.bg.lighter};
+  }
 `
 
 const Ch = styled.div`
-  font-size: 1.1rem;
-  margin-bottom: 0.3rem;
+  font-size: 1rem;
   margin-right: 0.7rem;
+`
+
+const Info = styled.div`
+  font-size: 0.9rem;
+  margin-right: 0.5rem;
+`
+
+const SubInfo = styled.div`
+  color: ${(props) => props.theme.colors.text.secondary};
 `
 
 const Sp = styled.div`
@@ -182,6 +198,70 @@ const Sp2 = styled.div`
 
 interface Props3 extends Props2 {
   ch: FixtureChannel
+}
+
+function getInfo({ ch }: Props3): string {
+  switch (ch.type) {
+    case 'axis':
+      return `Axis`
+    case 'color':
+      return `${ch.color}`
+    case 'colorMap':
+      return `Color Map`
+    case 'master':
+      return `Master`
+    case 'other':
+      return `Other`
+    case 'strobe':
+      return `Strobe`
+  }
+}
+
+function getSubInfo({ ch }: Props3): string | null {
+  switch (ch.type) {
+    case 'axis':
+      return `${ch.dir}: ${ch.min} - ${ch.max}`
+    case 'colorMap':
+      return `${ch.colors.length} colors`
+    case 'other':
+      return `Default: ${ch.default}`
+    case 'strobe':
+      return `Solid: ${ch.default_solid} | Strobe: ${ch.default_strobe}`
+    default:
+      return null
+  }
+}
+
+function PopupContent(props3: Props3) {
+  const { ch, hasMaster, fixtureID, channelIndex } = props3
+  const dispatch = useDispatch()
+
+  return (
+    <Content>
+      <Row>
+        <Info>Type:</Info>
+        <Select
+          label="Channel Type"
+          val={ch.type}
+          items={
+            hasMaster && ch.type !== 'master'
+              ? channelTypes.slice(1)
+              : channelTypes
+          }
+          onChange={(newType) =>
+            dispatch(
+              editFixtureChannel({
+                fixtureID: fixtureID,
+                channelIndex: channelIndex,
+                newChannel: initFixtureChannel(newType),
+              })
+            )
+          }
+        />
+      </Row>
+      <Fields {...props3} />
+    </Content>
+  )
 }
 
 function Fields({ ch, fixtureID, channelIndex }: Props3) {
@@ -261,17 +341,20 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
   } else if (ch.type === 'axis') {
     return (
       <>
-        <Select
-          label="dir"
-          val={ch.dir}
-          items={axisDirList}
-          onChange={(newAxisDir) =>
-            updateChannel({
-              ...ch,
-              dir: newAxisDir as AxisDir,
-            })
-          }
-        />
+        <Row>
+          <Info>Direction: </Info>
+          <Select
+            label="Direction:"
+            val={ch.dir}
+            items={axisDirList}
+            onChange={(newAxisDir) =>
+              updateChannel({
+                ...ch,
+                dir: newAxisDir as AxisDir,
+              })
+            }
+          />
+        </Row>
         <Sp2 />
         <NumberField
           val={ch.min}
@@ -303,12 +386,22 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
   } else if (ch.type === 'colorMap') {
     return (
       <div>
+        <ColorMapColor>
+          <ColorMapVisualizer />
+          <Info style={{ flex: '1 0 0' }}>DMX Value</Info>
+          <Info style={{ flex: '1 0 0' }}>Hue</Info>
+        </ColorMapColor>
         {ch.colors.map((color, i) => {
           return (
-            <div key={fixtureID + channelIndex + i}>
+            <ColorMapColor key={fixtureID + channelIndex + i}>
+              <ColorMapVisualizer
+                style={{
+                  backgroundColor: `hsl(${color.hue * 360}, 100%, 50%)`,
+                }}
+              />
               <NumberField
                 val={color.max}
-                label="max"
+                label=""
                 min={0}
                 max={255}
                 onChange={(newMax) =>
@@ -325,7 +418,7 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
               <Sp2 />
               <NumberField
                 val={color.hue}
-                label="hue"
+                label=""
                 min={0}
                 max={1}
                 onChange={(newHue) =>
@@ -340,7 +433,7 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
                 }
                 numberType="float"
               />
-            </div>
+            </ColorMapColor>
           )
         })}
         <IconButton
@@ -373,3 +466,25 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
     return null
   }
 }
+
+const Row = styled.div`
+  display: flex;
+  align-items: center;
+`
+
+const Content = styled.div`
+  & > * {
+    margin-bottom: 1rem;
+  }
+`
+
+const ColorMapColor = styled.div`
+  display: flex;
+  align-items: center;
+`
+
+const ColorMapVisualizer = styled.div`
+  width: 2rem;
+  height: 1.5rem;
+  margin-right: 0.5rem;
+`
