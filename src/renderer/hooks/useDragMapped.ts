@@ -13,7 +13,7 @@ type MouseEventHandler = React.MouseEventHandler<HTMLDivElement>
 export default function useDragMapped(
   onChange: (mappedPos: MappedPos, e: React.MouseEvent) => void
 ): [Ref, MouseEventHandler] {
-  const dragContainer = useRef()
+  const dragContainer = useRef(null)
 
   const onMouseMove: MouseEventHandler = (e: React.MouseEvent) => {
     update(e)
@@ -28,12 +28,14 @@ export default function useDragMapped(
   }
 
   const startListening = () => {
+    console.log('mapped stopListening')
     document.body.addEventListener('mousemove', onMouseMove)
     document.body.addEventListener('mouseup', onMouseUp)
     document.body.addEventListener('mouseleave', onMouseLeave)
   }
 
   const stopListening = () => {
+    console.log('mapped stopListening')
     document.body.removeEventListener('mousemove', onMouseMove)
     document.body.removeEventListener('mouseup', onMouseUp)
     document.body.removeEventListener('mouseleave', onMouseLeave)
@@ -48,17 +50,19 @@ export default function useDragMapped(
   }
 
   const update = (e: React.MouseEvent) => {
-    const { width, height, left, top, right, bottom } =
-      dragContainer.current.getBoundingClientRect()
-    onChange(
-      {
-        x: getRatio(e.clientX, left, right, width),
-        y: 1 - getRatio(e.clientY, top, bottom, height),
-        dx: e.movementX / width,
-        dy: -e.movementY / height,
-      },
-      e
-    )
+    if (dragContainer.current !== null) {
+      const { width, height, left, top, right, bottom } =
+        dragContainer.current.getBoundingClientRect()
+      onChange(
+        {
+          x: getRatio(e.clientX, left, right, width),
+          y: 1 - getRatio(e.clientY, top, bottom, height),
+          dx: e.movementX / width,
+          dy: -e.movementY / height,
+        },
+        e
+      )
+    }
   }
 
   function clamp(val: number, min: number, max: number) {
