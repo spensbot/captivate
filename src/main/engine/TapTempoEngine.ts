@@ -28,7 +28,6 @@ export default class TapTempoEngine {
       this.avgBPM.push(getBPM(period))
       setBpm(this.avgBPM.get())
     } else {
-      console.log(`resetting avgBPM: ${currentBPM}`)
       this.avgBPM.reset(currentBPM)
     }
   }

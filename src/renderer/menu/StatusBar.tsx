@@ -59,7 +59,7 @@ function loadScenes() {
       )
     })
     .catch((err) => {
-      console.log(err)
+      console.error(err)
     })
 }
 
@@ -69,11 +69,11 @@ function saveScenes() {
   saveFile('Save Scenes', serializedControlState, [captivateFileFilters.scenes])
     .then((err) => {
       if (err) {
-        console.log(err)
+        console.error(err)
       }
     })
     .catch((err) => {
-      console.log(err)
+      console.error(err)
     })
 }
 

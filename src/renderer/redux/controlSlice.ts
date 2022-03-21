@@ -168,7 +168,6 @@ export const scenesSlice = createSlice({
       state,
       { payload: { sceneType, val } }: ScopedAction<boolean>
     ) => {
-      console.log('val', val)
       modifyActiveScene(state, sceneType, (scene) => {
         scene.autoEnabled = val
       })
@@ -279,7 +278,6 @@ export const scenesSlice = createSlice({
       { payload }: PayloadAction<SetModulationPayload>
     ) => {
       const { splitIndex, modIndex, param, value } = payload
-      console.log(payload)
       modifyActiveLightScene(state, (scene) => {
         if (splitIndex === null) {
           scene.modulators[modIndex].modulation[param] = value

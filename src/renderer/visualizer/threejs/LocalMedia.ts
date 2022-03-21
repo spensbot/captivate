@@ -230,7 +230,6 @@ export default class LocalMedia extends VisualizerBase {
   }
 
   adjustDisplay(textureWidth: number, textureHeight: number) {
-    console.log(`adjustDisplay w: ${textureWidth} h: ${textureHeight}`)
     if (textureWidth === 0 || textureHeight === 0) return
     this.mesh.geometry.dispose()
     let width = 7

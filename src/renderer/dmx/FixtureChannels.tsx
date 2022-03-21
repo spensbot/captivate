@@ -153,7 +153,6 @@ function Channel(props: Props2) {
         <Popup
           title={`Channel ${channelIndex + 1}`}
           onClose={() => {
-            console.log('onClose')
             setEditing(null)
           }}
         >

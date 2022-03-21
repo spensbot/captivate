@@ -100,20 +100,14 @@ function connect(path: string) {
       }
     }
   )
-  _connection.on('disconnect', (d) => {
-    console.log('disconnect', d)
-  })
+  _connection.on('disconnect', (d) => {})
   _connection.on('error', (e) => {
-    console.log('Error', e)
+    console.error('Error', e)
   })
-  _connection.on('close', (d) => {
-    console.log('Close', d)
-  })
+  _connection.on('close', (d) => {})
 }
 
-function start() {
-  console.log('Sending DMX...')
-}
+function start() {}
 
 function isDmxDevice_t(port: SerialPort.PortInfo) {
   if (port.manufacturer?.includes('DMX')) return true

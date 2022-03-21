@@ -56,7 +56,6 @@ export const dmxSlice = createSlice({
   reducers: {
     setSelectedFixture: (state, { payload }: PayloadAction<number>) => {
       state.activeFixture = payload
-      console.log(`setSelectedFixture: ${state.activeFixture}`)
     },
     addFixture: (state, { payload }: PayloadAction<Fixture>) => {
       state.universe.push(payload)
@@ -67,7 +66,6 @@ export const dmxSlice = createSlice({
     },
     removeFixture: (state, { payload }: PayloadAction<number>) => {
       state.activeFixture = null
-      console.log(`state.activeFixture: ${state.activeFixture}`)
       state.universe.splice(payload, 1)
     },
     setFixtureWindow: (

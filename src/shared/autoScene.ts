@@ -98,7 +98,6 @@ function isNewScene(
       if (nextTimeState.beats - lastUserModified.beats > beatsPerScene) {
         return true
       } else {
-        console.log(`Not new period`)
       }
     }
   }

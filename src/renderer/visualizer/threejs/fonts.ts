@@ -4,8 +4,6 @@ import zsd from './fonts/font_zsd4dr.json'
 import helvetiker_bold from './fonts/helvetiker_bold.typeface.json'
 import helvetiker_reg from './fonts/helvetiker_regular.typeface.json'
 
-const _start = Date.now()
-
 export const fonts = {
   gentilis: new FontLoader().parse(gentilis),
   zsd: new FontLoader().parse(zsd),
@@ -14,5 +12,3 @@ export const fonts = {
 } as const
 
 export { Font } from 'three/examples/jsm/loaders/FontLoader'
-
-console.log(`Fonts loaded in ${Date.now() - _start}ms`)

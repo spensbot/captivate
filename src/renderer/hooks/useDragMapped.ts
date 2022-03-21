@@ -40,7 +40,6 @@ export default function useDragMapped(
   }
 
   const onMouseDown: MouseEventHandler = (e: React.MouseEvent) => {
-    console.log('onMouseDown', e)
     if (!e.defaultPrevented) {
       e.preventDefault()
       update(e)

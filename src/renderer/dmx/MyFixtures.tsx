@@ -18,7 +18,7 @@ function loadUniverse() {
       store.dispatch(resetUniverse(newDmxState))
     })
     .catch((err) => {
-      console.log(err)
+      console.error(err)
     })
 }
 
@@ -28,11 +28,11 @@ function saveUniverse() {
   saveFile('Save Universe', serializedDmxState, [captivateFileFilters.dmx])
     .then((err) => {
       if (err) {
-        console.log(err)
+        console.error(err)
       }
     })
     .catch((err) => {
-      console.log(err)
+      console.error(err)
     })
 }
 

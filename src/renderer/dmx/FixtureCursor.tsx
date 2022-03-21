@@ -28,10 +28,6 @@ export default function FixtureCursor({ index }: { index: number }) {
     if (window.y !== undefined) y = window.y.pos
   }
 
-  if (isSelected) {
-    console.log(`x: ${x}, y: ${y}`)
-  }
-
   return isSelected ? (
     <div style={{ zIndex: -1 }}>
       {/* <Cursor x={fixture.window?.x?.pos || 0.5} y={fixture.window?.y?.pos || 0.5} withHorizontal withVertical color="#fffc" />

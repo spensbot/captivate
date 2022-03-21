@@ -75,7 +75,7 @@ export function testSpeed(f: () => void, count: number, name: string) {
   array.forEach(f)
   const endTime = Date.now()
   const duration = endTime - startTime
-  console.log(`${name}: ${duration / count}ms per call`)
+  console.info(`${name}: ${duration / count}ms per call`)
 }
 
 // random number between 0 and max

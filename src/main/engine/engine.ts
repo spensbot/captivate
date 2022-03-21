@@ -59,7 +59,6 @@ export function start(
       }
     },
     on_open_visualizer: () => {
-      console.log('on_open_visualizer')
       openVisualizerWindow(visualizerContainer)
     },
   })

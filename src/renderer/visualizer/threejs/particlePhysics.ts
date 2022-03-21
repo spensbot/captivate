@@ -58,17 +58,6 @@ export function gravity(
   ax -= nvx * aDrag
   ay -= nvy * aDrag
 
-  // if (print) {
-  // console.log(
-  //   `x: ${x.toFixed(3)}  vx: ${vx.toFixed(5)}  ax: ${ax.toFixed(7)}`
-  // )
-  // console.log(
-  //   ` ==> x: ${(x + vx * dt).toFixed(5)}  vx: ${(vx + ax * dt).toFixed(7)}`
-  // )
-  // console.log(`pos: (${x}, ${y}) veloc: (${vx}, ${vy}) accel: (${ax}, ${ay})`)
-  // console.log(` ==> pos: (${x + vx * dt}, ${y + vy * dt}) veloc: (${vx}, ${vy}) accel: (${ax}, ${ay})`)
-  // }
-
   return {
     x: x + vx * dt,
     y: y + vy * dt,

@@ -48,7 +48,6 @@ function updateInputs(config: Config) {
   for (const oldPortName in inputs) {
     if (!availableMidiDevice_ts.find((d) => d.name === oldPortName)) {
       delete inputs[oldPortName]
-      console.log(`Removing Midi Connection: ${oldPortName}`)
     }
     if (!connectable.find((c) => c === oldPortName)) {
       inputs[oldPortName].closePort()
@@ -77,8 +76,6 @@ function newInput(index: number, config: Config) {
   })
 
   input.openPort(index)
-
-  console.log(`New Midi connection: ${input.getPortName(index)}`)
 
   return input
 }
