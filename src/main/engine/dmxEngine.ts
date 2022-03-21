@@ -18,7 +18,7 @@ export function calculateDmx(
   state: CleanReduxState,
   outputParams: Params,
   randomizerState: RandomizerState,
-  splitScenes: { outputParams: Params }[]
+  splitScenes: { outputParams: Params; randomizer: RandomizerState }[]
 ): number[] {
   const universe = state.dmx.universe
   const fixtureTypes = state.dmx.fixtureTypesByID
@@ -29,7 +29,11 @@ export function calculateDmx(
     const scenes = state.control.light
     const activeScene = scenes.byId[scenes.active]
 
-    const applyFixtures = (fixtures: Fixture[], _outputParams: Params) => {
+    const applyFixtures = (
+      fixtures: Fixture[],
+      _outputParams: Params,
+      _randomizerState: RandomizerState
+    ) => {
       const colors = getColors(_outputParams)
       const movingWindow = getMovingWindow(_outputParams)
 
@@ -53,7 +57,7 @@ export function calculateDmx(
               dmxOut =
                 applyRandomization(
                   dmxOut,
-                  randomizerState[i],
+                  _randomizerState[i],
                   _outputParams.randomize
                 ) * state.control.master
             }
@@ -74,7 +78,7 @@ export function calculateDmx(
       return true
     })
 
-    applyFixtures(mainSceneFixtures, outputParams)
+    applyFixtures(mainSceneFixtures, outputParams, randomizerState)
 
     splitScenes.forEach((split, i) => {
       const splitGroups = activeScene.splitScenes[i]?.groups
@@ -86,7 +90,7 @@ export function calculateDmx(
         }
         return false
       })
-      applyFixtures(splitSceneFixtures, split.outputParams)
+      applyFixtures(splitSceneFixtures, split.outputParams, split.randomizer)
     })
   }
 

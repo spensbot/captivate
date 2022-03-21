@@ -21,11 +21,13 @@ interface Scene_base {
 
 export interface SplitScene_t {
   baseParams: Partial<Params>
+  randomizer: RandomizerOptions
   groups: string[]
 }
 export function initSplitScene(): SplitScene_t {
   return {
     baseParams: initBaseParams(),
+    randomizer: initRandomizerOptions(),
     groups: [],
   }
 }

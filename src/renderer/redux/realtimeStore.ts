@@ -19,7 +19,7 @@ export interface RealtimeState {
   time: TimeState
   randomizer: RandomizerState
   dmxOut: number[]
-  splitScenes: { outputParams: Params }[]
+  splitScenes: { outputParams: Params; randomizer: RandomizerState }[]
 }
 
 export function initRealtimeState(): RealtimeState {

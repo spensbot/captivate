@@ -13,8 +13,6 @@ export function initRandomizerOptions() {
   return {
     triggerPeriod: 1,
     triggerDensity: 0.3,
-    riseTime: 20,
-    fallTime: 300,
     envelopeRatio: 0.1,
     envelopeDuration: 500,
   }

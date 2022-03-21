@@ -5,6 +5,7 @@ import {
   getCleanReduxState,
 } from './redux/store'
 import ipcChannels from '../shared/ipc_channels'
+import { initRandomizerOptions } from 'shared/randomizer'
 
 const SELECT_FILES = 'select-files'
 const CACHED_STATE_KEY = 'cached-state'
@@ -15,13 +16,9 @@ export function fixState(state: CleanReduxState): CleanReduxState {
   const light = state.control.light
   light.ids.forEach((id) => {
     const lightScene = light.byId[id]
-    lightScene.modulators.forEach((modulator) => {
-      if (modulator.splitModulations === undefined)
-        modulator.splitModulations = []
-      while (
-        modulator.splitModulations.length < lightScene.splitScenes.length
-      ) {
-        modulator.splitModulations.push({})
+    lightScene.splitScenes.forEach((split) => {
+      if (split.randomizer === undefined) {
+        split.randomizer = initRandomizerOptions()
       }
     })
   })

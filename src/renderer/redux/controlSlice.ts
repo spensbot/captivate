@@ -310,9 +310,11 @@ export const scenesSlice = createSlice({
             splitIndex === null
               ? scene.baseParams
               : scene.splitScenes[splitIndex].baseParams
-          baseParams[key as Param] = clampNormalized(
-            baseParams[key as Param] + value
-          )
+          if (baseParams[key as Param] !== undefined) {
+            baseParams[key as Param] = clampNormalized(
+              baseParams[key as Param] + value
+            )
+          }
         })
       }
     },

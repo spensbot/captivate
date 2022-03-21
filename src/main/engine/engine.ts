@@ -181,8 +181,18 @@ function getNextRealtimeState(
   const outputParams = getOutputParams(nextTimeState.beats, scene, null)
 
   const splitScenes = scene.splitScenes.map((_split, splitIndex) => {
+    const lastSplitRtState = realtimeState.splitScenes[splitIndex]
+    const lastSplitRandomizer =
+      lastSplitRtState === undefined ? [] : lastSplitRtState.randomizer
     return {
       outputParams: getOutputParams(nextTimeState.beats, scene, splitIndex),
+      randomizer: syncAndUpdate(
+        realtimeState.time.beats,
+        lastSplitRandomizer,
+        controlState.dmx.universe.length,
+        nextTimeState,
+        _split.randomizer
+      ),
     }
   })
 
