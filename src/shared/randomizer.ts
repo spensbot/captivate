@@ -31,18 +31,18 @@ export function initRandomizerState(): RandomizerState {
   return []
 }
 
-export function syncAndUpdate(
-  beatsLast: number,
-  state: RandomizerState,
-  size: number,
-  ts: TimeState,
-  options: RandomizerOptions
-) {
-  return update(beatsLast, sync(state, size), ts, options)
-}
+// export function syncAndUpdate(
+//   beatsLast: number,
+//   state: RandomizerState,
+//   size: number,
+//   ts: TimeState,
+//   options: RandomizerOptions
+// ) {
+//   return update(beatsLast, sync(state, size), ts, options)
+// }
 
 // returns a new randomizerState with the desired size. Growing or shrinking as necessary
-function sync(state: RandomizerState, size: number) {
+export function resizeRandomizer(state: RandomizerState, size: number) {
   const syncedState: Point[] = []
   Array(size)
     .fill(0)
@@ -65,6 +65,63 @@ function pickRandomIndexes(randCount: number, size: number) {
     randomIndexes.push(randomIndex)
   }
   return randomIndexes
+}
+
+export function updateIndexes(
+  beatsLast: number,
+  state: RandomizerState,
+  ts: TimeState,
+  indexes: number[],
+  {
+    triggerPeriod,
+    triggerDensity,
+    envelopeRatio,
+    envelopeDuration,
+  }: RandomizerOptions
+) {
+  const riseTime = envelopeDuration * envelopeRatio
+  const fallTime = envelopeDuration - riseTime
+  const indexesSet = new Set(indexes)
+  const nextState = state.map<Point>(({ level, rising }, index) => {
+    if (indexesSet.has(index)) {
+      if (rising) {
+        const newLevel = level + ts.dt / riseTime
+        if (newLevel > 1) {
+          return {
+            level: 1,
+            rising: false,
+          }
+        } else {
+          return {
+            level: newLevel,
+            rising: true,
+          }
+        }
+      } else {
+        const newLevel = level - ts.dt / fallTime
+        return {
+          level: newLevel < 0 ? 0 : newLevel,
+          rising: false,
+        }
+      }
+    } else {
+      return {
+        level,
+        rising,
+      }
+    }
+  })
+
+  if (isNewPeriod(beatsLast, ts.beats, triggerPeriod)) {
+    let randCount = Math.ceil(indexes.length * triggerDensity)
+    if (randCount === 0 && indexes.length > 0) randCount = 1
+    pickRandomIndexes(randCount, indexes.length).forEach((randIndex) => {
+      let index = indexes[randIndex]
+      nextState[index].rising = true
+    })
+  }
+
+  return nextState
 }
 
 function update(

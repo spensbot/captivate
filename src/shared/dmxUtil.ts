@@ -1,6 +1,12 @@
 import { Colors } from './dmxColors'
 import { Window, Window2D_t } from '../types/baseTypes'
-import { DmxValue, DMX_MAX_VALUE, FixtureChannel, Fixture } from './dmxFixtures'
+import {
+  DmxValue,
+  DMX_MAX_VALUE,
+  FixtureChannel,
+  Fixture,
+  Universe,
+} from './dmxFixtures'
 import { Params } from './params'
 import { lerp } from './util'
 import { Point } from './randomizer'
@@ -110,11 +116,30 @@ export function applyRandomization(
   return lerp(value, value * point.level, randomizationAmount)
 }
 
-export function getSplitSceneGroups(activeScene: LightScene_t) {
+export function getAllSplitSceneGroups(activeScene: LightScene_t) {
   return activeScene.splitScenes.reduce<Set<string>>((accum, splitScene) => {
     for (const group of splitScene.groups) {
       accum.add(group)
     }
     return accum
   }, new Set())
+}
+
+export function getFixturesWithIndexes(universe: Universe) {
+  return universe.map((fixture, universeIndex) => ({ fixture, universeIndex }))
+}
+
+export function getFixturesNotInGroups(
+  universe: Universe,
+  groups: Set<string>
+) {
+  return getFixturesWithIndexes(universe).filter(
+    ({ fixture }) => !fixture.groups.find((group) => groups.has(group))
+  )
+}
+
+export function getFixturesInGroups(universe: Universe, groups: string[]) {
+  return getFixturesWithIndexes(universe).filter(
+    ({ fixture }) => !!fixture.groups.find((group) => groups.includes(group))
+  )
 }

@@ -9,7 +9,7 @@ import {
   initRealtimeState,
 } from '../../renderer/redux/realtimeStore'
 import { TimeState } from '../../shared/TimeState'
-import { syncAndUpdate } from '../../shared/randomizer'
+import { resizeRandomizer, updateIndexes } from '../../shared/randomizer'
 import { getOutputParams } from '../../shared/modulation'
 import { handleMessage } from './handleMidi'
 import openVisualizerWindow, {
@@ -19,7 +19,11 @@ import { calculateDmx } from './dmxEngine'
 import { handleAutoScene } from '../../shared/autoScene'
 import { setActiveScene } from '../../renderer/redux/controlSlice'
 import TapTempoEngine from './TapTempoEngine'
-import { mapUndefinedParamsToDefault } from '../../shared/params'
+import {
+  getAllSplitSceneGroups,
+  getFixturesInGroups,
+  getFixturesNotInGroups,
+} from 'shared/dmxUtil'
 
 let _nodeLink = new NodeLink()
 let _ipcCallbacks: IPC_Callbacks | null = null
@@ -147,14 +151,7 @@ function getNextRealtimeState(
 ): RealtimeState {
   const scene =
     controlState.control.light.byId[controlState.control.light.active]
-
-  const newRandomizerState = syncAndUpdate(
-    realtimeState.time.beats,
-    realtimeState.randomizer,
-    controlState.dmx.universe.length,
-    nextTimeState,
-    scene.randomizer
-  )
+  const dmx = controlState.dmx
 
   handleAutoScene(
     realtimeState,
@@ -180,19 +177,51 @@ function getNextRealtimeState(
 
   const outputParams = getOutputParams(nextTimeState.beats, scene, null)
 
+  let newRandomizerState = resizeRandomizer(
+    realtimeState.randomizer,
+    dmx.universe.length
+  )
+
+  let splitGroups = getAllSplitSceneGroups(scene)
+  let mainSceneFixtures = getFixturesNotInGroups(dmx.universe, splitGroups)
+  let mainSceneFixturesWithinEpicness = mainSceneFixtures.filter(
+    ({ fixture }) =>
+      dmx.fixtureTypesByID[fixture.type].epicness <= outputParams.epicness
+  )
+
+  newRandomizerState = updateIndexes(
+    realtimeState.time.beats,
+    newRandomizerState,
+    nextTimeState,
+    mainSceneFixturesWithinEpicness.map(({ universeIndex }) => universeIndex),
+    scene.randomizer
+  )
+
   const splitScenes = scene.splitScenes.map((_split, splitIndex) => {
     const lastSplitRtState = realtimeState.splitScenes[splitIndex]
     const lastSplitRandomizer =
       lastSplitRtState === undefined ? [] : lastSplitRtState.randomizer
-    return {
-      outputParams: getOutputParams(nextTimeState.beats, scene, splitIndex),
-      randomizer: syncAndUpdate(
-        realtimeState.time.beats,
-        lastSplitRandomizer,
-        controlState.dmx.universe.length,
-        nextTimeState,
-        _split.randomizer
+    const splitOutputParams = getOutputParams(
+      nextTimeState.beats,
+      scene,
+      splitIndex
+    )
+    let splitSceneFixtures = getFixturesInGroups(dmx.universe, _split.groups)
+    let splitSceneFixturesWithinEpicness = splitSceneFixtures.filter(
+      ({ fixture }) =>
+        dmx.fixtureTypesByID[fixture.type].epicness <= outputParams.epicness
+    )
+    newRandomizerState = updateIndexes(
+      realtimeState.time.beats,
+      newRandomizerState,
+      nextTimeState,
+      splitSceneFixturesWithinEpicness.map(
+        ({ universeIndex }) => universeIndex
       ),
+      _split.randomizer
+    )
+    return {
+      outputParams: splitOutputParams,
     }
   })
 
