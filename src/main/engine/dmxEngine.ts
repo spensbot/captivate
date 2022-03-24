@@ -1,9 +1,5 @@
 import { getColors } from '../../shared/dmxColors'
-import {
-  DMX_MAX_VALUE,
-  DMX_DEFAULT_VALUE,
-  Fixture,
-} from '../../shared/dmxFixtures'
+import { DMX_MAX_VALUE, DMX_DEFAULT_VALUE } from '../../shared/dmxFixtures'
 import { Params } from '../../shared/params'
 import { RandomizerState } from '../../shared/randomizer'
 import { CleanReduxState } from '../../renderer/redux/store'
@@ -12,6 +8,9 @@ import {
   getDmxValue,
   applyRandomization,
   getAllSplitSceneGroups,
+  getFixturesInGroups,
+  getFixturesNotInGroups,
+  UniverseFixture,
 } from '../../shared/dmxUtil'
 
 export function calculateDmx(
@@ -30,14 +29,14 @@ export function calculateDmx(
     const activeScene = scenes.byId[scenes.active]
 
     const applyFixtures = (
-      fixtures: Fixture[],
+      fixtures: UniverseFixture[],
       _outputParams: Params,
       _randomizerState: RandomizerState
     ) => {
       const colors = getColors(_outputParams)
       const movingWindow = getMovingWindow(_outputParams)
 
-      fixtures.forEach((fixture, i) => {
+      fixtures.forEach(({ fixture, universeIndex }) => {
         const fixtureType = fixtureTypes[fixture.type]
 
         fixtureType.channels.forEach((channel, offset) => {
@@ -57,7 +56,7 @@ export function calculateDmx(
               dmxOut =
                 applyRandomization(
                   dmxOut,
-                  _randomizerState[i],
+                  _randomizerState[universeIndex],
                   _outputParams.randomize
                 ) * state.control.master
             }
@@ -71,25 +70,15 @@ export function calculateDmx(
 
     const splitSceneGroups = getAllSplitSceneGroups(activeScene)
 
-    const mainSceneFixtures = universe.filter((fixture) => {
-      for (const group of fixture.groups) {
-        if (splitSceneGroups.has(group)) return false
-      }
-      return true
-    })
+    const mainSceneFixtures = getFixturesNotInGroups(universe, splitSceneGroups)
 
     applyFixtures(mainSceneFixtures, outputParams, randomizerState)
 
     splitScenes.forEach((split, i) => {
-      const splitGroups = activeScene.splitScenes[i]?.groups
-      if (splitGroups === undefined) return
-      const splitGroupSet = new Set(splitGroups)
-      const splitSceneFixtures = universe.filter((fixture) => {
-        for (const group of fixture.groups) {
-          if (splitGroupSet.has(group)) return true
-        }
-        return false
-      })
+      const splitGroups = activeScene.splitScenes[i]?.groups ?? []
+
+      const splitSceneFixtures = getFixturesInGroups(universe, splitGroups)
+
       applyFixtures(splitSceneFixtures, split.outputParams, randomizerState)
     })
   }

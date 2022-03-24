@@ -312,7 +312,7 @@ export const scenesSlice = createSlice({
               : scene.splitScenes[splitIndex].baseParams
           if (baseParams[key as Param] !== undefined) {
             baseParams[key as Param] = clampNormalized(
-              baseParams[key as Param] + value
+              baseParams[key as Param] ?? 0.5 + value
             )
           }
         })
@@ -321,11 +321,19 @@ export const scenesSlice = createSlice({
     setRandomizer: (
       state,
       {
-        payload,
-      }: PayloadAction<{ key: keyof RandomizerOptions; value: number }>
+        payload: { key, value, splitIndex },
+      }: PayloadAction<{
+        key: keyof RandomizerOptions
+        value: number
+        splitIndex: number | null
+      }>
     ) => {
       modifyActiveLightScene(state, (scene) => {
-        scene.randomizer[payload.key] = payload.value
+        if (splitIndex === null) {
+          scene.randomizer[key] = value
+        } else {
+          scene.splitScenes[splitIndex].randomizer[key] = value
+        }
       })
     },
     addSplitScene: (state, {}: PayloadAction<undefined>) => {

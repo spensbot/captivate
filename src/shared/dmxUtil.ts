@@ -125,7 +125,12 @@ export function getAllSplitSceneGroups(activeScene: LightScene_t) {
   }, new Set())
 }
 
-export function getFixturesWithIndexes(universe: Universe) {
+export interface UniverseFixture {
+  fixture: Fixture
+  universeIndex: number
+}
+
+export function getFixturesWithIndexes(universe: Universe): UniverseFixture[] {
   return universe.map((fixture, universeIndex) => ({ fixture, universeIndex }))
 }
 

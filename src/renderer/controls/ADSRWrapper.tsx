@@ -3,10 +3,18 @@ import { useActiveLightScene } from '../redux/store'
 import { setRandomizer } from '../redux/controlSlice'
 import { useDispatch } from 'react-redux'
 
-interface Props {}
+interface Props {
+  splitIndex: number | null
+}
 
-export default function ADSRWrapper({}: Props) {
-  const state = useActiveLightScene((scene) => scene.randomizer)
+export default function ADSRWrapper({ splitIndex }: Props) {
+  const state = useActiveLightScene((scene) => {
+    if (splitIndex === null) {
+      return scene.randomizer
+    } else {
+      return scene.splitScenes[splitIndex].randomizer
+    }
+  })
   const dispatch = useDispatch()
 
   const ratio: Control = {
@@ -18,6 +26,7 @@ export default function ADSRWrapper({}: Props) {
         setRandomizer({
           key: 'envelopeRatio',
           value: newVal,
+          splitIndex,
         })
       )
     },
@@ -31,6 +40,7 @@ export default function ADSRWrapper({}: Props) {
         setRandomizer({
           key: 'envelopeDuration',
           value: newVal,
+          splitIndex,
         })
       )
     },

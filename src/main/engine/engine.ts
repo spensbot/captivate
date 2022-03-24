@@ -23,7 +23,7 @@ import {
   getAllSplitSceneGroups,
   getFixturesInGroups,
   getFixturesNotInGroups,
-} from 'shared/dmxUtil'
+} from '../../shared/dmxUtil'
 
 let _nodeLink = new NodeLink()
 let _ipcCallbacks: IPC_Callbacks | null = null
@@ -198,9 +198,6 @@ function getNextRealtimeState(
   )
 
   const splitScenes = scene.splitScenes.map((_split, splitIndex) => {
-    const lastSplitRtState = realtimeState.splitScenes[splitIndex]
-    const lastSplitRandomizer =
-      lastSplitRtState === undefined ? [] : lastSplitRtState.randomizer
     const splitOutputParams = getOutputParams(
       nextTimeState.beats,
       scene,
