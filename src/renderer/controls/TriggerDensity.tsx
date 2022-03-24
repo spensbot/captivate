@@ -11,7 +11,6 @@ interface Props {
   splitIndex: number | null
 }
 
-const divCount = 20
 const gapRatio = 0.5
 
 export default function TriggerDensity({ splitIndex }: Props) {
@@ -26,8 +25,6 @@ const Root = styled.div`
   flex: 1 0 0;
   padding: 0.3rem;
 `
-
-let _lastBeats = 0
 
 function Visualizer({ splitIndex }: Props) {
   const { universe, fixtureTypesByID } = useDmxSelector((dmx) => dmx)
@@ -96,4 +93,5 @@ const Div = styled.div`
 
 const Gap = styled.div`
   flex: ${gapRatio} 0 0;
+  max-width: 0.5rem;
 `
