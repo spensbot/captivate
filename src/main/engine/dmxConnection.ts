@@ -52,6 +52,7 @@ export function maintain(config: Config) {
 
 async function maintainConnection() {
   const availablePorts = await SerialPort.list()
+
   const availableDevices = availablePorts
     .filter((p) => isDmxDevice_t(p))
     .map((p) => dmxDevice(p))
@@ -110,7 +111,11 @@ function connect(path: string) {
 function start() {}
 
 function isDmxDevice_t(port: SerialPort.PortInfo) {
-  if (port.manufacturer?.includes('DMX')) return true
+  if (
+    port.manufacturer?.includes('DMX') ||
+    port.manufacturer?.includes('ENTTEC')
+  )
+    return true
   return false
 }
 

@@ -35,7 +35,6 @@ export default function useDragMapped(
   }
 
   const stopListening = () => {
-    console.log('mapped stopListening')
     document.body.removeEventListener('mousemove', onMouseMove)
     document.body.removeEventListener('mouseup', onMouseUp)
     document.body.removeEventListener('mouseleave', onMouseLeave)

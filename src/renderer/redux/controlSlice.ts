@@ -304,16 +304,15 @@ export const scenesSlice = createSlice({
       state,
       { payload: { params, splitIndex } }: ParamsAction
     ) => {
-      for (let [key, value] of Object.entries(params)) {
+      for (let [key, amount] of Object.entries(params)) {
         modifyActiveLightScene(state, (scene) => {
           const baseParams =
             splitIndex === null
               ? scene.baseParams
               : scene.splitScenes[splitIndex].baseParams
-          if (baseParams[key as Param] !== undefined) {
-            baseParams[key as Param] = clampNormalized(
-              baseParams[key as Param] ?? 0.5 + value
-            )
+          const currentVal = baseParams[key as Param]
+          if (currentVal !== undefined) {
+            baseParams[key as Param] = clampNormalized(currentVal + amount)
           }
         })
       }

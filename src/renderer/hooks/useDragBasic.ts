@@ -21,14 +21,12 @@ export default function useDragBasic(
   }
 
   const startListening = () => {
-    console.log('basic startListening')
     document.body.addEventListener('mousemove', onMouseMove)
     document.body.addEventListener('mouseup', onMouseUp)
     document.body.addEventListener('mouseleave', onMouseLeave)
   }
 
   const stopListening = () => {
-    console.log('basic stopListening')
     document.body.removeEventListener('mousemove', onMouseMove)
     document.body.removeEventListener('mouseup', onMouseUp)
     document.body.removeEventListener('mouseleave', onMouseLeave)
