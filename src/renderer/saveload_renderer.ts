@@ -16,7 +16,11 @@ export function fixState(state: CleanReduxState): CleanReduxState {
   const light = state.control.light
   light.ids.forEach((id) => {
     const lightScene = light.byId[id]
+    if (lightScene.randomizer.envelopeDuration > 16)
+      lightScene.randomizer.envelopeDuration = 1
     lightScene.splitScenes.forEach((split) => {
+      if (split.randomizer.envelopeDuration > 16)
+        split.randomizer.envelopeDuration = 1
       if (split.randomizer === undefined) {
         split.randomizer = initRandomizerOptions()
       }

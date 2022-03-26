@@ -67,7 +67,6 @@ export default function Randomizer({ splitIndex }: Props) {
                 })
               )
             }
-            style={{ height: '0.8rem' }}
           />
         </Row>
         <ParamXButton splitIndex={splitIndex} params={['randomize']} />
@@ -90,6 +89,8 @@ const Root = styled.div`
 const Row = styled.div`
   width: 100%;
   display: flex;
+  height: 2rem;
+  align-items: stretch;
   padding: 0 0.3rem 0.3rem 0.3rem;
   box-sizing: border-box;
 `

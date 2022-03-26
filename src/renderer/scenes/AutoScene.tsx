@@ -10,6 +10,7 @@ import {
 import { SceneType } from '../../shared/Scenes'
 import DraggableNumber from '../base/DraggableNumber'
 import { SliderMidiOverlay } from 'renderer/base/MidiOverlay'
+import { double_incremented, halve_incremented } from 'shared/util'
 
 export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
   const dispatch = useDispatch()
@@ -59,7 +60,6 @@ export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
         max={4}
         onChange={onPeriodChange}
         style={{
-          padding: '0.2rem 0.4rem',
           backgroundColor: '#0005',
           color: enabled ? '#fff' : '#fff5',
         }}

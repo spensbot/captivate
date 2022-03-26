@@ -1,5 +1,8 @@
-import { clamp } from '../../shared/util'
+import { DownIcon, UpIcon } from 'renderer/icons/arrows'
+import { clamp } from 'shared/util'
 import useDragBasic from '../hooks/useDragBasic'
+import styled from 'styled-components'
+import { double_incremented, halve_incremented } from 'shared/util'
 
 type Type = 'continuous' | 'snap'
 
@@ -95,18 +98,49 @@ export default function DraggableNumber({
 
   if (suffix) valueString += suffix
 
+  const onUp = () => {
+    const doubled = double_incremented(value)
+    onChange(Math.min(doubled, max))
+  }
+
+  const onDown = () => {
+    const halved = halve_incremented(value)
+    onChange(Math.max(halved, min))
+  }
+
   return (
-    <div
-      ref={dragContainer}
-      onMouseDown={onMouseDownWrapper}
-      style={{
-        padding: '0.5rem 0.8rem',
-        backgroundColor: '#0005',
-        cursor: 'move',
-        ...style,
-      }}
-    >
-      {valueString}
-    </div>
+    <Root style={style}>
+      <DragArea ref={dragContainer} onMouseDown={onMouseDownWrapper}>
+        {valueString}
+      </DragArea>
+      <Col>
+        <Arrow style={{ paddingBottom: '0.2rem' }} onClick={onUp}>
+          <UpIcon height={5} width={10} />
+        </Arrow>
+        <Arrow style={{ paddingTop: '0.2rem' }} onClick={onDown}>
+          <DownIcon height={5} width={10} />
+        </Arrow>
+      </Col>
+    </Root>
   )
 }
+
+const Root = styled.div`
+  display: flex;
+  align-items: center;
+  background-color: #0005;
+`
+const DragArea = styled.div`
+  padding: 0.5rem 0.3rem 0.5rem 0.7rem;
+  cursor: move;
+`
+const Col = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`
+const Arrow = styled.div`
+  cursor: pointer;
+  padding: 0.4rem;
+  font-size: 0; // for some reason this is necessary to make the svg render correctly?
+`

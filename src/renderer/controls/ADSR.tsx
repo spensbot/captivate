@@ -71,7 +71,7 @@ export default function ADSR({ width, height, ratio, duration }: Props) {
       <DraggableNumber
         style={{
           position: 'absolute',
-          top: padding_string,
+          bottom: padding_string,
           right: padding_string,
         }}
         value={duration.val}

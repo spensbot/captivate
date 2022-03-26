@@ -104,3 +104,35 @@ export function reorderArray<T>(
   let element = array.splice(fromIndex, 1)[0]
   array.splice(toIndex, 0, element)
 }
+
+export function double_incremented(val: number) {
+  let ref = 1
+  const doubled = val * 2
+  if (doubled > ref) {
+    while (doubled > ref) {
+      ref *= 2
+    }
+    return ref
+  } else {
+    while (doubled < ref) {
+      ref /= 2
+    }
+    return ref
+  }
+}
+
+export function halve_incremented(val: number) {
+  let ref = 1
+  const halved = val / 2
+  if (halved > ref) {
+    while (halved > ref) {
+      ref *= 2
+    }
+    return ref
+  } else {
+    while (halved < ref) {
+      ref /= 2
+    }
+    return ref
+  }
+}
