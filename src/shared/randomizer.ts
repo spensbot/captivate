@@ -11,10 +11,10 @@ export type RandomizerState = Point[]
 
 export function initRandomizerOptions() {
   return {
-    triggerPeriod: 1,
+    triggerPeriod: 1, // beats
     triggerDensity: 0.3,
     envelopeRatio: 0.1,
-    envelopeDuration: 500,
+    envelopeDuration: 1, // beats
   }
 }
 
@@ -79,13 +79,14 @@ export function updateIndexes(
     envelopeDuration,
   }: RandomizerOptions
 ) {
-  const riseTime = envelopeDuration * envelopeRatio
-  const fallTime = envelopeDuration - riseTime
+  const riseBeats = envelopeDuration * envelopeRatio
+  const fallBeats = envelopeDuration - riseBeats
+  const beatDelta = ts.beats - beatsLast
   const indexesSet = new Set(indexes)
   const nextState = state.map<Point>(({ level, rising }, index) => {
     if (indexesSet.has(index)) {
       if (rising) {
-        const newLevel = level + ts.dt / riseTime
+        const newLevel = level + beatDelta / riseBeats
         if (newLevel > 1) {
           return {
             level: 1,
@@ -98,7 +99,7 @@ export function updateIndexes(
           }
         }
       } else {
-        const newLevel = level - ts.dt / fallTime
+        const newLevel = level - beatDelta / fallBeats
         return {
           level: newLevel < 0 ? 0 : newLevel,
           rising: false,
@@ -135,11 +136,12 @@ function update(
     envelopeDuration,
   }: RandomizerOptions
 ) {
-  const riseTime = envelopeDuration * envelopeRatio
-  const fallTime = envelopeDuration - riseTime
+  const riseBeats = envelopeDuration * envelopeRatio
+  const fallBeats = envelopeDuration - riseBeats
+  const beatDelta = ts.beats - beatsLast
   const nextState = state.map<Point>(({ level, rising }) => {
     if (rising) {
-      const newLevel = level + ts.dt / riseTime
+      const newLevel = level + beatDelta / riseBeats
       if (newLevel > 1) {
         return {
           level: 1,
@@ -152,7 +154,7 @@ function update(
         }
       }
     } else {
-      const newLevel = level - ts.dt / fallTime
+      const newLevel = level - beatDelta / fallBeats
       return {
         level: newLevel < 0 ? 0 : newLevel,
         rising: false,

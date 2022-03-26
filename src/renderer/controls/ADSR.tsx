@@ -78,7 +78,6 @@ export default function ADSR({ width, height, ratio, duration }: Props) {
         min={duration.min}
         max={duration.max}
         onChange={duration.onChange}
-        suffix="ms"
       />
     </Root>
   )

@@ -33,8 +33,8 @@ export default function ADSRWrapper({ splitIndex }: Props) {
   }
   const duration: Control = {
     val: state.envelopeDuration,
-    min: 50,
-    max: 5000,
+    min: 0.1,
+    max: 16,
     onChange: (newVal) => {
       dispatch(
         setRandomizer({
