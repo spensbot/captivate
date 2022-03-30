@@ -13,8 +13,14 @@ export default function XYAxisCursor({ splitIndex }: Props) {
 
   return (
     <>
+      <Cursor
+        x={applyMirror(xOut, xMirror)}
+        y={yOut}
+        color="#777"
+        withHorizontal
+        withVertical
+      />
       <Cursor x={xOut} y={yOut} color="#fff" withHorizontal withVertical />
-      <Cursor x={applyMirror(xOut, xMirror)} y={yOut} color="#fff" />
     </>
   )
 }
