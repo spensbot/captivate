@@ -3,79 +3,20 @@ import Counter2 from './Counter2'
 import ConnectionStatus from './ConnectionStatus'
 import { useRealtimeSelector } from '../redux/realtimeStore'
 import useDragBasic from '../hooks/useDragBasic'
-// TODO
-// import { incrementTempo, setLinkEnabled } from '../engine/engine'
 import styled from 'styled-components'
 import { SliderMidiOverlay } from '../base/MidiOverlay'
 import UndoRedo from 'renderer/controls/UndoRedo'
 import UsbIcon from '@mui/icons-material/Usb'
-import CableIcon from '@mui/icons-material/Cable'
-import SettingsIcon from '@mui/icons-material/Settings'
-import SettingsInputSvideoIcon from '@mui/icons-material/SettingsInputSvideo'
 import IconButton from '@mui/material/IconButton'
 import PianoIcon from '@mui/icons-material/Piano'
 import { useDeviceSelector, useTypedSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import { midiSetIsEditing } from '../redux/controlSlice'
 import { setConnectionsMenu } from '../redux/guiSlice'
-import { ControlState } from '../redux/controlSlice'
-import { store, resetControl } from '../redux/store'
-import { loadFile, saveFile, captivateFileFilters } from '../saveload_renderer'
-import SaveIcon from '@mui/icons-material/Save'
-import FileOpenIcon from '@mui/icons-material/FileOpen'
 import { send_user_command } from '../ipcHandler'
 import TapTempo from './TapTempo'
 import PlayPauseButton from './PlayPauseButton'
-
-type SaveType = ControlState
-
-function fixState(state: ControlState): ControlState {
-  const light = state.light
-  light.ids.forEach((id) => {
-    const scene = light.byId[id]
-    if (scene.splitScenes === undefined) scene.splitScenes = []
-    scene.modulators.forEach((modulator) => {
-      if (modulator.splitModulations === undefined)
-        modulator.splitModulations = []
-    })
-  })
-  return state
-}
-
-function loadScenes() {
-  loadFile('Load Scenes', [captivateFileFilters.scenes])
-    .then((serializedControlState) => {
-      const newControlState: SaveType = fixState(
-        JSON.parse(serializedControlState)
-      )
-
-      store.dispatch(
-        resetControl({
-          device: store.getState().control.present.device,
-          master: 1,
-          light: newControlState.light,
-          visual: newControlState.visual,
-        })
-      )
-    })
-    .catch((err) => {
-      console.error(err)
-    })
-}
-
-function saveScenes() {
-  const controlState: SaveType = store.getState().control.present
-  const serializedControlState = JSON.stringify(controlState)
-  saveFile('Save Scenes', serializedControlState, [captivateFileFilters.scenes])
-    .then((err) => {
-      if (err) {
-        console.error(err)
-      }
-    })
-    .catch((err) => {
-      console.error(err)
-    })
-}
+import SaveLoad from './SaveLoad'
 
 function BPM() {
   const bpm = useRealtimeSelector((state) => state.time.bpm)
@@ -156,25 +97,11 @@ export default function StatusBar() {
       <IconButton onClick={() => dispatch(setConnectionsMenu(!connectionMenu))}>
         <UsbIcon />
       </IconButton>
-      <IconButton onClick={saveScenes}>
-        <SaveIcon />
-      </IconButton>
-      <IconButton onClick={loadScenes}>
-        <FileOpenIcon />
-      </IconButton>
+      <SaveLoad />
       <Connections>
         <ConnectionStatus type={'midi'} />
         <ConnectionStatus type={'dmx'} />
       </Connections>
-      {/* <IconButton>
-        <CableIcon />
-      </IconButton>
-      <IconButton>
-        <SettingsIcon />
-      </IconButton>
-      <IconButton>
-        <SettingsInputSvideoIcon />
-      </IconButton> */}
     </Root>
   )
 }

@@ -30,8 +30,7 @@ export function fixState(state: CleanReduxState): CleanReduxState {
 }
 
 export const captivateFileFilters = {
-  dmx: { name: 'captivate dmx', extensions: ['.cap_dmx'] },
-  scenes: { name: 'captivate scenes', extensions: ['.cap_scenes'] },
+  captivate: { name: 'Captivate', extensions: ['.captivate'] },
 }
 
 const videoFileFilters: Electron.FileFilter[] = [

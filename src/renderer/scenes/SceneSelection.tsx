@@ -1,12 +1,6 @@
-import {
-  ControlState,
-  sortScenesByBombacity,
-  autoBombacity,
-} from '../redux/controlSlice'
+import { sortScenesByBombacity, autoBombacity } from '../redux/controlSlice'
 import { SceneType } from '../../shared/Scenes'
 import { IconButton } from '@mui/material'
-import { store, resetControl } from '../redux/store'
-import { loadFile, saveFile, captivateFileFilters } from '../saveload_renderer'
 import styled from 'styled-components'
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import SortIcon from '@mui/icons-material/Sort'
