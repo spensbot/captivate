@@ -8,7 +8,7 @@ import { saveFile, loadFile, captivateFileFilters } from '../saveload_renderer'
 function fixState(_state: CleanReduxState) {}
 
 function load() {
-  loadFile('Load Scenes', [captivateFileFilters.scenes])
+  loadFile('Load Scenes', [captivateFileFilters.captivate])
     .then((serializedControlState) => {
       const newControlState: SaveType = fixState(
         JSON.parse(serializedControlState)
