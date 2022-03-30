@@ -32,7 +32,7 @@ let _realtimeState: RealtimeState = initRealtimeState()
 let _lastFrameTime = 0
 const _tapTempoEngine = new TapTempoEngine()
 function _tapTempo() {
-  _tapTempoEngine.tap(_realtimeState.time.bpm, (newBpm) => {
+  _tapTempoEngine.tap((newBpm) => {
     _nodeLink.setTempo(newBpm)
   })
 }
