@@ -15,6 +15,7 @@ interface Props {
   onChange: (newVal: number) => void
   style?: React.CSSProperties
   suffix?: string
+  noArrows?: boolean
 }
 
 // This is really bad react behavior... But IDK what else to do
@@ -31,6 +32,7 @@ export default function DraggableNumber({
   onChange,
   style,
   suffix,
+  noArrows,
 }: Props) {
   const speedAdjust = 500 / (max - min)
 
@@ -114,12 +116,16 @@ export default function DraggableNumber({
         {valueString}
       </DragArea>
       <Col>
-        <Arrow style={{ paddingBottom: '0.2rem' }} onClick={onUp}>
-          <UpIcon height={5} width={10} />
-        </Arrow>
-        <Arrow style={{ paddingTop: '0.2rem' }} onClick={onDown}>
-          <DownIcon height={5} width={10} />
-        </Arrow>
+        {!noArrows && (
+          <>
+            <Arrow style={{ paddingBottom: '0.2rem' }} onClick={onUp}>
+              <UpIcon height={5} width={10} />
+            </Arrow>
+            <Arrow style={{ paddingTop: '0.2rem' }} onClick={onDown}>
+              <DownIcon height={5} width={10} />
+            </Arrow>
+          </>
+        )}
       </Col>
     </Root>
   )

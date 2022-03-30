@@ -9,7 +9,7 @@ interface Props {
 }
 
 export default function HsvPad({ splitIndex }: Props) {
-  return (
+  return splitIndex === null ? (
     <Root>
       <MidiOverlay_xy
         actions={[
@@ -22,6 +22,11 @@ export default function HsvPad({ splitIndex }: Props) {
       <SliderMidiOverlay action={{ type: 'setBaseParam', paramKey: 'hue' }}>
         <Hue splitIndex={splitIndex} />
       </SliderMidiOverlay>
+    </Root>
+  ) : (
+    <Root>
+      <SVpad splitIndex={splitIndex} />
+      <Hue splitIndex={splitIndex} />
     </Root>
   )
 }

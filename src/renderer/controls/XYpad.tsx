@@ -54,7 +54,15 @@ export default function XYpad({ splitIndex }: Props) {
     return null
   }
 
-  return (
+  const content = (
+    <Root ref={dragContainer} onMouseDown={onMouseDown}>
+      <XYCursor splitIndex={splitIndex} />
+      <XYWindow splitIndex={splitIndex} />
+      <ParamXButton splitIndex={splitIndex} params={paramBundles.position} />
+    </Root>
+  )
+
+  return splitIndex === null ? (
     <MidiOverlay_xy
       style={{ marginRight: '1rem' }}
       actions={[
@@ -64,12 +72,10 @@ export default function XYpad({ splitIndex }: Props) {
         { type: 'setBaseParam', paramKey: 'height' },
       ]}
     >
-      <Root ref={dragContainer} onMouseDown={onMouseDown}>
-        <XYCursor splitIndex={splitIndex} />
-        <XYWindow splitIndex={splitIndex} />
-        <ParamXButton splitIndex={splitIndex} params={paramBundles.position} />
-      </Root>
+      {content}
     </MidiOverlay_xy>
+  ) : (
+    content
   )
 }
 

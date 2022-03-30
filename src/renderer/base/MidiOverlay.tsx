@@ -136,6 +136,7 @@ export function SliderMidiOverlay({ children, action, style }: Props) {
                     min={0}
                     max={controlledAction.options.max}
                     onChange={onChangeMin}
+                    noArrows
                   />
                   <DraggableNumber
                     type="continuous"
@@ -144,6 +145,7 @@ export function SliderMidiOverlay({ children, action, style }: Props) {
                     min={controlledAction.options.min}
                     max={1}
                     onChange={onChangeMax}
+                    noArrows
                   />
                 </MinMax>
                 {controlledAction.options.type === 'note' && (
