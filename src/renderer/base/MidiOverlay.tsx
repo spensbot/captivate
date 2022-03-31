@@ -99,6 +99,21 @@ export function SliderMidiOverlay({ children, action, style }: Props) {
     )
   }
 
+  const onClickMode_cc = () => {
+    dispatch(
+      midiSetSliderAction({
+        ...controlledAction,
+        options: {
+          ...controlledAction.options,
+          mode:
+            controlledAction.options.mode === 'relative'
+              ? 'absolute'
+              : 'relative',
+        },
+      })
+    )
+  }
+
   const onClickValue = () => {
     dispatch(
       midiSetSliderAction({
@@ -161,6 +176,13 @@ export function SliderMidiOverlay({ children, action, style }: Props) {
                       onClick={onClickValue}
                     />
                   </>
+                )}
+                {controlledAction.options.type === 'cc' && (
+                  <Button
+                    fontSize="0.8rem"
+                    label={controlledAction.options.mode}
+                    onClick={onClickMode_cc}
+                  />
                 )}
               </>
             )}

@@ -9,6 +9,7 @@ interface Range {
 }
 interface SliderControl_cc extends Range {
   type: 'cc'
+  mode: 'absolute' | 'relative'
 }
 interface SliderControl_note extends Range {
   type: 'note'
@@ -154,14 +155,3 @@ function clearInputID(state: DeviceState, inputID: string) {
     if (sliderAction.inputID === inputID) delete state.sliderActions[actionID]
   }
 }
-
-// export const midiSlice = createSlice({
-//   name: 'midi',
-//   initialState: initDeviceState(),
-//   reducers: {},
-// })
-
-// export const { setButtonAction, setSliderAction, listen, setIsEditing } =
-//   midiSlice.actions
-
-// export default midiSlice.reducer
