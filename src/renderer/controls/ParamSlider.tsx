@@ -7,6 +7,7 @@ import { setBaseParams } from '../redux/controlSlice'
 import ParamCursor from './ParamCursor'
 import { SliderMidiOverlay } from '../base/MidiOverlay'
 import ParamXButton from './ParamXButton'
+import styled from 'styled-components'
 
 interface Props {
   param: Param
@@ -31,17 +32,8 @@ export default function ParamSlider({ param, splitIndex }: Props) {
 
   if (value === undefined) return null
 
-  return (
-    <SliderMidiOverlay
-      action={{ type: 'setBaseParam', paramKey: param }}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        height: '10rem',
-        marginRight: '1rem',
-      }}
-    >
+  const content = (
+    <>
       <div style={{ flex: '1 0 10rem' }}>
         <SliderBase orientation="vertical" radius={radius} onChange={onChange}>
           <ParamCursor
@@ -61,6 +53,25 @@ export default function ParamSlider({ param, splitIndex }: Props) {
       </div>
       <ParamXButton splitIndex={splitIndex} params={[param]} />
       <div style={{ marginTop: '1rem' }}>{param}</div>
+    </>
+  )
+
+  const wrapperStyle: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    height: '10rem',
+    marginRight: '1rem',
+  }
+
+  return splitIndex === null ? (
+    <SliderMidiOverlay
+      action={{ type: 'setBaseParam', paramKey: param }}
+      style={wrapperStyle}
+    >
+      {content}
     </SliderMidiOverlay>
+  ) : (
+    <div style={wrapperStyle}>{content}</div>
   )
 }

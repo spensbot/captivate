@@ -64,6 +64,7 @@ export function handleMessage(
               type: 'cc',
               min: 0,
               max: 1,
+              mode: 'absolute',
             },
           })
         )
@@ -152,8 +153,7 @@ export function handleMessage(
             })
           )
         } else if (action.type === 'setBpm') {
-          const newTempo = newVal * 70 + 70
-          nodeLink.setTempo(newTempo)
+          nodeLink.setTempo(newVal)
         } else if (action.type === 'tapTempo') {
           tapTempo()
         }
@@ -162,7 +162,18 @@ export function handleMessage(
       const range = op.max - op.min
       if (op.type === 'cc') {
         if (input.message.type === 'CC') {
-          setNewVal(op.min + (input.message.value / 127) * range)
+          if (op.mode === 'absolute') {
+            setNewVal(op.min + (input.message.value / 127) * range * 70 + 70)
+          } else {
+            // relative
+            let mapped = (input.message.value - 64) / 2
+            console.log(
+              `old: ${getOldVal()} | mapped: ${mapped} | og: ${
+                input.message.value
+              }`
+            )
+            setNewVal(getOldVal() + mapped)
+          }
         }
       } else if (op.type === 'note') {
         if (input.message.type === 'On') {
