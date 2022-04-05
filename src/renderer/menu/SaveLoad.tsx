@@ -1,37 +1,50 @@
+import { useState } from 'react'
 import styled from 'styled-components'
 import SaveIcon from '@mui/icons-material/Save'
 import LoadIcon from '@mui/icons-material/FileOpen'
 import IconButton from '@mui/material/IconButton'
-import { CleanReduxState } from '../redux/store'
+import { store } from '../redux/store'
 import { saveFile, loadFile, captivateFileFilters } from '../saveload_renderer'
+import { DeviceState } from '../redux/deviceState'
+import { DmxState } from '../redux/dmxSlice'
+import { LightScenes_t, VisualScenes_t } from 'shared/Scenes'
+import Popup from 'renderer/base/Popup'
+import { Button } from '@mui/material'
 
-function fixState(_state: CleanReduxState) {}
+type SaveState = {
+  light?: LightScenes_t
+  visual?: VisualScenes_t
+  dmx?: DmxState
+  device?: DeviceState
+}
+type SaveType = keyof SaveState
+type SaveConfig = { [key in SaveType]: boolean }
+const saveTypes: SaveType[] = ['light', 'dmx', 'visual', 'device']
 
-function load() {
-  loadFile('Load Scenes', [captivateFileFilters.captivate])
-    .then((serializedControlState) => {
-      const newControlState: SaveType = fixState(
-        JSON.parse(serializedControlState)
-      )
+function fixState(_state: SaveState) {}
 
-      store.dispatch(
-        resetControl({
-          device: store.getState().control.present.device,
-          master: 1,
-          light: newControlState.light,
-          visual: newControlState.visual,
-        })
-      )
-    })
-    .catch((err) => {
-      console.error(err)
-    })
+async function load() {
+  const serializedSaveState = await loadFile('Load Scenes', [
+    captivateFileFilters.captivate,
+  ])
+  const saveState = fixState(JSON.parse(serializedSaveState))
+  return saveState
 }
 
-function save() {
-  const controlState: SaveType = store.getState().control.present
-  const serializedControlState = JSON.stringify(controlState)
-  saveFile('Save Scenes', serializedControlState, [captivateFileFilters.scenes])
+function save(config: SaveConfig) {
+  const state = store.getState()
+  const control = state.control.present
+  const dmx = state.dmx.present
+
+  const saveState: SaveState = {
+    light: config.light ? control.light : undefined,
+    visual: config.visual ? control.visual : undefined,
+    dmx: config.dmx ? dmx : undefined,
+    device: config.device ? control.device : undefined,
+  }
+
+  const serializedSaveState = JSON.stringify(saveState)
+  saveFile('Save Scenes', serializedSaveState, [captivateFileFilters.captivate])
     .then((err) => {
       if (err) {
         console.error(err)
@@ -44,17 +57,48 @@ function save() {
 
 interface Props {}
 
-export default function Save({}: Props) {
+export default function SaveLoad({}: Props) {
   return (
     <>
-      <IconButton onClick={saveScenes}>
-        <SaveIcon />
-      </IconButton>
-      <IconButton onClick={loadScenes}>
-        <LoadIcon />
-      </IconButton>
+      <Save />
+      <Load />
     </>
   )
 }
 
-const Root = styled.div``
+function Save() {
+  const [isOpen, setIsOpen] = useState(false)
+  const [saveConfig, setSaveConfig] = useState<SaveConfig>({
+    light: true,
+    visual: true,
+    dmx: true,
+    device: true,
+  })
+  return (
+    <Root>
+      <IconButton onClick={() => setIsOpen(true)}>
+        <SaveIcon />
+      </IconButton>
+      {isOpen && (
+        <Popup title="Save" onClose={() => setIsOpen(false)}>
+          {saveTypes.map((saveType) => saveType)}
+          <Button onClick={() => save(saveConfig)}>Save</Button>
+        </Popup>
+      )}
+    </Root>
+  )
+}
+
+function Load() {
+  return (
+    <Root>
+      <IconButton onClick={load}>
+        <LoadIcon />
+      </IconButton>
+    </Root>
+  )
+}
+
+const Root = styled.div`
+  display: relative;
+`
