@@ -1,33 +1,22 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import styled from 'styled-components'
 import SaveIcon from '@mui/icons-material/Save'
 import LoadIcon from '@mui/icons-material/FileOpen'
 import IconButton from '@mui/material/IconButton'
-import { store } from '../redux/store'
+import { store, resetState } from '../redux/store'
 import { saveFile, loadFile, captivateFileFilters } from '../saveload_renderer'
 import { DeviceState } from '../redux/deviceState'
 import { DmxState } from '../redux/dmxSlice'
 import { LightScenes_t, VisualScenes_t } from 'shared/Scenes'
 import Popup from 'renderer/base/Popup'
-import { Button } from '@mui/material'
-
-type SaveState = {
-  light?: LightScenes_t
-  visual?: VisualScenes_t
-  dmx?: DmxState
-  device?: DeviceState
-}
-type SaveType = keyof SaveState
-type SaveConfig = { [key in SaveType]: boolean }
-const saveTypes: SaveType[] = ['light', 'dmx', 'visual', 'device']
-
-function fixState(_state: SaveState) {}
+import { Button, Checkbox } from '@mui/material'
 
 async function load() {
   const serializedSaveState = await loadFile('Load Scenes', [
     captivateFileFilters.captivate,
   ])
-  const saveState = fixState(JSON.parse(serializedSaveState))
+  const saveState: SaveState = JSON.parse(serializedSaveState)
+  fixState(saveState)
   return saveState
 }
 
@@ -80,8 +69,25 @@ function Save() {
         <SaveIcon />
       </IconButton>
       {isOpen && (
-        <Popup title="Save" onClose={() => setIsOpen(false)}>
-          {saveTypes.map((saveType) => saveType)}
+        <Popup title="Save Configuration" onClose={() => setIsOpen(false)}>
+          {saveTypes.map((saveType) => {
+            return (
+              <CheckItem>
+                <Checkbox
+                  checked={saveConfig[saveType]}
+                  onChange={(e) =>
+                    setSaveConfig({
+                      ...saveConfig,
+                      [saveType]: e.target.checked,
+                    })
+                  }
+                  size="small"
+                />
+                {display(saveType)}
+              </CheckItem>
+            )
+          })}
+          <Sp />
           <Button onClick={() => save(saveConfig)}>Save</Button>
         </Popup>
       )}
@@ -90,15 +96,95 @@ function Save() {
 }
 
 function Load() {
+  const [state, setState] = useState<{
+    save: SaveState
+    config: SaveConfig
+  } | null>(null)
+
+  let onLoad = (_save: SaveState) => {}
+  let onLoadErr = (_err: string) => {}
+
+  useEffect(() => {
+    onLoad = (save: SaveState) => {
+      setState({
+        save,
+        config: getConfig(save),
+      })
+    }
+    onLoadErr = (err: any) => {
+      console.warn(err)
+    }
+
+    return () => {
+      onLoad = () => {}
+      onLoadErr = () => {}
+    }
+  }, [])
+
   return (
     <Root>
-      <IconButton onClick={load}>
+      <IconButton onClick={() => load().then(onLoad).catch(onLoadErr)}>
         <LoadIcon />
       </IconButton>
+      {state !== null && (
+        <Popup title="Load Configuration" onClose={() => setState(null)}>
+          <SaveConfig
+            config={state.config}
+            onChange={(newConfig) =>
+              setState({
+                ...state,
+                config: newConfig,
+              })
+            }
+          />
+          <Sp />
+          <Button onClick={() => )}>Save</Button>
+        </Popup>
+      )}
     </Root>
   )
 }
 
+function SaveConfig({
+  config,
+  onChange,
+}: {
+  config: SaveConfig
+  onChange: (newConfig: SaveConfig) => void
+}) {
+  return (
+    <>
+      {saveTypes.map((saveType) => {
+        return (
+          <CheckItem>
+            <Checkbox
+              checked={config[saveType]}
+              onChange={(e) =>
+                onChange({
+                  ...config,
+                  [saveType]: e.target.checked,
+                })
+              }
+              size="small"
+            />
+            {display(saveType)}
+          </CheckItem>
+        )
+      })}
+    </>
+  )
+}
+
 const Root = styled.div`
-  display: relative;
+  position: relative;
+`
+
+const CheckItem = styled.div`
+  display: flex;
+  align-items: center;
+  font-size: 1rem;
+`
+
+const Sp = styled.div`
+  height: 1rem;
 `

@@ -57,6 +57,7 @@ export type ReduxState = ReturnType<typeof baseReducer>
 const RESET_STATE = 'reset-state'
 const RESET_UNIVERSE = 'reset-universe'
 const RESET_CONTROL = 'reset-control'
+export function applySave(save: )
 export function resetState(
   newState: CleanReduxState
 ): PayloadAction<CleanReduxState> {
