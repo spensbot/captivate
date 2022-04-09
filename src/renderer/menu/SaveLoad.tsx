@@ -143,7 +143,7 @@ function SaveConfig({
       {saveTypes.map((saveType) => {
         const isValid = valid ? valid[saveType] : true
         return (
-          <CheckItem isValid={isValid}>
+          <CheckItem key={saveType} isValid={isValid}>
             <Checkbox
               checked={config[saveType]}
               onChange={(e) =>
