@@ -1,13 +1,22 @@
-type SaveState = {
+import { LightScenes_t, VisualScenes_t } from 'shared/Scenes'
+import { DmxState } from 'renderer/redux/dmxSlice'
+import { DeviceState } from 'renderer/redux/deviceState'
+
+export interface SaveState {
   light?: LightScenes_t
   visual?: VisualScenes_t
   dmx?: DmxState
   device?: DeviceState
 }
-type SaveType = keyof SaveState
-type SaveConfig = { [key in SaveType]: boolean }
-const saveTypes: SaveType[] = ['dmx', 'light', 'visual', 'device']
-function display(saveType: SaveType) {
+export type SaveType = keyof SaveState
+export type SaveConfig = { [key in SaveType]: boolean }
+export const saveTypes: SaveType[] = ['dmx', 'light', 'visual', 'device']
+export interface SaveInfo {
+  state: SaveState
+  config: SaveConfig
+}
+
+export function displaySaveType(saveType: SaveType) {
   switch (saveType) {
     case 'device':
       return 'Serial Device Settings (Midi & DMX)'
@@ -20,9 +29,9 @@ function display(saveType: SaveType) {
   }
 }
 
-function fixState(_state: SaveState) {}
+export function fixState(_state: SaveState) {}
 
-function getConfig(save: SaveState): SaveConfig {
+export function getSaveConfig(save: SaveState): SaveConfig {
   let config: Partial<SaveConfig> = {}
   for (const saveType of saveTypes) {
     config[saveType] = save[saveType] !== undefined

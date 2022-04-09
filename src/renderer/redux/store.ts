@@ -20,6 +20,7 @@ import {
   handleBadScene,
 } from '../../shared/Scenes'
 import { Param, Params } from '../../shared/params'
+import { SaveInfo } from 'shared/save'
 
 export interface UndoActionTypes {
   undo: string
@@ -54,10 +55,17 @@ const baseReducer = combineReducers({
 
 export type ReduxState = ReturnType<typeof baseReducer>
 
+const APPLY_SAVE = 'apply-save'
 const RESET_STATE = 'reset-state'
 const RESET_UNIVERSE = 'reset-universe'
 const RESET_CONTROL = 'reset-control'
-export function applySave(save: )
+export function applySave(info: SaveInfo): PayloadAction<SaveInfo> {
+  return {
+    type: APPLY_SAVE,
+    payload: info,
+  }
+}
+
 export function resetState(
   newState: CleanReduxState
 ): PayloadAction<CleanReduxState> {
@@ -117,6 +125,25 @@ const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (
       ...state,
       control: initUndoState(cs),
     }
+  } else if (action.type === APPLY_SAVE) {
+    console.log('Apply Save')
+    const info: SaveInfo = action.payload
+    let newState = {
+      ...state,
+    }
+    if (info.config.device && info.state.device) {
+      newState.control.present.device = info.state.device
+    }
+    if (info.config.dmx && info.state.dmx) {
+      newState.dmx.present = info.state.dmx
+    }
+    if (info.config.light && info.state.light) {
+      newState.control.present.light = info.state.light
+    }
+    if (info.config.visual && info.state.visual) {
+      newState.control.present.visual = info.state.visual
+    }
+    return newState
   }
   return baseReducer(state, action)
 }
