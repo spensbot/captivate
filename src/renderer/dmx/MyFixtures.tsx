@@ -2,39 +2,10 @@ import { useDmxSelector } from '../redux/store'
 import MyFixture from './MyFixture'
 import AddIcon from '@mui/icons-material/Add'
 import { IconButton } from '@mui/material'
-import { addFixtureType, DmxState } from '../redux/dmxSlice'
+import { addFixtureType } from '../redux/dmxSlice'
 import { useDispatch } from 'react-redux'
 import { initFixtureType } from '../../shared/dmxFixtures'
-import SaveIcon from '@mui/icons-material/Save'
-import FileOpenIcon from '@mui/icons-material/FileOpen'
-import { saveFile, loadFile, captivateFileFilters } from '../saveload_renderer'
-import { store, resetUniverse } from '../redux/store'
 import styled from 'styled-components'
-
-function loadUniverse() {
-  loadFile('Load Universe', [captivateFileFilters.dmx])
-    .then((serializedDmxState) => {
-      const newDmxState: DmxState = JSON.parse(serializedDmxState)
-      store.dispatch(resetUniverse(newDmxState))
-    })
-    .catch((err) => {
-      console.error(err)
-    })
-}
-
-function saveUniverse() {
-  const dmxState: DmxState = store.getState().dmx.present
-  const serializedDmxState = JSON.stringify(dmxState)
-  saveFile('Save Universe', serializedDmxState, [captivateFileFilters.dmx])
-    .then((err) => {
-      if (err) {
-        console.error(err)
-      }
-    })
-    .catch((err) => {
-      console.error(err)
-    })
-}
 
 export default function MyFixtures() {
   const fixtureTypes = useDmxSelector((state) => state.fixtureTypes)
@@ -47,13 +18,6 @@ export default function MyFixtures() {
     <Root>
       <Header>
         <Title>Fixtures</Title>
-        <Spacer />
-        <IconButton onClick={saveUniverse}>
-          <SaveIcon />
-        </IconButton>
-        <IconButton onClick={loadUniverse}>
-          <FileOpenIcon />
-        </IconButton>
       </Header>
       <Items style={{ overflow: 'scroll', height: 'auto' }}>
         {elements}
@@ -94,8 +58,4 @@ const Items = styled.div`
 
 const Title = styled.div`
   font-size: ${(props) => props.theme.font.size.h1};
-`
-
-const Spacer = styled.div`
-  flex: 1 0 0;
 `
