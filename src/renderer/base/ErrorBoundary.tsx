@@ -1,5 +1,6 @@
 import React from 'react'
 import styled from 'styled-components'
+import { Button } from '@mui/material'
 
 interface Props {}
 
@@ -36,7 +37,8 @@ export default class ErrorBoundary extends React.Component<Props, State> {
             Try running from undo history (if this doesn't work, you may need to
             try another option
           </Info>
-          <Info>Restart from defaults</Info>
+          <Button>Restore Last Auto-Save</Button>
+          <Button>Restart from defaults</Button>
           <Info>
             Want to help with Captivate's development? Let us know what you were
             doing when the error occurred.

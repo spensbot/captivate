@@ -29,7 +29,6 @@ export default async (visualizerContainer: VisualizerContainer) => {
       preload: path.join(__dirname, 'visualizer_preload.js'),
       webSecurity: false,
       nodeIntegration: false,
-      devTools: false,
     },
   })
 

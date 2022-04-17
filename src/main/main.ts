@@ -11,7 +11,7 @@
 import 'core-js/stable'
 import 'regenerator-runtime/runtime'
 import path from 'path'
-import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron'
+import { app, BrowserWindow, shell, dialog } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import log from 'electron-log'
 import MenuBuilder from './menu'
@@ -33,11 +33,6 @@ let visualizerContainer: VisualizerContainer = {
   visualizer: null,
 }
 
-ipcMain.on('ipc-example', async (event, _arg) => {
-  const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`
-  event.reply('ipc-example', msgTemplate('pong'))
-})
-
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support')
   sourceMapSupport.install()
@@ -47,7 +42,7 @@ const isDevelopment =
   process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true'
 
 if (isDevelopment) {
-  require('electron-debug')()
+  require('electron-debug')({ showDevTools: false })
 }
 
 const installExtensions = async () => {
@@ -164,7 +159,7 @@ app
     createWindow()
     app.on('activate', () => {
       // On macOS it's common to re-create a window in the app when the
-      // dock icon is clicked and there are no other windows open.
+      // dock icon is clicked and there are no other windows `open`.
       if (mainWindow === null) createWindow()
     })
   })
