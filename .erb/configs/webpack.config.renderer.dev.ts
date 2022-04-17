@@ -167,23 +167,29 @@ const configuration: webpack.Configuration = {
       verbose: true,
     },
     onBeforeSetupMiddleware() {
-      console.log('Starting Main Process...')
+      console.log('Starting Visualizer Dev Server & Main Process...')
+      const visualizer_dev_server_process = spawn(
+        'npm',
+        ['run', 'start:visualizer'],
+        {
+          shell: true,
+          env: process.env,
+          stdio: 'inherit',
+        }
+      ) // I can't find a callback that is called when this process is killed ¯\_(ツ)_/¯
       spawn('npm', ['run', 'start:main'], {
         shell: true,
         env: process.env,
         stdio: 'inherit',
       })
-        .on('close', (code: number) => process.exit(code!))
+        .on('close', (code: number) => {
+          console.log(
+            'main process closed. Closing main window & visualizer dev servers'
+          )
+          visualizer_dev_server_process.kill('SIGINT')
+          process.exit(code!)
+        })
         .on('error', (spawnError) => console.error(spawnError))
-      spawn('npm', ['run', 'start:visualizer'], {
-        shell: true,
-        env: process.env,
-        stdio: 'inherit',
-      })
-        .on('close', (code) => process.exit(code!))
-        .on('error', (err) =>
-          console.error(`visualizer dev server err: ${err}`)
-        )
     },
   },
 }

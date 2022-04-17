@@ -107,7 +107,6 @@ const createWindow = async () => {
     if (!isClosing) {
       e.preventDefault()
       if (mainWindow === null) return
-
       dialog
         .showMessageBox(mainWindow, {
           message: 'Stop the show?',
@@ -129,10 +128,6 @@ const createWindow = async () => {
         })
     }
   })
-
-  // mainWindow.on('closed', () => {
-
-  // })
 
   const menuBuilder = new MenuBuilder(mainWindow)
   menuBuilder.buildMenu()
