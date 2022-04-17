@@ -33,7 +33,7 @@ let visualizerContainer: VisualizerContainer = {
   visualizer: null,
 }
 
-ipcMain.on('ipc-example', async (event, arg) => {
+ipcMain.on('ipc-example', async (event, _arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`
   event.reply('ipc-example', msgTemplate('pong'))
 })
@@ -107,6 +107,7 @@ const createWindow = async () => {
     if (!isClosing) {
       e.preventDefault()
       if (mainWindow === null) return
+
       dialog
         .showMessageBox(mainWindow, {
           message: 'Stop the show?',
