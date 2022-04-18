@@ -50,12 +50,6 @@ export function initLightScene(): LightScene_t {
   }
 }
 
-export function handleBadLightScene(
-  scene: LightScene_t | undefined
-): LightScene_t {
-  return scene || initLightScene()
-}
-
 export interface VisualScene_t extends Scene_base {
   config: VisualizerConfig
   effectsConfig: EffectsConfig
@@ -71,18 +65,6 @@ export function initVisualScene(): VisualScene_t {
     effectsConfig: initEffectsConfig(),
     activeEffectIndex: 0,
   }
-}
-
-export function handleBadVisualScene(
-  scene: VisualScene_t | undefined
-): VisualScene_t {
-  return scene || initVisualScene()
-}
-
-export function handleBadScene(
-  scene: VisualScene_t | LightScene_t | undefined
-): VisualScene_t | LightScene_t {
-  return scene || initVisualScene()
 }
 
 export interface AutoScene_t {

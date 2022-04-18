@@ -6,19 +6,13 @@ import {
 } from '@reduxjs/toolkit'
 import { useSelector, TypedUseSelectorHook } from 'react-redux'
 import dmxReducer, { DmxState } from './dmxSlice'
-import guiReducer from './guiSlice'
+import guiReducer, { initGuiState } from './guiSlice'
 import controlReducer, { ControlState } from './controlSlice'
 import { LightScene_t } from '../../shared/Scenes'
 import mixerReducer from './mixerSlice'
 import undoable, { StateWithHistory } from 'redux-undo'
 import { DeviceState } from './deviceState'
-import {
-  VisualScene_t,
-  SceneType,
-  handleBadLightScene,
-  handleBadVisualScene,
-  handleBadScene,
-} from '../../shared/Scenes'
+import { VisualScene_t, SceneType } from '../../shared/Scenes'
 import { Param, Params } from '../../shared/params'
 import { SaveInfo } from 'shared/save'
 
@@ -128,22 +122,54 @@ const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (
   } else if (action.type === APPLY_SAVE) {
     console.log('Apply Save')
     const info: SaveInfo = action.payload
-    let newState = {
+    const control = state.control.present
+    return {
       ...state,
+      dmx: {
+        ...state.dmx,
+        present:
+          info.config.dmx && info.state.dmx
+            ? info.state.dmx
+            : state.dmx.present,
+      },
+      control: {
+        ...state.control,
+        present: {
+          ...state.control.present,
+          device:
+            info.config.device && info.state.device
+              ? info.state.device
+              : control.device,
+          light:
+            info.config.light && info.state.light
+              ? info.state.light
+              : control.light,
+          visual:
+            info.config.visual && info.state.visual
+              ? info.state.visual
+              : control.visual,
+        },
+      },
     }
-    if (info.config.device && info.state.device) {
-      newState.control.present.device = info.state.device
-    }
-    if (info.config.dmx && info.state.dmx) {
-      newState.dmx.present = info.state.dmx
-    }
-    if (info.config.light && info.state.light) {
-      newState.control.present.light = info.state.light
-    }
-    if (info.config.visual && info.state.visual) {
-      newState.control.present.visual = info.state.visual
-    }
-    return newState
+    // I HAVE NO IDEA WHY THE BELOW APPROACH DOESN"T WORK IF ANYBODY KNOWS PLEASE TELL ME!!!
+    // let newState = {
+    //   ...state,
+    // }
+    // if (info.config.device && info.state.device) {
+    //   newState.control.present.device = info.state.device
+    // }
+    // if (info.config.dmx && info.state.dmx) {
+    //   newState.dmx.present = info.state.dmx
+    // }
+    // if (info.config.light && info.state.light) {
+    //   newState.control.present.light = info.state.light
+    //   console.log(info.state.light)
+    //   console.log(newState.control.present.light)
+    // }
+    // if (info.config.visual && info.state.visual) {
+    //   newState.control.present.visual = info.state.visual
+    // }
+    // return newState
   }
   return baseReducer(state, action)
 }
@@ -182,31 +208,23 @@ export function useActiveScene<T>(
 ) {
   return useTypedSelector((state) =>
     getVal(
-      handleBadScene(
-        state.control.present[sceneType].byId[
-          state.control.present[sceneType].active
-        ]
-      )
+      state.control.present[sceneType].byId[
+        state.control.present[sceneType].active
+      ]
     )
   )
 }
 
 export function useActiveLightScene<T>(getVal: (scene: LightScene_t) => T) {
   return useTypedSelector((state) =>
-    getVal(
-      handleBadLightScene(
-        state.control.present.light.byId[state.control.present.light.active]
-      )
-    )
+    getVal(state.control.present.light.byId[state.control.present.light.active])
   )
 }
 
 export function useActiveVisualScene<T>(getVal: (scene: VisualScene_t) => T) {
   return useTypedSelector((state) =>
     getVal(
-      handleBadVisualScene(
-        state.control.present.visual.byId[state.control.present.visual.active]
-      )
+      state.control.present.visual.byId[state.control.present.visual.active]
     )
   )
 }

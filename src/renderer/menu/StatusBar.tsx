@@ -11,12 +11,13 @@ import IconButton from '@mui/material/IconButton'
 import PianoIcon from '@mui/icons-material/Piano'
 import { useDeviceSelector, useTypedSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
-import { midiSetIsEditing } from '../redux/controlSlice'
+import { midiSetIsEditing, setActiveScene } from '../redux/controlSlice'
 import { setConnectionsMenu } from '../redux/guiSlice'
 import { send_user_command } from '../ipcHandler'
 import TapTempo from './TapTempo'
 import PlayPauseButton from './PlayPauseButton'
 import SaveLoad from './SaveLoad'
+import BugIcon from '@mui/icons-material/BugReport'
 
 function BPM() {
   const bpm = useRealtimeSelector((state) => state.time.bpm)
@@ -78,6 +79,10 @@ export default function StatusBar() {
     (state) => state.gui.midi.connected.length > 0
   )
 
+  function introduceBadState() {
+    dispatch(setActiveScene({ sceneType: 'light', val: 'bad scene id' }))
+  }
+
   return (
     <Root>
       <PlayPauseButton />
@@ -98,6 +103,9 @@ export default function StatusBar() {
         <UsbIcon />
       </IconButton>
       <SaveLoad />
+      <IconButton onClick={introduceBadState}>
+        <BugIcon />
+      </IconButton>
       <Connections>
         <ConnectionStatus type={'midi'} />
         <ConnectionStatus type={'dmx'} />
