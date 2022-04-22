@@ -167,11 +167,6 @@ export function handleMessage(
           } else {
             // relative
             let mapped = (input.message.value - 64) / 2
-            console.log(
-              `old: ${getOldVal()} | mapped: ${mapped} | og: ${
-                input.message.value
-              }`
-            )
             setNewVal(getOldVal() + mapped)
           }
         }
