@@ -163,7 +163,7 @@ export function handleMessage(
       if (op.type === 'cc') {
         if (input.message.type === 'CC') {
           if (op.mode === 'absolute') {
-            setNewVal(op.min + (input.message.value / 127) * range * 70 + 70)
+            setNewVal(op.min + (input.message.value / 127) * range)
           } else {
             // relative
             let mapped = (input.message.value - 64) / 2
