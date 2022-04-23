@@ -83,7 +83,12 @@ export default function ParamAddButton({ splitIndex }: Props) {
       ) !== undefined
   )
 
-  const options = getOptions(baseParams)
+  const unuseableOptions: Set<Param | ParamBundle> = new Set()
+  if (!hasBlackLights) unuseableOptions.add('black')
+  if (!hasAxis) unuseableOptions.add('axis')
+  const options = getOptions(baseParams).filter(
+    (option) => !unuseableOptions.has(option)
+  )
 
   return (
     <Root>

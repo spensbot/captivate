@@ -5,8 +5,6 @@ import {
   EffectConfig,
 } from 'renderer/visualizer/threejs/EffectTypes'
 import { activeVisualSceneEffect_set } from 'renderer/redux/controlSlice'
-import { IconButton } from '@mui/material'
-import CloseIcon from '@mui/icons-material/Close'
 import { useDispatch } from 'react-redux'
 import { useActiveVisualScene } from 'renderer/redux/store'
 

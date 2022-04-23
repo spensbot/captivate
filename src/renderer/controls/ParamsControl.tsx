@@ -29,7 +29,3 @@ const Root = styled.div`
   display: flex;
   flex-direction: row;
 `
-
-const Sp = styled.div`
-  min-width: 1rem;
-`

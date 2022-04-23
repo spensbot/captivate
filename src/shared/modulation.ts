@@ -1,12 +1,8 @@
 import { initModulation, paramsList, Param, Modulation } from './params'
 import { Lfo, GetValue, GetRamp } from './oscillator'
 import { LightScene_t } from './Scenes'
-import { clampNormalized, indexArray } from './util'
-import {
-  Params,
-  mapUndefinedParamsToDefault,
-  defaultOutputParams,
-} from './params'
+import { clampNormalized } from './util'
+import { mapUndefinedParamsToDefault, defaultOutputParams } from './params'
 
 export interface Modulator {
   lfo: Lfo

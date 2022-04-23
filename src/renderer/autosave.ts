@@ -5,39 +5,32 @@ import {
   getCleanReduxState,
 } from './redux/store'
 import ipcChannels from '../shared/ipc_channels'
-import { initRandomizerOptions } from 'shared/randomizer'
+import { DEFAULT_GROUP } from 'shared/Scenes'
 
-const SELECT_FILES = 'select-files'
 const CACHED_STATE_KEY = 'cached-state'
 const AUTO_SAVE_INTERVAL = 1000 // ms
 
 // Modify this function to fix any state changes between upgrades
 export function fixState(state: CleanReduxState): CleanReduxState {
-  const light = state.control.light
-  light.ids.forEach((id) => {
-    const lightScene = light.byId[id]
-    if (lightScene.randomizer.envelopeDuration > 16)
-      lightScene.randomizer.envelopeDuration = 1
-    lightScene.splitScenes.forEach((split) => {
-      if (split.randomizer.envelopeDuration > 16)
-        split.randomizer.envelopeDuration = 1
-      if (split.randomizer === undefined) {
-        split.randomizer = initRandomizerOptions()
+  for (const fixture of state.dmx.universe) {
+    if (fixture.group === undefined) {
+      //@ts-ignore
+      let oldGroup = fixture.groups?.[0] as string
+      if (oldGroup !== undefined) {
+        fixture.group = oldGroup
+      } else {
+        fixture.group = DEFAULT_GROUP
       }
-    })
-  })
+      //@ts-ignore
+      delete fixture.groups
+    }
+  }
   return state
 }
 
 export const captivateFileFilters = {
   captivate: { name: 'Captivate', extensions: ['.captivate'] },
 }
-
-const videoFileFilters: Electron.FileFilter[] = [
-  { name: 'MP4', extensions: ['.mp4'] },
-  { name: 'OGG', extensions: ['.ogg'] },
-  { name: 'WebM', extensions: ['.webm'] },
-]
 
 function refreshLastSession(store: ReduxStore) {
   const cachedState = localStorage.getItem(CACHED_STATE_KEY)
@@ -79,7 +72,3 @@ export async function saveFile(
 ): Promise<NodeJS.ErrnoException> {
   return ipcRenderer.invoke(ipcChannels.save_file, title, data, fileFilters)
 }
-
-// export async function selectVideoFiles() {
-//   return ipcRenderer.invoke(SELECT_FILES, 'Video Select', videoFileFilters)
-// }

@@ -1,6 +1,7 @@
 import { Window2D_t } from '../types/baseTypes'
 import { Color } from './dmxColors'
 import { nanoid } from 'nanoid'
+import { DEFAULT_GROUP } from './Scenes'
 
 export const DMX_MAX_VALUE = 255
 export const DMX_NUM_CHANNELS = 512
@@ -229,7 +230,7 @@ export interface Fixture {
   ch: number
   type: string // FixtureType id
   window: Window2D_t
-  groups: string[]
+  group: string
 }
 
 export type Universe = Fixture[]
@@ -240,31 +241,74 @@ export function getTestUniverse(): Universe {
       ch: 1,
       type: '4',
       window: { x: { pos: 0.5, width: 0.0 }, y: { pos: 0.6, width: 0.0 } },
-      groups: [],
+      group: DEFAULT_GROUP,
     },
-    { ch: 8, type: '3', window: { x: { pos: 0.5, width: 0.0 } }, groups: [] },
-    // { ch: 11, type: '2', window: {x: {pos: 0.0, width: 0.0}}, groups: [] },
-    // { ch: 12, type: '2', window: {x: {pos: 0.33, width: 0.0}}, groups: [] },
-    // { ch: 13, type: '2', window: {x: {pos: 0.66, width: 0.0}}, groups: [] },
-    // { ch: 14, type: '2', window: {x: {pos: 1.0, width: 0.0}}, groups: [] },
-    { ch: 15, type: '1', window: { x: { pos: 0.15, width: 0.0 } }, groups: [] },
-    { ch: 23, type: '1', window: { x: { pos: 0.3, width: 0.0 } }, groups: [] },
-    { ch: 31, type: '1', window: { x: { pos: 0.7, width: 0.0 } }, groups: [] },
-    { ch: 39, type: '1', window: { x: { pos: 0.86, width: 0.0 } }, groups: [] },
-    { ch: 47, type: '6', window: { x: { pos: 0.0, width: 0.0 } }, groups: [] },
-    { ch: 54, type: '6', window: { x: { pos: 1.0, width: 0.0 } }, groups: [] },
-    { ch: 61, type: '7', window: { x: { pos: 0.0, width: 0.0 } }, groups: [] },
-    { ch: 69, type: '7', window: { x: { pos: 1.0, width: 0.0 } }, groups: [] },
-    // { ch: 128, type: '5', window: {}, groups: [] }
+    {
+      ch: 8,
+      type: '3',
+      window: { x: { pos: 0.5, width: 0.0 } },
+      group: DEFAULT_GROUP,
+    },
+    // { ch: 11, type: '2', window: {x: {pos: 0.0, width: 0.0}}, group: DEFAULT_GROUP },
+    // { ch: 12, type: '2', window: {x: {pos: 0.33, width: 0.0}}, group: DEFAULT_GROUP },
+    // { ch: 13, type: '2', window: {x: {pos: 0.66, width: 0.0}}, group: DEFAULT_GROUP },
+    // { ch: 14, type: '2', window: {x: {pos: 1.0, width: 0.0}}, group: DEFAULT_GROUP },
+    {
+      ch: 15,
+      type: '1',
+      window: { x: { pos: 0.15, width: 0.0 } },
+      group: DEFAULT_GROUP,
+    },
+    {
+      ch: 23,
+      type: '1',
+      window: { x: { pos: 0.3, width: 0.0 } },
+      group: DEFAULT_GROUP,
+    },
+    {
+      ch: 31,
+      type: '1',
+      window: { x: { pos: 0.7, width: 0.0 } },
+      group: DEFAULT_GROUP,
+    },
+    {
+      ch: 39,
+      type: '1',
+      window: { x: { pos: 0.86, width: 0.0 } },
+      group: DEFAULT_GROUP,
+    },
+    {
+      ch: 47,
+      type: '6',
+      window: { x: { pos: 0.0, width: 0.0 } },
+      group: DEFAULT_GROUP,
+    },
+    {
+      ch: 54,
+      type: '6',
+      window: { x: { pos: 1.0, width: 0.0 } },
+      group: DEFAULT_GROUP,
+    },
+    {
+      ch: 61,
+      type: '7',
+      window: { x: { pos: 0.0, width: 0.0 } },
+      group: DEFAULT_GROUP,
+    },
+    {
+      ch: 69,
+      type: '7',
+      window: { x: { pos: 1.0, width: 0.0 } },
+      group: DEFAULT_GROUP,
+    },
+    // { ch: 128, type: '5', window: {}, group: DEFAULT_GROUP }
   ]
 }
 
 export function getSortedGroups(universe: Universe) {
   const groupSet: Set<string> = new Set()
   for (const fixture of universe) {
-    for (const group of fixture.groups) {
-      groupSet.add(group)
-    }
+    groupSet.add(fixture.group)
   }
   return Array.from(groupSet.keys()).sort((a, b) => (a > b ? 1 : -1))
 }

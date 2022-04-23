@@ -7,7 +7,6 @@ import { setBaseParams } from '../redux/controlSlice'
 import ParamCursor from './ParamCursor'
 import { SliderMidiOverlay } from '../base/MidiOverlay'
 import ParamXButton from './ParamXButton'
-import styled from 'styled-components'
 
 interface Props {
   param: Param

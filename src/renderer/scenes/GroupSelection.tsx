@@ -6,7 +6,6 @@ import { useActiveLightScene, useDmxSelector } from 'renderer/redux/store'
 import styled from 'styled-components'
 import Popup from '../base/Popup'
 import { useDispatch } from 'react-redux'
-import { DEFAULT_GROUP } from 'shared/Scenes'
 import {
   removeSplitSceneByIndex,
   addSplitSceneGroup,
@@ -20,10 +19,7 @@ interface Props {
 export default function GroupSelection({ splitIndex }: Props) {
   const dispatch = useDispatch()
   const [isOpen, setIsOpen] = useState(false)
-  const availableGroups = [
-    // DEFAULT_GROUP,
-    ...useDmxSelector((dmx) => dmx.groups),
-  ]
+  const availableGroups = [...useDmxSelector((dmx) => dmx.groups)]
   const activeGroups = useActiveLightScene(
     (scene) => scene.splitScenes[splitIndex].groups
   )

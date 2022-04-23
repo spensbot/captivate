@@ -106,10 +106,7 @@ export const dmxSlice = createSlice({
         window.y.width = clampNormalized(window.y.width + payload.dHeight)
       }
     },
-    setGroupForActiveFixture: (
-      state,
-      { payload }: PayloadAction<string | null>
-    ) => {
+    setGroupForActiveFixture: (state, { payload }: PayloadAction<string>) => {
       const i = state.activeFixture
       if (i === null) {
         console.error('active fixture index === null')
@@ -119,25 +116,17 @@ export const dmxSlice = createSlice({
         console.warn('active fixture === null')
         return
       }
-      if (payload === null) {
-        state.universe[i].groups = []
-      } else {
-        state.universe[i].groups = [payload]
-      }
+      state.universe[i].group = payload
       state.groups = getSortedGroups(state.universe)
     },
     setGroupForAllFixturesOfActiveType: (
       state,
-      { payload }: PayloadAction<string | null>
+      { payload }: PayloadAction<string>
     ) => {
       const activeType = state.activeFixtureType
       for (const fixture of state.universe) {
         if (fixture.type === activeType) {
-          if (payload === null) {
-            fixture.groups = []
-          } else {
-            fixture.groups = [payload]
-          }
+          fixture.group = payload
         }
       }
       state.groups = getSortedGroups(state.universe)

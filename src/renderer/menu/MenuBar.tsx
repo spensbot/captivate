@@ -9,9 +9,7 @@ import { useTypedSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import { setActivePage, Page } from '../redux/guiSlice'
 import TooltipWrapper from '../base/TooltipWrapper'
-import BlackoutButton from './BlackoutButton'
 import MasterSlider from '../controls/MasterSlider'
-import PlayPauseButton from './PlayPauseButton'
 
 const selectedBorder = 0.2 //rem
 

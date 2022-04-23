@@ -16,7 +16,7 @@ import {
 import { ipc_setup, send_control_state } from './ipcHandler'
 import { ThemeProvider as MuiThemeProvider } from '@emotion/react'
 import { createTheme } from '@mui/material/styles'
-import { autoSave } from './saveload_renderer'
+import { autoSave } from './autosave'
 import { getUndoGroup, undoAction, redoAction } from './controls/UndoRedo'
 
 const theme = themes.dark()

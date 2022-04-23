@@ -10,7 +10,6 @@ import {
 import { SceneType } from '../../shared/Scenes'
 import DraggableNumber from '../base/DraggableNumber'
 import { SliderMidiOverlay } from 'renderer/base/MidiOverlay'
-import { double_incremented, halve_incremented } from 'shared/util'
 
 export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
   const dispatch = useDispatch()
@@ -94,9 +93,4 @@ const Button = styled.div`
   cursor: pointer;
   font-size: 0.9rem;
   margin-right: 0.5rem;
-`
-
-const SliderWrapper = styled.div`
-  flex: 1 0 auto;
-  margin: 0 1rem;
 `

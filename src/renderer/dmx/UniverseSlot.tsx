@@ -16,6 +16,7 @@ import { TextField, IconButton } from '@mui/material'
 import RemoveIcon from '@mui/icons-material/Remove'
 import AddIcon from '@mui/icons-material/Add'
 import { clamp } from '../../shared/util'
+import { DEFAULT_GROUP } from 'shared/Scenes'
 
 function ChannelSpan({ start, count }: { start: number; count: number }) {
   const end = start + count - 1
@@ -68,7 +69,7 @@ function GapSlot({ ch, count }: { ch: number; count: number }) {
                     ch: inputCh,
                     type: ft.id,
                     window: {},
-                    groups: [],
+                    group: DEFAULT_GROUP,
                   })
                 )
               }}
@@ -144,7 +145,7 @@ function FixtureSlot({ fixture, index }: { fixture: Fixture; index: number }) {
   const start = fixture.ch
   const isSelected = activeFixture === index
   function setWindowEnabled(dimension: 'x' | 'y', isEnabled: boolean) {
-    return (e: React.MouseEvent) => {
+    return (_e: React.MouseEvent) => {
       dispatch(
         setFixtureWindowEnabled({
           dimension: dimension,

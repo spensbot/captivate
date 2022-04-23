@@ -6,7 +6,7 @@ import {
 } from '@reduxjs/toolkit'
 import { useSelector, TypedUseSelectorHook } from 'react-redux'
 import dmxReducer, { DmxState } from './dmxSlice'
-import guiReducer, { initGuiState } from './guiSlice'
+import guiReducer from './guiSlice'
 import controlReducer, { ControlState } from './controlSlice'
 import { LightScene_t } from '../../shared/Scenes'
 import mixerReducer from './mixerSlice'

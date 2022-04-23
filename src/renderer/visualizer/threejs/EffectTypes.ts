@@ -64,22 +64,21 @@ export interface UnrealBloom {
 }
 
 export type EffectConfig =
-  | Glitch
   | AdaptiveToneMapping
   | Afterimage
   // | Bloom
   // | Bokeh
-  | Clear
+  // | Clear
   // | CubeTexture
   | DotScreen
   | Film
   | Glitch
   | Halftone
-  | LUT
+  // | LUT
   // | Mask
   // | Outline
   // | SAO
-  | SMAA
+  // | SMAA
   // | SSAO
   // | SSR
   // | Save

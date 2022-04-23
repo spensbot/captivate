@@ -101,11 +101,11 @@ function connect(path: string) {
       }
     }
   )
-  _connection.on('disconnect', (d) => {})
+  _connection.on('disconnect', (_d) => {})
   _connection.on('error', (e) => {
     console.error('Error', e)
   })
-  _connection.on('close', (d) => {})
+  _connection.on('close', (_d) => {})
 }
 
 function start() {}

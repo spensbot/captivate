@@ -139,12 +139,12 @@ export function getFixturesNotInGroups(
   groups: Set<string>
 ) {
   return getFixturesWithIndexes(universe).filter(
-    ({ fixture }) => !fixture.groups.find((group) => groups.has(group))
+    ({ fixture }) => !groups.has(fixture.group)
   )
 }
 
 export function getFixturesInGroups(universe: Universe, groups: string[]) {
-  return getFixturesWithIndexes(universe).filter(
-    ({ fixture }) => !!fixture.groups.find((group) => groups.includes(group))
+  return getFixturesWithIndexes(universe).filter(({ fixture }) =>
+    groups.includes(fixture.group)
   )
 }
