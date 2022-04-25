@@ -38,9 +38,7 @@ export default function GroupSelection({ splitIndex }: Props) {
         <RemoveIcon />
       </IconButton>
       <GroupName>
-        {activeGroups.length > 0
-          ? `Groups: ${activeGroupsString}`
-          : `No Groups`}
+        {activeGroups.length > 0 ? `${activeGroupsString}` : `none`}
       </GroupName>
       <IconButton
         size="small"

@@ -5,36 +5,12 @@ import {
   getCleanReduxState,
 } from './redux/store'
 import ipcChannels from '../shared/ipc_channels'
-import { DEFAULT_GROUP } from 'shared/Scenes'
 
 const CACHED_STATE_KEY = 'cached-state'
 const AUTO_SAVE_INTERVAL = 1000 // ms
 
 // Modify this function to fix any state changes between upgrades
 export function fixState(state: CleanReduxState): CleanReduxState {
-  const light = state.control.light
-  for (const id of light.ids) {
-    const scene = light.byId[id]
-    if (scene.groups !== undefined) {
-      delete scene.groups
-    }
-  }
-
-  for (const fixture of state.dmx.universe) {
-    if (fixture.group === undefined) {
-      //@ts-ignore
-      let oldGroup = fixture.groups?.[0] as string
-      if (oldGroup !== undefined) {
-        fixture.group = oldGroup
-      } else {
-        fixture.group = DEFAULT_GROUP
-      }
-      //@ts-ignore
-      delete fixture.groups
-
-      if (!fixture.group) fixture.group = DEFAULT_GROUP
-    }
-  }
   return state
 }
 
