@@ -15,8 +15,8 @@ export function fixState(state: CleanReduxState): CleanReduxState {
   const light = state.control.light
   for (const id of light.ids) {
     const scene = light.byId[id]
-    if (scene.groups === undefined) {
-      scene.groups = null
+    if (scene.groups !== undefined) {
+      delete scene.groups
     }
   }
 
@@ -31,6 +31,8 @@ export function fixState(state: CleanReduxState): CleanReduxState {
       }
       //@ts-ignore
       delete fixture.groups
+
+      if (!fixture.group) fixture.group = DEFAULT_GROUP
     }
   }
   return state

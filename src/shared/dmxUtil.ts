@@ -143,10 +143,8 @@ export function getMainGroups(
   activeScene: LightScene_t,
   all_groups: string[]
 ): string[] {
-  if (activeScene.groups !== null) return activeScene.groups
-
   let splitSceneGroups = getAllSplitSceneGroups(activeScene)
-  return all_groups.filter((g) => !splitSceneGroups.has(g))
+  return all_groups.filter((group) => !splitSceneGroups.has(group))
 }
 
 function getAllSplitSceneGroups(activeScene: LightScene_t) {

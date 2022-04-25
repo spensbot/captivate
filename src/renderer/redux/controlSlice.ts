@@ -351,47 +351,24 @@ export const scenesSlice = createSlice({
         })
       })
     },
-    toggleMainGroups: (state, _: PayloadAction<undefined>) => {
-      modifyActiveLightScene(state, (scene) => {
-        scene.groups = scene.groups === null ? [] : null
-      })
-    },
     addSceneGroup: (
       state,
       {
         payload: { group, index },
-      }: PayloadAction<{ group: string; index: number | null }>
+      }: PayloadAction<{ group: string; index: number }>
     ) => {
       modifyActiveLightScene(state, (scene) => {
-        if (index === null) {
-          if (scene.groups !== null) {
-            scene.groups.push(group)
-          } else {
-            console.warn(
-              `Tried to add a groups to the main scene, but main scene groups are disabled`
-            )
-          }
-        } else {
-          scene.splitScenes[index].groups.push(group)
-        }
+        scene.splitScenes[index].groups.push(group)
       })
     },
     removeSceneGroup: (
       state,
       {
         payload: { group, index },
-      }: PayloadAction<{ group: string; index: number | null }>
+      }: PayloadAction<{ group: string; index: number }>
     ) => {
       modifyActiveLightScene(state, (scene) => {
-        if (index === null) {
-          if (scene.groups !== null) {
-            removeItemByValue(scene.groups, group)
-          } else {
-            console.warn(`Tried to remove group from main scene when disabled`)
-          }
-        } else {
-          removeItemByValue(scene.splitScenes[index].groups, group)
-        }
+        removeItemByValue(scene.splitScenes[index].groups, group)
       })
     },
     // =====================   VISUAL SCENES ONLY   ===========================
@@ -501,7 +478,6 @@ export const {
   setRandomizer,
   addSplitScene,
   removeSplitSceneByIndex,
-  toggleMainGroups,
   addSceneGroup,
   removeSceneGroup,
 

@@ -26,7 +26,7 @@ export default function EditGroup({}: Props) {
     }
     const groups = Array.from(groupSet)
     if (groups.length < 1) {
-      return 'Default'
+      return 'unused'
     } else if (groups.length === 1) {
       return groups[0]
     } else {
