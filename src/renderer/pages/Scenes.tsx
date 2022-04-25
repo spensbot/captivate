@@ -1,11 +1,11 @@
 import React from 'react'
 import StatusBar from '../menu/StatusBar'
-import ParamsControl from '../controls/ParamsControl'
 import Modulators from '../scenes/Modulators'
 import SceneSelection from '../scenes/SceneSelection'
 import SplitPane from '../base/SplitPane'
 import styled from 'styled-components'
 import SplitScenes from 'renderer/scenes/SplitScenes'
+import MainParams from 'renderer/scenes/MainParams'
 
 export default function Scenes() {
   const splitPaneStyle: React.CSSProperties = {
@@ -28,19 +28,13 @@ export default function Scenes() {
           <SceneSelection sceneType="light" />
         </Pane>
         <Pane>
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              padding: '1rem',
-            }}
-          >
+          <Column>
             <Modulators />
             <Sp />
-            <ParamsControl splitIndex={null} />
+            <MainParams />
             <Sp />
             <SplitScenes />
-          </div>
+          </Column>
         </Pane>
       </SplitPane>
     </Root>
@@ -55,6 +49,12 @@ const Root = styled.div`
 
 const Pane = styled.div`
   height: 100%;
+`
+
+const Column = styled.div`
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
 `
 
 const Sp = styled.div`

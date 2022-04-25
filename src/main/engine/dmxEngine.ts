@@ -7,9 +7,8 @@ import {
   getMovingWindow,
   getDmxValue,
   applyRandomization,
-  getAllSplitSceneGroups,
+  getMainGroups,
   getFixturesInGroups,
-  getFixturesNotInGroups,
   UniverseFixture,
 } from '../../shared/dmxUtil'
 
@@ -68,9 +67,8 @@ export function calculateDmx(
       })
     }
 
-    const splitSceneGroups = getAllSplitSceneGroups(activeScene)
-
-    const mainSceneFixtures = getFixturesNotInGroups(universe, splitSceneGroups)
+    const mainGroups = getMainGroups(activeScene, state.dmx.groups)
+    const mainSceneFixtures = getFixturesInGroups(universe, mainGroups)
 
     applyFixtures(mainSceneFixtures, outputParams, randomizerState)
 

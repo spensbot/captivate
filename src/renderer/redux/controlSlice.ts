@@ -351,28 +351,46 @@ export const scenesSlice = createSlice({
         })
       })
     },
-    addSplitSceneGroup: (
-      state,
-      {
-        payload: { group, index },
-      }: PayloadAction<{ group: string; index: number }>
-    ) => {
+    toggleMainGroups: (state, _: PayloadAction<undefined>) => {
       modifyActiveLightScene(state, (scene) => {
-        scene.splitScenes[index].groups.push(group)
+        scene.groups = scene.groups === null ? [] : null
       })
     },
-    removeSplitSceneGroup: (
+    addSceneGroup: (
       state,
       {
         payload: { group, index },
-      }: PayloadAction<{ group: string; index: number }>
+      }: PayloadAction<{ group: string; index: number | null }>
     ) => {
       modifyActiveLightScene(state, (scene) => {
-        const groupIndex = scene.splitScenes[index].groups.findIndex(
-          (g) => g === group
-        )
-        if (groupIndex > -1) {
-          scene.splitScenes[index].groups.splice(groupIndex, 1)
+        if (index === null) {
+          if (scene.groups !== null) {
+            scene.groups.push(group)
+          } else {
+            console.warn(
+              `Tried to add a groups to the main scene, but main scene groups are disabled`
+            )
+          }
+        } else {
+          scene.splitScenes[index].groups.push(group)
+        }
+      })
+    },
+    removeSceneGroup: (
+      state,
+      {
+        payload: { group, index },
+      }: PayloadAction<{ group: string; index: number | null }>
+    ) => {
+      modifyActiveLightScene(state, (scene) => {
+        if (index === null) {
+          if (scene.groups !== null) {
+            removeItemByValue(scene.groups, group)
+          } else {
+            console.warn(`Tried to remove group from main scene when disabled`)
+          }
+        } else {
+          removeItemByValue(scene.splitScenes[index].groups, group)
         }
       })
     },
@@ -482,9 +500,10 @@ export const {
   resetModulator,
   setRandomizer,
   addSplitScene,
-  addSplitSceneGroup,
   removeSplitSceneByIndex,
-  removeSplitSceneGroup,
+  toggleMainGroups,
+  addSceneGroup,
+  removeSceneGroup,
 
   // VISUAL SCENES
   resetVisualScenes,
@@ -506,3 +525,10 @@ export const {
 } = scenesSlice.actions
 
 export default scenesSlice.reducer
+
+function removeItemByValue<T>(array: T[], itemToRemove: T) {
+  const index = array.findIndex((item) => item === itemToRemove)
+  if (index > -1) {
+    array.splice(index, 1)
+  }
+}

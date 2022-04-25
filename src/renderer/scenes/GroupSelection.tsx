@@ -8,21 +8,34 @@ import Popup from '../base/Popup'
 import { useDispatch } from 'react-redux'
 import {
   removeSplitSceneByIndex,
-  addSplitSceneGroup,
-  removeSplitSceneGroup,
+  addSceneGroup,
+  removeSceneGroup,
+  toggleMainGroups,
 } from 'renderer/redux/controlSlice'
 
 interface Props {
-  splitIndex: number
+  splitIndex: number | null
 }
 
 export default function GroupSelection({ splitIndex }: Props) {
   const dispatch = useDispatch()
   const [isOpen, setIsOpen] = useState(false)
   const availableGroups = [...useDmxSelector((dmx) => dmx.groups)]
-  const activeGroups = useActiveLightScene(
-    (scene) => scene.splitScenes[splitIndex].groups
+  const activeGroups = useActiveLightScene((scene) =>
+    splitIndex === null ? scene.groups : scene.splitScenes[splitIndex].groups
   )
+
+  if (activeGroups === null)
+    return (
+      <Disabled
+        onClick={() => {
+          dispatch(toggleMainGroups())
+        }}
+      >
+        Groups
+      </Disabled>
+    )
+
   const activeGroupsString = activeGroups.join(', ')
 
   return (
@@ -31,7 +44,11 @@ export default function GroupSelection({ splitIndex }: Props) {
         size="small"
         onClick={(e) => {
           e.preventDefault()
-          dispatch(removeSplitSceneByIndex(splitIndex))
+          if (splitIndex === null) {
+            dispatch(toggleMainGroups())
+          } else {
+            dispatch(removeSplitSceneByIndex(splitIndex))
+          }
         }}
       >
         <RemoveIcon />
@@ -68,8 +85,8 @@ export default function GroupSelection({ splitIndex }: Props) {
                 }
                 onClick={() =>
                   isActive
-                    ? dispatch(removeSplitSceneGroup(payload))
-                    : dispatch(addSplitSceneGroup(payload))
+                    ? dispatch(removeSceneGroup(payload))
+                    : dispatch(addSceneGroup(payload))
                 }
               >
                 {group}
@@ -81,6 +98,14 @@ export default function GroupSelection({ splitIndex }: Props) {
     </Root>
   )
 }
+
+const Disabled = styled.div`
+  color: ${(props) => props.theme.colors.text.secondary};
+  text-decoration: underline;
+  :hover {
+    color: ${(props) => props.theme.colors.text.primary};
+  }
+`
 
 const Root = styled.div`
   position: relative;
