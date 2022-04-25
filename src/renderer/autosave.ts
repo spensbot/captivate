@@ -12,6 +12,14 @@ const AUTO_SAVE_INTERVAL = 1000 // ms
 
 // Modify this function to fix any state changes between upgrades
 export function fixState(state: CleanReduxState): CleanReduxState {
+  const light = state.control.light
+  for (const id of light.ids) {
+    const scene = light.byId[id]
+    if (scene.groups === undefined) {
+      scene.groups = null
+    }
+  }
+
   for (const fixture of state.dmx.universe) {
     if (fixture.group === undefined) {
       //@ts-ignore

@@ -35,6 +35,7 @@ export interface LightScene_t extends Scene_base {
   modulators: Modulator[]
   baseParams: Partial<Params>
   randomizer: RandomizerOptions
+  groups: null | []
   splitScenes: SplitScene_t[]
 }
 
@@ -46,6 +47,7 @@ export function initLightScene(): LightScene_t {
     modulators: [initModulator(0)],
     baseParams: initBaseParams(),
     randomizer: initRandomizerOptions(),
+    groups: null,
     splitScenes: [],
   }
 }
