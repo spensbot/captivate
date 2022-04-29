@@ -35,6 +35,9 @@ export interface Glitch {
 export interface Halftone {
   type: 'Halftone'
 }
+export interface LightSyncPass {
+  type: 'LightSyncPass'
+}
 export interface LUT {
   type: 'LUT'
 }
@@ -74,6 +77,7 @@ export type EffectConfig =
   | Film
   | Glitch
   | Halftone
+  | LightSyncPass
   // | LUT
   // | Mask
   // | Outline
@@ -103,6 +107,7 @@ export const effectTypes: EffectType[] = [
   'Film',
   'Glitch',
   'Halftone',
+  'LightSyncPass',
   // 'LUT', <-- Does nothing?
   // 'Mask',
   // 'Outline',
