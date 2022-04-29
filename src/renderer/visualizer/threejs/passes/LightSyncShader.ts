@@ -1,7 +1,8 @@
 const LightSyncShader = {
   uniforms: {
     tDiffuse: { value: null },
-    opacity: { value: 5.0 },
+    opacity: { value: 1.0 },
+    brightness: { value: 1.0 },
   },
 
   vertexShader: /* glsl */ `
@@ -13,11 +14,12 @@ const LightSyncShader = {
 
   fragmentShader: /* glsl */ `
 		uniform float opacity;
+    uniform float brightness;
 		uniform sampler2D tDiffuse;
 		varying vec2 vUv;
 		void main() {
 			gl_FragColor = texture2D( tDiffuse, vUv );
-			gl_FragColor.a *= opacity;
+      gl_FragColor.xyz *= brightness;
 		}`,
 
   // fragmentShader: /* glsl */ `
