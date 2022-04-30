@@ -120,7 +120,7 @@ export function handleMessage(
       const action = sliderAction.action
       const getOldVal = () => {
         if (action.type === 'setAutoSceneBombacity') {
-          return state.control.light.auto.bombacity
+          return state.control.light.auto.epicness
         } else if (action.type === 'setBpm') {
           return rt_state.time.bpm
         } else if (action.type === 'setBaseParam') {

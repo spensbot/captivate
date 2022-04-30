@@ -13,7 +13,7 @@ import { SliderMidiOverlay } from 'renderer/base/MidiOverlay'
 
 export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
   const dispatch = useDispatch()
-  const { enabled, bombacity, period } = useControlSelector(
+  const { enabled, epicness, period } = useControlSelector(
     (control) => control[sceneType].auto
   )
 
@@ -69,7 +69,7 @@ export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
           style={{ flex: '1 0 auto', marginLeft: '0.5rem', padding: '0.5rem' }}
         >
           <Slider
-            value={bombacity}
+            value={epicness}
             radius={enabled ? 0.5 : 0.4}
             orientation="horizontal"
             onChange={onBombacityChange}

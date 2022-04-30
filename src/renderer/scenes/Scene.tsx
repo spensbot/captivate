@@ -22,10 +22,10 @@ import DragHandleIcon from '@mui/icons-material/DragHandle'
 import CopyIcon from '@mui/icons-material/FileCopy'
 import { SceneType } from '../../shared/Scenes'
 
-function getColor(bombacity: number) {
+function getColor(epicness: number) {
   const hueStart = 250
   const hueRange = 110 // 170
-  const hue = (hueStart + bombacity * hueRange) % 360
+  const hue = (hueStart + epicness * hueRange) % 360
   return `hsl(${hue}, ${40}%, ${50}%)`
 }
 
@@ -40,8 +40,8 @@ export function Scene({ sceneType, index, id }: Props) {
     (control) => control[sceneType].active === id
   )
   const dispatch = useDispatch()
-  const bombacity = useControlSelector(
-    (control) => control[sceneType].byId[id].bombacity
+  const epicness = useControlSelector(
+    (control) => control[sceneType].byId[id].epicness
   )
   const autoEnabled = useControlSelector(
     (control) => control[sceneType].byId[id].autoEnabled
@@ -88,7 +88,7 @@ export function Scene({ sceneType, index, id }: Props) {
   }
 
   let style: React.CSSProperties = {
-    backgroundColor: sceneType === 'light' ? getColor(bombacity) : undefined,
+    backgroundColor: sceneType === 'light' ? getColor(epicness) : undefined,
   }
 
   if (isActive) {
@@ -139,7 +139,7 @@ export function Scene({ sceneType, index, id }: Props) {
                     <>
                       <Sp />
                       <Slider
-                        value={bombacity}
+                        value={epicness}
                         radius={0.3}
                         orientation="horizontal"
                         onChange={onBombacityChange}

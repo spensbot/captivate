@@ -36,7 +36,7 @@ const icons: { [key in ParamBundle | Param]?: FunctionComponent } = {
   strobe: () => <StrobeIcon />,
   randomize: () => <RandomizeIcon />,
   position: () => <PositionIcon />,
-  epicness: () => <EpicnessIcon />,
+  intensity: () => <EpicnessIcon />,
   axis: Axis,
 }
 

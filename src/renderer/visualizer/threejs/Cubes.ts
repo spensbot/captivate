@@ -31,8 +31,8 @@ class RandomCube {
   }
 
   update(dt: number, { scene }: UpdateResource) {
-    const bombacity = scene.bombacity
-    this.mesh.rotateOnAxis(this.axis, (dt * Skew(bombacity, 0.6) + 0.5) / 200)
+    const epicness = scene.epicness
+    this.mesh.rotateOnAxis(this.axis, (dt * Skew(epicness, 0.6) + 0.5) / 200)
   }
 
   dispose() {

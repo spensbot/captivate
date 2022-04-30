@@ -7,7 +7,7 @@ export type Param =
   | 'y'
   | 'height'
   | 'black'
-  | 'epicness'
+  | 'intensity'
   | 'strobe'
   | 'randomize'
   | 'xAxis'
@@ -25,7 +25,7 @@ export function initBaseParams(): Partial<Params> {
     // y: 0.5,
     // height: 1.0,
     // black: 1.0,
-    // epicness: 1.0,
+    // intensity: 1.0,
     // strobe: 0.0,
     // randomize: 0.0,
     // xAxis: 0.5,
@@ -44,7 +44,7 @@ export function defaultOutputParams(): Params {
     y: 0.5,
     height: 1.0,
     black: 1.0,
-    epicness: 1.0,
+    intensity: 1.0,
     strobe: 0.0,
     randomize: 0.0,
     xAxis: 0.5,
@@ -62,7 +62,7 @@ export const paramsList: Param[] = [
   'y',
   'height',
   'black',
-  'epicness',
+  'intensity',
   'strobe',
   'randomize',
   'xAxis',

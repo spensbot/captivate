@@ -43,7 +43,7 @@ export function calculateDmx(
           const overwrite = state.mixer.overwrites[outputChannel - 1]
           if (overwrite !== undefined) {
             channels[outputChannel - 1] = overwrite * DMX_MAX_VALUE
-          } else if (_outputParams.epicness >= fixtureType.epicness) {
+          } else if (_outputParams.intensity >= fixtureType.intensity) {
             let dmxOut = getDmxValue(
               channel,
               _outputParams,

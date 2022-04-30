@@ -110,7 +110,7 @@ export const scenesSlice = createSlice({
       state,
       { payload: { sceneType, val } }: ScopedAction<number>
     ) => {
-      state[sceneType].auto.bombacity = val
+      state[sceneType].auto.epicness = val
     },
     setAutoScenePeriod: (
       state,
@@ -161,7 +161,7 @@ export const scenesSlice = createSlice({
       { payload: { sceneType, val } }: ScopedAction<number>
     ) => {
       modifyActiveScene(state, sceneType, (scene) => {
-        scene.bombacity = val
+        scene.epicness = val
       })
     },
     setActiveSceneAutoEnabled: (
@@ -198,7 +198,7 @@ export const scenesSlice = createSlice({
         const leftScene = scenes.byId[idLeft]
         const rightScene = scenes.byId[idRight]
         if (leftScene && rightScene)
-          return leftScene.bombacity - rightScene.bombacity
+          return leftScene.epicness - rightScene.epicness
         return 0
       })
     },
@@ -206,7 +206,7 @@ export const scenesSlice = createSlice({
       const scenes = state[payload]
       scenes.ids.forEach((id, i) => {
         const scene = scenes.byId[id]
-        if (scene) scene.bombacity = i / (scenes.ids.length - 1)
+        if (scene) scene.epicness = i / (scenes.ids.length - 1)
       })
     },
 

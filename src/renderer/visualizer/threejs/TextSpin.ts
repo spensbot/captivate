@@ -42,20 +42,20 @@ export default class TextSpin extends VisualizerBase {
   }
 
   update(dt: number, { params, scene }: UpdateResource): void {
-    const bombacity = scene.bombacity
-    this.text.mesh.rotation.y = this.spin.update(dt, bombacity)
+    const epicness = scene.epicness
+    this.text.mesh.rotation.y = this.spin.update(dt, epicness)
     const color = colorFromHSV(
       params.hue,
       params.saturation * 1,
       params.brightness *
-        (bombacity / 2 + 0.5) *
+        (epicness / 2 + 0.5) *
         this.strobe.update(dt, params.strobe)
     )
     this.text.material = new THREE.MeshBasicMaterial({
       color: color,
       side: THREE.DoubleSide,
     })
-    this.outline.group.rotation.y = this.wobble.update(dt, bombacity)
+    this.outline.group.rotation.y = this.wobble.update(dt, epicness)
   }
 
   dispose() {

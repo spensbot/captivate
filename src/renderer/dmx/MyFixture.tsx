@@ -116,8 +116,8 @@ export default function MyFixture({ id }: Props) {
           </Row>
           <Sp2 />
           <Slider
-            id="epicness"
-            value={ft.epicness}
+            id="intensity"
+            value={ft.intensity}
             step={0.01}
             min={0}
             max={1}
@@ -126,7 +126,7 @@ export default function MyFixture({ id }: Props) {
               dispatch(
                 updateFixtureType({
                   ...ft,
-                  epicness: Array.isArray(newVal) ? newVal[0] : newVal,
+                  intensity: Array.isArray(newVal) ? newVal[0] : newVal,
                 })
               )
             }

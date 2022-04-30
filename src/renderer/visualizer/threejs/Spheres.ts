@@ -52,17 +52,17 @@ export default class Spheres extends VisualizerBase {
   }
 
   update(dt: number, { params, scene }: UpdateResource): void {
-    const bombacity = scene.bombacity
+    const epicness = scene.epicness
 
     const color = colorFromHSV(
       params.hue,
       params.saturation / 2,
-      params.brightness * bombacity * this.strobe.update(dt, params.strobe)
+      params.brightness * epicness * this.strobe.update(dt, params.strobe)
     )
 
     this.globeMaterial.color = new THREE.Color(color)
 
-    const dr = (dt / 500) * (Skew(bombacity, 0.6) + 0.01)
+    const dr = (dt / 500) * (Skew(epicness, 0.6) + 0.01)
     this.spots.forEach((spot) => {
       spot.rotation.x += dr
       spot.rotation.y += dr

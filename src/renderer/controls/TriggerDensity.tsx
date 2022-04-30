@@ -29,10 +29,10 @@ function Visualizer({ splitIndex }: Props) {
     (rtState) => rtState
   )
 
-  let epicness =
+  let intensity =
     splitIndex === null
-      ? outputParams.epicness
-      : splitScenes[splitIndex]?.outputParams?.epicness ?? 0
+      ? outputParams.intensity
+      : splitScenes[splitIndex]?.outputParams?.intensity ?? 0
 
   let splitFixtures = getFixturesInGroups(
     universe,
@@ -42,7 +42,7 @@ function Visualizer({ splitIndex }: Props) {
   )
 
   let splitFixturesWithinEpicness = splitFixtures.filter(
-    ({ fixture }) => fixtureTypesByID[fixture.type].epicness <= epicness
+    ({ fixture }) => fixtureTypesByID[fixture.type].intensity <= intensity
   )
 
   const levels = splitFixturesWithinEpicness.map(

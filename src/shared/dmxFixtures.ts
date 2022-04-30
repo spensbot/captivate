@@ -106,7 +106,7 @@ export function initFixtureChannel(
 export type FixtureType = {
   id: string
   name: string
-  epicness: number
+  intensity: number
   manufacturer?: string
   channels: FixtureChannel[]
 }
@@ -115,7 +115,7 @@ const parFixture: FixtureType = {
   id: '1',
   manufacturer: 'YeeSaw',
   name: 'Par',
-  epicness: 0.3,
+  intensity: 0.3,
   channels: [
     { type: 'master' },
     { type: 'color', color: 'red' },
@@ -131,7 +131,7 @@ const parFixture: FixtureType = {
 const stringLightFixture: FixtureType = {
   id: '2',
   name: 'Light String',
-  epicness: 0.3,
+  intensity: 0.3,
   channels: [{ type: 'master' }],
 }
 
@@ -139,7 +139,7 @@ const strobeFixture: FixtureType = {
   id: '3',
   manufacturer: 'DragonX',
   name: 'Strobe',
-  epicness: 0.8,
+  intensity: 0.8,
   channels: [
     { type: 'master' },
     { type: 'strobe', default_solid: 0, default_strobe: 250 },
@@ -151,7 +151,7 @@ const derbyFixture: FixtureType = {
   id: '4',
   manufacturer: 'Laluce Natz',
   name: 'Derby',
-  epicness: 0,
+  intensity: 0,
   channels: [
     { type: 'master' },
     { type: 'color', color: 'red' },
@@ -167,7 +167,7 @@ const laserFixture: FixtureType = {
   id: '5',
   manufacturer: 'Laser World',
   name: 'EL-400',
-  epicness: 0.5,
+  intensity: 0.5,
   channels: [{ type: 'master' }],
 }
 
@@ -175,7 +175,7 @@ const vBar: FixtureType = {
   id: '6',
   manufacturer: 'American DJ',
   name: 'VBar',
-  epicness: 0.7,
+  intensity: 0.7,
   channels: [
     { type: 'color', color: 'red' },
     { type: 'color', color: 'green' },
@@ -191,7 +191,7 @@ const venuePar: FixtureType = {
   id: '7',
   manufacturer: 'Venue',
   name: 'ThinTri 64',
-  epicness: 0.7,
+  intensity: 0.7,
   channels: [
     { type: 'color', color: 'red' },
     { type: 'color', color: 'green' },
@@ -209,7 +209,7 @@ export function initFixtureType(): FixtureType {
     id: nanoid(),
     name: 'Name',
     manufacturer: 'Manufacturer',
-    epicness: 0,
+    intensity: 0,
     channels: [],
   }
 }

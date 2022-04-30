@@ -182,7 +182,7 @@ function getNextRealtimeState(
   let mainSceneFixtures = getFixturesInGroups(dmx.universe, mainGroups)
   let mainSceneFixturesWithinEpicness = mainSceneFixtures.filter(
     ({ fixture }) =>
-      dmx.fixtureTypesByID[fixture.type].epicness <= outputParams.epicness
+      dmx.fixtureTypesByID[fixture.type].intensity <= outputParams.intensity
   )
 
   newRandomizerState = updateIndexes(
@@ -202,7 +202,7 @@ function getNextRealtimeState(
     let splitSceneFixtures = getFixturesInGroups(dmx.universe, _split.groups)
     let splitSceneFixturesWithinEpicness = splitSceneFixtures.filter(
       ({ fixture }) =>
-        dmx.fixtureTypesByID[fixture.type].epicness <= outputParams.epicness
+        dmx.fixtureTypesByID[fixture.type].intensity <= outputParams.intensity
     )
     newRandomizerState = updateIndexes(
       realtimeState.time.beats,

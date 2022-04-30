@@ -15,7 +15,7 @@ export const DEFAULT_GROUP = 'Default'
 
 interface Scene_base {
   name: string
-  bombacity: number
+  epicness: number
   autoEnabled: boolean
 }
 
@@ -41,7 +41,7 @@ export interface LightScene_t extends Scene_base {
 export function initLightScene(): LightScene_t {
   return {
     name: 'Name',
-    bombacity: 0,
+    epicness: 0,
     autoEnabled: true,
     modulators: [initModulator(0)],
     baseParams: initBaseParams(),
@@ -59,7 +59,7 @@ export interface VisualScene_t extends Scene_base {
 export function initVisualScene(): VisualScene_t {
   return {
     name: 'Name',
-    bombacity: 0,
+    epicness: 0,
     autoEnabled: true,
     config: initVisualizerConfig('TextParticles'),
     effectsConfig: initEffectsConfig(),
@@ -69,7 +69,7 @@ export function initVisualScene(): VisualScene_t {
 
 export interface AutoScene_t {
   enabled: boolean
-  bombacity: number
+  epicness: number
   period: number
 }
 
@@ -102,7 +102,7 @@ export function initScenesState<T>(defaultScene: T): ScenesState<T> {
     active: initID,
     auto: {
       enabled: false,
-      bombacity: 0,
+      epicness: 0,
       period: 1,
     },
   }
