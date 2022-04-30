@@ -11,32 +11,6 @@ const AUTO_SAVE_INTERVAL = 1000 // ms
 
 // Modify this function to fix any state changes between upgrades
 export function fixState(state: CleanReduxState): CleanReduxState {
-  for (let ftID of state.dmx.fixtureTypes) {
-    let ft = state.dmx.fixtureTypesByID[ftID]
-    if (ft.epicness !== undefined) {
-      ft.intensity = ft.epicness
-      delete ft.epicness
-    }
-  }
-
-  for (let lsID of state.control.light.ids) {
-    let ls = state.control.light.byId[lsID]
-    if (ls.bombacity !== undefined) {
-      ls.epicness = ls.bombacity
-      delete ls.bombacity
-    }
-    if (ls.baseParams.epicness !== undefined) {
-      ls.baseParams.intensity = ls.baseParams.epicness
-      delete ls.baseParams.epicness
-    }
-    for (let ss of ls.splitScenes) {
-      if (ss.baseParams.epicness !== undefined) {
-        ss.baseParams.intensity = ss.baseParams.epicness
-        delete ss.baseParams.epicness
-      }
-    }
-  }
-
   return state
 }
 
