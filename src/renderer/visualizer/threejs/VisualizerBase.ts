@@ -5,7 +5,7 @@ import { Params } from '../../../shared/params'
 import { TimeState } from '../../../shared/TimeState'
 import { isNewPeriod } from '../../../shared/TimeState'
 
-export interface UpdateStuff {
+export interface UpdateInfo {
   time: TimeState
   params: Params
   scene: LightScene_t
@@ -19,7 +19,7 @@ export class UpdateResource {
   master: number
   private lastBeats: number
 
-  constructor(stuff: UpdateStuff) {
+  constructor(stuff: UpdateInfo) {
     this.time = stuff.time
     this.params = stuff.params
     this.scene = stuff.scene
@@ -27,7 +27,7 @@ export class UpdateResource {
     this.lastBeats = this.time.beats
   }
 
-  update(stuff: UpdateStuff) {
+  update(stuff: UpdateInfo) {
     this.lastBeats = this.time.beats
     this.time = stuff.time
     this.params = stuff.params

@@ -11,6 +11,16 @@ const AUTO_SAVE_INTERVAL = 1000 // ms
 
 // Modify this function to fix any state changes between upgrades
 export function fixState(state: CleanReduxState): CleanReduxState {
+  const vs = state.control.visual
+  for (let id of vs.ids) {
+    let scene = vs.byId[id]
+    for (let effect of scene.effectsConfig) {
+      if (effect.type === 'LightSyncPass') {
+        effect.type === 'LightSync'
+      }
+    }
+  }
+
   return state
 }
 

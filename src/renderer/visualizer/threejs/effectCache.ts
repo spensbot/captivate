@@ -22,6 +22,16 @@ import { EffectConfig } from './EffectTypes'
 import { Pass } from 'three/examples/jsm/postprocessing/Pass'
 import { Vector2 } from 'three'
 
+export const lightSync = new LightSyncPass({
+  type: 'LightSync',
+  obeyBrightness: true,
+  obeyColor: true,
+  obeyEpicness: true,
+  obeyMaster: true,
+  obeyPosition: true,
+  obeyStrobe: true,
+})
+
 const effectCache: { [key in EffectConfig['type']]: Pass } = {
   Glitch: new GlitchPass(),
   AdaptiveToneMapping: new AdaptiveToneMappingPass(), // Maps colors to increase bit-depth for HDR displays
@@ -33,7 +43,7 @@ const effectCache: { [key in EffectConfig['type']]: Pass } = {
   DotScreen: new DotScreenPass(),
   Film: new FilmPass(),
   Halftone: new HalftonePass(1, 1, {}),
-  LightSyncPass: new LightSyncPass({ type: 'LightSyncPass' }).pass,
+  LightSync: lightSync.pass,
   // LUT: new LUTPass({}),
   // Mask: new MaskPass(), // I think this creates a mask layer of one scene over another
   // Outline: new OutlinePass(),

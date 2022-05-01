@@ -11,7 +11,7 @@ import CubeSphere from './CubeSphere'
 import TextParticles from './TextParticles'
 import LocalMedia from './LocalMedia'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
-import effectCache from './effectCache'
+import effectCache, { lightSync } from './effectCache'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { EffectsConfig, initEffectsConfig } from './EffectTypes'
 import { AfterimagePass } from 'three/examples/jsm/postprocessing/AfterimagePass'
@@ -88,6 +88,8 @@ export default class VisualizerManager {
     } else {
       this.active.update(dt, this.updateResource)
     }
+    lightSync.update(dt, this.updateResource)
+
     this.effectComposer.render()
   }
 

@@ -7,18 +7,18 @@ export interface Afterimage {
   type: 'Afterimage'
   damp: number
 }
-export interface Bloom {
-  type: 'Bloom'
-}
-export interface Bokeh {
-  type: 'Bokeh'
-}
-export interface Clear {
-  type: 'Clear'
-}
-export interface CubeTexture {
-  type: 'CubeTexture'
-}
+// export interface Bloom {
+//   type: 'Bloom'
+// }
+// export interface Bokeh {
+//   type: 'Bokeh'
+// }
+// export interface Clear {
+//   type: 'Clear'
+// }
+// export interface CubeTexture {
+//   type: 'CubeTexture'
+// }
 export interface DotScreen {
   type: 'DotScreen'
   center: Vector2
@@ -35,33 +35,39 @@ export interface Glitch {
 export interface Halftone {
   type: 'Halftone'
 }
-export interface LightSyncPass {
-  type: 'LightSyncPass'
+export interface LightSync {
+  type: 'LightSync'
+  obeyColor: boolean
+  obeyBrightness: boolean
+  obeyMaster: boolean
+  obeyPosition: boolean
+  obeyStrobe: boolean
+  obeyEpicness: boolean
 }
-export interface LUT {
-  type: 'LUT'
-}
-export interface Mask {
-  type: 'Mask'
-}
-export interface Outline {
-  type: 'Outline'
-}
-export interface SAO {
-  type: 'SAO'
-}
-export interface SMAA {
-  type: 'SMAA'
-}
-export interface SSAO {
-  type: 'SSAO'
-}
-export interface SSR {
-  type: 'SSR'
-}
-export interface Save {
-  type: 'Save'
-}
+// export interface LUT {
+//   type: 'LUT'
+// }
+// export interface Mask {
+//   type: 'Mask'
+// }
+// export interface Outline {
+//   type: 'Outline'
+// }
+// export interface SAO {
+//   type: 'SAO'
+// }
+// export interface SMAA {
+//   type: 'SMAA'
+// }
+// export interface SSAO {
+//   type: 'SSAO'
+// }
+// export interface SSR {
+//   type: 'SSR'
+// }
+// export interface Save {
+//   type: 'Save'
+// }
 export interface UnrealBloom {
   type: 'UnrealBloom'
 }
@@ -77,7 +83,7 @@ export type EffectConfig =
   | Film
   | Glitch
   | Halftone
-  | LightSyncPass
+  | LightSync
   // | LUT
   // | Mask
   // | Outline
@@ -96,6 +102,54 @@ export function initEffectsConfig(): EffectsConfig {
   return []
 }
 
+export function initEffectConfig(type: EffectConfig['type']): EffectConfig {
+  switch (type) {
+    case 'AdaptiveToneMapping':
+      return {
+        type: 'AdaptiveToneMapping',
+      }
+    case 'Afterimage':
+      return {
+        type: 'Afterimage',
+        damp: 1.0,
+      }
+    case 'DotScreen':
+      return {
+        type: 'DotScreen',
+        center: new Vector2(0.0, 0.0),
+        scale: 1.0,
+        angle: 0.0,
+      }
+    case 'Film':
+      return {
+        type: 'Film',
+      }
+    case 'Glitch':
+      return {
+        type: 'Glitch',
+        dt: 16,
+      }
+    case 'Halftone':
+      return {
+        type: 'Halftone',
+      }
+    case 'LightSync':
+      return {
+        type: 'LightSync',
+        obeyColor: false,
+        obeyBrightness: false,
+        obeyMaster: false,
+        obeyPosition: false,
+        obeyStrobe: false,
+        obeyEpicness: false,
+      }
+    case 'UnrealBloom':
+      return {
+        type: 'UnrealBloom',
+      }
+  }
+}
+
 export const effectTypes: EffectType[] = [
   'AdaptiveToneMapping',
   'Afterimage',
@@ -107,7 +161,7 @@ export const effectTypes: EffectType[] = [
   'Film',
   'Glitch',
   'Halftone',
-  'LightSyncPass',
+  'LightSync',
   // 'LUT', <-- Does nothing?
   // 'Mask',
   // 'Outline',

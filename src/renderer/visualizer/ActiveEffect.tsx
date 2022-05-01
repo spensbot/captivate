@@ -3,6 +3,7 @@ import Select from '../base/Select'
 import {
   effectTypes,
   EffectConfig,
+  initEffectConfig,
 } from 'renderer/visualizer/threejs/EffectTypes'
 import { activeVisualSceneEffect_set } from 'renderer/redux/controlSlice'
 import { useDispatch } from 'react-redux'
@@ -25,11 +26,7 @@ export default function ActiveEffect({}: Props) {
         val={effect.type}
         items={effectTypes}
         onChange={(newType) =>
-          dispatch(
-            activeVisualSceneEffect_set({
-              type: newType,
-            })
-          )
+          dispatch(activeVisualSceneEffect_set(initEffectConfig(newType)))
         }
       />
     </Root>
