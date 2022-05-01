@@ -8,5 +8,9 @@ varying vec2 vUv;
 
 void main() {
   gl_FragColor = texture2D(tDiffuse, vUv);
-  gl_FragColor.xyz *= brightnessMultiplier;
+  float level = dot(gl_FragColor.rgb, vec3(0.33, 0.34, 0.33));
+  float adjustedLevel = sqrt(level);
+  vec4 adjustedColor = vec4(colorMultipler * adjustedLevel, 1);
+  gl_FragColor = mix(gl_FragColor, adjustedColor, 1.0);
+  gl_FragColor.rgb *= brightnessMultiplier;
 }

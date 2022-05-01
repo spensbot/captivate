@@ -3,6 +3,8 @@ import { Params } from './params'
 
 export type Color = 'red' | 'green' | 'blue' | 'white' | 'black'
 
+type RGB = [number, number, number]
+
 export const colorList = ['red', 'green', 'blue', 'white', 'black']
 
 export type Colors = { [key in Color]: Normalized }
@@ -24,7 +26,7 @@ function intermediate(C: number, X: number, hp: Normalized) {
 }
 
 // https://en.wikipedia.org/wiki/HSL_and_HSV
-export function hsl2rgb(h: Normalized, s: Normalized, l: Normalized) {
+export function hsl2rgb(h: Normalized, s: Normalized, l: Normalized): RGB {
   const hp = h * 6
   const c = (1 - Math.abs(2 * l - 1)) * s
   const x = c * (1 - Math.abs((hp % 2) - 1))
@@ -33,7 +35,7 @@ export function hsl2rgb(h: Normalized, s: Normalized, l: Normalized) {
   return [r1 + m, g1 + m, b1 + m]
 }
 
-export function hsv2rgb(h: Normalized, s: Normalized, v: Normalized) {
+export function hsv2rgb(h: Normalized, s: Normalized, v: Normalized): RGB {
   const hp = h * 6
   const c = v * s
   const x = c * (1 - Math.abs((hp % 2) - 1))
@@ -42,7 +44,7 @@ export function hsv2rgb(h: Normalized, s: Normalized, v: Normalized) {
   return [r1 + m, g1 + m, b1 + m]
 }
 
-export function hsi2rgb(h: Normalized, s: Normalized, i: Normalized) {
+export function hsi2rgb(h: Normalized, s: Normalized, i: Normalized): RGB {
   const hp = h * 6
   const z = 1 - Math.abs((hp % 2) - 1)
   const c = (3 * i * s) / (1 + z)

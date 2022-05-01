@@ -5,6 +5,7 @@ import fragmentShader from '../shaders/LightSync.frag'
 import { Uniform } from 'three'
 import { UpdateResource } from '../VisualizerBase'
 import { Strobe } from '../animations'
+import { getColors } from 'shared/dmxColors'
 
 interface CustomerPassShader<T> {
   uniforms: T
@@ -54,6 +55,39 @@ export default class {
 
     this.pass.uniforms.brightnessMultiplier.value = brightnessMultiplier
 
+    if (this.config.obeyColor) {
+      const colors = getColors(res.params)
+      this.pass.uniforms.colorMultipler.value = [
+        colors.red,
+        colors.green,
+        colors.blue,
+      ]
+    } else {
+      this.pass.uniforms.colorMultipler.value = [1, 1, 1]
+    }
+
+    if (this.config.obeyPosition) {
+      this.pass.uniforms.windowPosition.value = [
+        mapGLCoords(res.params.x),
+        mapGLCoords(res.params.y),
+      ]
+      this.pass.uniforms.windowSize.value = [
+        mapGLSize(res.params.width),
+        mapGLSize(res.params.height),
+      ]
+    } else {
+      this.pass.uniforms.windowPosition.value = [0, 0]
+      this.pass.uniforms.windowSize.value = [2, 2]
+    }
+
     // this.shader.uniforms.brightnessMultiplier.value = brightnessMultiplier
   }
+}
+
+function mapGLCoords(normalized: number): number {
+  return normalized * 2 - 1
+}
+
+function mapGLSize(normalized: number): number {
+  return normalized * 2
 }
