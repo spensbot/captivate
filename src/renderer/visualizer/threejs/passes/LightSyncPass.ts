@@ -77,7 +77,7 @@ export default class {
       ]
     } else {
       this.pass.uniforms.windowPosition.value = [0, 0]
-      this.pass.uniforms.windowSize.value = [2, 2]
+      this.pass.uniforms.windowSize.value = [1, 1]
     }
 
     // this.shader.uniforms.brightnessMultiplier.value = brightnessMultiplier
@@ -85,9 +85,11 @@ export default class {
 }
 
 function mapGLCoords(normalized: number): number {
-  return normalized * 2 - 1
+  return normalized
+  // return normalized * 2 - 1
 }
 
 function mapGLSize(normalized: number): number {
-  return normalized * 2
+  return normalized
+  // return normalized * 2
 }
