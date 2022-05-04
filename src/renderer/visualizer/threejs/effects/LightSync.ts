@@ -1,19 +1,37 @@
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js'
-import { LightSync } from '../EffectTypes'
+//@ts-ignore
 import vertexShader from '../shaders/LightSync.vert'
+//@ts-ignore
 import fragmentShader from '../shaders/LightSync.frag'
 import { Uniform } from 'three'
 import { UpdateResource } from '../VisualizerBase'
 import { Strobe } from '../animations'
 import { getColors } from 'shared/dmxColors'
+import CustomPassShader from './CustomPassShader'
 
-interface CustomerPassShader<T> {
-  uniforms: T
-  vertexShader: string
-  fragmentShader: string
+export interface LightSyncConfig {
+  type: 'LightSync'
+  obeyColor: number
+  obeyBrightness: boolean
+  obeyMaster: boolean
+  obeyPosition: boolean
+  obeyStrobe: boolean
+  obeyEpicness: boolean
 }
 
-type LightSyncShader = CustomerPassShader<{
+export function initLightSyncConfig(): LightSyncConfig {
+  return {
+    type: 'LightSync',
+    obeyColor: 1.0,
+    obeyBrightness: false,
+    obeyMaster: false,
+    obeyPosition: false,
+    obeyStrobe: false,
+    obeyEpicness: false,
+  }
+}
+
+type LightSyncShader = CustomPassShader<{
   tDiffuse: Uniform
   colorMultipler: Uniform // vec3 color
   brightnessMultiplier: Uniform // float brightness, master, strobe
@@ -21,13 +39,13 @@ type LightSyncShader = CustomerPassShader<{
   windowPosition: Uniform // vec2
 }>
 
-export default class {
-  config: LightSync
+export class LightSync {
+  config: LightSyncConfig
   shader: LightSyncShader
   pass: ShaderPass
   strobe: Strobe
 
-  constructor(config: LightSync) {
+  constructor(config: LightSyncConfig) {
     this.config = config
     this.shader = {
       uniforms: {
@@ -79,8 +97,6 @@ export default class {
       this.pass.uniforms.windowPosition.value = [0, 0]
       this.pass.uniforms.windowSize.value = [1, 1]
     }
-
-    // this.shader.uniforms.brightnessMultiplier.value = brightnessMultiplier
   }
 }
 

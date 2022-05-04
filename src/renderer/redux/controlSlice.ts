@@ -7,7 +7,7 @@ import { nanoid } from 'nanoid'
 import { RandomizerOptions } from '../../shared/randomizer'
 import cloneDeep from 'lodash.clonedeep'
 import { VisualizerConfig } from '../visualizer/threejs/VisualizerConfig'
-import { EffectConfig } from '../visualizer/threejs/EffectTypes'
+import { EffectConfig } from '../visualizer/threejs/effects/effectConfigs'
 import { DeviceState, initDeviceState, midiActions } from './deviceState'
 import {
   ScenesStateBundle,

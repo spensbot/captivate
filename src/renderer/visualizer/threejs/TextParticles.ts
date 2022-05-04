@@ -1,13 +1,14 @@
 import * as THREE from 'three'
 import { FontType } from './FontType'
 import VisualizerBase, { UpdateResource } from './VisualizerBase'
-import shaders from './shaders'
 import { particles } from './particles'
 import { textOutlineShapesAndHoles, textBounds } from './text'
 import { colorFromHSV, distance } from './util'
 import { randomRanged } from '../../../shared/util'
 import { gravity, ParticleState } from './particlePhysics'
 import { TextParticlesConfig } from './TextParticlesConfig'
+import vertexShader from './shaders/particles.vert'
+import fragmentShader from './shaders/particles.frag'
 
 const attrib = {
   position: 'position',
@@ -34,8 +35,8 @@ export default class TextParticles extends VisualizerBase {
         color: { value: new THREE.Color(0xffffff) },
         pointTexture: { value: particles.circle },
       },
-      vertexShader: shaders.particleVertex,
-      fragmentShader: shaders.particleFragment,
+      vertexShader,
+      fragmentShader,
 
       blending: THREE.AdditiveBlending,
       depthTest: false,
