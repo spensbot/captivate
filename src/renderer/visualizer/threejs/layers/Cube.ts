@@ -1,10 +1,11 @@
 import * as THREE from 'three'
-import VisualizerBase, { UpdateResource } from './VisualizerBase'
+import LayerBase from './LayerBase'
+import UpdateResource from '../UpdateResource'
 
 export interface CubeConfig {
   type: 'Cube'
 }
-export default class Cube extends VisualizerBase {
+export default class Cube extends LayerBase {
   private cube: THREE.Mesh
   private material = new THREE.MeshNormalMaterial()
 

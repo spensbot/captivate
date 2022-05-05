@@ -3,13 +3,13 @@ import { Modulator, initModulator } from './modulation'
 import { RandomizerOptions, initRandomizerOptions } from './randomizer'
 import { nanoid } from 'nanoid'
 import {
-  VisualizerConfig,
-  initVisualizerConfig,
-} from '../renderer/visualizer/threejs/VisualizerConfig'
+  LayerConfig,
+  initLayerConfig,
+} from '../renderer/visualizer/threejs/layers/LayerConfig'
 import {
   EffectsConfig,
   initEffectsConfig,
-} from '../renderer/visualizer/threejs/EffectTypes'
+} from '../renderer/visualizer/threejs/effects/effectConfigs'
 
 export const DEFAULT_GROUP = 'Default'
 
@@ -51,7 +51,7 @@ export function initLightScene(): LightScene_t {
 }
 
 export interface VisualScene_t extends Scene_base {
-  config: VisualizerConfig
+  config: LayerConfig
   effectsConfig: EffectsConfig
   activeEffectIndex: number
 }
@@ -61,7 +61,7 @@ export function initVisualScene(): VisualScene_t {
     name: 'Name',
     epicness: 0,
     autoEnabled: true,
-    config: initVisualizerConfig('TextParticles'),
+    config: initLayerConfig('TextParticles'),
     effectsConfig: initEffectsConfig(),
     activeEffectIndex: 0,
   }

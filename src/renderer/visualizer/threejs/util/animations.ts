@@ -1,4 +1,4 @@
-import { Skew } from '../../../shared/oscillator'
+import { Skew } from '../../../../shared/oscillator'
 
 export class Strobe {
   // Resets to 1, then is decremented according to strobe speed

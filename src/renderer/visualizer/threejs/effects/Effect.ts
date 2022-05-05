@@ -1,4 +1,3 @@
-import { EffectConfig, EffectsConfig } from './effectConfigs'
 import { LightSync } from './LightSync'
 import { Glitch } from './Glitch'
 import { AdaptiveToneMapping } from './AdaptiveToneMapping'
@@ -6,9 +5,11 @@ import { AfterImage } from './AfterImage'
 import { DotScreen } from './DotScreen'
 import { Film } from './Film'
 import { HalfTone } from './HalfTone'
+import { RenderLayer } from './RenderLayer'
 import { UnrealBloom } from './UnrealBloom'
+import { EffectConfig } from './effectConfigs'
 
-type Effect =
+export type Effect =
   | AdaptiveToneMapping
   | AfterImage
   | DotScreen
@@ -16,9 +17,10 @@ type Effect =
   | Glitch
   | HalfTone
   | LightSync
+  | RenderLayer
   | UnrealBloom
 
-function makeEffect(config: EffectConfig): Effect {
+export function constructEffect(config: EffectConfig): Effect {
   switch (config.type) {
     case 'AdaptiveToneMapping':
       return new AdaptiveToneMapping(config)
@@ -36,18 +38,7 @@ function makeEffect(config: EffectConfig): Effect {
       return new LightSync(config)
     case 'UnrealBloom':
       return new UnrealBloom(config)
-  }
-}
-
-export default class EffectManager {
-  effects: Effect[] = []
-  config: EffectsConfig
-
-  constructor(config: EffectsConfig) {
-    this.config = config
-  }
-
-  updateConfig(config: EffectsConfig): void {
-    this.config = config
+    case 'RenderLayer':
+      return new RenderLayer(config)
   }
 }

@@ -1,22 +1,14 @@
 import { AfterimagePass } from 'three/examples/jsm/postprocessing/AfterImagePass'
-import { UpdateResource } from '../VisualizerBase'
+import EffectBase from './EffectBase'
+import { AfterImageConfig } from './effectConfigs'
 
-export interface AfterImageConfig {
-  type: 'AfterImage'
-}
-
-export function initAfterImageConfig(): AfterImageConfig {
-  return { type: 'AfterImage' }
-}
-
-export class AfterImage {
+export class AfterImage extends EffectBase {
   type = 'AfterImage'
   config: AfterImageConfig
   pass = new AfterimagePass()
 
   constructor(config: AfterImageConfig) {
+    super()
     this.config = config
   }
-
-  update(_dt: number, _res: UpdateResource) {}
 }

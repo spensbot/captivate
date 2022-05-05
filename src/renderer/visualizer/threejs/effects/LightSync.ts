@@ -4,32 +4,12 @@ import vertexShader from '../shaders/LightSync.vert'
 //@ts-ignore
 import fragmentShader from '../shaders/LightSync.frag'
 import { Uniform } from 'three'
-import { UpdateResource } from '../VisualizerBase'
-import { Strobe } from '../animations'
+import UpdateResource from '../UpdateResource'
+import { Strobe } from '../util/animations'
 import { getColors } from 'shared/dmxColors'
 import CustomPassShader from './CustomPassShader'
-
-export interface LightSyncConfig {
-  type: 'LightSync'
-  obeyColor: number
-  obeyBrightness: boolean
-  obeyMaster: boolean
-  obeyPosition: boolean
-  obeyStrobe: boolean
-  obeyEpicness: boolean
-}
-
-export function initLightSyncConfig(): LightSyncConfig {
-  return {
-    type: 'LightSync',
-    obeyColor: 1.0,
-    obeyBrightness: false,
-    obeyMaster: false,
-    obeyPosition: false,
-    obeyStrobe: false,
-    obeyEpicness: false,
-  }
-}
+import EffectBase from './EffectBase'
+import { LightSyncConfig } from './effectConfigs'
 
 type LightSyncShader = CustomPassShader<{
   tDiffuse: Uniform
@@ -39,13 +19,14 @@ type LightSyncShader = CustomPassShader<{
   windowPosition: Uniform // vec2
 }>
 
-export class LightSync {
+export class LightSync extends EffectBase {
   config: LightSyncConfig
   shader: LightSyncShader
   pass: ShaderPass
   strobe: Strobe
 
   constructor(config: LightSyncConfig) {
+    super()
     this.config = config
     this.shader = {
       uniforms: {

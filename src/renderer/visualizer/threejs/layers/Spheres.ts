@@ -1,9 +1,10 @@
 import * as THREE from 'three'
-import VisualizerBase, { UpdateResource } from './VisualizerBase'
-import { randomRanged } from '../../../shared/util'
-import { Skew } from '../../../shared/oscillator'
-import { Strobe } from './animations'
-import { colorFromHSV } from './util'
+import LayerBase from './LayerBase'
+import { randomRanged } from '../../../../shared/util'
+import { Skew } from '../../../../shared/oscillator'
+import { Strobe } from '../util/animations'
+import { colorFromHSV } from '../util/util'
+import UpdateResource from '../UpdateResource'
 
 const RADIUS = 2
 const RATIO_MIN = 0.02
@@ -19,7 +20,7 @@ export function initSpheresConfig(): SpheresConfig {
   }
 }
 
-export default class Spheres extends VisualizerBase {
+export default class Spheres extends LayerBase {
   private globe: THREE.Mesh
   private globeMaterial: THREE.MeshBasicMaterial
   private spots: THREE.Mesh[]

@@ -3,8 +3,8 @@ import { useActiveVisualScene } from '../redux/store'
 import Select from '../base/Select'
 import {
   visualizerTypeList,
-  initVisualizerConfig,
-} from './threejs/VisualizerConfig'
+  initLayerConfig,
+} from './threejs/layers/LayerConfig'
 import { useDispatch } from 'react-redux'
 import { setVisualSceneConfig } from '../redux/controlSlice'
 
@@ -21,7 +21,7 @@ export default function VisualizerSceneEditor({}: Props) {
         val={config.type}
         items={visualizerTypeList}
         onChange={(newType) =>
-          dispatch(setVisualSceneConfig(initVisualizerConfig(newType)))
+          dispatch(setVisualSceneConfig(initLayerConfig(newType)))
         }
       />
     </Root>

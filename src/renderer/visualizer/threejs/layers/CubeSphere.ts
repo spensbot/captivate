@@ -1,7 +1,8 @@
 import * as THREE from 'three'
-import VisualizerBase, { UpdateResource } from './VisualizerBase'
-import { randomRanged } from '../../../shared/util'
+import LayerBase from './LayerBase'
+import { randomRanged } from '../../../../shared/util'
 import { Vector3 } from 'three'
+import UpdateResource from '../UpdateResource'
 
 const ARRAY = Array(20).fill(0)
 
@@ -44,7 +45,7 @@ class RandomCube {
   }
 }
 
-export default class CubeSphere extends VisualizerBase {
+export default class CubeSphere extends LayerBase {
   private cubes: RandomCube[]
 
   constructor() {

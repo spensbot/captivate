@@ -1,8 +1,8 @@
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader'
-import gentilis from './fonts/gentilis_bold.typeface.json'
-import zsd from './fonts/font_zsd4dr.json'
-import helvetiker_bold from './fonts/helvetiker_bold.typeface.json'
-import helvetiker_reg from './fonts/helvetiker_regular.typeface.json'
+import gentilis from './gentilis_bold.typeface.json'
+import zsd from './font_zsd4dr.json'
+import helvetiker_bold from './helvetiker_bold.typeface.json'
+import helvetiker_reg from './helvetiker_regular.typeface.json'
 
 export const fonts = {
   gentilis: new FontLoader().parse(gentilis),

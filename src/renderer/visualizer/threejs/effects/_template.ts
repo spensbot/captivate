@@ -1,24 +1,24 @@
-import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass'
-import { UpdateResource } from '../VisualizerBase'
+import { ___Pass } from 'three/examples/jsm/postprocessing/___Pass'
+import { UpdateResource } from '../LayerBase'
 
-export interface GlitchConfig {
-  type: 'Glitch'
+export interface ___Config {
+  type: '___'
 }
 
-export function initGlitchConfig(): GlitchConfig {
-  return { type: 'Glitch' }
+export function init___Config(): ___Config {
+  return { type: '___' }
 }
 
 // If the effect pass does not maintain internal state between frames, it can be cached and re-used
-const cached = new GlitchPass()
+const cached = new ___Pass()
 
-export class Glitch {
-  type = 'Glitch'
-  config: GlitchConfig
+export class ___ {
+  type = '___'
+  config: ___Config
   pass = cached
-  // pass = new GlitchPass  <-- If the effect uses internal state, you need to create a fresh pass with each instantiation
+  // pass = new ___Pass  <-- If the effect uses internal state, you need to create a fresh pass with each instantiation
 
-  constructor(config: GlitchConfig) {
+  constructor(config: ___Config) {
     this.config = config
   }
 

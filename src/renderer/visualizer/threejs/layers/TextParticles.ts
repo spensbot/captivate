@@ -1,14 +1,15 @@
 import * as THREE from 'three'
-import { FontType } from './FontType'
-import VisualizerBase, { UpdateResource } from './VisualizerBase'
-import { particles } from './particles'
-import { textOutlineShapesAndHoles, textBounds } from './text'
-import { colorFromHSV, distance } from './util'
-import { randomRanged } from '../../../shared/util'
-import { gravity, ParticleState } from './particlePhysics'
+import { FontType } from '../fonts/FontType'
+import LayerBase from './LayerBase'
+import { particles } from '../util/particles'
+import { textOutlineShapesAndHoles, textBounds } from '../util/text'
+import { colorFromHSV, distance } from '../util/util'
+import { randomRanged } from '../../../../shared/util'
+import { gravity, ParticleState } from '../util/particlePhysics'
 import { TextParticlesConfig } from './TextParticlesConfig'
-import vertexShader from './shaders/particles.vert'
-import fragmentShader from './shaders/particles.frag'
+import vertexShader from '../shaders/particles.vert'
+import fragmentShader from '../shaders/particles.frag'
+import UpdateResource from '../UpdateResource'
 
 const attrib = {
   position: 'position',
@@ -16,7 +17,7 @@ const attrib = {
   size: 'size',
 }
 
-export default class TextParticles extends VisualizerBase {
+export default class TextParticles extends LayerBase {
   particles = new THREE.Points()
   particleStates: ParticleState[] = []
   config: TextParticlesConfig

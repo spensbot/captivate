@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import VisualizerBase, { UpdateResource } from './VisualizerBase'
+import LayerBase from './LayerBase'
 import {
   textMesh,
   TextMesh_t,
@@ -7,14 +7,15 @@ import {
   textOutline,
   TextOutline_t,
   textOutline_release,
-} from './text'
-import { Spin, Wobble, Strobe } from './animations'
-import { colorFromHSV } from './util'
+} from '../util/text'
+import { Spin, Wobble, Strobe } from '../util/animations'
+import { colorFromHSV } from '../util/util'
+import UpdateResource from '../UpdateResource'
 
 const TEXT = 'FEEL\nWITH\nME'
 const SIZE = 1
 
-export default class TextSpin extends VisualizerBase {
+export default class TextSpin extends LayerBase {
   private text: TextMesh_t
   private outline: TextOutline_t
   private spin: Spin = new Spin()

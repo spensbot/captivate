@@ -1,8 +1,12 @@
 import * as THREE from 'three'
-import VisualizerBase, { UpdateResource } from './VisualizerBase'
-import { loadVideo, pathUrl, releaseVideo, loadImage } from './loaders'
-import LoadQueue from './LoadQueue'
-import { randomRanged, randomIndexExcludeCurrent } from '../../../shared/util'
+import LayerBase from './LayerBase'
+import { loadVideo, pathUrl, releaseVideo, loadImage } from '../util/loaders'
+import LoadQueue from '../util/LoadQueue'
+import {
+  randomRanged,
+  randomIndexExcludeCurrent,
+} from '../../../../shared/util'
+import UpdateResource from '../UpdateResource'
 
 export type OrderType = 'Random' | 'Ordered'
 export const orderTypes: OrderType[] = ['Ordered', 'Random']
@@ -119,7 +123,7 @@ function releaseMediaData(data: MediaData) {
 //   at the expense of the first media being from the previously active LocalMedia visualizer.
 let sharedQueue: LoadQueue<MediaData> | null = null
 
-export default class LocalMedia extends VisualizerBase {
+export default class LocalMedia extends LayerBase {
   readonly type = 'LocalMedia'
   config: LocalMediaConfig
   displayPlane: THREE.PlaneGeometry
@@ -127,7 +131,7 @@ export default class LocalMedia extends VisualizerBase {
   index: number = 0
   lastMediaData: MediaData | null = null
 
-  constructor(config: LocalMediaConfig) {
+  constructor(_config: LocalMediaConfig) {
     super()
     this.config = initLocalMediaConfig()
     this.displayPlane = new THREE.PlaneGeometry(1, 1)

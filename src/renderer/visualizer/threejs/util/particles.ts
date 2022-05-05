@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import particleSrc from '../../images/particle.png'
+import particleSrc from '../../../images/particle.png'
 import { TextureLoader } from 'three'
 
 export const particles = {

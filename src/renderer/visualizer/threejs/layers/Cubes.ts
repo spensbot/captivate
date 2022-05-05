@@ -1,10 +1,11 @@
 import * as THREE from 'three'
-import VisualizerBase, { UpdateResource } from './VisualizerBase'
-import { randomRanged } from '../../../shared/util'
+import LayerBase from './LayerBase'
+import { randomRanged } from '../../../../shared/util'
 import { Vector3 } from 'three'
-import { Strobe } from './animations'
-import { colorFromHSV } from './util'
-import { Skew } from '../../../shared/oscillator'
+import { Strobe } from '../util/animations'
+import { colorFromHSV } from '../util/util'
+import { Skew } from '../../../../shared/oscillator'
+import UpdateResource from '../UpdateResource'
 
 export interface CubesConfig {
   type: 'Cubes'
@@ -41,7 +42,7 @@ class RandomCube {
   }
 }
 
-export default class Cubes extends VisualizerBase {
+export default class Cubes extends LayerBase {
   private cubes: RandomCube[]
   private light: THREE.PointLight
   private strobe: Strobe = new Strobe()

@@ -1,5 +1,5 @@
-import { Physics } from './particlePhysics'
-import { FontType } from './FontType'
+import { Physics } from '../util/particlePhysics'
+import { FontType } from '../fonts/FontType'
 
 export interface TextParticlesConfig {
   type: 'TextParticles'

@@ -1,23 +1,16 @@
 import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass'
-
-export interface GlitchConfig {
-  type: 'Glitch'
-}
-
-export function initGlitchConfig(): GlitchConfig {
-  return { type: 'Glitch' }
-}
+import EffectBase from './EffectBase'
+import { GlitchConfig } from './effectConfigs'
 
 const cached = new GlitchPass()
 
-export class Glitch {
+export class Glitch extends EffectBase {
   type = 'Glitch'
   config: GlitchConfig
   pass = cached
 
   constructor(config: GlitchConfig) {
+    super()
     this.config = config
   }
-
-  update() {}
 }

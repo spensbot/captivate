@@ -6,7 +6,7 @@ import { initModulator } from '../../shared/modulation'
 import { nanoid } from 'nanoid'
 import { RandomizerOptions } from '../../shared/randomizer'
 import cloneDeep from 'lodash.clonedeep'
-import { VisualizerConfig } from '../visualizer/threejs/VisualizerConfig'
+import { LayerConfig } from '../visualizer/threejs/layers/LayerConfig'
 import { EffectConfig } from '../visualizer/threejs/effects/effectConfigs'
 import { DeviceState, initDeviceState, midiActions } from './deviceState'
 import {
@@ -375,10 +375,7 @@ export const scenesSlice = createSlice({
     resetVisualScenes: (state, { payload }: PayloadAction<VisualScenes_t>) => {
       state.visual = payload
     },
-    setVisualSceneConfig: (
-      state,
-      { payload }: PayloadAction<VisualizerConfig>
-    ) => {
+    setVisualSceneConfig: (state, { payload }: PayloadAction<LayerConfig>) => {
       modifyActiveVisualScene(state, (scene) => (scene.config = payload))
     },
     activeVisualSceneEffect_add: (
