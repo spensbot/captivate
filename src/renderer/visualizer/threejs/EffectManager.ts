@@ -3,19 +3,32 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import * as THREE from 'three'
 import { Effect, constructEffect } from './effects/Effect'
 import UpdateResource from './UpdateResource'
+import { LayerConfig } from './layers/LayerConfig'
+import { constructRenderLayer } from './effects/RenderLayer'
 
 export default class EffectManager {
   effects: Effect[] = []
-  config: EffectsConfig
+  layerConfig: LayerConfig
+  effectsConfig: EffectsConfig
   effectComposer: EffectComposer
 
-  constructor(config: EffectsConfig, renderer: THREE.WebGLRenderer) {
-    this.config = config
+  constructor(
+    layerConfig: LayerConfig,
+    effectsConfig: EffectsConfig,
+    renderer: THREE.WebGLRenderer,
+    width: number,
+    height: number
+  ) {
+    console.log('new EffectManager()')
+    this.layerConfig = layerConfig
+    this.effectsConfig = effectsConfig
     this.effectComposer = new EffectComposer(renderer)
+    this.resetEffects(width, height)
   }
 
-  updateConfig(config: EffectsConfig): void {
-    this.config = config
+  updateConfig(layerConfig: LayerConfig, effectsConfig: EffectsConfig): void {
+    this.layerConfig = layerConfig
+    this.effectsConfig = effectsConfig
   }
 
   update(dt: number, res: UpdateResource) {
@@ -23,9 +36,9 @@ export default class EffectManager {
   }
 
   resize(width: number, height: number) {
-    this.resetEffects()
+    console.log('resize()')
     this.effectComposer.setSize(width, height)
-    this.effects.forEach((effect) => effect.resize(width, height))
+    this.resetEffects(width, height)
   }
 
   render() {
@@ -36,9 +49,16 @@ export default class EffectManager {
     this.effects.forEach((effect) => effect.dispose())
   }
 
-  resetEffects() {
+  resetEffects(width: number, height: number) {
     this.removeAllEffects()
-    this.effects = this.config.map((ec) => constructEffect(ec))
+    this.effects = [
+      constructRenderLayer(this.layerConfig),
+      ...this.effectsConfig.map((effectConfig) =>
+        constructEffect(effectConfig)
+      ),
+    ]
+    this.effects.forEach((effect) => effect.resize(width, height))
+    this.effects.forEach((effect) => this.effectComposer.addPass(effect.pass))
   }
 
   removeAllEffects() {

@@ -5,6 +5,7 @@ import equal from 'deep-equal'
 import UpdateResource from './UpdateResource'
 import { EffectsConfig, initEffectsConfig } from './effects/effectConfigs'
 import EffectManager from './EffectManager'
+import { initLayerConfig, LayerConfig } from './layers/LayerConfig'
 
 export interface VisualizerResource {
   rt: RealtimeState
@@ -13,6 +14,9 @@ export interface VisualizerResource {
 
 export default class VisualizerManager {
   private renderer: THREE.WebGLRenderer // The renderer is the only THREE class that actually takes a while to instantiate (>3ms)
+  private width = 0
+  private height = 0
+  private layerConfig: LayerConfig
   private effectsConfig: EffectsConfig
   private updateResource: UpdateResource | null = null
   private effectManager: EffectManager
@@ -22,7 +26,14 @@ export default class VisualizerManager {
     // this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     // this.renderer.outputEncoding = THREE.sRGBEncoding
     this.effectsConfig = initEffectsConfig()
-    this.effectManager = new EffectManager(initEffectsConfig(), this.renderer)
+    this.layerConfig = initLayerConfig('Cubes')
+    this.effectManager = new EffectManager(
+      this.layerConfig,
+      this.effectsConfig,
+      this.renderer,
+      this.width,
+      this.height
+    )
   }
 
   getElement() {
@@ -33,6 +44,7 @@ export default class VisualizerManager {
     const control = res.state.control
     const visualScene = control.visual.byId[control.visual.active]
     const effectsConfig = visualScene?.effectsConfig || []
+    const layerConfig = visualScene.config
     const stuff = {
       params: res.rt.outputParams,
       time: res.rt.time,
@@ -44,17 +56,30 @@ export default class VisualizerManager {
     } else {
       this.updateResource.update(stuff)
     }
-    if (!equal(effectsConfig, this.effectsConfig)) {
+    if (
+      !equal(effectsConfig, this.effectsConfig) ||
+      !equal(layerConfig, this.layerConfig)
+    ) {
       this.effectManager.dispose()
-      this.effectManager = new EffectManager(effectsConfig, this.renderer)
-    } else {
-      this.effectManager.update(dt, this.updateResource)
+      this.effectManager = new EffectManager(
+        layerConfig,
+        effectsConfig,
+        this.renderer,
+        this.width,
+        this.height
+      )
+      this.layerConfig = layerConfig
+      this.effectsConfig = effectsConfig
+      this.effectManager.resize(this.width, this.height)
     }
 
+    this.effectManager.update(dt, this.updateResource)
     this.effectManager.render()
   }
 
   resize(width: number, height: number) {
+    this.width = width
+    this.height = height
     this.renderer.setSize(width, height)
     this.effectManager.resize(width, height)
   }
