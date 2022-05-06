@@ -49,11 +49,11 @@ export function initLightSyncConfig(): LightSyncConfig {
   return {
     type: 'LightSync',
     obeyColor: 1.0,
-    obeyBrightness: false,
-    obeyMaster: false,
-    obeyPosition: false,
-    obeyStrobe: false,
-    obeyEpicness: false,
+    obeyBrightness: true,
+    obeyMaster: true,
+    obeyPosition: true,
+    obeyStrobe: true,
+    obeyEpicness: true,
   }
 }
 export interface RenderLayerConfig {

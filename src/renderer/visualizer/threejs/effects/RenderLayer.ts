@@ -32,6 +32,7 @@ export class RenderLayer extends EffectBase {
 
   resize(width: number, height: number) {
     this.active_layer.resize(width, height)
+    this.pass = new RenderPass(...this.active_layer.getRenderInputs())
   }
 
   dispose() {

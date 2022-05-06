@@ -9,10 +9,11 @@ import { Strobe } from '../util/animations'
 import { getColors } from 'shared/dmxColors'
 import CustomPassShader from './CustomPassShader'
 import EffectBase from './EffectBase'
-import { LightSyncConfig } from './effectConfigs'
+import { LightSyncConfig, initLightSyncConfig } from './effectConfigs'
 
 type LightSyncShader = CustomPassShader<{
   tDiffuse: Uniform
+  obeyColor: Uniform
   colorMultipler: Uniform // vec3 color
   brightnessMultiplier: Uniform // float brightness, master, strobe
   windowSize: Uniform // vec2
@@ -27,10 +28,11 @@ export class LightSync extends EffectBase {
 
   constructor(config: LightSyncConfig) {
     super()
-    this.config = config
+    this.config = initLightSyncConfig()
     this.shader = {
       uniforms: {
         tDiffuse: new Uniform(null),
+        obeyColor: new Uniform(1.0),
         colorMultipler: new Uniform([0, 0, 0]),
         brightnessMultiplier: new Uniform(1.0),
         windowSize: new Uniform([1, 1]),
@@ -54,16 +56,14 @@ export class LightSync extends EffectBase {
 
     this.pass.uniforms.brightnessMultiplier.value = brightnessMultiplier
 
-    if (this.config.obeyColor) {
-      const colors = getColors(res.params)
-      this.pass.uniforms.colorMultipler.value = [
-        colors.red,
-        colors.green,
-        colors.blue,
-      ]
-    } else {
-      this.pass.uniforms.colorMultipler.value = [1, 1, 1]
-    }
+    const colors = getColors(res.params)
+    this.pass.uniforms.colorMultipler.value = [
+      colors.red,
+      colors.green,
+      colors.blue,
+    ]
+
+    this.pass.uniforms.obeyColor.value = this.config.obeyColor
 
     if (this.config.obeyPosition) {
       this.pass.uniforms.windowPosition.value = [
