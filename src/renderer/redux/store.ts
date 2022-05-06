@@ -120,7 +120,6 @@ const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (
       control: initUndoState(cs),
     }
   } else if (action.type === APPLY_SAVE) {
-    console.log('Apply Save')
     const info: SaveInfo = action.payload
     const control = state.control.present
     return {

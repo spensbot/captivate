@@ -11,48 +11,48 @@ import OpenVisualizerButton from 'renderer/visualizer/OpenVisualizerButton'
 import VisualizerSceneEditor from 'renderer/visualizer/VisualizerSceneEditor'
 import Effects from 'renderer/visualizer/Effects'
 
-const visualizer = new VisualizerManager()
-let lastUpdateTime: number | null = null
-let dt: number = 0
-
-function animateVisualizer() {
-  const now = Date.now()
-  if (lastUpdateTime !== null) {
-    dt = now - lastUpdateTime
-  }
-  lastUpdateTime = now
-  visualizer.update(dt, {
-    rt: realtimeStore.getState(),
-    state: getCleanReduxState(store.getState()),
-  })
-  requestAnimationFrame(animateVisualizer)
-}
-
-animateVisualizer()
-
 export default function Visualizer() {
-  const ref = useRef(null)
+  const visualizerDiv = useRef<null | HTMLDivElement>(null)
+  const dt = useRef<number>(60)
   useRealtimeSelector((state) => state)
 
-  function resize() {
-    const element = ref.current
-    if (element !== null) {
-      visualizer.resize(element.clientWidth, element.clientHeight)
-    }
-  }
-
   useEffect(() => {
-    const element = ref.current
+    let lastUpdateTime: number | null = null
+    const vm = new VisualizerManager()
+    const element = visualizerDiv.current
     if (element !== null) {
-      element.appendChild(visualizer.getElement())
+      element.appendChild(vm.getElement())
     }
+
+    const resize = () => {
+      const element = visualizerDiv.current
+      if (element !== null) {
+        vm.resize(element.clientWidth, element.clientHeight)
+      }
+    }
+
+    let animateVisualizer = () => {
+      const now = Date.now()
+      if (lastUpdateTime !== null) {
+        dt.current = now - lastUpdateTime
+      }
+      lastUpdateTime = now
+      vm.update(dt.current, {
+        rt: realtimeStore.getState(),
+        state: getCleanReduxState(store.getState()),
+      })
+      requestAnimationFrame(animateVisualizer)
+    }
+
     resize()
     window.addEventListener('resize', resize)
+    animateVisualizer()
 
     return () => {
       window.removeEventListener('resize', resize)
+      animateVisualizer = () => {}
     }
-  }, [ref.current?.clientWidth ?? 0, ref.current?.clientHeight ?? 0])
+  }, [])
 
   const splitPaneStyle: React.CSSProperties = {
     flex: '1 1 0',
@@ -74,8 +74,8 @@ export default function Visualizer() {
           <SceneSelection sceneType="visual" />
         </Pane>
         <VisualizerPane>
-          <Window ref={ref}>
-            <FPS dt={dt} />
+          <Window ref={visualizerDiv}>
+            <FPS dt={dt.current} />
             <OpenVisualizerButton />
           </Window>
           <SplitPane

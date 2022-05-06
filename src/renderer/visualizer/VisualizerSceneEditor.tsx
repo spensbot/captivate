@@ -7,6 +7,7 @@ import {
 } from './threejs/layers/LayerConfig'
 import { useDispatch } from 'react-redux'
 import { setVisualSceneConfig } from '../redux/controlSlice'
+import LayerEditor from './LayerEditor'
 
 interface Props {}
 
@@ -24,10 +25,19 @@ export default function VisualizerSceneEditor({}: Props) {
           dispatch(setVisualSceneConfig(initLayerConfig(newType)))
         }
       />
+      <LayerEditor
+        config={config}
+        onChange={(newConfig) => dispatch(setVisualSceneConfig(newConfig))}
+      />
     </Root>
   )
 }
 
 const Root = styled.div`
   padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  & > * {
+    margin-bottom: 0.5rem;
+  }
 `

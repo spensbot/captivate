@@ -14,7 +14,6 @@ export default abstract class LayerBase {
   }
 
   resize(width: number, height: number): void {
-    console.log('LayerBase::resize()')
     this.camera = new THREE.PerspectiveCamera(70, width / height, 0.001, 1000)
     this.camera.position.z = 5
     this.camera.updateProjectionMatrix()

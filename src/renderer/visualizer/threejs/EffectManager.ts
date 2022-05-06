@@ -19,7 +19,6 @@ export default class EffectManager {
     width: number,
     height: number
   ) {
-    console.log('new EffectManager()')
     this.layerConfig = layerConfig
     this.effectsConfig = effectsConfig
     this.effectComposer = new EffectComposer(renderer)
@@ -36,7 +35,6 @@ export default class EffectManager {
   }
 
   resize(width: number, height: number) {
-    console.log('resize()')
     this.effectComposer.setSize(width, height)
     this.resetEffects(width, height)
   }
