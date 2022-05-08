@@ -1,16 +1,11 @@
 import cloneDeep from 'lodash.clonedeep'
-import { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Select from 'renderer/base/Select'
 import styled from 'styled-components'
 import { LayerConfig } from './threejs/layers/LayerConfig'
-import {
-  LocalMediaConfig,
-  objectFits,
-  ObjectFit,
-  orderTypes,
-} from './threejs/layers/LocalMedia'
+import { objectFits, orderTypes } from './threejs/layers/LocalMedia'
 import { fontTypes } from './threejs/fonts/FontType'
-import { Button, Input, TextField } from '@mui/material'
+import { Button, TextField } from '@mui/material'
 
 interface Props {
   config: LayerConfig
@@ -19,6 +14,11 @@ interface Props {
 
 export default function LayerEditor({ config, onChange }: Props) {
   let [edit, setEdit] = useState(cloneDeep(config))
+  console.log('render')
+
+  useEffect(() => {
+    setEdit(config)
+  }, [config])
 
   return (
     <>
@@ -29,12 +29,22 @@ export default function LayerEditor({ config, onChange }: Props) {
 }
 
 function SpecificFields({ config, onChange }: Props) {
-  function makeOnChange<Config, Val>(key: keyof Config) {
-    return (newVal: Val) =>
+  function selectOnChange<Config, Val>(key: keyof Config) {
+    return (newVal: Val) => {
       onChange({
         ...config,
         [key]: newVal,
       })
+    }
+  }
+
+  function inputOnChange<Config>(key: keyof Config) {
+    return (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
+      onChange({
+        ...config,
+        [key]: e.target.value,
+      })
+    }
   }
 
   switch (config.type) {
@@ -49,13 +59,13 @@ function SpecificFields({ config, onChange }: Props) {
             label="Fit"
             val={config.objectFit}
             items={objectFits}
-            onChange={makeOnChange('objectFit')}
+            onChange={selectOnChange('objectFit')}
           />
           <Select
             label="Order"
             val={config.order}
             items={orderTypes}
-            onChange={makeOnChange('order')}
+            onChange={selectOnChange('order')}
           />
         </>
       )
@@ -68,18 +78,28 @@ function SpecificFields({ config, onChange }: Props) {
       config.particleCount
       return (
         <>
-          <TextField label="Text" value={config.text}></TextField>
+          <TextField
+            label="Text"
+            value={config.text}
+            onChange={inputOnChange('text')}
+          ></TextField>
           <Select
             label="Font"
             val={config.fontType}
             items={fontTypes}
-            onChange={makeOnChange('fontType')}
+            onChange={selectOnChange('fontType')}
           />
-          <TextField label="Font Size" type="number" value={config.textSize} />
+          <TextField
+            label="Font Size"
+            type="number"
+            value={config.textSize}
+            onChange={inputOnChange('textSize')}
+          />
           <TextField
             label="Particle Count"
             type="number"
             value={config.particleCount}
+            onChange={inputOnChange('particleCount')}
           />
         </>
       )

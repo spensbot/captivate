@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import Video from './pages/Visualizer'
+import Video from './pages/VisualizerPage'
 import Modulation from './pages/Scenes'
 import Universe from './pages/Universe'
 import Share from './pages/Share'

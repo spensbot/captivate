@@ -55,36 +55,36 @@ send_control_state(getCleanReduxState(store.getState()))
 
 store.subscribe(() => send_control_state(getCleanReduxState(store.getState())))
 
-document.onkeydown = (e) => {
-  const asInt = parseInt(e.key)
-  if (asInt !== NaN) {
-    if (asInt === 0) {
-      store.dispatch(
-        setActiveSceneIndex({
-          sceneType: 'light',
-          val: 10,
-        })
-      )
-    } else {
-      store.dispatch(
-        setActiveSceneIndex({
-          sceneType: 'light',
-          val: asInt - 1,
-        })
-      )
-    }
-  }
-  if (e.metaKey && e.key === 'z') {
-    const group = getUndoGroup(store.getState())
-    if (group !== null) {
-      if (e.shiftKey) {
-        store.dispatch(redoAction(group))
-      } else {
-        store.dispatch(undoAction(group))
-      }
-    }
-  }
-}
+// document.onkeydown = (e) => {
+//   const asInt = parseInt(e.key)
+//   if (asInt !== NaN) {
+//     if (asInt === 0) {
+//       store.dispatch(
+//         setActiveSceneIndex({
+//           sceneType: 'light',
+//           val: 10,
+//         })
+//       )
+//     } else {
+//       store.dispatch(
+//         setActiveSceneIndex({
+//           sceneType: 'light',
+//           val: asInt - 1,
+//         })
+//       )
+//     }
+//   }
+//   if (e.metaKey && e.key === 'z') {
+//     const group = getUndoGroup(store.getState())
+//     if (group !== null) {
+//       if (e.shiftKey) {
+//         store.dispatch(redoAction(group))
+//       } else {
+//         store.dispatch(undoAction(group))
+//       }
+//     }
+//   }
+// }
 
 render(
   <Provider store={store}>
