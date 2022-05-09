@@ -15,7 +15,7 @@ void main() {
   gl_FragColor = mix(gl_FragColor, adjustedColor, obeyColor);
 
   float delta = abs(vUv.x - windowPosition.x);
-  float mult = 1.5 - (2.0 * delta / windowSize.x);
+  float mult = 2.0 - (2.0 * delta / windowSize.x);
   float windowMultiplier = clamp(mult, 0.0, 1.0);
 
   gl_FragColor.rgb *= sqrt(brightnessMultiplier * windowMultiplier);

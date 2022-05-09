@@ -1,5 +1,5 @@
 import cloneDeep from 'lodash.clonedeep'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Select from 'renderer/base/Select'
 import styled from 'styled-components'
 import { EffectConfig } from '../../visualizer/threejs/effects/effectConfigs'
@@ -12,6 +12,10 @@ interface Props {
 
 export default function EffectEditor({ config, onChange }: Props) {
   let [edit, setEdit] = useState(cloneDeep(config))
+
+  useEffect(() => {
+    setEdit(config)
+  }, [config])
 
   return (
     <>
