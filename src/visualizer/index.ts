@@ -1,6 +1,6 @@
 import VisualizerManager, {
   VisualizerResource,
-} from '../renderer/visualizer/threejs/VisualizerManager'
+} from './threejs/VisualizerManager'
 import { ipcSetup } from './ipcHandler'
 
 const vm = new VisualizerManager()

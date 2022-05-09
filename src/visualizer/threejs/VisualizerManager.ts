@@ -1,6 +1,6 @@
 import * as THREE from 'three'
-import { RealtimeState } from '../../redux/realtimeStore'
-import { CleanReduxState } from '../../redux/store'
+import { RealtimeState } from '../../renderer/redux/realtimeStore'
+import { CleanReduxState } from '../../renderer/redux/store'
 import equal from 'deep-equal'
 import UpdateResource from './UpdateResource'
 import { EffectsConfig, initEffectsConfig } from './effects/effectConfigs'

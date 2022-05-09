@@ -2,7 +2,7 @@ import cloneDeep from 'lodash.clonedeep'
 import { useState } from 'react'
 import Select from 'renderer/base/Select'
 import styled from 'styled-components'
-import { EffectConfig } from './threejs/effects/effectConfigs'
+import { EffectConfig } from '../../visualizer/threejs/effects/effectConfigs'
 import { Button, Slider, TextField } from '@mui/material'
 
 interface Props {

@@ -6,8 +6,8 @@ import { initModulator } from '../../shared/modulation'
 import { nanoid } from 'nanoid'
 import { RandomizerOptions } from '../../shared/randomizer'
 import cloneDeep from 'lodash.clonedeep'
-import { LayerConfig } from '../visualizer/threejs/layers/LayerConfig'
-import { EffectConfig } from '../visualizer/threejs/effects/effectConfigs'
+import { LayerConfig } from '../../visualizer/threejs/layers/LayerConfig'
+import { EffectConfig } from '../../visualizer/threejs/effects/effectConfigs'
 import { DeviceState, initDeviceState, midiActions } from './deviceState'
 import {
   ScenesStateBundle,

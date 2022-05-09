@@ -4,7 +4,7 @@ import {
   effectTypes,
   EffectConfig,
   initEffectConfig,
-} from 'renderer/visualizer/threejs/effects/effectConfigs'
+} from 'visualizer/threejs/effects/effectConfigs'
 import { activeVisualSceneEffect_set } from 'renderer/redux/controlSlice'
 import { useDispatch } from 'react-redux'
 import { useActiveVisualScene } from 'renderer/redux/store'

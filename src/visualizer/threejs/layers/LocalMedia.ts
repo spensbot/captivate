@@ -2,10 +2,7 @@ import * as THREE from 'three'
 import LayerBase from './LayerBase'
 import { loadVideo, pathUrl, releaseVideo, loadImage } from '../util/loaders'
 import LoadQueue from '../util/LoadQueue'
-import {
-  randomRanged,
-  randomIndexExcludeCurrent,
-} from '../../../../shared/util'
+import { randomRanged, randomIndexExcludeCurrent } from '../../../shared/util'
 import UpdateResource from '../UpdateResource'
 
 export type OrderType = 'Random' | 'Ordered'

@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import LayerBase from './LayerBase'
-import { randomRanged } from '../../../../shared/util'
+import { randomRanged } from '../../../shared/util'
 import { Vector3 } from 'three'
 import UpdateResource from '../UpdateResource'
 

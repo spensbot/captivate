@@ -5,11 +5,11 @@ import { nanoid } from 'nanoid'
 import {
   LayerConfig,
   initLayerConfig,
-} from '../renderer/visualizer/threejs/layers/LayerConfig'
+} from '../visualizer/threejs/layers/LayerConfig'
 import {
   EffectsConfig,
   initEffectsConfig,
-} from '../renderer/visualizer/threejs/effects/effectConfigs'
+} from '../visualizer/threejs/effects/effectConfigs'
 
 export const DEFAULT_GROUP = 'Default'
 

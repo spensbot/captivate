@@ -2,9 +2,12 @@ import cloneDeep from 'lodash.clonedeep'
 import React, { useEffect, useState } from 'react'
 import Select from 'renderer/base/Select'
 import styled from 'styled-components'
-import { LayerConfig } from './threejs/layers/LayerConfig'
-import { objectFits, orderTypes } from './threejs/layers/LocalMedia'
-import { fontTypes } from './threejs/fonts/FontType'
+import { LayerConfig } from '../../visualizer/threejs/layers/LayerConfig'
+import {
+  objectFits,
+  orderTypes,
+} from '../../visualizer/threejs/layers/LocalMedia'
+import { fontTypes } from '../../visualizer/threejs/fonts/FontType'
 import { Button, TextField } from '@mui/material'
 
 interface Props {

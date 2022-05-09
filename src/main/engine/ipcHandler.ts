@@ -1,13 +1,13 @@
 import { ipcMain, WebContents, dialog } from 'electron'
 import ipcChannels, { UserCommand } from '../../shared/ipc_channels'
-import ipcChannelsVisualizer from '../../display/ipcChannels'
+import ipcChannelsVisualizer from '../../visualizer/ipcChannels'
 import { CleanReduxState } from '../../renderer/redux/store'
 import { RealtimeState } from '../../renderer/redux/realtimeStore'
 import * as dmxConnection from './dmxConnection'
 import * as midiConnection from './midiConnection'
 import { PayloadAction } from '@reduxjs/toolkit'
 import { promises } from 'fs'
-import { VisualizerResource } from '../../renderer/visualizer/threejs/VisualizerManager'
+import { VisualizerResource } from '../../visualizer/threejs/VisualizerManager'
 import { VisualizerContainer } from './createVisualizerWindow'
 
 interface Config {

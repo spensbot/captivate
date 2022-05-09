@@ -1,7 +1,7 @@
-import { Params } from '../../../shared/params'
-import { TimeState } from '../../../shared/TimeState'
-import { isNewPeriod } from '../../../shared/TimeState'
-import { LightScene_t } from '../../../shared/Scenes'
+import { Params } from '../../shared/params'
+import { TimeState } from '../../shared/TimeState'
+import { isNewPeriod } from '../../shared/TimeState'
+import { LightScene_t } from '../../shared/Scenes'
 
 interface UpdateData {
   time: TimeState

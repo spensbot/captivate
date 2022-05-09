@@ -4,7 +4,7 @@ import Select from '../base/Select'
 import {
   visualizerTypeList,
   initLayerConfig,
-} from './threejs/layers/LayerConfig'
+} from '../../visualizer/threejs/layers/LayerConfig'
 import { useDispatch } from 'react-redux'
 import { setVisualSceneConfig } from '../redux/controlSlice'
 import LayerEditor from './LayerEditor'

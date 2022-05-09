@@ -1,10 +1,10 @@
 import * as THREE from 'three'
 import LayerBase from './LayerBase'
-import { randomRanged } from '../../../../shared/util'
+import { randomRanged } from '../../../shared/util'
 import { Vector3 } from 'three'
 import { Strobe } from '../util/animations'
 import { colorFromHSV } from '../util/util'
-import { Skew } from '../../../../shared/oscillator'
+import { Skew } from '../../../shared/oscillator'
 import UpdateResource from '../UpdateResource'
 
 export interface CubesConfig {
