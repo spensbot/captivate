@@ -32,7 +32,7 @@ export default function LayerEditor({ config, onChange }: Props) {
 }
 
 function SpecificFields({ config, onChange }: Props) {
-  function selectOnChange<Config, Val>(key: keyof Config) {
+  function makeOnChange<Config, Val>(key: keyof Config) {
     return (newVal: Val) => {
       onChange({
         ...config,
@@ -43,10 +43,7 @@ function SpecificFields({ config, onChange }: Props) {
 
   function inputOnChange<Config>(key: keyof Config) {
     return (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-      onChange({
-        ...config,
-        [key]: e.target.value,
-      })
+      makeOnChange(key)(e.target.value)
     }
   }
 
@@ -62,13 +59,13 @@ function SpecificFields({ config, onChange }: Props) {
             label="Fit"
             val={config.objectFit}
             items={objectFits}
-            onChange={selectOnChange('objectFit')}
+            onChange={makeOnChange('objectFit')}
           />
           <Select
             label="Order"
             val={config.order}
             items={orderTypes}
-            onChange={selectOnChange('order')}
+            onChange={makeOnChange('order')}
           />
         </>
       )
@@ -90,7 +87,7 @@ function SpecificFields({ config, onChange }: Props) {
             label="Font"
             val={config.fontType}
             items={fontTypes}
-            onChange={selectOnChange('fontType')}
+            onChange={makeOnChange('fontType')}
           />
           <TextField
             label="Font Size"

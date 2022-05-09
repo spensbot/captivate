@@ -20,9 +20,19 @@ export function initDotScreenConfig(): DotScreenConfig {
 }
 export interface FilmConfig {
   type: 'Film'
+  noiseIntensity: number
+  scanlinesIntensity: number
+  scanlinesCount: number
+  grayscale: number
 }
 export function initFilmConfig(): FilmConfig {
-  return { type: 'Film' }
+  return {
+    type: 'Film',
+    noiseIntensity: 0.5,
+    scanlinesIntensity: 0.5,
+    scanlinesCount: 100,
+    grayscale: 1.0,
+  }
 }
 export interface GlitchConfig {
   type: 'Glitch'

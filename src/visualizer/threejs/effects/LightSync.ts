@@ -28,7 +28,7 @@ export class LightSync extends EffectBase {
 
   constructor(config: LightSyncConfig) {
     super()
-    this.config = initLightSyncConfig()
+    this.config = config
     this.shader = {
       uniforms: {
         tDiffuse: new Uniform(null),

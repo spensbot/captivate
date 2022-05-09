@@ -34,6 +34,27 @@ function SpecificFields({ config, onChange }: Props) {
       })
   }
 
+  function makeSlider<Config>(
+    config: Config,
+    key: keyof Config,
+    min?: number,
+    max?: number,
+    step?: number
+  ) {
+    const _min = min ?? 0
+    const _max = max ?? 1
+    const _step = step ?? 0.01
+    return (
+      <Slider
+        value={config[key]}
+        min={_min}
+        max={_max}
+        step={_step}
+        onChange={(_e, value) => makeOnChange(key)(value)}
+      />
+    )
+  }
+
   switch (config.type) {
     case 'AdaptiveToneMapping':
       return <></>
@@ -42,23 +63,20 @@ function SpecificFields({ config, onChange }: Props) {
     case 'DotScreen':
       return <></>
     case 'Film':
-      return <></>
+      return (
+        <>
+          {makeSlider(config, 'grayscale')}
+          {makeSlider(config, 'noiseIntensity')}
+          {makeSlider(config, 'scanlinesCount', 0, 1000, 1)}
+          {makeSlider(config, 'scanlinesIntensity')}
+        </>
+      )
     case 'Glitch':
       return <></>
     case 'HalfTone':
       return <></>
     case 'LightSync':
-      return (
-        <>
-          <Slider
-            value={config.obeyColor}
-            min={0}
-            max={1}
-            step={0.01}
-            onChange={(_e, value) => makeOnChange('obeyColor')(value)}
-          />
-        </>
-      )
+      return <>{makeSlider(config, 'obeyColor')}</>
     case 'RenderLayer':
       return <></>
     case 'UnrealBloom':
