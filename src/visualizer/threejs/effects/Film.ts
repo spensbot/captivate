@@ -10,10 +10,10 @@ export class Film extends EffectBase {
   constructor(config: FilmConfig) {
     super()
     this.pass = new FilmPass(
-      config.noiseIntensity,
-      config.scanlinesIntensity,
-      config.scanlinesCount,
-      config.grayscale
+      config.intensity,
+      config.intensity,
+      config.scanlines,
+      config.grayscale ? 1 : 0
     )
     this.config = config
   }

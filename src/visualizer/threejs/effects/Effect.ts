@@ -1,10 +1,11 @@
-import { LightSync } from './LightSync'
-import { Glitch } from './Glitch'
 import { AdaptiveToneMapping } from './AdaptiveToneMapping'
 import { AfterImage } from './AfterImage'
 import { DotScreen } from './DotScreen'
 import { Film } from './Film'
+import { Glitch } from './Glitch'
 import { HalfTone } from './HalfTone'
+import { LightSync } from './LightSync'
+import { Pixel } from './Pixel'
 import { RenderLayer } from './RenderLayer'
 import { UnrealBloom } from './UnrealBloom'
 import { EffectConfig } from './effectConfigs'
@@ -17,6 +18,7 @@ export type Effect =
   | Glitch
   | HalfTone
   | LightSync
+  | Pixel
   | RenderLayer
   | UnrealBloom
 
@@ -36,6 +38,8 @@ export function constructEffect(config: EffectConfig): Effect {
       return new HalfTone(config)
     case 'LightSync':
       return new LightSync(config)
+    case 'Pixel':
+      return new Pixel(config)
     case 'UnrealBloom':
       return new UnrealBloom(config)
     case 'RenderLayer':

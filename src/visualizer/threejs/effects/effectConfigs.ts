@@ -20,18 +20,16 @@ export function initDotScreenConfig(): DotScreenConfig {
 }
 export interface FilmConfig {
   type: 'Film'
-  noiseIntensity: number
-  scanlinesIntensity: number
-  scanlinesCount: number
-  grayscale: number
+  intensity: number // combines noiseIntensity & scanlinesIntensity
+  scanlines: number
+  grayscale: boolean
 }
 export function initFilmConfig(): FilmConfig {
   return {
     type: 'Film',
-    noiseIntensity: 0.5,
-    scanlinesIntensity: 0.5,
-    scanlinesCount: 100,
-    grayscale: 1.0,
+    intensity: 0.5,
+    scanlines: 100,
+    grayscale: true,
   }
 }
 export interface GlitchConfig {
@@ -66,6 +64,16 @@ export function initLightSyncConfig(): LightSyncConfig {
     obeyEpicness: true,
   }
 }
+export interface PixelConfig {
+  type: 'Pixel'
+  pixelSize: number // 1 to 64
+}
+export function initPixelConfig(): PixelConfig {
+  return {
+    type: 'Pixel',
+    pixelSize: 16,
+  }
+}
 export interface RenderLayerConfig {
   type: 'RenderLayer'
   layerConfig: LayerConfig
@@ -73,7 +81,7 @@ export interface RenderLayerConfig {
 export function initRenderLayerConfig(): RenderLayerConfig {
   return {
     type: 'RenderLayer',
-    layerConfig: initLayerConfig('Cubes'),
+    layerConfig: initLayerConfig('CubeSphere'),
   }
 }
 export interface UnrealBloomConfig {
@@ -92,6 +100,7 @@ export type EffectConfig =
   | GlitchConfig
   | HalfToneConfig
   | LightSyncConfig
+  | PixelConfig
   | RenderLayerConfig
   | UnrealBloomConfig
 
@@ -119,6 +128,8 @@ export function initEffectConfig(type: EffectConfig['type']): EffectConfig {
       return initHalfToneConfig()
     case 'LightSync':
       return initLightSyncConfig()
+    case 'Pixel':
+      return initPixelConfig()
     case 'UnrealBloom':
       return initUnrealBloomConfig()
     case 'RenderLayer':
@@ -134,5 +145,7 @@ export const effectTypes: EffectType[] = [
   'Glitch',
   'HalfTone',
   'LightSync',
+  'Pixel',
+  'RenderLayer',
   'UnrealBloom',
 ]

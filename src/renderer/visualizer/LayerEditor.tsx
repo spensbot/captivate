@@ -1,7 +1,6 @@
 import cloneDeep from 'lodash.clonedeep'
 import React, { useEffect, useState } from 'react'
 import Select from 'renderer/base/Select'
-import styled from 'styled-components'
 import { LayerConfig } from '../../visualizer/threejs/layers/LayerConfig'
 import {
   objectFits,
@@ -109,5 +108,3 @@ function SpecificFields({ config, onChange }: Props) {
       return <></>
   }
 }
-
-const Root = styled.div``

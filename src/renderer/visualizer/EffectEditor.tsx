@@ -1,9 +1,13 @@
 import cloneDeep from 'lodash.clonedeep'
 import { useState, useEffect } from 'react'
-import Select from 'renderer/base/Select'
-import styled from 'styled-components'
 import { EffectConfig } from '../../visualizer/threejs/effects/effectConfigs'
-import { Button, Slider, TextField } from '@mui/material'
+import { Button, Slider } from '@mui/material'
+import LayerEditor from './LayerEditor'
+import Select from 'renderer/base/Select'
+import {
+  visualizerTypeList,
+  initLayerConfig,
+} from '../../visualizer/threejs/layers/LayerConfig'
 
 interface Props {
   config: EffectConfig
@@ -66,9 +70,8 @@ function SpecificFields({ config, onChange }: Props) {
       return (
         <>
           {makeSlider(config, 'grayscale')}
-          {makeSlider(config, 'noiseIntensity')}
-          {makeSlider(config, 'scanlinesCount', 0, 1000, 1)}
-          {makeSlider(config, 'scanlinesIntensity')}
+          {makeSlider(config, 'intensity')}
+          {makeSlider(config, 'scanlines', 1, 1000, 1)}
         </>
       )
     case 'Glitch':
@@ -77,8 +80,28 @@ function SpecificFields({ config, onChange }: Props) {
       return <></>
     case 'LightSync':
       return <>{makeSlider(config, 'obeyColor')}</>
+    case 'Pixel':
+      return <>{makeSlider(config, 'pixelSize', 1, 64, 1)}</>
     case 'RenderLayer':
-      return <></>
+      return (
+        <>
+          <Select
+            label="Type"
+            val={config.layerConfig.type}
+            items={visualizerTypeList}
+            onChange={(newLayerType) => {
+              onChange({
+                ...config,
+                layerConfig: initLayerConfig(newLayerType),
+              })
+            }}
+          />
+          <LayerEditor
+            config={config.layerConfig}
+            onChange={makeOnChange('layerConfig')}
+          />
+        </>
+      )
     case 'UnrealBloom':
       return <></>
     default:

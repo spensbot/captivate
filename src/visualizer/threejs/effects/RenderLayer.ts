@@ -5,6 +5,7 @@ import constructLayer from '../layers/constructLayer'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass'
 import { RenderLayerConfig } from './effectConfigs'
 import { LayerConfig } from '../layers/LayerConfig'
+import * as THREE from 'three'
 
 export function constructRenderLayer(layerConfig: LayerConfig): RenderLayer {
   return new RenderLayer({
@@ -33,6 +34,8 @@ export class RenderLayer extends EffectBase {
   resize(width: number, height: number) {
     this.active_layer.resize(width, height)
     this.pass = new RenderPass(...this.active_layer.getRenderInputs())
+    // this.pass.clearColor = new THREE.Color(0, 0, 0)
+    // this.pass.clearAlpha = 1
   }
 
   dispose() {
