@@ -43,6 +43,6 @@ export function constructEffect(config: EffectConfig): Effect {
     case 'UnrealBloom':
       return new UnrealBloom(config)
     case 'RenderLayer':
-      return new RenderLayer(config)
+      return new RenderLayer(config, false)
   }
 }

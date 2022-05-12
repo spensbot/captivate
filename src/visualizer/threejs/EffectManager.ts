@@ -5,12 +5,14 @@ import { Effect, constructEffect } from './effects/Effect'
 import UpdateResource from './UpdateResource'
 import { LayerConfig } from './layers/LayerConfig'
 import { constructRenderLayer } from './effects/RenderLayer'
+import { WebGLRenderTarget } from 'three'
 
 export default class EffectManager {
   effects: Effect[] = []
   layerConfig: LayerConfig
   effectsConfig: EffectsConfig
   effectComposer: EffectComposer
+  renderer: THREE.WebGLRenderer
 
   constructor(
     layerConfig: LayerConfig,
@@ -21,7 +23,11 @@ export default class EffectManager {
   ) {
     this.layerConfig = layerConfig
     this.effectsConfig = effectsConfig
-    this.effectComposer = new EffectComposer(renderer)
+    this.effectComposer = new EffectComposer(
+      renderer,
+      new WebGLRenderTarget(width, height, { format: THREE.RGBAFormat })
+    )
+    this.renderer = renderer
     this.resetEffects(width, height)
   }
 
@@ -50,7 +56,7 @@ export default class EffectManager {
   resetEffects(width: number, height: number) {
     this.removeAllEffects()
     this.effects = [
-      constructRenderLayer(this.layerConfig),
+      constructRenderLayer(this.layerConfig, true),
       ...this.effectsConfig.map((effectConfig) =>
         constructEffect(effectConfig)
       ),

@@ -23,8 +23,8 @@ export default class VisualizerManager {
 
   constructor() {
     this.renderer = new THREE.WebGLRenderer({ alpha: true })
-    this.renderer.autoClear = false
-    this.renderer.setClearColor(0xffffff, 0)
+    // this.renderer.autoClear = true
+    this.renderer.setClearColor(0xff0000, 1)
     // this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     // this.renderer.outputEncoding = THREE.sRGBEncoding
     this.effectsConfig = initEffectsConfig()
