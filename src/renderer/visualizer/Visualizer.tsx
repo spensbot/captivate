@@ -15,15 +15,12 @@ export default function Visualizer() {
     let lastUpdateTime: number | null = null
     const vm = new VisualizerManager()
     const element = visualizerDiv.current
-    if (element !== null) {
-      element.appendChild(vm.getElement())
-    }
+    if (element === null) return
+
+    element.appendChild(vm.getElement())
 
     const resize = () => {
-      const element = visualizerDiv.current
-      if (element !== null) {
-        vm.resize(element.clientWidth, element.clientHeight)
-      }
+      vm.resize(element.clientWidth, element.clientHeight)
     }
 
     let animateVisualizer = () => {
@@ -39,12 +36,14 @@ export default function Visualizer() {
       requestAnimationFrame(animateVisualizer)
     }
 
+    let resizeObserver = new ResizeObserver(resize)
+    resizeObserver.observe(element)
+
     resize()
-    window.addEventListener('resize', resize)
     animateVisualizer()
 
     return () => {
-      window.removeEventListener('resize', resize)
+      resizeObserver.disconnect()
       animateVisualizer = () => {}
     }
   }, [])
@@ -59,7 +58,7 @@ export default function Visualizer() {
 
 const Root = styled.div`
   position: relative;
-  background-color: #000;
+  background-color: #00f;
   flex: 1 0 0;
   height: 60vh;
   overflow: auto;

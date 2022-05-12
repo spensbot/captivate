@@ -42,8 +42,9 @@ export class RenderLayer extends EffectBase {
   resize(width: number, height: number) {
     this.active_layer.resize(width, height)
     this.pass = new RenderPass(...this.active_layer.getRenderInputs())
-    // this.pass.clear = false
-    // this.pass.clearColor = new THREE.Color(1, 1, 1)
+    this.pass.clearColor = new THREE.Color(0, 0, 0)
+    this.pass.clearAlpha = 0
+    this.pass.clearDepth = true
   }
 
   dispose() {
