@@ -25,14 +25,12 @@ export class RenderLayer extends EffectBase {
   config: RenderLayerConfig
   active_layer: LayerBase
   pass: RenderPass
-  clear: boolean
 
   constructor(config: RenderLayerConfig, clear: boolean) {
     super()
     this.config = config
     this.active_layer = constructLayer(this.config.layerConfig)
     this.pass = new RenderPass(...this.active_layer.getRenderInputs())
-    this.clear = clear
   }
 
   update(dt: number, res: UpdateResource) {
@@ -42,9 +40,6 @@ export class RenderLayer extends EffectBase {
   resize(width: number, height: number) {
     this.active_layer.resize(width, height)
     this.pass = new RenderPass(...this.active_layer.getRenderInputs())
-    this.pass.clearColor = new THREE.Color(0, 0, 0)
-    this.pass.clearAlpha = 0
-    this.pass.clearDepth = true
   }
 
   dispose() {

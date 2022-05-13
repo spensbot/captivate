@@ -23,10 +23,7 @@ export default class EffectManager {
   ) {
     this.layerConfig = layerConfig
     this.effectsConfig = effectsConfig
-    this.effectComposer = new EffectComposer(
-      renderer,
-      new WebGLRenderTarget(width, height, { format: THREE.RGBAFormat })
-    )
+    this.effectComposer = new EffectComposer(renderer)
     this.renderer = renderer
     this.resetEffects(width, height)
   }

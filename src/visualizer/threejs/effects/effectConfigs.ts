@@ -146,6 +146,7 @@ export const effectTypes: EffectType[] = [
   'HalfTone',
   'LightSync',
   'Pixel',
-  'RenderLayer',
+  // 'RenderLayer', <-- Removing RenderLayer until I can find a way to render multiple renderlayer's on top of each other :/
+  // ... I tried so hard
   'UnrealBloom',
 ]

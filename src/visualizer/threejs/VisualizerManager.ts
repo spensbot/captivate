@@ -22,9 +22,9 @@ export default class VisualizerManager {
   private effectManager: EffectManager
 
   constructor() {
-    this.renderer = new THREE.WebGLRenderer({ alpha: true })
+    this.renderer = new THREE.WebGLRenderer()
     // this.renderer.autoClear = false
-    // this.renderer.setClearColor(0xff0000, 1)
+    // this.renderer.setClearColor(0x000000, 1)
     // this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     // this.renderer.outputEncoding = THREE.sRGBEncoding
     this.effectsConfig = initEffectsConfig()

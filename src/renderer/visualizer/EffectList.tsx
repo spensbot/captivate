@@ -10,6 +10,7 @@ import { IconButton } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import { indexArray } from '../../shared/util'
 import { useActiveVisualScene, useTypedSelector } from 'renderer/redux/store'
+import { initEffectConfig } from 'visualizer/threejs/effects/effectConfigs'
 
 interface Props {}
 
@@ -52,11 +53,7 @@ export default function EffectList({}: Props) {
       <Rest>
         <IconButton
           onClick={() =>
-            dispatch(
-              activeVisualSceneEffect_add({
-                type: 'Film',
-              })
-            )
+            dispatch(activeVisualSceneEffect_add(initEffectConfig('Pixel')))
           }
         >
           <AddIcon />
