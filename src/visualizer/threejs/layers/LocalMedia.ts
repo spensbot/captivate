@@ -128,9 +128,9 @@ export default class LocalMedia extends LayerBase {
   index: number = 0
   lastMediaData: MediaData | null = null
 
-  constructor(_config: LocalMediaConfig) {
+  constructor(config: LocalMediaConfig) {
     super()
-    this.config = initLocalMediaConfig()
+    this.config = config
     this.displayPlane = new THREE.PlaneGeometry(1, 1)
     this.mesh = new THREE.Mesh(
       this.displayPlane,

@@ -6,17 +6,20 @@ import { Strobe } from '../util/animations'
 import { colorFromHSV } from '../util/util'
 import UpdateResource from '../UpdateResource'
 
-const RADIUS = 2
 const RATIO_MIN = 0.02
 const RATIO_MAX = 0.1
 
 export interface SpheresConfig {
   type: 'Spheres'
+  quantity: number
+  radius: number
 }
 
 export function initSpheresConfig(): SpheresConfig {
   return {
     type: 'Spheres',
+    quantity: 50,
+    radius: 2,
   }
 }
 
@@ -27,22 +30,24 @@ export default class Spheres extends LayerBase {
   private spotMaterial: THREE.MeshBasicMaterial
   private strobe = new Strobe()
 
-  constructor() {
+  constructor(config: SpheresConfig) {
     super()
     this.globeMaterial = new THREE.MeshBasicMaterial({ color: 0x333333 })
     this.globe = new THREE.Mesh(
-      new THREE.SphereGeometry(RADIUS, 40, 40),
+      new THREE.SphereGeometry(config.radius, 40, 40),
       this.globeMaterial
     )
     this.scene.add(this.globe)
 
     this.spotMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff })
-    this.spots = Array(50)
+    this.spots = Array(config.quantity)
       .fill(0)
       .map((_) => {
-        const r = randomRanged(RATIO_MIN, RATIO_MAX) * RADIUS
+        const r = randomRanged(RATIO_MIN, RATIO_MAX) * config.radius
         const geometry = new THREE.SphereGeometry(r, 15, 15)
-        geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(0, RADIUS, 0))
+        geometry.applyMatrix4(
+          new THREE.Matrix4().makeTranslation(0, config.radius, 0)
+        )
         const spot = new THREE.Mesh(geometry, this.spotMaterial)
         spot.rotation.x = randomRanged(0, 100)
         spot.rotation.y = randomRanged(0, 100)

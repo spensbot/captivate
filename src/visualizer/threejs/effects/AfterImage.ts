@@ -5,10 +5,11 @@ import { AfterImageConfig } from './effectConfigs'
 export class AfterImage extends EffectBase {
   type = 'AfterImage'
   config: AfterImageConfig
-  pass = new AfterimagePass()
+  pass: AfterimagePass
 
   constructor(config: AfterImageConfig) {
     super()
     this.config = config
+    this.pass = new AfterimagePass(config.damp)
   }
 }

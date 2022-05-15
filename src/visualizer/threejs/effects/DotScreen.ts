@@ -1,16 +1,20 @@
+import { Vector2 } from 'three'
 import { DotScreenPass } from 'three/examples/jsm/postprocessing/DotScreenPass'
 import EffectBase from './EffectBase'
 import { DotScreenConfig } from './effectConfigs'
 
-const cached = new DotScreenPass()
-
 export class DotScreen extends EffectBase {
   type = 'DotScreen'
   config: DotScreenConfig
-  pass = cached
+  pass: DotScreenPass
 
   constructor(config: DotScreenConfig) {
     super()
     this.config = config
+    this.pass = new DotScreenPass(
+      new Vector2(config.centerX, config.centerY),
+      config.angle,
+      config.scale
+    )
   }
 }

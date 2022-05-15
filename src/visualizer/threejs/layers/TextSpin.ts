@@ -11,9 +11,7 @@ import {
 import { Spin, Wobble, Strobe } from '../util/animations'
 import { colorFromHSV } from '../util/util'
 import UpdateResource from '../UpdateResource'
-
-const TEXT = 'FEEL\nWITH\nME'
-const SIZE = 1
+import { TextSpinConfig } from './TextSpinConfig'
 
 export default class TextSpin extends LayerBase {
   private text: TextMesh_t
@@ -22,19 +20,19 @@ export default class TextSpin extends LayerBase {
   private wobble: Wobble = new Wobble()
   private strobe: Strobe = new Strobe()
 
-  constructor() {
+  constructor(config: TextSpinConfig) {
     super()
 
     this.text = textMesh(
-      TEXT,
-      SIZE,
+      config.text,
+      config.size,
       'helvetiker_bold',
       new THREE.MeshBasicMaterial()
     )
 
     this.outline = textOutline(
-      TEXT,
-      SIZE,
+      config.text,
+      config.size,
       'helvetiker_bold',
       new THREE.MeshBasicMaterial()
     )

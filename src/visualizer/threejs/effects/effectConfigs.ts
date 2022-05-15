@@ -8,15 +8,20 @@ export function initAdaptiveToneMappingConfig(): AdaptiveToneMappingConfig {
 }
 export interface AfterImageConfig {
   type: 'AfterImage'
+  damp: number
 }
 export function initAfterImageConfig(): AfterImageConfig {
-  return { type: 'AfterImage' }
+  return { type: 'AfterImage', damp: 1 }
 }
 export interface DotScreenConfig {
   type: 'DotScreen'
+  centerX: number
+  centerY: number
+  angle: number
+  scale: number
 }
 export function initDotScreenConfig(): DotScreenConfig {
-  return { type: 'DotScreen' }
+  return { type: 'DotScreen', centerX: 0, centerY: 0, angle: 0, scale: 1 }
 }
 export interface FilmConfig {
   type: 'Film'
@@ -40,9 +45,12 @@ export function initGlitchConfig(): GlitchConfig {
 }
 export interface HalfToneConfig {
   type: 'HalfTone'
+  radius: number
+  scatter: number
+  shape: number
 }
 export function initHalfToneConfig(): HalfToneConfig {
-  return { type: 'HalfTone' }
+  return { type: 'HalfTone', radius: 1, scatter: 1, shape: 0 }
 }
 export interface LightSyncConfig {
   type: 'LightSync'
@@ -86,10 +94,13 @@ export function initRenderLayerConfig(): RenderLayerConfig {
 }
 export interface UnrealBloomConfig {
   type: 'UnrealBloom'
+  strength: number
+  radius: number
+  threshold: number
 }
 
 export function initUnrealBloomConfig(): UnrealBloomConfig {
-  return { type: 'UnrealBloom' }
+  return { type: 'UnrealBloom', strength: 0.5, radius: 1, threshold: 0.5 }
 }
 
 export type EffectConfig =

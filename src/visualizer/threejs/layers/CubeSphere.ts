@@ -3,16 +3,19 @@ import LayerBase from './LayerBase'
 import { randomRanged } from '../../../shared/util'
 import { Vector3 } from 'three'
 import UpdateResource from '../UpdateResource'
-
-const ARRAY = Array(20).fill(0)
+import { Skew } from '../../../shared/oscillator'
 
 export interface CubeSphereConfig {
   type: 'CubeSphere'
+  quantity: number
+  size: number
 }
 
 export function initCubeSphereConfig(): CubeSphereConfig {
   return {
     type: 'CubeSphere',
+    quantity: 20,
+    size: 3,
   }
 }
 
@@ -35,8 +38,11 @@ class RandomCube {
     scene.add(this.mesh)
   }
 
-  update(dt: number, {}: UpdateResource) {
-    this.mesh.rotateOnAxis(this.axis, dt / 10000)
+  update(dt: number, { scene }: UpdateResource) {
+    this.mesh.rotateOnAxis(
+      this.axis,
+      (dt * (Skew(scene.epicness, 0.6) + 0.5)) / 10000
+    )
   }
 
   dispose() {
@@ -48,9 +54,11 @@ class RandomCube {
 export default class CubeSphere extends LayerBase {
   private cubes: RandomCube[]
 
-  constructor() {
+  constructor(config: CubeSphereConfig) {
     super()
-    this.cubes = ARRAY.map((_) => new RandomCube(this.scene))
+    this.cubes = Array(config.quantity)
+      .fill(0)
+      .map((_) => new RandomCube(this.scene))
   }
 
   update(dt: number, res: UpdateResource): void {

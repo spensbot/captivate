@@ -5,7 +5,6 @@ import constructLayer from '../layers/constructLayer'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass'
 import { RenderLayerConfig } from './effectConfigs'
 import { LayerConfig } from '../layers/LayerConfig'
-import * as THREE from 'three'
 
 export function constructRenderLayer(
   layerConfig: LayerConfig,

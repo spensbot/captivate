@@ -9,11 +9,15 @@ import UpdateResource from '../UpdateResource'
 
 export interface CubesConfig {
   type: 'Cubes'
+  minSize: number
+  maxSize: number
 }
 
 export function initCubesConfig(): CubesConfig {
   return {
     type: 'Cubes',
+    minSize: 1,
+    maxSize: 1.5,
   }
 }
 
@@ -22,8 +26,8 @@ class RandomCube {
   private axis: Vector3
   private material = new THREE.MeshStandardMaterial()
 
-  constructor(scene: THREE.Scene, x: number, y: number) {
-    const size = randomRanged(1, 1.5)
+  constructor(config: CubesConfig, scene: THREE.Scene, x: number, y: number) {
+    const size = randomRanged(config.minSize, config.maxSize)
     const geometry = new THREE.BoxGeometry(size, size, size)
     this.axis = new Vector3(x, y, 0).normalize()
     geometry.translate(x, y, 0)
@@ -47,7 +51,7 @@ export default class Cubes extends LayerBase {
   private light: THREE.PointLight
   private strobe: Strobe = new Strobe()
 
-  constructor() {
+  constructor(config: CubesConfig) {
     super()
 
     this.light = new THREE.PointLight()
@@ -61,7 +65,7 @@ export default class Cubes extends LayerBase {
       for (const row of Array(rows).keys()) {
         const x = col - cols / 2
         const y = row - rows / 2
-        this.cubes.push(new RandomCube(this.scene, x, y))
+        this.cubes.push(new RandomCube(config, this.scene, x, y))
       }
     }
   }

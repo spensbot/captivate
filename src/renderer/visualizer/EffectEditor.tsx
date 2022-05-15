@@ -1,7 +1,7 @@
 import cloneDeep from 'lodash.clonedeep'
 import { useState, useEffect } from 'react'
 import { EffectConfig } from '../../visualizer/threejs/effects/effectConfigs'
-import { Button, Slider } from '@mui/material'
+import { Button, Slider, Switch } from '@mui/material'
 import LayerEditor from './LayerEditor'
 import Select from 'renderer/base/Select'
 import {
@@ -50,6 +50,7 @@ function SpecificFields({ config, onChange }: Props) {
     const _step = step ?? 0.01
     return (
       <Slider
+        //@ts-ignore
         value={config[key]}
         min={_min}
         max={_max}
@@ -59,13 +60,30 @@ function SpecificFields({ config, onChange }: Props) {
     )
   }
 
+  function makeSwitch<Config>(config: Config, key: keyof Config) {
+    return (
+      <Switch
+        //@ts-ignore
+        checked={config[key]}
+        onChange={(e) => makeOnChange(key)(e.target.checked)}
+      />
+    )
+  }
+
   switch (config.type) {
     case 'AdaptiveToneMapping':
       return <></>
     case 'AfterImage':
-      return <></>
+      return <>{makeSlider(config, 'damp', 0, 10, 0.01)}</>
     case 'DotScreen':
-      return <></>
+      return (
+        <>
+          {makeSlider(config, 'centerX')}
+          {makeSlider(config, 'centerY')}
+          {makeSlider(config, 'angle')}
+          {makeSlider(config, 'scale')}
+        </>
+      )
     case 'Film':
       return (
         <>
@@ -77,9 +95,24 @@ function SpecificFields({ config, onChange }: Props) {
     case 'Glitch':
       return <></>
     case 'HalfTone':
-      return <></>
+      return (
+        <>
+          {makeSlider(config, 'radius', 0, 10, 0.1)}
+          {makeSlider(config, 'scatter', 0, 100, 0.1)}
+          {makeSlider(config, 'shape', 0, 5, 1)}
+        </>
+      )
     case 'LightSync':
-      return <>{makeSlider(config, 'obeyColor')}</>
+      return (
+        <>
+          {makeSlider(config, 'obeyColor')}
+          {makeSwitch(config, 'obeyBrightness')}
+          {makeSwitch(config, 'obeyMaster')}
+          {makeSwitch(config, 'obeyPosition')}
+          {makeSwitch(config, 'obeyStrobe')}
+          {makeSwitch(config, 'obeyEpicness')}
+        </>
+      )
     case 'Pixel':
       return <>{makeSlider(config, 'pixelSize', 1, 64, 1)}</>
     case 'RenderLayer':
@@ -103,7 +136,13 @@ function SpecificFields({ config, onChange }: Props) {
         </>
       )
     case 'UnrealBloom':
-      return <></>
+      return (
+        <>
+          {makeSlider(config, 'radius', 0, 100, 0.1)}
+          {makeSlider(config, 'strength', 0, 1, 0.01)}
+          {makeSlider(config, 'threshold', 0, 1, 0.01)}
+        </>
+      )
     default:
       return <></>
   }
