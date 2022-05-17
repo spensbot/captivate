@@ -8,6 +8,7 @@ import {
 } from '../../visualizer/threejs/layers/LocalMedia'
 import { fontTypes } from '../../visualizer/threejs/fonts/FontType'
 import { Button, TextField } from '@mui/material'
+import makeControls from './makeControls'
 
 interface Props {
   config: LayerConfig
@@ -31,45 +32,39 @@ export default function LayerEditor({ config, onChange }: Props) {
 }
 
 function SpecificFields({ config, onChange }: Props) {
-  function makeOnChange<Config, Val>(key: keyof Config) {
-    return (newVal: Val) => {
-      onChange({
-        ...config,
-        [key]: newVal,
-      })
-    }
-  }
-
-  function inputOnChange<Config>(key: keyof Config) {
-    return (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-      makeOnChange(key)(e.target.value)
-    }
-  }
+  let {
+    makeOnChange,
+    makeSlider,
+    makeSwitch,
+    makeNumberInput,
+    makeTextInput,
+    makeSelect,
+  } = makeControls(config, onChange)
 
   switch (config.type) {
     case 'CubeSphere':
-      return <></>
+      return (
+        <>
+          {makeSlider('Quantity', config, 'quantity', 1, 1000, 1)}
+          {makeSlider('Size', config, 'size', 0, 5, 0.01)}
+        </>
+      )
     case 'Cubes':
       return <></>
     case 'LocalMedia':
       return (
         <>
-          <Select
-            label="Fit"
-            val={config.objectFit}
-            items={objectFits}
-            onChange={makeOnChange('objectFit')}
-          />
-          <Select
-            label="Order"
-            val={config.order}
-            items={orderTypes}
-            onChange={makeOnChange('order')}
-          />
+          {makeSelect('Fit', config, objectFits, 'objectFit')}
+          {makeSelect('Order', config, orderTypes, 'order')}
         </>
       )
     case 'Spheres':
-      return <></>
+      return (
+        <>
+          {makeSlider('Quantity', config, 'quantity', 1, 1000, 1)}
+          {makeSlider('Radius', config, 'radius', 0, 5, 0.01)}
+        </>
+      )
     case 'TextParticles':
       config.fontType
       config.text
@@ -77,33 +72,19 @@ function SpecificFields({ config, onChange }: Props) {
       config.particleCount
       return (
         <>
-          <TextField
-            label="Text"
-            value={config.text}
-            onChange={inputOnChange('text')}
-          ></TextField>
-          <Select
-            label="Font"
-            val={config.fontType}
-            items={fontTypes}
-            onChange={makeOnChange('fontType')}
-          />
-          <TextField
-            label="Font Size"
-            type="number"
-            value={config.textSize}
-            onChange={inputOnChange('textSize')}
-          />
-          <TextField
-            label="Particle Count"
-            type="number"
-            value={config.particleCount}
-            onChange={inputOnChange('particleCount')}
-          />
+          {makeTextInput('Text', config, 'text')}
+          {makeSelect('Font', config, fontTypes, 'fontType')}
+          {makeNumberInput('Font Size', config, 'textSize')}
+          {makeNumberInput('Particle Count', config, 'particleCount')}
         </>
       )
     case 'TextSpin':
-      return <></>
+      return (
+        <>
+          {makeSlider('Size', config, 'size', 0, 5, 0.01)}
+          {makeTextInput('Text', config, 'text')}
+        </>
+      )
     default:
       return <></>
   }

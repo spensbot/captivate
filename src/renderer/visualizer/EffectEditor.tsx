@@ -8,6 +8,7 @@ import {
   visualizerTypeList,
   initLayerConfig,
 } from '../../visualizer/threejs/layers/LayerConfig'
+import makeControls from './makeControls'
 
 interface Props {
   config: EffectConfig
@@ -30,66 +31,29 @@ export default function EffectEditor({ config, onChange }: Props) {
 }
 
 function SpecificFields({ config, onChange }: Props) {
-  function makeOnChange<Config, Val>(key: keyof Config) {
-    return (newVal: Val) =>
-      onChange({
-        ...config,
-        [key]: newVal,
-      })
-  }
-
-  function makeSlider<Config>(
-    config: Config,
-    key: keyof Config,
-    min?: number,
-    max?: number,
-    step?: number
-  ) {
-    const _min = min ?? 0
-    const _max = max ?? 1
-    const _step = step ?? 0.01
-    return (
-      <Slider
-        //@ts-ignore
-        value={config[key]}
-        min={_min}
-        max={_max}
-        step={_step}
-        onChange={(_e, value) => makeOnChange(key)(value)}
-      />
-    )
-  }
-
-  function makeSwitch<Config>(config: Config, key: keyof Config) {
-    return (
-      <Switch
-        //@ts-ignore
-        checked={config[key]}
-        onChange={(e) => makeOnChange(key)(e.target.checked)}
-      />
-    )
-  }
+  let { makeOnChange, makeSlider, makeSwitch, makeNumberInput, makeSelect } =
+    makeControls(config, onChange)
 
   switch (config.type) {
     case 'AdaptiveToneMapping':
       return <></>
     case 'AfterImage':
-      return <>{makeSlider(config, 'damp', 0, 10, 0.01)}</>
+      return <>{makeSlider('Time', config, 'damp', 0, 10, 0.01)}</>
     case 'DotScreen':
       return (
         <>
-          {makeSlider(config, 'centerX')}
-          {makeSlider(config, 'centerY')}
-          {makeSlider(config, 'angle')}
-          {makeSlider(config, 'scale')}
+          {makeSlider('Center X', config, 'centerX')}
+          {makeSlider('Center Y', config, 'centerY')}
+          {makeSlider('Angle', config, 'angle')}
+          {makeSlider('Scale', config, 'scale')}
         </>
       )
     case 'Film':
       return (
         <>
-          {makeSlider(config, 'grayscale')}
-          {makeSlider(config, 'intensity')}
-          {makeSlider(config, 'scanlines', 1, 1000, 1)}
+          {makeSlider('Grayscale', config, 'grayscale')}
+          {makeSlider('Intensity', config, 'intensity')}
+          {makeSlider('Scanlines', config, 'scanlines', 1, 1000, 1)}
         </>
       )
     case 'Glitch':
@@ -97,24 +61,24 @@ function SpecificFields({ config, onChange }: Props) {
     case 'HalfTone':
       return (
         <>
-          {makeSlider(config, 'radius', 0, 10, 0.1)}
-          {makeSlider(config, 'scatter', 0, 100, 0.1)}
-          {makeSlider(config, 'shape', 0, 5, 1)}
+          {makeSlider('Radius', config, 'radius', 0, 10, 0.1)}
+          {makeSlider('Scatter', config, 'scatter', 0, 100, 0.1)}
+          {makeSlider('Shape', config, 'shape', 0, 5, 1)}
         </>
       )
     case 'LightSync':
       return (
         <>
-          {makeSlider(config, 'obeyColor')}
-          {makeSwitch(config, 'obeyBrightness')}
-          {makeSwitch(config, 'obeyMaster')}
-          {makeSwitch(config, 'obeyPosition')}
-          {makeSwitch(config, 'obeyStrobe')}
-          {makeSwitch(config, 'obeyEpicness')}
+          {makeSlider('Obey Color', config, 'obeyColor')}
+          {makeSwitch('Obey Brightness', config, 'obeyBrightness')}
+          {makeSwitch('Obey Master', config, 'obeyMaster')}
+          {makeSwitch('Obey Position', config, 'obeyPosition')}
+          {makeSwitch('Obey Strobe', config, 'obeyStrobe')}
+          {makeSwitch('Obey Epicness', config, 'obeyEpicness')}
         </>
       )
     case 'Pixel':
-      return <>{makeSlider(config, 'pixelSize', 1, 64, 1)}</>
+      return <>{makeSlider('Pixel Size', config, 'pixelSize', 1, 64, 1)}</>
     case 'RenderLayer':
       return (
         <>
@@ -138,9 +102,9 @@ function SpecificFields({ config, onChange }: Props) {
     case 'UnrealBloom':
       return (
         <>
-          {makeSlider(config, 'radius', 0, 100, 0.1)}
-          {makeSlider(config, 'strength', 0, 1, 0.01)}
-          {makeSlider(config, 'threshold', 0, 1, 0.01)}
+          {makeSlider('Radius', config, 'radius', 0, 100, 0.1)}
+          {makeSlider('Strength', config, 'strength', 0, 1, 0.01)}
+          {makeSlider('Threshold', config, 'threshold', 0, 1, 0.01)}
         </>
       )
     default:

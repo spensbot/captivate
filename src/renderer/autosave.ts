@@ -5,12 +5,24 @@ import {
   getCleanReduxState,
 } from './redux/store'
 import ipcChannels from '../shared/ipc_channels'
+import { initLayerConfig } from 'visualizer/threejs/layers/LayerConfig'
+import { initEffectConfig } from 'visualizer/threejs/effects/effectConfigs'
 
 const CACHED_STATE_KEY = 'cached-state'
 const AUTO_SAVE_INTERVAL = 1000 // ms
 
-// Modify this function to fix any state changes between upgrades
+// Modify this function to fix any breaking state changes between upgrades
 export function fixState(state: CleanReduxState): CleanReduxState {
+  const visual = state.control.visual
+  visual.ids
+    .map((id) => visual.byId[id])
+    .forEach((scene) => {
+      scene.config = initLayerConfig(scene.config.type)
+      scene.effectsConfig = scene.effectsConfig.map((ec) =>
+        initEffectConfig(ec.type)
+      )
+    })
+
   return state
 }
 
