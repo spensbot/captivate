@@ -24,8 +24,8 @@ class RandomCube {
   material = new THREE.MeshNormalMaterial()
   axis: Vector3
 
-  constructor(scene: THREE.Scene) {
-    const size = 3 //randomRanged(5, 5)
+  constructor(scene: THREE.Scene, config: CubeSphereConfig) {
+    const size = config.size //randomRanged(5, 5)
     const geometry = new THREE.BoxGeometry(size, size, size)
     this.mesh = new THREE.Mesh(geometry, this.material)
     this.mesh.rotation.x = randomRanged(0, 100)
@@ -58,7 +58,7 @@ export default class CubeSphere extends LayerBase {
     super()
     this.cubes = Array(config.quantity)
       .fill(0)
-      .map((_) => new RandomCube(this.scene))
+      .map((_) => new RandomCube(this.scene, config))
   }
 
   update(dt: number, res: UpdateResource): void {

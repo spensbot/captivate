@@ -46,12 +46,12 @@ export default function makeControls<SuperConfig>(
   ) {
     return (
       <Root>
-        <Label>{label}</Label>
         <Switch
           //@ts-ignore
           checked={config[key]}
           onChange={(e) => makeOnChange(key)(e.target.checked)}
         />
+        <Label>{label}</Label>
       </Root>
     )
   }
@@ -86,6 +86,7 @@ export default function makeControls<SuperConfig>(
           label={label}
           value={config[key]}
           onChange={(e) => makeOnChange(key)(e.target.value)}
+          multiline
         />
       </Root>
     )
@@ -128,4 +129,5 @@ const Root = styled.div`
 
 const Label = styled.div`
   margin-right: 1rem;
+  white-space: nowrap;
 `
