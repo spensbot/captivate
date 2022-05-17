@@ -59,6 +59,6 @@ export default function Visualizer() {
 const Root = styled.div`
   position: relative;
   flex: 1 0 0;
-  height: 60vh;
+  height: 100%;
   overflow: auto;
 `

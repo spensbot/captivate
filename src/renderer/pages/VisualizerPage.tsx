@@ -26,24 +26,31 @@ export default function VisualizerPage() {
         <Pane>
           <SceneSelection sceneType="visual" />
         </Pane>
-        <VisualizerPane>
+        <SplitPane
+          style={{ height: '100%' }}
+          type="horizontal"
+          initialSplit={0.6}
+          rem={0.5}
+          min={0.2}
+          max={0.8}
+        >
           <Visualizer />
           <SplitPane
-            style={{ flex: '0.8 0 0' }}
+            style={{ flex: '0.8 0 0', height: '100%' }}
             type="vertical"
-            initialSplit={0.4}
+            initialSplit={0.5}
             rem={0.5}
             min={0.2}
             max={0.5}
           >
-            <Pane style={{ borderRight: `1px solid #777` }}>
+            <Pane>
               <VisualizerSceneEditor />
             </Pane>
             <Pane>
               <Effects />
             </Pane>
           </SplitPane>
-        </VisualizerPane>
+        </SplitPane>
       </SplitPane>
     </Root>
   )

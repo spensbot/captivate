@@ -37,7 +37,9 @@ const Root = styled.div`
   padding: 1rem;
   display: flex;
   flex-direction: column;
+  min-height: 100%;
   & > * {
     margin-bottom: 0.5rem;
   }
+  border-right: 1px solid #777;
 `
