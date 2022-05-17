@@ -40,8 +40,8 @@ export default function VisualizerPage() {
             type="vertical"
             initialSplit={0.5}
             rem={0.5}
-            min={0.2}
-            max={0.5}
+            min={0.3}
+            max={0.7}
           >
             <Pane>
               <VisualizerSceneEditor />

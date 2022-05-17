@@ -11,7 +11,7 @@ export interface AfterImageConfig {
   damp: number
 }
 export function initAfterImageConfig(): AfterImageConfig {
-  return { type: 'AfterImage', damp: 1 }
+  return { type: 'AfterImage', damp: 0.9 }
 }
 export interface DotScreenConfig {
   type: 'DotScreen'

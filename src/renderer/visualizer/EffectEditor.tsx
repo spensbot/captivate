@@ -38,14 +38,14 @@ function SpecificFields({ config, onChange }: Props) {
     case 'AdaptiveToneMapping':
       return <></>
     case 'AfterImage':
-      return <>{makeSlider('Time', config, 'damp', 0, 10, 0.01)}</>
+      return <>{makeSlider('Time', config, 'damp', 0, 1, 0.01)}</>
     case 'DotScreen':
       return (
         <>
           {makeSlider('Center X', config, 'centerX')}
           {makeSlider('Center Y', config, 'centerY')}
           {makeSlider('Angle', config, 'angle')}
-          {makeSlider('Scale', config, 'scale')}
+          {makeSlider('Scale', config, 'scale', 0.01, 1, 0.001)}
         </>
       )
     case 'Film':
@@ -61,9 +61,9 @@ function SpecificFields({ config, onChange }: Props) {
     case 'HalfTone':
       return (
         <>
-          {makeSlider('Radius', config, 'radius', 0, 10, 0.1)}
-          {makeSlider('Scatter', config, 'scatter', 0, 100, 0.1)}
-          {makeSlider('Shape', config, 'shape', 0, 5, 1)}
+          {makeSlider('Radius', config, 'radius', 0, 100, 0.1)}
+          {makeSlider('Scatter', config, 'scatter', 0, 1, 0.1)}
+          {makeSlider('Shape', config, 'shape', 1, 4, 1)}
         </>
       )
     case 'LightSync':
@@ -102,9 +102,9 @@ function SpecificFields({ config, onChange }: Props) {
     case 'UnrealBloom':
       return (
         <>
-          {makeSlider('Radius', config, 'radius', 0, 100, 0.1)}
-          {makeSlider('Strength', config, 'strength', 0, 1, 0.01)}
-          {makeSlider('Threshold', config, 'threshold', 0, 1, 0.01)}
+          {makeSlider('Radius', config, 'radius')}
+          {makeSlider('Strength', config, 'strength')}
+          {makeSlider('Threshold', config, 'threshold')}
         </>
       )
     default:

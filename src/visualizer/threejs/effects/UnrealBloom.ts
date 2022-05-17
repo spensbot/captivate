@@ -18,4 +18,13 @@ export class UnrealBloom extends EffectBase {
       config.threshold
     )
   }
+
+  resize(width: number, height: number): void {
+    this.pass = new UnrealBloomPass(
+      new Vector2(width, height),
+      this.config.strength,
+      this.config.radius,
+      this.config.threshold
+    )
+  }
 }

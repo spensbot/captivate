@@ -16,4 +16,12 @@ export class HalfTone extends EffectBase {
       shape: config.shape,
     })
   }
+
+  resize(width: number, height: number): void {
+    this.pass = new HalftonePass(width, height, {
+      radius: this.config.radius,
+      scatter: this.config.scatter,
+      shape: this.config.shape,
+    })
+  }
 }
