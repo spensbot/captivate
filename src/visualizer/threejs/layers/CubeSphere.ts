@@ -56,7 +56,7 @@ export default class CubeSphere extends LayerBase {
 
   constructor(config: CubeSphereConfig) {
     super()
-    this.cubes = Array(config.quantity)
+    this.cubes = Array(Math.floor(config.quantity))
       .fill(0)
       .map((_) => new RandomCube(this.scene, config))
   }

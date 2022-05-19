@@ -149,7 +149,7 @@ export function initEffectConfig(type: EffectConfig['type']): EffectConfig {
 }
 
 export const effectTypes: EffectType[] = [
-  'AdaptiveToneMapping',
+  // 'AdaptiveToneMapping', <-- This doesn't always perform in a desireable way so removing for now
   'AfterImage',
   'DotScreen',
   'Film',

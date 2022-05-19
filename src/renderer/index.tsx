@@ -18,6 +18,7 @@ import { ThemeProvider as MuiThemeProvider } from '@emotion/react'
 import { createTheme } from '@mui/material/styles'
 import { autoSave } from './autosave'
 import { getUndoGroup, undoAction, redoAction } from './controls/UndoRedo'
+import './react_error_logging'
 
 const theme = themes.dark()
 const muiTheme = createTheme({

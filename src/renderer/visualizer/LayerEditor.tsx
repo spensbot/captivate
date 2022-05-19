@@ -1,13 +1,12 @@
 import cloneDeep from 'lodash.clonedeep'
-import React, { useEffect, useState } from 'react'
-import Select from 'renderer/base/Select'
+import { useEffect, useState } from 'react'
 import { LayerConfig } from '../../visualizer/threejs/layers/LayerConfig'
 import {
   objectFits,
   orderTypes,
 } from '../../visualizer/threejs/layers/LocalMedia'
 import { fontTypes } from '../../visualizer/threejs/fonts/FontType'
-import { Button, TextField } from '@mui/material'
+import { Button } from '@mui/material'
 import makeControls from './makeControls'
 
 interface Props {

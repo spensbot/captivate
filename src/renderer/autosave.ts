@@ -5,22 +5,20 @@ import {
   getCleanReduxState,
 } from './redux/store'
 import ipcChannels from '../shared/ipc_channels'
-import { initLayerConfig } from 'visualizer/threejs/layers/LayerConfig'
-import { initEffectConfig } from 'visualizer/threejs/effects/effectConfigs'
+import { initCubeSphereConfig } from 'visualizer/threejs/layers/CubeSphere'
 
 const CACHED_STATE_KEY = 'cached-state'
 const AUTO_SAVE_INTERVAL = 1000 // ms
 
 // Modify this function to fix any breaking state changes between upgrades
 export function fixState(state: CleanReduxState): CleanReduxState {
-  const visual = state.control.visual
-  visual.ids
-    .map((id) => visual.byId[id])
+  const v = state.control.visual
+  v.ids
+    .map((id) => v.byId[id])
     .forEach((scene) => {
-      scene.config = initLayerConfig(scene.config.type)
-      scene.effectsConfig = scene.effectsConfig.map((ec) =>
-        initEffectConfig(ec.type)
-      )
+      if (scene.config.type === 'CubeSphere') {
+        scene.config = initCubeSphereConfig()
+      }
     })
 
   return state
@@ -30,7 +28,7 @@ export const captivateFileFilters = {
   captivate: { name: 'Captivate', extensions: ['.captivate'] },
 }
 
-function refreshLastSession(store: ReduxStore) {
+export function refreshLastSession(store: ReduxStore) {
   const cachedState = localStorage.getItem(CACHED_STATE_KEY)
   if (!!cachedState) {
     // const lastState: ReduxState = fixState( JSON.parse(cachedState) )

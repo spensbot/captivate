@@ -15,6 +15,7 @@ export function light() {
       text: {
         primary: '#111',
         secondary: '#777',
+        error: '#922',
       },
     },
     font: {
@@ -41,6 +42,7 @@ export function dark(): Theme_t {
       text: {
         primary: '#eee',
         secondary: '#777',
+        error: '#f88',
       },
     },
   }

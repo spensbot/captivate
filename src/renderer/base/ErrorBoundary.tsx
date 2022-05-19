@@ -1,6 +1,5 @@
 import React from 'react'
-import styled from 'styled-components'
-import { Button } from '@mui/material'
+import ErrorBoundaryFallback from './ErrorBoundaryFallback'
 
 interface Props {}
 
@@ -29,41 +28,9 @@ export default class ErrorBoundary extends React.Component<Props, State> {
 
   render() {
     if (this.state.error !== undefined) {
-      // custom fallback UI
-      return (
-        <Root>
-          <Title>An Error Occured</Title>
-          <Info>
-            Try running from undo history (if this doesn't work, you may need to
-            try another option
-          </Info>
-          <Button>Restore Last Auto-Save</Button>
-          <Button>Restart from defaults</Button>
-          <Info>
-            Want to help with Captivate's development? Let us know what you were
-            doing when the error occurred.
-          </Info>
-        </Root>
-      )
+      return <ErrorBoundaryFallback />
     }
 
     return this.props.children
   }
 }
-
-const Root = styled.div`
-  height: 100%;
-  display: flex;
-  background-color: ${(props) => props.theme.colors.bg.primary};
-  align-items: center;
-  justify-content: center;
-`
-
-const Title = styled.div`
-  font-size: 1.4rem;
-  color: #660000;
-`
-
-const Info = styled.div`
-  color: #330000;
-`

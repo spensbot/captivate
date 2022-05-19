@@ -7,7 +7,7 @@ import Mixer from './pages/Mixer'
 import MenuBar from './menu/MenuBar'
 import { useTypedSelector } from './redux/store'
 import FullscreenOverlay from './overlays/FullscreenOverlay'
-import ErrorBoundary from './base/ErrorBoundary'
+import ErrorBoundarySentry from './base/ErrorBoundarySentry'
 
 export default function App() {
   const activePage = useTypedSelector((state) => state.gui.activePage)
@@ -24,13 +24,13 @@ export default function App() {
 
   return (
     <Root>
-      <ErrorBoundary>
+      <ErrorBoundarySentry>
         <MenuBar />
         <PageWrapper style={{ overflow: 'auto' }}>
           {getActivePage()}
         </PageWrapper>
         <FullscreenOverlay />
-      </ErrorBoundary>
+      </ErrorBoundarySentry>
     </Root>
   )
 }

@@ -34,6 +34,7 @@ export default function makeControls<SuperConfig>(
           max={_max}
           step={_step}
           onChange={(_e, value) => makeOnChange(key)(value)}
+          valueLabelDisplay="auto"
         />
       </Root>
     )
