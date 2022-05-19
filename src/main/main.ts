@@ -18,6 +18,7 @@ import MenuBuilder from './menu'
 import { resolveHtmlPath } from './util'
 import * as engine from './engine/engine'
 import { VisualizerContainer } from './engine/createVisualizerWindow'
+import { prevent_sleep } from './prevent_sleep'
 
 export default class AppUpdater {
   constructor() {
@@ -26,6 +27,8 @@ export default class AppUpdater {
     autoUpdater.checkForUpdatesAndNotify()
   }
 }
+
+prevent_sleep()
 
 let mainWindow: BrowserWindow | null = null
 let isClosing = false
