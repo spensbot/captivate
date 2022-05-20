@@ -5,7 +5,8 @@ import {
   getCleanReduxState,
 } from './redux/store'
 import ipcChannels from '../shared/ipc_channels'
-import { initCubeSphereConfig } from 'visualizer/threejs/layers/CubeSphere'
+import { initLayerConfig } from 'visualizer/threejs/layers/LayerConfig'
+import { initEffectConfig } from 'visualizer/threejs/effects/effectConfigs'
 
 const CACHED_STATE_KEY = 'cached-state'
 const AUTO_SAVE_INTERVAL = 1000 // ms
@@ -16,8 +17,9 @@ export function fixState(state: CleanReduxState): CleanReduxState {
   v.ids
     .map((id) => v.byId[id])
     .forEach((scene) => {
-      if (scene.config.type === 'CubeSphere') {
-        scene.config = initCubeSphereConfig()
+      scene.config = initLayerConfig(scene.config.type)
+      for (let i = 0; i < scene.effectsConfig.length; i++) {
+        scene.effectsConfig[i] = initEffectConfig(scene.effectsConfig[i].type)
       }
     })
 
