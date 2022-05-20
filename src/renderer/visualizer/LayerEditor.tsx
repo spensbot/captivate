@@ -38,6 +38,7 @@ function SpecificFields({ config, onChange }: Props) {
     makeNumberInput,
     makeTextInput,
     makeSelect,
+    makeInputArray,
   } = makeControls(config, onChange)
 
   switch (config.type) {
@@ -71,7 +72,7 @@ function SpecificFields({ config, onChange }: Props) {
       config.particleCount
       return (
         <>
-          {makeTextInput('Text', config, 'text')}
+          {makeInputArray('Text', config, 'text')}
           {makeSelect('Font', config, fontTypes, 'fontType')}
           {makeNumberInput('Font Size', config, 'textSize')}
           {makeNumberInput('Particle Count', config, 'particleCount')}

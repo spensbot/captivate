@@ -1,6 +1,8 @@
-import { Slider, Switch, TextField } from '@mui/material'
+import { IconButton, Slider, Switch, TextField } from '@mui/material'
 import Select from 'renderer/base/Select'
 import styled from 'styled-components'
+import AddIcon from '@mui/icons-material/Add'
+import { MultilineInput } from 'renderer/base/Input'
 
 export default function makeControls<SuperConfig>(
   superConfig: SuperConfig,
@@ -66,7 +68,7 @@ export default function makeControls<SuperConfig>(
       <Root>
         <Label>{label}</Label>
         <TextField
-          label={label}
+          size="small"
           value={config[key]}
           type="number"
           onChange={(e) => makeOnChange(key)(e.target.value)}
@@ -83,12 +85,14 @@ export default function makeControls<SuperConfig>(
     return (
       <Root>
         <Label>{label}</Label>
-        <TextField
-          label={label}
+        <MultilineInput value={config[key]} onChange={makeOnChange(key)} />
+        {/* <Input value={config[key]} onChange={makeOnChange(key)} /> */}
+        {/* <TextField
+          size="small"
           value={config[key]}
           onChange={(e) => makeOnChange(key)(e.target.value)}
           multiline
-        />
+        /> */}
       </Root>
     )
   }
@@ -113,6 +117,38 @@ export default function makeControls<SuperConfig>(
     )
   }
 
+  function makeInputArray<Config>(
+    label: string,
+    config: Config,
+    key: keyof Config
+  ) {
+    let copy = [...config[key]]
+    return (
+      <Root>
+        <Label>{label}</Label>
+        <Col>
+          {config[key].map((val, i) => (
+            <MultilineInput
+              key={i}
+              value={val}
+              onChange={(newVal) => {
+                copy[i] = newVal
+                makeOnChange(key)(copy)
+              }}
+              onEmptyDelete={() => {
+                copy.splice(i, 1)
+                makeOnChange(key)(copy)
+              }}
+            />
+          ))}
+          <IconButton onClick={() => makeOnChange(key)([...copy, ''])}>
+            <AddIcon />
+          </IconButton>
+        </Col>
+      </Root>
+    )
+  }
+
   return {
     makeOnChange,
     makeSlider,
@@ -120,12 +156,22 @@ export default function makeControls<SuperConfig>(
     makeNumberInput,
     makeTextInput,
     makeSelect,
+    makeInputArray,
   }
 }
 
 const Root = styled.div`
   display: flex;
   align-items: center;
+`
+
+const Col = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  & > * {
+    margin-bottom: 0.5rem;
+  }
 `
 
 const Label = styled.div`
