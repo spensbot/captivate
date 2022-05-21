@@ -66,9 +66,3 @@ const Root = styled.div`
 const Pane = styled.div`
   height: 100%;
 `
-
-const VisualizerPane = styled.div`
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-`

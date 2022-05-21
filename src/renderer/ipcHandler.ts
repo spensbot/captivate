@@ -50,3 +50,9 @@ export function send_user_command(command: UserCommand) {
 export function send_open_visualizer() {
   ipcRenderer.send(ipc_channels.open_visualizer)
 }
+export async function getLocalFilepaths(
+  title: string,
+  fileFilters: Electron.FileFilter[]
+): Promise<string[]> {
+  return ipcRenderer.invoke(ipc_channels.load_file, title, fileFilters)
+}

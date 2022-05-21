@@ -8,6 +8,7 @@ export default {
   load_file: 'load_file',
   save_file: 'save_file',
   open_visualizer: 'open_visualizer',
+  get_local_filepaths: 'get_local_filepaths',
 } as const
 
 export interface SetLinkEnabled {

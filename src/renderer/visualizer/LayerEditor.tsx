@@ -8,6 +8,7 @@ import {
 import { fontTypes } from '../../visualizer/threejs/fonts/FontType'
 import { Button } from '@mui/material'
 import makeControls from './makeControls'
+import FileList from './FileList'
 
 interface Props {
   config: LayerConfig
@@ -57,7 +58,7 @@ function SpecificFields({ config, onChange }: Props) {
           {makeSelect('Fit', config, objectFits, 'objectFit')}
           {makeSelect('Order', config, orderTypes, 'order')}
           {makeNumberInput('Beats Per Change', config, 'period')}
-          {makeInputArray('Text', config, 'text')}
+          <FileList />
         </>
       )
     case 'Spheres':

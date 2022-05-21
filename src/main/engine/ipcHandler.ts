@@ -94,3 +94,19 @@ ipcMain.handle(
     }
   }
 )
+
+ipcMain.handle(
+  ipcChannels.get_local_filepaths,
+  async (_event, title: string, fileFilters: Electron.FileFilter[]) => {
+    const dialogResult = await dialog.showOpenDialog({
+      title: title,
+      filters: fileFilters,
+      properties: ['openFile', 'multiSelections'],
+    })
+    if (!dialogResult.canceled && dialogResult.filePaths.length > 0) {
+      return dialogResult.filePaths
+    } else {
+      throw new Error('User cancelled the file load')
+    }
+  }
+)
