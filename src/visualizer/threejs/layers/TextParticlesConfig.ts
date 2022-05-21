@@ -11,6 +11,7 @@ export interface TextParticlesConfig {
   particleColor: number
   physics: Physics
   throwVelocity: number
+  period: number
 }
 
 export function initTextParticlesConfig(): TextParticlesConfig {
@@ -38,5 +39,6 @@ export function initTextParticlesConfig(): TextParticlesConfig {
       drag: 3,
     },
     throwVelocity: 0.5,
+    period: 8,
   }
 }

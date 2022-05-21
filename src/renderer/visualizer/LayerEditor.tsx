@@ -56,6 +56,8 @@ function SpecificFields({ config, onChange }: Props) {
         <>
           {makeSelect('Fit', config, objectFits, 'objectFit')}
           {makeSelect('Order', config, orderTypes, 'order')}
+          {makeNumberInput('Beats Per Change', config, 'period')}
+          {makeInputArray('Text', config, 'text')}
         </>
       )
     case 'Spheres':
@@ -72,10 +74,12 @@ function SpecificFields({ config, onChange }: Props) {
       config.particleCount
       return (
         <>
-          {makeInputArray('Text', config, 'text')}
           {makeSelect('Font', config, fontTypes, 'fontType')}
           {makeNumberInput('Font Size', config, 'textSize')}
           {makeNumberInput('Particle Count', config, 'particleCount')}
+          {makeNumberInput('Beats Per Change', config, 'period')}
+          {makeSlider('Particle Size', config, 'particleSize')}
+          {makeInputArray('Text', config, 'text')}
         </>
       )
     case 'TextSpin':

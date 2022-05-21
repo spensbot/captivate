@@ -68,7 +68,7 @@ export default class TextParticles extends LayerBase {
       colorFromHSV(res.params.hue, 1, params.brightness)
     )
 
-    if (res.isNewPeriod(8)) {
+    if (res.isNewPeriod(this.config.period)) {
       const { text, textSize, fontType, particleCount } = this.config
       this.activeTextIndex += 1
       if (this.activeTextIndex >= text.length) this.activeTextIndex = 0

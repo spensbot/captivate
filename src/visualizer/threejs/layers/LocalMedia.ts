@@ -16,6 +16,7 @@ export interface LocalMediaConfig {
   order: OrderType
   objectFit: ObjectFit
   paths: string[]
+  period: number
 }
 
 const videoExtensions = new Set(['mp4'])
@@ -68,6 +69,7 @@ export function initLocalMediaConfig(): LocalMediaConfig {
     paths: paths,
     order: 'Random',
     objectFit: 'Cover',
+    period: 2,
   }
 }
 
@@ -208,7 +210,7 @@ export default class LocalMedia extends LayerBase {
   update(_dt: number, res: UpdateResource) {
     // const d = dt / 10000
     // this.mesh.rotation.y += d
-    if (res.isNewPeriod(2)) {
+    if (res.isNewPeriod(this.config.period)) {
       if (sharedQueue !== null) {
         const mediaData = sharedQueue.getNext()
         if (mediaData) {
