@@ -5,6 +5,9 @@ import { getLocalFilepaths } from 'renderer/ipcHandler'
 import { IconButton } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import path from 'path'
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
+import DragHandle from '@mui/icons-material/DragHandle'
+import { reorderArray } from 'shared/util'
 
 const videoFileFilters: FileFilter[] = [
   { name: 'mp4', extensions: ['mp4'] },
@@ -30,7 +33,7 @@ interface Props {
   onChange: (newFilepaths: string[]) => void
 }
 
-export default function FileList({ filepaths, onChange }: Props) {
+export default function FileList(props: Props) {
   let onAdd = () => {
     getLocalFilepaths('Select Media', localMedialFileFilters)
       .then(onAddSuccess)
@@ -39,7 +42,7 @@ export default function FileList({ filepaths, onChange }: Props) {
 
   let onAddSuccess = (addedFilepaths: string[]) => {
     console.log(addedFilepaths)
-    onChange([...filepaths, ...addedFilepaths])
+    props.onChange([...props.filepaths, ...addedFilepaths])
   }
 
   useEffect(() => {
@@ -50,29 +53,74 @@ export default function FileList({ filepaths, onChange }: Props) {
 
   return (
     <Root>
-      {filepaths.map((filepath, i) => {
-        let name = path.basename(filepath)
-        let dir = path.dirname(filepath)
-        return (
-          <Entry>
-            <DeleteButton
-              onClick={() => {
-                let fpCopy = [...filepaths]
-                fpCopy.splice(i, 1)
-                onChange(fpCopy)
-              }}
-            >
-              <Delete />
-            </DeleteButton>
-            <Name>{name}</Name>
-            <Dir>{dir}</Dir>
-          </Entry>
-        )
-      })}
+      <DragDropContext
+        onDragEnd={({ source, destination }) => {
+          let fpCopy = [...props.filepaths]
+          reorderArray(fpCopy, {
+            fromIndex: source.index,
+            toIndex: destination?.index ?? 0,
+          })
+          props.onChange(fpCopy)
+        }}
+      >
+        <Droppable droppableId="list">
+          {(provided) => (
+            <div ref={provided.innerRef} {...provided.droppableProps}>
+              {files(props)}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
       <IconButton onClick={onAdd}>
         <AddIcon />
       </IconButton>
     </Root>
+  )
+}
+
+function files({ filepaths, onChange }: Props) {
+  return filepaths.map((filepath, i) => {
+    return (
+      <File
+        filepaths={filepaths}
+        key={filepath + i}
+        i={i}
+        filepath={filepath}
+        onChange={onChange}
+      />
+    )
+  })
+}
+
+interface FileProps extends Props {
+  filepath: string
+  i: number
+}
+
+function File({ filepaths, i, filepath, onChange }: FileProps) {
+  let name = path.basename(filepath)
+  let dir = path.dirname(filepath)
+  return (
+    <Draggable draggableId={filepath + i} index={i}>
+      {(provided) => (
+        <Entry ref={provided.innerRef} {...provided.draggableProps}>
+          <div {...provided.dragHandleProps}>
+            <DragHandle />
+          </div>
+          <Name
+            onClick={() => {
+              let fpCopy = [...filepaths]
+              fpCopy.splice(i, 1)
+              onChange(fpCopy)
+            }}
+          >
+            {name}
+          </Name>
+          <Dir>{dir}</Dir>
+        </Entry>
+      )}
+    </Draggable>
   )
 }
 
@@ -85,21 +133,12 @@ const Entry = styled.div`
 const Name = styled.div`
   margin-right: 0.5rem;
   white-space: nowrap;
+  :hover {
+    text-decoration: line-through;
+  }
 `
 const Dir = styled.div`
   color: ${(props) => props.theme.colors.text.secondary};
   white-space: nowrap;
   overflow: scroll;
-`
-const DeleteButton = styled.div`
-  height: 1.2rem;
-  margin-right: 0.5rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-`
-const Delete = styled.div`
-  height: 0.2rem;
-  width: 1rem;
-  background-color: ${(props) => props.theme.colors.text.primary};
 `
