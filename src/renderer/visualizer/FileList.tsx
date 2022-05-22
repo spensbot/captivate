@@ -4,11 +4,11 @@ import { useEffect } from 'react'
 import { getLocalFilepaths } from 'renderer/ipcHandler'
 import { IconButton } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
-import Input from 'renderer/base/Input'
+import path from 'path'
 
 const videoFileFilters: FileFilter[] = [
   { name: 'mp4', extensions: ['mp4'] },
-  { name: 'mov', extensions: ['mov'] },
+  { name: 'mov', extensions: ['mov', 'MOV'] },
   { name: 'webm', extensions: ['webm'] },
   { name: 'ogg', extensions: ['ogg'] },
 ]
@@ -38,6 +38,7 @@ export default function FileList({ filepaths, onChange }: Props) {
   }
 
   let onAddSuccess = (addedFilepaths: string[]) => {
+    console.log(addedFilepaths)
     onChange([...filepaths, ...addedFilepaths])
   }
 
@@ -49,17 +50,25 @@ export default function FileList({ filepaths, onChange }: Props) {
 
   return (
     <Root>
-      {filepaths.map((filepath, i) => (
-        <Input
-          key={filepath + i}
-          value={filepath}
-          onChange={(newFilepath) => {
-            let newFilepaths = [...filepaths]
-            newFilepaths[i] = newFilepath
-            onChange(newFilepaths)
-          }}
-        />
-      ))}
+      {filepaths.map((filepath, i) => {
+        let name = path.basename(filepath)
+        let dir = path.dirname(filepath)
+        return (
+          <Entry>
+            <DeleteButton
+              onClick={() => {
+                let fpCopy = [...filepaths]
+                fpCopy.splice(i, 1)
+                onChange(fpCopy)
+              }}
+            >
+              <Delete />
+            </DeleteButton>
+            <Name>{name}</Name>
+            <Dir>{dir}</Dir>
+          </Entry>
+        )
+      })}
       <IconButton onClick={onAdd}>
         <AddIcon />
       </IconButton>
@@ -68,3 +77,29 @@ export default function FileList({ filepaths, onChange }: Props) {
 }
 
 const Root = styled.div``
+
+const Entry = styled.div`
+  display: flex;
+  align-items: center;
+`
+const Name = styled.div`
+  margin-right: 0.5rem;
+  white-space: nowrap;
+`
+const Dir = styled.div`
+  color: ${(props) => props.theme.colors.text.secondary};
+  white-space: nowrap;
+  overflow: scroll;
+`
+const DeleteButton = styled.div`
+  height: 1.2rem;
+  margin-right: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+`
+const Delete = styled.div`
+  height: 0.2rem;
+  width: 1rem;
+  background-color: ${(props) => props.theme.colors.text.primary};
+`

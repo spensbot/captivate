@@ -6,7 +6,7 @@ import {
   TextParticlesConfig,
   initTextParticlesConfig,
 } from './TextParticlesConfig'
-import { LocalMediaConfig, initLocalMediaConfig } from './LocalMedia'
+import { LocalMediaConfig, initLocalMediaConfig } from './LocalMediaConfig'
 
 export type LayerConfig =
   | SpheresConfig

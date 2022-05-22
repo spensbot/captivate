@@ -4,7 +4,7 @@ import { LayerConfig } from '../../visualizer/threejs/layers/LayerConfig'
 import {
   objectFits,
   orderTypes,
-} from '../../visualizer/threejs/layers/LocalMedia'
+} from '../../visualizer/threejs/layers/LocalMediaConfig'
 import { fontTypes } from '../../visualizer/threejs/fonts/FontType'
 import { Button } from '@mui/material'
 import makeControls from './makeControls'
@@ -58,7 +58,10 @@ function SpecificFields({ config, onChange }: Props) {
           {makeSelect('Fit', config, objectFits, 'objectFit')}
           {makeSelect('Order', config, orderTypes, 'order')}
           {makeNumberInput('Beats Per Change', config, 'period')}
-          <FileList />
+          <FileList
+            filepaths={config.paths}
+            onChange={(newFilepaths) => makeOnChange('paths')(newFilepaths)}
+          />
         </>
       )
     case 'Spheres':

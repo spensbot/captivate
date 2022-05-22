@@ -54,5 +54,9 @@ export async function getLocalFilepaths(
   title: string,
   fileFilters: Electron.FileFilter[]
 ): Promise<string[]> {
-  return ipcRenderer.invoke(ipc_channels.load_file, title, fileFilters)
+  return ipcRenderer.invoke(
+    ipc_channels.get_local_filepaths,
+    title,
+    fileFilters
+  )
 }

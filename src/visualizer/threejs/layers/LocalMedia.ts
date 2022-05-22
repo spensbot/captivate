@@ -4,74 +4,12 @@ import { loadVideo, pathUrl, releaseVideo, loadImage } from '../util/loaders'
 import LoadQueue from '../util/LoadQueue'
 import { randomRanged, randomIndexExcludeCurrent } from '../../../shared/util'
 import UpdateResource from '../UpdateResource'
-
-export type OrderType = 'Random' | 'Ordered'
-export const orderTypes: OrderType[] = ['Ordered', 'Random']
-
-export type ObjectFit = 'Cover' | 'Fit'
-export const objectFits: ObjectFit[] = ['Cover', 'Fit']
-
-export interface LocalMediaConfig {
-  type: 'LocalMedia'
-  order: OrderType
-  objectFit: ObjectFit
-  paths: string[]
-  period: number
-}
-
-const videoExtensions = new Set(['mp4'])
-const base = '/Users/spensersaling/Movies/videos/'
-const getVideos = () => [
-  'balloons.mp4',
-  'bonfire.mp4',
-  'cowboy.mp4',
-  // 'desert woman.mp4',
-  'fern.mp4',
-  'forest.mp4',
-  'forest2.mp4',
-  'particles.mp4',
-  'sailing.mp4',
-  'rain slowmo.mp4',
-  'small fire.mp4',
-  'smoke.mp4',
-  'space.mp4',
-  'sunset couple.mp4',
-  'wheat.mp4',
-  'wheat2.mp4',
-  'woman in field.mp4',
-]
-const videoPaths = getVideos().map((filename) => base + filename)
-
-const imageExtensions = new Set(['jpg', 'jpeg'])
-const imageBase = `/Users/spensersaling/Pictures/`
-const images: string[] = [
-  'blue_city.jpg',
-  'city.jpg',
-  'forest.jpg',
-  'hills.jpg',
-  'love.jpg',
-  'moon.jpg',
-  'mountains.jpg',
-  'old_city.jpg',
-  'plane.jpg',
-  'rave.jpg',
-  'rose.jpg',
-  'snow.jpg',
-  'snowfall.jpg',
-  'waterfall.jpg',
-]
-const imagePaths = images.map((filename) => imageBase + filename)
-const paths = videoPaths.concat(imagePaths)
-
-export function initLocalMediaConfig(): LocalMediaConfig {
-  return {
-    type: 'LocalMedia',
-    paths: paths,
-    order: 'Random',
-    objectFit: 'Cover',
-    period: 2,
-  }
-}
+import no_media_image from '../../../../assets/no_media.png'
+import {
+  imageExtensions,
+  videoExtensions,
+  LocalMediaConfig,
+} from './LocalMediaConfig'
 
 interface MediaDataBase {
   width: number
@@ -158,6 +96,23 @@ export default class LocalMedia extends LayerBase {
 
   async loadNext(): Promise<MediaData> {
     const path = this.config.paths[this.index]
+    if (path === undefined) {
+      const {
+        texture,
+        bitmap: { width, height },
+      } = await loadImage(no_media_image)
+      const material = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        map: texture,
+      })
+      return {
+        type: 'image',
+        texture,
+        material,
+        width,
+        height,
+      }
+    }
     if (this.config.order === 'Random') {
       this.index = randomIndexExcludeCurrent(
         this.config.paths.length,
