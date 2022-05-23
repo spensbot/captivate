@@ -1,7 +1,7 @@
 import useDragMapped from '../hooks/useDragMapped'
 import { useDispatch } from 'react-redux'
 import { setBaseParams, incrementBaseParams } from '../redux/controlSlice'
-import XYCursor from './XYCursor'
+import { XYCursorBase, XYCursorOutput } from './XYCursor'
 import XYWindow from './XYWindow'
 import styled from 'styled-components'
 import ParamXButton from './ParamXButton'
@@ -56,7 +56,8 @@ export default function XYpad({ splitIndex }: Props) {
 
   const content = (
     <Root ref={dragContainer} onMouseDown={onMouseDown}>
-      <XYCursor splitIndex={splitIndex} />
+      <XYCursorOutput splitIndex={splitIndex} />
+      <XYCursorBase splitIndex={splitIndex} />
       <XYWindow splitIndex={splitIndex} />
       <ParamXButton splitIndex={splitIndex} params={paramBundles.position} />
     </Root>

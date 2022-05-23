@@ -13,15 +13,15 @@ const AUTO_SAVE_INTERVAL = 1000 // ms
 
 // Modify this function to fix any breaking state changes between upgrades
 export function fixState(state: CleanReduxState): CleanReduxState {
-  const v = state.control.visual
-  v.ids
-    .map((id) => v.byId[id])
-    .forEach((scene) => {
-      scene.config = initLayerConfig(scene.config.type)
-      for (let i = 0; i < scene.effectsConfig.length; i++) {
-        scene.effectsConfig[i] = initEffectConfig(scene.effectsConfig[i].type)
-      }
-    })
+  // const v = state.control.visual
+  // v.ids
+  //   .map((id) => v.byId[id])
+  //   .forEach((scene) => {
+  //     scene.config = initLayerConfig(scene.config.type)
+  //     for (let i = 0; i < scene.effectsConfig.length; i++) {
+  //       scene.effectsConfig[i] = initEffectConfig(scene.effectsConfig[i].type)
+  //     }
+  //   })
 
   return state
 }

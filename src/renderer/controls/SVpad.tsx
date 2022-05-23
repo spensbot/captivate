@@ -2,7 +2,7 @@ import styled from 'styled-components'
 import useDragMapped from '../hooks/useDragMapped'
 import { useDispatch } from 'react-redux'
 import { setBaseParams } from '../redux/controlSlice'
-import SVCursor from './SVCursor'
+import { SVCursorBase, SVCursorOutput } from './SVCursor'
 import { useOutputParam } from '../redux/realtimeStore'
 import ParamXButton from './ParamXButton'
 import { Param } from 'shared/params'
@@ -38,7 +38,8 @@ export default function SVpad({ splitIndex }: Props) {
       <White>
         <Black />
         {/* <ParamXButton splitIndex={splitIndex} params={['saturation', 'hue']} /> */}
-        <SVCursor splitIndex={splitIndex} />
+        <SVCursorOutput splitIndex={splitIndex} />
+        <SVCursorBase splitIndex={splitIndex} />
       </White>
     </Root>
   )
