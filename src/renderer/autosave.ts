@@ -5,11 +5,6 @@ import {
   getCleanReduxState,
 } from './redux/store'
 import ipcChannels from '../shared/ipc_channels'
-import { initLayerConfig } from 'visualizer/threejs/layers/LayerConfig'
-import { initEffectConfig } from 'visualizer/threejs/effects/effectConfigs'
-
-const CACHED_STATE_KEY = 'cached-state'
-const AUTO_SAVE_INTERVAL = 1000 // ms
 
 // Modify this function to fix any breaking state changes between upgrades
 export function fixState(state: CleanReduxState): CleanReduxState {
