@@ -4,10 +4,17 @@ interface Props {
   value: string
   onChange: (newVal: string) => void
   onEmptyDelete?: () => void
+  size?: string
 }
 
-export default function Input({ value, onChange }: Props) {
-  return <Root value={value} onChange={(e) => onChange(e.target.value)} />
+export default function Input({ value, onChange, size }: Props) {
+  return (
+    <Root
+      style={{ fontSize: size }}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  )
 }
 
 const Root = styled.input`
@@ -18,7 +25,12 @@ const Root = styled.input`
   font-size: 1rem;
 `
 
-export function MultilineInput({ value, onChange, onEmptyDelete }: Props) {
+export function MultilineInput({
+  size,
+  value,
+  onChange,
+  onEmptyDelete,
+}: Props) {
   console.log(value)
   const num_lines = value.split('\n').length
   return (
@@ -31,6 +43,7 @@ export function MultilineInput({ value, onChange, onEmptyDelete }: Props) {
           onEmptyDelete()
         }
       }}
+      style={{ fontSize: size }}
     />
   )
 }

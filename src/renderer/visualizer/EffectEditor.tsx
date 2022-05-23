@@ -74,7 +74,6 @@ function SpecificFields({ config, onChange }: Props) {
           {makeSwitch('Obey Master', config, 'obeyMaster')}
           {makeSwitch('Obey Position', config, 'obeyPosition')}
           {makeSwitch('Obey Strobe', config, 'obeyStrobe')}
-          {makeSwitch('Obey Epicness', config, 'obeyEpicness')}
         </>
       )
     case 'Pixel':

@@ -139,6 +139,7 @@ export default function makeControls<SuperConfig>(
                 copy.splice(i, 1)
                 makeOnChange(key)(copy)
               }}
+              size="0.8rem"
             />
           ))}
           <IconButton onClick={() => makeOnChange(key)([...copy, ''])}>
@@ -170,7 +171,7 @@ const Col = styled.div`
   flex-direction: column;
   align-items: flex-start;
   & > * {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.2rem;
   }
 `
 
