@@ -8,7 +8,9 @@ import {
 } from './TextParticlesConfig'
 import { LocalMediaConfig, initLocalMediaConfig } from './LocalMediaConfig'
 import { RandomConfig, initRandomConfig } from './Random'
+import { initSpaceConfig, SpaceConfig } from './Space'
 
+//ADD LAYER!!!
 export type LayerConfig =
   | SpheresConfig
   | TextSpinConfig
@@ -17,9 +19,11 @@ export type LayerConfig =
   | TextParticlesConfig
   | LocalMediaConfig
   | RandomConfig
+  | SpaceConfig
 
 export type VisualizerType = LayerConfig['type']
 
+//ADD LAYER!!!
 export const visualizerTypeList: VisualizerType[] = [
   'CubeSphere',
   'Cubes',
@@ -28,8 +32,10 @@ export const visualizerTypeList: VisualizerType[] = [
   'TextSpin',
   'LocalMedia',
   'Random',
+  'Space',
 ]
 
+//ADD LAYER!!!
 export function initLayerConfig(type: VisualizerType): LayerConfig {
   if (type === 'CubeSphere') return initCubeSphereConfig()
   if (type === 'Cubes') return initCubesConfig()
@@ -38,6 +44,7 @@ export function initLayerConfig(type: VisualizerType): LayerConfig {
   if (type === 'TextSpin') return initTextSpinConfig()
   if (type === 'LocalMedia') return initLocalMediaConfig()
   if (type === 'Random') return initRandomConfig()
+  if (type === 'Space') return initSpaceConfig()
   console.error(`Missing default config in initLayerConfig()`)
   return initCubeSphereConfig()
 }

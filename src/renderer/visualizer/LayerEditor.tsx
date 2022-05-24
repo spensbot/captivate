@@ -31,11 +31,11 @@ export default function LayerEditor({ config, onChange }: Props) {
   )
 }
 
+//ADD LAYER!!!
 function SpecificFields({ config, onChange }: Props) {
   let {
     makeOnChange,
     makeSlider,
-    makeSwitch,
     makeNumberInput,
     makeTextInput,
     makeSelect,
@@ -96,11 +96,22 @@ function SpecificFields({ config, onChange }: Props) {
     case 'Random':
       return (
         <>
+          {makeSlider('Obey Epicness', config, 'obeyEpicness')}
           {makeSlider('Count', config, 'count', 10, 50000, 1)}
           {makeSlider('Period', config, 'period', 0.01, 4, 0.01)}
           {makeSelect('Shape', config, randomShapes, 'shape')}
           {makeSlider('Width', config, 'width', 0.1, 20, 0.1)}
           {makeSlider('Height', config, 'height', 0.1, 20, 0.1)}
+        </>
+      )
+    case 'Space':
+      return (
+        <>
+          {makeSlider('Obey Epicness', config, 'obeyEpicness')}
+          {makeSlider('Count', config, 'count', 10, 50000, 1)}
+          {makeSlider('Speed', config, 'speed', 10, 1000, 1)}
+          {makeSlider('Thickness', config, 'thickness', 0.1, 5, 0.01)}
+          {makeSlider('Length', config, 'length', 1, 100, 0.1)}
         </>
       )
     default:

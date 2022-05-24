@@ -1,18 +1,15 @@
 import * as THREE from 'three'
-import { Vector3, Matrix4, Mesh } from 'three'
 import LayerBase from './LayerBase'
 import UpdateResource from '../UpdateResource'
-import { randomRanged, zeroArray } from '../../../shared/util'
+import { randomRanged, indexArray } from '../../../shared/util'
+import { snapToMultipleOf2, getMultiplier } from '../util/util'
 
 const MIN_XY = -1000
 const MAX_XY = 1000
-const MIN_Z = -5
-const MAX_Z = 5
-const MIN_SPEED = 100
-const MAX_SPEED = 1000
 
 export interface RandomConfig {
   type: 'Random'
+  obeyEpicness: number
   count: number
   period: number
   shape: 'Cone' | 'Box' | 'Sphere' | 'Cylinder'
@@ -30,6 +27,7 @@ export const randomShapes: RandomConfig['shape'][] = [
 export function initRandomConfig(): RandomConfig {
   return {
     type: 'Random',
+    obeyEpicness: 0.5,
     count: 10000,
     period: 1,
     shape: 'Box',
@@ -43,7 +41,6 @@ const dummy = new THREE.Object3D()
 export default class Random extends LayerBase {
   mat = new THREE.MeshBasicMaterial({ color: 0xffffff })
   stars: THREE.InstancedMesh
-  starPositions: [Vector3, Matrix4][]
   config: RandomConfig
 
   constructor(config: RandomConfig) {
@@ -54,26 +51,54 @@ export default class Random extends LayerBase {
       this.mat,
       config.count
     )
-    this.starPositions = zeroArray(config.count).map((_) => {
-      let position = new Vector3(randomXY(), randomXY(), 0)
-      return [position, new Matrix4().setPosition(position)]
-    })
-    // this.starPositions.forEach(([_, m], i) => this.stars.setMatrixAt(i, m))
-    // this.stars.instanceMatrix.needsUpdate = true
-    // this.stars.matrixWorldNeedsUpdate = true
     this.stars.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
     this.scene.add(this.stars)
   }
 
-  update(dt: number, res: UpdateResource): void {
-    if (res.isNewPeriod(this.config.period)) {
-      this.starPositions.forEach((_, i) => {
+  update(res: UpdateResource): void {
+    let epicnessMultiplier = getMultiplier(
+      res.scene.epicness,
+      this.config.obeyEpicness
+    )
+
+    let count = Math.floor(this.config.count * epicnessMultiplier)
+    let period = this.config.period / epicnessMultiplier
+    let snappedPeriod = snapToMultipleOf2(period)
+
+    console.log(
+      `mult: ${epicnessMultiplier.toFixed(
+        2
+      )} | count: ${count} | period: ${period.toFixed(
+        2
+      )} | snapped: ${snappedPeriod}`
+    )
+
+    if (this.stars.count !== count) {
+      this.reset_count
+    }
+
+    if (res.isNewPeriod(snappedPeriod)) {
+      indexArray(this.stars.count).forEach((i) => {
         dummy.position.set(randomXY(), randomXY(), randomXY())
         dummy.updateMatrix()
         this.stars.setMatrixAt(i, dummy.matrix)
       })
       this.stars.instanceMatrix.needsUpdate = true
     }
+  }
+
+  reset_count(count: number) {
+    this.scene.remove(this.stars)
+    this.stars.geometry.dispose()
+    this.stars.dispose()
+
+    this.stars = new THREE.InstancedMesh(
+      makeGeometry(this.config),
+      this.mat,
+      count
+    )
+    this.stars.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
+    this.scene.add(this.stars)
   }
 
   dispose() {
