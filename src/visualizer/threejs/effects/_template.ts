@@ -22,5 +22,5 @@ export class ___ {
     this.config = config
   }
 
-  update(_dt: number, _res: UpdateResource) {}
+  update(_res: UpdateResource) {}
 }

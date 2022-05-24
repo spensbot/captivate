@@ -48,6 +48,7 @@ export default class VisualizerManager {
     const effectsConfig = visualScene?.effectsConfig || []
     const layerConfig = visualScene.config
     const stuff = {
+      dt,
       params: res.rt.outputParams,
       time: res.rt.time,
       scene: control.light.byId[control.light.active],
@@ -75,7 +76,7 @@ export default class VisualizerManager {
       this.effectManager.resize(this.width, this.height)
     }
 
-    this.effectManager.update(dt, this.updateResource)
+    this.effectManager.update(this.updateResource)
     this.effectManager.render()
   }
 
@@ -86,12 +87,12 @@ export default class VisualizerManager {
     this.effectManager.resize(width, height)
   }
 
-  private printMemory() {
-    const info = this.renderer.info
-    console.log(`WebGLRenderer Info
-    Geometries: ${info.memory.geometries}
-    Textures: ${info.memory.textures}
-    Programs: ${info.programs?.length}
-    `)
-  }
+  // private printMemory() {
+  //   const info = this.renderer.info
+  //   console.log(`WebGLRenderer Info
+  //   Geometries: ${info.memory.geometries}
+  //   Textures: ${info.memory.textures}
+  //   Programs: ${info.programs?.length}
+  //   `)
+  // }
 }

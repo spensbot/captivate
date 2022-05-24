@@ -162,7 +162,7 @@ export default class LocalMedia extends LayerBase {
     throw Error(`Bad File Extension: ${path}`)
   }
 
-  update(_dt: number, res: UpdateResource) {
+  update(res: UpdateResource) {
     // const d = dt / 10000
     // this.mesh.rotation.y += d
     if (res.isNewPeriod(this.config.period)) {

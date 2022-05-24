@@ -9,7 +9,7 @@ import { Strobe } from '../util/animations'
 import { getColors } from 'shared/dmxColors'
 import CustomPassShader from './CustomPassShader'
 import EffectBase from './EffectBase'
-import { LightSyncConfig, initLightSyncConfig } from './effectConfigs'
+import { LightSyncConfig } from './effectConfigs'
 
 type LightSyncShader = CustomPassShader<{
   tDiffuse: Uniform
@@ -45,18 +45,17 @@ export class LightSync extends EffectBase {
     this.strobe = new Strobe()
   }
 
-  update(dt: number, res: UpdateResource) {
+  update({ dt, params, master }: UpdateResource) {
     let brightnessMultiplier = 1.0
 
-    if (this.config.obeyMaster) brightnessMultiplier *= res.master
-    if (this.config.obeyBrightness)
-      brightnessMultiplier *= res.params.brightness
+    if (this.config.obeyMaster) brightnessMultiplier *= master
+    if (this.config.obeyBrightness) brightnessMultiplier *= params.brightness
     if (this.config.obeyStrobe)
-      brightnessMultiplier *= this.strobe.update(dt, res.params.strobe)
+      brightnessMultiplier *= this.strobe.update(dt, params.strobe)
 
     this.pass.uniforms.brightnessMultiplier.value = brightnessMultiplier
 
-    const colors = getColors(res.params)
+    const colors = getColors(params)
     this.pass.uniforms.colorMultipler.value = [
       colors.red,
       colors.green,
@@ -67,12 +66,12 @@ export class LightSync extends EffectBase {
 
     if (this.config.obeyPosition) {
       this.pass.uniforms.windowPosition.value = [
-        mapGLCoords(res.params.x),
-        mapGLCoords(res.params.y),
+        mapGLCoords(params.x),
+        mapGLCoords(params.y),
       ]
       this.pass.uniforms.windowSize.value = [
-        mapGLSize(res.params.width),
-        mapGLSize(res.params.height),
+        mapGLSize(params.width),
+        mapGLSize(params.height),
       ]
     } else {
       this.pass.uniforms.windowPosition.value = [0, 0]

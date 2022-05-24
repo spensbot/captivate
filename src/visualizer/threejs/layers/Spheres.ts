@@ -57,7 +57,7 @@ export default class Spheres extends LayerBase {
       })
   }
 
-  update(dt: number, { params, scene }: UpdateResource): void {
+  update({ dt, params, scene }: UpdateResource): void {
     const epicness = scene.epicness
 
     const color = colorFromHSV(

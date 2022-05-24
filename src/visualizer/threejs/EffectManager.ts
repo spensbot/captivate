@@ -5,7 +5,6 @@ import { Effect, constructEffect } from './effects/Effect'
 import UpdateResource from './UpdateResource'
 import { LayerConfig } from './layers/LayerConfig'
 import { constructRenderLayer } from './effects/RenderLayer'
-import { WebGLRenderTarget } from 'three'
 
 export default class EffectManager {
   effects: Effect[] = []
@@ -33,8 +32,8 @@ export default class EffectManager {
     this.effectsConfig = effectsConfig
   }
 
-  update(dt: number, res: UpdateResource) {
-    this.effects.forEach((effect) => effect.update(dt, res))
+  update(res: UpdateResource) {
+    this.effects.forEach((effect) => effect.update(res))
   }
 
   resize(width: number, height: number) {

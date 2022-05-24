@@ -16,7 +16,7 @@ export default class Cube extends LayerBase {
     this.scene.add(this.cube)
   }
 
-  update(_dt: number, { time }: UpdateResource): void {
+  update({ time }: UpdateResource): void {
     this.cube.rotation.x = time.beats
     this.cube.rotation.y = time.beats
   }

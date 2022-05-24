@@ -4,6 +4,7 @@ import { isNewPeriod } from '../../shared/TimeState'
 import { LightScene_t } from '../../shared/Scenes'
 
 interface UpdateData {
+  dt: number
   time: TimeState
   params: Params
   scene: LightScene_t
@@ -11,6 +12,7 @@ interface UpdateData {
 }
 
 export default class UpdateResource {
+  dt: number
   time: TimeState
   params: Params
   scene: LightScene_t
@@ -18,6 +20,7 @@ export default class UpdateResource {
   private lastBeats: number
 
   constructor(stuff: UpdateData) {
+    this.dt = stuff.dt
     this.time = stuff.time
     this.params = stuff.params
     this.scene = stuff.scene
@@ -26,6 +29,7 @@ export default class UpdateResource {
   }
 
   update(stuff: UpdateData) {
+    this.dt = stuff.dt
     this.lastBeats = this.time.beats
     this.time = stuff.time
     this.params = stuff.params

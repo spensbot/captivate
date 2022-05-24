@@ -38,7 +38,7 @@ class RandomCube {
     scene.add(this.mesh)
   }
 
-  update(dt: number, { scene }: UpdateResource) {
+  update({ dt, scene }: UpdateResource) {
     this.mesh.rotateOnAxis(
       this.axis,
       (dt * (Skew(scene.epicness, 0.6) + 0.5)) / 10000
@@ -61,8 +61,8 @@ export default class CubeSphere extends LayerBase {
       .map((_) => new RandomCube(this.scene, config))
   }
 
-  update(dt: number, res: UpdateResource): void {
-    this.cubes.forEach((cube) => cube.update(dt, res))
+  update(res: UpdateResource): void {
+    this.cubes.forEach((cube) => cube.update(res))
   }
 
   dispose() {

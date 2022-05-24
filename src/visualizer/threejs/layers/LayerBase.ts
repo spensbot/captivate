@@ -6,7 +6,7 @@ export default abstract class LayerBase {
   protected scene: THREE.Scene
   protected camera: THREE.PerspectiveCamera
 
-  abstract update(dt: number, res: UpdateResource): void
+  abstract update(res: UpdateResource): void
 
   constructor() {
     this.scene = new THREE.Scene()

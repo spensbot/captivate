@@ -25,15 +25,15 @@ export class RenderLayer extends EffectBase {
   active_layer: LayerBase
   pass: RenderPass
 
-  constructor(config: RenderLayerConfig, clear: boolean) {
+  constructor(config: RenderLayerConfig, _clear: boolean) {
     super()
     this.config = config
     this.active_layer = constructLayer(this.config.layerConfig)
     this.pass = new RenderPass(...this.active_layer.getRenderInputs())
   }
 
-  update(dt: number, res: UpdateResource) {
-    this.active_layer.update(dt, res)
+  update(res: UpdateResource) {
+    this.active_layer.update(res)
   }
 
   resize(width: number, height: number) {

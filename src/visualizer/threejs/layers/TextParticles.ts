@@ -57,7 +57,7 @@ export default class TextParticles extends LayerBase {
     this.createParticles()
   }
 
-  update(dt: number, res: UpdateResource): void {
+  update(res: UpdateResource): void {
     const { params } = res
     const pos = this.particles.geometry.attributes.position
     const color = this.particles.geometry.attributes.customColor
@@ -89,7 +89,7 @@ export default class TextParticles extends LayerBase {
       // })
     }
 
-    const dt_seconds = dt / 1000
+    const dt_seconds = res.dt / 1000
 
     this.particleStates.forEach((pState, i) => {
       const { x, y, ix, iy, vx, vy } = gravity(

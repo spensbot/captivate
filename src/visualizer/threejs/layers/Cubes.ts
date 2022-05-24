@@ -35,7 +35,7 @@ class RandomCube {
     scene.add(this.mesh)
   }
 
-  update(dt: number, { scene }: UpdateResource) {
+  update({ dt, scene }: UpdateResource) {
     const epicness = scene.epicness
     this.mesh.rotateOnAxis(this.axis, (dt * Skew(epicness, 0.6) + 0.5) / 200)
   }
@@ -70,11 +70,11 @@ export default class Cubes extends LayerBase {
     }
   }
 
-  update(dt: number, res: UpdateResource): void {
-    this.cubes.forEach((cube) => cube.update(dt, res))
+  update(res: UpdateResource): void {
+    this.cubes.forEach((cube) => cube.update(res))
     this.light.position.x = res.params.x * 10 - 5
     this.light.position.y = res.params.y * 8 - 4
-    this.light.intensity = this.strobe.update(dt, res.params.strobe)
+    this.light.intensity = this.strobe.update(res.dt, res.params.strobe)
     this.light.color = new THREE.Color(
       colorFromHSV(res.params.hue, res.params.saturation, res.params.brightness)
     )

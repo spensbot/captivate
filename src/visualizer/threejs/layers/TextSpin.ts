@@ -40,7 +40,7 @@ export default class TextSpin extends LayerBase {
     this.scene.add(this.outline.group)
   }
 
-  update(dt: number, { params, scene }: UpdateResource): void {
+  update({ dt, params, scene }: UpdateResource): void {
     const epicness = scene.epicness
     this.text.mesh.rotation.y = this.spin.update(dt, epicness)
     const color = colorFromHSV(
