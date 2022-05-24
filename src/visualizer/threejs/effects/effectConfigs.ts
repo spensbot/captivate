@@ -145,6 +145,9 @@ export function initEffectConfig(type: EffectConfig['type']): EffectConfig {
       return initUnrealBloomConfig()
     case 'RenderLayer':
       return initRenderLayerConfig()
+    default:
+      console.error(`Missing initEffectConfig()`)
+      return initPixelConfig()
   }
 }
 

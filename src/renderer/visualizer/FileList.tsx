@@ -41,7 +41,6 @@ export default function FileList(props: Props) {
   }
 
   let onAddSuccess = (addedFilepaths: string[]) => {
-    console.log(addedFilepaths)
     props.onChange([...props.filepaths, ...addedFilepaths])
   }
 

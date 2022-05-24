@@ -69,6 +69,10 @@ export function indexArray(length: number) {
   return Array.from(Array(length).keys())
 }
 
+export function zeroArray(length: number) {
+  return Array(length).fill(0)
+}
+
 export function testSpeed(f: () => void, count: number, name: string) {
   const array = Array(count).fill(0)
   const startTime = Date.now()

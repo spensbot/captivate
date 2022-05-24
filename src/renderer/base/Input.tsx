@@ -31,7 +31,6 @@ export function MultilineInput({
   onChange,
   onEmptyDelete,
 }: Props) {
-  console.log(value)
   const num_lines = value.split('\n').length
   return (
     <MLRoot

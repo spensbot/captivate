@@ -9,6 +9,7 @@ import { fontTypes } from '../../visualizer/threejs/fonts/FontType'
 import { Button } from '@mui/material'
 import makeControls from './makeControls'
 import FileList from './FileList'
+import { randomShapes } from 'visualizer/threejs/layers/Random'
 
 interface Props {
   config: LayerConfig
@@ -17,7 +18,6 @@ interface Props {
 
 export default function LayerEditor({ config, onChange }: Props) {
   let [edit, setEdit] = useState(cloneDeep(config))
-  console.log('render')
 
   useEffect(() => {
     setEdit(config)
@@ -91,6 +91,16 @@ function SpecificFields({ config, onChange }: Props) {
         <>
           {makeSlider('Size', config, 'size', 0, 5, 0.01)}
           {makeTextInput('Text', config, 'text')}
+        </>
+      )
+    case 'Random':
+      return (
+        <>
+          {makeSlider('Count', config, 'count', 10, 50000, 1)}
+          {makeSlider('Period', config, 'period', 0.01, 4, 0.01)}
+          {makeSelect('Shape', config, randomShapes, 'shape')}
+          {makeSlider('Width', config, 'width', 0.1, 20, 0.1)}
+          {makeSlider('Height', config, 'height', 0.1, 20, 0.1)}
         </>
       )
     default:
