@@ -3,6 +3,7 @@ import Select from 'renderer/base/Select'
 import styled from 'styled-components'
 import AddIcon from '@mui/icons-material/Add'
 import { MultilineInput } from 'renderer/base/Input'
+import { Range } from 'types/baseTypes'
 
 export default function makeControls<SuperConfig>(
   superConfig: SuperConfig,
@@ -36,6 +37,43 @@ export default function makeControls<SuperConfig>(
           max={_max}
           step={_step}
           onChange={(_e, value) => makeOnChange(key)(value)}
+          valueLabelDisplay="auto"
+        />
+      </Root>
+    )
+  }
+  function makeRangeSlider<Config>(
+    label: string,
+    config: Config,
+    key: keyof Config,
+    min?: number,
+    max?: number,
+    step?: number
+  ) {
+    const _min = min ?? 0
+    const _max = max ?? 1
+    const _step = step ?? 0.01
+
+    const range = config[key] as unknown as Range
+    const values = [range.min, range.max]
+    return (
+      <Root>
+        <Label>{label}</Label>
+        <Slider
+          //@ts-ignore
+          value={values}
+          min={_min}
+          max={_max}
+          step={_step}
+          onChange={(_e, newVals) => {
+            let newValues = newVals as [number, number]
+            let min = Math.min(...newValues)
+            let max = Math.max(...newValues)
+            makeOnChange(key)({
+              min,
+              max,
+            })
+          }}
           valueLabelDisplay="auto"
         />
       </Root>
@@ -82,10 +120,11 @@ export default function makeControls<SuperConfig>(
     config: Config,
     key: keyof Config
   ) {
+    let val = config[key] as unknown as string
     return (
       <Root>
         <Label>{label}</Label>
-        <MultilineInput value={config[key]} onChange={makeOnChange(key)} />
+        <MultilineInput value={val} onChange={makeOnChange(key)} />
         {/* <Input value={config[key]} onChange={makeOnChange(key)} /> */}
         {/* <TextField
           size="small"
@@ -122,12 +161,13 @@ export default function makeControls<SuperConfig>(
     config: Config,
     key: keyof Config
   ) {
-    let copy = [...config[key]]
+    let array = config[key] as unknown as string[]
+    let copy = [...array]
     return (
       <Root>
         <Label>{label}</Label>
         <Col>
-          {config[key].map((val, i) => (
+          {copy.map((val, i) => (
             <MultilineInput
               key={i}
               value={val}
@@ -153,6 +193,7 @@ export default function makeControls<SuperConfig>(
   return {
     makeOnChange,
     makeSlider,
+    makeRangeSlider,
     makeSwitch,
     makeNumberInput,
     makeTextInput,
