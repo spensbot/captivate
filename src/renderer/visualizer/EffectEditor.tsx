@@ -40,8 +40,7 @@ export default function EffectEditor({ config, onChange }: Props) {
 }
 
 function SpecificFields({ config, onChange }: Props) {
-  let { makeOnChange, makeSlider, makeSwitch, makeNumberInput, makeSelect } =
-    makeControls(config, onChange)
+  let { makeOnChange, makeSlider, makeSwitch } = makeControls(config, onChange)
 
   switch (config.type) {
     case 'AdaptiveToneMapping':

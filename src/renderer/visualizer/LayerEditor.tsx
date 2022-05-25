@@ -10,7 +10,7 @@ import { fontTypes } from '../../visualizer/threejs/fonts/FontType'
 import { Button } from '@mui/material'
 import makeControls from './makeControls'
 import FileList from './FileList'
-import { randomShapes } from 'visualizer/threejs/layers/Random'
+import { spaceShapes } from 'visualizer/threejs/layers/Space'
 
 interface Props {
   config: LayerConfig
@@ -102,26 +102,16 @@ function SpecificFields({ config, onChange }: Props) {
           {makeTextInput('Text', config, 'text')}
         </>
       )
-    case 'Random':
-      return (
-        <>
-          {makeSlider('Obey Epicness', config, 'obeyEpicness')}
-          {makeSlider('Count', config, 'count', 10, 50000, 1)}
-          {makeSlider('Randomize', config, 'randomize', 0.0, 4, 0.01)}
-          {makeSelect('Shape', config, randomShapes, 'shape')}
-          {makeSlider('Width', config, 'width', 0.1, 20, 0.1)}
-          {makeSlider('Height', config, 'height', 0.1, 100, 0.1)}
-          {makeSlider('Speed', config, 'speed', 0, 4, 0.01)}
-        </>
-      )
     case 'Space':
       return (
         <>
           {makeSlider('Obey Epicness', config, 'obeyEpicness')}
           {makeSlider('Count', config, 'count', 10, 50000, 1)}
-          {makeSlider('Speed', config, 'speed', 10, 1000, 1)}
-          {makeSlider('Thickness', config, 'thickness', 0.1, 5, 0.01)}
-          {makeSlider('Length', config, 'length', 1, 100, 0.1)}
+          {makeSlider('Randomize', config, 'randomize', 0.0, 4, 0.01)}
+          {makeSelect('Shape', config, spaceShapes, 'shape')}
+          {makeSlider('Width', config, 'width', 0.1, 20, 0.1)}
+          {makeSlider('Height', config, 'height', 0.1, 100, 0.1)}
+          {makeSlider('Speed', config, 'speed', 0, 4, 0.01)}
         </>
       )
     default:
