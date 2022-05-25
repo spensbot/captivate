@@ -56,7 +56,7 @@ export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
       <DraggableNumber
         value={period}
         min={1}
-        max={4}
+        max={64}
         onChange={onPeriodChange}
         style={{
           backgroundColor: '#0005',
