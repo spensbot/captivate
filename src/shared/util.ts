@@ -1,3 +1,8 @@
+export type Range = {
+  min: number
+  max: number
+}
+
 export function clampNormalized(val: number) {
   if (val < 0.0) return 0.0
   if (val > 1.0) return 1.0
@@ -60,9 +65,12 @@ export function getFilename(path: string) {
   return path.substring(path.lastIndexOf('/') + 1)
 }
 
-export function lerp(start: number, stop: number, amt: number) {
+export function lerp(start: number, stop: number, amount: number) {
   const delta = stop - start
-  return start + delta * amt
+  return start + delta * amount
+}
+export function rLerp(range: Range, amount: number) {
+  return lerp(range.min, range.max, amount)
 }
 
 export function indexArray(length: number) {
@@ -139,4 +147,27 @@ export function halve_incremented(val: number) {
     }
     return ref
   }
+}
+
+export function mapFn(
+  skew: number,
+  range_out?: Partial<Range>
+): (normalized: number) => number {
+  let min = range_out?.min ?? 0
+  let max = range_out?.max ?? 1
+  let range = max - min
+
+  return (normalized: number) => normalized ** skew * range + min
+}
+
+export function mapRangeFn(
+  skew: number,
+  range_out?: Partial<Range>
+): (normalizedRange: Range) => Range {
+  let mapVal = mapFn(skew, range_out)
+
+  return (normalizedRange: Range) => ({
+    min: mapVal(normalizedRange.min),
+    max: mapVal(normalizedRange.max),
+  })
 }

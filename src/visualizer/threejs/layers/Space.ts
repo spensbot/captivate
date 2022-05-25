@@ -2,9 +2,14 @@ import * as THREE from 'three'
 import { Vector3 } from 'three'
 import LayerBase from './LayerBase'
 import UpdateResource from '../UpdateResource'
-import { randomRanged } from '../../../shared/util'
-import { snapToMultipleOf2, getMultiplier } from '../util/util'
-// import { Range } from 'types/baseTypes'
+import {
+  randomRanged,
+  mapFn,
+  mapRangeFn,
+  Range,
+  rLerp,
+} from '../../../shared/util'
+import { snapToMultipleOf2 } from '../util/util'
 
 const MIN_XY = -2000
 const MAX_XY = 2000
@@ -13,13 +18,12 @@ const MAX_Z = 100
 
 export interface SpaceConfig {
   type: 'Space'
-  obeyEpicness: number
-  count: number
-  randomize: number
+  count: Range
+  speed: Range
+  randomize: Range
   shape: 'Box' | 'Sphere' | 'Cylinder'
   width: number
   height: number
-  speed: number
 }
 
 export const spaceShapes: SpaceConfig['shape'][] = ['Box', 'Cylinder', 'Sphere']
@@ -27,15 +31,20 @@ export const spaceShapes: SpaceConfig['shape'][] = ['Box', 'Cylinder', 'Sphere']
 export function initSpaceConfig(): SpaceConfig {
   return {
     type: 'Space',
-    obeyEpicness: 0.5,
-    count: 5000,
-    randomize: 0,
+    count: { min: 0.25, max: 0.75 },
+    speed: { min: 0.0, max: 0.5 },
+    randomize: { min: 0.0, max: 0.0 },
     shape: 'Cylinder',
-    width: 3,
-    height: 100,
-    speed: 1,
+    width: 0.5,
+    height: 0.5,
   }
 }
+
+const mapRandomize = mapRangeFn(2)
+const mapSpeed = mapRangeFn(2, { max: 10 })
+const mapCount = mapRangeFn(2, { min: 1, max: 50000 })
+const mapWidth = mapFn(2, { min: 0, max: 200 })
+const mapHeight = mapFn(2, { min: 0, max: 200 })
 
 const dummy = new THREE.Object3D()
 
@@ -48,31 +57,33 @@ export default class Space extends LayerBase {
   constructor(config: SpaceConfig) {
     super()
     this.config = config
-    this.reset(this.config.count)
     this.scene.fog = new THREE.FogExp2(0x000000, 0.0008)
   }
 
   update(res: UpdateResource): void {
-    let epicnessMultiplier = getMultiplier(
-      res.scene.epicness,
-      this.config.obeyEpicness
-    )
+    let config = this.config
+    let epicness = res.scene.epicness
 
-    let count = Math.floor(this.config.count * epicnessMultiplier)
-    let randomize = this.config.randomize * epicnessMultiplier
+    let count = rLerp(mapCount(config.count), epicness)
+    let speed = rLerp(mapSpeed(config.speed), epicness)
+    let randomize = rLerp(mapRandomize(config.randomize), epicness)
     let period = 0.25 / randomize
     let snappedPeriod = snapToMultipleOf2(period)
-    let speed = this.config.speed * epicnessMultiplier
+
+    let ogRandomize = config.randomize
+    let mapped = mapRandomize(config.randomize)
+    console.log(
+      `randomize: ${randomize} | period: ${period} | original: ${ogRandomize.min.toFixed(
+        2
+      )} ${ogRandomize.max.toFixed(2)} | mapped: ${mapped.min} ${mapped.max}`
+    )
 
     if (this.stars.count !== count) {
-      this.prep_for_reset()
       this.reset(count)
     }
 
     if (res.isNewPeriod(snappedPeriod)) {
-      this.positions = this.positions.map(
-        (_) => new Vector3(randomXY(), randomXY(), randomZ())
-      )
+      this.positions = this.positions.map((_) => spawnPosition())
     }
 
     this.positions.forEach((p, i) => {
@@ -92,6 +103,10 @@ export default class Space extends LayerBase {
   }
 
   reset(count: number) {
+    this.scene.remove(this.stars)
+    this.stars.geometry.dispose()
+    this.stars.dispose()
+
     this.stars = new THREE.InstancedMesh(
       makeGeometry(this.config),
       this.mat,
@@ -101,15 +116,9 @@ export default class Space extends LayerBase {
     this.scene.add(this.stars)
 
     while (this.positions.length < count) {
-      this.positions.push(new Vector3(randomXY(), randomXY(), randomZ()))
+      this.positions.push(spawnPosition())
     }
     this.positions.splice(count - 1)
-  }
-
-  prep_for_reset() {
-    this.scene.remove(this.stars)
-    this.stars.geometry.dispose()
-    this.stars.dispose()
   }
 
   dispose() {
@@ -120,26 +129,25 @@ export default class Space extends LayerBase {
 }
 
 function makeGeometry(config: SpaceConfig) {
+  let width = mapWidth(config.width)
+  let height = mapHeight(config.height)
+
   switch (config.shape) {
     case 'Box':
-      return new THREE.BoxGeometry(config.width, config.height, config.width)
+      return new THREE.BoxGeometry(width, height, width)
     case 'Cylinder':
-      let geo = new THREE.CylinderGeometry(
-        config.width,
-        config.width,
-        config.height
-      )
+      let geo = new THREE.CylinderGeometry(width, width, height)
       geo.rotateX(Math.PI / 2)
       return geo
     case 'Sphere':
-      return new THREE.SphereGeometry(config.width)
+      return new THREE.SphereGeometry(width)
   }
-}
-
-function randomZ() {
-  return randomRanged(MIN_Z, MAX_Z)
 }
 
 function randomXY() {
   return randomRanged(MIN_XY, MAX_XY)
+}
+
+function spawnPosition() {
+  return new Vector3(randomXY(), randomXY(), randomRanged(MIN_Z, MAX_Z))
 }

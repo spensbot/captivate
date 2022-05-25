@@ -49,6 +49,7 @@ function SpecificFields({ config, onChange }: Props) {
     makeTextInput,
     makeSelect,
     makeInputArray,
+    makeRangeSlider,
   } = makeControls(config, onChange)
 
   switch (config.type) {
@@ -105,13 +106,12 @@ function SpecificFields({ config, onChange }: Props) {
     case 'Space':
       return (
         <>
-          {makeSlider('Obey Epicness', config, 'obeyEpicness')}
-          {makeSlider('Count', config, 'count', 10, 50000, 1)}
-          {makeSlider('Randomize', config, 'randomize', 0.0, 4, 0.01)}
+          {makeRangeSlider('Count', config, 'count')}
+          {makeRangeSlider('Speed', config, 'speed')}
           {makeSelect('Shape', config, spaceShapes, 'shape')}
-          {makeSlider('Width', config, 'width', 0.1, 20, 0.1)}
-          {makeSlider('Height', config, 'height', 0.1, 100, 0.1)}
-          {makeSlider('Speed', config, 'speed', 0, 4, 0.01)}
+          {makeSlider('Width', config, 'width')}
+          {makeSlider('Height', config, 'height')}
+          {makeRangeSlider('Randomize', config, 'randomize')}
         </>
       )
     default:
