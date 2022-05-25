@@ -2,13 +2,7 @@ import * as THREE from 'three'
 import { Vector3 } from 'three'
 import LayerBase from './LayerBase'
 import UpdateResource from '../UpdateResource'
-import {
-  randomRanged,
-  mapFn,
-  mapRangeFn,
-  Range,
-  rLerp,
-} from '../../../shared/util'
+import { randomRanged, mapFn, Range, rLerp } from '../../../shared/util'
 import { snapToMultipleOf2 } from '../util/util'
 
 const MIN_XY = -2000
@@ -40,9 +34,9 @@ export function initSpaceConfig(): SpaceConfig {
   }
 }
 
-const mapRandomize = mapRangeFn(2)
-const mapSpeed = mapRangeFn(2, { max: 10 })
-const mapCount = mapRangeFn(2, { min: 1, max: 50000 })
+const mapRandomize = mapFn(3, { max: 100 })
+const mapSpeed = mapFn(2, { max: 10 })
+const mapCount = mapFn(3, { min: 1, max: 50000 })
 const mapWidth = mapFn(2, { min: 0, max: 200 })
 const mapHeight = mapFn(2, { min: 0, max: 200 })
 
@@ -64,19 +58,11 @@ export default class Space extends LayerBase {
     let config = this.config
     let epicness = res.scene.epicness
 
-    let count = rLerp(mapCount(config.count), epicness)
-    let speed = rLerp(mapSpeed(config.speed), epicness)
-    let randomize = rLerp(mapRandomize(config.randomize), epicness)
-    let period = 0.25 / randomize
+    let count = mapCount(rLerp(config.count, epicness))
+    let speed = mapSpeed(rLerp(config.speed, epicness))
+    let randomize = mapRandomize(rLerp(config.randomize, epicness))
+    let period = 1 / randomize
     let snappedPeriod = snapToMultipleOf2(period)
-
-    let ogRandomize = config.randomize
-    let mapped = mapRandomize(config.randomize)
-    console.log(
-      `randomize: ${randomize} | period: ${period} | original: ${ogRandomize.min.toFixed(
-        2
-      )} ${ogRandomize.max.toFixed(2)} | mapped: ${mapped.min} ${mapped.max}`
-    )
 
     if (this.stars.count !== count) {
       this.reset(count)
