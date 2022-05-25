@@ -1,4 +1,5 @@
 import cloneDeep from 'lodash.clonedeep'
+import deepEqual from 'deep-equal'
 import { useEffect, useState } from 'react'
 import { LayerConfig } from '../../visualizer/threejs/layers/LayerConfig'
 import {
@@ -23,10 +24,18 @@ export default function LayerEditor({ config, onChange }: Props) {
     setEdit(config)
   }, [config])
 
+  const disabled = deepEqual(config, edit, { strict: true })
+
   return (
     <>
       <SpecificFields config={edit} onChange={setEdit} />
-      <Button onClick={() => onChange(edit)}>Apply</Button>
+      <Button
+        variant="outlined"
+        disabled={disabled}
+        onClick={() => onChange(edit)}
+      >
+        Apply
+      </Button>
     </>
   )
 }
@@ -98,10 +107,11 @@ function SpecificFields({ config, onChange }: Props) {
         <>
           {makeSlider('Obey Epicness', config, 'obeyEpicness')}
           {makeSlider('Count', config, 'count', 10, 50000, 1)}
-          {makeSlider('Period', config, 'period', 0.01, 4, 0.01)}
+          {makeSlider('Randomize', config, 'randomize', 0.0, 4, 0.01)}
           {makeSelect('Shape', config, randomShapes, 'shape')}
           {makeSlider('Width', config, 'width', 0.1, 20, 0.1)}
-          {makeSlider('Height', config, 'height', 0.1, 20, 0.1)}
+          {makeSlider('Height', config, 'height', 0.1, 100, 0.1)}
+          {makeSlider('Speed', config, 'speed', 0, 4, 0.01)}
         </>
       )
     case 'Space':

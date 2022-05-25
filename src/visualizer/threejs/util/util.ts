@@ -34,6 +34,8 @@ export function snapToMultipleOf2(val: number) {
     } else {
       ref /= 2
     }
+    dif = Math.abs(val - ref)
+    relativeDif = dif / ref
     i += 1
   }
   return ref

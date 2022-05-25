@@ -50,7 +50,7 @@ export interface HalfToneConfig {
   shape: number
 }
 export function initHalfToneConfig(): HalfToneConfig {
-  return { type: 'HalfTone', radius: 1, scatter: 1, shape: 0 }
+  return { type: 'HalfTone', radius: 1, scatter: 1, shape: 1 }
 }
 export interface LightSyncConfig {
   type: 'LightSync'

@@ -1,20 +1,24 @@
 import * as THREE from 'three'
+import { Vector3 } from 'three'
 import LayerBase from './LayerBase'
 import UpdateResource from '../UpdateResource'
-import { randomRanged, indexArray } from '../../../shared/util'
+import { randomRanged, indexArray, zeroArray } from '../../../shared/util'
 import { snapToMultipleOf2, getMultiplier } from '../util/util'
 
-const MIN_XY = -1000
-const MAX_XY = 1000
+const MIN_XY = -2000
+const MAX_XY = 2000
+const MAX_Z = 0
+const MIN_Z = -2000
 
 export interface RandomConfig {
   type: 'Random'
   obeyEpicness: number
   count: number
-  period: number
+  randomize: number
   shape: 'Cone' | 'Box' | 'Sphere' | 'Cylinder'
   width: number
   height: number
+  speed: number
 }
 
 export const randomShapes: RandomConfig['shape'][] = [
@@ -28,11 +32,12 @@ export function initRandomConfig(): RandomConfig {
   return {
     type: 'Random',
     obeyEpicness: 0.5,
-    count: 10000,
-    period: 1,
-    shape: 'Box',
+    count: 5000,
+    randomize: 0,
+    shape: 'Cylinder',
     width: 1,
-    height: 10,
+    height: 20,
+    speed: 0.5,
   }
 }
 
@@ -41,18 +46,24 @@ const dummy = new THREE.Object3D()
 export default class Random extends LayerBase {
   mat = new THREE.MeshBasicMaterial({ color: 0xffffff })
   stars: THREE.InstancedMesh
+  positions: Vector3[]
   config: RandomConfig
 
   constructor(config: RandomConfig) {
     super()
+    this.mat.fog = true
     this.config = config
     this.stars = new THREE.InstancedMesh(
       makeGeometry(config),
       this.mat,
       config.count
     )
+    this.positions = zeroArray(config.count).map(
+      (_) => new Vector3(randomXY(), randomXY(), randomRanged(MIN_Z, MAX_Z))
+    )
     this.stars.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
     this.scene.add(this.stars)
+    this.scene.fog = new THREE.FogExp2(0x000000, 0.0008)
   }
 
   update(res: UpdateResource): void {
@@ -62,11 +73,13 @@ export default class Random extends LayerBase {
     )
 
     let count = Math.floor(this.config.count * epicnessMultiplier)
-    let period = this.config.period / epicnessMultiplier
+    let randomize = this.config.randomize * epicnessMultiplier
+    let period = 0.25 / randomize
     let snappedPeriod = snapToMultipleOf2(period)
+    let speed = this.config.speed * epicnessMultiplier
 
     console.log(
-      `mult: ${epicnessMultiplier.toFixed(
+      `speed${speed.toFixed(2)} | mult: ${epicnessMultiplier.toFixed(
         2
       )} | count: ${count} | period: ${period.toFixed(
         2
@@ -78,13 +91,30 @@ export default class Random extends LayerBase {
     }
 
     if (res.isNewPeriod(snappedPeriod)) {
-      indexArray(this.stars.count).forEach((i) => {
-        dummy.position.set(randomXY(), randomXY(), randomXY())
-        dummy.updateMatrix()
-        this.stars.setMatrixAt(i, dummy.matrix)
-      })
-      this.stars.instanceMatrix.needsUpdate = true
+      this.positions = this.positions.map(
+        (_) => new Vector3(randomXY(), randomXY(), randomRanged(MIN_Z, MAX_Z))
+      )
+      // indexArray(this.stars.count).forEach((i) => {
+      //   dummy.position.set(randomXY(), randomXY(), randomRanged(MIN_Z, MAX_Z))
+      //   dummy.updateMatrix()
+      //   this.stars.setMatrixAt(i, dummy.matrix)
+      // })
     }
+
+    this.positions.forEach((p, i) => {
+      // p.z += 10
+      p.z += speed * res.dt
+      if (p.z > MAX_Z) {
+        p.z = MIN_Z
+        p.x = randomXY()
+        p.y = randomXY()
+      }
+      dummy.position.set(p.x, p.y, p.z)
+      dummy.updateMatrix()
+      this.stars.setMatrixAt(i, dummy.matrix)
+    })
+
+    this.stars.instanceMatrix.needsUpdate = true
   }
 
   reset_count(count: number) {
@@ -96,6 +126,9 @@ export default class Random extends LayerBase {
       makeGeometry(this.config),
       this.mat,
       count
+    )
+    this.positions = zeroArray(this.config.count).map(
+      (_) => new Vector3(randomXY(), randomXY(), randomRanged(MIN_Z, MAX_Z))
     )
     this.stars.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
     this.scene.add(this.stars)
@@ -115,11 +148,13 @@ function makeGeometry(config: RandomConfig) {
     case 'Cone':
       return new THREE.ConeGeometry(config.width, config.height)
     case 'Cylinder':
-      return new THREE.CylinderGeometry(
+      let geo = new THREE.CylinderGeometry(
         config.width,
         config.width,
         config.height
       )
+      geo.rotateX(Math.PI / 2)
+      return geo
     case 'Sphere':
       return new THREE.SphereGeometry(config.width)
   }

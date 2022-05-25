@@ -1,4 +1,5 @@
 import cloneDeep from 'lodash.clonedeep'
+import deepEqual from 'deep-equal'
 import { useState, useEffect } from 'react'
 import { EffectConfig } from '../../visualizer/threejs/effects/effectConfigs'
 import { Button } from '@mui/material'
@@ -22,10 +23,18 @@ export default function EffectEditor({ config, onChange }: Props) {
     setEdit(config)
   }, [config])
 
+  const disabled = deepEqual(config, edit, { strict: true })
+
   return (
     <>
       <SpecificFields config={edit} onChange={setEdit} />
-      <Button onClick={() => onChange(edit)}>Apply</Button>
+      <Button
+        variant="outlined"
+        disabled={disabled}
+        onClick={() => onChange(edit)}
+      >
+        Apply
+      </Button>
     </>
   )
 }
