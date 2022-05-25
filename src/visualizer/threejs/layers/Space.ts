@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { Vector3 } from 'three'
 import LayerBase from './LayerBase'
 import UpdateResource from '../UpdateResource'
-import { randomRanged, zeroArray } from '../../../shared/util'
+import { randomRanged } from '../../../shared/util'
 import { snapToMultipleOf2, getMultiplier } from '../util/util'
 // import { Range } from 'types/baseTypes'
 
@@ -41,23 +41,14 @@ const dummy = new THREE.Object3D()
 
 export default class Space extends LayerBase {
   mat = new THREE.MeshBasicMaterial({ color: 0xffffff })
-  stars: THREE.InstancedMesh
-  positions: Vector3[]
+  stars = new THREE.InstancedMesh(undefined, undefined, 0)
+  positions: Vector3[] = []
   config: SpaceConfig
 
   constructor(config: SpaceConfig) {
     super()
     this.config = config
-    this.stars = new THREE.InstancedMesh(
-      makeGeometry(config),
-      this.mat,
-      config.count
-    )
-    this.positions = zeroArray(config.count).map(
-      (_) => new Vector3(randomXY(), randomXY(), randomZ())
-    )
-    this.stars.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
-    this.scene.add(this.stars)
+    this.reset(this.config.count)
     this.scene.fog = new THREE.FogExp2(0x000000, 0.0008)
   }
 
@@ -73,16 +64,9 @@ export default class Space extends LayerBase {
     let snappedPeriod = snapToMultipleOf2(period)
     let speed = this.config.speed * epicnessMultiplier
 
-    console.log(
-      `speed${speed.toFixed(2)} | mult: ${epicnessMultiplier.toFixed(
-        2
-      )} | count: ${count} | period: ${period.toFixed(
-        2
-      )} | snapped: ${snappedPeriod}`
-    )
-
     if (this.stars.count !== count) {
-      this.reset_count
+      this.prep_for_reset()
+      this.reset(count)
     }
 
     if (res.isNewPeriod(snappedPeriod)) {
@@ -107,21 +91,25 @@ export default class Space extends LayerBase {
     this.stars.instanceMatrix.needsUpdate = true
   }
 
-  reset_count(count: number) {
-    this.scene.remove(this.stars)
-    this.stars.geometry.dispose()
-    this.stars.dispose()
-
+  reset(count: number) {
     this.stars = new THREE.InstancedMesh(
       makeGeometry(this.config),
       this.mat,
       count
     )
-    this.positions = zeroArray(this.config.count).map(
-      (_) => new Vector3(randomXY(), randomXY(), randomZ())
-    )
     this.stars.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
     this.scene.add(this.stars)
+
+    while (this.positions.length < count) {
+      this.positions.push(new Vector3(randomXY(), randomXY(), randomZ()))
+    }
+    this.positions.splice(count - 1)
+  }
+
+  prep_for_reset() {
+    this.scene.remove(this.stars)
+    this.stars.geometry.dispose()
+    this.stars.dispose()
   }
 
   dispose() {
