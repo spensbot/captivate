@@ -304,11 +304,3 @@ export function getTestUniverse(): Universe {
     // { ch: 128, type: '5', window: {}, group: DEFAULT_GROUP }
   ]
 }
-
-export function getSortedGroups(universe: Universe) {
-  const groupSet: Set<string> = new Set()
-  for (const fixture of universe) {
-    groupSet.add(fixture.group)
-  }
-  return Array.from(groupSet.keys()).sort((a, b) => (a > b ? 1 : -1))
-}

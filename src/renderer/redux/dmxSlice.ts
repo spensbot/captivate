@@ -7,7 +7,6 @@ import {
   fixtureTypesByID,
   getTestUniverse,
   FixtureChannel,
-  getSortedGroups,
   ColorMapColor,
 } from '../../shared/dmxFixtures'
 import { clampNormalized } from '../../shared/util'
@@ -18,7 +17,6 @@ export interface DmxState {
   fixtureTypesByID: { [id: string]: FixtureType }
   activeFixtureType: null | string
   activeFixture: null | number
-  groups: string[]
 }
 
 interface SetFixtureWindowPayload {
@@ -46,7 +44,6 @@ export function initDmxState(): DmxState {
     fixtureTypesByID: fixtureTypesByID,
     activeFixtureType: null,
     activeFixture: null,
-    groups: [],
   }
 }
 
@@ -117,7 +114,6 @@ export const dmxSlice = createSlice({
         return
       }
       state.universe[i].group = payload
-      state.groups = getSortedGroups(state.universe)
     },
     setGroupForAllFixturesOfActiveType: (
       state,
@@ -129,7 +125,6 @@ export const dmxSlice = createSlice({
           fixture.group = payload
         }
       }
-      state.groups = getSortedGroups(state.universe)
     },
     setEditedFixture: (state, { payload }: PayloadAction<null | string>) => {
       state.activeFixtureType = payload

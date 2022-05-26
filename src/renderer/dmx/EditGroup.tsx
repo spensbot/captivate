@@ -8,6 +8,7 @@ import Popup from '../base/Popup'
 import { useDispatch } from 'react-redux'
 import { setGroupForAllFixturesOfActiveType } from '../redux/dmxSlice'
 import { Button } from '@mui/material'
+import { getSortedGroups } from 'shared/dmxUtil'
 
 interface Props {}
 
@@ -16,7 +17,7 @@ export default function EditGroup({}: Props) {
   const [newGroup, setNewGroup] = useState('')
   const [isOpen, setIsOpen] = useState(false)
   const activeFixtureTypeID = useDmxSelector((dmx) => dmx.activeFixtureType)
-  const availableGroups = useDmxSelector((dmx) => dmx.groups)
+  const universe = useDmxSelector((dmx) => dmx.universe)
   const fixtureGroupString = useDmxSelector((dmx) => {
     const groupSet: Set<string> = new Set()
     for (const fixture of dmx.universe) {
@@ -33,6 +34,7 @@ export default function EditGroup({}: Props) {
       return 'Various'
     }
   })
+  const groups = getSortedGroups(universe)
 
   return (
     <Root>
@@ -48,7 +50,7 @@ export default function EditGroup({}: Props) {
       </IconButton>
       {isOpen && (
         <Popup title="Edit Group" onClose={() => setIsOpen(false)}>
-          {availableGroups.map((group) => (
+          {groups.map((group) => (
             <AvailableGroup
               key={group}
               onClick={() =>

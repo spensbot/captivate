@@ -10,6 +10,7 @@ import {
   getMainGroups,
   getFixturesInGroups,
   UniverseFixture,
+  getSortedGroups,
 } from '../../shared/dmxUtil'
 
 export function calculateDmx(
@@ -67,7 +68,9 @@ export function calculateDmx(
       })
     }
 
-    const mainGroups = getMainGroups(activeScene, state.dmx.groups)
+    const groups = getSortedGroups(state.dmx.universe)
+
+    const mainGroups = getMainGroups(activeScene, groups)
     const mainSceneFixtures = getFixturesInGroups(universe, mainGroups)
 
     applyFixtures(mainSceneFixtures, outputParams, randomizerState)

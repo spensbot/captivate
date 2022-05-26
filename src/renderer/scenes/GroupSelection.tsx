@@ -11,6 +11,7 @@ import {
   addSceneGroup,
   removeSceneGroup,
 } from 'renderer/redux/controlSlice'
+import { getSortedGroups } from 'shared/dmxUtil'
 
 interface Props {
   splitIndex: number
@@ -19,7 +20,8 @@ interface Props {
 export default function GroupSelection({ splitIndex }: Props) {
   const dispatch = useDispatch()
   const [isOpen, setIsOpen] = useState(false)
-  const availableGroups = [...useDmxSelector((dmx) => dmx.groups)]
+  const universe = useDmxSelector((dmx) => dmx.universe)
+  const availableGroups = getSortedGroups(universe)
   const activeGroups = useActiveLightScene(
     (scene) => scene.splitScenes[splitIndex].groups
   )

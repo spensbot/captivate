@@ -19,7 +19,11 @@ import { calculateDmx } from './dmxEngine'
 import { handleAutoScene } from '../../shared/autoScene'
 import { setActiveScene } from '../../renderer/redux/controlSlice'
 import TapTempoEngine from './TapTempoEngine'
-import { getFixturesInGroups, getMainGroups } from '../../shared/dmxUtil'
+import {
+  getFixturesInGroups,
+  getMainGroups,
+  getSortedGroups,
+} from '../../shared/dmxUtil'
 
 let _nodeLink = new NodeLink()
 let _ipcCallbacks: IPC_Callbacks | null = null
@@ -178,7 +182,8 @@ function getNextRealtimeState(
     dmx.universe.length
   )
 
-  let mainGroups = getMainGroups(scene, dmx.groups)
+  let groups = getSortedGroups(dmx.universe)
+  let mainGroups = getMainGroups(scene, groups)
   let mainSceneFixtures = getFixturesInGroups(dmx.universe, mainGroups)
   let mainSceneFixturesWithinEpicness = mainSceneFixtures.filter(
     ({ fixture }) =>
