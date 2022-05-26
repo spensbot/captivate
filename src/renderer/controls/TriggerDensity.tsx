@@ -1,7 +1,11 @@
 import styled from 'styled-components'
 import { useActiveLightScene, useDmxSelector } from '../redux/store'
 import { useRealtimeSelector } from 'renderer/redux/realtimeStore'
-import { getMainGroups, getFixturesInGroups } from 'shared/dmxUtil'
+import {
+  getMainGroups,
+  getFixturesInGroups,
+  getSortedGroups,
+} from 'shared/dmxUtil'
 
 interface Props {
   splitIndex: number | null
@@ -23,11 +27,12 @@ const Root = styled.div`
 `
 
 function Visualizer({ splitIndex }: Props) {
-  const { universe, fixtureTypesByID, groups } = useDmxSelector((dmx) => dmx)
+  const { universe, fixtureTypesByID } = useDmxSelector((dmx) => dmx)
   const activeLightScene = useActiveLightScene((scene) => scene)
   const { randomizer, outputParams, splitScenes } = useRealtimeSelector(
     (rtState) => rtState
   )
+  let groups = getSortedGroups(universe)
 
   let intensity =
     splitIndex === null
