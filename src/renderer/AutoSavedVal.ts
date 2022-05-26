@@ -1,7 +1,7 @@
 import { indexArray } from 'shared/util'
 
-const FACTOR = 4
-const SLOT_COUNT = 8
+const FACTOR = 2
+const SLOT_COUNT = 12
 const INTERVAL_MS = 1000
 
 interface DatedSave<T> {
@@ -9,15 +9,15 @@ interface DatedSave<T> {
   data: T
 }
 
-function print_time_passed(datedSave: DatedSave<any>) {
+export function printTimePassed(datedSave: DatedSave<any>) {
   let ms = Date.now() - datedSave.dateStamp
   let s = ms / 1000
   if (s < 60) {
-    return `${s.toFixed(0)} seconds`
+    return `${s.toFixed(0)} secs`
   }
   let m = s / 60
   if (m < 60) {
-    return `${m.toFixed(0)} minutes`
+    return `${m.toFixed(0)} mins`
   }
   let h = m / 60
   return `${h.toFixed(0)} hours`
@@ -25,21 +25,28 @@ function print_time_passed(datedSave: DatedSave<any>) {
 
 export default class AutoSavedVal<T> {
   readonly id: string
+  private interval: NodeJS.Timer
   private getCurrent: () => T
 
   constructor(id: string, getCurrent: () => T) {
     this.id = id
     this.getCurrent = getCurrent
+    this.interval = setInterval(() => this.updateSaves(), INTERVAL_MS)
+  }
 
-    setInterval(() => this.updateSaves(), INTERVAL_MS)
+  stop() {
+    clearInterval(this.interval)
+  }
+
+  start() {
+    this.interval = setInterval(() => this.updateSaves(), INTERVAL_MS)
   }
 
   loadAll(): DatedSave<T>[] {
-    const maybeStrings = saveSlots().map((slot) => {
-      return localStorage.getItem(this.key(slot))
-    })
-    const strings = maybeStrings.filter((a) => a !== null) as string[]
-    return strings.map((str) => deserializeDated(str as string))
+    return saveSlots()
+      .map((slot) => localStorage.getItem(this.key(slot)))
+      .filter((a) => a !== null)
+      .map((str) => deserializeDated(str as string))
   }
 
   loadLatest(): T | null {
@@ -66,7 +73,6 @@ export default class AutoSavedVal<T> {
         if (saveCount % updateEvery(slot) === 0) {
           let previousSlotString = localStorage.getItem(this.key(slot - 1))
           if (previousSlotString !== null) {
-            console.log(`saving ${this.key(slot)}`)
             localStorage.setItem(this.key(slot), previousSlotString)
           }
         }
@@ -75,13 +81,6 @@ export default class AutoSavedVal<T> {
     localStorage.setItem(this.key(0), serializeDated(this.getCurrent()))
 
     setSaveCount(this.id, saveCount + 1)
-
-    console.log(`saveSlots`, saveSlots())
-    console.log(`saveCount`, saveCount)
-    console.log(
-      `autoSaves`,
-      this.loadAll().map((a) => print_time_passed(a))
-    )
   }
 }
 

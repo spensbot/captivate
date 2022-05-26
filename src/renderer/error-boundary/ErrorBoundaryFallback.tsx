@@ -1,34 +1,42 @@
 import styled from 'styled-components'
-import { Button } from '@mui/material'
 import { store, resetState } from 'renderer/redux/store'
-import { refreshLastSession } from 'renderer/autosave'
+import { getSaveSlots, startAutoSave, stopAutoSave } from 'renderer/autosave'
 import { initDmxState } from 'renderer/redux/dmxSlice'
 import { initGuiState } from 'renderer/redux/guiSlice'
 import { initControlState } from 'renderer/redux/controlSlice'
 import { initMixerState } from 'renderer/redux/mixerSlice'
-
-function restore() {
-  refreshLastSession(store)
-}
+import { Button, ButtonGroup } from '@mui/material'
+import { useEffect } from 'react'
 
 export default function ErrorBoundaryFallback({
   resetError,
 }: {
   resetError: () => void
 }) {
+  useEffect(() => {
+    stopAutoSave()
+    return () => startAutoSave()
+  }, [])
+
+  let saves = getSaveSlots()
+
   return (
     <Root>
       <Title>An Error Occured :/</Title>
-      <Info>First, try this:</Info>
-      <Button
-        variant="contained"
-        onClick={() => {
-          restore()
-          resetError()
-        }}
-      >
-        Restore Last Auto-Save
-      </Button>
+      <Info>First, try loading a recent save</Info>
+      <ButtonGroup variant="contained">
+        {saves.map(({ timePassed, apply }, i) => (
+          <Button
+            key={i}
+            onClick={() => {
+              apply()
+              resetError()
+            }}
+          >
+            {timePassed}
+          </Button>
+        ))}
+      </ButtonGroup>
       <Info>If that doesn't work, you may have to:</Info>
       <Button
         variant="contained"

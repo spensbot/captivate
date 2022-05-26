@@ -7,7 +7,7 @@ import Mixer from './pages/Mixer'
 import MenuBar from './menu/MenuBar'
 import { useTypedSelector } from './redux/store'
 import FullscreenOverlay from './overlays/FullscreenOverlay'
-import ErrorBoundarySentry from './base/ErrorBoundarySentry'
+import ErrorBoundarySentry from './error-boundary/ErrorBoundarySentry'
 
 export default function App() {
   const activePage = useTypedSelector((state) => state.gui.activePage)

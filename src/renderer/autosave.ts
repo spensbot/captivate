@@ -3,9 +3,10 @@ import {
   CleanReduxState,
   resetState,
   getCleanReduxState,
+  store,
 } from './redux/store'
 import ipcChannels from '../shared/ipc_channels'
-import AutoSavedVal from './AutoSavedVal'
+import AutoSavedVal, { printTimePassed } from './AutoSavedVal'
 
 let autoSavedVal: AutoSavedVal<CleanReduxState> | null = null
 
@@ -24,15 +25,48 @@ export function fixState(state: CleanReduxState): CleanReduxState {
   return state
 }
 
+export function stopAutoSave() {
+  if (autoSavedVal !== null) {
+    autoSavedVal.stop()
+  }
+}
+
+export function startAutoSave() {
+  if (autoSavedVal !== null) {
+    autoSavedVal.start()
+  }
+}
+
+export function getSaveSlots() {
+  if (autoSavedVal === null) {
+    return []
+  } else {
+    return autoSavedVal
+      .loadAll()
+      .slice(2)
+      .map((datedSave) => ({
+        timePassed: printTimePassed(datedSave),
+        apply: () => store.dispatch(resetState(fixState(datedSave.data))),
+      }))
+  }
+}
+
+function restoreLastState(
+  store: ReduxStore,
+  asv: AutoSavedVal<CleanReduxState>
+) {
+  let latest = asv.loadLatest()
+  if (latest !== null) {
+    store.dispatch(resetState(fixState(latest)))
+  }
+}
+
 export const autoSave = (store: ReduxStore) => {
   autoSavedVal = new AutoSavedVal('state', () =>
     getCleanReduxState(store.getState())
   )
 
-  let latest = autoSavedVal.loadLatest()
-  if (latest !== null) {
-    store.dispatch(resetState(latest))
-  }
+  restoreLastState(store, autoSavedVal)
 }
 
 // @ts-ignore: Typescript doesn't recognize the globals set in "src/main/preload.js"
