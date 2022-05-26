@@ -5,6 +5,9 @@ import {
   getCleanReduxState,
 } from './redux/store'
 import ipcChannels from '../shared/ipc_channels'
+import AutoSavedVal from './AutoSavedVal'
+
+let autoSavedVal: AutoSavedVal<CleanReduxState> | null = null
 
 // Modify this function to fix any breaking state changes between upgrades
 export function fixState(state: CleanReduxState): CleanReduxState {
@@ -21,35 +24,23 @@ export function fixState(state: CleanReduxState): CleanReduxState {
   return state
 }
 
-export const captivateFileFilters = {
-  captivate: { name: 'Captivate', extensions: ['.captivate'] },
-}
-
-export function refreshLastSession(store: ReduxStore) {
-  const cachedState = localStorage.getItem(CACHED_STATE_KEY)
-  if (!!cachedState) {
-    // const lastState: ReduxState = fixState( JSON.parse(cachedState) )
-    const lastState: CleanReduxState = fixState(JSON.parse(cachedState))
-    store.dispatch(resetState(lastState))
-  }
-}
-
-function saveState(state: CleanReduxState) {
-  if (!!state) {
-    localStorage.setItem(CACHED_STATE_KEY, JSON.stringify(state))
-  }
-}
-
 export const autoSave = (store: ReduxStore) => {
-  refreshLastSession(store)
+  autoSavedVal = new AutoSavedVal('state', () =>
+    getCleanReduxState(store.getState())
+  )
 
-  setInterval(() => {
-    saveState(getCleanReduxState(store.getState()))
-  }, AUTO_SAVE_INTERVAL)
+  let latest = autoSavedVal.loadLatest()
+  if (latest !== null) {
+    store.dispatch(resetState(latest))
+  }
 }
 
 // @ts-ignore: Typescript doesn't recognize the globals set in "src/main/preload.js"
 const ipcRenderer = window.electron.ipcRenderer
+
+export const captivateFileFilters = {
+  captivate: { name: 'Captivate', extensions: ['.captivate'] },
+}
 
 export async function loadFile(
   title: string,
