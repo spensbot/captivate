@@ -7,7 +7,7 @@ import { LocalMediaConfig } from '../layers/LocalMediaConfig'
 import { Size, defaultSize, fit, cover } from '../../../shared/Size'
 import { getMediaData, MediaData, releaseMediaData } from './MediaData'
 
-const MIN_DELTA = 100 // ms
+const MIN_DELTA = 200 // ms
 
 export default class LocalMediaQueue {
   private index: number = 0
@@ -19,7 +19,6 @@ export default class LocalMediaQueue {
   private lastSwitch = 0
 
   constructor(config: LocalMediaConfig) {
-    console.log(`new LocalMediaQueue()`)
     this.config = config
     this.mesh = new THREE.Mesh(undefined, undefined)
     this.loadQueue = new LoadQueue<MediaData>(
@@ -28,6 +27,10 @@ export default class LocalMediaQueue {
       releaseMediaData,
       (mediaData) => this.updateMediaData(mediaData)
     )
+  }
+
+  updateConfig(config: LocalMediaConfig) {
+    this.config = config
   }
 
   getMesh() {

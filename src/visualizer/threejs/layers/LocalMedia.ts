@@ -13,12 +13,12 @@ export default class LocalMedia extends LayerBase {
   config: LocalMediaConfig
 
   constructor(config: LocalMediaConfig) {
-    console.log(`new LocalMedia()`)
     super()
     if (sharedQueue === null) {
       sharedQueue = new LocalMediaQueue(config)
     }
     this.config = config
+    sharedQueue.updateConfig(config)
     sharedQueue.switch()
     this.scene.add(sharedQueue.getMesh())
   }

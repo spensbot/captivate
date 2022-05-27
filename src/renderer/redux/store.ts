@@ -162,8 +162,6 @@ const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (
     // }
     // if (info.config.light && info.state.light) {
     //   newState.control.present.light = info.state.light
-    //   console.log(info.state.light)
-    //   console.log(newState.control.present.light)
     // }
     // if (info.config.visual && info.state.visual) {
     //   newState.control.present.visual = info.state.visual
