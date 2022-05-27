@@ -2,7 +2,6 @@ import * as THREE from 'three'
 import { loadVideo, releaseVideo, loadImage } from './loaders'
 import { imageExtensions, videoExtensions } from '../layers/LocalMediaConfig'
 import { Size } from '../../../shared/Size'
-import { randomRanged } from '../../../shared/util'
 
 interface MediaDataBase {
   size: Size
@@ -79,7 +78,7 @@ async function getImageData(src: string): Promise<ImageData> {
 
 async function getVideoData(src: string): Promise<VideoData> {
   const video = await loadVideo(src)
-  video.currentTime = randomStartTime(video.duration)
+
   const texture = new THREE.VideoTexture(video)
   const material = new THREE.MeshBasicMaterial({
     color: 0xffffff,
@@ -94,14 +93,5 @@ async function getVideoData(src: string): Promise<VideoData> {
       width: video.videoWidth,
       height: video.videoHeight,
     },
-  }
-}
-
-const MIN_PLAY_TIME = 5 // seconds
-function randomStartTime(duration: number) {
-  if (duration === NaN || duration < MIN_PLAY_TIME) {
-    return 0
-  } else {
-    return randomRanged(0, duration - MIN_PLAY_TIME)
   }
 }
