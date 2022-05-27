@@ -98,6 +98,7 @@ ipcMain.handle(
 ipcMain.handle(
   ipcChannels.get_local_filepaths,
   async (_event, title: string, fileFilters: Electron.FileFilter[]) => {
+    console.log(fileFilters)
     const dialogResult = await dialog.showOpenDialog({
       title: title,
       filters: fileFilters,

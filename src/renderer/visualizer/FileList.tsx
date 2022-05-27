@@ -1,5 +1,4 @@
 import styled from 'styled-components'
-import { FileFilter } from 'electron'
 import { useEffect } from 'react'
 import { getLocalFilepaths } from 'renderer/ipcHandler'
 import { IconButton } from '@mui/material'
@@ -8,24 +7,14 @@ import path from 'path'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import DragHandle from '@mui/icons-material/DragHandle'
 import { reorderArray } from 'shared/util'
+import { FileFilter } from 'electron/renderer'
+import {
+  videoExtensions,
+  imageExtensions,
+} from 'visualizer/threejs/layers/LocalMediaConfig'
 
-const videoFileFilters: FileFilter[] = [
-  { name: 'mp4', extensions: ['mp4'] },
-  { name: 'mov', extensions: ['mov', 'MOV'] },
-  { name: 'webm', extensions: ['webm'] },
-  { name: 'ogg', extensions: ['ogg'] },
-]
-
-const imageFileFilters: FileFilter[] = [
-  { name: 'jpeg', extensions: ['jpg', 'jpeg'] },
-  { name: 'png', extensions: ['png'] },
-  { name: 'gif', extensions: ['gif'] },
-  { name: 'svg', extensions: ['svg'] },
-]
-
-const localMedialFileFilters: FileFilter[] = [
-  ...videoFileFilters,
-  ...imageFileFilters,
+const localMediaFileFilters: FileFilter[] = [
+  { name: 'Media', extensions: [...videoExtensions, ...imageExtensions] },
 ]
 
 interface Props {
@@ -35,7 +24,7 @@ interface Props {
 
 export default function FileList(props: Props) {
   let onAdd = () => {
-    getLocalFilepaths('Select Media', localMedialFileFilters)
+    getLocalFilepaths('Select Media', localMediaFileFilters)
       .then(onAddSuccess)
       .catch((_err) => {})
   }

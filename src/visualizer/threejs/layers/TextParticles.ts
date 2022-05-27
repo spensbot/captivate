@@ -160,6 +160,7 @@ export default class TextParticles extends LayerBase {
   }
 
   dispose() {
+    console.log(`TextParticles dispose()`)
     this.particles.geometry.dispose()
     this.material.dispose()
     this.planeGeometry.dispose()

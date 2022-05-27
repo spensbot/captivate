@@ -12,8 +12,21 @@ export interface LocalMediaConfig {
   period: number
 }
 
-export const videoExtensions = new Set(['mp4'])
-export const imageExtensions = new Set(['jpg', 'jpeg'])
+export const videoExtensions: readonly string[] = [
+  'mkv',
+  'avi',
+  'mp4',
+  'mov',
+  'webm',
+  'ogg',
+]
+export const imageExtensions: readonly string[] = [
+  'jpg',
+  'jpeg',
+  'png',
+  'gif',
+  'svg',
+]
 
 export function initLocalMediaConfig(): LocalMediaConfig {
   return {
