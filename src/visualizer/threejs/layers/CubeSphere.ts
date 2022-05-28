@@ -1,31 +1,38 @@
 import * as THREE from 'three'
 import LayerBase from './LayerBase'
-import { randomRanged } from '../../../shared/util'
 import { Vector3 } from 'three'
 import UpdateResource from '../UpdateResource'
-import { Skew } from '../../../shared/oscillator'
+import { randomRanged, mapFn, Range, rLerp } from '../../../shared/util'
 
 export interface CubeSphereConfig {
   type: 'CubeSphere'
   quantity: number
   size: number
+  speed: Range
 }
 
 export function initCubeSphereConfig(): CubeSphereConfig {
   return {
     type: 'CubeSphere',
-    quantity: 20,
-    size: 3,
+    quantity: 0.5,
+    size: 0.7,
+    speed: { min: 0.1, max: 0.6 },
   }
 }
+
+const mapQuantity = mapFn(3, { min: 1, max: 500 })
+const mapSize = mapFn(1, { min: 0.1, max: 4 })
+const mapSpeed = mapFn(3, { max: 0.01 })
 
 class RandomCube {
   mesh: THREE.Mesh
   material = new THREE.MeshNormalMaterial()
   axis: Vector3
+  config: CubeSphereConfig
 
   constructor(scene: THREE.Scene, config: CubeSphereConfig) {
-    const size = config.size //randomRanged(5, 5)
+    this.config = config
+    const size = mapSize(config.size)
     const geometry = new THREE.BoxGeometry(size, size, size)
     this.mesh = new THREE.Mesh(geometry, this.material)
     this.mesh.rotation.x = randomRanged(0, 100)
@@ -39,10 +46,8 @@ class RandomCube {
   }
 
   update({ dt, scene }: UpdateResource) {
-    this.mesh.rotateOnAxis(
-      this.axis,
-      (dt * (Skew(scene.epicness, 0.6) + 0.5)) / 10000
-    )
+    let speed = mapSpeed(rLerp(this.config.speed, scene.epicness))
+    this.mesh.rotateOnAxis(this.axis, dt * speed)
   }
 
   dispose() {
@@ -56,7 +61,8 @@ export default class CubeSphere extends LayerBase {
 
   constructor(config: CubeSphereConfig) {
     super()
-    this.cubes = Array(Math.floor(config.quantity))
+    const quantity = mapQuantity(config.quantity)
+    this.cubes = Array(Math.floor(quantity))
       .fill(0)
       .map((_) => new RandomCube(this.scene, config))
   }

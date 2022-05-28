@@ -56,8 +56,9 @@ function SpecificFields({ config, onChange }: Props) {
     case 'CubeSphere':
       return (
         <>
-          {makeSlider('Quantity', config, 'quantity', 1, 1000, 1)}
-          {makeSlider('Size', config, 'size', 0, 5, 0.01)}
+          {makeSlider('Quantity', config, 'quantity')}
+          {makeSlider('Size', config, 'size')}
+          {makeRangeSlider('Speed', config, 'speed')}
         </>
       )
     case 'Cubes':
@@ -77,8 +78,8 @@ function SpecificFields({ config, onChange }: Props) {
     case 'Spheres':
       return (
         <>
-          {makeSlider('Quantity', config, 'quantity', 1, 1000, 1)}
-          {makeSlider('Radius', config, 'radius', 0, 5, 0.01)}
+          {makeSlider('Quantity', config, 'quantity')}
+          {makeSlider('Radius', config, 'radius')}
         </>
       )
     case 'TextParticles':
@@ -99,7 +100,7 @@ function SpecificFields({ config, onChange }: Props) {
     case 'TextSpin':
       return (
         <>
-          {makeSlider('Size', config, 'size', 0, 5, 0.01)}
+          {makeSlider('Size', config, 'size')}
           {makeTextInput('Text', config, 'text')}
         </>
       )

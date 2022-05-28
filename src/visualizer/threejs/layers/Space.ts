@@ -37,8 +37,8 @@ export function initSpaceConfig(): SpaceConfig {
 const mapRandomize = mapFn(4, { max: 100 })
 const mapSpeed = mapFn(2, { max: 10 })
 const mapCount = mapFn(3, { min: 1, max: 50000 })
-const mapWidth = mapFn(2, { min: 0, max: 200 })
-const mapHeight = mapFn(2, { min: 0, max: 200 })
+const mapWidth = mapFn(2, { max: 200 })
+const mapHeight = mapFn(2, { max: 200 })
 
 const dummy = new THREE.Object3D()
 
