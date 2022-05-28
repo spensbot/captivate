@@ -51,9 +51,9 @@ export default class LocalMediaQueue {
     }
     const path = this.config.paths[this.index]
     if (path === undefined) {
-      return getMediaData(no_media_image)
+      return await getMediaData(no_media_image)
     }
-    return getMediaData(pathUrl(path))
+    return await getMediaData(pathUrl(path))
   }
 
   switch() {

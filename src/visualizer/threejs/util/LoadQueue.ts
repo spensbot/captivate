@@ -27,7 +27,7 @@ export default class LoadQueue<T> {
     this.onFirstLoad = onFirstLoad
 
     this.queue = Array(size)
-      .fill(0)
+      .fill(null)
       .map((_, i) => this.loadNextAndBind(i))
   }
 
@@ -46,9 +46,12 @@ export default class LoadQueue<T> {
     let i = 0
     for (const loadable of this.queue) {
       if (i !== this.currentIndex && loadable.state === 'ready') {
-        const currentItem = this.queue[this.currentIndex]
-        if (currentItem.state === 'ready') {
-          this.releaseItem(currentItem.data)
+        const current = this.queue[this.currentIndex]
+        if (current.state === 'ready') {
+          this.releaseItem(current.data)
+        } else {
+          current.canelled = true
+          current.promise.then((data) => this.releaseItem(data))
         }
         this.queue[this.currentIndex] = this.loadNextAndBind(this.currentIndex)
         this.currentIndex = i
@@ -77,10 +80,7 @@ export default class LoadQueue<T> {
       })
       .catch((err) => {
         console.error(`LoadQueue Load Error`, err)
-        this.queue[index] = {
-          state: 'loading',
-          promise: this.loadNext(),
-        }
+        this.loadNextAndBind(index)
       })
     return {
       state: 'loading',

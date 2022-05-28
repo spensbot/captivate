@@ -41,6 +41,6 @@ export default class LocalMedia extends LayerBase {
   }
 
   dispose() {
-    // We don't need to dispose anything since the video queue sticks around for the life of the app
+    // We don't need to dispose anything since the LocalMediaQueue sticks around for the life of the app
   }
 }

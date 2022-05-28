@@ -29,6 +29,7 @@ export default function ActiveEffect({}: Props) {
         onChange={(newType) =>
           dispatch(activeVisualSceneEffect_set(initEffectConfig(newType)))
         }
+        style={{ fontSize: '1.2rem' }}
       />
       <EffectEditor
         config={effect}

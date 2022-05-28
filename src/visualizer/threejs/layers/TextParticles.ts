@@ -7,8 +7,7 @@ import { colorFromHSV, distance } from '../util/util'
 import { randomRanged } from '../../../shared/util'
 import { gravity, ParticleState } from '../util/particlePhysics'
 import { TextParticlesConfig } from './TextParticlesConfig'
-import vertexShader from '../shaders/particles.vert'
-import fragmentShader from '../shaders/particles.frag'
+import shaders from '../shaders/shaders'
 import UpdateResource from '../UpdateResource'
 
 const attrib = {
@@ -36,9 +35,8 @@ export default class TextParticles extends LayerBase {
         color: { value: new THREE.Color(0xffffff) },
         pointTexture: { value: particles.circle },
       },
-      vertexShader,
-      fragmentShader,
-
+      vertexShader: shaders.particles.vertex,
+      fragmentShader: shaders.particles.fragment,
       blending: THREE.AdditiveBlending,
       depthTest: false,
       transparent: true,

@@ -24,6 +24,7 @@ export default function VisualizerSceneEditor({}: Props) {
         onChange={(newType) =>
           dispatch(setVisualSceneConfig(initLayerConfig(newType)))
         }
+        style={{ fontSize: '1.4rem' }}
       />
       <LayerEditor
         config={config}
