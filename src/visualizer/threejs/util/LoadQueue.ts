@@ -67,16 +67,8 @@ export default class LoadQueue<T> {
     promise
       .then((data) => {
         const loadable = this.queue[index]
-        if (loadable.state === 'loading' && loadable.canelled) return
-        this.queue[index] = {
-          state: 'ready',
-          data,
-        }
-        if (this.onFirstLoad !== null) {
-          this.currentIndex = index
-          this.onFirstLoad(data)
-          this.onFirstLoad = null
-        }
+        if (isCancelled(loadable)) return
+        this.setData(data, index)
       })
       .catch((err) => {
         console.error(`LoadQueue Load Error`, err)
@@ -97,4 +89,20 @@ export default class LoadQueue<T> {
       }
     })
   }
+
+  setData(data: T, index: number) {
+    this.queue[index] = {
+      state: 'ready',
+      data,
+    }
+    if (this.onFirstLoad !== null) {
+      this.currentIndex = index
+      this.onFirstLoad(data)
+      this.onFirstLoad = null
+    }
+  }
+}
+
+function isCancelled(loadable: Loadable<any>) {
+  return loadable.state === 'loading' && loadable.canelled
 }
