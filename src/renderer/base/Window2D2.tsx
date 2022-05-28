@@ -1,4 +1,4 @@
-import { Window2D_t } from '../../types/baseTypes'
+import { Window2D_t } from '../../shared/window'
 
 interface Props {
   window2D: Window2D_t

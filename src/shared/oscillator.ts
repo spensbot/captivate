@@ -1,4 +1,13 @@
-import { Normalized } from '../types/baseTypes'
+import { Normalized } from '../math/util'
+import {
+  skewBezier1,
+  skewBezier2,
+  skewPower,
+  skewSymmetric,
+} from '../math/skew'
+
+const SKEW_FN = skewBezier2
+// const SKEW_FN = skewPower
 
 export enum LfoShape {
   Sin,
@@ -41,40 +50,8 @@ export function GetValueFromPhase(lfo: Lfo, phase: Normalized) {
   const baseValue = GetValue_base(lfo, phaseShifted)
   // return Flip(Skew(SymmetricSkew(baseValue, lfo.symmetricSkew), lfo.skew), lfo.flip)
   return lfo.shape == LfoShape.Sin
-    ? Flip(SymmetricSkew(baseValue, lfo.skew), lfo.flip)
-    : Flip(Skew(baseValue, lfo.skew), lfo.flip)
-}
-
-function denormalize(skew: Normalized) {
-  const factor = getBaseLog(0.5, 0.0099)
-  return Math.pow(skew, factor) * 100 + 0.01
-}
-
-export function Skew(value: Normalized, skew: Normalized) {
-  // first, skew the normalized skew value so it ranges from 0 to 100
-  const deNormalizedSkew = denormalize(skew)
-
-  return Math.pow(value, deNormalizedSkew)
-}
-
-export function UnSkew(skewed: Normalized, skew: Normalized) {
-  const deNormalizedSkew = denormalize(skew)
-
-  return Math.pow(skewed, 1 / deNormalizedSkew)
-}
-
-function getBaseLog(x: number, y: number) {
-  return Math.log(y) / Math.log(x)
-}
-
-function SymmetricSkew(value: Normalized, skew: Normalized) {
-  let output = value * 2.0 - 1.0
-  if (output > 0) {
-    output = Skew(output, skew)
-  } else {
-    output = -Skew(-output, skew)
-  }
-  return (output + 1) / 2
+    ? Flip(skewSymmetric(baseValue, lfo.skew, SKEW_FN), lfo.flip)
+    : Flip(SKEW_FN(baseValue, lfo.skew), lfo.flip)
 }
 
 function Flip(value: Normalized, flip: Normalized) {

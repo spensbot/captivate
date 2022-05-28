@@ -1,4 +1,4 @@
-import { Normalized } from '../types/baseTypes'
+import { Normalized } from '../math/util'
 import { Params } from './params'
 
 export type Color = 'red' | 'green' | 'blue' | 'white' | 'black'

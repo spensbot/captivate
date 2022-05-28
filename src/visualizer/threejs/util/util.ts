@@ -1,7 +1,6 @@
 import { PerspectiveCamera } from 'three'
 import convert from 'color-convert'
-import { Normalized } from 'types/baseTypes'
-import { lerp } from '../../../shared/util'
+import { Normalized, lerp } from '../../../math/util'
 
 export function colorFromHSV(h: number, s: number, v: number) {
   return Number('0x' + convert.hsv.hex([h * 360, s * 50, v * 100]))

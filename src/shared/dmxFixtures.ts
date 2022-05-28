@@ -1,4 +1,4 @@
-import { Window2D_t } from '../types/baseTypes'
+import { Window2D_t } from '../shared/window'
 import { Color } from './dmxColors'
 import { nanoid } from 'nanoid'
 import { DEFAULT_GROUP } from './Scenes'

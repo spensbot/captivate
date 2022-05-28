@@ -26,6 +26,7 @@ import {
 } from '../../shared/dmxUtil'
 
 let _nodeLink = new NodeLink()
+_nodeLink.setIsPlaying(true)
 let _ipcCallbacks: IPC_Callbacks | null = null
 let _controlState: CleanReduxState | null = null
 let _realtimeState: RealtimeState = initRealtimeState()

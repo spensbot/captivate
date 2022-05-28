@@ -3,7 +3,10 @@ import Select from 'renderer/base/Select'
 import styled from 'styled-components'
 import AddIcon from '@mui/icons-material/Add'
 import { MultilineInput } from 'renderer/base/Input'
-import { Range } from 'types/baseTypes'
+import { Range } from 'math/range'
+
+// NOTE: This file is littered with @ts-ignore and smelly casts.
+// It's a necessary evil to simplify Config controls... But use with caution
 
 export default function makeControls<SuperConfig>(
   superConfig: SuperConfig,
@@ -136,10 +139,10 @@ export default function makeControls<SuperConfig>(
     )
   }
 
-  function makeSelect<Config, Val>(
+  function makeSelect<Config, T extends string>(
     label: string,
     config: Config,
-    items: Val[],
+    items: T[],
     key: keyof Config
   ) {
     return (
@@ -147,8 +150,7 @@ export default function makeControls<SuperConfig>(
         <Label>{label}</Label>
         <Select
           label={label}
-          val={config[key]}
-          //@ts-ignore
+          val={config[key] as unknown as T}
           items={items}
           onChange={makeOnChange(key)}
         />
