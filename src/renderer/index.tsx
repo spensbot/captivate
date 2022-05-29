@@ -5,8 +5,7 @@ import App from './App'
 import * as themes from './theme'
 import { Provider } from 'react-redux'
 import { store, getCleanReduxState } from './redux/store'
-import { setDmx, setMidi } from './redux/guiSlice'
-import { setActiveSceneIndex } from './redux/controlSlice'
+import { setDmx, setMidi, setSaving, setLoading } from './redux/guiSlice'
 import {
   realtimeStore,
   realtimeContext,
@@ -43,6 +42,23 @@ ipc_setup({
   on_dispatch: (action) => {
     store.dispatch(action)
   },
+  on_main_command: (command) => {
+    if (command.type === 'undo') {
+      const group = getUndoGroup(store.getState())
+      if (group !== null) {
+        store.dispatch(undoAction(group))
+      }
+    } else if (command.type === 'redo') {
+      const group = getUndoGroup(store.getState())
+      if (group !== null) {
+        store.dispatch(redoAction(group))
+      }
+    } else if (command.type === 'load') {
+      store.dispatch(setLoading(null))
+    } else if (command.type === 'save') {
+      store.dispatch(setSaving(true))
+    }
+  },
 })
 
 function animateRealtimeState() {
@@ -55,37 +71,6 @@ animateRealtimeState()
 send_control_state(getCleanReduxState(store.getState()))
 
 store.subscribe(() => send_control_state(getCleanReduxState(store.getState())))
-
-// document.onkeydown = (e) => {
-//   const asInt = parseInt(e.key)
-//   if (asInt !== NaN) {
-//     if (asInt === 0) {
-//       store.dispatch(
-//         setActiveSceneIndex({
-//           sceneType: 'light',
-//           val: 10,
-//         })
-//       )
-//     } else {
-//       store.dispatch(
-//         setActiveSceneIndex({
-//           sceneType: 'light',
-//           val: asInt - 1,
-//         })
-//       )
-//     }
-//   }
-//   if (e.metaKey && e.key === 'z') {
-//     const group = getUndoGroup(store.getState())
-//     if (group !== null) {
-//       if (e.shiftKey) {
-//         store.dispatch(redoAction(group))
-//       } else {
-//         store.dispatch(undoAction(group))
-//       }
-//     }
-//   }
-// }
 
 render(
   <Provider store={store}>

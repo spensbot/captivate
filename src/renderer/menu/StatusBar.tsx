@@ -103,9 +103,9 @@ export default function StatusBar() {
         <UsbIcon />
       </IconButton>
       <SaveLoad />
-      <IconButton onClick={introduceBadState}>
+      {/* <IconButton onClick={introduceBadState}>
         <BugIcon />
-      </IconButton>
+      </IconButton> */}
       <Connections>
         <ConnectionStatus type={'midi'} />
         <ConnectionStatus type={'dmx'} />

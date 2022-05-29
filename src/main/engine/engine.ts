@@ -38,6 +38,10 @@ function _tapTempo() {
   })
 }
 
+export function getIpcCallbacks() {
+  return _ipcCallbacks
+}
+
 export function start(
   renderer: WebContents,
   visualizerContainer: VisualizerContainer
@@ -90,6 +94,7 @@ export function start(
       })
     }
   }, 1000 / 90)
+  return _ipcCallbacks
 }
 
 export function stop() {

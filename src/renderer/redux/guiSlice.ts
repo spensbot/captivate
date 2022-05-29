@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
+import { SaveInfo } from '../../shared/save'
 import {
   MidiConnections,
   DmxConnections,
@@ -14,6 +15,8 @@ export interface GuiState {
   connectionMenu: boolean
   midi: MidiConnections
   dmx: DmxConnections
+  saving: boolean
+  loading: SaveInfo | null
 }
 
 export function initGuiState(): GuiState {
@@ -23,6 +26,8 @@ export function initGuiState(): GuiState {
     connectionMenu: false,
     midi: initMidiConnections(),
     dmx: initDmxConnections(),
+    saving: false,
+    loading: null,
   }
 }
 
@@ -45,6 +50,12 @@ export const guiSlice = createSlice({
     setDmx: (state, { payload }: PayloadAction<DmxConnections>) => {
       state.dmx = payload
     },
+    setSaving: (state, { payload }: PayloadAction<boolean>) => {
+      state.saving = payload
+    },
+    setLoading: (state, { payload }: PayloadAction<SaveInfo | null>) => {
+      state.loading = payload
+    },
   },
 })
 
@@ -54,6 +65,8 @@ export const {
   setConnectionsMenu,
   setMidi,
   setDmx,
+  setSaving,
+  setLoading,
 } = guiSlice.actions
 
 export default guiSlice.reducer

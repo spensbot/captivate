@@ -1,5 +1,8 @@
 import { ipcMain, WebContents, dialog } from 'electron'
-import ipcChannels, { UserCommand } from '../../shared/ipc_channels'
+import ipcChannels, {
+  UserCommand,
+  MainCommand,
+} from '../../shared/ipc_channels'
 import ipcChannelsVisualizer from '../../visualizer/ipcChannels'
 import { CleanReduxState } from '../../renderer/redux/store'
 import { RealtimeState } from '../../renderer/redux/realtimeStore'
@@ -52,6 +55,9 @@ export function ipcSetup(config: Config) {
           payload
         )
       }
+    },
+    send_main_command: (command: MainCommand) => {
+      _config.renderer.send(ipcChannels.main_command, command)
     },
   }
 }

@@ -9,6 +9,7 @@ export default {
   save_file: 'save_file',
   open_visualizer: 'open_visualizer',
   get_local_filepaths: 'get_local_filepaths',
+  main_command: 'main_command',
 } as const
 
 export interface SetLinkEnabled {
@@ -47,3 +48,17 @@ export type UserCommand =
   | SetIsPlaying
   | SetBPM
   | TapTempo
+
+interface Undo {
+  type: 'undo'
+}
+interface Redo {
+  type: 'redo'
+}
+interface Save {
+  type: 'save'
+}
+interface Load {
+  type: 'load'
+}
+export type MainCommand = Undo | Redo | Save | Load

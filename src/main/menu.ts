@@ -5,17 +5,24 @@ import {
   BrowserWindow,
   MenuItemConstructorOptions,
 } from 'electron'
+import { IPC_Callbacks } from './engine/ipcHandler'
 
 interface DarwinMenuItemConstructorOptions extends MenuItemConstructorOptions {
   selector?: string
   submenu?: DarwinMenuItemConstructorOptions[] | Menu
 }
 
+interface MenuResource {
+  ipcCallbacks: IPC_Callbacks
+}
+
 export default class MenuBuilder {
   mainWindow: BrowserWindow
+  res: MenuResource
 
-  constructor(mainWindow: BrowserWindow) {
+  constructor(mainWindow: BrowserWindow, res: MenuResource) {
     this.mainWindow = mainWindow
+    this.res = res
   }
 
   buildMenu(): Menu {
@@ -73,25 +80,49 @@ export default class MenuBuilder {
     const subMenuFile: DarwinMenuItemConstructorOptions = {
       label: 'File',
       submenu: [
-        { label: 'Save', accelerator: 'Command+S', click: () => {} },
         {
-          label: 'Save Selective',
-          accelerator: 'Shift+Command+S',
-          click: () => {},
+          label: 'Save',
+          accelerator: 'Command+S',
+          click: () => {
+            this.res.ipcCallbacks.send_main_command({ type: 'save' })
+          },
         },
-        { label: 'Load', accelerator: 'Command+O', click: () => {} },
+        // {
+        //   label: 'Save Selective',
+        //   accelerator: 'Shift+Command+S',
+        //   click: () => {},
+        // },
         {
-          label: 'Load Selective',
-          accelerator: 'Shift+Command+O',
-          click: () => {},
+          label: 'Load',
+          accelerator: 'Command+O',
+          click: () => {
+            this.res.ipcCallbacks.send_main_command({ type: 'load' })
+          },
         },
+        // {
+        //   label: 'Load Selective',
+        //   accelerator: 'Shift+Command+O',
+        //   click: () => {},
+        // },
       ],
     }
     const subMenuEdit: DarwinMenuItemConstructorOptions = {
       label: 'Edit',
       submenu: [
-        { label: 'Undo', accelerator: 'Command+Z', selector: 'undo:' },
-        { label: 'Redo', accelerator: 'Shift+Command+Z', selector: 'redo:' },
+        {
+          label: 'Undo',
+          accelerator: 'Command+Z',
+          click: () => {
+            this.res.ipcCallbacks.send_main_command({ type: 'undo' })
+          },
+        },
+        {
+          label: 'Redo',
+          accelerator: 'Shift+Command+Z',
+          click: () => {
+            this.res.ipcCallbacks.send_main_command({ type: 'redo' })
+          },
+        },
         { type: 'separator' },
         { label: 'Cut', accelerator: 'Command+X', selector: 'cut:' },
         { label: 'Copy', accelerator: 'Command+C', selector: 'copy:' },

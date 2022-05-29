@@ -29,6 +29,7 @@ contextBridge.exposeInMainWorld('electron', {
         'new_control_state',
         'new_time_state',
         'new_visualizer_state',
+        'main_command',
       ]
       if (validChannels.includes(channel)) {
         // Deliberately strip event as it includes `sender`

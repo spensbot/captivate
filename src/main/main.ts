@@ -127,16 +127,16 @@ const createWindow = async () => {
     }
   })
 
-  const menuBuilder = new MenuBuilder(mainWindow)
-  menuBuilder.buildMenu()
-
   // Open urls in the user's browser
   mainWindow.webContents.on('new-window', (event, url) => {
     event.preventDefault()
     shell.openExternal(url)
   })
 
-  engine.start(mainWindow.webContents, visualizerContainer)
+  const ipcCallbacks = engine.start(mainWindow.webContents, visualizerContainer)
+
+  const menuBuilder = new MenuBuilder(mainWindow, { ipcCallbacks })
+  menuBuilder.buildMenu()
 
   // Remove this if your app does not use auto updates
   // eslint-disable-next-line

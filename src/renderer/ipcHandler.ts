@@ -1,4 +1,4 @@
-import ipc_channels, { UserCommand } from '../shared/ipc_channels'
+import ipc_channels, { UserCommand, MainCommand } from '../shared/ipc_channels'
 import { CleanReduxState } from './redux/store'
 import { RealtimeState } from './redux/realtimeStore'
 import * as dmxConnection from '../main/engine/dmxConnection'
@@ -10,6 +10,7 @@ interface Config {
   on_midi_connection_update: (payload: midiConnection.UpdatePayload) => void
   on_time_state: (time_state: RealtimeState) => void
   on_dispatch: (action: PayloadAction) => void
+  on_main_command: (command: MainCommand) => void
 }
 
 let _config: Config
@@ -38,6 +39,10 @@ export function ipc_setup(config: Config) {
 
   ipcRenderer.on(ipc_channels.dispatch, (action: PayloadAction<any>) =>
     _config.on_dispatch(action)
+  )
+
+  ipcRenderer.on(ipc_channels.main_command, (command: MainCommand) =>
+    _config.on_main_command(command)
   )
 }
 
