@@ -14,7 +14,7 @@ export function SVCursorOutput({ splitIndex }: Props) {
     <Cursor
       x={saturation}
       y={brightness}
-      color="#7777"
+      color="#777"
       withHorizontal
       withVertical
     />

@@ -18,6 +18,8 @@ import { createTheme } from '@mui/material/styles'
 import { autoSave } from './autosave'
 import { getUndoGroup, undoAction, redoAction } from './controls/UndoRedo'
 import './react_error_logging'
+import { load } from './menu/SaveLoad'
+import { getSaveConfig } from 'shared/save'
 
 const theme = themes.dark()
 const muiTheme = createTheme({
@@ -54,7 +56,16 @@ ipc_setup({
         store.dispatch(redoAction(group))
       }
     } else if (command.type === 'load') {
-      store.dispatch(setLoading(null))
+      load()
+        .then((state) =>
+          store.dispatch(
+            setLoading({
+              state,
+              config: getSaveConfig(state),
+            })
+          )
+        )
+        .catch((err) => console.warn(err))
     } else if (command.type === 'save') {
       store.dispatch(setSaving(true))
     }

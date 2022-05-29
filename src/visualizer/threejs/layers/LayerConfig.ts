@@ -24,7 +24,7 @@ export type VisualizerType = LayerConfig['type']
 //ADD LAYER!!!
 export const visualizerTypeList: VisualizerType[] = [
   'CubeSphere',
-  'Cubes',
+  // 'Cubes',
   'Spheres',
   'TextParticles',
   'TextSpin',
@@ -46,7 +46,7 @@ export function initLayerConfig(type: VisualizerType): LayerConfig {
 }
 
 //ADD LAYER!!!
-export const layerDisplayNames: { [key in VisualizerType]?: string } = {
+export const layerDisplayNames: { [key in VisualizerType]: string } = {
   CubeSphere: 'Cube Sphere',
   Cubes: 'Cubes',
   Spheres: 'Spheres',

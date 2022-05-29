@@ -2,6 +2,8 @@ import styled from 'styled-components'
 import Select from '../base/Select'
 import {
   effectTypes,
+  effectDisplayNames,
+  effectTypeFromDisplayName,
   EffectConfig,
   initEffectConfig,
 } from 'visualizer/threejs/effects/effectConfigs'
@@ -24,10 +26,14 @@ export default function ActiveEffect({}: Props) {
     <Root>
       <Select
         label="Effect"
-        val={effect.type}
-        items={effectTypes}
-        onChange={(newType) =>
-          dispatch(activeVisualSceneEffect_set(initEffectConfig(newType)))
+        val={effectDisplayNames[effect.type]}
+        items={effectTypes.map((type) => effectDisplayNames[type])}
+        onChange={(newDisplayName) =>
+          dispatch(
+            activeVisualSceneEffect_set(
+              initEffectConfig(effectTypeFromDisplayName(newDisplayName))
+            )
+          )
         }
         style={{ fontSize: '1.2rem' }}
       />

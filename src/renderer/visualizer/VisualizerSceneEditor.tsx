@@ -4,6 +4,8 @@ import Select from '../base/Select'
 import {
   visualizerTypeList,
   initLayerConfig,
+  layerDisplayNames,
+  layerTypeFromDisplayName,
 } from '../../visualizer/threejs/layers/LayerConfig'
 import { useDispatch } from 'react-redux'
 import { setVisualSceneConfig } from '../redux/controlSlice'
@@ -19,10 +21,14 @@ export default function VisualizerSceneEditor({}: Props) {
     <Root>
       <Select
         label="Type"
-        val={config.type}
-        items={visualizerTypeList}
-        onChange={(newType) =>
-          dispatch(setVisualSceneConfig(initLayerConfig(newType)))
+        val={layerDisplayNames[config.type]}
+        items={visualizerTypeList.map((type) => layerDisplayNames[type])}
+        onChange={(displayName) =>
+          dispatch(
+            setVisualSceneConfig(
+              initLayerConfig(layerTypeFromDisplayName(displayName))
+            )
+          )
         }
         style={{ fontSize: '1.4rem' }}
       />

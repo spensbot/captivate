@@ -21,6 +21,8 @@ export function fixState(state: CleanReduxState): CleanReduxState {
   //       scene.effectsConfig[i] = initEffectConfig(scene.effectsConfig[i].type)
   //     }
   //   })
+  state.gui.loading = null
+  state.gui.saving = false
 
   return state
 }

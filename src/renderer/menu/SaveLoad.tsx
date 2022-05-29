@@ -3,11 +3,10 @@ import styled from 'styled-components'
 import SaveIcon from '@mui/icons-material/Save'
 import LoadIcon from '@mui/icons-material/FileOpen'
 import IconButton from '@mui/material/IconButton'
-import { store, applySave } from '../redux/store'
+import { store, applySave, useTypedSelector } from '../redux/store'
 import { saveFile, loadFile, captivateFileFilters } from '../autosave'
 import Popup from 'renderer/base/Popup'
 import { Button, Checkbox } from '@mui/material'
-import useSafeCallback from 'renderer/hooks/useSafeCallback'
 import {
   SaveState,
   fixState,
@@ -15,11 +14,11 @@ import {
   saveTypes,
   displaySaveType,
   getSaveConfig,
-  SaveInfo,
 } from 'shared/save'
 import { useDispatch } from 'react-redux'
+import { setSaving, setLoading } from 'renderer/redux/guiSlice'
 
-async function load() {
+export async function load() {
   const serializedSaveState = await loadFile('Load Scenes', [
     captivateFileFilters.captivate,
   ])
@@ -64,7 +63,8 @@ export default function SaveLoad({}: Props) {
 }
 
 function Save() {
-  const [isOpen, setIsOpen] = useState(false)
+  const isSaving = useTypedSelector((state) => state.gui.saving)
+  const dispatch = useDispatch()
   const [saveConfig, setSaveConfig] = useState<SaveConfig>({
     light: true,
     visual: true,
@@ -73,11 +73,14 @@ function Save() {
   })
   return (
     <Root>
-      <IconButton onClick={() => setIsOpen(true)}>
+      <IconButton onClick={() => dispatch(setSaving(true))}>
         <SaveIcon />
       </IconButton>
-      {isOpen && (
-        <Popup title="Save Configuration" onClose={() => setIsOpen(false)}>
+      {isSaving && (
+        <Popup
+          title="Save Configuration"
+          onClose={() => dispatch(setSaving(false))}
+        >
           <SaveConfig
             config={saveConfig}
             onChange={(newConfig) => setSaveConfig(newConfig)}
@@ -91,38 +94,45 @@ function Save() {
 }
 
 function Load() {
-  const [info, setInfo] = useState<SaveInfo | null>(null)
+  const loading = useTypedSelector((state) => state.gui.loading)
   const dispatch = useDispatch()
 
-  const onLoad = useSafeCallback((state: SaveState) => {
-    setInfo({
-      state,
-      config: getSaveConfig(state),
-    })
-  })
-  const onLoadErr = useSafeCallback((err: any) => {
+  const onLoad = (state: SaveState) =>
+    dispatch(
+      setLoading({
+        state,
+        config: getSaveConfig(state),
+      })
+    )
+
+  const onLoadErr = (err: any) => {
     console.warn(err)
-  })
+  }
 
   return (
     <Root>
       <IconButton onClick={() => load().then(onLoad).catch(onLoadErr)}>
         <LoadIcon />
       </IconButton>
-      {info !== null && (
-        <Popup title="Load Configuration" onClose={() => setInfo(null)}>
+      {loading !== null && (
+        <Popup
+          title="Load Configuration"
+          onClose={() => dispatch(setLoading(null))}
+        >
           <SaveConfig
-            config={info.config}
-            valid={getSaveConfig(info.state)}
+            config={loading.config}
+            valid={getSaveConfig(loading.state)}
             onChange={(newConfig) =>
-              setInfo({
-                ...info,
-                config: newConfig,
-              })
+              dispatch(
+                setLoading({
+                  ...loading,
+                  config: newConfig,
+                })
+              )
             }
           />
           <Sp />
-          <Button onClick={() => dispatch(applySave(info))}>Load</Button>
+          <Button onClick={() => dispatch(applySave(loading))}>Load</Button>
         </Popup>
       )}
     </Root>

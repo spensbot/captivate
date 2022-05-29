@@ -165,7 +165,7 @@ export const effectTypes: EffectType[] = [
   // ... I tried so hard
 ]
 
-export const effectDisplayNames: { [key in EffectType]?: string } = {
+export const effectDisplayNames: { [key in EffectType]: string } = {
   AfterImage: 'Motion Blur',
   DotScreen: 'Dot Screen',
   Film: 'Film',
@@ -173,7 +173,9 @@ export const effectDisplayNames: { [key in EffectType]?: string } = {
   HalfTone: 'Half Tone',
   LightSync: 'Light Sync',
   Pixel: 'Pixel',
-  UnrealBloom: 'Bloom (Glow)',
+  UnrealBloom: 'Bloom',
+  RenderLayer: 'Layer',
+  AdaptiveToneMapping: 'Adaptive Tone Mapping',
 } as const
 
 export function effectTypeFromDisplayName(searchFor: string): EffectType {

@@ -9,6 +9,7 @@ import { IconButton } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import DragHandleIcon from '@mui/icons-material/DragHandle'
 import { Draggable } from 'react-beautiful-dnd'
+import { effectDisplayNames } from 'visualizer/threejs/effects/effectConfigs'
 
 interface Props {
   index: number
@@ -29,6 +30,7 @@ export default function Effect({ index }: Props) {
     return activeVisualScene.activeEffectIndex === index
   })
   const dispatch = useDispatch()
+  const displayName = effectDisplayNames[effect.type]
 
   return (
     <Draggable draggableId={activeVisualSceneId + index} index={index}>
@@ -40,7 +42,7 @@ export default function Effect({ index }: Props) {
             }
             isActive={isActive}
           >
-            <Text>{effect.type}</Text>
+            <Text>{displayName}</Text>
             <div style={{ flex: '1 0 0' }} />
             <div {...provided.dragHandleProps}>
               <DragHandleIcon />
