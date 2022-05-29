@@ -16,9 +16,9 @@ export interface CubeSphereConfig {
 export function initCubeSphereConfig(): CubeSphereConfig {
   return {
     type: 'CubeSphere',
-    quantity: 0.5,
+    quantity: 0.35,
     size: 0.7,
-    speed: { min: 0.1, max: 0.6 },
+    speed: { min: 0.2, max: 0.5 },
   }
 }
 

@@ -7,7 +7,7 @@ export interface TextSpinConfig {
 export function initTextSpinConfig(): TextSpinConfig {
   return {
     type: 'TextSpin',
-    size: 1,
+    size: 0.5,
     text: 'FEEL\nWITH\nME',
   }
 }

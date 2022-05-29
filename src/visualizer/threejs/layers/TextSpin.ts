@@ -12,6 +12,9 @@ import { Spin, Wobble, Strobe } from '../util/animations'
 import { colorFromHSV } from '../util/util'
 import UpdateResource from '../UpdateResource'
 import { TextSpinConfig } from './TextSpinConfig'
+import { mapFn } from 'shared/util'
+
+const mapSize = mapFn(1.2, { min: 0.1, max: 2 })
 
 export default class TextSpin extends LayerBase {
   private text: TextMesh_t
@@ -23,16 +26,18 @@ export default class TextSpin extends LayerBase {
   constructor(config: TextSpinConfig) {
     super()
 
+    const size = mapSize(config.size)
+
     this.text = textMesh(
       config.text,
-      config.size,
+      size,
       'helvetiker_bold',
       new THREE.MeshBasicMaterial()
     )
 
     this.outline = textOutline(
       config.text,
-      config.size,
+      size,
       'helvetiker_bold',
       new THREE.MeshBasicMaterial()
     )

@@ -14,7 +14,7 @@ export class DotScreen extends EffectBase {
     this.pass = new DotScreenPass(
       new Vector2(config.centerX, config.centerY),
       config.angle,
-      config.scale
+      1 - config.scale
     )
   }
 }

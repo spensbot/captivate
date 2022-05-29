@@ -50,10 +50,11 @@ function SpecificFields({ config, onChange }: Props) {
     case 'DotScreen':
       return (
         <>
-          {makeSlider('Center X', config, 'centerX')}
+          {makeSlider('Dot Size', config, 'scale', 0.01, 1, 0.001)}
+          {/* I Don't think these other params have a meaningful effect */}
+          {/* {makeSlider('Center X', config, 'centerX')}
           {makeSlider('Center Y', config, 'centerY')}
-          {makeSlider('Angle', config, 'angle')}
-          {makeSlider('Scale', config, 'scale', 0.01, 1, 0.001)}
+          {makeSlider('Angle', config, 'angle')} */}
         </>
       )
     case 'Film':

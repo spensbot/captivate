@@ -7,6 +7,8 @@ import { EffectsConfig, initEffectsConfig } from './effects/effectConfigs'
 import EffectManager from './EffectManager'
 import { initLayerConfig, LayerConfig } from './layers/LayerConfig'
 
+const MAX_DT = 100 // ms
+
 export interface VisualizerResource {
   rt: RealtimeState
   state: CleanReduxState
@@ -48,7 +50,7 @@ export default class VisualizerManager {
     const effectsConfig = visualScene?.effectsConfig || []
     const layerConfig = visualScene.config
     const stuff = {
-      dt,
+      dt: Math.min(dt, MAX_DT),
       params: res.rt.outputParams,
       time: res.rt.time,
       scene: control.light.byId[control.light.active],

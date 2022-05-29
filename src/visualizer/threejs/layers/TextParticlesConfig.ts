@@ -17,17 +17,7 @@ export interface TextParticlesConfig {
 export function initTextParticlesConfig(): TextParticlesConfig {
   return {
     type: 'TextParticles',
-    text: [
-      'CAPTIVATE',
-      'YOUR',
-      'AUDIENCE',
-      'BE\nHERE\nNOW',
-      'FEEL',
-      'WITH',
-      'ME',
-      'FEEL\nWITH\nME',
-      "IT's\nOK",
-    ],
+    text: ['CAPTIVATE', 'YOUR', 'AUDIENCE'],
     fontType: 'zsd',
     textSize: 1.5,
     particleColor: 0xffffff,

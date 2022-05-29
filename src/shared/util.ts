@@ -41,12 +41,12 @@ export function getFilename(path: string) {
   return path.substring(path.lastIndexOf('/') + 1)
 }
 
-export function indexArray(length: number) {
-  return Array.from(Array(length).keys())
+export function indexArray(len: number) {
+  return Array.from(Array(Math.floor(len)).keys())
 }
 
-export function zeroArray(length: number) {
-  return Array(length).fill(0)
+export function zeroArray(len: number) {
+  return Array(Math.floor(len)).fill(0)
 }
 
 export function testSpeed(f: () => void, count: number, name: string) {

@@ -44,3 +44,25 @@ export function initLayerConfig(type: VisualizerType): LayerConfig {
   console.error(`Missing default config in initLayerConfig()`)
   return initCubeSphereConfig()
 }
+
+//ADD LAYER!!!
+export const layerDisplayNames: { [key in VisualizerType]?: string } = {
+  CubeSphere: 'Cube Sphere',
+  Cubes: 'Cubes',
+  Spheres: 'Spheres',
+  TextParticles: 'Text Particles',
+  TextSpin: 'Text',
+  LocalMedia: 'Local Media',
+  Space: 'Space',
+} as const
+
+export function layerTypeFromDisplayName(searchFor: string): VisualizerType {
+  for (let [type, displayName] of Object.entries(layerDisplayNames)) {
+    let layerType = type as VisualizerType
+    if (displayName === searchFor) {
+      return layerType
+    }
+  }
+  console.error(`layerTypeFromDisplayName() bad displayName`)
+  return 'Space'
+}

@@ -11,7 +11,7 @@ export interface AfterImageConfig {
   damp: number
 }
 export function initAfterImageConfig(): AfterImageConfig {
-  return { type: 'AfterImage', damp: 0.9 }
+  return { type: 'AfterImage', damp: 0.5 }
 }
 export interface DotScreenConfig {
   type: 'DotScreen'
@@ -21,7 +21,7 @@ export interface DotScreenConfig {
   scale: number
 }
 export function initDotScreenConfig(): DotScreenConfig {
-  return { type: 'DotScreen', centerX: 0, centerY: 0, angle: 0, scale: 1 }
+  return { type: 'DotScreen', centerX: 0, centerY: 0, angle: 0, scale: 0.5 }
 }
 export interface FilmConfig {
   type: 'Film'
@@ -152,15 +152,37 @@ export function initEffectConfig(type: EffectConfig['type']): EffectConfig {
 }
 
 export const effectTypes: EffectType[] = [
-  // 'AdaptiveToneMapping', <-- This doesn't always perform in a desireable way so removing for now
+  'LightSync',
+  'UnrealBloom',
   'AfterImage',
+  'Pixel',
   'DotScreen',
   'Film',
   'Glitch',
   'HalfTone',
-  'LightSync',
-  'Pixel',
+  // 'AdaptiveToneMapping', <-- This doesn't always perform in a desireable way so removing for now
   // 'RenderLayer', <-- Removing RenderLayer until I can find a way to render multiple renderlayer's on top of each other :/
   // ... I tried so hard
-  'UnrealBloom',
 ]
+
+export const effectDisplayNames: { [key in EffectType]?: string } = {
+  AfterImage: 'Motion Blur',
+  DotScreen: 'Dot Screen',
+  Film: 'Film',
+  Glitch: 'Glitch',
+  HalfTone: 'Half Tone',
+  LightSync: 'Light Sync',
+  Pixel: 'Pixel',
+  UnrealBloom: 'Bloom (Glow)',
+} as const
+
+export function effectTypeFromDisplayName(searchFor: string): EffectType {
+  for (let [type, displayName] of Object.entries(effectDisplayNames)) {
+    let effectType = type as EffectType
+    if (displayName === searchFor) {
+      return effectType
+    }
+  }
+  console.error(`effectTypeFromDisplayName() bad displayName`)
+  return 'Pixel'
+}

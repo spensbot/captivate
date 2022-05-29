@@ -27,12 +27,12 @@ export const spaceShapes: SpaceConfig['shape'][] = ['Box', 'Cylinder', 'Sphere']
 export function initSpaceConfig(): SpaceConfig {
   return {
     type: 'Space',
-    count: { min: 0.25, max: 0.75 },
-    speed: { min: 0.0, max: 0.5 },
+    count: { min: 0.4, max: 0.4 },
+    speed: { min: 0.1, max: 0.5 },
     randomize: { min: 0.0, max: 0.0 },
     shape: 'Cylinder',
-    width: 0.5,
-    height: 0.5,
+    width: 0.1,
+    height: 0.8,
   }
 }
 

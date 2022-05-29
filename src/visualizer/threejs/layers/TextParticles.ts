@@ -102,7 +102,7 @@ export default class TextParticles extends LayerBase {
       const delta = distance(x, y, ix, iy)
 
       pos.setXY(i, x, y)
-      size.setX(i, delta + this.config.particleSize)
+      size.setX(i, delta * this.config.particleSize + this.config.particleSize)
       color.setXYZ(i, col.r, col.g, col.b)
     })
 
