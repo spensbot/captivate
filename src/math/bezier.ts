@@ -36,7 +36,7 @@ export function cubicBezier(
 // Custom modified compound quad-like bezier for use in skew functions
 
 const p0 = point(0, 0)
-const p4 = point(1, 1)
+const p3 = point(1, 1)
 
 export interface SkewBezier {
   skew: Normalized
@@ -48,44 +48,46 @@ export function skewBezier(
   t: Normalized
 ) {
   // TODO: Actaully break down this function algebraically, to substitue actual point values and simplify the calulations
-  const { p1, p2, p3 } =
+  const { p1, p2 } =
     dir === 'up'
       ? {
           p1: point(0, skew),
-          p2: point(0, 1),
-          p3: point(1 - skew, 1),
+          p2: point(1 - skew, 1),
         }
       : {
           p1: point(skew, 0),
-          p2: point(1, 0),
-          p3: point(1, 1 - skew),
+          p2: point(1, 1 - skew),
         }
 
   if (t < 0.5) {
     const t_ = 2 * t
     const a = pLerp(p0, p1, t_)
-    const b = pLerp(p2, p3, t_)
+    const b = pLerp(p1, p2, t_)
     return pLerp(a, b, t)
   } else {
     const t_ = (t - 0.5) * 2
     const a = pLerp(p1, p2, t_)
-    const b = pLerp(p3, p4, t_)
+    const b = pLerp(p2, p3, t_)
     return pLerp(a, b, t)
   }
 }
 
 export function findYForX(x: Normalized, bezierFn: (t: Normalized) => Point) {
   let t = x
-  Array(5)
+  let res = point(x, x)
+  const N = 50
+  Array(N)
     .fill(0)
-    .forEach((_) => {
-      const res = bezierFn(t).x
-      if (res < x) {
-        t *= 2
+    .forEach((_, i) => {
+      res = bezierFn(t)
+      let mult = 1.2 - (i / N) * 0.2
+      if (res.x < x) {
+        t *= mult
       } else {
-        t /= 2
+        t /= mult
       }
     })
+  return res.y
 }
 
 // function compountQuadBezier(start0: Point, start1: Point, end0: Point, end1: Point, halfT: number) {

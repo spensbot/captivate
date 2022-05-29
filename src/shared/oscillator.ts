@@ -3,11 +3,13 @@ import {
   skewBezier1,
   skewBezier2,
   skewPower,
+  skewPower2,
+  skewPower3,
   skewSymmetric,
 } from '../math/skew'
 
-const SKEW_FN = skewBezier2
-// const SKEW_FN = skewPower
+// const SKEW_FN = skewBezier2
+const SKEW_FN = skewPower3
 
 export enum LfoShape {
   Sin,

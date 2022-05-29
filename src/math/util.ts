@@ -31,6 +31,12 @@ export function lerp(start: number, end: number, amount: number) {
   return start + delta * amount
 }
 
+// determines the t that val lives at between start and end
+export function unlerp(start: number, end: number, val: number) {
+  let delta = end - start
+  return (val - start) / delta
+}
+
 // random number between 0 and max
 export function random(max: number) {
   return Math.random() * max
