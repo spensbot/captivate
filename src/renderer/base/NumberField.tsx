@@ -1,5 +1,5 @@
 import { TextField } from '@mui/material'
-import { clampMaybe } from '../../shared/util'
+import { clampMaybe } from '../../math/util'
 
 interface Props2 {
   val: number

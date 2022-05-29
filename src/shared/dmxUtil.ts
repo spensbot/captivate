@@ -8,7 +8,7 @@ import {
   Universe,
 } from './dmxFixtures'
 import { Params } from './params'
-import { lerp } from './util'
+import { lerp } from '../math/util'
 import { Point } from './randomizer'
 import { LightScene_t } from 'shared/Scenes'
 

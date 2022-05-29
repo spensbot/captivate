@@ -32,13 +32,13 @@ function unMap(mapped: number) {
 // ========== POWER SKEW =================
 
 function getPow(skew: Normalized) {
+  // map the normalized skew value so it ranges from 0 to MAX
   const MAX = 5
   const factor = getBaseLog(0.5, 1 / MAX)
   return Math.pow(skew, factor) * MAX
 }
 
 export const skewPower: SkewFn = (val, skew) => {
-  // first, skew the normalized skew value so it ranges from 0 to 100
   const pow = getPow(skew)
 
   return Math.pow(val, pow)

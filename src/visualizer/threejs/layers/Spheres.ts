@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import LayerBase from './LayerBase'
-import { randomRanged } from '../../../shared/util'
-import { Skew } from '../../../shared/oscillator'
+import { randomRanged } from '../../../math/util'
+import { skewPower3 } from '../../../math/skew'
 import { Strobe } from '../util/animations'
 import { colorFromHSV } from '../util/util'
 import UpdateResource from '../UpdateResource'
@@ -68,7 +68,7 @@ export default class Spheres extends LayerBase {
 
     this.globeMaterial.color = new THREE.Color(color)
 
-    const dr = (dt / 500) * (Skew(epicness, 0.6) + 0.01)
+    const dr = (dt / 500) * (skewPower3(epicness, 0.6) + 0.01)
     this.spots.forEach((spot) => {
       spot.rotation.x += dr
       spot.rotation.y += dr

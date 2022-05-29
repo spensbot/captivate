@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { randomRanged } from '../../../shared/util'
+import { randomRanged } from '../../../math/util'
 
 export function pathUrl(path: string) {
   return `file://` + path

@@ -1,10 +1,10 @@
 import * as THREE from 'three'
 import LayerBase from './LayerBase'
-import { randomRanged } from '../../../shared/util'
+import { randomRanged } from '../../../math/util'
+import { skewPower } from '../../../math/skew'
 import { Vector3 } from 'three'
 import { Strobe } from '../util/animations'
 import { colorFromHSV } from '../util/util'
-import { Skew } from '../../../shared/oscillator'
 import UpdateResource from '../UpdateResource'
 
 export interface CubesConfig {
@@ -37,7 +37,10 @@ class RandomCube {
 
   update({ dt, scene }: UpdateResource) {
     const epicness = scene.epicness
-    this.mesh.rotateOnAxis(this.axis, (dt * Skew(epicness, 0.6) + 0.5) / 200)
+    this.mesh.rotateOnAxis(
+      this.axis,
+      (dt * skewPower(epicness, 0.6) + 0.5) / 200
+    )
   }
 
   dispose() {

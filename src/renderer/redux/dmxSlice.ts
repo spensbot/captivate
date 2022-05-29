@@ -9,7 +9,7 @@ import {
   FixtureChannel,
   ColorMapColor,
 } from '../../shared/dmxFixtures'
-import { clampNormalized } from '../../shared/util'
+import { clampNormalized } from '../../math/util'
 
 export interface DmxState {
   universe: Universe

@@ -1,5 +1,5 @@
 import { DownIcon, UpIcon } from 'renderer/icons/arrows'
-import { clamp } from 'shared/util'
+import { clamp } from 'math/util'
 import useDragBasic from '../hooks/useDragBasic'
 import styled from 'styled-components'
 import { double_incremented, halve_incremented } from 'shared/util'
@@ -87,7 +87,7 @@ export default function DraggableNumber({
     onChange(globalValue)
   })
 
-  function onMouseDownWrapper(e: React.MouseEvent) {
+  function onMouseDownWrapper(e: React.MouseEvent<HTMLDivElement>) {
     globalMovement = 0
     globalValue = value
     onMouseDown(e)

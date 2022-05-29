@@ -1,4 +1,4 @@
-import { Skew } from '../../../shared/oscillator'
+import { skewPower } from '../../../math/skew'
 
 export class Strobe {
   // Resets to 1, then is decremented according to strobe speed
@@ -36,7 +36,7 @@ export class Wobble {
   }
 
   update(dt: number, speed: number) {
-    this.elapsed += (dt * Skew(speed, 0.6) + 0.5) / 300
+    this.elapsed += (dt * skewPower(speed, 0.6) + 0.5) / 300
     return Math.sin(this.elapsed) * this.bound
   }
 }
@@ -45,7 +45,7 @@ export class Spin {
   private elapsed: number = 0
 
   update(dt: number, speed: number) {
-    this.elapsed += (dt * Skew(speed, 0.6) + 0.5) / 300
+    this.elapsed += (dt * skewPower(speed, 0.6) + 0.5) / 300
     return this.elapsed
   }
 }
