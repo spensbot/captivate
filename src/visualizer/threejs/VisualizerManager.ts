@@ -96,7 +96,7 @@ export default class VisualizerManager {
   // It will take alot of time to fully debug the memory leaks...
   // I've spent so much time trying and I can't squash them all
   // So this is a temporary fix.
-  private ruthlessly_nuke_all_memory_I_dont_even_care_kill_it_with_fire() {
+  ruthlessly_nuke_all_memory_I_dont_even_care_kill_it_with_fire() {
     console.log(`WebGLRenderer Memory Wiped!!!`)
     this.renderer.dispose()
   }

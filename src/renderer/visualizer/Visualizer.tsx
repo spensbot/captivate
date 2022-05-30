@@ -45,6 +45,7 @@ export default function Visualizer() {
     return () => {
       resizeObserver.disconnect()
       animateVisualizer = () => {}
+      vm.ruthlessly_nuke_all_memory_I_dont_even_care_kill_it_with_fire()
     }
   }, [])
 
