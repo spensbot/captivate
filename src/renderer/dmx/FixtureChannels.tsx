@@ -291,7 +291,35 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
       />
     )
   } else if (ch.type === 'master') {
-    return null
+    return (
+      <>
+        <NumberField
+          val={ch.min}
+          label="Min"
+          min={0}
+          max={ch.max}
+          onChange={(newMin) =>
+            updateChannel({
+              ...ch,
+              min: newMin,
+            })
+          }
+        />
+        <Sp2 />
+        <NumberField
+          val={ch.max}
+          label="Max"
+          min={ch.min}
+          max={255}
+          onChange={(newMax) =>
+            updateChannel({
+              ...ch,
+              max: newMax,
+            })
+          }
+        />
+      </>
+    )
   } else if (ch.type === 'other') {
     return (
       <NumberField
@@ -465,6 +493,11 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
     return null
   }
 }
+
+const Col = styled.div`
+  display: flex;
+  flex-direction: column;
+`
 
 const Row = styled.div`
   display: flex;

@@ -9,6 +9,7 @@ import {
 } from './dmxFixtures'
 import { Params } from './params'
 import { lerp } from '../math/util'
+import { rLerp } from '../math/range'
 import { Point } from './randomizer'
 import { LightScene_t } from 'shared/Scenes'
 
@@ -39,45 +40,40 @@ export function applyMirror(value: number, mirrorAmount: number) {
 }
 
 export function getDmxValue(
-  fixtureChannel: FixtureChannel,
+  ch: FixtureChannel,
   params: Params,
   colors: Colors,
   fixture: Fixture,
   movingWindow: Window2D_t
 ): DmxValue {
-  switch (fixtureChannel.type) {
+  switch (ch.type) {
     case 'master':
-      return (
-        params.brightness *
-        DMX_MAX_VALUE *
-        getWindowMultiplier2D(fixture.window, movingWindow)
+      return rLerp(
+        ch,
+        params.brightness * getWindowMultiplier2D(fixture.window, movingWindow)
       )
     case 'other':
-      return fixtureChannel.default
+      return ch.default
     case 'color':
-      return colors[fixtureChannel.color] * DMX_MAX_VALUE
+      return colors[ch.color] * DMX_MAX_VALUE
     case 'strobe':
-      return params.strobe > 0.5
-        ? fixtureChannel.default_strobe
-        : fixtureChannel.default_solid
+      return params.strobe > 0.5 ? ch.default_strobe : ch.default_solid
     case 'axis':
-      const { min, max, dir } = fixtureChannel
-      const range = max - min
-      if (dir === 'x') {
+      if (ch.dir === 'x') {
         const fixtureXPos = fixture.window?.x?.pos ?? 0
         const xAxis =
           fixtureXPos < 0.5
             ? params.xAxis
             : applyMirror(params.xAxis, params.xMirror)
-        return min + xAxis * range
-      } else if (dir === 'y') {
-        return min + params.yAxis * range
+        return rLerp(ch, xAxis)
+      } else if (ch.dir === 'y') {
+        return rLerp(ch, params.yAxis)
       } else {
         console.error('Unhandled axis dir')
         return 0
       }
     case 'colorMap':
-      const _colors = fixtureChannel.colors
+      const _colors = ch.colors
       const firstColor = _colors[0]
       const hue = params.hue
       if (firstColor && params.saturation > 0.5) {

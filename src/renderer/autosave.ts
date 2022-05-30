@@ -7,25 +7,9 @@ import {
 } from './redux/store'
 import ipcChannels from '../shared/ipc_channels'
 import AutoSavedVal, { printTimePassed } from './AutoSavedVal'
+import fixState from '../shared/fixState'
 
 let autoSavedVal: AutoSavedVal<CleanReduxState> | null = null
-
-// Modify this function to fix any breaking state changes between upgrades
-export function fixState(state: CleanReduxState): CleanReduxState {
-  // const v = state.control.visual
-  // v.ids
-  //   .map((id) => v.byId[id])
-  //   .forEach((scene) => {
-  //     scene.config = initLayerConfig(scene.config.type)
-  //     for (let i = 0; i < scene.effectsConfig.length; i++) {
-  //       scene.effectsConfig[i] = initEffectConfig(scene.effectsConfig[i].type)
-  //     }
-  //   })
-  state.gui.loading = null
-  state.gui.saving = false
-
-  return state
-}
 
 export function stopAutoSave() {
   if (autoSavedVal !== null) {

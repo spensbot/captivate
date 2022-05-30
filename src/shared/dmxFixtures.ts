@@ -15,6 +15,16 @@ export const axisDirList = ['x', 'y']
 
 type ChannelMaster = {
   type: 'master'
+  min: DmxValue
+  max: DmxValue
+}
+
+function master(): ChannelMaster {
+  return {
+    type: 'master',
+    min: 0,
+    max: 255,
+  }
 }
 
 type ChannelColor = {
@@ -98,9 +108,7 @@ export function initFixtureChannel(
       colors: [],
     }
   }
-  return {
-    type: 'master',
-  }
+  return master()
 }
 
 export type FixtureType = {
@@ -117,7 +125,7 @@ const parFixture: FixtureType = {
   name: 'Par',
   intensity: 0.3,
   channels: [
-    { type: 'master' },
+    master(),
     { type: 'color', color: 'red' },
     { type: 'color', color: 'green' },
     { type: 'color', color: 'blue' },
@@ -132,7 +140,7 @@ const stringLightFixture: FixtureType = {
   id: '2',
   name: 'Light String',
   intensity: 0.3,
-  channels: [{ type: 'master' }],
+  channels: [master()],
 }
 
 const strobeFixture: FixtureType = {
@@ -141,7 +149,7 @@ const strobeFixture: FixtureType = {
   name: 'Strobe',
   intensity: 0.8,
   channels: [
-    { type: 'master' },
+    master(),
     { type: 'strobe', default_solid: 0, default_strobe: 250 },
     { type: 'other', default: 0 },
   ],
@@ -153,7 +161,7 @@ const derbyFixture: FixtureType = {
   name: 'Derby',
   intensity: 0,
   channels: [
-    { type: 'master' },
+    master(),
     { type: 'color', color: 'red' },
     { type: 'color', color: 'green' },
     { type: 'color', color: 'blue' },
@@ -168,7 +176,7 @@ const laserFixture: FixtureType = {
   manufacturer: 'Laser World',
   name: 'EL-400',
   intensity: 0.5,
-  channels: [{ type: 'master' }],
+  channels: [master()],
 }
 
 const vBar: FixtureType = {
@@ -181,7 +189,7 @@ const vBar: FixtureType = {
     { type: 'color', color: 'green' },
     { type: 'color', color: 'blue' },
     { type: 'color', color: 'red' },
-    { type: 'master' },
+    master(),
     { type: 'strobe', default_solid: 0, default_strobe: 218 },
     { type: 'other', default: 0 },
   ],
@@ -199,7 +207,7 @@ const venuePar: FixtureType = {
     { type: 'other', default: 0 },
     { type: 'strobe', default_solid: 0, default_strobe: 247 },
     { type: 'other', default: 0 },
-    { type: 'master' },
+    master(),
     { type: 'other', default: 0 },
   ],
 }

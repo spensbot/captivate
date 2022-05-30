@@ -65,6 +65,9 @@ export default class VisualizerManager {
       !equal(effectsConfig, this.effectsConfig) ||
       !equal(layerConfig, this.layerConfig)
     ) {
+      // periodic memory wipe to clear any leaks
+      this.ruthlessly_nuke_all_memory_I_dont_even_care_kill_it_with_fire()
+
       this.effectManager.dispose()
       this.effectManager = new EffectManager(
         layerConfig,
@@ -87,6 +90,15 @@ export default class VisualizerManager {
     this.height = height
     this.renderer.setSize(width, height)
     this.effectManager.resize(width, height)
+  }
+
+  // This is a bandaid fix for the horrendous memory leaking that happens in the visualizer...
+  // It will take alot of time to fully debug the memory leaks...
+  // I've spent so much time trying and I can't squash them all
+  // So this is a temporary fix.
+  private ruthlessly_nuke_all_memory_I_dont_even_care_kill_it_with_fire() {
+    console.log(`WebGLRenderer Memory Wiped!!!`)
+    this.renderer.dispose()
   }
 
   // private printMemory() {
