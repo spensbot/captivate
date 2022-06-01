@@ -166,7 +166,7 @@ export function handleMessage(
             setNewVal(op.min + (input.message.value / 127) * range)
           } else {
             // relative
-            let mapped = (input.message.value - 64) / 2
+            let mapped = (input.message.value - 64) / 5
             setNewVal(getOldVal() + mapped)
           }
         }
