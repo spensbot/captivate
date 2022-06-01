@@ -241,6 +241,7 @@
     "lodash.debounce": "^4.0.8",
     "nanoid": "^3.1.30",
     "node-polyfill-webpack-plugin": "^1.1.4",
+    "path": "^0.12.7",
     "postprocessing": "^6.24.0",
     "react": "^17.0.2",
     "react-beautiful-dnd": "^13.1.0",

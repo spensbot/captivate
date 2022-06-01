@@ -1,10 +1,10 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 
 export default function useBounds(): [
-  React.RefObject<HTMLElement>,
+  React.RefObject<HTMLDivElement>,
   DOMRect | null
 ] {
-  const ref = useRef<HTMLElement>(null)
+  const ref = useRef<HTMLDivElement>(null)
   const [bounds, boundsUpdated] = useState<DOMRect | null>(null)
 
   useLayoutEffect(() => {

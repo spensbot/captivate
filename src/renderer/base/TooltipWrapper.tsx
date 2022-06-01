@@ -10,19 +10,20 @@ const delay = 1000
 
 export default function TooltipWrapper({ children, text, style = {} }: Props) {
   const [visible, setVisible] = useState(false)
-  const [timeoutRef, setTimeoutRef] = useState(0)
+  const [timeoutRef, setTimeoutRef] = useState<NodeJS.Timeout>()
+
+  let onTimeout = () => {
+    setVisible(true)
+  }
+
   useEffect(() => {
     return () => {
-      clearTimeout(timeoutRef)
+      onTimeout = () => {}
     }
   })
 
   function onMouseEnter() {
-    setTimeoutRef(
-      setTimeout(() => {
-        setVisible(true)
-      }, delay)
-    )
+    setTimeoutRef(setTimeout(onTimeout, delay))
   }
 
   function onMouseLeave() {

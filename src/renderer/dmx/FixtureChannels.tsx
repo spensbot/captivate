@@ -494,11 +494,6 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
   }
 }
 
-const Col = styled.div`
-  display: flex;
-  flex-direction: column;
-`
-
 const Row = styled.div`
   display: flex;
   align-items: center;

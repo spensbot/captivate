@@ -114,13 +114,13 @@ export function SliderMidiOverlay({ children, action, style }: Props) {
     )
   }
 
-  const onClickValue = () => {
+  const onClickValue = (value: 'max' | 'velocity') => () => {
     dispatch(
       midiSetSliderAction({
         ...controlledAction,
         options: {
           ...controlledAction.options,
-          value: controlledAction.options.value === 'max' ? 'velocity' : 'max',
+          value: value === 'max' ? 'velocity' : 'max',
         },
       })
     )
@@ -173,7 +173,7 @@ export function SliderMidiOverlay({ children, action, style }: Props) {
                     <Button
                       fontSize="0.8rem"
                       label={controlledAction.options.value}
-                      onClick={onClickValue}
+                      onClick={onClickValue(controlledAction.options.value)}
                     />
                   </>
                 )}

@@ -14,7 +14,6 @@ const DMX_SEND_INTERVAL = 1000 / 40
 
 let _readyToWrite = true
 let _connection: null | SerialPort = null
-let _intervalHandle: NodeJS.Timer
 let _config: Config
 
 export type UpdatePayload = DmxConnections
@@ -45,7 +44,7 @@ function dmxDevice(port: SerialPort.PortInfo): DmxDevice_t {
 export function maintain(config: Config) {
   _config = config
   maintainConnection()
-  _intervalHandle = setInterval(() => {
+  setInterval(() => {
     sendUniverse(_config.getChannels())
   }, DMX_SEND_INTERVAL)
 }

@@ -1,22 +1,22 @@
-import { useEffect, useRef } from 'react'
+import React, { useEffect, useRef } from 'react'
 
 type Ref = React.MutableRefObject<any>
-type MouseEventHandler = React.MouseEventHandler<HTMLDivElement>
+type MouseEventHandler = (e: MouseEvent) => any
 
 export default function useDragBasic(
-  onChange: (e: React.MouseEvent) => void
-): [Ref, MouseEventHandler] {
+  onChange: (e: MouseEvent) => void
+): [Ref, React.MouseEventHandler<HTMLDivElement>] {
   const dragContainer = useRef(null)
 
-  const onMouseMove: MouseEventHandler = (e: React.MouseEvent) => {
+  const onMouseMove: MouseEventHandler = (e: MouseEvent) => {
     update(e)
   }
 
-  const onMouseUp: MouseEventHandler = (_e: React.MouseEvent) => {
+  const onMouseUp: MouseEventHandler = (_e: MouseEvent) => {
     stopListening()
   }
 
-  const onMouseLeave: MouseEventHandler = (_e: React.MouseEvent) => {
+  const onMouseLeave: MouseEventHandler = (_e: MouseEvent) => {
     stopListening()
   }
 
@@ -32,7 +32,7 @@ export default function useDragBasic(
     document.body.removeEventListener('mouseleave', onMouseLeave)
   }
 
-  const onMouseDown = (e: React.MouseEvent) => {
+  const onMouseDown = (e: MouseEvent) => {
     if (!e.defaultPrevented) {
       e.preventDefault()
       update(e)
@@ -40,7 +40,7 @@ export default function useDragBasic(
     }
   }
 
-  const update = (e: React.MouseEvent) => {
+  const update = (e: MouseEvent) => {
     onChange(e)
   }
 
@@ -50,5 +50,5 @@ export default function useDragBasic(
     }
   }, [])
 
-  return [dragContainer, onMouseDown]
+  return [dragContainer, onMouseDown as unknown as React.MouseEventHandler]
 }
