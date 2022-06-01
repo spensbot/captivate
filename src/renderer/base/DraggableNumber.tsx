@@ -3,6 +3,7 @@ import { clamp } from 'math/util'
 import useDragBasic from '../hooks/useDragBasic'
 import styled from 'styled-components'
 import { double_incremented, halve_incremented } from 'shared/util'
+import React from 'react'
 
 type Type = 'continuous' | 'snap'
 

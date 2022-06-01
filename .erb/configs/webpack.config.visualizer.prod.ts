@@ -35,7 +35,7 @@ const configuration: webpack.Configuration = {
   entry: [
     'core-js',
     'regenerator-runtime/runtime',
-    path.join(webpackPaths.srcVisualizerPath, 'index.tsx'),
+    path.join(webpackPaths.srcVisualizerPath, 'index.ts'),
   ],
 
   output: {

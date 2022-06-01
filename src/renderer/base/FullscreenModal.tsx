@@ -18,7 +18,6 @@ interface Props {
 export default function FullscreenModal({
   title,
   message,
-  buttons,
   children,
   modalStyle,
 }: Props) {
@@ -48,7 +47,7 @@ const Root = styled.div`
 
 const Modal = styled.div`
   background-color: ${(props) => props.theme.colors.bg.primary};
-  box-shadow: 'this wont work'
+  box-shadow: 'this wont work';
   padding: ${(props) => props.theme.spacing(5)};
   & > * {
     margin-bottom: ${(props) => props.theme.spacing(1)};
