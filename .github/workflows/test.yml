@@ -29,6 +29,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           npm run package
-          npm run lint
           npm exec tsc
-          npm test
