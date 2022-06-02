@@ -14,7 +14,7 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
-import './test_native_deps';
+import doStuff from './test_native_deps';
 
 export default class AppUpdater {
   constructor() {
@@ -93,6 +93,7 @@ const createWindow = async () => {
     } else {
       mainWindow.show();
     }
+    doStuff();
   });
 
   mainWindow.on('closed', () => {
