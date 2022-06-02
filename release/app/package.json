@@ -1,12 +1,17 @@
 {
-  "name": "electron-react-boilerplate",
-  "version": "4.6.0",
-  "description": "A foundation for scalable desktop apps",
+  "name": "captivate",
+  "version": "0.9.0",
+  "description": "Lighting and Visual Synth",
+  "homepage": "https://captivatesynth.com/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spensbot/captivate.git"
+  },
   "license": "MIT",
   "author": {
-    "name": "Electron React Boilerplate Maintainers",
-    "email": "electronreactboilerplate@gmail.com",
-    "url": "https://github.com/electron-react-boilerplate"
+    "name": "Spenser Saling",
+    "email": "spenser0saling@gmail.com",
+    "url": "https://electron-react-boilerplate.js.org"
   },
   "main": "./dist/main/main.js",
   "scripts": {

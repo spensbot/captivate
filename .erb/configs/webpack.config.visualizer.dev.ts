@@ -1,43 +1,38 @@
-/**
- * Build config for electron renderer process
- */
-
+import 'webpack-dev-server';
 import path from 'path';
 import webpack from 'webpack';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
-import MiniCssExtractPlugin from 'mini-css-extract-plugin';
-import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer';
-import CssMinimizerPlugin from 'css-minimizer-webpack-plugin';
 import { merge } from 'webpack-merge';
-import TerserPlugin from 'terser-webpack-plugin';
+import ReactRefreshWebpackPlugin from '@pmmmwh/react-refresh-webpack-plugin';
 import baseConfig from './webpack.config.base';
 import webpackPaths from './webpack.paths';
 import checkNodeEnv from '../scripts/check-node-env';
-import deleteSourceMaps from '../scripts/delete-source-maps';
 
-checkNodeEnv('production');
-deleteSourceMaps();
+// When an ESLint server is running, we can't set the NODE_ENV so we'll check if it's
+// at the dev webpack config is not accidentally run in a production environment
+if (process.env.NODE_ENV === 'production') {
+  checkNodeEnv('development');
+}
 
-const devtoolsConfig =
-  process.env.DEBUG_PROD === 'true'
-    ? {
-        devtool: 'source-map',
-      }
-    : {};
+const port = process.env.PORT || 1213;
 
 const configuration: webpack.Configuration = {
-  ...devtoolsConfig,
+  devtool: 'inline-source-map',
 
-  mode: 'production',
+  mode: 'development',
 
   target: ['web', 'electron-renderer'],
 
-  entry: [path.join(webpackPaths.srcRendererPath, 'index.tsx')],
+  entry: [
+    `webpack-dev-server/client?http://localhost:${port}/dist`,
+    'webpack/hot/only-dev-server',
+    path.join(webpackPaths.srcVisualizerPath, 'index.tsx'),
+  ],
 
   output: {
-    path: webpackPaths.distRendererPath,
-    publicPath: './',
-    filename: 'renderer.js',
+    path: webpackPaths.distVisualizerPath,
+    publicPath: '/',
+    filename: 'visualizer.dev.js',
     library: {
       type: 'umd',
     },
@@ -46,9 +41,9 @@ const configuration: webpack.Configuration = {
   module: {
     rules: [
       {
-        test: /\.s?(a|c)ss$/,
+        test: /\.s?css$/,
         use: [
-          MiniCssExtractPlugin.loader,
+          'style-loader',
           {
             loader: 'css-loader',
             options: {
@@ -62,8 +57,8 @@ const configuration: webpack.Configuration = {
         include: /\.module\.s?(c|a)ss$/,
       },
       {
-        test: /\.s?(a|c)ss$/,
-        use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'],
+        test: /\.s?css$/,
+        use: ['style-loader', 'css-loader', 'sass-loader'],
         exclude: /\.module\.s?(c|a)ss$/,
       },
       // Fonts
@@ -82,18 +77,9 @@ const configuration: webpack.Configuration = {
       },
     ],
   },
-
-  optimization: {
-    minimize: true,
-    minimizer: [
-      new TerserPlugin({
-        parallel: true,
-      }),
-      new CssMinimizerPlugin(),
-    ],
-  },
-
   plugins: [
+    new webpack.NoEmitOnErrorsPlugin(),
+
     /**
      * Create global constants which can be configured at compile time.
      *
@@ -102,32 +88,52 @@ const configuration: webpack.Configuration = {
      *
      * NODE_ENV should be production so that modules do not perform certain
      * development checks
+     *
+     * By default, use 'development' as NODE_ENV. This can be overriden with
+     * 'staging', for example, by changing the ENV variables in the npm scripts
      */
     new webpack.EnvironmentPlugin({
-      NODE_ENV: 'production',
-      DEBUG_PROD: false,
+      NODE_ENV: 'development',
     }),
 
-    new MiniCssExtractPlugin({
-      filename: 'style.css',
+    new webpack.LoaderOptionsPlugin({
+      debug: true,
     }),
 
-    new BundleAnalyzerPlugin({
-      analyzerMode: process.env.ANALYZE === 'true' ? 'server' : 'disabled',
-    }),
+    new ReactRefreshWebpackPlugin(),
 
     new HtmlWebpackPlugin({
-      filename: 'index.html',
-      template: path.join(webpackPaths.srcRendererPath, 'index.ejs'),
+      filename: path.join('index.html'),
+      template: path.join(webpackPaths.srcVisualizerPath, 'index.ejs'),
       minify: {
         collapseWhitespace: true,
         removeAttributeQuotes: true,
         removeComments: true,
       },
       isBrowser: false,
+      env: process.env.NODE_ENV,
       isDevelopment: process.env.NODE_ENV !== 'production',
+      nodeModules: webpackPaths.appNodeModulesPath,
     }),
   ],
+
+  node: {
+    __dirname: false,
+    __filename: false,
+  },
+
+  devServer: {
+    port,
+    compress: true,
+    hot: true,
+    headers: { 'Access-Control-Allow-Origin': '*' },
+    static: {
+      publicPath: '/',
+    },
+    historyApiFallback: {
+      verbose: true,
+    },
+  },
 
   resolve: {
     fallback: {

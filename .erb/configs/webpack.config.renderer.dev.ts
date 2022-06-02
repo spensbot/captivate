@@ -94,6 +94,10 @@ const configuration: webpack.Configuration = {
         test: /\.(png|svg|jpg|jpeg|gif)$/i,
         type: 'asset/resource',
       },
+      {
+        test: /\.(frag|vert)$/i,
+        use: 'raw-loader',
+      },
     ],
   },
   plugins: [
@@ -171,6 +175,16 @@ const configuration: webpack.Configuration = {
         .on('close', (code: number) => process.exit(code!))
         .on('error', (spawnError) => console.error(spawnError));
 
+      console.log('Starting Visualzier Process...');
+      const visualizer_dev_server_process = spawn(
+        'npm',
+        ['run', 'start:visualizer'],
+        {
+          shell: true,
+          env: process.env,
+          stdio: 'inherit',
+        }
+      );
       console.log('Starting Main Process...');
       spawn('npm', ['run', 'start:main'], {
         shell: true,
@@ -178,10 +192,17 @@ const configuration: webpack.Configuration = {
       })
         .on('close', (code: number) => {
           preloadProcess.kill();
+          visualizer_dev_server_process.kill('SIGINT');
           process.exit(code!);
         })
         .on('error', (spawnError) => console.error(spawnError));
       return middlewares;
+    },
+  },
+
+  resolve: {
+    fallback: {
+      path: require.resolve('path-browserify'),
     },
   },
 };
