@@ -8,7 +8,6 @@
  * When running `npm run build` or `npm run build:main`, this file is compiled to
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
-import fakeLog from './fakeLog';
 import path from 'path';
 import { app, BrowserWindow, shell, dialog } from 'electron';
 import { autoUpdater } from 'electron-updater';
@@ -17,12 +16,9 @@ import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 import * as engine from './engine/engine';
 import { VisualizerContainer } from './engine/createVisualizerWindow';
-fakeLog(`./prevent_sleep`);
 import './prevent_sleep';
-fakeLog(`./electron_error_logging`);
 import './electron_error_logging';
 
-fakeLog(`export default class AppUpdater {`);
 export default class AppUpdater {
   constructor() {
     log.transports.file.level = 'info';
@@ -31,19 +27,14 @@ export default class AppUpdater {
   }
 }
 
-fakeLog(`let mainWindow: BrowserWindow | null = null;`);
 let mainWindow: BrowserWindow | null = null;
-fakeLog(`let isClosing = false;`);
 let isClosing = false;
-fakeLog(`let visualizerContainer: VisualizerContainer = {`);
 let visualizerContainer: VisualizerContainer = {
   visualizer: null,
 };
 
 if (process.env.NODE_ENV === 'production') {
-  fakeLog(`  const sourceMapSupport = require('source-map-support');`);
   const sourceMapSupport = require('source-map-support');
-  fakeLog(`  sourceMapSupport.install();`);
   sourceMapSupport.install();
 }
 
@@ -51,11 +42,9 @@ const isDevelopment =
   process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
 
 if (isDevelopment) {
-  fakeLog(`  require('electron-debug')({ showDevTools: false });`);
   require('electron-debug')({ showDevTools: false });
 }
 
-fakeLog(`const installExtensions = async () => {`);
 const installExtensions = async () => {
   const installer = require('electron-devtools-installer');
   const forceDownload = !!process.env.UPGRADE_EXTENSIONS;
@@ -69,7 +58,6 @@ const installExtensions = async () => {
     .catch(console.log);
 };
 
-fakeLog(`const createWindow = async () => {`);
 const createWindow = async () => {
   if (isDevelopment) {
     await installExtensions();

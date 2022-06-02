@@ -83,7 +83,6 @@
     "@mui/icons-material": "^5.8.2",
     "@mui/material": "^5.8.2",
     "@reduxjs/toolkit": "^1.8.2",
-    "@sentry/electron": "^3.0.7",
     "@sentry/react": "^7.0.0",
     "@sentry/tracing": "^7.0.0",
     "deep-equal": "^2.0.5",
