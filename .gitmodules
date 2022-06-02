@@ -1,0 +1,3 @@
+[submodule "release/app/node-link"]
+	path = release/app/node-link
+	url = git@github.com:spensbot/node-link.git
