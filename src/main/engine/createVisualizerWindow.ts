@@ -1,24 +1,26 @@
-import path from 'path'
-import { app, BrowserWindow } from 'electron'
-import { resolveHtmlPath } from './util'
+import path from 'path';
+import { app, BrowserWindow } from 'electron';
+import { resolveHtmlPath } from './util';
 
 export interface VisualizerContainer {
-  visualizer: BrowserWindow | null
+  visualizer: BrowserWindow | null;
 }
 
-export default async (visualizerContainer: VisualizerContainer) => {
+export default function createVisualizerWindow(
+  visualizerContainer: VisualizerContainer
+) {
   if (visualizerContainer.visualizer) {
-    console.warn('Tried to open a visualizer twice')
-    return
+    console.warn('Tried to open a visualizer twice');
+    return;
   }
 
   const RESOURCES_PATH = app.isPackaged
     ? path.join(process.resourcesPath, 'assets')
-    : path.join(__dirname, '../../assets')
+    : path.join(__dirname, '../../assets');
 
   const getAssetPath = (...paths: string[]): string => {
-    return path.join(RESOURCES_PATH, ...paths)
-  }
+    return path.join(RESOURCES_PATH, ...paths);
+  };
 
   visualizerContainer.visualizer = new BrowserWindow({
     show: false,
@@ -30,19 +32,19 @@ export default async (visualizerContainer: VisualizerContainer) => {
       webSecurity: false,
       nodeIntegration: false,
     },
-  })
+  });
 
-  visualizerContainer.visualizer.loadURL(resolveHtmlPath('index.html'))
+  visualizerContainer.visualizer.loadURL(resolveHtmlPath('index.html'));
   // visualizerContainer.visualizer.loadURL(`data:text/html;charset=utf-8,${html}`)
 
   visualizerContainer.visualizer.on('ready-to-show', () => {
     if (!visualizerContainer.visualizer) {
-      throw new Error('"visualizer" is not defined')
+      throw new Error('"visualizer" is not defined');
     }
-    visualizerContainer.visualizer.show()
-  })
+    visualizerContainer.visualizer.show();
+  });
 
   visualizerContainer.visualizer.on('closed', () => {
-    visualizerContainer.visualizer = null
-  })
+    visualizerContainer.visualizer = null;
+  });
 }

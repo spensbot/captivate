@@ -109,6 +109,7 @@
     "@testing-library/jest-dom": "^5.16.4",
     "@testing-library/react": "^13.2.0",
     "@types/color-convert": "^2.0.0",
+    "@types/core-js": "^2.5.5",
     "@types/deep-equal": "^1.0.1",
     "@types/jest": "^27.5.1",
     "@types/lodash.clonedeep": "^4.5.7",
@@ -197,8 +198,7 @@
       "target": {
         "target": "default",
         "arch": [
-          "arm64",
-          "x64"
+          "arm64"
         ]
       },
       "type": "distribution",

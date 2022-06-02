@@ -1,6 +1,5 @@
 //Much of this code is adapted from: https://github.com/node-dmx/dmx
 
-import 'regenerator-runtime';
 import { SerialPort } from 'serialport';
 import { DmxConnections, DeviceId, DmxDevice_t } from '../../shared/connection';
 
