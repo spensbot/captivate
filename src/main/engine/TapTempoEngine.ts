@@ -1,0 +1,66 @@
+import RollingAverage from '../../shared/RollingAverage'
+
+const BPM_LIMIT = 1000
+const SLEEP_TIME = 3000 // milliseconds between taps after which the engine resets
+const TAPS_TO_COMMIT = 3 // Number of taps before the bpm is set
+const SUSTAIN_SAMPLES = 5 // <- Number of samples the rolling average is averaged over
+
+function getBPM(ms: number) {
+  return 60000 / ms
+}
+
+export default class TapTempoEngine {
+  private avgBPM = new RollingAverage()
+  private sessionStartTime = 0
+  private sessionTaps = 0
+  private lastTapTime = 0
+
+  constructor() {
+    this.avgBPM.setSustainSamples(SUSTAIN_SAMPLES)
+  }
+
+  tap(setBpm: (newBPM: number) => void) {
+    const now = Date.now()
+    this.sessionTaps += 1
+
+    if (this.sessionTaps === 1) {
+      this.begin_session(now)
+    } else if (this.sessionTaps <= TAPS_TO_COMMIT) {
+      const sessionTime = now - this.sessionStartTime
+      const period = now - this.lastTapTime
+      if (period < SLEEP_TIME) {
+        if (this.sessionTaps === TAPS_TO_COMMIT) {
+          let bpm = getBPM(sessionTime / (TAPS_TO_COMMIT - 1))
+          if (bpm < BPM_LIMIT) {
+            this.avgBPM.reset(bpm)
+            setBpm(this.avgBPM.get())
+          } else {
+            console.warn(`unusally large reset BPM: ${bpm}`)
+          }
+        }
+      } else {
+        this.begin_session(now)
+      }
+    } else {
+      const period = now - this.lastTapTime
+      if (period < SLEEP_TIME) {
+        let bpm = getBPM(period)
+        if (bpm < BPM_LIMIT) {
+          this.avgBPM.push(bpm)
+          setBpm(this.avgBPM.get())
+        } else {
+          console.warn(`unusally large push BPM: ${bpm}`)
+        }
+      } else {
+        this.begin_session(now)
+      }
+    }
+
+    this.lastTapTime = now
+  }
+
+  begin_session(now: number) {
+    this.sessionTaps = 1
+    this.sessionStartTime = now
+  }
+}
