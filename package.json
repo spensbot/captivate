@@ -184,8 +184,8 @@
     "webpack-merge": "^5.8.0"
   },
   "build": {
-    "productName": "ElectronReact",
-    "appId": "org.erb.ElectronReact",
+    "productName": "Captivate",
+    "appId": "com.sailingtomars.Captivate",
     "asar": true,
     "asarUnpack": "**\\*.{node,dll}",
     "files": [
