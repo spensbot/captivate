@@ -36,11 +36,15 @@ Since all dmx channels boil down to the same parameters, captivate scenes can pl
 
 We live in an open source world. Share your best scenes and creations with other captivate users!
 
-## Developer Notes
+## Developers
 
-This repo contains submodules. Be sure to run `git sumodule update --init --recursive` after cloning.
+`git clone https://github.com/spensbot/captivate.git` <-- download the repo locally
 
-Captivate has several binary dependencies (serialport, midi, node-link). It will not run until these are built against Electron's node version: `npm run rebuild`
+`git submodule update --init --recursive` <-- download submodules
+
+`npm install` <-- install node dependencies
+
+`npm start` <-- run the app in development mode with hot-reloading
 
 Thanks to [this repo](https://github.com/electron-react-boilerplate/electron-react-boilerplate) for the electron/react boilerplate
 
