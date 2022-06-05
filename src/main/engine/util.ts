@@ -15,7 +15,7 @@ if (process.env.NODE_ENV === 'development') {
   resolveHtmlPath = (htmlFileName: string) => {
     return `file://${path.resolve(
       __dirname,
-      '../../visualizer/',
+      '../visualizer/',
       htmlFileName
     )}`
   }
