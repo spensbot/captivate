@@ -46,6 +46,6 @@ We live in an open source world. Share your best scenes and creations with other
 
 `npm start` <-- run the app in development mode with hot-reloading
 
-Thanks to [this repo](https://github.com/electron-react-boilerplate/electron-react-boilerplate) for the electron/react boilerplate
+Thanks to [electron-react-boilerplate](https://github.com/electron-react-boilerplate/electron-react-boilerplate) for the app boilerplate
 
 [MIT License](https://github.com/spensbot/Captivate2/blob/master/LICENSE)

@@ -1,9 +1,8 @@
 import { useRef } from 'react'
-import RollingAverage from 'shared/RollingAverage'
+import {DynamicSustainRollingAverage, dynamicSustain} from 'shared/RollingAverage'
 
 function getRollingAverage() {
-  const avg = new RollingAverage()
-  avg.setSustainSamples(30)
+  const avg = new DynamicSustainRollingAverage(60, dynamicSustain(20, 0.3))
   return avg
 }
 
@@ -18,7 +17,6 @@ export default function FPS({ dt }: { dt: number }) {
         position: 'absolute',
         fontSize: '0.9rem',
         padding: '1rem',
-        cursor: 'pointer',
         userSelect: 'none',
         top: 0,
         left: 0,

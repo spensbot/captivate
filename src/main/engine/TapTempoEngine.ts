@@ -1,23 +1,20 @@
-import RollingAverage from '../../shared/RollingAverage'
+import {DynamicSustainRollingAverage, dynamicSustain} from '../../shared/RollingAverage'
 
 const BPM_LIMIT = 1000
 const SLEEP_TIME = 3000 // milliseconds between taps after which the engine resets
 const TAPS_TO_COMMIT = 3 // Number of taps before the bpm is set
-const SUSTAIN_SAMPLES = 5 // <- Number of samples the rolling average is averaged over
+const MAX_SUSTAIN_SAMPLES = 5 // <- Number of samples the rolling average is averaged over
+const RESET_RATIO = 0.5
 
 function getBPM(ms: number) {
   return 60000 / ms
 }
 
 export default class TapTempoEngine {
-  private avgBPM = new RollingAverage()
+  private avgBPM = new DynamicSustainRollingAverage(120, dynamicSustain(MAX_SUSTAIN_SAMPLES, RESET_RATIO))
   private sessionStartTime = 0
   private sessionTaps = 0
   private lastTapTime = 0
-
-  constructor() {
-    this.avgBPM.setSustainSamples(SUSTAIN_SAMPLES)
-  }
 
   tap(setBpm: (newBPM: number) => void) {
     const now = Date.now()

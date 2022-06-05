@@ -1,7 +1,11 @@
 export default class RollingAverage {
-  private average: number = 0.0
-  private newWeight: number = 1.0
-  private oldWeight: number = 0.0
+  private average: number
+  private newWeight = 1
+  private oldWeight = 0
+
+  constructor(init: number) {
+    this.average = init
+  }
 
   setSustainSamples(sustainSamples: number) {
     if (sustainSamples < 1.0) {
@@ -13,7 +17,7 @@ export default class RollingAverage {
     }
   }
 
-  setSustainSeconds(sampleRate: number, sustainSeconds: number) {
+  setSustainSeconds(sampleRate: number /* samples per second */, sustainSeconds: number) {
     this.setSustainSamples(sampleRate * sustainSeconds)
   }
 
@@ -25,7 +29,47 @@ export default class RollingAverage {
     return this.average
   }
 
-  reset(average: number) {
-    this.average = average
+  reset(newAverage: number) {
+    this.average = newAverage
+  }
+}
+
+// A rolling average that dynamically updates sustain samples 
+// based on the ratio between the pushed sample and the current average
+export class DynamicSustainRollingAverage {
+  private rollingAverage: RollingAverage
+  private getSustainSamples: (ratio: number) => number
+
+  constructor(init: number, getSustainSamples: (ratio: number) => number) {
+    this.rollingAverage = new RollingAverage(init)
+    this.getSustainSamples = getSustainSamples
+  }
+
+  push(sample: number) {
+    const dif = Math.abs(sample - this.rollingAverage.get())
+    const ref = Math.min(this.rollingAverage.get(), sample)
+    const ratio = dif / ref
+    this.rollingAverage.setSustainSamples(this.getSustainSamples(ratio))
+    this.rollingAverage.push(sample)
+  }
+
+  get() {
+    return this.rollingAverage.get()
+  }
+
+  reset(newAverage: number) {
+    this.rollingAverage.reset(newAverage)
+  }
+}
+
+export function dynamicSustain(maxSustainSamples: number, resetRatio: number) {
+  return (ratio: number) => {
+    const dif = resetRatio - ratio
+    if (dif < 0) {
+      return 0
+    } else {
+      const normalized = dif / resetRatio
+      return normalized ** 2 * maxSustainSamples + 1
+    }
   }
 }
