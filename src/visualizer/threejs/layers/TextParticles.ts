@@ -4,17 +4,23 @@ import LayerBase from './LayerBase'
 import { particles } from '../util/particles'
 import { textOutlineShapesAndHoles, textBounds } from '../util/text'
 import { colorFromHSV, distance } from '../util/util'
-import { randomRanged } from '../../../math/util'
+import { lerp, randomRanged } from '../../../math/util'
 import { gravity, ParticleState } from '../util/particlePhysics'
 import { TextParticlesConfig } from './TextParticlesConfig'
 import shaders from '../shaders/shaders'
 import UpdateResource from '../UpdateResource'
+import { mapFn } from '../../../shared/util'
+import { snapToMultipleOf2 } from '../util/util'
+import { rLerp } from 'math/range'
 
 const attrib = {
   position: 'position',
   color: 'customColor',
   size: 'size',
 }
+
+const mapSpeedToPeriod = mapFn(0.5, {min: 16, max: 0.5})
+const mapSnapToExp = mapFn(2, {min: 1.5, max: 0.2})
 
 export default class TextParticles extends LayerBase {
   particles = new THREE.Points()
@@ -62,11 +68,13 @@ export default class TextParticles extends LayerBase {
     const size = this.particles.geometry.attributes.size
     if (pos === undefined) return
 
+    const period = snapToMultipleOf2(mapSpeedToPeriod(rLerp(this.config.speed, res.scene.epicness)))
+  
     const col = new THREE.Color(
       colorFromHSV(res.params.hue, 1, params.brightness)
     )
 
-    if (res.isNewPeriod(this.config.period)) {
+    if (res.isNewPeriod(period)) {
       const { text, textSize, fontType, particleCount } = this.config
       this.activeTextIndex += 1
       if (this.activeTextIndex >= text.length) this.activeTextIndex = 0
@@ -77,33 +85,39 @@ export default class TextParticles extends LayerBase {
         fontType
       )
       this.particleStates.forEach((pState, i) => {
-        pState.ix = points[i]?.x ?? 0
-        pState.iy = points[i]?.y ?? 0
+        pState.tx = points[i]?.x ?? 0
+        pState.ty = points[i]?.y ?? 0
       })
-    } else if (res.isNewPeriod(1)) {
-      // this.particleStates.forEach((pState, i) => {
-      // pState.vx += this.throw()
-      // pState.vy += this.throw()
-      // })
     }
 
     const dt_seconds = res.dt / 1000
 
+    res.msPerPeriod(period)
+    const framesLeft = res.framesLeft(period)
+    const exp = mapSnapToExp(res.lerpEpicness(this.config.snap))
+    const amount = Math.min((1 / framesLeft), 1) ** exp
+
     this.particleStates.forEach((pState, i) => {
-      const { x, y, ix, iy, vx, vy } = gravity(
+      let { x, y, tx, ty, vx, vy } = gravity(
         dt_seconds,
         pState,
-        this.config.physics
+        this.config.physics,
       )
+
+      // Pull towards target as we near the end of the period
+      x = lerp(x, tx, amount)
+      y = lerp(y, ty, amount)
+
+      const dist = distance(x, y, tx, ty)
+
+      pos.setXY(i, x, y)
+      size.setX(i, (1 + dist * 5) * this.config.particleSize * res.size.height / 2000)
+      color.setXYZ(i, col.r, col.g, col.b)
+
       pState.x = x
       pState.y = y
       pState.vx = vx
       pState.vy = vy
-      const delta = distance(x, y, ix, iy)
-
-      pos.setXY(i, x, y)
-      size.setX(i, delta * this.config.particleSize + this.config.particleSize)
-      color.setXYZ(i, col.r, col.g, col.b)
     })
 
     pos.needsUpdate = true
@@ -127,8 +141,8 @@ export default class TextParticles extends LayerBase {
       this.particleStates.push({
         x: x,
         y: y,
-        ix: x,
-        iy: y,
+        tx: x,
+        ty: y,
         vx: 0,
         vy: 0,
       })

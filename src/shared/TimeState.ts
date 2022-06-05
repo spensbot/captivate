@@ -26,19 +26,27 @@ export function initTimeState(): TimeState {
 
 export type Beats = number
 
-// export function isNewPeriod(ts: TimeState, period: Beats) {
-//   const dtMinutes = ts.dt / 60000
-//   const dtBeats = dtMinutes * ts.bpm
-//   return ts.beats % period < dtBeats
-// }
-
 export function isNewPeriod(
   beatsLast: Beats,
   beatsNow: Beats,
-  beatsPerPeriod: Beats
+  period: Beats
 ) {
   const beatDelta = beatsNow - beatsLast
-  return beatsNow % beatsPerPeriod < beatDelta
+  return beatsNow % period < beatDelta
+}
+
+export function beatsIn(
+  beatsNow: Beats,
+  period: Beats
+) {
+  return beatsNow % period
+}
+
+export function beatsLeft(
+  beatsNow: Beats,
+  period: Beats,
+) {
+  return period - beatsIn(beatsNow, period)
 }
 
 export class PeriodTracker {

@@ -92,7 +92,8 @@ function SpecificFields({ config, onChange }: Props) {
           {makeSelect('Font', config, fontTypes, 'fontType')}
           {makeNumberInput('Font Size', config, 'textSize')}
           {makeNumberInput('Particle Count', config, 'particleCount')}
-          {makeNumberInput('Beats Per Change', config, 'period')}
+          {makeRangeSlider('Speed', config, 'speed')}
+          {makeRangeSlider('Snap', config, 'snap')}
           {makeSlider('Particle Size', config, 'particleSize')}
           {makeInputArray('Text', config, 'text')}
         </>

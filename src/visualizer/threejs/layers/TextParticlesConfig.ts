@@ -1,5 +1,6 @@
 import { Physics } from '../util/particlePhysics'
 import { FontType } from '../fonts/FontType'
+import { Range } from 'math/range'
 
 export interface TextParticlesConfig {
   type: 'TextParticles'
@@ -11,7 +12,8 @@ export interface TextParticlesConfig {
   particleColor: number
   physics: Physics
   throwVelocity: number
-  period: number
+  speed: Range
+  snap: Range
 }
 
 export function initTextParticlesConfig(): TextParticlesConfig {
@@ -29,6 +31,7 @@ export function initTextParticlesConfig(): TextParticlesConfig {
       drag: 3,
     },
     throwVelocity: 0.5,
-    period: 8,
+    speed: {min: 0, max: 1},
+    snap: {min: 0, max: 1}
   }
 }

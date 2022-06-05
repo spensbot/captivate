@@ -113,15 +113,3 @@ export function mapFn(
 
   return (normalized: number) => normalized ** skew * range + min
 }
-
-export function mapRangeFn(
-  skew: number,
-  range_out?: Partial<Range>
-): (normalizedRange: Range) => Range {
-  let mapVal = mapFn(skew, range_out)
-
-  return (normalizedRange: Range) => ({
-    min: mapVal(normalizedRange.min),
-    max: mapVal(normalizedRange.max),
-  })
-}

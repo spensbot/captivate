@@ -55,6 +55,10 @@ export default class VisualizerManager {
       time: res.rt.time,
       scene: control.light.byId[control.light.active],
       master: control.master,
+      size: {
+        width: this.width,
+        height: this.height
+      }
     }
     if (this.updateResource === null) {
       this.updateResource = new UpdateResource(stuff)

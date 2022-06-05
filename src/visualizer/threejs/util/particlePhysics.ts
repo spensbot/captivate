@@ -1,8 +1,10 @@
+import { randomRanged } from "math/util"
+
 export interface ParticleState {
   x: number
   y: number
-  ix: number // initial pos (units)
-  iy: number
+  tx: number // target pos (units)
+  ty: number
   vx: number // velocity (units/s)
   vy: number
 }
@@ -42,11 +44,12 @@ export type Physics = Gravity
 
 export function gravity(
   dt: number,
-  { x, y, ix, iy, vx, vy }: ParticleState,
-  { gravity, drag }: Gravity
+  { x, y, tx, ty, vx, vy }: ParticleState,
+  { gravity, drag }: Gravity,
 ): ParticleState {
-  const { distance, nx, ny } = positionInfo(x, y, ix, iy)
+  const { distance, nx, ny } = positionInfo(x, y, tx, ty)
   const { speed, nvx, nvy } = velocityInfo(vx, vy)
+  const rand = randomRanged(-1, 1) * 3
 
   //acceleration
   const aGrav = gravity // ((distance ^ 2) + 0.01)
@@ -57,12 +60,14 @@ export function gravity(
   ay += ny * aGrav
   ax -= nvx * aDrag
   ay -= nvy * aDrag
+  ax += distance * rand
+  ay += distance * rand
 
   return {
     x: x + vx * dt,
     y: y + vy * dt,
-    ix: ix,
-    iy: iy,
+    tx: tx,
+    ty: ty,
     vx: vx + ax * dt,
     vy: vy + ay * dt,
   }
@@ -72,4 +77,4 @@ export function gravity(
 //   wind: number // units/ms^2
 // }
 
-// export function smoke({ x, y, ix, iy, vx, vy, wind }: Smoke) {}
+// export function smoke({ x, y, tx, ty, vx, vy, wind }: Smoke) {}

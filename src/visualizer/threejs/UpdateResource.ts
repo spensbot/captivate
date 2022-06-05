@@ -1,7 +1,9 @@
 import { Params } from '../../shared/params'
 import { TimeState } from '../../shared/TimeState'
-import { isNewPeriod } from '../../shared/TimeState'
+import { isNewPeriod, beatsIn, beatsLeft } from '../../shared/TimeState'
 import { LightScene_t } from '../../shared/Scenes'
+import { Size } from 'math/size'
+import { Range, rLerp } from 'math/range'
 
 interface UpdateData {
   dt: number
@@ -9,6 +11,7 @@ interface UpdateData {
   params: Params
   scene: LightScene_t
   master: number
+  size: Size
 }
 
 export default class UpdateResource {
@@ -17,6 +20,7 @@ export default class UpdateResource {
   params: Params
   scene: LightScene_t
   master: number
+  size: Size
   private lastBeats: number
 
   constructor(stuff: UpdateData) {
@@ -25,6 +29,7 @@ export default class UpdateResource {
     this.params = stuff.params
     this.scene = stuff.scene
     this.master = stuff.master
+    this.size = stuff.size
     this.lastBeats = this.time.beats
   }
 
@@ -35,9 +40,35 @@ export default class UpdateResource {
     this.params = stuff.params
     this.scene = stuff.scene
     this.master = stuff.master
+    this.size = stuff.size
   }
 
-  isNewPeriod(beatsPerPeriod: number) {
-    return isNewPeriod(this.lastBeats, this.time.beats, beatsPerPeriod)
+  isNewPeriod(period: number) {
+    return isNewPeriod(this.lastBeats, this.time.beats, period)
+  }
+
+  msPerPeriod(beatsPerPeriod: number) {
+    return beatsPerPeriod / this.time.bpm * 60000
+  }
+
+  beatsIn(period: number) {
+    return beatsIn(this.time.beats, period)
+  }
+
+  beatsLeft(period: number) {
+    return beatsLeft(this.time.beats, period)
+  }
+
+  beatsPerFrame() {
+    const minutesPerFrame = this.dt / 60000
+    return minutesPerFrame * this.time.bpm
+  }
+
+  framesLeft(period: number) {
+    return this.beatsLeft(period) / this.beatsPerFrame()
+  }
+
+  lerpEpicness(range: Range) {
+    return rLerp(range, this.scene.epicness)
   }
 }
