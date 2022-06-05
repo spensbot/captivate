@@ -19,7 +19,7 @@ const attrib = {
   size: 'size',
 }
 
-const mapSpeedToPeriod = mapFn(0.5, {min: 16, max: 0.5})
+const mapSpeedToPeriod = mapFn(0.3, {min: 16, max: 0.125})
 const mapSnapToExp = mapFn(2, {min: 1.5, max: 0.2})
 
 export default class TextParticles extends LayerBase {

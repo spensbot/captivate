@@ -68,16 +68,34 @@ export default function makeControls<SuperConfig>(
           min={_min}
           max={_max}
           step={_step}
-          onChange={(_e, newVals) => {
+          onChange={(e, newVals) => {
             let newValues = newVals as [number, number]
-            let min = Math.min(...newValues)
-            let max = Math.max(...newValues)
+
+            let min = 0
+            let max = 0
+
+            if ((e as KeyboardEvent).metaKey) {
+              min = Math.min(...newValues)
+              max = Math.max(...newValues)
+            } else {
+              if (values[0] !== newValues[0]) {
+                min = newValues[0]
+                max = newValues[0]
+              } else {
+                min = newValues[1]
+                max = newValues[1]
+              }
+            }
+
             makeOnChange(key)({
               min,
               max,
             })
           }}
           valueLabelDisplay="off"
+          sx={{
+            color: 'success.main'
+          }}
         />
       </Root>
     )
