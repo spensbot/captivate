@@ -48,4 +48,4 @@ We live in an open source world. Share your best scenes and creations with other
 
 Thanks to [electron-react-boilerplate](https://github.com/electron-react-boilerplate/electron-react-boilerplate) for the app boilerplate
 
-[MIT License](https://github.com/spensbot/Captivate2/blob/master/LICENSE)
+[MIT License](https://github.com/spensbot/Captivate2/blob/master/LICENSE) 
