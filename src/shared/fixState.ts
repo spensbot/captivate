@@ -2,13 +2,6 @@ import { CleanReduxState } from '../renderer/redux/store'
 
 // Modify this function to fix any breaking state changes between upgrades
 export default function fixState(state: CleanReduxState): CleanReduxState {
-  visualScenes(state).forEach(scene => {
-    if (scene.config.type === 'TextParticles') {
-      scene.config.speed = {min: 0, max: 1}
-      scene.config.snap = {min: 0, max: 1}
-    }
-  })
-
   return state
 }
 
