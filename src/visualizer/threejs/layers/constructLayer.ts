@@ -7,6 +7,7 @@ import LocalMedia from './LocalMedia'
 import { LayerConfig } from './LayerConfig'
 import LayerBase from './LayerBase'
 import Space from './Space'
+import Run from './Run'
 
 //ADD LAYER!!!
 export default function constructLayer(config: LayerConfig): LayerBase {
@@ -17,6 +18,7 @@ export default function constructLayer(config: LayerConfig): LayerBase {
   if (config.type === 'TextSpin') return new TextSpin(config)
   if (config.type === 'LocalMedia') return new LocalMedia(config)
   if (config.type === 'Space') return new Space(config)
+  if (config.type === 'Run') return new Run(config)
   console.error(`Missing constructor in constructLayer()`)
   return new CubeSphere(initCubeSphereConfig())
 }

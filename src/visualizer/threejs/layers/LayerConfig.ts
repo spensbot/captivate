@@ -8,6 +8,7 @@ import {
 } from './TextParticlesConfig'
 import { LocalMediaConfig, initLocalMediaConfig } from './LocalMediaConfig'
 import { initSpaceConfig, SpaceConfig } from './Space'
+import { initRunConfig, RunConfig } from './Run'
 
 //ADD LAYER!!!
 export type LayerConfig =
@@ -18,6 +19,7 @@ export type LayerConfig =
   | TextParticlesConfig
   | LocalMediaConfig
   | SpaceConfig
+  | RunConfig
 
 export type VisualizerType = LayerConfig['type']
 
@@ -30,6 +32,7 @@ export const visualizerTypeList: VisualizerType[] = [
   'TextSpin',
   'LocalMedia',
   'Space',
+  // 'Run' // <-- not finished yet
 ]
 
 //ADD LAYER!!!
@@ -41,6 +44,7 @@ export function initLayerConfig(type: VisualizerType): LayerConfig {
   if (type === 'TextSpin') return initTextSpinConfig()
   if (type === 'LocalMedia') return initLocalMediaConfig()
   if (type === 'Space') return initSpaceConfig()
+  if (type === 'Run') return initRunConfig()
   console.error(`Missing default config in initLayerConfig()`)
   return initCubeSphereConfig()
 }
@@ -54,6 +58,7 @@ export const layerDisplayNames: { [key in VisualizerType]: string } = {
   TextSpin: 'Text',
   LocalMedia: 'Local Media',
   Space: 'Space',
+  Run: 'Run'
 } as const
 
 export function layerTypeFromDisplayName(searchFor: string): VisualizerType {

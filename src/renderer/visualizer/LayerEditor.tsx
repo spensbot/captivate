@@ -116,6 +116,8 @@ function SpecificFields({ config, onChange }: Props) {
           {makeRangeSlider('Randomize', config, 'randomize')}
         </>
       )
+    case 'Run':
+      return (<></>)
     default:
       return <></>
   }
