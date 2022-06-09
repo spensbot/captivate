@@ -22,6 +22,7 @@ import {
   removeColorMapColor,
 } from '../redux/dmxSlice'
 import { IconButton } from '@mui/material'
+import Checkbox from '../base/Checkbox'
 import AddIcon from '@mui/icons-material/Add'
 import RemoveIcon from '@mui/icons-material/Remove'
 import Add from '@mui/icons-material/Add'
@@ -213,6 +214,8 @@ function getInfo({ ch }: Props3): string {
       return `Other`
     case 'strobe':
       return `Strobe`
+    case 'reset':
+      return `Reset`
   }
 }
 
@@ -226,6 +229,10 @@ function getSubInfo({ ch }: Props3): string | null {
       return `Default: ${ch.default}`
     case 'strobe':
       return `Solid: ${ch.default_solid} | Strobe: ${ch.default_strobe}`
+    case 'master':
+      return `${ch.min} - ${ch.max}`
+    case 'reset':
+      return `val: ${ch.resetVal}`
     default:
       return null
   }
@@ -318,6 +325,10 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
             })
           }
         />
+        <Checkbox label='On/Off' checked={ch.isOnOff} onChange={isOnOff => updateChannel({
+          ...ch,
+          isOnOff
+        })}/>
       </>
     )
   } else if (ch.type === 'other') {

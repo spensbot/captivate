@@ -17,6 +17,7 @@ type ChannelMaster = {
   type: 'master'
   min: DmxValue
   max: DmxValue
+  isOnOff: boolean
 }
 
 function master(): ChannelMaster {
@@ -24,6 +25,7 @@ function master(): ChannelMaster {
     type: 'master',
     min: 0,
     max: 255,
+    isOnOff: false
   }
 }
 
@@ -57,6 +59,11 @@ type ChannelColorMap = {
   colors: ColorMapColor[]
 }
 
+type ChannelReset = {
+  type: 'reset'
+  resetVal: DmxValue
+}
+
 export type FixtureChannel =
   | ChannelMaster
   | ChannelColor
@@ -64,6 +71,7 @@ export type FixtureChannel =
   | ChannelAxis
   | ChannelColorMap
   | ChannelOther
+  | ChannelReset
 
 export type ChannelType = FixtureChannel['type']
 
