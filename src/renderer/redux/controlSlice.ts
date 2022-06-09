@@ -301,6 +301,29 @@ export const scenesSlice = createSlice({
         })
       }
     },
+    deleteBaseParams: (
+      state,
+      { payload: { params, splitIndex } }: PayloadAction<{
+        splitIndex: number | null
+        params: readonly Param[]
+      }>
+    ) => {
+      for (const param of params) {
+        modifyActiveLightScene(state, (scene) => {
+          const baseParams =
+            splitIndex === null
+              ? scene.baseParams
+              : scene.splitScenes[splitIndex].baseParams
+          delete baseParams[param]
+
+          // Now remove the params from any modulators
+          scene.modulators.forEach(modulator => {
+            const modulation = splitIndex === null ? modulator.modulation : modulator.splitModulations[splitIndex]
+            delete modulation[param]
+          }) 
+        })
+      }
+    },
     incrementBaseParams: (
       state,
       { payload: { params, splitIndex } }: ParamsAction
@@ -464,6 +487,7 @@ export const {
   // LIGHT SCENES
   resetLightScenes,
   setBaseParams,
+  deleteBaseParams,
   incrementBaseParams,
   setModulatorShape,
   setPeriod,

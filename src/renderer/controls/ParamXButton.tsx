@@ -1,7 +1,7 @@
 import styled from 'styled-components'
-import { Param, Params } from 'shared/params'
+import { Param } from 'shared/params'
 import { useDispatch } from 'react-redux'
-import { setBaseParams } from 'renderer/redux/controlSlice'
+import { deleteBaseParams } from 'renderer/redux/controlSlice'
 
 interface Props {
   splitIndex: number | null
@@ -12,14 +12,10 @@ export default function ParamXButton({ splitIndex, params }: Props) {
   const dispatch = useDispatch()
 
   const onClick = () => {
-    const deletedParams: Partial<Params> = {}
-    for (const param of params) {
-      deletedParams[param] = undefined
-    }
     dispatch(
-      setBaseParams({
+      deleteBaseParams({
         splitIndex,
-        params: deletedParams,
+        params
       })
     )
   }
