@@ -22,7 +22,7 @@ import {
   removeColorMapColor,
 } from '../redux/dmxSlice'
 import { IconButton } from '@mui/material'
-import Checkbox from '../base/Checkbox'
+import Checkbox from '../base/LabelledCheckbox'
 import AddIcon from '@mui/icons-material/Add'
 import RemoveIcon from '@mui/icons-material/Remove'
 import Add from '@mui/icons-material/Add'
@@ -325,6 +325,7 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
             })
           }
         />
+        <Sp2 />
         <Checkbox label='On/Off' checked={ch.isOnOff} onChange={isOnOff => updateChannel({
           ...ch,
           isOnOff

@@ -11,7 +11,7 @@ export default function LabelledCheckbox({checked, onChange, label}: Props) {
   return (
     <Root>
       {label && <Label>{label}</Label>}
-      <Checkbox checked={checked} onChange={e => onChange(e.target.checked)}/>
+      <Checkbox checked={checked} onClick={_ => onChange(!checked)}/>
     </Root>
   )
 }
@@ -22,5 +22,6 @@ const Root = styled.div`
 `
 
 const Label = styled.div`
-  
+  font-size: 1rem;
+  margin-right: 0.5rem;
 `
