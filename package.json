@@ -14,8 +14,7 @@
     "start:main": "cross-env NODE_ENV=development electronmon -r ts-node/register/transpile-only .",
     "start:preload": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.preload.dev.ts",
     "start:renderer": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack serve --config ./.erb/configs/webpack.config.renderer.dev.ts",
-    "start:visualizer": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack serve --config ./.erb/configs/webpack.config.visualizer.dev.ts",
-    "test": "jest"
+    "start:visualizer": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack serve --config ./.erb/configs/webpack.config.visualizer.dev.ts"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
@@ -105,8 +104,6 @@
   "devDependencies": {
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.6",
     "@teamsupercell/typings-for-css-modules-loader": "^2.5.1",
-    "@testing-library/jest-dom": "^5.16.4",
-    "@testing-library/react": "^13.2.0",
     "@types/color-convert": "^2.0.0",
     "@types/core-js": "^2.5.5",
     "@types/deep-equal": "^1.0.1",
