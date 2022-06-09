@@ -46,36 +46,6 @@
       }
     ]
   },
-  "jest": {
-    "moduleDirectories": [
-      "node_modules",
-      "release/app/node_modules"
-    ],
-    "moduleFileExtensions": [
-      "js",
-      "jsx",
-      "ts",
-      "tsx",
-      "json"
-    ],
-    "moduleNameMapper": {
-      "\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$": "<rootDir>/.erb/mocks/fileMock.js",
-      "\\.(css|less|sass|scss)$": "identity-obj-proxy"
-    },
-    "setupFiles": [
-      "./.erb/scripts/check-build-exists.ts"
-    ],
-    "testEnvironment": "jsdom",
-    "testEnvironmentOptions": {
-      "url": "http://localhost/"
-    },
-    "testPathIgnorePatterns": [
-      "release/app/dist"
-    ],
-    "transform": {
-      "\\.(ts|tsx|js|jsx)$": "ts-jest"
-    }
-  },
   "dependencies": {
     "@emotion/react": "^11.9.0",
     "@emotion/styled": "^11.8.1",
@@ -114,7 +84,6 @@
     "@types/react": "^18.0.9",
     "@types/react-beautiful-dnd": "^13.1.2",
     "@types/react-dom": "^18.0.4",
-    "@types/react-test-renderer": "^18.0.0",
     "@types/regenerator-runtime": "^0.13.1",
     "@types/serialport": "^8.0.2",
     "@types/styled-components": "^5.1.25",
@@ -162,7 +131,6 @@
     "prettier": "^2.6.2",
     "raw-loader": "^4.0.2",
     "react-refresh": "^0.13.0",
-    "react-test-renderer": "^18.1.0",
     "rimraf": "^3.0.2",
     "sass": "^1.51.0",
     "sass-loader": "^12.6.0",
