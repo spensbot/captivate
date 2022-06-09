@@ -8,7 +8,6 @@ import BarChartIcon from '@mui/icons-material/BarChart'
 import { useTypedSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import { setActivePage, Page } from '../redux/guiSlice'
-import TooltipWrapper from '../base/TooltipWrapper'
 import MasterSlider from '../controls/MasterSlider'
 
 const selectedBorder = 0.2 //rem
@@ -25,7 +24,6 @@ export default function MenuBar() {
 
   function MenuItem({
     page,
-    tooltipText,
     paddingRem = 1,
     children,
   }: {
@@ -40,7 +38,6 @@ export default function MenuBar() {
       ? `${p}rem ${p}rem ${p}rem ${p - selectedBorder}rem`
       : `${p}rem`
     return (
-      <TooltipWrapper text={tooltipText}>
         <Item
           selected={activePage === page}
           style={{ padding: padding }}
@@ -48,7 +45,6 @@ export default function MenuBar() {
         >
           {children}
         </Item>
-      </TooltipWrapper>
     )
   }
 

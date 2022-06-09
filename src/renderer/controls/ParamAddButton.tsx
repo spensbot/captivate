@@ -107,6 +107,7 @@ export default function ParamAddButton({ splitIndex }: Props) {
             const icon = icons[option]
             return (
               <Option
+                key={option}
                 onClick={(e) => {
                   e.preventDefault()
                   const newParams: Partial<Params> = {}
