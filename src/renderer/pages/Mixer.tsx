@@ -278,6 +278,9 @@ const Info = styled.div`
   color: #111;
   background-color: #eee;
   padding: 0.15rem 0.3rem;
+  opacity: 0.8;
+  box-shadow: 0px 2px 10px 0px #000000;
+  border-radius: 3px;
 `
 
 const Val = styled.div`
