@@ -24,5 +24,20 @@
     "midi": "^2.0.0",
     "node-link": "file:node-link",
     "@sentry/electron": "^3.0.7"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "overrides": [
+      {
+        "files": [
+          ".prettierrc",
+          ".eslintrc"
+        ],
+        "options": {
+          "parser": "json",
+          "semi": false
+        }
+      }
+    ]
   }
 }

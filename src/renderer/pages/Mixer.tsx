@@ -14,6 +14,10 @@ import {
 import { useRealtimeSelector } from '../redux/realtimeStore'
 import StatusBar from '../menu/StatusBar'
 import React from 'react'
+import useHover from 'renderer/hooks/useHover'
+import { FixtureChannel, FixtureType } from 'shared/dmxFixtures'
+import zIndexes from 'renderer/zIndexes'
+import useMousePosition from 'renderer/hooks/useMousePosition'
 
 const MAX_DMX = 512
 
@@ -31,18 +35,18 @@ export default function Mixer() {
     <Root>
       <StatusBar />
       <Header />
-      <SliderWrapper>
+      <LabelledSliderWrapper>
         {dmxIndexes.map((i) => (
           <LabelledSlider key={i} index={i} />
         ))}
-      </SliderWrapper>
+      </LabelledSliderWrapper>
     </Root>
   )
 }
 
 const Root = styled.div``
 
-const SliderWrapper = styled.div`
+const LabelledSliderWrapper = styled.div`
   display: flex;
   flex-wrap: wrap;
   padding: 1rem;
@@ -127,8 +131,8 @@ function LabelledSlider({ index }: { index: number }) {
     (state) => {
       let i = 0
       for (const f of state.universe) {
-        const endChannel =
-          f.ch + state.fixtureTypesByID[f.type].channels.length - 1
+        const ft = state.fixtureTypesByID[f.type]
+        const endChannel = f.ch + ft.channels.length - 1
         if (ch == f.ch) {
           if (ch == endChannel) {
             return ['single', i]
@@ -145,20 +149,21 @@ function LabelledSlider({ index }: { index: number }) {
   )
   const output: number = useRealtimeSelector((state) => state.dmxOut[index])
   const dispatch = useDispatch()
+  const { hoverDiv, isHover } = useHover()
 
   const onChange = (newVal: number) => {
     dispatch(setOverwrite({ index: index, value: newVal }))
   }
 
   return (
-    <Col>
+    <Col ref={hoverDiv}>
       <Slider
         value={overwrite !== undefined ? overwrite : output / 255}
         radius={0.5}
         onChange={onChange}
         orientation="vertical"
         disabled={overwrite === undefined}
-      ></Slider>
+      />
       <Div>
         <Status
           style={{
@@ -168,16 +173,19 @@ function LabelledSlider({ index }: { index: number }) {
         />
         <Label>{ch.toString()}</Label>
       </Div>
+      {isHover && <InfoCursor index={index} />}
     </Col>
   )
 }
 
 const Col = styled.div`
-  height: 13rem;
+  height: 14rem;
   width: 2rem;
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: relative;
+  margin-bottom: 1rem;
 `
 
 const Div = styled.div`
@@ -188,7 +196,6 @@ const Div = styled.div`
   margin-top: 0.5rem;
   height: 1.5rem;
   width: 100%;
-  margin-bottom: 1rem;
 `
 
 const Label = styled.div`
@@ -235,3 +242,48 @@ const statusStyles: { [key in Status_t]: React.CSSProperties } = {
     border: 'none',
   },
 }
+
+function InfoCursor({ index }: { index: number }) {
+  const ch = index + 1
+  const output: number = useRealtimeSelector((state) => state.dmxOut[index])
+  const pos = useMousePosition()
+  const [fixtureType, fixtureChannel]: [
+    FixtureType | null,
+    FixtureChannel | null
+  ] = useDmxSelector((state) => {
+    let i = 0
+    for (const f of state.universe) {
+      const ft = state.fixtureTypesByID[f.type]
+      const fc = ft.channels[ch - f.ch]
+      const endChannel = f.ch + ft.channels.length - 1
+      if (ch >= f.ch && ch <= endChannel) return [ft, fc]
+      i += 1
+    }
+    return [null, null]
+  })
+
+  return (
+    <Info style={{ left: `${pos.x}px`, top: `${pos.y}px` }}>
+      <Val>{Math.floor(output)}</Val>
+      <FixtureName>{fixtureType?.name}</FixtureName>
+      <FixtureChannelName>{fixtureChannel?.type}</FixtureChannelName>
+    </Info>
+  )
+}
+
+const Info = styled.div`
+  position: fixed;
+  z-index: ${zIndexes.popups};
+  margin-left: 1rem;
+  color: #111;
+  background-color: #eee;
+  padding: 0.15rem 0.3rem;
+`
+
+const Val = styled.div`
+  font-size: 1rem;
+`
+
+const FixtureName = styled.div``
+
+const FixtureChannelName = styled.div``

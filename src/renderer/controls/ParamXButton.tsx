@@ -15,7 +15,7 @@ export default function ParamXButton({ splitIndex, params }: Props) {
     dispatch(
       deleteBaseParams({
         splitIndex,
-        params
+        params,
       })
     )
   }
