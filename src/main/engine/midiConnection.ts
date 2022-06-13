@@ -5,6 +5,7 @@ import {
   DeviceId,
   MidiDevice_t,
 } from '../../shared/connection'
+import throttle from 'lodash.throttle'
 
 export type UpdatePayload = MidiConnections
 export type MessagePayload = MidiMessage
@@ -78,4 +79,28 @@ function newInput(index: number, config: Config) {
   input.openPort(index)
 
   return input
+}
+
+export class ThrottleMap<T> {
+  throttles: { [id: string]: ReturnType<typeof throttle> | undefined } = {}
+  f: (arg: T) => void
+  period: number
+
+  constructor(f: (arg: T) => void, period: number) {
+    this.f = f
+    this.period = period
+  }
+
+  call(id: string, arg: any) {
+    let throttled = this.throttles[id]
+    if (throttled === undefined) {
+      // leading and trailing set to true ensures that the first and last midi note during the interval are always sent
+      throttled = throttle(this.f, this.period, {
+        leading: true,
+        trailing: true,
+      })
+      this.throttles[id] = throttled
+    }
+    throttled(arg)
+  }
 }

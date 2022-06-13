@@ -53,3 +53,12 @@ function getHexDigits(byte: number): [number, number] {
   const msd = (byte - lsd) / 16
   return [msd, lsd]
 }
+
+// must uniquely identify a midi message source (for use in a hash table)
+// does not need to be human readable. Just unique for a given action
+export function midiInputID(msg: MidiMessage): string {
+  if (msg.type === 'On' || msg.type === 'Off')
+    return msg.channel + 'note' + msg.number.toString()
+  if (msg.type === 'CC') return msg.channel + 'cc' + msg.number
+  return 'unknown'
+}

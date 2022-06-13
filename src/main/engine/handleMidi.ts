@@ -1,4 +1,4 @@
-import { MidiMessage } from '../../shared/midi'
+import { MidiMessage, midiInputID } from '../../shared/midi'
 import { CleanReduxState } from '../../renderer/redux/store'
 import { RealtimeState } from '../../renderer/redux/realtimeStore'
 import { getActionID, SliderAction } from '../../renderer/redux/deviceState'
@@ -18,18 +18,9 @@ interface MidiInput {
   message: MidiMessage
 }
 
-// must uniquely identify a midi message source (for use in a hash table)
-// does not need to be human readable. Just unique for a given action
-function getInputID(msg: MidiMessage): string {
-  if (msg.type === 'On' || msg.type === 'Off')
-    return msg.channel + 'note' + msg.number.toString()
-  if (msg.type === 'CC') return msg.channel + 'cc' + msg.number
-  return 'unknown'
-}
-
 function getInput(msg: MidiMessage): MidiInput {
   return {
-    id: getInputID(msg),
+    id: midiInputID(msg),
     message: msg,
   }
 }

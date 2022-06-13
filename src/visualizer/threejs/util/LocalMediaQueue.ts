@@ -9,6 +9,15 @@ import { getMediaData, MediaData, releaseMediaData } from './MediaData'
 
 const MIN_DELTA = 200 // ms
 
+let loadCount = 0
+let releaseCount = 0
+
+// We can remove this once we figure out the illusive memory leak issue
+// setInterval(
+//   () => console.log(`Media loaded: ${loadCount} | released: ${releaseCount}`),
+//   5000
+// )
+
 export default class LocalMediaQueue {
   private index: number = 0
   private mediaData: MediaData | null = null
@@ -19,12 +28,19 @@ export default class LocalMediaQueue {
   private lastSwitch = 0
 
   constructor(config: LocalMediaConfig) {
+    console.log(`LocalMediaQueue()`)
     this.config = config
     this.mesh = new THREE.Mesh(undefined, undefined)
     this.loadQueue = new LoadQueue<MediaData>(
       3,
-      () => this.loadNext(),
-      releaseMediaData,
+      () => {
+        loadCount += 1
+        return this.loadNext()
+      },
+      (data) => {
+        releaseCount += 1
+        releaseMediaData(data)
+      },
       (mediaData) => this.updateMediaData(mediaData)
     )
   }
