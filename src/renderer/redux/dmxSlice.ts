@@ -3,9 +3,6 @@ import {
   Fixture,
   FixtureType,
   Universe,
-  fixtureTypes,
-  fixtureTypesByID,
-  getTestUniverse,
   FixtureChannel,
   ColorMapColor,
 } from '../../shared/dmxFixtures'
@@ -39,9 +36,9 @@ interface SetFixtureWindowEnabledPayload {
 
 export function initDmxState(): DmxState {
   return {
-    universe: getTestUniverse(),
-    fixtureTypes: fixtureTypes,
-    fixtureTypesByID: fixtureTypesByID,
+    universe: [],
+    fixtureTypes: [],
+    fixtureTypesByID: {},
     activeFixtureType: null,
     activeFixture: null,
   }

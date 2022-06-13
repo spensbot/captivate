@@ -9,11 +9,12 @@ import { Param, Params, paramsList } from 'shared/params'
 import { setBaseParams } from 'renderer/redux/controlSlice'
 import { defaultOutputParams } from 'shared/params'
 import BlackLightIcon from '@mui/icons-material/LightBulb'
-import EpicnessIcon from '@mui/icons-material/LocalFireDepartment'
+import IntensityIcon from '@mui/icons-material/LocalFireDepartment'
 import StrobeIcon from '@mui/icons-material/LightMode'
 import RandomizeIcon from '@mui/icons-material/Shuffle'
 import PositionIcon from '@mui/icons-material/PictureInPicture'
 import axisIconSrc from '../../../assets/axis.svg'
+import ModeIcon from '@mui/icons-material/Category'
 
 interface Props {
   splitIndex: number | null
@@ -36,8 +37,9 @@ const icons: { [key in ParamBundle | Param]?: FunctionComponent } = {
   strobe: () => <StrobeIcon />,
   randomize: () => <RandomizeIcon />,
   position: () => <PositionIcon />,
-  intensity: () => <EpicnessIcon />,
+  intensity: () => <IntensityIcon />,
   axis: Axis,
+  mode: () => <ModeIcon />,
 }
 
 const defalt = defaultOutputParams()
@@ -82,10 +84,20 @@ export default function ParamAddButton({ splitIndex }: Props) {
           ) !== undefined
       ) !== undefined
   )
+  const hasMode = useDmxSelector(
+    (dmx) =>
+      dmx.fixtureTypes.find(
+        (ftID) =>
+          dmx.fixtureTypesByID[ftID].channels.find(
+            (ch) => ch.type === 'mode'
+          ) !== undefined
+      ) !== undefined
+  )
 
   const unuseableOptions: Set<Param | ParamBundle> = new Set()
   if (!hasBlackLights) unuseableOptions.add('black')
   if (!hasAxis) unuseableOptions.add('axis')
+  if (!hasMode) unuseableOptions.add('mode')
   const options = getOptions(baseParams).filter(
     (option) => !unuseableOptions.has(option)
   )

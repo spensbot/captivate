@@ -1,7 +1,6 @@
 import { Window2D_t } from '../shared/window'
 import { Color } from './dmxColors'
 import { nanoid } from 'nanoid'
-import { DEFAULT_GROUP } from './Scenes'
 
 export const DMX_MAX_VALUE = 255
 export const DMX_NUM_CHANNELS = 512
@@ -18,15 +17,6 @@ type ChannelMaster = {
   min: DmxValue
   max: DmxValue
   isOnOff: boolean
-}
-
-function master(): ChannelMaster {
-  return {
-    type: 'master',
-    min: 0,
-    max: 255,
-    isOnOff: false
-  }
 }
 
 type ChannelColor = {
@@ -52,6 +42,12 @@ type ChannelAxis = {
   max: DmxValue
 }
 
+type ChannelMode = {
+  type: 'mode'
+  min: DmxValue
+  max: DmxValue
+}
+
 export type ColorMapColor = { max: number; hue: number }
 
 type ChannelColorMap = {
@@ -72,6 +68,7 @@ export type FixtureChannel =
   | ChannelColorMap
   | ChannelOther
   | ChannelReset
+  | ChannelMode
 
 export type ChannelType = FixtureChannel['type']
 
@@ -82,6 +79,8 @@ export const channelTypes: ChannelType[] = [
   'axis',
   'colorMap',
   'other',
+  'mode',
+  'reset',
 ]
 
 export function initFixtureChannel(
@@ -115,8 +114,24 @@ export function initFixtureChannel(
       type: type,
       colors: [],
     }
+  } else if (type === 'mode') {
+    return {
+      type: type,
+      min: 0,
+      max: 255,
+    }
+  } else if (type === 'reset') {
+    return {
+      type: 'reset',
+      resetVal: 255,
+    }
   }
-  return master()
+  return {
+    type: 'master',
+    min: 0,
+    max: 255,
+    isOnOff: false,
+  }
 }
 
 export type FixtureType = {
@@ -125,99 +140,6 @@ export type FixtureType = {
   intensity: number
   manufacturer?: string
   channels: FixtureChannel[]
-}
-
-const parFixture: FixtureType = {
-  id: '1',
-  manufacturer: 'YeeSaw',
-  name: 'Par',
-  intensity: 0.3,
-  channels: [
-    master(),
-    { type: 'color', color: 'red' },
-    { type: 'color', color: 'green' },
-    { type: 'color', color: 'blue' },
-    { type: 'color', color: 'white' },
-    { type: 'other', default: 0 },
-    { type: 'strobe', default_solid: 0, default_strobe: 241 },
-    { type: 'other', default: 0 },
-  ],
-}
-
-const stringLightFixture: FixtureType = {
-  id: '2',
-  name: 'Light String',
-  intensity: 0.3,
-  channels: [master()],
-}
-
-const strobeFixture: FixtureType = {
-  id: '3',
-  manufacturer: 'DragonX',
-  name: 'Strobe',
-  intensity: 0.8,
-  channels: [
-    master(),
-    { type: 'strobe', default_solid: 0, default_strobe: 250 },
-    { type: 'other', default: 0 },
-  ],
-}
-
-const derbyFixture: FixtureType = {
-  id: '4',
-  manufacturer: 'Laluce Natz',
-  name: 'Derby',
-  intensity: 0,
-  channels: [
-    master(),
-    { type: 'color', color: 'red' },
-    { type: 'color', color: 'green' },
-    { type: 'color', color: 'blue' },
-    { type: 'strobe', default_solid: 0, default_strobe: 199 },
-    { type: 'other', default: 130 },
-    { type: 'other', default: 0 },
-  ],
-}
-
-const laserFixture: FixtureType = {
-  id: '5',
-  manufacturer: 'Laser World',
-  name: 'EL-400',
-  intensity: 0.5,
-  channels: [master()],
-}
-
-const vBar: FixtureType = {
-  id: '6',
-  manufacturer: 'American DJ',
-  name: 'VBar',
-  intensity: 0.7,
-  channels: [
-    { type: 'color', color: 'red' },
-    { type: 'color', color: 'green' },
-    { type: 'color', color: 'blue' },
-    { type: 'color', color: 'red' },
-    master(),
-    { type: 'strobe', default_solid: 0, default_strobe: 218 },
-    { type: 'other', default: 0 },
-  ],
-}
-
-const venuePar: FixtureType = {
-  id: '7',
-  manufacturer: 'Venue',
-  name: 'ThinTri 64',
-  intensity: 0.7,
-  channels: [
-    { type: 'color', color: 'red' },
-    { type: 'color', color: 'green' },
-    { type: 'color', color: 'blue' },
-    { type: 'other', default: 0 },
-    { type: 'strobe', default_solid: 0, default_strobe: 247 },
-    { type: 'other', default: 0 },
-    master(),
-    { type: 'other', default: 0 },
-  ],
 }
 
 export function initFixtureType(): FixtureType {
@@ -230,18 +152,6 @@ export function initFixtureType(): FixtureType {
   }
 }
 
-export const fixtureTypes = ['1', '2', '3', '4', '5', '6', '7']
-
-export const fixtureTypesByID = {
-  '1': parFixture,
-  '2': stringLightFixture,
-  '3': strobeFixture,
-  '4': derbyFixture,
-  '5': laserFixture,
-  '6': vBar,
-  '7': venuePar,
-}
-
 export interface Fixture {
   ch: number
   type: string // FixtureType id
@@ -250,73 +160,3 @@ export interface Fixture {
 }
 
 export type Universe = Fixture[]
-
-export function getTestUniverse(): Universe {
-  return [
-    {
-      ch: 1,
-      type: '4',
-      window: { x: { pos: 0.5, width: 0.0 }, y: { pos: 0.6, width: 0.0 } },
-      group: DEFAULT_GROUP,
-    },
-    {
-      ch: 8,
-      type: '3',
-      window: { x: { pos: 0.5, width: 0.0 } },
-      group: DEFAULT_GROUP,
-    },
-    // { ch: 11, type: '2', window: {x: {pos: 0.0, width: 0.0}}, group: DEFAULT_GROUP },
-    // { ch: 12, type: '2', window: {x: {pos: 0.33, width: 0.0}}, group: DEFAULT_GROUP },
-    // { ch: 13, type: '2', window: {x: {pos: 0.66, width: 0.0}}, group: DEFAULT_GROUP },
-    // { ch: 14, type: '2', window: {x: {pos: 1.0, width: 0.0}}, group: DEFAULT_GROUP },
-    {
-      ch: 15,
-      type: '1',
-      window: { x: { pos: 0.15, width: 0.0 } },
-      group: DEFAULT_GROUP,
-    },
-    {
-      ch: 23,
-      type: '1',
-      window: { x: { pos: 0.3, width: 0.0 } },
-      group: DEFAULT_GROUP,
-    },
-    {
-      ch: 31,
-      type: '1',
-      window: { x: { pos: 0.7, width: 0.0 } },
-      group: DEFAULT_GROUP,
-    },
-    {
-      ch: 39,
-      type: '1',
-      window: { x: { pos: 0.86, width: 0.0 } },
-      group: DEFAULT_GROUP,
-    },
-    {
-      ch: 47,
-      type: '6',
-      window: { x: { pos: 0.0, width: 0.0 } },
-      group: DEFAULT_GROUP,
-    },
-    {
-      ch: 54,
-      type: '6',
-      window: { x: { pos: 1.0, width: 0.0 } },
-      group: DEFAULT_GROUP,
-    },
-    {
-      ch: 61,
-      type: '7',
-      window: { x: { pos: 0.0, width: 0.0 } },
-      group: DEFAULT_GROUP,
-    },
-    {
-      ch: 69,
-      type: '7',
-      window: { x: { pos: 1.0, width: 0.0 } },
-      group: DEFAULT_GROUP,
-    },
-    // { ch: 128, type: '5', window: {}, group: DEFAULT_GROUP }
-  ]
-}

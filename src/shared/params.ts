@@ -13,6 +13,7 @@ export type Param =
   | 'xAxis'
   | 'yAxis'
   | 'xMirror'
+  | 'mode'
 
 export type Params = { [key in Param]: number }
 export function initBaseParams(): Partial<Params> {
@@ -50,6 +51,7 @@ export function defaultOutputParams(): Params {
     xAxis: 0.5,
     yAxis: 0.5,
     xMirror: 0.0,
+    mode: 0.0,
   }
 }
 
@@ -68,6 +70,7 @@ export const paramsList: Param[] = [
   'xAxis',
   'yAxis',
   'xMirror',
+  'mode',
 ]
 
 export type Modulation = Partial<Params>

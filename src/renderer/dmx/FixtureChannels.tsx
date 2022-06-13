@@ -10,6 +10,7 @@ import {
   initFixtureChannel,
   AxisDir,
   axisDirList,
+  DMX_MAX_VALUE,
 } from '../../shared/dmxFixtures'
 import { colorList, Color } from '../../shared/dmxColors'
 import NumberField from '../base/NumberField'
@@ -216,6 +217,8 @@ function getInfo({ ch }: Props3): string {
       return `Strobe`
     case 'reset':
       return `Reset`
+    case 'mode':
+      return `Mode`
   }
 }
 
@@ -326,10 +329,16 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
           }
         />
         <Sp2 />
-        <Checkbox label='On/Off' checked={ch.isOnOff} onChange={isOnOff => updateChannel({
-          ...ch,
-          isOnOff
-        })}/>
+        <Checkbox
+          label="On/Off"
+          checked={ch.isOnOff}
+          onChange={(isOnOff) =>
+            updateChannel({
+              ...ch,
+              isOnOff,
+            })
+          }
+        />
       </>
     )
   } else if (ch.type === 'other') {
@@ -500,6 +509,53 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
           <Add />
         </IconButton>
       </div>
+    )
+  } else if (ch.type === 'mode') {
+    return (
+      <>
+        <NumberField
+          val={ch.min}
+          label="Min"
+          min={0}
+          max={ch.max}
+          onChange={(newMin) =>
+            updateChannel({
+              ...ch,
+              min: newMin,
+            })
+          }
+        />
+        <Sp2 />
+        <NumberField
+          val={ch.max}
+          label="Max"
+          min={ch.min}
+          max={255}
+          onChange={(newMax) =>
+            updateChannel({
+              ...ch,
+              max: newMax,
+            })
+          }
+        />
+      </>
+    )
+  } else if (ch.type === 'reset') {
+    return (
+      <>
+        <NumberField
+          val={ch.resetVal}
+          label="Reset Value"
+          min={0}
+          max={DMX_MAX_VALUE}
+          onChange={(resetVal) =>
+            updateChannel({
+              ...ch,
+              resetVal,
+            })
+          }
+        />
+      </>
     )
   } else {
     return null

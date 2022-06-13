@@ -48,14 +48,12 @@ export function getDmxValue(
 ): DmxValue {
   switch (ch.type) {
     case 'master':
-      const level = params.brightness * getWindowMultiplier2D(fixture.window, movingWindow)
+      const level =
+        params.brightness * getWindowMultiplier2D(fixture.window, movingWindow)
       if (ch.isOnOff) {
         return level > 0.5 ? ch.max : ch.min
       } else {
-        return rLerp(
-          ch,
-          level
-        )
+        return rLerp(ch, level)
       }
     case 'other':
       return ch.default
@@ -97,6 +95,8 @@ export function getDmxValue(
       } else {
         return 0
       }
+    case 'mode':
+      return rLerp(ch, params.mode)
     default:
       return 0
   }

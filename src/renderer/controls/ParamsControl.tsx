@@ -20,6 +20,7 @@ export default function ParamsControl({ splitIndex }: Params) {
       <ParamSlider param={'black'} splitIndex={splitIndex} />
       <ParamSlider param={'strobe'} splitIndex={splitIndex} />
       <ParamSlider param={'intensity'} splitIndex={splitIndex} />
+      <ParamSlider param={'mode'} splitIndex={splitIndex} />
       <ParamAddButton splitIndex={splitIndex} />
     </Root>
   )
