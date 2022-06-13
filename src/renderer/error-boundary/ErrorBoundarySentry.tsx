@@ -1,11 +1,11 @@
 import React from 'react'
 import * as Sentry from '@sentry/react'
 import ErrorBoundaryFallback from './ErrorBoundaryFallback'
-import debounce from 'lodash.debounce'
+import throttle from 'lodash.throttle'
 
-const MIN_TIME_BETWEEN_DIALOGS = 5000 // ms
+const MIN_TIME_BETWEEN_DIALOGS = 5 * 60 * 1000 // 5 minutes
 
-let showDialog = debounce(() => {
+let showDialog = throttle(() => {
   Sentry.showReportDialog()
 }, MIN_TIME_BETWEEN_DIALOGS)
 

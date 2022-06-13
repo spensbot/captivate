@@ -42,6 +42,7 @@ ipc_setup({
     _frequentlyUpdatedRealtimeState = newRealtimeState
   },
   on_dispatch: (action) => {
+    console.log('dispatch')
     store.dispatch(action)
   },
   on_main_command: (command) => {
