@@ -251,13 +251,11 @@ function InfoCursor({ index }: { index: number }) {
     FixtureType | null,
     FixtureChannel | null
   ] = useDmxSelector((state) => {
-    let i = 0
     for (const f of state.universe) {
       const ft = state.fixtureTypesByID[f.type]
       const fc = ft.channels[ch - f.ch]
       const endChannel = f.ch + ft.channels.length - 1
       if (ch >= f.ch && ch <= endChannel) return [ft, fc]
-      i += 1
     }
     return [null, null]
   })

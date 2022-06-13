@@ -9,8 +9,8 @@ import { getMediaData, MediaData, releaseMediaData } from './MediaData'
 
 const MIN_DELTA = 200 // ms
 
-let loadCount = 0
-let releaseCount = 0
+// let loadCount = 0
+// let releaseCount = 0
 
 // We can remove this once we figure out the illusive memory leak issue
 // setInterval(
@@ -34,11 +34,9 @@ export default class LocalMediaQueue {
     this.loadQueue = new LoadQueue<MediaData>(
       3,
       () => {
-        loadCount += 1
         return this.loadNext()
       },
       (data) => {
-        releaseCount += 1
         releaseMediaData(data)
       },
       (mediaData) => this.updateMediaData(mediaData)
