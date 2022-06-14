@@ -1,4 +1,4 @@
-import { Colors } from './dmxColors'
+import { getColors } from './dmxColors'
 import { Window, Window2D_t } from '../shared/window'
 import {
   DmxValue,
@@ -10,7 +10,6 @@ import {
 import { Params } from './params'
 import { lerp } from '../math/util'
 import { rLerp } from '../math/range'
-import { Point } from './randomizer'
 import { LightScene_t } from 'shared/Scenes'
 
 function getWindowMultiplier2D(
@@ -42,14 +41,24 @@ export function applyMirror(value: number, mirrorAmount: number) {
 export function getDmxValue(
   ch: FixtureChannel,
   params: Params,
-  colors: Colors,
   fixture: Fixture,
-  movingWindow: Window2D_t
+  master: number,
+  randomizerLevel: number
 ): DmxValue {
+  const movingWindow = getMovingWindow(params)
+  const colors = getColors(params)
+
   switch (ch.type) {
     case 'master':
-      const level =
-        params.brightness * getWindowMultiplier2D(fixture.window, movingWindow)
+      const unrandomizedLevel =
+        params.brightness *
+        getWindowMultiplier2D(fixture.window, movingWindow) *
+        master
+      const level = applyRandomization(
+        unrandomizedLevel,
+        randomizerLevel,
+        params.randomize
+      )
       if (ch.isOnOff) {
         return level > 0.5 ? ch.max : ch.min
       } else {
@@ -111,10 +120,10 @@ export function getMovingWindow(params: Params): Window2D_t {
 
 export function applyRandomization(
   value: number,
-  point: Point,
+  randomizerLevel: number,
   randomizationAmount: number
 ) {
-  return lerp(value, value * point.level, randomizationAmount)
+  return lerp(value, value * randomizerLevel, randomizationAmount)
 }
 export interface UniverseFixture {
   fixture: Fixture

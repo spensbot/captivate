@@ -1,12 +1,9 @@
-import { getColors } from '../../shared/dmxColors'
 import { DMX_MAX_VALUE, DMX_DEFAULT_VALUE } from '../../shared/dmxFixtures'
 import { Params } from '../../shared/params'
 import { RandomizerState } from '../../shared/randomizer'
 import { CleanReduxState } from '../../renderer/redux/store'
 import {
-  getMovingWindow,
   getDmxValue,
-  applyRandomization,
   getMainGroups,
   getFixturesInGroups,
   UniverseFixture,
@@ -33,9 +30,6 @@ export function calculateDmx(
       _outputParams: Params,
       _randomizerState: RandomizerState
     ) => {
-      const colors = getColors(_outputParams)
-      const movingWindow = getMovingWindow(_outputParams)
-
       fixtures.forEach(({ fixture, universeIndex }) => {
         const fixtureType = fixtureTypes[fixture.type]
 
@@ -48,18 +42,10 @@ export function calculateDmx(
             let dmxOut = getDmxValue(
               channel,
               _outputParams,
-              colors,
               fixture,
-              movingWindow
+              state.control.master,
+              _randomizerState[universeIndex].level
             )
-            if (channel.type === 'master') {
-              dmxOut =
-                applyRandomization(
-                  dmxOut,
-                  _randomizerState[universeIndex],
-                  _outputParams.randomize
-                ) * state.control.master
-            }
             channels[outputChannel - 1] = dmxOut
           } else {
             channels[outputChannel - 1] = DMX_DEFAULT_VALUE
