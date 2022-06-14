@@ -68,7 +68,7 @@ function GapSlot({ ch, count }: { ch: number; count: number }) {
                   addFixture({
                     ch: inputCh,
                     type: ft.id,
-                    window: {},
+                    window: { x: { pos: 0.5, width: 0 } },
                     group: DEFAULT_GROUP,
                   })
                 )

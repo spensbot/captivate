@@ -115,22 +115,26 @@ export default function MyFixture({ id }: Props) {
             </div>
           </Row>
           <Sp2 />
-          <Slider
-            id="intensity"
-            value={ft.intensity}
-            step={0.01}
-            min={0}
-            max={1}
-            valueLabelDisplay="off"
-            onChange={(_e, newVal) =>
-              dispatch(
-                updateFixtureType({
-                  ...ft,
-                  intensity: Array.isArray(newVal) ? newVal[0] : newVal,
-                })
-              )
-            }
-          />
+          <Row>
+            <Intensity>Intensity:</Intensity>
+            <Slider
+              id="intensity"
+              value={ft.intensity}
+              step={0.01}
+              min={0}
+              max={1}
+              valueLabelDisplay="off"
+              onChange={(_e, newVal) =>
+                dispatch(
+                  updateFixtureType({
+                    ...ft,
+                    intensity: Array.isArray(newVal) ? newVal[0] : newVal,
+                  })
+                )
+              }
+            />
+          </Row>
+
           <FixtureChannels fixtureID={id} isInUse={isInUse} />
           <Sp />
           <Row>
@@ -183,4 +187,9 @@ const Sp2 = styled.div`
 const Row = styled.div`
   display: flex;
   align-items: center;
+`
+
+const Intensity = styled.div`
+  font-size: 0.9rem;
+  margin-right: 0.7rem;
 `
