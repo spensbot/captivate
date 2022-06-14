@@ -204,7 +204,7 @@ interface Props3 extends Props2 {
 function getInfo({ ch }: Props3): string {
   switch (ch.type) {
     case 'axis':
-      return `Axis`
+      return `${ch.dir} Axis`
     case 'color':
       return `${ch.color}`
     case 'colorMap':
@@ -225,7 +225,7 @@ function getInfo({ ch }: Props3): string {
 function getSubInfo({ ch }: Props3): string | null {
   switch (ch.type) {
     case 'axis':
-      return `${ch.dir}: ${ch.min} - ${ch.max}`
+      return `${ch.min} - ${ch.max}`
     case 'colorMap':
       return `${ch.colors.length} colors`
     case 'other':
@@ -236,6 +236,8 @@ function getSubInfo({ ch }: Props3): string | null {
       return `${ch.min} - ${ch.max}`
     case 'reset':
       return `val: ${ch.resetVal}`
+    case 'mode':
+      return `${ch.min} - ${ch.max}`
     default:
       return null
   }
@@ -307,7 +309,7 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
           val={ch.min}
           label="Min"
           min={0}
-          max={ch.max}
+          max={DMX_MAX_VALUE}
           onChange={(newMin) =>
             updateChannel({
               ...ch,
@@ -319,8 +321,8 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
         <NumberField
           val={ch.max}
           label="Max"
-          min={ch.min}
-          max={255}
+          min={0}
+          max={DMX_MAX_VALUE}
           onChange={(newMax) =>
             updateChannel({
               ...ch,
@@ -347,7 +349,7 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
         val={ch.default}
         label="Default"
         min={0}
-        max={255}
+        max={DMX_MAX_VALUE}
         onChange={(newVal) =>
           updateChannel({
             type: 'other',
@@ -363,7 +365,7 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
           val={ch.default_solid}
           label="Solid"
           min={0}
-          max={255}
+          max={DMX_MAX_VALUE}
           onChange={(newVal) =>
             updateChannel({
               ...ch,
@@ -376,7 +378,7 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
           val={ch.default_strobe}
           label="Strobe"
           min={0}
-          max={255}
+          max={DMX_MAX_VALUE}
           onChange={(newVal) =>
             updateChannel({
               ...ch,
@@ -408,7 +410,7 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
           val={ch.min}
           label="min"
           min={0}
-          max={255}
+          max={DMX_MAX_VALUE}
           onChange={(newVal) =>
             updateChannel({
               ...ch,
@@ -421,7 +423,7 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
           val={ch.max}
           label="max"
           min={0}
-          max={255}
+          max={DMX_MAX_VALUE}
           onChange={(newVal) =>
             updateChannel({
               ...ch,
@@ -451,7 +453,7 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
                 val={color.max}
                 label=""
                 min={0}
-                max={255}
+                max={DMX_MAX_VALUE}
                 onChange={(newMax) =>
                   dispatch(
                     setColorMapColor({
@@ -517,7 +519,7 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
           val={ch.min}
           label="Min"
           min={0}
-          max={ch.max}
+          max={DMX_MAX_VALUE}
           onChange={(newMin) =>
             updateChannel({
               ...ch,
@@ -529,8 +531,8 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
         <NumberField
           val={ch.max}
           label="Max"
-          min={ch.min}
-          max={255}
+          min={0}
+          max={DMX_MAX_VALUE}
           onChange={(newMax) =>
             updateChannel({
               ...ch,
