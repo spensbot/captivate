@@ -17,6 +17,7 @@ export interface GuiState {
   dmx: DmxConnections
   saving: boolean
   loading: SaveInfo | null
+  newProjectDialog: boolean
 }
 
 export function initGuiState(): GuiState {
@@ -28,6 +29,7 @@ export function initGuiState(): GuiState {
     dmx: initDmxConnections(),
     saving: false,
     loading: null,
+    newProjectDialog: false,
   }
 }
 
@@ -56,6 +58,9 @@ export const guiSlice = createSlice({
     setLoading: (state, { payload }: PayloadAction<SaveInfo | null>) => {
       state.loading = payload
     },
+    setNewProjectDialog: (state, { payload }: PayloadAction<boolean>) => {
+      state.newProjectDialog = payload
+    },
   },
 })
 
@@ -67,6 +72,7 @@ export const {
   setDmx,
   setSaving,
   setLoading,
+  setNewProjectDialog,
 } = guiSlice.actions
 
 export default guiSlice.reducer

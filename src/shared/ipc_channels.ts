@@ -61,10 +61,7 @@ interface Save {
 interface Load {
   type: 'load'
 }
-interface NewDefault {
-  type: 'new-default'
+interface NewProject {
+  type: 'new-project'
 }
-interface NewEmpty {
-  type: 'new-empty'
-}
-export type MainCommand = Undo | Redo | Save | Load | NewDefault | NewEmpty
+export type MainCommand = Undo | Redo | Save | Load | NewProject

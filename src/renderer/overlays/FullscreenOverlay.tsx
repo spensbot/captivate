@@ -5,12 +5,16 @@ import styled from 'styled-components'
 import zIndexes from '../zIndexes'
 import Blackout from './Blackout'
 import Devices from './Devices'
+import NewProjectDialog from './NewProjectDialog'
 
 interface Props {}
 
 export default function FullscreenOverlay({}: Props) {
   const isBlackout = useTypedSelector((state) => state.gui.blackout)
   const connectionsMenu = useTypedSelector((state) => state.gui.connectionMenu)
+  const newProjectDialog = useTypedSelector(
+    (state) => state.gui.newProjectDialog
+  )
   const dispatch = useDispatch()
 
   if (isBlackout)
@@ -24,6 +28,13 @@ export default function FullscreenOverlay({}: Props) {
     return (
       <Root>
         <Devices />
+      </Root>
+    )
+
+  if (newProjectDialog)
+    return (
+      <Root>
+        <NewProjectDialog />
       </Root>
     )
 
