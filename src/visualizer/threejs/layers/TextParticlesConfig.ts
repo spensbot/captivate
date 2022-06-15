@@ -31,7 +31,7 @@ export function initTextParticlesConfig(): TextParticlesConfig {
       drag: 3,
     },
     throwVelocity: 0.5,
-    speed: {min: 0, max: 1},
-    snap: {min: 0, max: 1}
+    speed: { min: 0, max: 0.7 },
+    snap: { min: 0.2, max: 0.8 },
   }
 }
