@@ -81,6 +81,20 @@ export default class MenuBuilder {
       label: 'File',
       submenu: [
         {
+          label: 'New Default Project',
+          accelerator: 'Command+N',
+          click: () => {
+            this.res.ipcCallbacks.send_main_command({ type: 'new-default' })
+          },
+        },
+        {
+          label: 'New Empty Project',
+          accelerator: 'Command+Shift+N',
+          click: () => {
+            this.res.ipcCallbacks.send_main_command({ type: 'new-empty' })
+          },
+        },
+        {
           label: 'Save',
           accelerator: 'Command+S',
           click: () => {

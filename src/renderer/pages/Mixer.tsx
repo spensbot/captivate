@@ -158,11 +158,12 @@ function LabelledSlider({ index }: { index: number }) {
   return (
     <Col ref={hoverDiv}>
       <Slider
-        value={overwrite !== undefined ? overwrite : output / 255}
+        value={output / 255}
         radius={0.5}
         onChange={onChange}
         orientation="vertical"
         disabled={overwrite === undefined}
+        color={overwrite !== undefined ? '#b1b1ff' : undefined}
       />
       <Div>
         <Status

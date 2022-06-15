@@ -4,7 +4,7 @@ import GlobalStyle from './GlobalStyle'
 import App from './App'
 import * as themes from './theme'
 import { Provider } from 'react-redux'
-import { store, getCleanReduxState } from './redux/store'
+import { store, getCleanReduxState, resetState } from './redux/store'
 import { setDmx, setMidi, setSaving, setLoading } from './redux/guiSlice'
 import {
   realtimeStore,
@@ -20,6 +20,8 @@ import { getUndoGroup, undoAction, redoAction } from './controls/UndoRedo'
 import './react_error_logging'
 import { load } from './menu/SaveLoad'
 import { getSaveConfig } from 'shared/save'
+import initState from './redux/initState'
+import defaultState from './redux/defaultState'
 
 const theme = themes.dark()
 const muiTheme = createTheme({
@@ -69,6 +71,10 @@ ipc_setup({
         .catch((err) => console.warn(err))
     } else if (command.type === 'save') {
       store.dispatch(setSaving(true))
+    } else if (command.type === 'new-default') {
+      store.dispatch(resetState(defaultState()))
+    } else if (command.type === 'new-empty') {
+      store.dispatch(resetState(initState()))
     }
   },
 })

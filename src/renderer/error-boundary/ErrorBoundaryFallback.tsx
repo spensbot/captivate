@@ -1,12 +1,9 @@
 import styled from 'styled-components'
 import { store, resetState } from 'renderer/redux/store'
 import { getSaveSlots, startAutoSave, stopAutoSave } from 'renderer/autosave'
-import { initDmxState } from 'renderer/redux/dmxSlice'
-import { initGuiState } from 'renderer/redux/guiSlice'
-import { initControlState } from 'renderer/redux/controlSlice'
-import { initMixerState } from 'renderer/redux/mixerSlice'
 import { Button, ButtonGroup } from '@mui/material'
 import { useEffect } from 'react'
+import initState from 'renderer/redux/initState'
 
 export default function ErrorBoundaryFallback({
   resetError,
@@ -41,14 +38,7 @@ export default function ErrorBoundaryFallback({
       <Button
         variant="contained"
         onClick={() => {
-          store.dispatch(
-            resetState({
-              dmx: initDmxState(),
-              gui: initGuiState(),
-              control: initControlState(),
-              mixer: initMixerState(),
-            })
-          )
+          store.dispatch(resetState(initState()))
           resetError()
         }}
       >
