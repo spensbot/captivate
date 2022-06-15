@@ -1,4 +1,8 @@
-import { DMX_MAX_VALUE, DMX_DEFAULT_VALUE } from '../../shared/dmxFixtures'
+import {
+  DMX_MAX_VALUE,
+  DMX_DEFAULT_VALUE,
+  DMX_NUM_CHANNELS,
+} from '../../shared/dmxFixtures'
 import { Params } from '../../shared/params'
 import { RandomizerState } from '../../shared/randomizer'
 import { CleanReduxState } from '../../renderer/redux/store'
@@ -9,6 +13,7 @@ import {
   UniverseFixture,
   getSortedGroups,
 } from '../../shared/dmxUtil'
+import { indexArray } from '../../shared/util'
 
 export function calculateDmx(
   state: CleanReduxState,
@@ -19,7 +24,7 @@ export function calculateDmx(
   const universe = state.dmx.universe
   const fixtureTypes = state.dmx.fixtureTypesByID
 
-  let channels = Array(512).fill(0)
+  let channels = Array(DMX_NUM_CHANNELS).fill(0)
 
   if (!state.gui.blackout) {
     const scenes = state.control.light
@@ -35,10 +40,7 @@ export function calculateDmx(
 
         fixtureType.channels.forEach((channel, offset) => {
           const outputChannel = fixture.ch + offset
-          const overwrite = state.mixer.overwrites[outputChannel - 1]
-          if (overwrite !== undefined) {
-            channels[outputChannel - 1] = overwrite * DMX_MAX_VALUE
-          } else if (_outputParams.intensity >= fixtureType.intensity) {
+          if (_outputParams.intensity >= fixtureType.intensity) {
             let dmxOut = getDmxValue(
               channel,
               _outputParams,
@@ -67,6 +69,14 @@ export function calculateDmx(
       const splitSceneFixtures = getFixturesInGroups(universe, splitGroups)
 
       applyFixtures(splitSceneFixtures, split.outputParams, randomizerState)
+    })
+
+    // Apply any overwrites
+    indexArray(DMX_NUM_CHANNELS).forEach((i) => {
+      const overwrite = state.mixer.overwrites[i]
+      if (overwrite !== undefined) {
+        channels[i] = overwrite * DMX_MAX_VALUE
+      }
     })
   }
 
