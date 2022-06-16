@@ -1,4 +1,4 @@
-import { Normalized, getBaseLog, lerp } from './util'
+import { Normalized, getBaseLog } from './util'
 
 // Skew Functions are transfer functions for a value from 0 to 1.
 // skew < 0.5 => val decreases
@@ -35,23 +35,23 @@ function getPow(skew: Normalized) {
   // map the normalized skew value so it ranges from 0 to MAX
   const MAX = 5
   const factor = getBaseLog(0.5, 1 / MAX)
-  return Math.pow(skew, factor) * MAX
+  return skew ** factor * MAX
 }
 
 export const skewPower: SkewFn = (val, skew) => {
   const pow = getPow(skew)
 
-  return Math.pow(val, pow)
+  return val ** pow
 }
 
 export const skewPower3: SkewFn = (val, skew) => {
   const pow = getPow(skew)
 
-  return Math.pow(val, Math.pow(pow, lerp(1, 3, val)))
+  return val ** (pow ** (1 + 2 * val))
 }
 
 export function unSkewPower(skewed: Normalized, skew: Normalized) {
   const pow = getPow(skew)
 
-  return Math.pow(skewed, 1 / pow)
+  return skewed ** (1 / pow)
 }
