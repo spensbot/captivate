@@ -8,6 +8,7 @@ import {
 import ipcChannels from '../shared/ipc_channels'
 import AutoSavedVal, { printTimePassed } from './AutoSavedVal'
 import fixState from '../shared/fixState'
+import defaultState from './redux/defaultState'
 
 let autoSavedVal: AutoSavedVal<CleanReduxState> | null = null
 
@@ -42,7 +43,9 @@ function restoreLastState(
   asv: AutoSavedVal<CleanReduxState>
 ) {
   let latest = asv.loadLatest()
-  if (latest !== null) {
+  if (latest === null) {
+    store.dispatch(resetState(defaultState()))
+  } else {
     store.dispatch(resetState(fixState(latest)))
   }
 }
