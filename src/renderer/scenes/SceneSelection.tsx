@@ -57,7 +57,7 @@ const Header = styled.div`
   align-items: center;
   margin-top: -0.3rem;
   font-size: ${(props) => props.theme.font.size.h1};
-  height: 2.5rem;
+  min-height: 2.5rem;
 `
 
 const Sp = styled.div`

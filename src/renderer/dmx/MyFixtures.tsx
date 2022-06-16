@@ -49,6 +49,7 @@ const Header = styled.div`
   display: flex;
   align-items: center;
   margin-top: -0.3rem;
+  min-height: 2.5rem;
 `
 
 const Items = styled.div`

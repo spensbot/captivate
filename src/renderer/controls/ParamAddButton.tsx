@@ -21,7 +21,7 @@ interface Props {
 }
 
 type ParamBundle = 'axis' | 'position'
-const paramBundleList: ParamBundle[] = ['axis', 'position']
+const paramBundleList: ParamBundle[] = ['position', 'axis']
 
 export const paramBundles: { [key in ParamBundle]: Param[] } = {
   axis: ['xAxis', 'yAxis', 'xMirror'],
