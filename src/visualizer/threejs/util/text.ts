@@ -1,7 +1,11 @@
 import * as THREE from 'three'
-import { fonts } from '../fonts/fonts'
+import { Font, fonts, fallbackFont } from '../fonts/fonts'
 import { FontType } from '../fonts/FontType'
 import { SVGLoader, StrokeStyle } from 'three/examples/jsm/loaders/SVGLoader'
+
+function getFontSafe(fontType: FontType): Font {
+  return fonts[fontType] ?? fallbackFont
+}
 
 // Creates a centered Mesh of the given text
 export function textMesh(
@@ -11,7 +15,7 @@ export function textMesh(
   material: THREE.Material
 ) {
   material.side = THREE.DoubleSide
-  let shapes = fonts[fontType].generateShapes(text, size)
+  let shapes = getFontSafe(fontType).generateShapes(text, size)
   let geometry = new THREE.ShapeGeometry(shapes)
   geometry.computeBoundingBox()
   const bb = geometry.boundingBox
@@ -33,7 +37,7 @@ export function textMesh_release(text: TextMesh_t) {
 }
 
 export function textBounds(text: string, size: number, fontType: FontType) {
-  let shapes = fonts[fontType].generateShapes(text, size)
+  let shapes = getFontSafe(fontType).generateShapes(text, size)
   let geometry = new THREE.ShapeGeometry(shapes)
   geometry.computeBoundingBox()
   const bb = geometry.boundingBox
@@ -58,7 +62,7 @@ export function textOutlineShapesAndHoles(
   fontType: FontType
 ) {
   const holes = []
-  const shapes = fonts[fontType].generateShapes(text, size)
+  const shapes = getFontSafe(fontType).generateShapes(text, size)
   for (const shape of shapes) {
     if (shape.holes) {
       for (const hole of shape.holes) {

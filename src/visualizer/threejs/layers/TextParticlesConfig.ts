@@ -20,7 +20,7 @@ export function initTextParticlesConfig(): TextParticlesConfig {
   return {
     type: 'TextParticles',
     text: ['CAPTIVATE', 'YOUR', 'AUDIENCE'],
-    fontType: 'zsd',
+    fontType: 'helvetiker_bold',
     textSize: 1.5,
     particleColor: 0xffffff,
     particleSize: 0.15,
