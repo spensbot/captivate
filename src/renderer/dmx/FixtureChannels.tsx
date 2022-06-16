@@ -81,7 +81,7 @@ export default function FixtureChannels({ fixtureID, isInUse }: Props) {
             editing={editing}
             setEditing={setEditing}
             hasMaster={hasMaster}
-            isInUse
+            isInUse={isInUse}
           />
         ))}
       </Channels>
@@ -139,14 +139,17 @@ function Channel(props: Props2) {
       <Sp />
       {!isInUse && (
         <IconButton
-          onClick={() =>
+          size="small"
+          style={{ margin: '-0.9rem 0' }}
+          onClick={(e) => {
+            e.preventDefault()
             dispatch(
               removeFixtureChannel({
                 fixtureID: fixtureID,
                 channelIndex: channelIndex,
               })
             )
-          }
+          }}
         >
           <RemoveIcon />
         </IconButton>
