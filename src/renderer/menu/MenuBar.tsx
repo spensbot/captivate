@@ -1,10 +1,12 @@
 import React from 'react'
 import styled from 'styled-components'
 import zIndexes from '../zIndexes'
-import ListIcon from '@mui/icons-material/List'
-import MovieFilterIcon from '@mui/icons-material/MovieFilter'
-import logoThick from '../images/Thick.png'
-import BarChartIcon from '@mui/icons-material/BarChart'
+// import UniverseIcon from '@mui/icons-material/List'
+import UniverseIcon from '@mui/icons-material/Settings'
+// import LightingIcon from '@mui/icons-material/MovieFilter'
+import LightingIcon from '@mui/icons-material/LightBulb'
+import VisualsIcon from '../images/Thick.png'
+import MixerIcon from '@mui/icons-material/BarChart'
 import { useTypedSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import { setActivePage, Page } from '../redux/guiSlice'
@@ -24,7 +26,7 @@ export default function MenuBar() {
 
   function MenuItem({
     page,
-    paddingRem = 1,
+    paddingRem = 0.8,
     children,
   }: {
     page: Page
@@ -38,13 +40,13 @@ export default function MenuBar() {
       ? `${p}rem ${p}rem ${p}rem ${p - selectedBorder}rem`
       : `${p}rem`
     return (
-        <Item
-          selected={activePage === page}
-          style={{ padding: padding }}
-          onClick={setPage(page)}
-        >
-          {children}
-        </Item>
+      <Item
+        selected={activePage === page}
+        style={{ padding: padding, fontSize: '1.7rem', margin: '0' }}
+        onClick={setPage(page)}
+      >
+        {children}
+      </Item>
     )
   }
 
@@ -53,18 +55,18 @@ export default function MenuBar() {
       <MenuItem page="Universe" tooltipText="DMX Setup">
         {/* <ViewComfyIcon /> */}
         {/* <PlaylistAddIcon /> */}
-        <ListIcon />
+        <UniverseIcon fontSize="inherit" />
       </MenuItem>
       <MenuItem page="Modulation" tooltipText="Scene Editor">
         {/* <WhatshotIcon /> */}
-        <MovieFilterIcon />
+        <LightingIcon fontSize="inherit" />
         {/* <StarBorderIcon /> */}
       </MenuItem>
       <MenuItem page="Video" tooltipText="Visualizer" paddingRem={0.6}>
         {/* <FeaturedVideoIcon /> */}
         {/* <MovieFilterIcon /> */}
         <img
-          src={logoThick}
+          src={VisualsIcon}
           style={{ width: '2.3rem', height: '2.3rem', margin: '0' }}
         />
       </MenuItem>
@@ -72,7 +74,7 @@ export default function MenuBar() {
         <CloudUploadIcon />
       </MenuItem> */}
       <MenuItem page="Mixer" tooltipText="DMX Mixer">
-        <BarChartIcon />
+        <MixerIcon fontSize="inherit" />
       </MenuItem>
       <Spacer />
       <MasterSlider />
