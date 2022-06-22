@@ -2,11 +2,11 @@
 
 <img src="https://github.com/spensbot/captivate/blob/main/assets/readme/Thick.png" alt="Captivate Icon" width="150"/>
 
-### Visual & Lighting Synth
+## Visual & Lighting Synth
+
+[CaptivateSynth.com](https://CaptivateSynth.com)
 
 Captivate generates live visuals and dmx lighting. All synchronized to music.
-
-[![Captivate Introduction Video](https://img.youtube.com/vi/6ZwQ97sySq0/0.jpg)](https://www.youtube.com/watch?v=6ZwQ97sySq0)
 
 ## Ready to Impress?
 
@@ -59,6 +59,10 @@ With integrated [Ableton Link](https://www.ableton.com/en/link/) technology, cap
 ## Create once, Perform anywhere
 
 Since all dmx channels boil down to the same parameters, captivate scenes can play on any lighting setup. Add and remove fixtures, or change venues with ease.
+
+### Watch the Youtube Video
+
+[![Captivate Introduction Video](https://img.youtube.com/vi/6ZwQ97sySq0/0.jpg)](https://www.youtube.com/watch?v=6ZwQ97sySq0)
 
 ## Developers
 
