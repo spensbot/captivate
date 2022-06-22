@@ -1,8 +1,12 @@
 # Captivate
 
+![Captivate Icon](https://github.com/spensbot/captivate/blob/main/assets/readme/Thick.png)
+
 ### Visual & Lighting Synth
 
 Captivate generates live visuals and dmx lighting. All synchronized to music.
+
+[![Captivate Introduction Video](https://img.youtube.com/vi/6ZwQ97sySq0/0.jpg)](https://www.youtube.com/watch?v=6ZwQ97sySq0)
 
 ## Ready to Impress?
 
@@ -20,7 +24,7 @@ Tell Captivate which fixtures you have, and where they are located in space.
 
 Add fixtures seamlessly, without the need to update scenes.
 
-![Captivate DMX Configurator Video](https://CaptivateSynth.com/static/preview_universe-a41ac30449db5fab485f9003b1576781.mp4)
+![Captivate DMX Configurator](https://github.com/spensbot/captivate/blob/main/assets/readme/screenshot_1_dmx_config.jpg)
 
 ## Breathtaking Lighting
 
@@ -30,6 +34,8 @@ Take control of these parameters live, or automate them with Captivate's familia
 
 Light groups allow you to add complexity as needed
 
+![Captivate DMX Configurator](https://github.com/spensbot/captivate/blob/main/assets/readme/screenshot_2_light_scenes.jpg)
+
 ## Stunning Visuals
 
 Combine visualizers and effects in any way to perfect your visual experience
@@ -38,9 +44,13 @@ Add your own videos and photos to create something truly unique
 
 Visualizers and effects listen to the parameters from the active light scene so lighing and visuals are automatically synchronized.
 
+![Captivate DMX Configurator](https://github.com/spensbot/captivate/blob/main/assets/readme/screenshot_3_visual_scenes.jpg)
+
 ## Streamlined Complexity
 
 With Captivate, you'll forget there are 512 DMX channels running behind then scenes
+
+![Captivate DMX Configurator](https://github.com/spensbot/captivate/blob/main/assets/readme/screenshot_4_dmx_console.jpg)
 
 ## Always Synchronized
 
