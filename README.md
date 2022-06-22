@@ -2,7 +2,7 @@
 
 ### Visual & Lighting Synth
 
-An easy to use, cross-platform app (mac, linux, windows) for real-time, synchronized generation of Visuals and DMX Lighting
+Captivate generates live visuals and dmx lighting. All synchronized to music.
 
 ## Ready to Impress?
 
@@ -10,19 +10,37 @@ Captivate is groundbreaking software that revolutionizes stage lighting and visu
 
 Concert quality visuals and lighting that is easy, fun, and dynamic. Captivate is designed to run autonomously, or you can take as much control as you'd like.
 
-This is Captivate. Captivate generates live lighting and visuals that intuitively and dynamically synchronize to music via Ableton Link. Captivate is capable of running autonomously, but it's designed so you can take as much control as you'd like. In addition to all that power, setup has never been easier. This same setup can be configured in minutes with Captivate. If I change the tempo, or the song, captivate adjusts accordingly. Captivate's design was inspired by synthesisers, so you'll find familiar tools like LFO's, midi integration, pads, and randomizers.
+Captivate's design was inspired by synthesisers, so you'll find familiar tools like LFO's, midi integration, pads, and randomizers.
 
-## An Intuitive Universe
+## Add Dimension To Your DMX Universe
 
-Captivate works by simplifying an entire dmx universe into a handful of intuitive parameters.
+Configure your dmx universe in minutes.
 
-## Familiar Modulation
+Tell Captivate which fixtures you have, and where they are located in space.
 
-Modulate parameters with familiar synth tools such as Sin and Ramp LFOs.
+Add fixtures seamlessly, without the need to update scenes.
 
-## Visually Stunning
+![Captivate DMX Configurator Video](https://CaptivateSynth.com/static/preview_universe-a41ac30449db5fab485f9003b1576781.mp4)
 
-These parameters control lights, and visuals; All generated live.
+## Breathtaking Lighting
+
+With captivate, hundreds of DMX channels boil down to a handful of intuitive parameters
+
+Take control of these parameters live, or automate them with Captivate's familiar, synth-like modulation tools.
+
+Light groups allow you to add complexity as needed
+
+## Stunning Visuals
+
+Combine visualizers and effects in any way to perfect your visual experience
+
+Add your own videos and photos to create something truly unique
+
+Visualizers and effects listen to the parameters from the active light scene so lighing and visuals are automatically synchronized.
+
+## Streamlined Complexity
+
+With Captivate, you'll forget there are 512 DMX channels running behind then scenes
 
 ## Always Synchronized
 
@@ -31,10 +49,6 @@ With integrated [Ableton Link](https://www.ableton.com/en/link/) technology, cap
 ## Create once, Perform anywhere
 
 Since all dmx channels boil down to the same parameters, captivate scenes can play on any lighting setup. Add and remove fixtures, or change venues with ease.
-
-## Share your Creations
-
-We live in an open source world. Share your best scenes and creations with other captivate users!
 
 ## Developers
 
