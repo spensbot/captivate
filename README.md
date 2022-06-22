@@ -1,6 +1,6 @@
 # Captivate
 
-![Captivate Icon](https://github.com/spensbot/captivate/blob/main/assets/readme/Thick.png)
+<img src="https://github.com/spensbot/captivate/blob/main/assets/readme/Thick.png" alt="Captivate Icon" width="150"/>
 
 ### Visual & Lighting Synth
 
@@ -72,4 +72,4 @@ Since all dmx channels boil down to the same parameters, captivate scenes can pl
 
 Thanks to [electron-react-boilerplate](https://github.com/electron-react-boilerplate/electron-react-boilerplate) for the app boilerplate
 
-[MIT License](https://github.com/spensbot/Captivate2/blob/master/LICENSE) 
+[MIT License](https://github.com/spensbot/Captivate2/blob/master/LICENSE)
