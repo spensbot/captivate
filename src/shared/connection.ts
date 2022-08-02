@@ -8,6 +8,7 @@ export interface DmxDevice_t {
   productId?: string
   serialNumber?: string
   vendorId?: string
+  name: string
 }
 
 export interface MidiDevice_t {

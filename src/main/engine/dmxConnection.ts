@@ -36,7 +36,15 @@ interface Config {
 }
 
 function getDeviceId(port: PortInfo): DeviceId {
-  return port.path;
+  return port.serialNumber || port.path
+}
+
+function getDeviceName(port: PortInfo): DeviceId {
+  if (port.manufacturer === 'FTDI') {
+    return "DMX USB Device"
+  } else {
+    return port.manufacturer || 'undefined';
+  }
 }
 
 function dmxDevice(port: PortInfo): DmxDevice_t {
@@ -48,6 +56,7 @@ function dmxDevice(port: PortInfo): DmxDevice_t {
     productId: port.productId,
     serialNumber: port.serialNumber,
     vendorId: port.vendorId,
+    name: getDeviceName(port)
   };
 }
 
@@ -60,8 +69,8 @@ export function maintain(config: Config) {
 }
 
 async function maintainConnection() {
-  const availablePorts = await SerialPort.list();
-
+  const availablePorts = await SerialPort.list()
+  
   const availableDevices = availablePorts
     .filter((p) => isDmxDevice_t(p))
     .map((p) => dmxDevice(p));
@@ -121,7 +130,8 @@ function start() {}
 function isDmxDevice_t(port: PortInfo) {
   if (
     port.manufacturer?.includes('DMX') ||
-    port.manufacturer?.includes('ENTTEC')
+    port.manufacturer?.includes('ENTTEC') ||
+    port.manufacturer?.includes('FTDI')
   )
     return true;
   return false;

@@ -97,7 +97,11 @@ interface Props2<T> {
   connectable: DeviceId[]
 }
 
-function hasDevice(ids: DeviceId[], device: DmxDevice_t | MidiDevice_t) {
+function hasDmxDevice(paths: string[], device: DmxDevice_t) {
+  return paths.find(path => device.path === path) !== undefined
+}
+
+function hasMidiDevice(ids: DeviceId[], device: DmxDevice_t | MidiDevice_t) {
   return ids.find((id) => device.id === id) !== undefined
 }
 
@@ -106,20 +110,32 @@ interface Status {
   isConnectable: boolean
 }
 
-function getStatus(
-  device: DmxDevice_t | MidiDevice_t,
+function getMidiStatus(
+  device: MidiDevice_t,
   connected: DeviceId[],
   connectable: DeviceId[]
 ): Status {
   return {
-    isConnected: hasDevice(connected, device),
-    isConnectable: hasDevice(connectable, device),
+    isConnected: hasMidiDevice(connected, device),
+    isConnectable: hasMidiDevice(connectable, device),
+  }
+}
+
+
+function getDmxStatus(
+  device: DmxDevice_t,
+  connected: DeviceId[],
+  connectable: DeviceId[]
+): Status {
+  return {
+    isConnected: hasDmxDevice(connected, device),
+    isConnectable: hasDmxDevice(connectable, device),
   }
 }
 
 function DmxDevice({ device, connected, connectable }: Props2<DmxDevice_t>) {
   const dispatch = useDispatch()
-  const status = getStatus(device, connected, connectable)
+  const status = getDmxStatus(device, connected, connectable)
 
   const onClick = () => {
     let newConnectable = [...connectable]
@@ -133,14 +149,14 @@ function DmxDevice({ device, connected, connectable }: Props2<DmxDevice_t>) {
 
   return (
     <DeviceRoot {...status} onClick={onClick}>
-      {device.manufacturer ? `${device.manufacturer}` : device.id}
+      {device.name}
     </DeviceRoot>
   )
 }
 
 function MidiDevice({ device, connected, connectable }: Props2<MidiDevice_t>) {
   const dispatch = useDispatch()
-  const status = getStatus(device, connected, connectable)
+  const status = getMidiStatus(device, connected, connectable)
 
   const onClick = () => {
     let newConnectable = [...connectable]
@@ -154,7 +170,7 @@ function MidiDevice({ device, connected, connectable }: Props2<MidiDevice_t>) {
 
   return (
     <DeviceRoot {...status} onClick={onClick}>
-      {device.id}
+      {device.name}
     </DeviceRoot>
   )
 }
