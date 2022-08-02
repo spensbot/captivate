@@ -66,6 +66,10 @@ Since all dmx channels boil down to the same parameters, captivate scenes can pl
 
 ## Developers
 
+To build locally, make sure you have Python installed.
+
+You'll also need XCode Command Line Tools for Mac or a Visual Studio C++ Build Environment for Windows. This will allow you to build Captivate's native binaries. Full installation instructions can be found on [node-gyp's npm page](https://www.npmjs.com/package/node-gyp)
+
 `git clone https://github.com/spensbot/captivate.git` <-- download the repo locally
 
 `git submodule update --init --recursive` <-- download submodules
