@@ -66,8 +66,6 @@ Since all dmx channels boil down to the same parameters, captivate scenes can pl
 
 ## Developers
 
-Note: Captivate cannot currently be built on Windows. I'm working on it.
-
 `git clone https://github.com/spensbot/captivate.git` <-- download the repo locally
 
 `git submodule update --init --recursive` <-- download submodules
