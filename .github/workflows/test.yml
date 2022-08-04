@@ -8,7 +8,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [macos-latest]
+        os: [macos-latest, windows-latest]
 
     steps:
       - name: Check out Git repository
@@ -16,7 +16,7 @@ jobs:
 
       - name: Checkout submodules
         run: git submodule update --init --recursive
-        
+
       - name: Install Node.js and NPM
         uses: actions/setup-node@v2
         with:
