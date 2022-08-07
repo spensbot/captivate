@@ -66,8 +66,6 @@ Since all dmx channels boil down to the same parameters, captivate scenes can pl
 
 ## Developers
 
-To run locally:
-
 **Prereqs:** Node, NPM, Python, and XCode Command Line Tools (for Mac) or Visual Studio C++ Build Environment (for Windows).
 
 `git clone https://github.com/spensbot/captivate.git` <-- download the repo locally
