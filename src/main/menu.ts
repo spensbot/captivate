@@ -225,23 +225,25 @@ export default class MenuBuilder {
       {
         label: '&File',
         submenu: [
-          { label: 'Save', accelerator: 'Ctrl+S', click: () => {} },
           {
-            label: 'Save Selective',
-            accelerator: 'Shift+Ctrl+S',
-            click: () => {},
-          },
-          { label: 'Load', accelerator: 'Ctrl+O', click: () => {} },
-          {
-            label: 'Load Selective',
-            accelerator: 'Shift+Ctrl+O',
-            click: () => {},
-          },
-          {
-            label: '&Close',
-            accelerator: 'Ctrl+W',
+            label: 'New Project',
+            accelerator: 'Ctrl+N',
             click: () => {
-              this.mainWindow.close()
+              this.res.ipcCallbacks.send_main_command({ type: 'new-project' })
+            },
+          },
+          {
+            label: 'Save',
+            accelerator: 'Ctrl+S',
+            click: () => {
+              this.res.ipcCallbacks.send_main_command({ type: 'save' })
+            },
+          },
+          {
+            label: 'Load',
+            accelerator: 'Ctrl+O',
+            click: () => {
+              this.res.ipcCallbacks.send_main_command({ type: 'load' })
             },
           },
         ],
