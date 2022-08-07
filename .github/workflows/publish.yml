@@ -30,16 +30,6 @@ jobs:
         run: |
           npm install
 
-      - name: Set Env Windows
-        if: ${{ matrix.os == 'windows-latest' }}
-        env: 
-          PUBLISH_FLAGS: "--win"
-
-      - name: Set Env Mac
-        if: ${{ matrix.os == 'macos-latest' }}
-        env: 
-          PUBLISH_FLAGS: "--mac"
-
       - name: Publish releases
         env:
           # These values are used for auto updates signing
@@ -52,4 +42,4 @@ jobs:
         run: |
           npm run postinstall
           npm run build
-          npm exec electron-builder -- --publish always $PUBLISH_FLAGS
+          npm exec electron-builder -- --publish always
