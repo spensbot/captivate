@@ -4,12 +4,13 @@ import useDragBasic from '../hooks/useDragBasic'
 import styled from 'styled-components'
 import { double_incremented, halve_incremented } from 'shared/util'
 import React from 'react'
+import { secondaryEnabled } from './keyUtil'
 
 type Type = 'continuous' | 'snap'
 
 interface Props {
   type?: Type
-  withMetaKey?: Type
+  secondaryBehavior?: Type
   value: number
   min: number
   max: number
@@ -26,7 +27,7 @@ let globalValue = 0
 
 export default function DraggableNumber({
   type = 'snap',
-  withMetaKey = 'continuous',
+  secondaryBehavior = 'continuous',
   value,
   min,
   max,
@@ -69,8 +70,8 @@ export default function DraggableNumber({
       }
     }
 
-    if (e.metaKey) {
-      if (withMetaKey === 'snap') {
+    if (secondaryEnabled(e)) {
+      if (secondaryBehavior === 'snap') {
         adjust_snap()
       } else {
         adjust_continuous()

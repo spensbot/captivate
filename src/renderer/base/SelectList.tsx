@@ -1,4 +1,5 @@
 import styled from 'styled-components'
+import { secondaryEnabled } from './keyUtil'
 import wrapClick from './wrapClick'
 
 interface Props<T extends string> {
@@ -50,7 +51,7 @@ export function MultiSelectList<T extends string>({
           selected={selected.has(item)}
           onClick={(e) => {
             let newSelected
-            if (e.metaKey) {
+            if (secondaryEnabled(e as unknown as MouseEvent)) {
               newSelected = new Set(selected)
               newSelected.add(item)
             } else {

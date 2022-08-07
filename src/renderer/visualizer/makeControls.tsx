@@ -4,6 +4,7 @@ import styled from 'styled-components'
 import AddIcon from '@mui/icons-material/Add'
 import { MultilineInput } from 'renderer/base/Input'
 import { Range } from 'math/range'
+import { secondaryEnabled } from 'renderer/base/keyUtil'
 
 // NOTE: This file is littered with @ts-ignore and smelly casts.
 // It's a necessary evil to simplify Config controls... But use with caution
@@ -74,7 +75,7 @@ export default function makeControls<SuperConfig>(
             let min = 0
             let max = 0
 
-            if ((e as KeyboardEvent).metaKey) {
+            if (secondaryEnabled(e as MouseEvent)) {
               min = Math.min(...newValues)
               max = Math.max(...newValues)
             } else {
@@ -94,7 +95,7 @@ export default function makeControls<SuperConfig>(
           }}
           valueLabelDisplay="off"
           sx={{
-            color: 'success.main'
+            color: 'success.main',
           }}
         />
       </Root>

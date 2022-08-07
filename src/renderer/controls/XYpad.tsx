@@ -8,6 +8,7 @@ import ParamXButton from './ParamXButton'
 import { useBaseParam } from 'renderer/redux/store'
 import MidiOverlay_xy from '../base/MidiOverlay_xy'
 import { paramBundles } from './ParamAddButton'
+import { secondaryEnabled } from 'renderer/base/keyUtil'
 
 interface Props {
   splitIndex: number | null
@@ -17,7 +18,7 @@ export default function XYpad({ splitIndex }: Props) {
   const dispatch = useDispatch()
 
   const [dragContainer, onMouseDown] = useDragMapped(({ x, y, dx, dy }, e) => {
-    if (e.metaKey) {
+    if (secondaryEnabled(e)) {
       dispatch(
         incrementBaseParams({
           splitIndex,

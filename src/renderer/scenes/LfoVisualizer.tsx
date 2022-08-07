@@ -3,6 +3,7 @@ import { useDispatch } from 'react-redux'
 import useDragBasic from '../hooks/useDragBasic'
 import { incrementModulator } from '../redux/controlSlice'
 import { useActiveLightScene } from '../redux/store'
+import { secondaryEnabled } from 'renderer/base/keyUtil'
 
 type Props = {
   index: number
@@ -32,13 +33,14 @@ export default function LfoVisualizer({
   const [dragContainer, onMouseDown] = useDragBasic((e) => {
     const dx = -e.movementX / width
     const dy = e.movementY / height
+    const se = secondaryEnabled(e)
     dispatch(
       incrementModulator({
         index: index,
-        phaseShift: e.metaKey ? 0 : dx,
-        flip: e.metaKey ? 0 : dy,
-        symmetricSkew: e.metaKey ? dx : 0,
-        skew: e.metaKey ? dy : 0,
+        phaseShift: se ? 0 : dx,
+        flip: se ? 0 : dy,
+        symmetricSkew: se ? dx : 0,
+        skew: se ? dy : 0,
       })
     )
   })
