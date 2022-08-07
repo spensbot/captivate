@@ -62,7 +62,7 @@ export const autoSave = (store: ReduxStore) => {
 const ipcRenderer = window.electron.ipcRenderer
 
 export const captivateFileFilters = {
-  captivate: { name: 'Captivate', extensions: ['.captivate'] },
+  captivate: { name: 'Captivate', extensions: ['captivate'] },
 }
 
 export async function loadFile(
