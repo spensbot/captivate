@@ -2,7 +2,7 @@ import { Input } from 'midi'
 import { parseMessage, MidiMessage } from '../../shared/midi'
 import {
   MidiConnections,
-  DeviceId,
+  ConnectionId,
   MidiDevice_t,
 } from '../../shared/connection'
 import throttle from 'lodash.throttle'
@@ -14,7 +14,7 @@ interface Config {
   update_ms: number
   onUpdate: (activeDevices: UpdatePayload) => void
   onMessage: (message: MessagePayload) => void
-  getConnectable: () => DeviceId[]
+  getConnectable: () => ConnectionId[]
 }
 
 const refInput = new Input()
@@ -30,13 +30,13 @@ export function maintain(config: Config) {
 function updateInputs(config: Config) {
   const portCount = refInput.getPortCount()
   const availableMidiDevice_ts: MidiDevice_t[] = []
-  const connected: DeviceId[] = []
+  const connected: ConnectionId[] = []
   const connectable = config.getConnectable()
 
   for (let i = 0; i < portCount; i++) {
     const portName = refInput.getPortName(i)
     availableMidiDevice_ts.push({
-      id: portName,
+      connectionId: portName,
       name: portName,
     })
     if (inputs[portName] === undefined) {

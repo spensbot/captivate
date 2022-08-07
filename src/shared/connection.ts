@@ -1,7 +1,7 @@
-export type DeviceId = string
+export type ConnectionId = string
 
 export interface DmxDevice_t {
-  id: DeviceId
+  connectionId: ConnectionId
   path: string
   manufacturer?: string
   pnpId?: string
@@ -12,17 +12,17 @@ export interface DmxDevice_t {
 }
 
 export interface MidiDevice_t {
-  id: DeviceId
+  connectionId: ConnectionId
   name: string
 }
 
 export interface DmxConnections {
-  connected: DeviceId[]
+  connected: ConnectionId[]
   available: DmxDevice_t[]
 }
 
 export interface MidiConnections {
-  connected: DeviceId[]
+  connected: ConnectionId[]
   available: MidiDevice_t[]
 }
 

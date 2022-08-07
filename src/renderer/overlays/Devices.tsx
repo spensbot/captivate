@@ -5,7 +5,11 @@ import { useDispatch } from 'react-redux'
 import { setDmxConnectable, setMidiConnectable } from '../redux/controlSlice'
 import CloseIcon from '@mui/icons-material/Close'
 import IconButton from '@mui/material/IconButton'
-import { DmxDevice_t, MidiDevice_t, DeviceId } from '../../shared/connection'
+import {
+  DmxDevice_t,
+  MidiDevice_t,
+  ConnectionId,
+} from '../../shared/connection'
 
 interface Props {}
 
@@ -15,6 +19,10 @@ export default function Devices({}: Props) {
   const connectable = useControlSelector((state) => state.device.connectable)
   const dmx = useTypedSelector((state) => state.gui.dmx)
   const midi = useTypedSelector((state) => state.gui.midi)
+
+  console.log('connectable', connectable.dmx)
+  console.log('available', dmx.available)
+  console.log('connected', dmx.connected)
 
   return (
     <Root>
@@ -30,7 +38,7 @@ export default function Devices({}: Props) {
             <SubTitle>Dmx</SubTitle>
             {dmx.available.map((device) => (
               <DmxDevice
-                key={device.id}
+                key={device.name}
                 device={device}
                 connected={dmx.connected}
                 connectable={connectable.dmx}
@@ -42,7 +50,7 @@ export default function Devices({}: Props) {
             <SubTitle>Midi</SubTitle>
             {midi.available.map((device) => (
               <MidiDevice
-                key={device.id}
+                key={device.name}
                 device={device}
                 connected={midi.connected}
                 connectable={connectable.midi}
@@ -93,16 +101,19 @@ const SubTitle = styled.div`
 
 interface Props2<T> {
   device: T
-  connected: DeviceId[]
-  connectable: DeviceId[]
+  connected: ConnectionId[]
+  connectable: ConnectionId[]
 }
 
 function hasDmxDevice(paths: string[], device: DmxDevice_t) {
-  return paths.find(path => device.path === path) !== undefined
+  return paths.find((path) => device.path === path) !== undefined
 }
 
-function hasMidiDevice(ids: DeviceId[], device: DmxDevice_t | MidiDevice_t) {
-  return ids.find((id) => device.id === id) !== undefined
+function hasMidiDevice(
+  ids: ConnectionId[],
+  device: DmxDevice_t | MidiDevice_t
+) {
+  return ids.find((id) => device.connectionId === id) !== undefined
 }
 
 interface Status {
@@ -112,8 +123,8 @@ interface Status {
 
 function getMidiStatus(
   device: MidiDevice_t,
-  connected: DeviceId[],
-  connectable: DeviceId[]
+  connected: ConnectionId[],
+  connectable: ConnectionId[]
 ): Status {
   return {
     isConnected: hasMidiDevice(connected, device),
@@ -121,11 +132,10 @@ function getMidiStatus(
   }
 }
 
-
 function getDmxStatus(
   device: DmxDevice_t,
-  connected: DeviceId[],
-  connectable: DeviceId[]
+  connected: ConnectionId[],
+  connectable: ConnectionId[]
 ): Status {
   return {
     isConnected: hasDmxDevice(connected, device),
@@ -138,13 +148,13 @@ function DmxDevice({ device, connected, connectable }: Props2<DmxDevice_t>) {
   const status = getDmxStatus(device, connected, connectable)
 
   const onClick = () => {
-    let newConnectable = [...connectable]
+    let connectableSet = new Set(connectable)
     if (status.isConnectable) {
-      newConnectable = newConnectable.filter((c) => c !== device.id)
+      connectableSet.delete(device.connectionId)
     } else {
-      newConnectable.push(device.id)
+      connectableSet.add(device.connectionId)
     }
-    dispatch(setDmxConnectable(newConnectable))
+    dispatch(setDmxConnectable(Array.from(connectableSet)))
   }
 
   return (
@@ -159,13 +169,13 @@ function MidiDevice({ device, connected, connectable }: Props2<MidiDevice_t>) {
   const status = getMidiStatus(device, connected, connectable)
 
   const onClick = () => {
-    let newConnectable = [...connectable]
+    let connectableSet = new Set(connectable)
     if (status.isConnectable) {
-      newConnectable = newConnectable.filter((c) => c !== device.id)
+      connectableSet.delete(device.connectionId)
     } else {
-      newConnectable.push(device.id)
+      connectableSet.add(device.connectionId)
     }
-    dispatch(setMidiConnectable(newConnectable))
+    dispatch(setMidiConnectable(Array.from(connectableSet)))
   }
 
   return (

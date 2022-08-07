@@ -1,7 +1,7 @@
 import { PayloadAction } from '@reduxjs/toolkit'
 import { Param } from '../../shared/params'
 import { SceneType } from '.../../shared/Scenes'
-import { DeviceId } from '../../shared/connection'
+import { ConnectionId } from '../../shared/connection'
 
 interface Range {
   min: number
@@ -78,8 +78,8 @@ export interface DeviceState {
   listening?: MidiAction
   isEditing: boolean
   connectable: {
-    midi: DeviceId[]
-    dmx: DeviceId[]
+    midi: ConnectionId[]
+    dmx: ConnectionId[]
   }
   buttonActions: { [actionID: string]: ButtonAction }
   sliderActions: { [actionID: string]: SliderAction }
@@ -135,13 +135,13 @@ export const midiActions = {
   },
   setMidiConnectable: (
     state: DeviceState,
-    { payload }: PayloadAction<DeviceId[]>
+    { payload }: PayloadAction<ConnectionId[]>
   ) => {
     state.connectable.midi = payload
   },
   setDmxConnectable: (
     state: DeviceState,
-    { payload }: PayloadAction<DeviceId[]>
+    { payload }: PayloadAction<ConnectionId[]>
   ) => {
     state.connectable.dmx = payload
   },
