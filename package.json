@@ -178,7 +178,8 @@
     "publish": {
       "provider": "github",
       "owner": "spensbot",
-      "repo": "captivate"
+      "repo": "captivate",
+      "vPrefixedTagName": true
     }
   },
   "devEngines": {
