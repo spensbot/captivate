@@ -1,5 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from 'firebase/app'
+import * as firebase from 'firebase'
 import {
   getAnalytics,
   logEvent as logEventWithAnalytics,
