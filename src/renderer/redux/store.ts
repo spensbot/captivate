@@ -15,6 +15,7 @@ import { DeviceState } from './deviceState'
 import { VisualScene_t, SceneType } from '../../shared/Scenes'
 import { Param, Params } from '../../shared/params'
 import { SaveInfo } from 'shared/save'
+import eventLogger from './eventLogger'
 
 export interface UndoActionTypes {
   undo: string
@@ -177,7 +178,7 @@ export const store = configureStore({
     getDefaultMiddleware({
       serializableCheck: false,
       immutableCheck: false,
-    }),
+    }).concat(eventLogger),
 })
 
 export type ReduxStore = typeof store

@@ -1,3 +1,5 @@
+import './3rd-party/initFirebase'
+import './3rd-party/initErrorLogging'
 import { render } from 'react-dom'
 import { ThemeProvider } from 'styled-components'
 import GlobalStyle from './GlobalStyle'
@@ -23,7 +25,6 @@ import { ThemeProvider as MuiThemeProvider } from '@emotion/react'
 import { createTheme } from '@mui/material/styles'
 import { autoSave } from './autosave'
 import { getUndoGroup, undoAction, redoAction } from './controls/UndoRedo'
-import './react_error_logging'
 import { load } from './menu/SaveLoad'
 import { getSaveConfig } from 'shared/save'
 
@@ -48,7 +49,6 @@ ipc_setup({
     _frequentlyUpdatedRealtimeState = newRealtimeState
   },
   on_dispatch: (action) => {
-    console.log('dispatch')
     store.dispatch(action)
   },
   on_main_command: (command) => {

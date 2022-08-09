@@ -31,10 +31,11 @@ export function getOutputParams(
   splitIndex: number | null
 ) {
   const outputParams = defaultOutputParams()
-  const baseParams =
-    splitIndex === null
-      ? scene.baseParams
-      : scene.splitScenes[splitIndex].baseParams
+  // const baseParams =
+  //   splitIndex === null
+  //     ? scene.baseParams
+  //     : scene.splitScenes[splitIndex].baseParams
+  const baseParams = defaultOutputParams()
   const mappedParams = mapUndefinedParamsToDefault(baseParams)
   const snapshots: ModSnapshot[] =
     splitIndex === null

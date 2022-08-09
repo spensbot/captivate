@@ -20,10 +20,6 @@ export default function Devices({}: Props) {
   const dmx = useTypedSelector((state) => state.gui.dmx)
   const midi = useTypedSelector((state) => state.gui.midi)
 
-  console.log('connectable', connectable.dmx)
-  console.log('available', dmx.available)
-  console.log('connected', dmx.connected)
-
   return (
     <Root>
       <Modal>
