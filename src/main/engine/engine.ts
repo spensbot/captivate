@@ -29,6 +29,8 @@ import { MidiMessage, midiInputID } from '../../shared/midi'
 
 let _nodeLink = new NodeLink()
 _nodeLink.setIsPlaying(true)
+_nodeLink.enableStartStopSync(true)
+_nodeLink.enable(true)
 let _ipcCallbacks: IPC_Callbacks | null = null
 let _controlState: CleanReduxState | null = null
 let _realtimeState: RealtimeState = initRealtimeState()
