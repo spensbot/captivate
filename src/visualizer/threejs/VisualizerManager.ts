@@ -22,6 +22,8 @@ export default class VisualizerManager {
   private effectsConfig: EffectsConfig
   private updateResource: UpdateResource | null = null
   private effectManager: EffectManager
+  private stoppedScene = new THREE.Scene()
+  private stoppedCamera = new THREE.Camera()
 
   constructor() {
     this.renderer = new THREE.WebGLRenderer()
@@ -57,8 +59,8 @@ export default class VisualizerManager {
       master: control.master,
       size: {
         width: this.width,
-        height: this.height
-      }
+        height: this.height,
+      },
     }
     if (this.updateResource === null) {
       this.updateResource = new UpdateResource(stuff)
@@ -86,7 +88,11 @@ export default class VisualizerManager {
     }
 
     this.effectManager.update(this.updateResource)
-    this.effectManager.render()
+    if (this.updateResource.time.isPlaying) {
+      this.effectManager.render()
+    } else {
+      this.renderer.render(this.stoppedScene, this.stoppedCamera)
+    }
   }
 
   resize(width: number, height: number) {
