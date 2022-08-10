@@ -80,7 +80,7 @@ export default function MenuBar() {
       <MasterSlider />
       <div style={{ height: '0.5rem' }} />
       {/* <BlackoutButton /> */}
-      {/* <PlayPauseButton /> */}
+      {/* <StartStopButton /> */}
     </Root>
   )
 }

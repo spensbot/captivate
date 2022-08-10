@@ -15,7 +15,7 @@ import { midiSetIsEditing } from '../redux/controlSlice'
 import { setConnectionsMenu } from '../redux/guiSlice'
 import { send_user_command } from '../ipcHandler'
 import TapTempo from './TapTempo'
-import PlayPauseButton from './PlayPauseButton'
+import StartStopButton from './StartStopButton'
 import SaveLoad from './SaveLoad'
 
 function BPM() {
@@ -80,7 +80,7 @@ export default function StatusBar() {
 
   return (
     <Root>
-      <PlayPauseButton />
+      <StartStopButton />
       <div style={{ width: '0.5rem' }} />
       <LinkButton />
       <TapTempo />
