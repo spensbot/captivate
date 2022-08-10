@@ -14,19 +14,21 @@ import {
   getSortedGroups,
 } from '../../shared/dmxUtil'
 import { indexArray } from '../../shared/util'
+import { TimeState } from '../../shared/TimeState'
 
 export function calculateDmx(
   state: CleanReduxState,
   outputParams: Params,
   randomizerState: RandomizerState,
-  splitScenes: { outputParams: Params }[]
+  splitScenes: { outputParams: Params }[],
+  timeState: TimeState
 ): number[] {
   const universe = state.dmx.universe
   const fixtureTypes = state.dmx.fixtureTypesByID
 
   let channels = Array(DMX_NUM_CHANNELS).fill(0)
 
-  if (!state.gui.blackout) {
+  if (timeState.isPlaying) {
     const scenes = state.control.light
     const activeScene = scenes.byId[scenes.active]
 

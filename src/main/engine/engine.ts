@@ -245,7 +245,8 @@ function getNextRealtimeState(
       controlState,
       outputParams,
       newRandomizerState,
-      splitScenes
+      splitScenes,
+      nextTimeState
     ),
     splitScenes,
   }
