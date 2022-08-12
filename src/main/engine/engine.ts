@@ -94,7 +94,7 @@ export function start(
   setInterval(() => {
     const nextTimeState = getNextTimeState()
     if (
-      (nextTimeState.isPlaying || _realtimeState.time.isPlaying) &&
+      // (nextTimeState.isPlaying || _realtimeState.time.isPlaying) &&
       _ipcCallbacks !== null &&
       _controlState !== null
     ) {
