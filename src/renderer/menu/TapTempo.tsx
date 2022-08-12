@@ -1,5 +1,3 @@
-import AdjustIcon from '@mui/icons-material/Adjust'
-import IconButton from '@mui/material/IconButton'
 import { send_user_command } from '../ipcHandler'
 import { ButtonMidiOverlay } from 'renderer/base/MidiOverlay'
 import styled from 'styled-components'

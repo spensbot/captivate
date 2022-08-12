@@ -62,7 +62,7 @@ export default function MenuBar() {
         <LightingIcon fontSize="inherit" />
         {/* <StarBorderIcon /> */}
       </MenuItem>
-      <MenuItem page="Video" tooltipText="Visualizer" paddingRem={0.6}>
+      <MenuItem page="Video" tooltipText="Visualizer" paddingRem={0.5}>
         {/* <FeaturedVideoIcon /> */}
         {/* <MovieFilterIcon /> */}
         <img
