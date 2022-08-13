@@ -72,6 +72,10 @@ export function maintain(config: Config) {
   }, DMX_SEND_INTERVAL)
 }
 
+export function listPorts(): Promise<PortInfo[]> {
+  return SerialPort.list()
+}
+
 async function maintainConnection() {
   const availablePorts = await SerialPort.list()
 

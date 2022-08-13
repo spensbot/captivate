@@ -4,8 +4,10 @@ import {
   shell,
   BrowserWindow,
   MenuItemConstructorOptions,
+  dialog,
 } from 'electron'
 import { IPC_Callbacks } from './engine/ipcHandler'
+import { listPorts } from './engine/dmxConnection'
 
 interface DarwinMenuItemConstructorOptions extends MenuItemConstructorOptions {
   selector?: string
@@ -199,6 +201,32 @@ export default class MenuBuilder {
           label: 'Learn More',
           click() {
             shell.openExternal('https://captivatesynth.com/')
+          },
+        },
+        {
+          label: 'Tutorials',
+          click() {
+            shell.openExternal('https://captivatesynth.com/getting_started')
+          },
+        },
+        {
+          label: 'Discussion',
+          click() {
+            shell.openExternal(
+              'https://github.com/spensbot/captivate/discussions'
+            )
+          },
+        },
+        {
+          label: 'USB Troubleshooting',
+          click: () => {
+            listPorts().then((ports) =>
+              dialog.showMessageBox(this.mainWindow, {
+                title: 'USB Troubleshooting',
+                message:
+                  JSON.stringify(ports) + Array(100).fill('hello').join(' \n'),
+              })
+            )
           },
         },
       ],
