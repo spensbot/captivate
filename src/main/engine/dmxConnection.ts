@@ -5,6 +5,7 @@ import {
   DmxConnections,
   ConnectionId,
   DmxDevice_t,
+  SerialportInfo,
 } from '../../shared/connection'
 
 const ENTTEC_PRO_DMX_STARTCODE = 0x00
@@ -21,17 +22,6 @@ let _config: Config
 
 export type UpdatePayload = DmxConnections
 
-// I literally copy-pasted this from serialport because I can't figure out how to import it :/
-interface PortInfo {
-  path: string
-  manufacturer: string | undefined
-  serialNumber: string | undefined
-  pnpId: string | undefined
-  locationId: string | undefined
-  productId: string | undefined
-  vendorId: string | undefined
-}
-
 interface Config {
   update_ms: number
   onUpdate: (path: UpdatePayload) => void
@@ -39,11 +29,11 @@ interface Config {
   getConnectable: () => ConnectionId[]
 }
 
-function getConnectionId(port: PortInfo): ConnectionId {
+function getConnectionId(port: SerialportInfo): ConnectionId {
   return port.path
 }
 
-function getDeviceName(port: PortInfo): ConnectionId {
+function getDeviceName(port: SerialportInfo): ConnectionId {
   if (port.manufacturer === 'FTDI') {
     return 'DMX USB Device'
   } else {
@@ -51,7 +41,7 @@ function getDeviceName(port: PortInfo): ConnectionId {
   }
 }
 
-function dmxDevice(port: PortInfo): DmxDevice_t {
+function dmxDevice(port: SerialportInfo): DmxDevice_t {
   return {
     connectionId: getConnectionId(port),
     path: port.path,
@@ -72,7 +62,7 @@ export function maintain(config: Config) {
   }, DMX_SEND_INTERVAL)
 }
 
-export function listPorts(): Promise<PortInfo[]> {
+export function listPorts(): Promise<SerialportInfo[]> {
   return SerialPort.list()
 }
 
@@ -105,6 +95,7 @@ async function maintainConnection() {
   _config.onUpdate({
     connected: _connection ? [_connection.path] : [],
     available: availableDevices,
+    serialports: availablePorts,
   })
 
   setTimeout(maintainConnection, _config.update_ms)
@@ -136,7 +127,7 @@ function connect(path: string) {
 
 function start() {}
 
-function isDmxDevice_t(port: PortInfo) {
+function isDmxDevice_t(port: SerialportInfo) {
   if (
     port.manufacturer?.includes('DMX') ||
     port.manufacturer?.includes('ENTTEC') ||

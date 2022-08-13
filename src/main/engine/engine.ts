@@ -120,8 +120,9 @@ export function stop() {
 
 DmxConnection.maintain({
   update_ms: 1000,
-  onUpdate: (path) => {
-    if (_ipcCallbacks !== null) _ipcCallbacks.send_dmx_connection_update(path)
+  onUpdate: (dmxStatus) => {
+    if (_ipcCallbacks !== null)
+      _ipcCallbacks.send_dmx_connection_update(dmxStatus)
   },
   getChannels: () => _realtimeState.dmxOut,
   getConnectable: () => {

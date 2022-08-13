@@ -11,6 +11,16 @@ export interface DmxDevice_t {
   name: string
 }
 
+export interface SerialportInfo {
+  path: string
+  manufacturer: string | undefined
+  serialNumber: string | undefined
+  pnpId: string | undefined
+  locationId: string | undefined
+  productId: string | undefined
+  vendorId: string | undefined
+}
+
 export interface MidiDevice_t {
   connectionId: ConnectionId
   name: string
@@ -19,6 +29,7 @@ export interface MidiDevice_t {
 export interface DmxConnections {
   connected: ConnectionId[]
   available: DmxDevice_t[]
+  serialports: SerialportInfo[]
 }
 
 export interface MidiConnections {
@@ -37,5 +48,6 @@ export function initDmxConnections(): DmxConnections {
   return {
     connected: [],
     available: [],
+    serialports: [],
   }
 }
