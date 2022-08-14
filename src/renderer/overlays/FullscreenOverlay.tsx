@@ -49,27 +49,3 @@ const Root = styled.div`
   bottom: 0;
   right: 0;
 `
-
-const Warning = styled.div`
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #0006;
-`
-
-const WarningText = styled.div`
-  padding: 2rem;
-  font-size: 3rem;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  background-color: #0009;
-  /* width: 100%; */
-`
-const SubText = styled.div`
-  font-size: 1.5rem;
-  text-align: center;
-  color: ${(props) => props.theme.colors.text.secondary};
-`
