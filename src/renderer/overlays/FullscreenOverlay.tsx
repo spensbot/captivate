@@ -6,7 +6,6 @@ import zIndexes from '../zIndexes'
 import Blackout from './Blackout'
 import Devices from './Devices'
 import NewProjectDialog from './NewProjectDialog'
-import { useRealtimeSelector } from 'renderer/redux/realtimeStore'
 
 interface Props {}
 
@@ -16,8 +15,6 @@ export default function FullscreenOverlay({}: Props) {
   const newProjectDialog = useTypedSelector(
     (state) => state.gui.newProjectDialog
   )
-  const isPlaying = useRealtimeSelector((rtState) => rtState.time.isPlaying)
-  const isMaster = useTypedSelector((state) => state.control.present.master)
   const dispatch = useDispatch()
 
   if (isBlackout)
@@ -38,30 +35,6 @@ export default function FullscreenOverlay({}: Props) {
     return (
       <Root>
         <NewProjectDialog />
-      </Root>
-    )
-
-  if (!isPlaying)
-    return (
-      <Root style={{ pointerEvents: 'none' }}>
-        <Warning>
-          <WarningText>
-            Stopped
-            <SubText>Press the Play Button to Continue</SubText>
-          </WarningText>
-        </Warning>
-      </Root>
-    )
-
-  if (!isMaster)
-    return (
-      <Root style={{ pointerEvents: 'none' }}>
-        <Warning>
-          <WarningText>
-            Master Off
-            <SubText>Increase Master Level To Continue</SubText>
-          </WarningText>
-        </Warning>
       </Root>
     )
 

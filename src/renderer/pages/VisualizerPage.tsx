@@ -58,7 +58,7 @@ export default function VisualizerPage() {
 
 const Root = styled.div`
   width: 100%;
-  height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
 `

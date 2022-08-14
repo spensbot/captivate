@@ -8,11 +8,28 @@ export default function BottomStatus() {
     (state) => state.control.present.master > 0.05
   )
 
-  let warning: string | null = null
-  if (!isMaster) warning = 'MASTER OFF! Increase Master Slider To See Lights'
-  if (!isPlaying) warning = 'STOPPED! Press Play To Continue'
+  let message: string = 'All is well'
+  let color: string | undefined = undefined
+  let backgroundColor: string | undefined = undefined
+  if (!isPlaying) {
+    message = 'STOPPED! Press Play To Continue'
+    color = '#fff'
+    backgroundColor = '#d33'
+  } else if (!isMaster) {
+    message = 'MASTER LOW! Increase Master Slider To See Lights'
+    color = '#fff'
+    backgroundColor = '#d33'
+  }
 
-  return <Root>{warning}</Root>
+  return (
+    <Root style={{ color, backgroundColor: backgroundColor }}>{message}</Root>
+  )
 }
 
-const Root = styled.div``
+const Root = styled.div`
+  color: ${(props) => props.theme.colors.text.secondary};
+  border-top: 1px solid #383838;
+  padding: 0.2rem 0.5rem;
+  user-select: text;
+  background-color: ${(props) => props.theme.colors.bg.primary};
+`

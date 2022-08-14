@@ -44,12 +44,17 @@ export default function Mixer() {
   )
 }
 
-const Root = styled.div``
+const Root = styled.div`
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+`
 
 const LabelledSliderWrapper = styled.div`
   display: flex;
   flex-wrap: wrap;
-  padding: 1rem;
+  overflow: auto;
+  margin: 0 1rem;
 `
 
 function Header() {
@@ -102,6 +107,7 @@ const HeaderRoot = styled.div`
   align-items: center;
   margin-top: 1rem;
   margin-left: 1rem;
+  margin-bottom: 1rem;
 `
 
 const Page = styled.span`

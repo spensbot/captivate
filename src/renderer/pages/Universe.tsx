@@ -39,7 +39,7 @@ export default function Universe() {
 }
 
 const Root = styled.div`
-  height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
 `

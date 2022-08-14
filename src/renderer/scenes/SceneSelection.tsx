@@ -44,7 +44,7 @@ export default function SceneSelection({
 
 const Root = styled.div`
   background-color: ${(props) => props.theme.colors.bg.darker};
-  padding: 1rem;
+  padding: 1rem 1rem 0 1rem;
   height: 100%;
   border-right: 1px solid ${(props) => props.theme.colors.divider};
   display: flex;

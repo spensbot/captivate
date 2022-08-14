@@ -8,6 +8,7 @@ import MenuBar from './menu/MenuBar'
 import { useTypedSelector } from './redux/store'
 import FullscreenOverlay from './overlays/FullscreenOverlay'
 import ErrorBoundarySentry from './error-boundary/ErrorBoundarySentry'
+import BottomStatus from './menu/BottomStatus'
 
 export default function App() {
   const activePage = useTypedSelector((state) => state.gui.activePage)
@@ -26,9 +27,12 @@ export default function App() {
     <Root>
       <ErrorBoundarySentry>
         <MenuBar />
-        <PageWrapper style={{ overflow: 'auto' }}>
-          {getActivePage()}
-        </PageWrapper>
+        <Col>
+          <PageWrapper style={{ overflow: 'auto' }}>
+            {getActivePage()}
+          </PageWrapper>
+          <BottomStatus />
+        </Col>
         <FullscreenOverlay />
       </ErrorBoundarySentry>
     </Root>
@@ -38,11 +42,15 @@ export default function App() {
 const Root = styled.div`
   display: flex;
   position: relative;
-  flex-direction: row;
   height: 100vh;
 `
 
 const PageWrapper = styled.div`
-  flex: 1 1 auto;
-  height: '100%';
+  flex: 1 1 0;
+`
+
+const Col = styled.div`
+  flex: 1 0 0;
+  display: flex;
+  flex-direction: column;
 `
