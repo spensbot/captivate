@@ -10,6 +10,7 @@ import {
   MidiDevice_t,
   ConnectionId,
 } from '../../shared/connection'
+import DmxTroubleShoot from './DmxTroubleshoot'
 
 interface Props {}
 
@@ -30,7 +31,7 @@ export default function Devices({}: Props) {
           </IconButton>
         </Row>
         <Row>
-          <Pane style={{ borderRight: '1px solid #777', paddingRight: '1rem' }}>
+          <Pane>
             <SubTitle>Dmx</SubTitle>
             {dmx.available.map((device) => (
               <DmxDevice
@@ -42,7 +43,8 @@ export default function Devices({}: Props) {
             ))}
             {dmx.available.length === 0 && <NoneFound />}
           </Pane>
-          <Pane style={{ paddingLeft: '1rem' }}>
+          <Divider />
+          <Pane>
             <SubTitle>Midi</SubTitle>
             {midi.available.map((device) => (
               <MidiDevice
@@ -55,6 +57,7 @@ export default function Devices({}: Props) {
             {midi.available.length === 0 && <NoneFound />}
           </Pane>
         </Row>
+        <DmxTroubleShoot />
       </Modal>
     </Root>
   )
@@ -86,6 +89,12 @@ const Pane = styled.div`
   height: 100%;
 `
 
+const Divider = styled.div`
+  width: 1px;
+  background-color: ${(props) => props.theme.colors.divider};
+  margin: 0 1rem;
+`
+
 const Title = styled.div`
   font-size: 1.4rem;
 `
@@ -94,7 +103,6 @@ const SubTitle = styled.div`
   font-size: 1.1rem;
   margin-bottom: 1rem;
 `
-
 interface Props2<T> {
   device: T
   connected: ConnectionId[]

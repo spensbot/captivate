@@ -42,8 +42,13 @@ export default function FullscreenOverlay({}: Props) {
 
   if (!isPlaying)
     return (
-      <Root>
-        <Warning>Stopped. Press the Play Button to Continue</Warning>
+      <Root style={{ pointerEvents: 'none' }}>
+        <Warning>
+          <WarningText>
+            Stopped
+            <SubText>Press the Play Button to Continue</SubText>
+          </WarningText>
+        </Warning>
       </Root>
     )
 
@@ -57,7 +62,6 @@ const Root = styled.div`
   left: 0;
   bottom: 0;
   right: 0;
-  pointer-events: none;
 `
 
 const Warning = styled.div`
@@ -66,7 +70,20 @@ const Warning = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 3rem;
   background-color: #0006;
-  pointer-events: none;
+`
+
+const WarningText = styled.div`
+  padding: 3rem;
+  font-size: 3rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  background-color: #0006;
+  /* width: 100%; */
+`
+const SubText = styled.div`
+  font-size: 1.5rem;
+  text-align: center;
+  color: ${(props) => props.theme.colors.text.secondary};
 `
