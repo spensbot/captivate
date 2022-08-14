@@ -68,6 +68,8 @@ function Header() {
 
   return (
     <HeaderRoot>
+      <HeaderTitle>DMX Out</HeaderTitle>
+      <S />
       <IconButton
         disabled={!canGoBack}
         onClick={() => dispatch(setPageIndex(_s.pageIndex - 1))}
@@ -101,6 +103,10 @@ function Header() {
     </HeaderRoot>
   )
 }
+
+const HeaderTitle = styled.div`
+  font-size: 1.3rem;
+`
 
 const HeaderRoot = styled.div`
   display: flex;

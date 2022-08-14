@@ -78,6 +78,7 @@ function portInfo(title: string, val?: string) {
 
 const Root = styled.div`
   margin: 0 1rem 0.5rem 1rem;
+  max-width: 30rem;
 `
 
 const Ports = styled.div`
@@ -92,6 +93,7 @@ const PortInfoRoot = styled.div`
   font-size: 0.8rem;
   margin-left: 1rem;
   color: ${(props) => props.theme.colors.text.secondary};
+  overflow: scroll;
 `
 
 const TSButton = styled.div`
