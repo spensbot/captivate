@@ -17,6 +17,7 @@ export default function FullscreenOverlay({}: Props) {
     (state) => state.gui.newProjectDialog
   )
   const isPlaying = useRealtimeSelector((rtState) => rtState.time.isPlaying)
+  const isMaster = useTypedSelector((state) => state.control.present.master)
   const dispatch = useDispatch()
 
   if (isBlackout)
@@ -52,6 +53,18 @@ export default function FullscreenOverlay({}: Props) {
       </Root>
     )
 
+  if (!isMaster)
+    return (
+      <Root style={{ pointerEvents: 'none' }}>
+        <Warning>
+          <WarningText>
+            Master Off
+            <SubText>Increase Master Level To Continue</SubText>
+          </WarningText>
+        </Warning>
+      </Root>
+    )
+
   return null
 }
 
@@ -74,12 +87,12 @@ const Warning = styled.div`
 `
 
 const WarningText = styled.div`
-  padding: 3rem;
+  padding: 2rem;
   font-size: 3rem;
   text-align: center;
   display: flex;
   flex-direction: column;
-  background-color: #0006;
+  background-color: #0009;
   /* width: 100%; */
 `
 const SubText = styled.div`

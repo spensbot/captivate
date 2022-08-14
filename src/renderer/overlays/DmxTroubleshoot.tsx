@@ -22,7 +22,7 @@ export default function DmxTroubleshoot() {
   return (
     <Root>
       <Divider style={{ height: '1px' }} />
-      <Row style={troubleshoot ? { marginBottom: '0.5rem' } : undefined}>
+      <Row>
         {troubleshoot && (
           <IconButton
             onClick={() => {
@@ -31,13 +31,14 @@ export default function DmxTroubleshoot() {
                 .catch(() => safeSetCopyStatus('error'))
               setTimeout(() => safeSetCopyStatus(null), 700)
             }}
+            style={{ marginRight: '0.5rem' }}
           >
             <CopyIcon />
           </IconButton>
         )}
         <div style={{ flex: '1 0 0' }}>
           {copyStatus === 'success'
-            ? 'copied'
+            ? 'Copied :)'
             : copyStatus === 'error'
             ? 'copy failed :/'
             : ''}
@@ -46,18 +47,22 @@ export default function DmxTroubleshoot() {
           Troubleshoot {troubleshoot ? '▲' : '▼'}
         </TSButton>
       </Row>
-      {troubleshoot &&
-        serialPorts.map((port) => (
-          <Port>
-            Path: {port.path}
-            {portInfo('Location: ', port.locationId)}
-            {portInfo('Manufacturer: ', port.manufacturer)}
-            {portInfo('Pnp Id: ', port.pnpId)}
-            {portInfo('Product Id: ', port.productId)}
-            {portInfo('Serial Number: ', port.serialNumber)}
-            {portInfo('Vendor Id: ', port.vendorId)}
-          </Port>
-        ))}
+      {troubleshoot && <div style={{ height: '0.5rem' }} />}
+      {troubleshoot && (
+        <Ports>
+          {serialPorts.map((port) => (
+            <Port>
+              Path: {port.path}
+              {portInfo('Location: ', port.locationId)}
+              {portInfo('Manufacturer: ', port.manufacturer)}
+              {portInfo('Pnp Id: ', port.pnpId)}
+              {portInfo('Product Id: ', port.productId)}
+              {portInfo('Serial Number: ', port.serialNumber)}
+              {portInfo('Vendor Id: ', port.vendorId)}
+            </Port>
+          ))}
+        </Ports>
+      )}
     </Root>
   )
 }
@@ -75,8 +80,12 @@ const Root = styled.div`
   margin: 0 1rem 0.5rem 1rem;
 `
 
+const Ports = styled.div`
+  user-select: text;
+`
+
 const Port = styled.div`
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 `
 
 const PortInfoRoot = styled.div`
