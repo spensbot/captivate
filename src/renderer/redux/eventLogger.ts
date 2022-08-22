@@ -1,6 +1,7 @@
 import { Middleware } from 'redux'
 import throttle from 'lodash.throttle'
 import { logEvent } from 'renderer/3rd-party/initFirebase'
+import { ReduxState } from './store'
 
 export function logEventThrottled(eventName: string, throttleMs: number) {
   return throttle((params: { [key: string]: any } | undefined = undefined) => {
@@ -98,12 +99,13 @@ function makeFirebaseSafe(
   }
 }
 
-const eventLogger: Middleware = (_) => (next) => (action) => {
-  const eventName = getEventName(action)
-  if (!eliminatedEvents.has(eventName)) {
-    _eventThrottleMap.call(eventName, getEventParams(action))
+const eventLogger: Middleware<{}, ReduxState> =
+  (_store) => (next) => (action) => {
+    const eventName = getEventName(action)
+    if (!eliminatedEvents.has(eventName)) {
+      _eventThrottleMap.call(eventName, getEventParams(action))
+    }
+    return next(action)
   }
-  return next(action)
-}
 
 export default eventLogger
