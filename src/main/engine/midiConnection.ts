@@ -60,10 +60,12 @@ function updateInputs(config: Config) {
     connected.push(portName)
   }
 
-  config.onUpdate({
+  let status: MidiConnections = {
     available: availableMidiDevice_ts,
     connected: connected,
-  })
+  }
+
+  config.onUpdate(status)
 }
 
 function newInput(index: number, config: Config) {

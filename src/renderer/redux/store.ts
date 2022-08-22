@@ -179,6 +179,7 @@ export const store = configureStore({
       serializableCheck: false,
       immutableCheck: false,
     }).concat(eventLogger),
+  devTools: { name: 'UI Store' },
 })
 
 export type ReduxStore = typeof store

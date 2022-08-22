@@ -60,6 +60,7 @@ export const realtimeStore = configureStore({
       serializableCheck: false,
       immutableCheck: false,
     }),
+  devTools: { name: 'Realtime Store' },
 })
 
 export type RealtimeStore = typeof realtimeStore

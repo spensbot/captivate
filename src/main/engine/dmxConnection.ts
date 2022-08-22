@@ -92,11 +92,13 @@ async function maintainConnection() {
     }
   }
 
-  _config.onUpdate({
+  let status: DmxConnections = {
     connected: _connection ? [_connection.path] : [],
     available: availableDevices,
     serialports: availablePorts,
-  })
+  }
+
+  _config.onUpdate(status)
 
   setTimeout(maintainConnection, _config.update_ms)
 }
