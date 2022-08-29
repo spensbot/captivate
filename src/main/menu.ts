@@ -90,6 +90,13 @@ export default class MenuBuilder {
           },
         },
         {
+          label: 'Ledfx URL',
+          accelerator: 'Command+L',
+          click: () => {
+            this.res.ipcCallbacks.send_main_command({ type: 'ledfx-url' })
+          },
+        },
+        {
           label: 'Save',
           accelerator: 'Command+S',
           click: () => {
@@ -258,6 +265,13 @@ export default class MenuBuilder {
             accelerator: 'Ctrl+N',
             click: () => {
               this.res.ipcCallbacks.send_main_command({ type: 'new-project' })
+            },
+          },
+          {
+            label: 'Ledfx URL',
+            accelerator: 'Ctrl+L',
+            click: () => {
+              this.res.ipcCallbacks.send_main_command({ type: 'ledfx-url' })
             },
           },
           {

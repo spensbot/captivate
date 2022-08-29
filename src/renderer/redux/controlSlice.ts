@@ -36,7 +36,8 @@ export function initControlState(): ControlState {
     master: 1,
   }
 }
-
+const ledfxURL = 'http://localhost:8888/api/scenes'
+const ledfxPayload = {"id":"red","action":"activate"}
 interface IncrementModulatorPayload {
   index: number
   flip: number
@@ -59,6 +60,7 @@ function modifyActiveLightScene(
   const scene = state.light.byId[state.light.active]
   if (scene) {
     callback(scene)
+    console.log(ledfxURL, ledfxPayload)
   }
 }
 
@@ -320,7 +322,7 @@ export const scenesSlice = createSlice({
           scene.modulators.forEach(modulator => {
             const modulation = splitIndex === null ? modulator.modulation : modulator.splitModulations[splitIndex]
             delete modulation[param]
-          }) 
+          })
         })
       }
     },
