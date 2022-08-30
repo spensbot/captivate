@@ -18,6 +18,8 @@ export interface GuiState {
   saving: boolean
   loading: SaveInfo | null
   newProjectDialog: boolean
+  ledFxURLDialog: boolean
+  ledFxURL: string | null
 }
 
 export function initGuiState(): GuiState {
@@ -30,6 +32,8 @@ export function initGuiState(): GuiState {
     saving: false,
     loading: null,
     newProjectDialog: false,
+    ledFxURLDialog: false,
+    ledFxURL: null,
   }
 }
 
@@ -61,6 +65,12 @@ export const guiSlice = createSlice({
     setNewProjectDialog: (state, { payload }: PayloadAction<boolean>) => {
       state.newProjectDialog = payload
     },
+    setLedFxURLDialog: (state, { payload }: PayloadAction<boolean>) => {
+      state.ledFxURLDialog = payload
+    },
+    setLedFxURL: (state, { payload }: PayloadAction<string>) => {
+      state.ledFxURL = payload
+    },
   },
 })
 
@@ -73,6 +83,8 @@ export const {
   setSaving,
   setLoading,
   setNewProjectDialog,
+  setLedFxURLDialog,
+  setLedFxURL,
 } = guiSlice.actions
 
 export default guiSlice.reducer

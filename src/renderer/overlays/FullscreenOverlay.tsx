@@ -6,6 +6,7 @@ import zIndexes from '../zIndexes'
 import Blackout from './Blackout'
 import Devices from './Devices'
 import NewProjectDialog from './NewProjectDialog'
+import LedFxURLDialog from './LedFxURLDialog'
 
 interface Props {}
 
@@ -14,6 +15,9 @@ export default function FullscreenOverlay({}: Props) {
   const connectionsMenu = useTypedSelector((state) => state.gui.connectionMenu)
   const newProjectDialog = useTypedSelector(
     (state) => state.gui.newProjectDialog
+  )
+  const ledFxURLDialog = useTypedSelector(
+    (state) => state.gui.ledFxURLDialog
   )
   const dispatch = useDispatch()
 
@@ -31,7 +35,13 @@ export default function FullscreenOverlay({}: Props) {
       </Root>
     )
 
-  if (newProjectDialog)
+  if (ledFxURLDialog)
+    return (
+      <Root>
+        <LedFxURLDialog />
+      </Root>
+    )
+    if (newProjectDialog)
     return (
       <Root>
         <NewProjectDialog />

@@ -13,6 +13,7 @@ import {
   setSaving,
   setLoading,
   setNewProjectDialog,
+  setLedFxURLDialog,
 } from './redux/guiSlice'
 import {
   realtimeStore,
@@ -77,6 +78,9 @@ ipc_setup({
       store.dispatch(setSaving(true))
     } else if (command.type === 'new-project') {
       store.dispatch(setNewProjectDialog(true))
+    }
+    else if (command.type === 'ledfx-url') {
+      store.dispatch(setLedFxURLDialog(true))
     }
   },
 })

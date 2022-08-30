@@ -36,7 +36,7 @@ export function initControlState(): ControlState {
     master: 1,
   }
 }
-const ledfxURL = 'http://localhost:8888/api/scenes'
+//const ledfxURL = 'http://localhost:8888/api/scenes'
 const ledfxPayload = {"id":"red","action":"activate"}
 interface IncrementModulatorPayload {
   index: number
@@ -60,7 +60,7 @@ function modifyActiveLightScene(
   const scene = state.light.byId[state.light.active]
   if (scene) {
     callback(scene)
-    console.log(ledfxURL, ledfxPayload)
+    //console.log(ledfxURL, ledfxPayload)
   }
 }
 

@@ -64,4 +64,8 @@ interface Load {
 interface NewProject {
   type: 'new-project'
 }
-export type MainCommand = Undo | Redo | Save | Load | NewProject
+
+interface LedFxURL {
+  type: 'ledfx-url'
+}
+export type MainCommand = Undo | Redo | Save | Load | NewProject | LedFxURL
