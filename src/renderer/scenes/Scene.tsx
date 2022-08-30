@@ -14,6 +14,8 @@ import { IconButton } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import AddIcon from '@mui/icons-material/Add'
 import DisableIcon from '@mui/icons-material/DoNotDisturb'
+import AddLedFxSceneIcon from '@mui/icons-material/AddPhotoAlternate';
+import DisableLedFxSceneIcon from '@mui/icons-material/Photo';
 import Slider from '../base/Slider'
 import { ButtonMidiOverlay } from '../base/MidiOverlay'
 import Input from '../base/Input'
@@ -128,6 +130,13 @@ export function Scene({ sceneType, index, id }: Props) {
                       checked={autoEnabled}
                       onChange={(e) => onAutoEnabledChange(e.target.checked)}
                     /> */}
+                    {/*TODO: Only show enable/disable, If Ledfx scene has been assigned to Captivate scene*/}
+                    <Disable onClick={() => onAutoEnabledChange(!autoEnabled)}>
+                      <DisableLedFxSceneIcon
+                        fontSize="small"
+                        style={{ opacity: autoEnabled ? 0.3 : 1 }}
+                      />
+                    </Disable>
                     <Disable onClick={() => onAutoEnabledChange(!autoEnabled)}>
                       <DisableIcon
                         fontSize="small"
@@ -160,6 +169,21 @@ export function Scene({ sceneType, index, id }: Props) {
                     onClick={onRemoveScene}
                   >
                     <CloseIcon />
+                  </IconButton>
+
+                  <IconButton
+                    aria-label="delete scene"
+                    size="small"
+                    onClick={onRemoveScene}
+                  >
+                    {/*
+                    TO DO: Dialog popup, On clicking the + button,
+                    does a GET from LedFx URL endpoint (http://127.0.0.1:8888/api/scenes) and
+                    shows dropdown list of aviaible LedFx scene options, along with a none option.
+                    OK button saves to captivate project config. And displays scene name.
+                    OnClick above needs to be called.
+                    */}
+                    <AddLedFxSceneIcon />
                   </IconButton>
                 </>
               )}
