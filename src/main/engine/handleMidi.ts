@@ -10,7 +10,7 @@ import {
   setMaster,
   setBaseParams,
 } from '../../renderer/redux/controlSlice'
-import NodeLink from 'node-link'
+import { setTempo } from './time'
 import { PayloadAction } from '@reduxjs/toolkit'
 
 interface MidiInput {
@@ -29,7 +29,6 @@ export function handleMessage(
   message: MidiMessage,
   state: CleanReduxState,
   rt_state: RealtimeState,
-  nodeLink: NodeLink,
   dispatch: (action: PayloadAction<any>) => void,
   tapTempo: () => void
 ) {
@@ -144,7 +143,7 @@ export function handleMessage(
             })
           )
         } else if (action.type === 'setBpm') {
-          nodeLink.setTempo(newVal)
+          setTempo(newVal)
         } else if (action.type === 'tapTempo') {
           tapTempo()
         }

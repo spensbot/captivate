@@ -1,12 +1,18 @@
 export interface TimeState {
   bpm: number
   beats: number
+
+  // Link
   numPeers: number
   isEnabled: boolean
   isPlaying: boolean
   isStartStopSyncEnabled: boolean
   quantum: number
-  dt: number
+
+  // Live Audio Analysis
+  rms: number
+  confidence: number
+  confidenceThreshold: number
 }
 
 export function initTimeState(): TimeState {
@@ -18,7 +24,9 @@ export function initTimeState(): TimeState {
     isPlaying: false,
     isStartStopSyncEnabled: false,
     quantum: 4.0,
-    dt: 0.0,
+    rms: 0.0,
+    confidence: 0.0,
+    confidenceThreshold: 0.5,
   }
 }
 

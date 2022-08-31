@@ -15,6 +15,7 @@ import SaveLoad from './SaveLoad'
 import LinkButton from './LinkButton'
 import Bpm from './Bpm'
 import StartStopSyncButton from './StartStopSyncButton'
+import AudioInput from './AudioInput'
 
 export default function StatusBar() {
   const isEditing = useDeviceSelector((state) => state.isEditing)
@@ -38,6 +39,8 @@ export default function StatusBar() {
       <Sp />
       <Counter2 />
       <UndoRedo />
+      <AudioInput />
+      <div>{}</div>
       <div style={{ flex: '1 0 0' }} />
       {midiConnected && (
         <IconButton onClick={() => dispatch(midiSetIsEditing(!isEditing))}>

@@ -1,7 +1,6 @@
 import { WebContents } from 'electron'
 import * as DmxConnection from './dmxConnection'
 import * as MidiConnection from './midiConnection'
-import NodeLink from 'node-link'
 import { ipcSetup, IPC_Callbacks } from './ipcHandler'
 import { CleanReduxState } from '../../renderer/redux/store'
 import {
@@ -26,20 +25,15 @@ import {
 } from '../../shared/dmxUtil'
 import { ThrottleMap } from './midiConnection'
 import { MidiMessage, midiInputID } from '../../shared/midi'
-import './audioEngine'
+import { _nodeLink, setTempo, getNextTimeState } from './time'
 
-let _nodeLink = new NodeLink()
-_nodeLink.setIsPlaying(true)
-_nodeLink.enableStartStopSync(true)
-_nodeLink.enable(true)
 let _ipcCallbacks: IPC_Callbacks | null = null
 let _controlState: CleanReduxState | null = null
 let _realtimeState: RealtimeState = initRealtimeState()
-let _lastFrameTime = 0
 const _tapTempoEngine = new TapTempoEngine()
 function _tapTempo() {
   _tapTempoEngine.tap((newBpm) => {
-    _nodeLink.setTempo(newBpm)
+    setTempo(newBpm)
   })
 }
 
@@ -49,7 +43,6 @@ const _midiThrottle = new ThrottleMap((message: MidiMessage) => {
       message,
       _controlState,
       _realtimeState,
-      _nodeLink,
       _ipcCallbacks.send_dispatch,
       _tapTempo
     )
@@ -72,7 +65,7 @@ export function start(
     },
     on_user_command: (command) => {
       if (command.type === 'IncrementTempo') {
-        _nodeLink.setTempo(_realtimeState.time.bpm + command.amount)
+        setTempo(_realtimeState.time.bpm + command.amount)
       } else if (command.type === 'SetLinkEnabled') {
         _nodeLink.enable(command.isEnabled)
       } else if (command.type === 'EnableStartStopSync') {
@@ -80,7 +73,7 @@ export function start(
       } else if (command.type === 'SetIsPlaying') {
         _nodeLink.setIsPlaying(command.isPlaying)
       } else if (command.type === 'SetBPM') {
-        _nodeLink.setTempo(command.bpm)
+        setTempo(command.bpm)
       } else if (command.type === 'TapTempo') {
         _tapTempo()
       }
@@ -144,20 +137,6 @@ MidiConnection.maintain({
     return _controlState ? _controlState.control.device.connectable.midi : []
   },
 })
-
-// Todo: Desimate dt in this context
-function getNextTimeState(): TimeState {
-  let currentTime = Date.now()
-  const dt = currentTime - _lastFrameTime
-
-  _lastFrameTime = currentTime
-
-  return {
-    ..._nodeLink.getSessionInfoCurrent(),
-    dt: dt,
-    quantum: 4.0,
-  }
-}
 
 function getNextRealtimeState(
   realtimeState: RealtimeState,
