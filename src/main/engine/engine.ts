@@ -26,6 +26,7 @@ import {
 } from '../../shared/dmxUtil'
 import { ThrottleMap } from './midiConnection'
 import { MidiMessage, midiInputID } from '../../shared/midi'
+import './audioEngine'
 
 let _nodeLink = new NodeLink()
 _nodeLink.setIsPlaying(true)

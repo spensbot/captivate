@@ -23,6 +23,7 @@
     "serialport": "^10.4.0",
     "midi": "^2.0.0",
     "node-link": "file:node-link",
+    "node-audio": "file:node-audio",
     "@sentry/electron": "^3.0.7",
     "firebase": "^9.9.2"
   }

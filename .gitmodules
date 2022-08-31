@@ -1,3 +1,6 @@
 [submodule "release/app/node-link"]
 	path = release/app/node-link
 	url = https://github.com/spensbot/node-link.git
+[submodule "release/app/node-audio"]
+	path = release/app/node-audio
+	url = https://github.com/spensbot/node-audio.git
