@@ -13,6 +13,7 @@ import {
   setSaving,
   setLoading,
   setNewProjectDialog,
+  setAudio,
 } from './redux/guiSlice'
 import {
   realtimeStore,
@@ -44,6 +45,9 @@ ipc_setup({
   },
   on_midi_connection_update: (payload) => {
     store.dispatch(setMidi(payload))
+  },
+  on_audio_connection_update: (payload) => {
+    store.dispatch(setAudio(payload))
   },
   on_time_state: (newRealtimeState) => {
     _frequentlyUpdatedRealtimeState = newRealtimeState

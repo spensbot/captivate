@@ -4,10 +4,12 @@ import { RealtimeState } from './redux/realtimeStore'
 import * as dmxConnection from '../main/engine/dmxConnection'
 import * as midiConnection from '../main/engine/midiConnection'
 import { PayloadAction } from '@reduxjs/toolkit'
+import { AudioConnectionState } from 'node-audio'
 
 interface Config {
   on_dmx_connection_update: (payload: dmxConnection.UpdatePayload) => void
   on_midi_connection_update: (payload: midiConnection.UpdatePayload) => void
+  on_audio_connection_update: (paylaod: AudioConnectionState) => void
   on_time_state: (time_state: RealtimeState) => void
   on_dispatch: (action: PayloadAction) => void
   on_main_command: (command: MainCommand) => void
@@ -31,6 +33,13 @@ export function ipc_setup(config: Config) {
     ipc_channels.midi_connection_update,
     (payload: midiConnection.UpdatePayload) =>
       _config.on_midi_connection_update(payload)
+  )
+
+  ipcRenderer.on(
+    ipc_channels.audio_connection_update,
+    (payload: AudioConnectionState) => {
+      _config.on_audio_connection_update(payload)
+    }
   )
 
   ipcRenderer.on(ipc_channels.new_time_state, (realtimeState: RealtimeState) =>

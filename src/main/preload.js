@@ -25,6 +25,7 @@ contextBridge.exposeInMainWorld('electron', {
         'new_midi_message',
         'dmx_connection_update',
         'midi_connection_update',
+        'audio_connection_update',
         'dispatch',
         'new_control_state',
         'new_time_state',

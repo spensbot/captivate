@@ -2,7 +2,11 @@ import styled from 'styled-components'
 import { useControlSelector, useTypedSelector } from '../redux/store'
 import { setConnectionsMenu } from '../redux/guiSlice'
 import { useDispatch } from 'react-redux'
-import { setDmxConnectable, setMidiConnectable } from '../redux/controlSlice'
+import {
+  setDmxConnectable,
+  setMidiConnectable,
+  setAudioConnectable,
+} from '../redux/controlSlice'
 import CloseIcon from '@mui/icons-material/Close'
 import IconButton from '@mui/material/IconButton'
 import {
@@ -11,6 +15,7 @@ import {
   ConnectionId,
 } from '../../shared/connection'
 import DmxTroubleShoot from './DmxTroubleshoot'
+import { AudioPort } from 'node-audio'
 
 interface Props {}
 
@@ -20,6 +25,7 @@ export default function Devices({}: Props) {
   const connectable = useControlSelector((state) => state.device.connectable)
   const dmx = useTypedSelector((state) => state.gui.dmx)
   const midi = useTypedSelector((state) => state.gui.midi)
+  const audio = useTypedSelector((state) => state.gui.audio)
 
   return (
     <Root>
@@ -55,6 +61,22 @@ export default function Devices({}: Props) {
               />
             ))}
             {midi.available.length === 0 && <NoneFound />}
+          </Pane>
+          <Divider />
+          <Pane>
+            <SubTitle>Audio</SubTitle>
+            {audio.available.map((device) => (
+              <AudioDevice
+                key={device.id}
+                device={device}
+                connected={audio.connected ? [audio.connected.id] : []}
+                connectable={connectable.audio}
+              />
+            ))}
+            {/* {audio.available.map((p) => (
+              <div>{p.id}</div>
+            ))} */}
+            {audio.available.length === 0 && <NoneFound />}
           </Pane>
         </Row>
         <DmxTroubleShoot />
@@ -152,13 +174,7 @@ function DmxDevice({ device, connected, connectable }: Props2<DmxDevice_t>) {
   const status = getDmxStatus(device, connected, connectable)
 
   const onClick = () => {
-    let connectableSet = new Set(connectable)
-    if (status.isConnectable) {
-      connectableSet.delete(device.connectionId)
-    } else {
-      connectableSet.add(device.connectionId)
-    }
-    dispatch(setDmxConnectable(Array.from(connectableSet)))
+    dispatch(setDmxConnectable([device.connectionId]))
   }
 
   return (
@@ -180,6 +196,36 @@ function MidiDevice({ device, connected, connectable }: Props2<MidiDevice_t>) {
       connectableSet.add(device.connectionId)
     }
     dispatch(setMidiConnectable(Array.from(connectableSet)))
+  }
+
+  return (
+    <DeviceRoot {...status} onClick={onClick}>
+      {device.name}
+    </DeviceRoot>
+  )
+}
+
+function hasAudioPort(portIds: ConnectionId[], port: AudioPort) {
+  return portIds.find((id) => id === port.id) !== undefined
+}
+
+function getAudioPortStatus(
+  device: AudioPort,
+  connected: ConnectionId[],
+  connectable: ConnectionId[]
+): Status {
+  return {
+    isConnected: hasAudioPort(connected, device),
+    isConnectable: hasAudioPort(connectable, device),
+  }
+}
+
+function AudioDevice({ device, connected, connectable }: Props2<AudioPort>) {
+  const dispatch = useDispatch()
+  const status = getAudioPortStatus(device, connected, connectable)
+
+  const onClick = () => {
+    dispatch(setAudioConnectable([device.id]))
   }
 
   return (

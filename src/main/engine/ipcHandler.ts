@@ -12,6 +12,7 @@ import { PayloadAction } from '@reduxjs/toolkit'
 import { promises } from 'fs'
 import { VisualizerResource } from '../../visualizer/threejs/VisualizerManager'
 import { VisualizerContainer } from './createVisualizerWindow'
+import { AudioConnectionState } from 'node-audio'
 
 interface Config {
   renderer: WebContents
@@ -43,6 +44,8 @@ export function ipcSetup(config: Config) {
       _config.renderer.send(ipcChannels.dmx_connection_update, payload),
     send_midi_connection_update: (payload: midiConnection.UpdatePayload) =>
       _config.renderer.send(ipcChannels.midi_connection_update, payload),
+    send_audio_connection_update: (payload: AudioConnectionState) =>
+      _config.renderer.send(ipcChannels.audio_connection_update, payload),
     send_time_state: (time_state: RealtimeState) =>
       _config.renderer.send(ipcChannels.new_time_state, time_state),
     send_dispatch: (action: PayloadAction<any>) =>

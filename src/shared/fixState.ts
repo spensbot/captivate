@@ -26,6 +26,9 @@ export default function fixState(state: CleanReduxState): CleanReduxState {
       }
       modulator.mod = lfo
     }
+    if (state.control.device.connectable.audio === undefined) {
+      state.control.device.connectable.audio = []
+    }
   })
   return state
 }

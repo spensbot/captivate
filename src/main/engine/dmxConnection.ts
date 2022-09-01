@@ -24,7 +24,7 @@ export type UpdatePayload = DmxConnections
 
 interface Config {
   update_ms: number
-  onUpdate: (path: UpdatePayload) => void
+  onUpdate: (connections: UpdatePayload) => void
   getChannels: () => number[]
   getConnectable: () => ConnectionId[]
 }

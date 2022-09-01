@@ -25,7 +25,12 @@ import {
 } from '../../shared/dmxUtil'
 import { ThrottleMap } from './midiConnection'
 import { MidiMessage, midiInputID } from '../../shared/midi'
-import { _nodeLink, setTempo, getNextTimeState } from './time'
+import {
+  _nodeLink,
+  setTempo,
+  getNextTimeState,
+  maintainAudioConnection,
+} from './time'
 
 let _ipcCallbacks: IPC_Callbacks | null = null
 let _controlState: CleanReduxState | null = null
@@ -135,6 +140,17 @@ MidiConnection.maintain({
   },
   getConnectable: () => {
     return _controlState ? _controlState.control.device.connectable.midi : []
+  },
+})
+
+maintainAudioConnection({
+  update_ms: 1000,
+  onUpdate: (audioConnectionState) => {
+    if (_ipcCallbacks !== null)
+      _ipcCallbacks.send_audio_connection_update(audioConnectionState)
+  },
+  getConnectable: () => {
+    return _controlState ? _controlState.control.device.connectable.audio : []
   },
 })
 

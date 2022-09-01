@@ -1,3 +1,5 @@
+import { AudioConnectionState } from 'node-audio'
+
 export type ConnectionId = string
 
 export interface DmxDevice_t {
@@ -49,5 +51,12 @@ export function initDmxConnections(): DmxConnections {
     connected: [],
     available: [],
     serialports: [],
+  }
+}
+
+export function initAudioConnections(): AudioConnectionState {
+  return {
+    available: [],
+    connected: null,
   }
 }

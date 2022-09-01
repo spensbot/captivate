@@ -466,6 +466,8 @@ export const scenesSlice = createSlice({
       midiActions.setDmxConnectable(state.device, action),
     setMidiConnectable: (state, action) =>
       midiActions.setMidiConnectable(state.device, action),
+    setAudioConnectable: (state, action) =>
+      midiActions.setAudioConnectable(state.device, action),
     removeMidiAction: (state, action) =>
       midiActions.removeMidiAction(state.device, action),
   },
@@ -525,6 +527,7 @@ export const {
   midiSetSliderAction,
   setDmxConnectable,
   setMidiConnectable,
+  setAudioConnectable,
   removeMidiAction,
 } = scenesSlice.actions
 

@@ -12,8 +12,6 @@ export default function StartStopSyncButton({}: Props) {
 
   const color = sssEnabled ? '#fff7' : '#fff3'
 
-  console.log(sssEnabled)
-
   if (!linkEnabled) return <PlaceHolder />
 
   return (

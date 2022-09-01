@@ -11,18 +11,11 @@ export default function AudioInput({}: Props) {
 
   return (
     <Root>
+      {/* <MicIcon />
+      <Sp /> */}
       <Level />
       <Sp />
       <Confidence />
-      <Sp />
-      <MicIcon />
-      <Sp />
-      <Select
-        label="Input"
-        val={deviceName}
-        items={items}
-        onChange={() => {}}
-      />
     </Root>
   )
 }

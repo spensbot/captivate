@@ -5,7 +5,9 @@ import {
   DmxConnections,
   initDmxConnections,
   initMidiConnections,
+  initAudioConnections,
 } from '../../shared/connection'
+import { AudioConnectionState } from 'node-audio'
 
 export type Page = 'Universe' | 'Modulation' | 'Video' | 'Share' | 'Mixer'
 
@@ -15,6 +17,7 @@ export interface GuiState {
   connectionMenu: boolean
   midi: MidiConnections
   dmx: DmxConnections
+  audio: AudioConnectionState
   saving: boolean
   loading: SaveInfo | null
   newProjectDialog: boolean
@@ -27,6 +30,7 @@ export function initGuiState(): GuiState {
     connectionMenu: false,
     midi: initMidiConnections(),
     dmx: initDmxConnections(),
+    audio: initAudioConnections(),
     saving: false,
     loading: null,
     newProjectDialog: false,
@@ -52,6 +56,9 @@ export const guiSlice = createSlice({
     setDmx: (state, { payload }: PayloadAction<DmxConnections>) => {
       state.dmx = payload
     },
+    setAudio: (state, { payload }: PayloadAction<AudioConnectionState>) => {
+      state.audio = payload
+    },
     setSaving: (state, { payload }: PayloadAction<boolean>) => {
       state.saving = payload
     },
@@ -70,6 +77,7 @@ export const {
   setConnectionsMenu,
   setMidi,
   setDmx,
+  setAudio,
   setSaving,
   setLoading,
   setNewProjectDialog,

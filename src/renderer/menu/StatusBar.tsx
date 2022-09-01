@@ -39,8 +39,6 @@ export default function StatusBar() {
       <Sp />
       <Counter2 />
       <UndoRedo />
-      <AudioInput />
-      <div>{}</div>
       <div style={{ flex: '1 0 0' }} />
       {midiConnected && (
         <IconButton onClick={() => dispatch(midiSetIsEditing(!isEditing))}>
@@ -55,6 +53,8 @@ export default function StatusBar() {
         <ConnectionStatus type={'midi'} />
         <ConnectionStatus type={'dmx'} />
       </Connections>
+      <Sp />
+      <AudioInput />
     </Root>
   )
 }

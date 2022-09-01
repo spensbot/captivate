@@ -80,6 +80,7 @@ export interface DeviceState {
   connectable: {
     midi: ConnectionId[]
     dmx: ConnectionId[]
+    audio: ConnectionId[]
   }
   buttonActions: { [actionID: string]: ButtonAction }
   sliderActions: { [actionID: string]: SliderAction }
@@ -93,6 +94,7 @@ export function initDeviceState(): DeviceState {
     connectable: {
       midi: [],
       dmx: [],
+      audio: [],
     },
   }
 }
@@ -144,6 +146,12 @@ export const midiActions = {
     { payload }: PayloadAction<ConnectionId[]>
   ) => {
     state.connectable.dmx = payload
+  },
+  setAudioConnectable: (
+    state: DeviceState,
+    { payload }: PayloadAction<ConnectionId[]>
+  ) => {
+    state.connectable.audio = payload
   },
 }
 
