@@ -1,7 +1,32 @@
 import { CleanReduxState } from '../renderer/redux/store'
+import { Lfo } from './oscillator'
+import { Modulator } from './modulation'
+
+export enum LegacyLfoShape {
+  Sin,
+  Ramp,
+}
+export interface LegacyLfo extends Lfo {
+  shape: LegacyLfoShape
+}
+
+export interface LegacyModulator extends Modulator {
+  lfo: LegacyLfo
+}
 
 // Modify this function to fix any breaking state changes between upgrades
 export default function fixState(state: CleanReduxState): CleanReduxState {
+  modulators(state).forEach((modulator) => {
+    if (modulator.mod === undefined) {
+      const legacyModulator = modulator as LegacyModulator
+      const legacyLfo = legacyModulator.lfo
+      const lfo: Lfo = {
+        ...legacyLfo,
+        type: legacyLfo.shape === LegacyLfoShape.Sin ? 'Sin' : 'Ramp',
+      }
+      modulator.mod = lfo
+    }
+  })
   return state
 }
 

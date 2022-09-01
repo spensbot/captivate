@@ -4,6 +4,7 @@ import useDragBasic from '../hooks/useDragBasic'
 import { incrementModulator } from '../redux/controlSlice'
 import { useActiveLightScene } from '../redux/store'
 import { secondaryEnabled } from 'renderer/base/keyUtil'
+import { audioModulatorValueOut } from 'shared/audioModulator'
 
 type Props = {
   index: number
@@ -15,7 +16,8 @@ type Props = {
 const stepSize = 2
 const lineWidth = 2
 const backgroundColor = '#000000'
-const lineColor = '#3333ff'
+const lfoLineColor = '#3333ff'
+const audioLineColor = '#33ff33'
 
 export default function LfoVisualizer({
   index,
@@ -45,16 +47,28 @@ export default function LfoVisualizer({
     )
   })
 
-  const modulator = useActiveLightScene(
-    (activeScene) => activeScene.modulators[index]
+  const mod = useActiveLightScene(
+    (activeScene) => activeScene.modulators[index].mod
   )
+
+  let lineColor = lfoLineColor
 
   function GetPoints() {
     const zeros = Array(width_ / stepSize + 1).fill(0)
 
     const pointsArray = zeros.map((_, i) => {
       const x = (i * stepSize) / width_
-      const y = 1 - GetValueFromPhase(modulator.lfo, x)
+      let y = 0
+      if (mod.type === 'Sin' || mod.type === 'Ramp') {
+        y = 1 - GetValueFromPhase(mod, x)
+      } else if (
+        mod.type === 'Freq' ||
+        mod.type === 'Pitch' ||
+        mod.type === 'RMS'
+      ) {
+        lineColor = audioLineColor
+        y = 1 - audioModulatorValueOut(x, mod.skew)
+      }
       return [x * width_ + xPadding, y * height_ + yPadding]
     })
 

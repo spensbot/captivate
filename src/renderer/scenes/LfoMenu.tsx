@@ -1,4 +1,3 @@
-import { LfoShape } from '../../shared/oscillator'
 import { useDispatch } from 'react-redux'
 import { useActiveLightScene } from '../redux/store'
 import {
@@ -13,6 +12,7 @@ import Select from '@mui/material/Select'
 import SettingsBackupRestoreIcon from '@mui/icons-material/SettingsBackupRestore'
 import LfoPeriod from './LfoPeriod'
 import Divider from '../base/Divider'
+import { ModulatorType, modulatorTypes } from 'shared/modulation'
 
 type Props = {
   index: number
@@ -22,7 +22,7 @@ export default function LfoMenu({ index }: Props) {
   const dispatch = useDispatch()
 
   const lfo = useActiveLightScene(
-    (activeScene) => activeScene.modulators[index].lfo
+    (activeScene) => activeScene.modulators[index].mod
   )
 
   return (
@@ -39,20 +39,23 @@ export default function LfoMenu({ index }: Props) {
       <Select
         labelId="lfo-shape-select-label"
         id="lfo-shape-select"
-        value={lfo.shape}
+        value={lfo.type}
         size="small"
         variant="standard"
         onChange={(e) =>
           dispatch(
             setModulatorShape({
               index: index,
-              shape: e.target.value as LfoShape,
+              shape: e.target.value as ModulatorType,
             })
           )
         }
       >
-        <MenuItem value={LfoShape.Ramp}>Ramp</MenuItem>
-        <MenuItem value={LfoShape.Sin}>Sin</MenuItem>
+        {modulatorTypes.map((type) => (
+          <MenuItem key={type} value={type}>
+            {type}
+          </MenuItem>
+        ))}
       </Select>
       <div style={{ flex: '1 0 0' }} />
       <LfoPeriod index={index} />

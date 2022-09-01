@@ -1,18 +1,45 @@
 import { initModulation, paramsList, Param, Modulation } from './params'
-import { Lfo, GetValue, GetRamp } from './oscillator'
+import { Lfo, oscillatorValue, GetRamp } from './oscillator'
+import { AudioModulator, audioModulatorValue } from './audioModulator'
 import { LightScene_t } from './Scenes'
 import { clampNormalized } from '../math/util'
 import { mapUndefinedParamsToDefault, defaultOutputParams } from './params'
+import { TimeState } from './TimeState'
 
 export interface Modulator {
-  lfo: Lfo
+  mod: Lfo | AudioModulator
   modulation: Modulation
   splitModulations: Modulation[]
 }
 
+export type ModulatorType = Modulator['mod']['type']
+
+export const modulatorTypes: ModulatorType[] = [
+  'Freq',
+  'Pitch',
+  'RMS',
+  'Sin',
+  'Ramp',
+]
+
+function modulatorValue(modulator: Lfo | AudioModulator, timeState: TimeState) {
+  if (modulator.type === 'Sin' || modulator.type === 'Ramp') {
+    return oscillatorValue(modulator, timeState.beats)
+  } else if (
+    modulator.type === 'Freq' ||
+    modulator.type === 'Pitch' ||
+    modulator.type === 'RMS'
+  ) {
+    return audioModulatorValue(modulator, timeState)
+  } else {
+    console.error('modulatorValue unhandled type')
+    return 0
+  }
+}
+
 export function initModulator(splitCount: number): Modulator {
   return {
-    lfo: GetRamp(),
+    mod: GetRamp(),
     modulation: initModulation(),
     splitModulations: Array(splitCount)
       .fill(0)
@@ -26,7 +53,7 @@ interface ModSnapshot {
 }
 
 export function getOutputParams(
-  beats: number,
+  timeState: TimeState,
   scene: LightScene_t,
   splitIndex: number | null
 ) {
@@ -41,11 +68,11 @@ export function getOutputParams(
     splitIndex === null
       ? scene.modulators.map((modulator) => ({
           modulation: modulator.modulation,
-          lfoVal: GetValue(modulator.lfo, beats),
+          lfoVal: modulatorValue(modulator.mod, timeState),
         }))
       : scene.modulators.map((modulator) => ({
           modulation: modulator.splitModulations[splitIndex],
-          lfoVal: GetValue(modulator.lfo, beats),
+          lfoVal: modulatorValue(modulator.mod, timeState),
         }))
 
   paramsList.forEach((param) => {

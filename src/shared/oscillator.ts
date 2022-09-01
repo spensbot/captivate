@@ -4,13 +4,8 @@ import { skewPower3, skewSymmetric } from '../math/skew'
 // const SKEW_FN = skewBezier2
 const SKEW_FN = skewPower3
 
-export enum LfoShape {
-  Sin,
-  Ramp,
-}
-
 export interface Lfo {
-  shape: LfoShape
+  type: 'Sin' | 'Ramp'
   skew: Normalized
   symmetricSkew: Normalized
   phaseShift: Normalized
@@ -18,9 +13,9 @@ export interface Lfo {
   period: number // beats
 }
 
-export function GetSin() {
+export function GetSin(): Lfo {
   return {
-    shape: LfoShape.Sin,
+    type: 'Sin',
     skew: 0.5,
     symmetricSkew: 0.5,
     phaseShift: 0.0,
@@ -31,11 +26,11 @@ export function GetSin() {
 
 export function GetRamp() {
   const lfo = GetSin()
-  lfo.shape = LfoShape.Ramp
+  lfo.type = 'Ramp'
   return lfo
 }
 
-export function GetValue(lfo: Lfo, beats: number): Normalized {
+export function oscillatorValue(lfo: Lfo, beats: number): Normalized {
   const phase = GetPhase(lfo, beats)
   return GetValueFromPhase(lfo, phase)
 }
@@ -44,7 +39,7 @@ export function GetValueFromPhase(lfo: Lfo, phase: Normalized) {
   const phaseShifted = ShiftPhase(phase, lfo.phaseShift)
   const baseValue = GetValue_base(lfo, phaseShifted)
   // return Flip(Skew(SymmetricSkew(baseValue, lfo.symmetricSkew), lfo.skew), lfo.flip)
-  return lfo.shape == LfoShape.Sin
+  return lfo.type === 'Sin'
     ? Flip(skewSymmetric(baseValue, lfo.skew, SKEW_FN), lfo.flip)
     : Flip(SKEW_FN(baseValue, lfo.skew), lfo.flip)
 }
@@ -57,9 +52,9 @@ function Flip(value: Normalized, flip: Normalized) {
 }
 
 function GetValue_base(lfo: Lfo, phaseNormalized: Normalized): Normalized {
-  if (lfo.shape == LfoShape.Sin)
+  if (lfo.type === 'Sin')
     return Math.sin(phaseNormalized * 2 * Math.PI) / 2 + 0.5
-  else if (lfo.shape == LfoShape.Ramp) return phaseNormalized
+  else if (lfo.type === 'Ramp') return phaseNormalized
   else return 0.0
 }
 

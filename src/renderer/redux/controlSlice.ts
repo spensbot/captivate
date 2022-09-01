@@ -1,9 +1,8 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { LfoShape } from '../../shared/oscillator'
 import { Param, Params } from '../../shared/params'
 import { ReorderParams } from '../../shared/util'
 import { clampNormalized, clamp } from '../../math/util'
-import { initModulator } from '../../shared/modulation'
+import { initModulator, ModulatorType } from '../../shared/modulation'
 import { nanoid } from 'nanoid'
 import { RandomizerOptions } from '../../shared/randomizer'
 import cloneDeep from 'lodash.clonedeep'
@@ -217,10 +216,10 @@ export const scenesSlice = createSlice({
     },
     setModulatorShape: (
       state,
-      { payload }: PayloadAction<{ index: number; shape: LfoShape }>
+      { payload }: PayloadAction<{ index: number; shape: ModulatorType }>
     ) => {
       modifyActiveLightScene(state, (scene) => {
-        scene.modulators[payload.index].lfo.shape = payload.shape
+        scene.modulators[payload.index].mod.type = payload.shape
       })
     },
     setPeriod: (
@@ -228,7 +227,10 @@ export const scenesSlice = createSlice({
       { payload }: PayloadAction<{ index: number; newVal: number }>
     ) => {
       modifyActiveLightScene(state, (scene) => {
-        scene.modulators[payload.index].lfo.period = payload.newVal
+        const mod = scene.modulators[payload.index].mod
+        if (mod.type === 'Sin' || mod.type === 'Ramp') {
+          mod.period = payload.newVal
+        }
       })
     },
     incrementPeriod: (
@@ -236,11 +238,10 @@ export const scenesSlice = createSlice({
       { payload }: PayloadAction<{ index: number; amount: number }>
     ) => {
       modifyActiveLightScene(state, (scene) => {
-        scene.modulators[payload.index].lfo.period = clamp(
-          scene.modulators[payload.index].lfo.period + payload.amount,
-          0.25,
-          16
-        )
+        const mod = scene.modulators[payload.index].mod
+        if (mod.type === 'Sin' || mod.type === 'Ramp') {
+          mod.period = clamp(mod.period + payload.amount, 0.25, 16)
+        }
       })
     },
     incrementModulator: (
@@ -248,15 +249,15 @@ export const scenesSlice = createSlice({
       { payload }: PayloadAction<IncrementModulatorPayload>
     ) => {
       modifyActiveLightScene(state, (scene) => {
-        const modulator = scene.modulators[payload.index]
-        modulator.lfo.flip = clampNormalized(modulator.lfo.flip + payload.flip)
-        modulator.lfo.phaseShift = clampNormalized(
-          modulator.lfo.phaseShift + payload.phaseShift
-        )
-        modulator.lfo.skew = clampNormalized(modulator.lfo.skew + payload.skew)
-        modulator.lfo.symmetricSkew = clampNormalized(
-          modulator.lfo.symmetricSkew + payload.symmetricSkew
-        )
+        const mod = scene.modulators[payload.index].mod
+        mod.skew = clampNormalized(mod.skew + payload.skew)
+        if (mod.type === 'Sin' || mod.type === 'Ramp') {
+          mod.flip = clampNormalized(mod.flip + payload.flip)
+          mod.phaseShift = clampNormalized(mod.phaseShift + payload.phaseShift)
+          mod.symmetricSkew = clampNormalized(
+            mod.symmetricSkew + payload.symmetricSkew
+          )
+        }
       })
     },
     addModulator: (state, _: PayloadAction<void>) => {
@@ -303,7 +304,9 @@ export const scenesSlice = createSlice({
     },
     deleteBaseParams: (
       state,
-      { payload: { params, splitIndex } }: PayloadAction<{
+      {
+        payload: { params, splitIndex },
+      }: PayloadAction<{
         splitIndex: number | null
         params: readonly Param[]
       }>
@@ -317,10 +320,13 @@ export const scenesSlice = createSlice({
           delete baseParams[param]
 
           // Now remove the params from any modulators
-          scene.modulators.forEach(modulator => {
-            const modulation = splitIndex === null ? modulator.modulation : modulator.splitModulations[splitIndex]
+          scene.modulators.forEach((modulator) => {
+            const modulation =
+              splitIndex === null
+                ? modulator.modulation
+                : modulator.splitModulations[splitIndex]
             delete modulation[param]
-          }) 
+          })
         })
       }
     },

@@ -170,7 +170,7 @@ function getNextRealtimeState(
     }
   )
 
-  const outputParams = getOutputParams(nextTimeState.beats, scene, null)
+  const outputParams = getOutputParams(nextTimeState, scene, null)
 
   let newRandomizerState = resizeRandomizer(
     realtimeState.randomizer,
@@ -194,11 +194,7 @@ function getNextRealtimeState(
   )
 
   const splitScenes = scene.splitScenes.map((_split, splitIndex) => {
-    const splitOutputParams = getOutputParams(
-      nextTimeState.beats,
-      scene,
-      splitIndex
-    )
+    const splitOutputParams = getOutputParams(nextTimeState, scene, splitIndex)
     let splitSceneFixtures = getFixturesInGroups(dmx.universe, _split.groups)
     let splitSceneFixturesWithinEpicness = splitSceneFixtures.filter(
       ({ fixture }) =>

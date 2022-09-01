@@ -8,11 +8,15 @@ type Props = {
 }
 
 export default function LfoPeriod({ index }: Props) {
-  const period = useActiveLightScene(
-    (activeScene) => activeScene.modulators[index].lfo.period
+  const mod = useActiveLightScene(
+    (activeScene) => activeScene.modulators[index].mod
   )
-
   const dispatch = useDispatch()
+
+  if (mod.type === 'Freq' || mod.type === 'Pitch' || mod.type === 'RMS')
+    return null
+
+  const period = mod.period
 
   function onChange(newVal: number) {
     dispatch(setPeriod({ index: index, newVal: newVal }))
