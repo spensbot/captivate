@@ -90,7 +90,7 @@ export default class MenuBuilder {
           },
         },
         {
-          label: 'Ledfx URL',
+          label: 'LEDFx URL',
           accelerator: 'Command+L',
           click: () => {
             this.res.ipcCallbacks.send_main_command({ type: 'ledfx-url' })
@@ -268,8 +268,8 @@ export default class MenuBuilder {
             },
           },
           {
-            label: 'Ledfx URL',
-            accelerator: 'Ctrl+L',
+            label: 'LEDFx URL',
+            accelerator: 'Command+L',
             click: () => {
               this.res.ipcCallbacks.send_main_command({ type: 'ledfx-url' })
             },

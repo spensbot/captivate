@@ -12,6 +12,7 @@ import { PayloadAction } from '@reduxjs/toolkit'
 import { promises } from 'fs'
 import { VisualizerResource } from '../../visualizer/threejs/VisualizerManager'
 import { VisualizerContainer } from './createVisualizerWindow'
+import fetch from 'node-fetch'
 
 interface Config {
   renderer: WebContents
@@ -97,6 +98,59 @@ ipcMain.handle(
       return await promises.writeFile(dialogResult.filePath, data)
     } else {
       throw new Error('User cancelled the file save')
+    }
+  }
+)
+ipcMain.handle(
+  ipcChannels.save_scene_config,
+  async (_event, title: string, data: string) => {
+    try {
+      return await promises.writeFile(
+        `${__dirname}/../../../saves/${title}`,
+        data
+      )
+    } catch (err) {
+      throw new Error('Problem saving scene config')
+    }
+  }
+)
+
+ipcMain.handle(ipcChannels.load_scene_config, async (_event, title: string) => {
+  try {
+    return await promises.readFile(
+      `${__dirname}/../../../saves/${title}`,
+      'utf8'
+    )
+  } catch (err) {
+    throw new Error('Problem loading scene config')
+  }
+})
+
+ipcMain.handle(ipcChannels.fetch_scenes, async (_event, url: string) => {
+  try {
+    return await fetch(`${url}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    }).then((res) => res.json())
+  } catch (error) {
+    throw new Error('Problem fetching scenes for LedFx')
+  }
+})
+
+ipcMain.handle(
+  ipcChannels.put_scenes,
+  async (_event, url: string, id: string) => {
+    try {
+      return await fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        body: JSON.stringify({
+          id: id,
+          action: 'activate',
+        }),
+      }).then((res) => res.json())
+    } catch (err) {
+      throw new Error('Problem sending a PUT to LedFx')
     }
   }
 )

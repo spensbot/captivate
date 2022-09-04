@@ -36,8 +36,7 @@ export function initControlState(): ControlState {
     master: 1,
   }
 }
-//const ledfxURL = 'http://localhost:8888/api/scenes'
-const ledfxPayload = {"id":"red","action":"activate"}
+
 interface IncrementModulatorPayload {
   index: number
   flip: number
@@ -60,7 +59,6 @@ function modifyActiveLightScene(
   const scene = state.light.byId[state.light.active]
   if (scene) {
     callback(scene)
-    //console.log(ledfxURL, ledfxPayload)
   }
 }
 
@@ -148,6 +146,19 @@ export const scenesSlice = createSlice({
     ) => {
       state[sceneType].active = val
     },
+    setSelected: (state, { payload: val }: PayloadAction<string>) => {
+      state['light'].selected = val
+    },
+    setName: (state, { payload: val }: PayloadAction<string>) => {
+      state['light'].name = val
+    },
+    setResults: (state, { payload: val }: PayloadAction<Array<any>>) => {
+      state['light'].results = val
+    },
+    setURL: (state, { payload: val }: PayloadAction<string>) => {
+      state['light'].url = val
+    },
+
     setActiveSceneIndex: (
       state,
       { payload: { sceneType, val } }: ScopedAction<number>
@@ -305,7 +316,9 @@ export const scenesSlice = createSlice({
     },
     deleteBaseParams: (
       state,
-      { payload: { params, splitIndex } }: PayloadAction<{
+      {
+        payload: { params, splitIndex },
+      }: PayloadAction<{
         splitIndex: number | null
         params: readonly Param[]
       }>
@@ -319,8 +332,11 @@ export const scenesSlice = createSlice({
           delete baseParams[param]
 
           // Now remove the params from any modulators
-          scene.modulators.forEach(modulator => {
-            const modulation = splitIndex === null ? modulator.modulation : modulator.splitModulations[splitIndex]
+          scene.modulators.forEach((modulator) => {
+            const modulation =
+              splitIndex === null
+                ? modulator.modulation
+                : modulator.splitModulations[splitIndex]
             delete modulation[param]
           })
         })
@@ -477,6 +493,10 @@ export const {
   newScene,
   removeScene,
   setActiveScene,
+  setSelected,
+  setName,
+  setResults,
+  setURL,
   setActiveSceneIndex,
   setActiveSceneBombacity,
   setActiveSceneAutoEnabled,

@@ -54,7 +54,15 @@ contextBridge.exposeInMainWorld('electron', {
       }
     },
     invoke(channel, ...args) {
-      const validChannels = ['save_file', 'load_file', 'get_local_filepaths']
+      const validChannels = [
+        'save_file',
+        'load_file',
+        'get_local_filepaths',
+        'save_scene_config',
+        'load_scene_config',
+        'fetch_scenes',
+        'put_scenes',
+      ]
       if (validChannels.includes(channel)) {
         return ipcRenderer.invoke(channel, ...args)
       } else {

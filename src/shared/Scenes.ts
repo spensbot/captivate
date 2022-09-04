@@ -79,6 +79,10 @@ interface ScenesState<T> {
   ids: SceneID[]
   byId: { [key: SceneID]: T }
   active: SceneID
+  selected: string
+  name: string
+  url: string
+  results: Array<T>
   auto: AutoScene_t
 }
 
@@ -100,6 +104,10 @@ export function initScenesState<T>(defaultScene: T): ScenesState<T> {
       [initID]: defaultScene,
     },
     active: initID,
+    selected: 'Select a scene ↓',
+    url: '',
+    results: [],
+    name: 'Name',
     auto: {
       enabled: false,
       epicness: 0,

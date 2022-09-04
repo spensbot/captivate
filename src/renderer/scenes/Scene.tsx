@@ -14,8 +14,8 @@ import { IconButton } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import AddIcon from '@mui/icons-material/Add'
 import DisableIcon from '@mui/icons-material/DoNotDisturb'
-import AddLedFxSceneIcon from '@mui/icons-material/AddPhotoAlternate';
-import DisableLedFxSceneIcon from '@mui/icons-material/Photo';
+import AddLedFxSceneIcon from '@mui/icons-material/AddPhotoAlternate'
+import DisableLedFxSceneIcon from '@mui/icons-material/Photo'
 import Slider from '../base/Slider'
 import { ButtonMidiOverlay } from '../base/MidiOverlay'
 import Input from '../base/Input'
@@ -23,6 +23,8 @@ import { Draggable } from 'react-beautiful-dnd'
 import DragHandleIcon from '@mui/icons-material/DragHandle'
 import CopyIcon from '@mui/icons-material/FileCopy'
 import { SceneType } from '../../shared/Scenes'
+import { setSceneSelect } from 'renderer/redux/guiSlice'
+import { loadConfig, putScenes } from 'renderer/autosave'
 
 function getColor(epicness: number) {
   const hueStart = 250
@@ -41,13 +43,19 @@ export function Scene({ sceneType, index, id }: Props) {
   const isActive = useControlSelector(
     (control) => control[sceneType].active === id
   )
+
+  const url = useControlSelector((control: any) => control['light'].url)
+
   const dispatch = useDispatch()
+
   const epicness = useControlSelector(
     (control) => control[sceneType].byId[id].epicness
   )
+
   const autoEnabled = useControlSelector(
     (control) => control[sceneType].byId[id].autoEnabled
   )
+
   const name = useControlSelector((control) => control[sceneType].byId[id].name)
 
   const onNameChange = (newVal: string) => {
@@ -89,13 +97,26 @@ export function Scene({ sceneType, index, id }: Props) {
     )
   }
 
+  const openScenePopup = () => {
+    dispatch(setSceneSelect(true))
+  }
+
   let style: React.CSSProperties = {
     backgroundColor: sceneType === 'light' ? getColor(epicness) : undefined,
+  }
+
+  const putScene = () => {
+    loadConfig(name)
+      .then((data: string) => JSON.parse(data))
+      .then((data) => {
+        putScenes(url, data[0])
+      })
   }
 
   if (isActive) {
     style.border = '2px solid'
     style.color = '#fffc'
+    if (!autoEnabled) putScene()
   }
 
   return (
@@ -131,6 +152,7 @@ export function Scene({ sceneType, index, id }: Props) {
                       onChange={(e) => onAutoEnabledChange(e.target.checked)}
                     /> */}
                     {/*TODO: Only show enable/disable, If Ledfx scene has been assigned to Captivate scene*/}
+                    <AddIcon onClick={openScenePopup} />
                     <Disable onClick={() => onAutoEnabledChange(!autoEnabled)}>
                       <DisableLedFxSceneIcon
                         fontSize="small"
@@ -163,6 +185,7 @@ export function Scene({ sceneType, index, id }: Props) {
                   </div>
                   <div style={{ flex: '1 0 0' }} />
                   {!autoEnabled && <DisableIcon fontSize="small" />}
+                  <AddIcon onClick={openScenePopup} />
                   <IconButton
                     aria-label="delete scene"
                     size="small"
