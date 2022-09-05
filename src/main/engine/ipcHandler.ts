@@ -101,30 +101,6 @@ ipcMain.handle(
     }
   }
 )
-ipcMain.handle(
-  ipcChannels.save_scene_config,
-  async (_event, title: string, data: string) => {
-    try {
-      return await promises.writeFile(
-        `${__dirname}/../../../saves/${title}`,
-        data
-      )
-    } catch (err) {
-      throw new Error('Problem saving scene config')
-    }
-  }
-)
-
-ipcMain.handle(ipcChannels.load_scene_config, async (_event, title: string) => {
-  try {
-    return await promises.readFile(
-      `${__dirname}/../../../saves/${title}`,
-      'utf8'
-    )
-  } catch (err) {
-    throw new Error('Problem loading scene config')
-  }
-})
 
 ipcMain.handle(ipcChannels.fetch_scenes, async (_event, url: string) => {
   try {
@@ -132,8 +108,9 @@ ipcMain.handle(ipcChannels.fetch_scenes, async (_event, url: string) => {
       method: 'GET',
       headers: { 'Content-Type': 'application/json; charset=utf-8' },
     }).then((res) => res.json())
-  } catch (error) {
-    throw new Error('Problem fetching scenes for LedFx')
+  } catch (error: any) {
+    if (error.code === 'ECONNREFUSED') console.log('No LedFx URL set!')
+    console.error('Error connecting to LedFx')
   }
 })
 
@@ -149,8 +126,9 @@ ipcMain.handle(
           action: 'activate',
         }),
       }).then((res) => res.json())
-    } catch (err) {
-      throw new Error('Problem sending a PUT to LedFx')
+    } catch (err: any) {
+      if (err.code === 'ECONNREFUSED') console.log('No LedFx URL set!')
+      console.log({ err })
     }
   }
 )

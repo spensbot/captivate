@@ -9,6 +9,7 @@ import {
   setActiveSceneName,
   copyActiveScene,
   setActiveSceneAutoEnabled,
+  setLedFxName,
 } from '../redux/controlSlice'
 import { IconButton } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
@@ -42,6 +43,9 @@ interface Props {
 export function Scene({ sceneType, index, id }: Props) {
   const isActive = useControlSelector(
     (control) => control[sceneType].active === id
+  )
+  const ledfxname = useControlSelector(
+    (control) => control[sceneType].byId[id].ledfxname
   )
 
   const url = useControlSelector((control: any) => control['light'].url)
@@ -77,6 +81,7 @@ export function Scene({ sceneType, index, id }: Props) {
   }
 
   const onAutoEnabledChange = (newVal: boolean) => {
+    console.log(autoEnabled)
     dispatch(
       setActiveSceneAutoEnabled({
         sceneType,
@@ -106,11 +111,15 @@ export function Scene({ sceneType, index, id }: Props) {
   }
 
   const putScene = () => {
-    loadConfig(name)
-      .then((data: string) => JSON.parse(data))
-      .then((data) => {
-        putScenes(url, data[0])
-      })
+    try {
+      let localData: any = localStorage.getItem(ledfxname)
+      let config: string = JSON.parse(localData)
+
+      if (url.length < 1) return
+      putScenes(url, config[0])
+    } catch (err: any) {
+      console.error('Error loading config with name')
+    }
   }
 
   if (isActive) {
@@ -146,13 +155,16 @@ export function Scene({ sceneType, index, id }: Props) {
                 <Column>
                   <Row>
                     <Input value={name} onChange={onNameChange} />
+
                     {/* <Switch
                       size="small"
                       checked={autoEnabled}
                       onChange={(e) => onAutoEnabledChange(e.target.checked)}
                     /> */}
                     {/*TODO: Only show enable/disable, If Ledfx scene has been assigned to Captivate scene*/}
-                    <AddIcon onClick={openScenePopup} />
+                    {url && !autoEnabled && (
+                      <AddIcon onClick={openScenePopup} />
+                    )}
                     <Disable onClick={() => onAutoEnabledChange(!autoEnabled)}>
                       <DisableLedFxSceneIcon
                         fontSize="small"
@@ -165,6 +177,11 @@ export function Scene({ sceneType, index, id }: Props) {
                         style={{ opacity: autoEnabled ? 0.3 : 1 }}
                       />
                     </Disable>
+                  </Row>
+                  <Row>
+                    <div style={{ color: autoEnabled ? '#fff' : 'fff7' }}>
+                      {ledfxname}
+                    </div>
                   </Row>
                   {sceneType === 'light' && (
                     <>
@@ -183,9 +200,10 @@ export function Scene({ sceneType, index, id }: Props) {
                   <div style={{ color: autoEnabled ? '#fff' : 'fff7' }}>
                     {name}
                   </div>
+
                   <div style={{ flex: '1 0 0' }} />
                   {!autoEnabled && <DisableIcon fontSize="small" />}
-                  <AddIcon onClick={openScenePopup} />
+                  {url && <AddIcon onClick={openScenePopup} />}
                   <IconButton
                     aria-label="delete scene"
                     size="small"
@@ -252,7 +270,7 @@ const Root = styled.div`
   box-sizing: border-box;
   border: 1px solid #7777;
   background-color: ${(props) => props.theme.colors.bg.lighter};
-  height: 3.4rem;
+  height: 4rem;
   :hover {
     border: 1px solid;
     cursor: pointer;

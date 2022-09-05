@@ -15,6 +15,7 @@ export const DEFAULT_GROUP = 'Default'
 
 interface Scene_base {
   name: string
+  ledfxname: string
   epicness: number
   autoEnabled: boolean
 }
@@ -41,6 +42,7 @@ export interface LightScene_t extends Scene_base {
 export function initLightScene(): LightScene_t {
   return {
     name: 'Name',
+    ledfxname: '',
     epicness: 0,
     autoEnabled: true,
     modulators: [initModulator(0)],
@@ -59,6 +61,7 @@ export interface VisualScene_t extends Scene_base {
 export function initVisualScene(): VisualScene_t {
   return {
     name: 'Name',
+    ledfxname: '',
     epicness: 0,
     autoEnabled: true,
     config: initLayerConfig('TextParticles'),
@@ -81,8 +84,9 @@ interface ScenesState<T> {
   active: SceneID
   selected: string
   name: string
+  ledfxname: string
   url: string
-  results: Array<T>
+  results: Array<string>
   auto: AutoScene_t
 }
 
@@ -105,9 +109,10 @@ export function initScenesState<T>(defaultScene: T): ScenesState<T> {
     },
     active: initID,
     selected: 'Select a scene ↓',
-    url: '',
-    results: [],
+    url: 'http://localhost:8888/api/scenes',
+    results: ['none'],
     name: 'Name',
+    ledfxname: '',
     auto: {
       enabled: false,
       epicness: 0,

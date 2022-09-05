@@ -3,9 +3,13 @@ import { useDispatch } from 'react-redux'
 import { Button } from '@mui/material'
 import { setSceneSelect } from 'renderer/redux/guiSlice'
 import Dropdown from './../base/Dropdown'
+import {
+  setActiveLedFxName,
+  setLedFxName,
+  setResults,
+} from '../redux/controlSlice'
 import { useEffect } from 'react'
-import { setActiveSceneName, setResults } from '../redux/controlSlice'
-import { fetchScenes, saveConfig } from './../autosave'
+import { fetchScenes } from './../autosave'
 import { setSelected } from '../redux/controlSlice'
 
 import { useControlSelector } from '../redux/store'
@@ -15,28 +19,31 @@ export default function SceneSelect({}: Props) {
   const dispatch = useDispatch()
 
   const url = useControlSelector((control: any) => control['light'].url)
-  const name = useControlSelector((control: any) => control['light'].name)
+  const ledfxname = useControlSelector(
+    (control: any) => control['light'].ledfxname
+  )
   const result = useControlSelector((control: any) => control['light'].results)
 
   useEffect(() => onLoad(), [])
 
   function onLoad() {
     fetchScenes(url).then((response: any) => {
-      dispatch(setResults(Object.entries(response.scenes)))
+      try {
+        dispatch(setResults(Object.entries(response.scenes)))
+      } catch (err: any) {
+        if (err.message.includes('scenes'))
+          console.error('No LedFx URL, error getting the scenes')
+        else console.error(err.message)
+      }
     })
   }
 
   function onConfirm() {
     // setting the name
-    dispatch(
-      setActiveSceneName({
-        sceneType: 'light',
-        val: name,
-      })
-    )
-    let dataToLoad = result.filter((el: any) => el[1].name === name)
+    dispatch(setActiveLedFxName({ sceneType: 'light', val: ledfxname }))
+    let dataToLoad = result.filter((el: any) => el[0] === ledfxname)
     dataToLoad = JSON.stringify(Object.assign({}, dataToLoad[0]))
-    saveConfig(name, dataToLoad)
+    localStorage.setItem(ledfxname, dataToLoad)
     onCancel()
   }
   function onCancel() {
@@ -50,10 +57,12 @@ export default function SceneSelect({}: Props) {
         <Title>Scene Select</Title>
 
         <Sp />
+
         <Sp />
         <Row>
           <Dropdown results={result} />
         </Row>
+        <Sp />
         <Sp />
         <Row>
           <ButtonExtended variant="outlined" onClick={onConfirm}>
@@ -61,7 +70,7 @@ export default function SceneSelect({}: Props) {
           </ButtonExtended>
         </Row>
         <Sp />
-
+        <Sp />
         <ButtonExtended variant="contained" onClick={onCancel}>
           Cancel
         </ButtonExtended>

@@ -58,8 +58,6 @@ contextBridge.exposeInMainWorld('electron', {
         'save_file',
         'load_file',
         'get_local_filepaths',
-        'save_scene_config',
-        'load_scene_config',
         'fetch_scenes',
         'put_scenes',
       ]

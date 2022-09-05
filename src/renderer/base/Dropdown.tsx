@@ -1,8 +1,7 @@
 import styled from 'styled-components'
-import { setSelected } from 'renderer/redux/controlSlice'
+import { setLedFxName, setSelected } from 'renderer/redux/controlSlice'
 import { useDispatch } from 'react-redux'
 import { useControlSelector } from '../redux/store'
-import { setName } from '../redux/controlSlice'
 
 type DropdownProps = {
   results: any
@@ -12,9 +11,9 @@ type DropdownProps = {
 export const Menu = ({ results = ['Scenes loading'] }: DropdownProps) => {
   const handleClick = (action: string) => {
     dispatch(setSelected(action))
-    dispatch(setName(action))
+    dispatch(setLedFxName(action))
   }
-
+  console.log(results)
   const dispatch = useDispatch()
   const isSelected = useControlSelector(
     (control: any) => control['light'].selected
@@ -26,9 +25,10 @@ export const Menu = ({ results = ['Scenes loading'] }: DropdownProps) => {
         <Dropbtn onClick={() => handleClick('DropDown')}>{isSelected}</Dropbtn>
         <DropDownContent>
           <SubA onClick={() => handleClick('none')}>none</SubA>
-          {results.map((el: any) => (
-            <SubA onClick={() => handleClick(el[1].name)}>{el[1].name}</SubA>
-          ))}
+          {results[0] !== 'none' &&
+            results.map((el: any) => (
+              <SubA onClick={() => handleClick(el[0])}>{el[0]}</SubA>
+            ))}
         </DropDownContent>
       </DropDownLi>
     </StyledUl>

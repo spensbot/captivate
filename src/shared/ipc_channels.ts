@@ -7,8 +7,6 @@ export default {
   dispatch: 'dispatch',
   load_file: 'load_file',
   save_file: 'save_file',
-  save_scene_config: 'save_scene_config',
-  load_scene_config: 'load_scene_config',
   fetch_scenes: 'fetch_scenes',
   put_scenes: 'put_scenes',
   open_visualizer: 'open_visualizer',

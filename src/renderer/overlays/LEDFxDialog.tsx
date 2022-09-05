@@ -13,7 +13,8 @@ export default function LEDFxDialog({}: Props) {
   const dispatch = useDispatch()
 
   function onAdd(e: any) {
-    dispatch(setURL(e.target.value))
+    dispatch(setURL(url))
+    if (url.length < 1) return
     onCancel()
   }
   function onCancel() {
@@ -26,7 +27,7 @@ export default function LEDFxDialog({}: Props) {
   return (
     <Root>
       <Modal>
-        <Title>LEDFx Dialog</Title>
+        <Title>LEDFx Dialoge</Title>
         <Sp />
         <Paragraph>
           If you want to download the LedFx click this{' '}
@@ -42,7 +43,7 @@ export default function LEDFxDialog({}: Props) {
           <Input
             onChange={(e) => onChange(e)}
             value={url}
-            placeholder="Enter URL"
+            placeholder="Enter LedFx endpoint URL"
           />
         </Row>
         <Sp />

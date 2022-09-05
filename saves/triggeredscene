@@ -1,0 +1,1 @@
+{"0":"triggeredscene","1":{"name":"triggeredscene","scene_image":"","virtuals":{"wled-dj-desk-103":{"config":{"background_brightness":1,"background_color":"#000000","blur":3,"brightness":1,"color_high":"#0000ff","color_lows":"#ff0000","color_mids":"#00ff00","decay":0.97,"flip":false,"mirror":true,"speed":3,"threshold":0},"type":"scroll"},"wled-dj-tv":{}}}}

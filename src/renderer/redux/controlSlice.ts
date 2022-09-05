@@ -152,6 +152,9 @@ export const scenesSlice = createSlice({
     setName: (state, { payload: val }: PayloadAction<string>) => {
       state['light'].name = val
     },
+    setLedFxName: (state, { payload: val }: PayloadAction<string>) => {
+      state['light'].ledfxname = val
+    },
     setResults: (state, { payload: val }: PayloadAction<Array<any>>) => {
       state['light'].results = val
     },
@@ -192,6 +195,14 @@ export const scenesSlice = createSlice({
     ) => {
       modifyActiveScene(state, sceneType, (scene) => {
         scene.name = val
+      })
+    },
+    setActiveLedFxName: (
+      state,
+      { payload: { sceneType, val } }: ScopedAction<string>
+    ) => {
+      modifyActiveScene(state, sceneType, (scene) => {
+        scene.ledfxname = val
       })
     },
     reorderScene: (
@@ -495,12 +506,14 @@ export const {
   setActiveScene,
   setSelected,
   setName,
+  setLedFxName,
   setResults,
   setURL,
   setActiveSceneIndex,
   setActiveSceneBombacity,
   setActiveSceneAutoEnabled,
   setActiveSceneName,
+  setActiveLedFxName,
   reorderScene,
   copyActiveScene,
   sortScenesByBombacity,
