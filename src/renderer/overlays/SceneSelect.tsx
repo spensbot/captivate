@@ -50,16 +50,16 @@ export default function SceneSelect({}: Props) {
         <Title>Scene Select</Title>
 
         <Sp />
-        <Row>
-          <ButtonExtended variant="outlined" onClick={onConfirm}>
-            Set selected scene
-          </ButtonExtended>
-        </Row>
         <Sp />
         <Row>
           <Dropdown results={result} />
         </Row>
         <Sp />
+        <Row>
+          <ButtonExtended variant="outlined" onClick={onConfirm}>
+            Set selected scene
+          </ButtonExtended>
+        </Row>
         <Sp />
 
         <ButtonExtended variant="contained" onClick={onCancel}>
