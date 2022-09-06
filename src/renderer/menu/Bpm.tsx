@@ -25,10 +25,12 @@ export default function BPM() {
         <Large ref={dragContainer} onMouseDown={onMouseDown}>
           {`${Math.round(bpm)} BPM`}
         </Large>
-        <Small>{`${Math.round(bpmUnconfident)}`}</Small>
-        <Bar>
+        <Small>{`${Math.round(bpmUnconfident)} - ${confidence.toFixed(
+          3
+        )}`}</Small>
+        {/* <Bar>
           <Confidence style={{ width: `${confidence * 0.12 * 2 * 100}%` }} />
-        </Bar>
+        </Bar> */}
       </Root>
     </SliderMidiOverlay>
   )
