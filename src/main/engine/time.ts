@@ -44,10 +44,14 @@ export function getNextTimeState(): TimeState {
   const linkState = _nodeLink.getSessionInfoCurrent()
   const audioState = _nodeAudio.getSessionState()
 
-  const nextTimeState = {
-    ...linkState,
-    ...audioState,
-    quantum: 4.0,
+  const nextTimeState: TimeState = {
+    bpm: linkState.isEnabled ? linkState.bpm : audioState.bpm,
+    beats: linkState.isEnabled ? linkState.beats : audioState.beats,
+    link: {
+      ...linkState,
+      quantum: 4.0,
+    },
+    audio: audioState,
   }
 
   if (linkState.isEnabled) {

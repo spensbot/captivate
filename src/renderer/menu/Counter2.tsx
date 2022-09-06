@@ -3,8 +3,8 @@ import { useRealtimeSelector } from '../redux/realtimeStore'
 export default function Counter2() {
   const time = useRealtimeSelector((state) => state.time)
 
-  const beats = Array(time.quantum).fill(0)
-  const phase = time.beats % time.quantum
+  const beats = Array(time.link.quantum).fill(0)
+  const phase = time.beats % time.link.quantum
   beats[Math.floor(phase)] = 1 - (phase % 1.0)
 
   return (

@@ -1,14 +1,9 @@
-import Select from 'renderer/base/Select'
 import { useRealtimeSelector } from 'renderer/redux/realtimeStore'
 import styled from 'styled-components'
-import MicIcon from '@mui/icons-material/Mic'
 
 interface Props {}
 
 export default function AudioInput({}: Props) {
-  const deviceName = 'Fake Audio Device'
-  const items = [deviceName]
-
   return (
     <Root>
       {/* <MicIcon />
@@ -21,7 +16,7 @@ export default function AudioInput({}: Props) {
 }
 
 function Level() {
-  const rms = useRealtimeSelector((state) => state.time.rms)
+  const rms = useRealtimeSelector((state) => state.time.audio.rms)
 
   const skewed = rms ** 0.3
 
@@ -35,7 +30,9 @@ function Level() {
 }
 
 function Confidence() {
-  const confidence = useRealtimeSelector((state) => state.time.confidence)
+  const confidence = useRealtimeSelector(
+    (state) => state.time.audio.bpmConfidence
+  )
 
   const skewed = confidence ** 0.3
 

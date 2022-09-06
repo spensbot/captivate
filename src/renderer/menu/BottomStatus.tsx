@@ -3,7 +3,9 @@ import { useTypedSelector } from 'renderer/redux/store'
 import { useRealtimeSelector } from 'renderer/redux/realtimeStore'
 
 export default function BottomStatus() {
-  const isPlaying = useRealtimeSelector((rtState) => rtState.time.isPlaying)
+  const isPlaying = useRealtimeSelector(
+    (rtState) => rtState.time.link.isPlaying
+  )
   const isMaster = useTypedSelector(
     (state) => state.control.present.master > 0.05
   )

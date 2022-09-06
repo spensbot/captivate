@@ -5,9 +5,9 @@ import { send_user_command } from '../ipcHandler'
 interface Props {}
 
 export default function StartStopSyncButton({}: Props) {
-  const linkEnabled = useRealtimeSelector((state) => state.time.isEnabled)
+  const linkEnabled = useRealtimeSelector((state) => state.time.link.isEnabled)
   const sssEnabled = useRealtimeSelector(
-    (state) => state.time.isStartStopSyncEnabled
+    (state) => state.time.link.isStartStopSyncEnabled
   )
 
   const color = sssEnabled ? '#fff7' : '#fff3'

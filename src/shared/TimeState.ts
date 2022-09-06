@@ -1,32 +1,53 @@
-export interface TimeState {
-  bpm: number
-  beats: number
+import { SessionState } from 'node-audio'
 
-  // Link
+function initSessionState(): SessionState {
+  return {
+    bpm: 120,
+    beats: 0,
+    rms: 0,
+    rms_l: 0,
+    rms_r: 0,
+    lrBalance: 0.5,
+    pitch: 0,
+    pitchConfidence: 0,
+    bpmConfidence: 0,
+    bpmConfidenceThreshold: 0,
+    bpmUnconfident: 0,
+    phaseVocoder: [],
+  }
+}
+
+interface LinkState {
   numPeers: number
   isEnabled: boolean
   isPlaying: boolean
   isStartStopSyncEnabled: boolean
   quantum: number
+}
 
-  // Live Audio Analysis
-  rms: number
-  confidence: number
-  confidenceThreshold: number
+function initLinkState(): LinkState {
+  return {
+    numPeers: 0,
+    isEnabled: false,
+    isPlaying: false,
+    isStartStopSyncEnabled: false,
+    quantum: 4.0,
+  }
+}
+
+export interface TimeState {
+  bpm: number
+  beats: number
+  link: LinkState
+  audio: SessionState
 }
 
 export function initTimeState(): TimeState {
   return {
     bpm: 90.0, // (from LINK)
     beats: 0.0, // running total of beats (from LINK)
-    numPeers: 0,
-    isEnabled: false,
-    isPlaying: false,
-    isStartStopSyncEnabled: false,
-    quantum: 4.0,
-    rms: 0.0,
-    confidence: 0.0,
-    confidenceThreshold: 0.5,
+    link: initLinkState(),
+    audio: initSessionState(),
   }
 }
 

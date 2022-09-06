@@ -86,7 +86,8 @@
     "stack": "cpp",
     "strstream": "cpp",
     "thread": "cpp",
-    "variant": "cpp"
+    "variant": "cpp",
+    "*.ipp": "cpp"
   },
 
   "eslint.validate": [

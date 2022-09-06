@@ -28,7 +28,7 @@ export function calculateDmx(
 
   let channels = Array(DMX_NUM_CHANNELS).fill(0)
 
-  if (timeState.isPlaying) {
+  if (timeState.link.isPlaying) {
     const scenes = state.control.light
     const activeScene = scenes.byId[scenes.active]
 

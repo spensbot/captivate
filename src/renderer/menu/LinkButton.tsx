@@ -3,8 +3,8 @@ import { useRealtimeSelector } from '../redux/realtimeStore'
 import { send_user_command } from '../ipcHandler'
 
 export default function LinkButton() {
-  const numPeers = useRealtimeSelector((state) => state.time.numPeers)
-  const isEnabled = useRealtimeSelector((state) => state.time.isEnabled)
+  const numPeers = useRealtimeSelector((state) => state.time.link.numPeers)
+  const isEnabled = useRealtimeSelector((state) => state.time.link.isEnabled)
 
   const style: React.CSSProperties = {
     backgroundColor: isEnabled ? '#3d5a' : '#fff3',

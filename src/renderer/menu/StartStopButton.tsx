@@ -12,11 +12,11 @@ export default function StartStopButton() {
       onClick={() =>
         send_user_command({
           type: 'SetIsPlaying',
-          isPlaying: !time.isPlaying,
+          isPlaying: !time.link.isPlaying,
         })
       }
     >
-      {time.isPlaying ? <StopIcon /> : <StartIcon />}
+      {time.link.isPlaying ? <StopIcon /> : <StartIcon />}
     </Root>
   )
 }

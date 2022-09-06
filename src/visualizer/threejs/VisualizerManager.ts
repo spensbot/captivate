@@ -88,7 +88,7 @@ export default class VisualizerManager {
     }
 
     this.effectManager.update(this.updateResource)
-    if (this.updateResource.time.isPlaying) {
+    if (this.updateResource.time.link.isPlaying) {
       this.effectManager.render()
     } else {
       this.renderer.render(this.stoppedScene, this.stoppedCamera)
