@@ -27,7 +27,7 @@ export default function LEDFxDialog({}: Props) {
   return (
     <Root>
       <Modal>
-        <Title>LEDFx Dialoge</Title>
+        <Title>LEDFx Dialog</Title>
         <Sp />
         <Paragraph>
           If you want to download the LedFx click this{' '}

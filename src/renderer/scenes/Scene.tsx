@@ -13,10 +13,8 @@ import {
 } from '../redux/controlSlice'
 import { IconButton } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
-import AddIcon from '@mui/icons-material/Add'
 import DisableIcon from '@mui/icons-material/DoNotDisturb'
 import AddLedFxSceneIcon from '@mui/icons-material/AddPhotoAlternate'
-import DisableLedFxSceneIcon from '@mui/icons-material/Photo'
 import Slider from '../base/Slider'
 import { ButtonMidiOverlay } from '../base/MidiOverlay'
 import Input from '../base/Input'
@@ -116,7 +114,7 @@ export function Scene({ sceneType, index, id }: Props) {
       let config: string = JSON.parse(localData)
 
       if (url.length < 1) return
-      putScenes(url, config[0])
+      putScenes(url, config[0]).then((res) => console.log(res))
     } catch (err: any) {
       console.error('Error loading config with name')
     }
@@ -163,14 +161,8 @@ export function Scene({ sceneType, index, id }: Props) {
                     /> */}
                     {/*TODO: Only show enable/disable, If Ledfx scene has been assigned to Captivate scene*/}
                     {url && !autoEnabled && (
-                      <AddIcon onClick={openScenePopup} />
+                      <AddLedFxSceneIcon onClick={openScenePopup} />
                     )}
-                    <Disable onClick={() => onAutoEnabledChange(!autoEnabled)}>
-                      <DisableLedFxSceneIcon
-                        fontSize="small"
-                        style={{ opacity: autoEnabled ? 0.3 : 1 }}
-                      />
-                    </Disable>
                     <Disable onClick={() => onAutoEnabledChange(!autoEnabled)}>
                       <DisableIcon
                         fontSize="small"
@@ -203,7 +195,7 @@ export function Scene({ sceneType, index, id }: Props) {
 
                   <div style={{ flex: '1 0 0' }} />
                   {!autoEnabled && <DisableIcon fontSize="small" />}
-                  {url && <AddIcon onClick={openScenePopup} />}
+                  {url && <AddLedFxSceneIcon onClick={openScenePopup} />}
                   <IconButton
                     aria-label="delete scene"
                     size="small"
@@ -224,7 +216,6 @@ export function Scene({ sceneType, index, id }: Props) {
                     OK button saves to captivate project config. And displays scene name.
                     OnClick above needs to be called.
                     */}
-                    <AddLedFxSceneIcon />
                   </IconButton>
                 </>
               )}
@@ -251,7 +242,6 @@ export function NewScene({ sceneType }: { sceneType: SceneType }) {
   return (
     <Root>
       <IconButton onClick={onNew}>
-        <AddIcon />
       </IconButton>
       <IconButton onClick={onCopy}>
         <CopyIcon />

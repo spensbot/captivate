@@ -41,9 +41,13 @@ export default function SceneSelect({}: Props) {
   function onConfirm() {
     // setting the name
     dispatch(setActiveLedFxName({ sceneType: 'light', val: ledfxname }))
-    let dataToLoad = result.filter((el: any) => el[0] === ledfxname)
-    dataToLoad = JSON.stringify(Object.assign({}, dataToLoad[0]))
-    localStorage.setItem(ledfxname, dataToLoad)
+    try {
+      let dataToLoad = result.filter((el: any) => el[0] === ledfxname)
+      dataToLoad = JSON.stringify(Object.assign({}, dataToLoad[0]))
+      localStorage.setItem(ledfxname, dataToLoad)
+    } catch (err) {
+      console.error(err)
+    }
     onCancel()
   }
   function onCancel() {

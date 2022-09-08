@@ -5,6 +5,7 @@ import defaultState from '../redux/defaultState'
 import { resetState } from '../redux/store'
 import { Button } from '@mui/material'
 import { setNewProjectDialog } from 'renderer/redux/guiSlice'
+import { setURL } from 'renderer/redux/controlSlice'
 
 interface Props {}
 
@@ -16,6 +17,7 @@ export default function NewProjectDialog({}: Props) {
   }
   function onDefault() {
     dispatch(resetState(defaultState()))
+    dispatch(setURL('http://localhost:8888/api/scenes'))
   }
   function onCancel() {
     dispatch(setNewProjectDialog(false))
