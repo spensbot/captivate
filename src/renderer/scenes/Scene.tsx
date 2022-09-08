@@ -9,7 +9,6 @@ import {
   setActiveSceneName,
   copyActiveScene,
   setActiveSceneAutoEnabled,
-  setLedFxName,
 } from '../redux/controlSlice'
 import { IconButton } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
@@ -23,7 +22,7 @@ import DragHandleIcon from '@mui/icons-material/DragHandle'
 import CopyIcon from '@mui/icons-material/FileCopy'
 import { SceneType } from '../../shared/Scenes'
 import { setSceneSelect } from 'renderer/redux/guiSlice'
-import { loadConfig, putScenes } from 'renderer/autosave'
+import { putScenes } from 'renderer/autosave'
 
 function getColor(epicness: number) {
   const hueStart = 250

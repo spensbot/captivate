@@ -13,8 +13,9 @@ export const Menu = ({ results = ['Scenes loading'] }: DropdownProps) => {
     dispatch(setSelected(action))
     dispatch(setLedFxName(action))
   }
-  console.log(results)
   const dispatch = useDispatch()
+  dispatch(setSelected('Select a scene ↓'))
+
   const isSelected = useControlSelector(
     (control: any) => control['light'].selected
   )

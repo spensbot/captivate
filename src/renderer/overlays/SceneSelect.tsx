@@ -2,12 +2,8 @@ import styled from 'styled-components'
 import { useDispatch } from 'react-redux'
 import { Button } from '@mui/material'
 import { setSceneSelect } from 'renderer/redux/guiSlice'
-import Dropdown from './../base/Dropdown'
-import {
-  setActiveLedFxName,
-  setLedFxName,
-  setResults,
-} from '../redux/controlSlice'
+import MuiDropdown from '../base/MuiDropdown'
+import { setActiveLedFxName, setResults } from '../redux/controlSlice'
 import { useEffect } from 'react'
 import { fetchScenes } from './../autosave'
 import { setSelected } from '../redux/controlSlice'
@@ -64,7 +60,7 @@ export default function SceneSelect({}: Props) {
 
         <Sp />
         <Row>
-          <Dropdown results={result} />
+          <MuiDropdown results={result} />
         </Row>
         <Sp />
         <Sp />
@@ -90,6 +86,7 @@ const Root = styled.div`
   align-items: center;
   justify-content: center;
   background-color: #0007;
+  overflow-y: visible;
 `
 
 const Modal = styled.div`
