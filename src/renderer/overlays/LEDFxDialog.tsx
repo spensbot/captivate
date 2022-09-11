@@ -12,7 +12,7 @@ export default function LEDFxDialog({}: Props) {
 
   const dispatch = useDispatch()
 
-  function onAdd(e: any) {
+  function onAdd() {
     dispatch(setURL(url))
     if (url.length < 1) return
     onCancel()
@@ -48,7 +48,7 @@ export default function LEDFxDialog({}: Props) {
         </Row>
         <Sp />
         <Row>
-          <Button variant="outlined" onClick={(e: any) => onAdd(e)}>
+          <Button variant="outlined" onClick={onAdd}>
             Set LEDFx URL
           </Button>
 

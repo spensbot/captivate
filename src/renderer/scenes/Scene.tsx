@@ -14,6 +14,7 @@ import { IconButton } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import DisableIcon from '@mui/icons-material/DoNotDisturb'
 import AddLedFxSceneIcon from '@mui/icons-material/AddPhotoAlternate'
+import DisableLedFxSceneIcon from '@mui/icons-material/Photo'
 import Slider from '../base/Slider'
 import { ButtonMidiOverlay } from '../base/MidiOverlay'
 import Input from '../base/Input'
@@ -162,6 +163,12 @@ export function Scene({ sceneType, index, id }: Props) {
                     {url && !autoEnabled && (
                       <AddLedFxSceneIcon onClick={openScenePopup} />
                     )}
+                    <Disable onClick={() => onAutoEnabledChange(!autoEnabled)}>
+                      <DisableLedFxSceneIcon
+                        fontSize="small"
+                        style={{ opacity: autoEnabled ? 0.3 : 1 }}
+                      />
+                    </Disable>
                     <Disable onClick={() => onAutoEnabledChange(!autoEnabled)}>
                       <DisableIcon
                         fontSize="small"

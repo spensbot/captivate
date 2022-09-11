@@ -4,7 +4,7 @@ import initState from './initState'
 import { CleanReduxState } from './store'
 
 export default function defaultState(): CleanReduxState {
-  const save = defaultSave as SaveState
+  const save = defaultSave as unknown as SaveState
   const state = initState()
   if (save.device) state.control.device = save.device
   if (save.dmx) state.dmx = save.dmx
