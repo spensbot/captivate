@@ -10,7 +10,7 @@ type MuiDropdownProps = {
   results: any
 }
 
-export default function SelectVariants({ results }: MuiDropdownProps) {
+const SelectVariants = ({ results }: MuiDropdownProps) => {
   const dispatch = useDispatch()
 
   const handleChange = (event: SelectChangeEvent) => {
@@ -21,6 +21,7 @@ export default function SelectVariants({ results }: MuiDropdownProps) {
   const isSelected = useControlSelector(
     (control: any) => control['light'].selected
   )
+  const url = useControlSelector((control: any) => control['light'].url)
 
   return (
     <div>
@@ -43,7 +44,9 @@ export default function SelectVariants({ results }: MuiDropdownProps) {
           <MenuItem value="">
             <em>None</em>
           </MenuItem>
-          {results[0] !== 'none' &&
+          {results &&
+            results[0] !== 'none' &&
+            url.length > 8 &&
             results.map((el: any) => (
               <MenuItem value={el[0]}>{el[0]}</MenuItem>
             ))}
@@ -52,3 +55,5 @@ export default function SelectVariants({ results }: MuiDropdownProps) {
     </div>
   )
 }
+
+export default SelectVariants
