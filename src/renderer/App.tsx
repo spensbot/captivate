@@ -10,8 +10,55 @@ import FullscreenOverlay from './overlays/FullscreenOverlay'
 import ErrorBoundarySentry from './error-boundary/ErrorBoundarySentry'
 import BottomStatus from './menu/BottomStatus'
 
+import { store } from './redux/store'
+
+import io from 'socket.io-client'
+import { useState, useEffect } from 'react'
+import { getUtil, putUtil } from './apiUtils/apiUtils'
+
 export default function App() {
+  const [socket, setSocket] = useState(io('http://localhost:3001'))
   const activePage = useTypedSelector((state) => state.gui.activePage)
+
+  useEffect(() => {
+    // PUT
+    socket.on('controller-put', (payload: any) => {
+      try {
+        putUtil(payload.target, payload.id, payload.data)
+        socket.emit('controller-put-response', {
+          status: 'success',
+          data: null,
+        })
+      } catch (err: any) {
+        console.log(err)
+        socket.emit('controller-put-response', {
+          status: 'fail',
+          err: err.message,
+        })
+      }
+    })
+
+    // GET
+
+    socket.on('controller-get', (recivedData) => {
+      console.log(store.getState())
+
+      try {
+        let endResult: any = getUtil(recivedData.target)
+        socket.emit('controller-get-response', {
+          status: 'success',
+          data: endResult,
+        })
+      } catch (err: any) {
+        socket.emit('controller-get-response', {
+          status: 'fail',
+          data: {
+            err: err.message,
+          },
+        })
+      }
+    })
+  }, [])
 
   function getActivePage() {
     if (activePage == 'Modulation') return <Modulation />

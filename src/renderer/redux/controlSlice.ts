@@ -101,6 +101,15 @@ export const scenesSlice = createSlice({
       state.master = payload
     },
     // =====================   LIGHT & VISUAL SCENES   ===========================
+    modifyScene: (
+      state,
+      {
+        payload: { sceneType, val },
+      }: ScopedAction<{ id: string; config: LightScene_t | VisualScene_t }>
+    ) => {
+      state[sceneType].byId[val.id] = val.config
+    },
+
     setAutoSceneEnabled: (
       state,
       { payload: { sceneType, val } }: ScopedAction<boolean>
@@ -498,6 +507,7 @@ export const {
   setMaster,
 
   // LIGHT & VISUAL SCENES
+  modifyScene,
   setAutoSceneEnabled,
   setAutoSceneBombacity,
   setAutoScenePeriod,
