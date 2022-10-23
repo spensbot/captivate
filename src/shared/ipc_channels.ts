@@ -7,6 +7,10 @@ export default {
   dispatch: 'dispatch',
   load_file: 'load_file',
   save_file: 'save_file',
+  save_scene_config: 'save_scene_config',
+  load_scene_config: 'load_scene_config',
+  fetch_scenes: 'fetch_scenes',
+  put_scenes: 'put_scenes',
   open_visualizer: 'open_visualizer',
   get_local_filepaths: 'get_local_filepaths',
   main_command: 'main_command',
@@ -64,4 +68,17 @@ interface Load {
 interface NewProject {
   type: 'new-project'
 }
-export type MainCommand = Undo | Redo | Save | Load | NewProject
+interface LEDFx {
+  type: 'ledfx-url'
+}
+interface SceneSelect {
+  type: 'scene-select'
+}
+export type MainCommand =
+  | Undo
+  | Redo
+  | Save
+  | Load
+  | NewProject
+  | LEDFx
+  | SceneSelect

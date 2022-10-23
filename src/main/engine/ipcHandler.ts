@@ -12,6 +12,7 @@ import { PayloadAction } from '@reduxjs/toolkit'
 import { promises } from 'fs'
 import { VisualizerResource } from '../../visualizer/threejs/VisualizerManager'
 import { VisualizerContainer } from './createVisualizerWindow'
+import fetch from 'node-fetch'
 
 interface Config {
   renderer: WebContents
@@ -97,6 +98,37 @@ ipcMain.handle(
       return await promises.writeFile(dialogResult.filePath, data)
     } else {
       throw new Error('User cancelled the file save')
+    }
+  }
+)
+
+ipcMain.handle(ipcChannels.fetch_scenes, async (_event, url: string) => {
+  try {
+    return await fetch(`${url}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    }).then((res) => res.json())
+  } catch (error: any) {
+    if (error.code === 'ECONNREFUSED') console.log('No LedFx URL set!')
+    console.error('Error connecting to LedFx')
+  }
+})
+
+ipcMain.handle(
+  ipcChannels.put_scenes,
+  async (_event, url: string, id: string) => {
+    try {
+      return await fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        body: JSON.stringify({
+          id: id,
+          action: 'activate',
+        }),
+      }).then((res) => res.json())
+    } catch (err: any) {
+      if (err.code === 'ECONNREFUSED') console.log('No LedFx URL set!')
+      console.log({ err })
     }
   }
 )

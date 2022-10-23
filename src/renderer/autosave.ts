@@ -79,3 +79,19 @@ export async function saveFile(
 ): Promise<NodeJS.ErrnoException> {
   return ipcRenderer.invoke(ipcChannels.save_file, title, data, fileFilters)
 }
+
+export async function saveConfig(
+  title: string,
+  data: string
+): Promise<NodeJS.ErrnoException> {
+  return ipcRenderer.invoke(ipcChannels.save_scene_config, title, data)
+}
+export async function loadConfig(title: string): Promise<string> {
+  return ipcRenderer.invoke(ipcChannels.load_scene_config, title)
+}
+export async function fetchScenes(url: string): Promise<Object> {
+  return ipcRenderer.invoke(ipcChannels.fetch_scenes, url)
+}
+export async function putScenes(url: string, id: string): Promise<Object> {
+  return ipcRenderer.invoke(ipcChannels.put_scenes, url, id)
+}
