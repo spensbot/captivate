@@ -18,6 +18,8 @@ import * as engine from './engine/engine'
 import { VisualizerContainer } from './engine/createVisualizerWindow'
 import './prevent_sleep'
 import './electron_error_logging'
+const server = require('./../../src/server/src/bin/server')
+
 export default class AppUpdater {
   constructor() {
     log.transports.file.level = 'info'
@@ -151,7 +153,6 @@ const createWindow = async () => {
 //     app.quit()
 //   }
 // })
-
 app
   .whenReady()
   .then(() => {
