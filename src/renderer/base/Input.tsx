@@ -5,14 +5,16 @@ interface Props {
   onChange: (newVal: string) => void
   onEmptyDelete?: () => void
   size?: string
+  placeholder?: string
 }
 
-export default function Input({ value, onChange, size }: Props) {
+export default function Input({ value, onChange, size, placeholder }: Props) {
   return (
     <Root
       style={{ fontSize: size }}
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
     />
   )
 }

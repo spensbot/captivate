@@ -27,7 +27,7 @@ export async function load() {
   return saveState
 }
 
-function save(config: SaveConfig) {
+export function save(config: SaveConfig) {
   const state = store.getState()
   const control = state.control.present
   const dmx = state.dmx.present
