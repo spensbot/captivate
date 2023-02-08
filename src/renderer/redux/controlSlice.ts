@@ -146,6 +146,22 @@ export const scenesSlice = createSlice({
     ) => {
       state[sceneType].active = val
     },
+    setSelected: (state, { payload: val }: PayloadAction<string>) => {
+      state['light'].selected = val
+    },
+    setName: (state, { payload: val }: PayloadAction<string>) => {
+      state['light'].name = val
+    },
+    setLedFxName: (state, { payload: val }: PayloadAction<string>) => {
+      state['light'].ledfxname = val
+    },
+    setResults: (state, { payload: val }: PayloadAction<Array<any>>) => {
+      state['light'].results = val
+    },
+    setURL: (state, { payload: val }: PayloadAction<string>) => {
+      state['light'].url = val
+    },
+
     setActiveSceneIndex: (
       state,
       { payload: { sceneType, val } }: ScopedAction<number>
@@ -179,6 +195,14 @@ export const scenesSlice = createSlice({
     ) => {
       modifyActiveScene(state, sceneType, (scene) => {
         scene.name = val
+      })
+    },
+    setActiveLedFxName: (
+      state,
+      { payload: { sceneType, val } }: ScopedAction<string>
+    ) => {
+      modifyActiveScene(state, sceneType, (scene) => {
+        scene.ledfxname = val
       })
     },
     reorderScene: (
@@ -303,7 +327,9 @@ export const scenesSlice = createSlice({
     },
     deleteBaseParams: (
       state,
-      { payload: { params, splitIndex } }: PayloadAction<{
+      {
+        payload: { params, splitIndex },
+      }: PayloadAction<{
         splitIndex: number | null
         params: readonly Param[]
       }>
@@ -317,10 +343,13 @@ export const scenesSlice = createSlice({
           delete baseParams[param]
 
           // Now remove the params from any modulators
-          scene.modulators.forEach(modulator => {
-            const modulation = splitIndex === null ? modulator.modulation : modulator.splitModulations[splitIndex]
+          scene.modulators.forEach((modulator) => {
+            const modulation =
+              splitIndex === null
+                ? modulator.modulation
+                : modulator.splitModulations[splitIndex]
             delete modulation[param]
-          }) 
+          })
         })
       }
     },
@@ -475,10 +504,16 @@ export const {
   newScene,
   removeScene,
   setActiveScene,
+  setSelected,
+  setName,
+  setLedFxName,
+  setResults,
+  setURL,
   setActiveSceneIndex,
   setActiveSceneBombacity,
   setActiveSceneAutoEnabled,
   setActiveSceneName,
+  setActiveLedFxName,
   reorderScene,
   copyActiveScene,
   sortScenesByBombacity,
