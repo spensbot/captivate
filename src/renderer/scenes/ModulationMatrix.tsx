@@ -1,8 +1,12 @@
-import { useActiveLightScene, useControlSelector } from 'renderer/redux/store'
+import {
+  useActiveLightScene,
+  useControlSelector,
+  useDmxSelector,
+} from 'renderer/redux/store'
 import styled from 'styled-components'
 import { indexArray } from 'shared/util'
-import { paramsList } from '../../shared/params'
 import ModulationSlider, { AddModulationButton } from './ModulationSlider'
+import { getAllParamKeys } from 'renderer/redux/dmxSlice'
 
 export default function ModulationMatrix({ index }: { index: number }) {
   const numSplits = useActiveLightScene((scene) => scene.splitScenes.length)
@@ -29,9 +33,11 @@ function SplitSceneModulationMatrix({
   modIndex: number
   splitIndex: number | null
 }) {
+  const allParamKeys = useDmxSelector((dmx) => getAllParamKeys(dmx))
+
   return (
     <SplitRoot>
-      {paramsList.map((paramKey) => {
+      {allParamKeys.map((paramKey) => {
         return (
           <ModulationSlider
             splitIndex={splitIndex}

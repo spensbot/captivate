@@ -47,7 +47,8 @@ function Visualizer({ splitIndex }: Props) {
   )
 
   let splitFixturesWithinEpicness = splitFixtures.filter(
-    ({ fixture }) => fixtureTypesByID[fixture.type].intensity <= intensity
+    ({ fixture }) =>
+      fixtureTypesByID[fixture.type].intensity <= (intensity ?? 0)
   )
 
   const levels = splitFixturesWithinEpicness.map(

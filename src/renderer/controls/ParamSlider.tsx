@@ -1,4 +1,4 @@
-import { Param } from '../../shared/params'
+import { DefaultParam } from '../../shared/params'
 import SliderBase from '../base/SliderBase'
 import SliderCursor from '../base/SliderCursor'
 import { useBaseParam } from '../redux/store'
@@ -9,7 +9,7 @@ import { SliderMidiOverlay } from '../base/MidiOverlay'
 import ParamXButton from './ParamXButton'
 
 interface Props {
-  param: Param
+  param: DefaultParam | string
   splitIndex: number | null
 }
 

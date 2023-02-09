@@ -1,8 +1,8 @@
-import { initModulation, paramsList, Param, Modulation } from './params'
+import { initModulation, DefaultParam, Modulation } from './params'
 import { Lfo, GetValue, GetRamp } from './oscillator'
 import { LightScene_t } from './Scenes'
 import { clampNormalized } from '../math/util'
-import { mapUndefinedParamsToDefault, defaultOutputParams } from './params'
+import { defaultOutputParams } from './params'
 
 export interface Modulator {
   lfo: Lfo
@@ -28,15 +28,14 @@ interface ModSnapshot {
 export function getOutputParams(
   beats: number,
   scene: LightScene_t,
-  splitIndex: number | null
+  splitIndex: number | null,
+  allParamKeys: string[]
 ) {
   const outputParams = defaultOutputParams()
   const baseParams =
     splitIndex === null
       ? scene.baseParams
       : scene.splitScenes[splitIndex].baseParams
-  // const baseParams = defaultOutputParams()
-  const mappedParams = mapUndefinedParamsToDefault(baseParams)
   const snapshots: ModSnapshot[] =
     splitIndex === null
       ? scene.modulators.map((modulator) => ({
@@ -48,18 +47,19 @@ export function getOutputParams(
           lfoVal: GetValue(modulator.lfo, beats),
         }))
 
-  paramsList.forEach((param) => {
-    outputParams[param] = getOutputParam(mappedParams[param], param, snapshots)
+  allParamKeys.forEach((param) => {
+    outputParams[param] = getOutputParam(baseParams[param], param, snapshots)
   })
 
   return outputParams
 }
 
 function getOutputParam(
-  baseParam: number,
-  param: Param,
+  baseParam: number | undefined,
+  param: DefaultParam | string,
   snapshots: ModSnapshot[]
 ) {
+  if (baseParam === undefined) return undefined
   return clampNormalized(
     snapshots.reduce((sum, { modulation, lfoVal }) => {
       const modAmount = modulation[param]

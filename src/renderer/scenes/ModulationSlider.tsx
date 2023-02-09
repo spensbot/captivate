@@ -1,17 +1,23 @@
 import { useState } from 'react'
 import { useDispatch } from 'react-redux'
-import { Param, paramsList } from '../../shared/params'
-import { useActiveLightScene, useBaseParams, useModParam } from '../redux/store'
+import { DefaultParam } from '../../shared/params'
+import {
+  useActiveLightScene,
+  useBaseParams,
+  useDmxSelector,
+  useModParam,
+} from '../redux/store'
 import { setModulation } from '../redux/controlSlice'
 import useDragMapped from '../hooks/useDragMapped'
 import styled from 'styled-components'
 import Popup from 'renderer/base/Popup'
 import { indexArray } from 'shared/util'
+import { getAllParamKeys } from 'renderer/redux/dmxSlice'
 
 interface Props {
   splitIndex: number | null
   modIndex: number
-  param: Param
+  param: DefaultParam | string
 }
 
 export default function ModulationSlider({
@@ -94,13 +100,14 @@ function ParamsGroup({
   modIndex: number
 }) {
   const baseParams = useBaseParams(splitIndex)
+  const allParamKeys = useDmxSelector((dmx) => getAllParamKeys(dmx))
 
   return (
     <Group isDefault={false}>
       <GroupHeader>
         {splitIndex === null ? `Default` : `Split ${splitIndex + 1}`}
       </GroupHeader>
-      {paramsList.map((param) => {
+      {allParamKeys.map((param) => {
         if (baseParams[param] === undefined) return null
         return (
           <ParamEditor
@@ -122,7 +129,7 @@ function ParamEditor({
 }: {
   splitIndex: number | null
   modIndex: number
-  param: Param
+  param: DefaultParam | string
 }) {
   const modVal = useModParam(param, modIndex, splitIndex)
   const dispatch = useDispatch()

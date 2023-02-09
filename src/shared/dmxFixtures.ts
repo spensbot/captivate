@@ -2,6 +2,7 @@ import { Window2D_t } from '../shared/window'
 import { Color } from './dmxColors'
 import { nanoid } from 'nanoid'
 
+export const DMX_MIN_VALUE = 0
 export const DMX_MAX_VALUE = 255
 export const DMX_NUM_CHANNELS = 512
 export const DMX_DEFAULT_VALUE = 0
@@ -60,6 +61,16 @@ type ChannelReset = {
   resetVal: DmxValue
 }
 
+export type ChannelCustom = {
+  type: 'custom'
+  name: string
+  default: DmxValue
+  min: DmxValue
+  max: DmxValue
+}
+
+export const defaultCustomChannels = ['speed']
+
 export type FixtureChannel =
   | ChannelMaster
   | ChannelColor
@@ -69,6 +80,7 @@ export type FixtureChannel =
   | ChannelOther
   | ChannelReset
   | ChannelMode
+  | ChannelCustom
 
 export type ChannelType = FixtureChannel['type']
 
@@ -81,6 +93,7 @@ export const channelTypes: ChannelType[] = [
   'other',
   'mode',
   'reset',
+  'custom',
 ]
 
 export function initFixtureChannel(
@@ -99,37 +112,45 @@ export function initFixtureChannel(
   } else if (type === 'strobe') {
     return {
       type: type,
-      default_solid: 0,
-      default_strobe: 255,
+      default_solid: DMX_MIN_VALUE,
+      default_strobe: DMX_MAX_VALUE,
     }
   } else if (type === 'axis') {
     return {
       type: type,
       dir: 'x',
       min: 1,
-      max: 255,
+      max: DMX_MAX_VALUE,
     }
   } else if (type === 'colorMap') {
     return {
       type: type,
       colors: [],
     }
-  } else if (type === 'mode') {
-    return {
-      type: type,
-      min: 0,
-      max: 255,
-    }
   } else if (type === 'reset') {
     return {
       type: 'reset',
-      resetVal: 255,
+      resetVal: DMX_MAX_VALUE,
+    }
+  } else if (type === 'custom') {
+    return {
+      type: 'custom',
+      name: 'custom',
+      default: DMX_MIN_VALUE,
+      min: DMX_MIN_VALUE,
+      max: DMX_MAX_VALUE,
+    }
+  } else if (type === 'mode') {
+    return {
+      type: 'mode',
+      min: DMX_MIN_VALUE,
+      max: DMX_MAX_VALUE,
     }
   }
   return {
     type: 'master',
-    min: 0,
-    max: 255,
+    min: DMX_MIN_VALUE,
+    max: DMX_MAX_VALUE,
     isOnOff: false,
   }
 }

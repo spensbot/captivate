@@ -5,9 +5,9 @@ import { useBaseParams, useDmxSelector } from 'renderer/redux/store'
 import styled from 'styled-components'
 import Popup from '../base/Popup'
 import { useDispatch } from 'react-redux'
-import { Param, Params, paramsList } from 'shared/params'
+import { DefaultParam, Params, defaultParamsList } from 'shared/params'
 import { setBaseParams } from 'renderer/redux/controlSlice'
-import { defaultOutputParams } from 'shared/params'
+import { defaultBaseParams } from 'shared/params'
 import BlackLightIcon from '@mui/icons-material/LightBulb'
 import IntensityIcon from '@mui/icons-material/LocalFireDepartment'
 import StrobeIcon from '@mui/icons-material/LightMode'
@@ -15,6 +15,7 @@ import RandomizeIcon from '@mui/icons-material/Shuffle'
 import PositionIcon from '@mui/icons-material/PictureInPicture'
 import axisIconSrc from '../../../assets/axis.svg'
 import ModeIcon from '@mui/icons-material/Category'
+import { getCustomChannels } from 'renderer/redux/dmxSlice'
 
 interface Props {
   splitIndex: number | null
@@ -23,7 +24,7 @@ interface Props {
 type ParamBundle = 'axis' | 'position'
 const paramBundleList: ParamBundle[] = ['position', 'axis']
 
-export const paramBundles: { [key in ParamBundle]: Param[] } = {
+export const paramBundles: { [key in ParamBundle]: DefaultParam[] } = {
   axis: ['xAxis', 'yAxis', 'xMirror'],
   position: ['x', 'y', 'width', 'height'],
 }
@@ -32,7 +33,9 @@ function Axis() {
   return <img style={{ width: '1.5rem', height: '1.5rem' }} src={axisIconSrc} />
 }
 
-const icons: { [key in ParamBundle | Param]?: FunctionComponent } = {
+const icons: {
+  [key in ParamBundle | DefaultParam | string]?: FunctionComponent
+} = {
   black: () => <BlackLightIcon />,
   strobe: () => <StrobeIcon />,
   randomize: () => <RandomizeIcon />,
@@ -42,16 +45,20 @@ const icons: { [key in ParamBundle | Param]?: FunctionComponent } = {
   mode: () => <ModeIcon />,
 }
 
-const defalt = defaultOutputParams()
+const defalt = defaultBaseParams()
 
-function getOptions(baseParams: Partial<Params>) {
-  const paramOptions: (Param | ParamBundle)[] = paramsList.filter((param) => {
-    const isActive = baseParams[param] !== undefined
-    const isInBundle = paramBundleList.find((pb) =>
-      paramBundles[pb].find((p) => p === param)
-    )
-    return !isActive && !isInBundle
-  })
+function getOptions(
+  custom_channels: Set<string>,
+  baseParams: Params
+): (DefaultParam | ParamBundle | string)[] {
+  const paramOptions: (DefaultParam | ParamBundle | string)[] =
+    defaultParamsList.filter((param) => {
+      const isActive = baseParams[param] !== undefined
+      const isInBundle = paramBundleList.find((pb) =>
+        paramBundles[pb].find((p) => p === param)
+      )
+      return !isActive && !isInBundle
+    })
   const paramBundleOptions = paramBundleList.filter((pb) => {
     const isActive = paramBundles[pb].reduce(
       (accum, param) => accum && baseParams[param] !== undefined,
@@ -59,7 +66,10 @@ function getOptions(baseParams: Partial<Params>) {
     )
     return !isActive
   })
-  return paramOptions.concat(paramBundleOptions)
+
+  return paramOptions
+    .concat(paramBundleOptions)
+    .concat(Array.from(custom_channels))
 }
 
 export default function ParamAddButton({ splitIndex }: Props) {
@@ -93,12 +103,13 @@ export default function ParamAddButton({ splitIndex }: Props) {
           ) !== undefined
       ) !== undefined
   )
+  const customChannels = useDmxSelector((dmx) => getCustomChannels(dmx))
 
-  const unuseableOptions: Set<Param | ParamBundle> = new Set()
+  const unuseableOptions: Set<DefaultParam | ParamBundle | string> = new Set()
   if (!hasBlackLights) unuseableOptions.add('black')
   if (!hasAxis) unuseableOptions.add('axis')
   if (!hasMode) unuseableOptions.add('mode')
-  const options = getOptions(baseParams).filter(
+  const options = getOptions(customChannels, baseParams).filter(
     (option) => !unuseableOptions.has(option)
   )
 
@@ -122,13 +133,13 @@ export default function ParamAddButton({ splitIndex }: Props) {
                 key={option}
                 onClick={(e) => {
                   e.preventDefault()
-                  const newParams: Partial<Params> = {}
+                  const newParams: Params = {}
                   if (option === 'axis' || option === 'position') {
                     for (const param of paramBundles[option]) {
-                      newParams[param] = defalt[param]
+                      newParams[param] = defalt[param] ?? 0
                     }
                   } else {
-                    newParams[option] = defalt[option]
+                    newParams[option] = defalt[option] ?? 0
                   }
                   dispatch(
                     setBaseParams({

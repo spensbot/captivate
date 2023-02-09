@@ -1,4 +1,4 @@
-export type Param =
+export type DefaultParam =
   | 'hue'
   | 'saturation'
   | 'brightness'
@@ -15,27 +15,19 @@ export type Param =
   | 'xMirror'
   | 'mode'
 
-export type Params = { [key in Param]: number }
-export function initBaseParams(): Partial<Params> {
+// export type CustomChannelParams = { [key: string]: number | undefined }
+
+export type Params = { [key: string]: number | undefined }
+
+export function initBaseParams(): Params {
   return {
     hue: 0.5,
     saturation: 0.5,
     brightness: 0.5,
-    // x: 0.5,
-    // width: 1.0,
-    // y: 0.5,
-    // height: 1.0,
-    // black: 1.0,
-    // intensity: 1.0,
-    // strobe: 0.0,
-    // randomize: 0.0,
-    // xAxis: 0.5,
-    // yAxis: 0.5,
-    // xMirror: 0.0,
   }
 }
 
-export function defaultOutputParams(): Params {
+export function defaultBaseParams(): Params {
   return {
     hue: 0.5,
     saturation: 0.5,
@@ -55,7 +47,27 @@ export function defaultOutputParams(): Params {
   }
 }
 
-export const paramsList: Param[] = [
+export function defaultOutputParams(): Params {
+  return {
+    hue: 0.5,
+    saturation: 0.5,
+    brightness: 0.5,
+    // x: 0.5,
+    // width: 1.0,
+    // y: 0.5,
+    // height: 1.0,
+    // black: 1.0,
+    // intensity: 1.0,
+    // strobe: 0.0,
+    // randomize: 0.0,
+    // xAxis: 0.5,
+    // yAxis: 0.5,
+    // xMirror: 0.0,
+    // mode: 0.0,
+  }
+}
+
+export const defaultParamsList: DefaultParam[] = [
   'hue',
   'saturation',
   'brightness',
@@ -73,19 +85,8 @@ export const paramsList: Param[] = [
   'mode',
 ]
 
-export type Modulation = Partial<Params>
+export type Modulation = Params
 
 export function initModulation(): Modulation {
   return {}
-}
-
-export function mapUndefinedParamsToDefault(params: Partial<Params>): Params {
-  const defalt = defaultOutputParams()
-  for (const param of paramsList) {
-    const val = params[param]
-    if (val !== undefined) {
-      defalt[param] = val
-    }
-  }
-  return defalt
 }

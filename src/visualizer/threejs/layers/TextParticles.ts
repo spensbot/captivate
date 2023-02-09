@@ -19,8 +19,8 @@ const attrib = {
   size: 'size',
 }
 
-const mapSpeedToPeriod = mapFn(0.3, {min: 16, max: 0.125})
-const mapSnapToExp = mapFn(2, {min: 1.5, max: 0.2})
+const mapSpeedToPeriod = mapFn(0.3, { min: 16, max: 0.125 })
+const mapSnapToExp = mapFn(2, { min: 1.5, max: 0.2 })
 
 export default class TextParticles extends LayerBase {
   particles = new THREE.Points()
@@ -68,10 +68,12 @@ export default class TextParticles extends LayerBase {
     const size = this.particles.geometry.attributes.size
     if (pos === undefined) return
 
-    const period = snapToMultipleOf2(mapSpeedToPeriod(rLerp(this.config.speed, res.scene.epicness)))
-  
+    const period = snapToMultipleOf2(
+      mapSpeedToPeriod(rLerp(this.config.speed, res.scene.epicness))
+    )
+
     const col = new THREE.Color(
-      colorFromHSV(res.params.hue, 1, params.brightness)
+      colorFromHSV(res.params.hue ?? 0.0, 1, params.brightness ?? 0.0)
     )
 
     if (res.isNewPeriod(period)) {
@@ -95,13 +97,13 @@ export default class TextParticles extends LayerBase {
     res.msPerPeriod(period)
     const framesLeft = res.framesLeft(period)
     const exp = mapSnapToExp(res.lerpEpicness(this.config.snap))
-    const amount = Math.min((1 / framesLeft), 1) ** exp
+    const amount = Math.min(1 / framesLeft, 1) ** exp
 
     this.particleStates.forEach((pState, i) => {
       let { x, y, tx, ty, vx, vy } = gravity(
         dt_seconds,
         pState,
-        this.config.physics,
+        this.config.physics
       )
 
       // Pull towards target as we near the end of the period
@@ -111,7 +113,10 @@ export default class TextParticles extends LayerBase {
       const dist = distance(x, y, tx, ty)
 
       pos.setXY(i, x, y)
-      size.setX(i, (1 + dist * 5) * this.config.particleSize * res.size.height / 2000)
+      size.setX(
+        i,
+        ((1 + dist * 5) * this.config.particleSize * res.size.height) / 2000
+      )
       color.setXYZ(i, col.r, col.g, col.b)
 
       pState.x = x

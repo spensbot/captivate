@@ -1,5 +1,5 @@
 import { PayloadAction } from '@reduxjs/toolkit'
-import { Param } from '../../shared/params'
+import { DefaultParam } from '../../shared/params'
 import { SceneType } from '.../../shared/Scenes'
 import { ConnectionId } from '../../shared/connection'
 
@@ -37,7 +37,7 @@ interface SetBpm {
 
 interface SetBaseParam {
   type: 'setBaseParam'
-  paramKey: Param
+  paramKey: DefaultParam | string
 }
 
 interface TapTempo {

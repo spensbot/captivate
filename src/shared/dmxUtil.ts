@@ -6,6 +6,7 @@ import {
   FixtureChannel,
   Fixture,
   Universe,
+  DMX_DEFAULT_VALUE,
 } from './dmxFixtures'
 import { Params } from './params'
 import { lerp } from '../math/util'
@@ -32,7 +33,11 @@ function getWindowMultiplier(fixtureWindow?: Window, movingWindow?: Window) {
 }
 
 // Value and MirrorAmount should be normalized (0 - 1)
-export function applyMirror(value: number, mirrorAmount: number) {
+export function applyMirror(value: number, mirrorAmount: number | undefined) {
+  if (mirrorAmount === undefined) {
+    mirrorAmount = 0
+  }
+
   const doubleNorm = value * 2 - 1
   const mirroredDoubleNorm = lerp(doubleNorm, -doubleNorm, mirrorAmount)
   return (mirroredDoubleNorm + 1) / 2
@@ -50,14 +55,17 @@ export function getDmxValue(
 
   switch (ch.type) {
     case 'master':
+      const brightnessParam = params.brightness ?? 0
+      const randomizeParam = params.randomize ?? 0
+
       const unrandomizedLevel =
-        params.brightness *
+        brightnessParam *
         getWindowMultiplier2D(fixture.window, movingWindow) *
         master
       const level = applyRandomization(
         unrandomizedLevel,
         randomizerLevel,
-        params.randomize
+        randomizeParam
       )
       if (ch.isOnOff) {
         return level > 0.5 ? ch.max : ch.min
@@ -69,26 +77,33 @@ export function getDmxValue(
     case 'color':
       return colors[ch.color] * DMX_MAX_VALUE
     case 'strobe':
-      return params.strobe > 0.5 ? ch.default_strobe : ch.default_solid
+      return params.strobe !== undefined && params.strobe > 0.5
+        ? ch.default_strobe
+        : ch.default_solid
     case 'axis':
-      if (ch.dir === 'x') {
+      if (ch.dir === 'x' && params.xAxis !== undefined) {
         const fixtureXPos = fixture.window?.x?.pos ?? 0
         const xAxis =
           fixtureXPos < 0.5
             ? params.xAxis
             : applyMirror(params.xAxis, params.xMirror)
         return rLerp(ch, xAxis)
-      } else if (ch.dir === 'y') {
+      } else if (ch.dir === 'y' && params.yAxis !== undefined) {
         return rLerp(ch, params.yAxis)
       } else {
-        console.error('Unhandled axis dir')
         return 0
       }
     case 'colorMap':
       const _colors = ch.colors
       const firstColor = _colors[0]
       const hue = params.hue
-      if (firstColor && params.saturation > 0.5) {
+      const saturation = params.saturation
+      if (
+        hue !== undefined &&
+        saturation !== undefined &&
+        firstColor &&
+        saturation > 0.5
+      ) {
         const closestColor = _colors.reduce((current, color) => {
           const currentDif = Math.min(
             Math.abs(current.hue - hue),
@@ -102,19 +117,41 @@ export function getDmxValue(
         }, firstColor)
         return closestColor.max
       } else {
-        return 0
+        return DMX_DEFAULT_VALUE
       }
     case 'mode':
-      return rLerp(ch, params.mode)
+      const modeParam = params.mode
+      if (modeParam === undefined) {
+        return DMX_DEFAULT_VALUE
+      } else {
+        return rLerp(ch, modeParam)
+      }
+    case 'custom':
+      const customParam = params[ch.name]
+      if (customParam === undefined) {
+        return ch.default
+      } else {
+        return rLerp(ch, customParam)
+      }
     default:
-      return 0
+      return DMX_DEFAULT_VALUE
   }
 }
 
 export function getMovingWindow(params: Params): Window2D_t {
+  const x =
+    params.x !== undefined && params.width !== undefined
+      ? { pos: params.x, width: params.width }
+      : undefined
+
+  const y =
+    params.y !== undefined && params.height !== undefined
+      ? { pos: params.y, width: params.height }
+      : undefined
+
   return {
-    x: { pos: params.x, width: params.width },
-    y: { pos: params.y, width: params.height },
+    x: x,
+    y: y,
   }
 }
 

@@ -75,11 +75,15 @@ export default class Cubes extends LayerBase {
 
   update(res: UpdateResource): void {
     this.cubes.forEach((cube) => cube.update(res))
-    this.light.position.x = res.params.x * 10 - 5
-    this.light.position.y = res.params.y * 8 - 4
-    this.light.intensity = this.strobe.update(res.dt, res.params.strobe)
+    this.light.position.x = res.params.x ?? 0.5 * 10 - 5
+    this.light.position.y = res.params.y ?? 0.5 * 8 - 4
+    this.light.intensity = this.strobe.update(res.dt, res.params.strobe ?? 0)
     this.light.color = new THREE.Color(
-      colorFromHSV(res.params.hue, res.params.saturation, res.params.brightness)
+      colorFromHSV(
+        res.params.hue ?? 0,
+        res.params.saturation ?? 0,
+        res.params.brightness ?? 0
+      )
     )
   }
 

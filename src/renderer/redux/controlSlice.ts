@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { LfoShape } from '../../shared/oscillator'
-import { Param, Params } from '../../shared/params'
+import { DefaultParam, Params } from '../../shared/params'
 import { ReorderParams } from '../../shared/util'
 import { clampNormalized, clamp } from '../../math/util'
 import { initModulator } from '../../shared/modulation'
@@ -48,7 +48,7 @@ interface IncrementModulatorPayload {
 interface SetModulationPayload {
   splitIndex: number | null
   modIndex: number
-  param: Param
+  param: DefaultParam | string
   value: number | undefined
 }
 
@@ -90,7 +90,7 @@ type ScopedAction<T> = PayloadAction<{
 
 type ParamsAction = PayloadAction<{
   splitIndex: number | null
-  params: Partial<Params>
+  params: Params
 }>
 
 export const scenesSlice = createSlice({
@@ -297,15 +297,17 @@ export const scenesSlice = createSlice({
             splitIndex === null
               ? scene.baseParams
               : scene.splitScenes[splitIndex].baseParams
-          baseParams[key as Param] = value
+          baseParams[key] = value
         })
       }
     },
     deleteBaseParams: (
       state,
-      { payload: { params, splitIndex } }: PayloadAction<{
+      {
+        payload: { params, splitIndex },
+      }: PayloadAction<{
         splitIndex: number | null
-        params: readonly Param[]
+        params: readonly (DefaultParam | string)[]
       }>
     ) => {
       for (const param of params) {
@@ -317,10 +319,13 @@ export const scenesSlice = createSlice({
           delete baseParams[param]
 
           // Now remove the params from any modulators
-          scene.modulators.forEach(modulator => {
-            const modulation = splitIndex === null ? modulator.modulation : modulator.splitModulations[splitIndex]
+          scene.modulators.forEach((modulator) => {
+            const modulation =
+              splitIndex === null
+                ? modulator.modulation
+                : modulator.splitModulations[splitIndex]
             delete modulation[param]
-          }) 
+          })
         })
       }
     },
@@ -330,13 +335,17 @@ export const scenesSlice = createSlice({
     ) => {
       for (let [key, amount] of Object.entries(params)) {
         modifyActiveLightScene(state, (scene) => {
-          const baseParams =
-            splitIndex === null
-              ? scene.baseParams
-              : scene.splitScenes[splitIndex].baseParams
-          const currentVal = baseParams[key as Param]
-          if (currentVal !== undefined) {
-            baseParams[key as Param] = clampNormalized(currentVal + amount)
+          if (amount !== undefined) {
+            const baseParams =
+              splitIndex === null
+                ? scene.baseParams
+                : scene.splitScenes[splitIndex].baseParams
+            const currentVal = baseParams[key as DefaultParam]
+            if (currentVal !== undefined) {
+              baseParams[key as DefaultParam] = clampNormalized(
+                currentVal + amount
+              )
+            }
           }
         })
       }

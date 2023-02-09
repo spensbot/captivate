@@ -5,12 +5,16 @@ import styled from 'styled-components'
 import Randomizer from './Randomizer'
 import XYAxispad from './XYAxisPad'
 import ParamAddButton from './ParamAddButton'
+import { useDmxSelector } from 'renderer/redux/store'
+import { getCustomChannels } from 'renderer/redux/dmxSlice'
 
 interface Params {
   splitIndex: number | null
 }
 
 export default function ParamsControl({ splitIndex }: Params) {
+  let customChannels = useDmxSelector((dmx) => getCustomChannels(dmx))
+
   return (
     <Root>
       <HsvPad splitIndex={splitIndex} />
@@ -21,6 +25,9 @@ export default function ParamsControl({ splitIndex }: Params) {
       <ParamSlider param={'strobe'} splitIndex={splitIndex} />
       <ParamSlider param={'intensity'} splitIndex={splitIndex} />
       <ParamSlider param={'mode'} splitIndex={splitIndex} />
+      {Array.from(customChannels).map((name) => (
+        <ParamSlider key={name} param={name} splitIndex={splitIndex} />
+      ))}
       <ParamAddButton splitIndex={splitIndex} />
     </Root>
   )

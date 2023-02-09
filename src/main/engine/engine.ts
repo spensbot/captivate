@@ -26,6 +26,7 @@ import {
 } from '../../shared/dmxUtil'
 import { ThrottleMap } from './midiConnection'
 import { MidiMessage, midiInputID } from '../../shared/midi'
+import { getAllParamKeys } from '../../renderer/redux/dmxSlice'
 
 let _nodeLink = new NodeLink()
 _nodeLink.setIsPlaying(true)
@@ -167,6 +168,7 @@ function getNextRealtimeState(
   const scene =
     controlState.control.light.byId[controlState.control.light.active]
   const dmx = controlState.dmx
+  const allParamKeys = getAllParamKeys(dmx)
 
   handleAutoScene(
     realtimeState,
@@ -190,7 +192,12 @@ function getNextRealtimeState(
     }
   )
 
-  const outputParams = getOutputParams(nextTimeState.beats, scene, null)
+  const outputParams = getOutputParams(
+    nextTimeState.beats,
+    scene,
+    null,
+    allParamKeys
+  )
 
   let newRandomizerState = resizeRandomizer(
     realtimeState.randomizer,
@@ -202,7 +209,8 @@ function getNextRealtimeState(
   let mainSceneFixtures = getFixturesInGroups(dmx.universe, mainGroups)
   let mainSceneFixturesWithinEpicness = mainSceneFixtures.filter(
     ({ fixture }) =>
-      dmx.fixtureTypesByID[fixture.type].intensity <= outputParams.intensity
+      dmx.fixtureTypesByID[fixture.type].intensity <=
+      (outputParams.intensity ?? 0)
   )
 
   newRandomizerState = updateIndexes(
@@ -217,12 +225,14 @@ function getNextRealtimeState(
     const splitOutputParams = getOutputParams(
       nextTimeState.beats,
       scene,
-      splitIndex
+      splitIndex,
+      allParamKeys
     )
     let splitSceneFixtures = getFixturesInGroups(dmx.universe, _split.groups)
     let splitSceneFixturesWithinEpicness = splitSceneFixtures.filter(
       ({ fixture }) =>
-        dmx.fixtureTypesByID[fixture.type].intensity <= outputParams.intensity
+        dmx.fixtureTypesByID[fixture.type].intensity <=
+        (outputParams.intensity ?? 0)
     )
     newRandomizerState = updateIndexes(
       realtimeState.time.beats,

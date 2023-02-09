@@ -20,7 +20,7 @@ interface Scene_base {
 }
 
 export interface SplitScene_t {
-  baseParams: Partial<Params>
+  baseParams: Params
   randomizer: RandomizerOptions
   groups: string[]
 }
@@ -33,7 +33,7 @@ export function initSplitScene(): SplitScene_t {
 }
 export interface LightScene_t extends Scene_base {
   modulators: Modulator[]
-  baseParams: Partial<Params>
+  baseParams: Params
   randomizer: RandomizerOptions
   splitScenes: SplitScene_t[]
 }

@@ -42,7 +42,10 @@ export function calculateDmx(
 
         fixtureType.channels.forEach((channel, offset) => {
           const outputChannel = fixture.ch + offset
-          if (_outputParams.intensity >= fixtureType.intensity) {
+          if (
+            _outputParams.intensity !== undefined &&
+            _outputParams.intensity >= fixtureType.intensity
+          ) {
             let dmxOut = getDmxValue(
               channel,
               _outputParams,

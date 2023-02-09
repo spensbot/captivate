@@ -11,9 +11,11 @@ import {
   AxisDir,
   axisDirList,
   DMX_MAX_VALUE,
+  DMX_MIN_VALUE,
 } from '../../shared/dmxFixtures'
 import { colorList, Color } from '../../shared/dmxColors'
 import NumberField from '../base/NumberField'
+import Input from '../base/Input'
 import {
   editFixtureChannel,
   addFixtureChannel,
@@ -222,6 +224,8 @@ function getInfo({ ch }: Props3): string {
       return `Reset`
     case 'mode':
       return `Mode`
+    case 'custom':
+      return `${ch.name}`
   }
 }
 
@@ -291,6 +295,28 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
     )
   }
 
+  function dmxNumberField<Ch extends FixtureChannel, Key extends keyof Ch>(
+    ch: Ch,
+    field: Key,
+    label: string
+  ) {
+    return (
+      <NumberField
+        // @ts-ignore  It's gross but it saves so much time here
+        val={ch[field]}
+        label={label}
+        min={DMX_MIN_VALUE}
+        max={DMX_MAX_VALUE}
+        onChange={(newVal) =>
+          updateChannel({
+            ...ch,
+            [field]: newVal,
+          })
+        }
+      />
+    )
+  }
+
   if (ch.type === 'color') {
     return (
       <Select
@@ -308,31 +334,9 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
   } else if (ch.type === 'master') {
     return (
       <>
-        <NumberField
-          val={ch.min}
-          label="Min"
-          min={0}
-          max={DMX_MAX_VALUE}
-          onChange={(newMin) =>
-            updateChannel({
-              ...ch,
-              min: newMin,
-            })
-          }
-        />
+        {dmxNumberField(ch, 'min', 'Min')}
         <Sp2 />
-        <NumberField
-          val={ch.max}
-          label="Max"
-          min={0}
-          max={DMX_MAX_VALUE}
-          onChange={(newMax) =>
-            updateChannel({
-              ...ch,
-              max: newMax,
-            })
-          }
-        />
+        {dmxNumberField(ch, 'max', 'MAX')}
         <Sp2 />
         <Checkbox
           label="On/Off"
@@ -347,48 +351,13 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
       </>
     )
   } else if (ch.type === 'other') {
-    return (
-      <NumberField
-        val={ch.default}
-        label="Default"
-        min={0}
-        max={DMX_MAX_VALUE}
-        onChange={(newVal) =>
-          updateChannel({
-            type: 'other',
-            default: newVal,
-          })
-        }
-      />
-    )
+    return dmxNumberField(ch, 'default', 'Default')
   } else if (ch.type === 'strobe') {
     return (
       <>
-        <NumberField
-          val={ch.default_solid}
-          label="Solid"
-          min={0}
-          max={DMX_MAX_VALUE}
-          onChange={(newVal) =>
-            updateChannel({
-              ...ch,
-              default_solid: newVal,
-            })
-          }
-        />
+        {dmxNumberField(ch, 'default_solid', 'Solid')}
         <Sp2 />
-        <NumberField
-          val={ch.default_strobe}
-          label="Strobe"
-          min={0}
-          max={DMX_MAX_VALUE}
-          onChange={(newVal) =>
-            updateChannel({
-              ...ch,
-              default_strobe: newVal,
-            })
-          }
-        />
+        {dmxNumberField(ch, 'default_strobe', 'Strobe')}
       </>
     )
   } else if (ch.type === 'axis') {
@@ -409,31 +378,9 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
           />
         </Row>
         <Sp2 />
-        <NumberField
-          val={ch.min}
-          label="min"
-          min={0}
-          max={DMX_MAX_VALUE}
-          onChange={(newVal) =>
-            updateChannel({
-              ...ch,
-              min: newVal,
-            })
-          }
-        />
+        {dmxNumberField(ch, 'min', 'Min')}
         <Sp2 />
-        <NumberField
-          val={ch.max}
-          label="max"
-          min={0}
-          max={DMX_MAX_VALUE}
-          onChange={(newVal) =>
-            updateChannel({
-              ...ch,
-              max: newVal,
-            })
-          }
-        />
+        {dmxNumberField(ch, 'max', 'Max')}
       </>
     )
   } else if (ch.type === 'colorMap') {
@@ -518,48 +465,30 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
   } else if (ch.type === 'mode') {
     return (
       <>
-        <NumberField
-          val={ch.min}
-          label="Min"
-          min={0}
-          max={DMX_MAX_VALUE}
-          onChange={(newMin) =>
-            updateChannel({
-              ...ch,
-              min: newMin,
-            })
-          }
-        />
+        {dmxNumberField(ch, 'min', 'Min')}
         <Sp2 />
-        <NumberField
-          val={ch.max}
-          label="Max"
-          min={0}
-          max={DMX_MAX_VALUE}
-          onChange={(newMax) =>
-            updateChannel({
-              ...ch,
-              max: newMax,
-            })
-          }
-        />
+        {dmxNumberField(ch, 'max', 'Max')}
       </>
     )
   } else if (ch.type === 'reset') {
+    return dmxNumberField(ch, 'resetVal', 'Reset Value')
+  } else if (ch.type === 'custom') {
     return (
       <>
-        <NumberField
-          val={ch.resetVal}
-          label="Reset Value"
-          min={0}
-          max={DMX_MAX_VALUE}
-          onChange={(resetVal) =>
+        <Input
+          value={ch.name}
+          onChange={(newName) =>
             updateChannel({
               ...ch,
-              resetVal,
+              name: newName,
             })
           }
         />
+        {dmxNumberField(ch, 'default', 'Default')}
+        <Sp2 />
+        {dmxNumberField(ch, 'min', 'Min')}
+        <Sp2 />
+        {dmxNumberField(ch, 'max', 'Max')}
       </>
     )
   } else {

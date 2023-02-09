@@ -13,7 +13,7 @@ import mixerReducer from './mixerSlice'
 import undoable, { StateWithHistory } from 'redux-undo'
 import { DeviceState } from './deviceState'
 import { VisualScene_t, SceneType } from '../../shared/Scenes'
-import { Param, Params } from '../../shared/params'
+import { DefaultParam, Params } from '../../shared/params'
 import { SaveInfo } from 'shared/save'
 import eventLogger from './eventLogger'
 
@@ -237,7 +237,7 @@ export function useDeviceSelector<T>(getVal: (midi: DeviceState) => T) {
 }
 
 export function useBaseParam(
-  param: Param,
+  param: DefaultParam | string,
   splitIndex: number | null
 ): number | undefined {
   const baseParam = useActiveLightScene((state) => {
@@ -248,7 +248,7 @@ export function useBaseParam(
   return baseParam
 }
 
-export function useBaseParams(splitIndex: number | null): Partial<Params> {
+export function useBaseParams(splitIndex: number | null): Params {
   const baseParams = useActiveLightScene((state) => {
     return splitIndex === null
       ? state.baseParams
@@ -258,7 +258,7 @@ export function useBaseParams(splitIndex: number | null): Partial<Params> {
 }
 
 export function useModParam(
-  param: Param,
+  param: DefaultParam | string,
   modIndex: number,
   splitIndex: number | null
 ) {

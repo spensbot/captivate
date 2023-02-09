@@ -7,6 +7,7 @@ import {
   ColorMapColor,
 } from '../../shared/dmxFixtures'
 import { clampNormalized } from '../../math/util'
+import { defaultParamsList } from '../../shared/params'
 
 export interface DmxState {
   universe: Universe
@@ -14,6 +15,26 @@ export interface DmxState {
   fixtureTypesByID: { [id: string]: FixtureType }
   activeFixtureType: null | string
   activeFixture: null | number
+}
+
+export function getCustomChannels(dmx: DmxState): Set<string> {
+  let result = new Set() as Set<string>
+
+  for (const ftId of dmx.fixtureTypes) {
+    for (const ch of dmx.fixtureTypesByID[ftId].channels) {
+      if (ch.type === 'custom') {
+        result.add(ch.name)
+      }
+    }
+  }
+
+  return result
+}
+
+export function getAllParamKeys(dmx: DmxState): string[] {
+  return (defaultParamsList as string[]).concat(
+    Array.from(getCustomChannels(dmx))
+  )
 }
 
 interface SetFixtureWindowPayload {
