@@ -8,7 +8,6 @@ import { useDispatch } from 'react-redux'
 import { DefaultParam, Params, defaultParamsList } from 'shared/params'
 import { setBaseParams } from 'renderer/redux/controlSlice'
 import { defaultBaseParams } from 'shared/params'
-import BlackLightIcon from '@mui/icons-material/LightBulb'
 import IntensityIcon from '@mui/icons-material/LocalFireDepartment'
 import StrobeIcon from '@mui/icons-material/LightMode'
 import RandomizeIcon from '@mui/icons-material/Shuffle'
@@ -36,7 +35,6 @@ function Axis() {
 const icons: {
   [key in ParamBundle | DefaultParam | string]?: FunctionComponent
 } = {
-  black: () => <BlackLightIcon />,
   strobe: () => <StrobeIcon />,
   randomize: () => <RandomizeIcon />,
   position: () => <PositionIcon />,
@@ -76,15 +74,6 @@ export default function ParamAddButton({ splitIndex }: Props) {
   const dispatch = useDispatch()
   const [isOpen, setIsOpen] = useState(false)
   const baseParams = useBaseParams(splitIndex)
-  const hasBlackLights = useDmxSelector(
-    (dmx) =>
-      dmx.fixtureTypes.find(
-        (ftID) =>
-          dmx.fixtureTypesByID[ftID].channels.find(
-            (ch) => ch.type === 'color' && ch.color === 'black'
-          ) !== undefined
-      ) !== undefined
-  )
   const hasAxis = useDmxSelector(
     (dmx) =>
       dmx.fixtureTypes.find(
@@ -106,7 +95,6 @@ export default function ParamAddButton({ splitIndex }: Props) {
   const customChannels = useDmxSelector((dmx) => getCustomChannels(dmx))
 
   const unuseableOptions: Set<DefaultParam | ParamBundle | string> = new Set()
-  if (!hasBlackLights) unuseableOptions.add('black')
   if (!hasAxis) unuseableOptions.add('axis')
   if (!hasMode) unuseableOptions.add('mode')
   const options = getOptions(customChannels, baseParams).filter(

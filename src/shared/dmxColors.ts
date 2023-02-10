@@ -1,11 +1,11 @@
 import { Normalized } from '../math/util'
 import { Params } from './params'
 
-export type Color = 'red' | 'green' | 'blue' | 'white' | 'black'
+export type Color = 'red' | 'green' | 'blue' | 'white'
 
 type RGB = [number, number, number]
 
-export const colorList = ['red', 'green', 'blue', 'white', 'black']
+export const colorList = ['red', 'green', 'blue', 'white']
 
 export type Colors = { [key in Color]: Normalized }
 
@@ -65,7 +65,6 @@ export function getColors(params: Params): Colors {
     red: r,
     green: g,
     blue: b,
-    black: params.black ?? 0,
     // The min of r g b represents a little bit of white
     white: Math.min(r, g, b),
   }

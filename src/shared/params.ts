@@ -6,7 +6,6 @@ export type DefaultParam =
   | 'width'
   | 'y'
   | 'height'
-  | 'black'
   | 'intensity'
   | 'strobe'
   | 'randomize'
@@ -36,7 +35,6 @@ export function defaultBaseParams(): Params {
     width: 1.0,
     y: 0.5,
     height: 1.0,
-    black: 1.0,
     intensity: 1.0,
     strobe: 0.0,
     randomize: 0.0,
@@ -56,7 +54,6 @@ export function defaultOutputParams(): Params {
     // width: 1.0,
     // y: 0.5,
     // height: 1.0,
-    // black: 1.0,
     // intensity: 1.0,
     // strobe: 0.0,
     // randomize: 0.0,
@@ -75,7 +72,6 @@ export const defaultParamsList: DefaultParam[] = [
   'width',
   'y',
   'height',
-  'black',
   'intensity',
   'strobe',
   'randomize',

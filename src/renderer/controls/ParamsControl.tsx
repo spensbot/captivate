@@ -21,7 +21,6 @@ export default function ParamsControl({ splitIndex }: Params) {
       <XYpad splitIndex={splitIndex} />
       <XYAxispad splitIndex={splitIndex} />
       <Randomizer splitIndex={splitIndex} />
-      <ParamSlider param={'black'} splitIndex={splitIndex} />
       <ParamSlider param={'strobe'} splitIndex={splitIndex} />
       <ParamSlider param={'intensity'} splitIndex={splitIndex} />
       <ParamSlider param={'mode'} splitIndex={splitIndex} />
