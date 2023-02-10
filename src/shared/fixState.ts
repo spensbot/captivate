@@ -1,7 +1,33 @@
 import { CleanReduxState } from '../renderer/redux/store'
+import { DmxValue, FixtureChannel } from './dmxFixtures'
+
+type Deprecated_ChannelMode = {
+  type: 'mode'
+  min: DmxValue
+  max: DmxValue
+}
 
 // Modify this function to fix any breaking state changes between upgrades
 export default function fixState(state: CleanReduxState): CleanReduxState {
+  for (const fixture of fixtureTypes(state)) {
+    for (let i = 0; i < fixture.channels.length; i++) {
+      let channel = fixture.channels[i] as
+        | FixtureChannel
+        | Deprecated_ChannelMode
+
+      if (channel.type === 'mode') {
+        const newChannel: FixtureChannel = {
+          type: 'custom',
+          name: 'mode',
+          default: 0,
+          min: channel.min,
+          max: channel.max,
+        }
+        fixture.channels[i] = newChannel
+      }
+    }
+  }
+
   return state
 }
 

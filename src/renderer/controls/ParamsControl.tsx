@@ -23,7 +23,6 @@ export default function ParamsControl({ splitIndex }: Params) {
       <Randomizer splitIndex={splitIndex} />
       <ParamSlider param={'strobe'} splitIndex={splitIndex} />
       <ParamSlider param={'intensity'} splitIndex={splitIndex} />
-      <ParamSlider param={'mode'} splitIndex={splitIndex} />
       {Array.from(customChannels).map((name) => (
         <ParamSlider key={name} param={name} splitIndex={splitIndex} />
       ))}

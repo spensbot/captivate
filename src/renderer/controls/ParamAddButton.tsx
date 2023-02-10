@@ -83,20 +83,10 @@ export default function ParamAddButton({ splitIndex }: Props) {
           ) !== undefined
       ) !== undefined
   )
-  const hasMode = useDmxSelector(
-    (dmx) =>
-      dmx.fixtureTypes.find(
-        (ftID) =>
-          dmx.fixtureTypesByID[ftID].channels.find(
-            (ch) => ch.type === 'mode'
-          ) !== undefined
-      ) !== undefined
-  )
   const customChannels = useDmxSelector((dmx) => getCustomChannels(dmx))
 
   const unuseableOptions: Set<DefaultParam | ParamBundle | string> = new Set()
   if (!hasAxis) unuseableOptions.add('axis')
-  if (!hasMode) unuseableOptions.add('mode')
   const options = getOptions(customChannels, baseParams).filter(
     (option) => !unuseableOptions.has(option)
   )

@@ -222,8 +222,6 @@ function getInfo({ ch }: Props3): string {
       return `Strobe`
     case 'reset':
       return `Reset`
-    case 'mode':
-      return `Mode`
     case 'custom':
       return `${ch.name}`
   }
@@ -243,8 +241,6 @@ function getSubInfo({ ch }: Props3): string | null {
       return `${ch.min} - ${ch.max}`
     case 'reset':
       return `val: ${ch.resetVal}`
-    case 'mode':
-      return `${ch.min} - ${ch.max}`
     default:
       return null
   }
@@ -475,14 +471,6 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
           <Add />
         </IconButton>
       </div>
-    )
-  } else if (ch.type === 'mode') {
-    return (
-      <>
-        {dmxNumberField(ch, 'min', 'Min')}
-        <Sp2 />
-        {dmxNumberField(ch, 'max', 'Max')}
-      </>
     )
   } else if (ch.type === 'reset') {
     return dmxNumberField(ch, 'resetVal', 'Reset Value')

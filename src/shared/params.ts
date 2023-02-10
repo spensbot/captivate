@@ -12,7 +12,6 @@ export type DefaultParam =
   | 'xAxis'
   | 'yAxis'
   | 'xMirror'
-  | 'mode'
 
 // export type CustomChannelParams = { [key: string]: number | undefined }
 
@@ -41,7 +40,6 @@ export function defaultBaseParams(): Params {
     xAxis: 0.5,
     yAxis: 0.5,
     xMirror: 0.0,
-    mode: 0.0,
   }
 }
 
@@ -60,7 +58,6 @@ export function defaultOutputParams(): Params {
     // xAxis: 0.5,
     // yAxis: 0.5,
     // xMirror: 0.0,
-    // mode: 0.0,
   }
 }
 
@@ -78,7 +75,6 @@ export const defaultParamsList: DefaultParam[] = [
   'xAxis',
   'yAxis',
   'xMirror',
-  'mode',
 ]
 
 export type Modulation = Params

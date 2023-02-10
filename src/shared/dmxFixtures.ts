@@ -44,12 +44,6 @@ export type ChannelAxis = {
   max: DmxValue
 }
 
-type ChannelMode = {
-  type: 'mode'
-  min: DmxValue
-  max: DmxValue
-}
-
 export type ColorMapColor = { max: number; hue: number }
 
 type ChannelColorMap = {
@@ -80,7 +74,6 @@ export type FixtureChannel =
   | ChannelColorMap
   | ChannelOther
   | ChannelReset
-  | ChannelMode
   | ChannelCustom
 
 export type ChannelType = FixtureChannel['type']
@@ -92,7 +85,6 @@ export const channelTypes: ChannelType[] = [
   'axis',
   'colorMap',
   'other',
-  'mode',
   'reset',
   'custom',
 ]
@@ -139,12 +131,6 @@ export function initFixtureChannel(
       type: 'custom',
       name: 'custom',
       default: DMX_MIN_VALUE,
-      min: DMX_MIN_VALUE,
-      max: DMX_MAX_VALUE,
-    }
-  } else if (type === 'mode') {
-    return {
-      type: 'mode',
       min: DMX_MIN_VALUE,
       max: DMX_MAX_VALUE,
     }

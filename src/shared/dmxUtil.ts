@@ -132,13 +132,6 @@ export function getDmxValue(
       } else {
         return DMX_DEFAULT_VALUE
       }
-    case 'mode':
-      const modeParam = params.mode
-      if (modeParam === undefined) {
-        return DMX_DEFAULT_VALUE
-      } else {
-        return rLerp(ch, modeParam)
-      }
     case 'custom':
       const customParam = params[ch.name]
       if (customParam === undefined) {
