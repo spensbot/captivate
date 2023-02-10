@@ -232,7 +232,7 @@ function getInfo({ ch }: Props3): string {
 function getSubInfo({ ch }: Props3): string | null {
   switch (ch.type) {
     case 'axis':
-      return `${ch.min} - ${ch.max}`
+      return ch.isFine ? 'fine' : `${ch.min} - ${ch.max}`
     case 'colorMap':
       return `${ch.colors.length} colors`
     case 'other':
@@ -377,10 +377,24 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
             }
           />
         </Row>
-        <Sp2 />
-        {dmxNumberField(ch, 'min', 'Min')}
-        <Sp2 />
-        {dmxNumberField(ch, 'max', 'Max')}
+        <Checkbox
+          label="Fine"
+          checked={ch.isFine}
+          onChange={(isFine) =>
+            updateChannel({
+              ...ch,
+              isFine,
+            })
+          }
+        />
+        {!ch.isFine && (
+          <>
+            <Sp2 />
+            {dmxNumberField(ch, 'min', 'Min')}
+            <Sp2 />
+            {dmxNumberField(ch, 'max', 'Max')}
+          </>
+        )}
       </>
     )
   } else if (ch.type === 'colorMap') {

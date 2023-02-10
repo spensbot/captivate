@@ -50,6 +50,7 @@ export function calculateDmx(
               channel,
               _outputParams,
               fixture,
+              fixtureType,
               state.control.master,
               _randomizerState[universeIndex].level
             )

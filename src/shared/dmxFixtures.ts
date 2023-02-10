@@ -36,9 +36,10 @@ type ChannelOther = {
   default: DmxValue
 }
 
-type ChannelAxis = {
+export type ChannelAxis = {
   type: 'axis'
   dir: AxisDir
+  isFine: boolean
   min: DmxValue
   max: DmxValue
 }
@@ -107,7 +108,7 @@ export function initFixtureChannel(
   } else if (type === 'other') {
     return {
       type: type,
-      default: 0,
+      default: DMX_MIN_VALUE,
     }
   } else if (type === 'strobe') {
     return {
@@ -119,7 +120,8 @@ export function initFixtureChannel(
     return {
       type: type,
       dir: 'x',
-      min: 1,
+      isFine: false,
+      min: DMX_MIN_VALUE,
       max: DMX_MAX_VALUE,
     }
   } else if (type === 'colorMap') {

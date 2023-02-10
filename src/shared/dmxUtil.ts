@@ -7,9 +7,13 @@ import {
   Fixture,
   Universe,
   DMX_DEFAULT_VALUE,
+  ChannelAxis,
+  FixtureType,
+  AxisDir,
+  DMX_MIN_VALUE,
 } from './dmxFixtures'
 import { Params } from './params'
-import { lerp } from '../math/util'
+import { lerp, Normalized } from '../math/util'
 import { rLerp } from '../math/range'
 import { LightScene_t } from 'shared/Scenes'
 
@@ -33,7 +37,10 @@ function getWindowMultiplier(fixtureWindow?: Window, movingWindow?: Window) {
 }
 
 // Value and MirrorAmount should be normalized (0 - 1)
-export function applyMirror(value: number, mirrorAmount: number | undefined) {
+export function applyMirror(
+  value: Normalized,
+  mirrorAmount: Normalized | undefined
+) {
   if (mirrorAmount === undefined) {
     mirrorAmount = 0
   }
@@ -47,6 +54,7 @@ export function getDmxValue(
   ch: FixtureChannel,
   params: Params,
   fixture: Fixture,
+  fixture_type: FixtureType,
   master: number,
   randomizerLevel: number
 ): DmxValue {
@@ -81,17 +89,22 @@ export function getDmxValue(
         ? ch.default_strobe
         : ch.default_solid
     case 'axis':
-      if (ch.dir === 'x' && params.xAxis !== undefined) {
-        const fixtureXPos = fixture.window?.x?.pos ?? 0
-        const xAxis =
-          fixtureXPos < 0.5
-            ? params.xAxis
-            : applyMirror(params.xAxis, params.xMirror)
-        return rLerp(ch, xAxis)
-      } else if (ch.dir === 'y' && params.yAxis !== undefined) {
-        return rLerp(ch, params.yAxis)
+      if (ch.dir === 'x') {
+        return calculate_axis_channel(
+          ch,
+          params.xAxis,
+          fixture.window?.x?.pos,
+          params.xMirror,
+          fixture_type
+        )
       } else {
-        return 0
+        return calculate_axis_channel(
+          ch,
+          params.yAxis,
+          fixture.window?.y?.pos,
+          undefined, // No y-mirroring yet
+          fixture_type
+        )
       }
     case 'colorMap':
       const _colors = ch.colors
@@ -209,4 +222,45 @@ export function getSortedGroups(universe: Universe) {
     groupSet.add(fixture.group)
   }
   return Array.from(groupSet.keys()).sort((a, b) => (a > b ? 1 : -1))
+}
+
+function calculate_axis_channel(
+  ch: ChannelAxis,
+  axis_param: Normalized | undefined,
+  fixture_position: Normalized | undefined,
+  mirror_param: Normalized | undefined,
+  fixture_type: FixtureType
+) {
+  if (axis_param === undefined) return 0
+
+  let mirrored_param =
+    fixture_position && fixture_position > 0.5
+      ? applyMirror(axis_param, mirror_param)
+      : axis_param
+
+  if (ch.isFine) {
+    const step_count = axis_range(fixture_type, ch.dir)
+    const step_delta = 1 / step_count
+    let remainder = mirrored_param % step_delta
+    let remainder_ratio = remainder / step_delta
+
+    console.log(
+      `fine: steps: ${step_count} delta: ${step_delta} remainder: ${remainder} val: ${
+        remainder_ratio * DMX_MAX_VALUE
+      }`
+    )
+
+    return remainder_ratio * DMX_MAX_VALUE
+  } else {
+    console.log(`Coarse: ${Math.floor(rLerp(ch, mirrored_param))}`)
+    return Math.floor(rLerp(ch, mirrored_param))
+  }
+}
+
+function axis_range(fixture_type: FixtureType, dir: AxisDir) {
+  for (const ch of fixture_type.channels) {
+    if (ch.type === 'axis' && ch.dir === dir && !ch.isFine)
+      return ch.max - ch.min
+  }
+  return DMX_MAX_VALUE - DMX_MIN_VALUE
 }
