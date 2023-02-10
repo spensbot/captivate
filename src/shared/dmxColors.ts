@@ -55,7 +55,11 @@ export function hsi2rgb(h: Normalized, s: Normalized, i: Normalized): RGB {
 }
 
 export function getColors(params: Params): Colors {
-  const [r, g, b] = hsv2rgb(params.hue ?? 0, params.saturation ?? 0, 1.0)
+  const [r, g, b] = hsv2rgb(
+    params.hue ?? 0,
+    params.saturation ?? 0,
+    params.brightness ?? 0
+  )
 
   return {
     red: r,
