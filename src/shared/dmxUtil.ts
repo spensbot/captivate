@@ -243,16 +243,8 @@ function calculate_axis_channel(
     const step_delta = 1 / step_count
     let remainder = mirrored_param % step_delta
     let remainder_ratio = remainder / step_delta
-
-    console.log(
-      `fine: steps: ${step_count} delta: ${step_delta} remainder: ${remainder} val: ${
-        remainder_ratio * DMX_MAX_VALUE
-      }`
-    )
-
     return remainder_ratio * DMX_MAX_VALUE
   } else {
-    console.log(`Coarse: ${Math.floor(rLerp(ch, mirrored_param))}`)
     return Math.floor(rLerp(ch, mirrored_param))
   }
 }
