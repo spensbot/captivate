@@ -9,6 +9,7 @@ type Deprecated_ChannelMode = {
 
 // Modify this function to fix any breaking state changes between upgrades
 export default function fixState(state: CleanReduxState): CleanReduxState {
+  // Swtich old mode channels to new custom channel
   for (const fixture of fixtureTypes(state)) {
     for (let i = 0; i < fixture.channels.length; i++) {
       let channel = fixture.channels[i] as
@@ -25,6 +26,13 @@ export default function fixState(state: CleanReduxState): CleanReduxState {
         }
         fixture.channels[i] = newChannel
       }
+    }
+  }
+
+  // Add subfixtures to all fixtures
+  for (const fixture of fixtureTypes(state)) {
+    if (fixture.subFixtures === undefined) {
+      fixture.subFixtures = []
     }
   }
 

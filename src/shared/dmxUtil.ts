@@ -11,6 +11,7 @@ import {
   FixtureType,
   AxisDir,
   DMX_MIN_VALUE,
+  FlattenedFixture,
 } from './dmxFixtures'
 import { Params } from './params'
 import { lerp, Normalized } from '../math/util'
@@ -53,8 +54,7 @@ export function applyMirror(
 export function getDmxValue(
   ch: FixtureChannel,
   params: Params,
-  fixture: Fixture,
-  fixture_type: FixtureType,
+  fixture: FlattenedFixture,
   master: number,
   randomizerLevel: number
 ): DmxValue {
@@ -95,7 +95,7 @@ export function getDmxValue(
           params.xAxis,
           fixture.window?.x?.pos,
           params.xMirror,
-          fixture_type
+          fixture
         )
       } else {
         return calculate_axis_channel(
@@ -103,7 +103,7 @@ export function getDmxValue(
           params.yAxis,
           fixture.window?.y?.pos,
           undefined, // No y-mirroring yet
-          fixture_type
+          fixture
         )
       }
     case 'colorMap':
@@ -168,27 +168,13 @@ export function applyRandomization(
 ) {
   return lerp(value, value * randomizerLevel, randomizationAmount)
 }
-export interface UniverseFixture {
-  fixture: Fixture
-  universeIndex: number
-}
 
-export function getFixturesWithIndexes(universe: Universe): UniverseFixture[] {
-  return universe.map((fixture, universeIndex) => ({ fixture, universeIndex }))
-}
-
-export function getFixturesNotInGroups(
-  universe: Universe,
-  groups: Set<string>
+export function getFixturesInGroups(
+  fixtures: FlattenedFixture[],
+  groups: string[]
 ) {
-  return getFixturesWithIndexes(universe).filter(
-    ({ fixture }) => !groups.has(fixture.group)
-  )
-}
-
-export function getFixturesInGroups(universe: Universe, groups: string[]) {
-  return getFixturesWithIndexes(universe).filter(({ fixture }) =>
-    groups.includes(fixture.group)
+  return fixtures.filter(
+    (fixture) => fixture.groups.find((g) => groups.includes(g)) !== undefined
   )
 }
 
@@ -222,7 +208,7 @@ function calculate_axis_channel(
   axis_param: Normalized | undefined,
   fixture_position: Normalized | undefined,
   mirror_param: Normalized | undefined,
-  fixture_type: FixtureType
+  fixture: FlattenedFixture
 ) {
   if (axis_param === undefined) return 0
 
@@ -232,7 +218,7 @@ function calculate_axis_channel(
       : axis_param
 
   if (ch.isFine) {
-    const step_count = axis_range(fixture_type, ch.dir)
+    const step_count = axis_range(fixture, ch.dir)
     const step_delta = 1 / step_count
     let remainder = mirrored_param % step_delta
     let remainder_ratio = remainder / step_delta
@@ -242,10 +228,53 @@ function calculate_axis_channel(
   }
 }
 
-function axis_range(fixture_type: FixtureType, dir: AxisDir) {
-  for (const ch of fixture_type.channels) {
+function axis_range(fixture: FlattenedFixture, dir: AxisDir) {
+  for (const [_channel_num, ch] of fixture.channels) {
     if (ch.type === 'axis' && ch.dir === dir && !ch.isFine)
       return ch.max - ch.min
   }
   return DMX_MAX_VALUE - DMX_MIN_VALUE
+}
+
+export function flatten_fixture(
+  fixture: Fixture,
+  fixture_type: FixtureType,
+  base_channel: number // DMX Channel assigned to the fixture
+): FlattenedFixture[] {
+  let subfixture_ch_indexes: Set<number> = new Set()
+
+  let flattened: FlattenedFixture[] = fixture_type.subFixtures.map((sub) => {
+    return {
+      intensity: sub.intensity ?? fixture_type.intensity,
+      window: sub.relative_window ?? fixture.window,
+      channels: sub.channels.map((ch_index) => {
+        subfixture_ch_indexes.add(ch_index)
+        return [base_channel + ch_index, fixture_type.channels[ch_index]]
+      }),
+      groups: [fixture.group],
+    }
+  })
+
+  flattened.push({
+    intensity: fixture_type.intensity,
+    window: fixture.window,
+    channels: fixture_type.channels
+      .map((ch, ch_index) => {
+        return [ch_index, ch] as [number, FixtureChannel]
+      })
+      .filter(([ch_index]) => !subfixture_ch_indexes.has(ch_index))
+      .map(([ch_index, ch]) => [base_channel + ch_index, ch]),
+    groups: [fixture.group],
+  })
+
+  return flattened
+}
+
+export function flatten_fixtures(
+  universe: Universe,
+  fixture_types_by_id: { [id: string]: FixtureType }
+): FlattenedFixture[] {
+  return universe
+    .map((f) => flatten_fixture(f, fixture_types_by_id[f.type], f.ch))
+    .flat(1)
 }
