@@ -280,11 +280,7 @@ export const scenesSlice = createSlice({
     ) => {
       const { splitIndex, modIndex, param, value } = payload
       modifyActiveLightScene(state, (scene) => {
-        if (splitIndex === null) {
-          scene.modulators[modIndex].modulation[param] = value
-        } else {
-          scene.modulators[modIndex].splitModulations[splitIndex][param] = value
-        }
+        scene.modulators[modIndex].splitModulations[splitIndex][param] = value
       })
     },
     setBaseParams: (
@@ -314,10 +310,7 @@ export const scenesSlice = createSlice({
 
           // Now remove the params from any modulators
           scene.modulators.forEach((modulator) => {
-            const modulation =
-              splitIndex === null
-                ? modulator.modulation
-                : modulator.splitModulations[splitIndex]
+            const modulation = modulator.splitModulations[splitIndex]
             delete modulation[param]
           })
         })

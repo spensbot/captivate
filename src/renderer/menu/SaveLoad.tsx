@@ -9,7 +9,7 @@ import Popup from 'renderer/base/Popup'
 import { Button, Checkbox } from '@mui/material'
 import {
   SaveState,
-  fixState,
+  fixSaveState,
   SaveConfig,
   saveTypes,
   displaySaveType,
@@ -23,7 +23,7 @@ export async function load() {
     captivateFileFilters.captivate,
   ])
   const saveState: SaveState = JSON.parse(serializedSaveState)
-  fixState(saveState)
+  fixSaveState(saveState)
   return saveState
 }
 

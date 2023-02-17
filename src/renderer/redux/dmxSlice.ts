@@ -167,6 +167,7 @@ export const dmxSlice = createSlice({
     },
     setEditedFixture: (state, { payload }: PayloadAction<null | string>) => {
       state.activeFixtureType = payload
+      state.activeSubFixture = null
     },
     addFixtureType: (state, { payload }: PayloadAction<FixtureType>) => {
       state.fixtureTypes.push(payload.id)

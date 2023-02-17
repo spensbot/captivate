@@ -256,14 +256,9 @@ export function useBaseParams(splitIndex: number): Params {
 export function useModParam(
   param: DefaultParam | string,
   modIndex: number,
-  splitIndex: number | null
+  splitIndex: number
 ) {
   return useActiveLightScene((scene) => {
-    const modulator = scene.modulators[modIndex]
-    if (splitIndex === null) {
-      return modulator.modulation[param]
-    } else {
-      return modulator.splitModulations[splitIndex][param]
-    }
+    return scene.modulators[modIndex].splitModulations[splitIndex][param]
   })
 }

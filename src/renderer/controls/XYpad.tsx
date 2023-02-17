@@ -64,7 +64,7 @@ export default function XYpad({ splitIndex }: Props) {
     </Root>
   )
 
-  return splitIndex === null ? (
+  return splitIndex === 0 ? (
     <MidiOverlay_xy
       style={{ marginRight: '1rem' }}
       actions={[

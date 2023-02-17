@@ -6,17 +6,15 @@ import { defaultOutputParams } from './params'
 
 export interface Modulator {
   lfo: Lfo
-  modulation: Modulation
   splitModulations: Modulation[]
 }
 
 export function initModulator(splitCount: number): Modulator {
   return {
     lfo: GetRamp(),
-    modulation: initModulation(),
     splitModulations: Array(splitCount)
       .fill(0)
-      .map(() => ({})),
+      .map(() => initModulation()),
   }
 }
 
@@ -33,16 +31,10 @@ export function getOutputParams(
 ) {
   const outputParams = defaultOutputParams()
   const baseParams = scene.splitScenes[splitIndex].baseParams
-  const snapshots: ModSnapshot[] =
-    splitIndex === null
-      ? scene.modulators.map((modulator) => ({
-          modulation: modulator.modulation,
-          lfoVal: GetValue(modulator.lfo, beats),
-        }))
-      : scene.modulators.map((modulator) => ({
-          modulation: modulator.splitModulations[splitIndex],
-          lfoVal: GetValue(modulator.lfo, beats),
-        }))
+  const snapshots: ModSnapshot[] = scene.modulators.map((modulator) => ({
+    modulation: modulator.splitModulations[splitIndex],
+    lfoVal: GetValue(modulator.lfo, beats),
+  }))
 
   allParamKeys.forEach((param) => {
     outputParams[param] = getOutputParam(baseParams[param], param, snapshots)

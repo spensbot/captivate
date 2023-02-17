@@ -63,7 +63,7 @@ export default function ParamSlider({ param, splitIndex }: Props) {
     marginRight: '1rem',
   }
 
-  return splitIndex === null ? (
+  return splitIndex === 0 ? (
     <SliderMidiOverlay
       action={{ type: 'setBaseParam', paramKey: param }}
       style={wrapperStyle}
