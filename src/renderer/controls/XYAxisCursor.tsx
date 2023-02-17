@@ -3,7 +3,7 @@ import Cursor from '../base/Cursor'
 import { applyMirror } from 'shared/dmxUtil'
 
 interface Props {
-  splitIndex: number | null
+  splitIndex: number
 }
 
 export default function XYAxisCursor({ splitIndex }: Props) {

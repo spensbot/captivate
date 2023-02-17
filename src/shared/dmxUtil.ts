@@ -16,7 +16,6 @@ import {
 import { Params } from './params'
 import { lerp, Normalized } from '../math/util'
 import { rLerp } from '../math/range'
-import { LightScene_t } from 'shared/Scenes'
 
 function getWindowMultiplier2D(
   fixtureWindow: Window2D_t,
@@ -173,32 +172,50 @@ export function getFixturesInGroups(
   fixtures: FlattenedFixture[],
   groups: string[]
 ) {
-  return fixtures.filter(
-    (fixture) => fixture.groups.find((g) => groups.includes(g)) !== undefined
-  )
+  return groups.length === 0
+    ? fixtures
+    : fixtures.filter(
+        (fixture) =>
+          fixture.groups.find((g) => groups.includes(g)) !== undefined
+      )
 }
 
-export function getMainGroups(
-  activeScene: LightScene_t,
-  all_groups: string[]
-): string[] {
-  let splitSceneGroups = getAllSplitSceneGroups(activeScene)
-  return all_groups.filter((group) => !splitSceneGroups.has(group))
+export function getSortedGroupsForFixture(
+  fixture: Fixture,
+  fixtureType: FixtureType
+) {
+  const groupSet: Set<string> = new Set()
+  for (const group of fixture.groups) {
+    groupSet.add(group)
+  }
+  for (const group of fixtureType.groups) {
+    groupSet.add(group)
+  }
+  return Array.from(groupSet.keys()).sort((a, b) => (a > b ? 1 : -1))
 }
 
-function getAllSplitSceneGroups(activeScene: LightScene_t) {
-  return activeScene.splitScenes.reduce<Set<string>>((accum, splitScene) => {
-    for (const group of splitScene.groups) {
-      accum.add(group)
-    }
-    return accum
-  }, new Set())
+export function getSortedGroupsForFixtureType(fixtureType: FixtureType) {
+  return fixtureType.groups.sort((a, b) => (a > b ? 1 : -1))
 }
 
-export function getSortedGroups(universe: Universe) {
+export function getSortedGroups(
+  universe: Universe,
+  fixtureTypesById: { [id: string]: FixtureType }
+) {
   const groupSet: Set<string> = new Set()
   for (const fixture of universe) {
-    groupSet.add(fixture.group)
+    for (const group of fixture.groups) {
+      groupSet.add(group)
+    }
+    const fixtureType = fixtureTypesById[fixture.type]
+    for (const group of fixtureType.groups) {
+      groupSet.add(group)
+    }
+    for (const sub of fixtureType.subFixtures) {
+      for (const group of sub.groups) {
+        groupSet.add(group)
+      }
+    }
   }
   return Array.from(groupSet.keys()).sort((a, b) => (a > b ? 1 : -1))
 }
@@ -243,6 +260,8 @@ export function flatten_fixture(
 ): FlattenedFixture[] {
   let subfixture_ch_indexes: Set<number> = new Set()
 
+  let groups = fixture.groups.concat(fixture_type.groups)
+
   let flattened: FlattenedFixture[] = fixture_type.subFixtures.map((sub) => {
     return {
       intensity: sub.intensity ?? fixture_type.intensity,
@@ -251,7 +270,7 @@ export function flatten_fixture(
         subfixture_ch_indexes.add(ch_index)
         return [base_channel + ch_index, fixture_type.channels[ch_index]]
       }),
-      groups: [fixture.group],
+      groups: groups.concat(sub.groups),
     }
   })
 
@@ -264,7 +283,7 @@ export function flatten_fixture(
       })
       .filter(([ch_index]) => !subfixture_ch_indexes.has(ch_index))
       .map(([ch_index, ch]) => [base_channel + ch_index, ch]),
-    groups: [fixture.group],
+    groups,
   })
 
   return flattened

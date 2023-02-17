@@ -28,14 +28,11 @@ interface ModSnapshot {
 export function getOutputParams(
   beats: number,
   scene: LightScene_t,
-  splitIndex: number | null,
+  splitIndex: number,
   allParamKeys: string[]
 ) {
   const outputParams = defaultOutputParams()
-  const baseParams =
-    splitIndex === null
-      ? scene.baseParams
-      : scene.splitScenes[splitIndex].baseParams
+  const baseParams = scene.splitScenes[splitIndex].baseParams
   const snapshots: ModSnapshot[] =
     splitIndex === null
       ? scene.modulators.map((modulator) => ({

@@ -21,7 +21,8 @@ export default function GroupSelection({ splitIndex }: Props) {
   const dispatch = useDispatch()
   const [isOpen, setIsOpen] = useState(false)
   const universe = useDmxSelector((dmx) => dmx.universe)
-  const availableGroups = getSortedGroups(universe)
+  const fixtureTypesById = useDmxSelector((dmx) => dmx.fixtureTypesByID)
+  const availableGroups = getSortedGroups(universe, fixtureTypesById)
   const activeGroups = useActiveLightScene(
     (scene) => scene.splitScenes[splitIndex].groups
   )
@@ -30,17 +31,19 @@ export default function GroupSelection({ splitIndex }: Props) {
 
   return (
     <Root>
-      <IconButton
-        size="small"
-        onClick={(e) => {
-          e.preventDefault()
-          dispatch(removeSplitSceneByIndex(splitIndex))
-        }}
-      >
-        <RemoveIcon />
-      </IconButton>
+      {splitIndex > 0 && (
+        <IconButton
+          size="small"
+          onClick={(e) => {
+            e.preventDefault()
+            dispatch(removeSplitSceneByIndex(splitIndex))
+          }}
+        >
+          <RemoveIcon />
+        </IconButton>
+      )}
       <GroupName>
-        {activeGroups.length > 0 ? `${activeGroupsString}` : `none`}
+        {activeGroups.length > 0 ? `${activeGroupsString}` : `all`}
       </GroupName>
       <IconButton
         size="small"

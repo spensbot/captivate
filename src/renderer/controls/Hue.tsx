@@ -3,7 +3,7 @@ import { useDispatch } from 'react-redux'
 import { setBaseParams } from '../redux/controlSlice'
 
 interface Props {
-  splitIndex: number | null
+  splitIndex: number
 }
 
 export default function Hue({ splitIndex }: Props) {

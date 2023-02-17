@@ -53,7 +53,7 @@ export default class VisualizerManager {
     const layerConfig = visualScene.config
     const stuff = {
       dt: Math.min(dt, MAX_DT),
-      params: res.rt.outputParams,
+      params: res.rt.splitScenes[0].outputParams,
       time: res.rt.time,
       scene: control.light.byId[control.light.active],
       master: control.master,

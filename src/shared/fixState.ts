@@ -1,10 +1,18 @@
 import { CleanReduxState } from '../renderer/redux/store'
 import { DmxValue, FixtureChannel } from './dmxFixtures'
+import { Params } from './params'
+import { RandomizerOptions } from './randomizer'
+import { LightScene_t, SplitScene_t } from './Scenes'
 
 type Deprecated_ChannelMode = {
   type: 'mode'
   min: DmxValue
   max: DmxValue
+}
+
+interface Deprecated_LightScene_t extends LightScene_t {
+  baseParams?: Params
+  randomizer?: RandomizerOptions
 }
 
 // Modify this function to fix any breaking state changes between upgrades
@@ -33,6 +41,36 @@ export default function fixState(state: CleanReduxState): CleanReduxState {
   for (const fixture of fixtureTypes(state)) {
     if (fixture.subFixtures === undefined) {
       fixture.subFixtures = []
+    }
+  }
+
+  // Add groups
+  for (const fixtureType of fixtureTypes(state)) {
+    if (!Array.isArray(fixtureType.groups)) {
+      fixtureType.groups = []
+    }
+  }
+  for (const fixture of state.dmx.universe) {
+    if (!Array.isArray(fixture.groups)) {
+      fixture.groups = []
+    }
+  }
+
+  // Move deprecated main scene to split scenes
+  for (const lightScene of lightScenes(state)) {
+    const _lightScene = lightScene as Deprecated_LightScene_t
+    if (
+      _lightScene.baseParams !== undefined &&
+      _lightScene.randomizer !== undefined
+    ) {
+      const oldMainScene: SplitScene_t = {
+        baseParams: _lightScene.baseParams,
+        randomizer: _lightScene.randomizer,
+        groups: [],
+      }
+      delete _lightScene.baseParams
+      delete _lightScene.randomizer
+      lightScene.splitScenes.unshift(oldMainScene)
     }
   }
 

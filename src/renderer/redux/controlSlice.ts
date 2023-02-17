@@ -46,7 +46,7 @@ interface IncrementModulatorPayload {
 }
 
 interface SetModulationPayload {
-  splitIndex: number | null
+  splitIndex: number
   modIndex: number
   param: DefaultParam | string
   value: number | undefined
@@ -89,7 +89,7 @@ type ScopedAction<T> = PayloadAction<{
 }>
 
 type ParamsAction = PayloadAction<{
-  splitIndex: number | null
+  splitIndex: number
   params: Params
 }>
 
@@ -293,10 +293,7 @@ export const scenesSlice = createSlice({
     ) => {
       for (let [key, value] of Object.entries(params)) {
         modifyActiveLightScene(state, (scene) => {
-          const baseParams =
-            splitIndex === null
-              ? scene.baseParams
-              : scene.splitScenes[splitIndex].baseParams
+          const baseParams = scene.splitScenes[splitIndex].baseParams
           baseParams[key] = value
         })
       }
@@ -306,16 +303,13 @@ export const scenesSlice = createSlice({
       {
         payload: { params, splitIndex },
       }: PayloadAction<{
-        splitIndex: number | null
+        splitIndex: number
         params: readonly (DefaultParam | string)[]
       }>
     ) => {
       for (const param of params) {
         modifyActiveLightScene(state, (scene) => {
-          const baseParams =
-            splitIndex === null
-              ? scene.baseParams
-              : scene.splitScenes[splitIndex].baseParams
+          const baseParams = scene.splitScenes[splitIndex].baseParams
           delete baseParams[param]
 
           // Now remove the params from any modulators
@@ -336,10 +330,7 @@ export const scenesSlice = createSlice({
       for (let [key, amount] of Object.entries(params)) {
         modifyActiveLightScene(state, (scene) => {
           if (amount !== undefined) {
-            const baseParams =
-              splitIndex === null
-                ? scene.baseParams
-                : scene.splitScenes[splitIndex].baseParams
+            const baseParams = scene.splitScenes[splitIndex].baseParams
             const currentVal = baseParams[key as DefaultParam]
             if (currentVal !== undefined) {
               baseParams[key as DefaultParam] = clampNormalized(
@@ -357,15 +348,11 @@ export const scenesSlice = createSlice({
       }: PayloadAction<{
         key: keyof RandomizerOptions
         value: number
-        splitIndex: number | null
+        splitIndex: number
       }>
     ) => {
       modifyActiveLightScene(state, (scene) => {
-        if (splitIndex === null) {
-          scene.randomizer[key] = value
-        } else {
-          scene.splitScenes[splitIndex].randomizer[key] = value
-        }
+        scene.splitScenes[splitIndex].randomizer[key] = value
       })
     },
     addSplitScene: (state, {}: PayloadAction<undefined>) => {

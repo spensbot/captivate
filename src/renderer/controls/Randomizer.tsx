@@ -10,16 +10,12 @@ import ParamXButton from './ParamXButton'
 import ParamSlider from './ParamSlider'
 
 interface Props {
-  splitIndex: number | null
+  splitIndex: number
 }
 
 export default function Randomizer({ splitIndex }: Props) {
   const { triggerPeriod, triggerDensity } = useActiveLightScene((scene) => {
-    if (splitIndex === null) {
-      return scene.randomizer
-    } else {
-      return scene.splitScenes[splitIndex].randomizer
-    }
+    return scene.splitScenes[splitIndex].randomizer
   })
   const dispatch = useDispatch()
   const randomize = useBaseParam('randomize', splitIndex)

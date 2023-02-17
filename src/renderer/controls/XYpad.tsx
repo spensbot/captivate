@@ -11,7 +11,7 @@ import { paramBundles } from './ParamAddButton'
 import { secondaryEnabled } from 'renderer/base/keyUtil'
 
 interface Props {
-  splitIndex: number | null
+  splitIndex: number
 }
 
 export default function XYpad({ splitIndex }: Props) {

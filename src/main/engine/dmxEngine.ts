@@ -9,9 +9,7 @@ import { RandomizerState } from '../../shared/randomizer'
 import { CleanReduxState } from '../../renderer/redux/store'
 import {
   getDmxValue,
-  getMainGroups,
   getFixturesInGroups,
-  getSortedGroups,
   flatten_fixtures,
 } from '../../shared/dmxUtil'
 import { indexArray } from '../../shared/util'
@@ -19,7 +17,6 @@ import { TimeState } from '../../shared/TimeState'
 
 export function calculateDmx(
   state: CleanReduxState,
-  outputParams: Params,
   randomizerState: RandomizerState,
   splitScenes: { outputParams: Params }[],
   timeState: TimeState
@@ -40,11 +37,13 @@ export function calculateDmx(
     ) => {
       _fixtures.forEach((fixture) => {
         fixture.channels.forEach(([outputChannel, channelType]) => {
+          let new_channel_value = DMX_DEFAULT_VALUE
+          let current_channel_value = channels[outputChannel - 1]
           if (
             _outputParams.intensity !== undefined &&
             _outputParams.intensity >= fixture.intensity
           ) {
-            let dmxOut = getDmxValue(
+            new_channel_value = getDmxValue(
               channelType,
               _outputParams,
               fixture,
@@ -52,20 +51,14 @@ export function calculateDmx(
               // TODO: Fix randomizer now that we have subfixtures
               1.0 // _randomizerState[universeIndex].level
             )
-            channels[outputChannel - 1] = dmxOut
-          } else {
-            channels[outputChannel - 1] = DMX_DEFAULT_VALUE
           }
+          channels[outputChannel - 1] = Math.max(
+            new_channel_value,
+            current_channel_value
+          )
         })
       })
     }
-
-    const groups = getSortedGroups(state.dmx.universe)
-
-    const mainGroups = getMainGroups(activeScene, groups)
-    const mainSceneFixtures = getFixturesInGroups(fixtures, mainGroups)
-
-    applyFixtures(mainSceneFixtures, outputParams, randomizerState)
 
     splitScenes.forEach((split, i) => {
       const splitGroups = activeScene.splitScenes[i]?.groups ?? []

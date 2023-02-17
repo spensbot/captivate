@@ -4,7 +4,7 @@ import { useDispatch } from 'react-redux'
 import { deleteBaseParams } from 'renderer/redux/controlSlice'
 
 interface Props {
-  splitIndex: number | null
+  splitIndex: number
   params: readonly (DefaultParam | string)[]
 }
 

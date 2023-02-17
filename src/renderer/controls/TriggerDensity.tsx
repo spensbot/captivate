@@ -1,17 +1,17 @@
 import styled from 'styled-components'
-import { useActiveLightScene, useDmxSelector } from '../redux/store'
-import { useRealtimeSelector } from 'renderer/redux/realtimeStore'
-import {
-  getMainGroups,
-  getFixturesInGroups,
-  getSortedGroups,
-} from 'shared/dmxUtil'
+// import { useActiveLightScene, useDmxSelector } from '../redux/store'
+// import { useRealtimeSelector } from 'renderer/redux/realtimeStore'
+// import {
+//   getMainGroups,
+//   getFixturesInGroups,
+//   getSortedGroups,
+// } from 'shared/dmxUtil'
 
 interface Props {
-  splitIndex: number | null
+  splitIndex: number
 }
 
-const gapRatio = 0.5
+// const gapRatio = 0.5
 
 export default function TriggerDensity({ splitIndex }: Props) {
   return (
@@ -26,7 +26,7 @@ const Root = styled.div`
   padding: 0.3rem;
 `
 
-function Visualizer({ splitIndex }: Props) {
+function Visualizer({}: Props) {
   // const { universe, fixtureTypesByID } = useDmxSelector((dmx) => dmx)
   // const activeLightScene = useActiveLightScene((scene) => scene)
   // const { randomizer, outputParams, splitScenes } = useRealtimeSelector(
@@ -85,12 +85,12 @@ const VRoot = styled.div`
   height: 100%;
 `
 
-const Div = styled.div`
-  flex: 1 0 0;
-  background-color: #555;
-`
+// const Div = styled.div`
+//   flex: 1 0 0;
+//   background-color: #555;
+// `
 
-const Gap = styled.div`
-  flex: ${gapRatio} 0 0;
-  max-width: 0.5rem;
-`
+// const Gap = styled.div`
+//   flex: ${gapRatio} 0 0;
+//   max-width: 0.5rem;
+// `

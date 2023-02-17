@@ -6,7 +6,7 @@ interface Props {
   param: DefaultParam | string
   radius: number
   orientation: 'vertical' | 'horizontal'
-  splitIndex: number | null
+  splitIndex: number
 }
 
 export default function ParamCursor({

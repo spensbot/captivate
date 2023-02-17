@@ -16,7 +16,6 @@ import { VisualScene_t, SceneType } from '../../shared/Scenes'
 import { DefaultParam, Params } from '../../shared/params'
 import { SaveInfo } from 'shared/save'
 import eventLogger from './eventLogger'
-import { FixtureType } from 'shared/dmxFixtures'
 
 export interface UndoActionTypes {
   undo: string
@@ -239,21 +238,17 @@ export function useDeviceSelector<T>(getVal: (midi: DeviceState) => T) {
 
 export function useBaseParam(
   param: DefaultParam | string,
-  splitIndex: number | null
+  splitIndex: number
 ): number | undefined {
   const baseParam = useActiveLightScene((state) => {
-    return splitIndex === null
-      ? state.baseParams[param]
-      : state.splitScenes[splitIndex].baseParams[param]
+    return state.splitScenes[splitIndex].baseParams[param]
   })
   return baseParam
 }
 
-export function useBaseParams(splitIndex: number | null): Params {
+export function useBaseParams(splitIndex: number): Params {
   const baseParams = useActiveLightScene((state) => {
-    return splitIndex === null
-      ? state.baseParams
-      : state.splitScenes[splitIndex].baseParams
+    return state.splitScenes[splitIndex].baseParams
   })
   return baseParams
 }

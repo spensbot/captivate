@@ -82,6 +82,18 @@ function modifyActiveFixtureType(
   }
 }
 
+function add_noDuplicates<T>(t: T, ts: T[]): T[] {
+  const set = new Set(ts)
+  set.add(t)
+  return Array.from(set)
+}
+
+function remove_noDuplicates<T>(t: T, ts: T[]): T[] {
+  const set = new Set(ts)
+  set.delete(t)
+  return Array.from(set)
+}
+
 export const dmxSlice = createSlice({
   name: 'dmx',
   initialState: initDmxState(),
@@ -138,28 +150,20 @@ export const dmxSlice = createSlice({
         window.y.width = clampNormalized(window.y.width + payload.dHeight)
       }
     },
-    setGroupForActiveFixture: (state, { payload }: PayloadAction<string>) => {
-      const i = state.activeFixture
-      if (i === null) {
-        console.error('active fixture index === null')
-        return
-      }
-      if (state.universe[i] === undefined) {
-        console.warn('active fixture === null')
-        return
-      }
-      state.universe[i].group = payload
+    addActiveFixtureTypeGroup: (state, { payload }: PayloadAction<string>) => {
+      modifyActiveFixtureType(
+        state,
+        (ft) => (ft.groups = add_noDuplicates(payload, ft.groups))
+      )
     },
-    setGroupForAllFixturesOfActiveType: (
+    removeActiveFixtureTypeGroup: (
       state,
       { payload }: PayloadAction<string>
     ) => {
-      const activeType = state.activeFixtureType
-      for (const fixture of state.universe) {
-        if (fixture.type === activeType) {
-          fixture.group = payload
-        }
-      }
+      modifyActiveFixtureType(
+        state,
+        (ft) => (ft.groups = remove_noDuplicates(payload, ft.groups))
+      )
     },
     setEditedFixture: (state, { payload }: PayloadAction<null | string>) => {
       state.activeFixtureType = payload
@@ -315,8 +319,9 @@ export const dmxSlice = createSlice({
     ) => {
       modifyActiveFixtureType(state, (ft) => {
         for (const subFixture of ft.subFixtures) {
-          subFixture.channels = subFixture.channels.filter(
-            (ci) => ci !== channelIndex
+          subFixture.channels = remove_noDuplicates(
+            channelIndex,
+            subFixture.channels
           )
         }
 
@@ -333,8 +338,9 @@ export const dmxSlice = createSlice({
     ) => {
       modifyActiveFixtureType(state, (ft) => {
         for (const subFixture of ft.subFixtures) {
-          subFixture.channels = subFixture.channels.filter(
-            (ci) => ci !== channelIndex
+          subFixture.channels = remove_noDuplicates(
+            channelIndex,
+            subFixture.channels
           )
         }
       })
@@ -347,14 +353,14 @@ export const {
   setEditedFixture,
   setFixtureWindow,
   setFixtureWindowEnabled,
-  setGroupForActiveFixture,
-  setGroupForAllFixturesOfActiveType,
   incrementFixtureWindow,
   addFixture,
   removeFixture,
   addFixtureType,
   updateFixtureType,
   deleteFixtureType,
+  addActiveFixtureTypeGroup,
+  removeActiveFixtureTypeGroup,
   addFixtureChannel,
   editFixtureChannel,
   removeFixtureChannel,

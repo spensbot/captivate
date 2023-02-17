@@ -15,7 +15,7 @@ import { indexArray } from 'shared/util'
 import { getAllParamKeys } from 'renderer/redux/dmxSlice'
 
 interface Props {
-  splitIndex: number | null
+  splitIndex: number
   modIndex: number
   param: DefaultParam | string
 }
@@ -78,7 +78,6 @@ function AddModulation({ modIndex }: { modIndex: number }) {
 
   return (
     <AddModRoot>
-      <ParamsGroup splitIndex={null} modIndex={modIndex} />
       {indexArray(numSplits).map((splitIndex) => (
         <ParamsGroup splitIndex={splitIndex} modIndex={modIndex} />
       ))}
@@ -96,7 +95,7 @@ function ParamsGroup({
   splitIndex,
   modIndex,
 }: {
-  splitIndex: number | null
+  splitIndex: number
   modIndex: number
 }) {
   const baseParams = useBaseParams(splitIndex)
@@ -127,7 +126,7 @@ function ParamEditor({
   modIndex,
   param,
 }: {
-  splitIndex: number | null
+  splitIndex: number
   modIndex: number
   param: DefaultParam | string
 }) {

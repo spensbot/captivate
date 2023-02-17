@@ -9,7 +9,7 @@ import { useDmxSelector } from 'renderer/redux/store'
 import { getCustomChannels } from 'renderer/redux/dmxSlice'
 
 interface Params {
-  splitIndex: number | null
+  splitIndex: number
 }
 
 export default function ParamsControl({ splitIndex }: Params) {

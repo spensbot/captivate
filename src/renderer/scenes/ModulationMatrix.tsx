@@ -13,7 +13,6 @@ export default function ModulationMatrix({ index }: { index: number }) {
   const activeSceneId = useControlSelector((control) => control.light.active)
   return (
     <div>
-      <SplitSceneModulationMatrix modIndex={index} splitIndex={null} />
       {indexArray(numSplits).map((splitIndex) => (
         <SplitSceneModulationMatrix
           key={splitIndex + activeSceneId}
@@ -31,7 +30,7 @@ function SplitSceneModulationMatrix({
   splitIndex,
 }: {
   modIndex: number
-  splitIndex: number | null
+  splitIndex: number
 }) {
   const allParamKeys = useDmxSelector((dmx) => getAllParamKeys(dmx))
 

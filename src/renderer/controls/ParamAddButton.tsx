@@ -17,7 +17,7 @@ import ModeIcon from '@mui/icons-material/Category'
 import { getCustomChannels } from 'renderer/redux/dmxSlice'
 
 interface Props {
-  splitIndex: number | null
+  splitIndex: number
 }
 
 type ParamBundle = 'axis' | 'position'

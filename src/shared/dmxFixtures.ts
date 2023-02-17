@@ -150,6 +150,7 @@ export type FixtureType = {
   manufacturer?: string
   channels: FixtureChannel[]
   subFixtures: SubFixture[]
+  groups: string[]
 }
 
 export function initFixtureType(): FixtureType {
@@ -160,6 +161,7 @@ export function initFixtureType(): FixtureType {
     intensity: 0,
     channels: [],
     subFixtures: [],
+    groups: [],
   }
 }
 
@@ -167,7 +169,7 @@ export interface Fixture {
   ch: number
   type: string // FixtureType id
   window: Window2D_t
-  group: string
+  groups: string[]
 }
 
 export type Universe = Fixture[]
@@ -177,12 +179,14 @@ export type SubFixture = {
   intensity?: number
   channels: number[] // Channel indexes from the parent fixture
   relative_window?: Window2D_t
+  groups: string[]
 }
 
 export function initSubFixture(): SubFixture {
   return {
     name: 'Name',
     channels: [],
+    groups: [],
   }
 }
 

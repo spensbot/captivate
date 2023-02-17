@@ -5,11 +5,11 @@ import { SliderMidiOverlay } from '../base/MidiOverlay'
 import styled from 'styled-components'
 
 interface Props {
-  splitIndex: number | null
+  splitIndex: number
 }
 
 export default function HsvPad({ splitIndex }: Props) {
-  return splitIndex === null ? (
+  return splitIndex === 0 ? (
     <Root>
       <MidiOverlay_xy
         actions={[

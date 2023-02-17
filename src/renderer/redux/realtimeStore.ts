@@ -15,7 +15,6 @@ function initDmxOut(): number[] {
 }
 
 export interface RealtimeState {
-  outputParams: Params
   time: TimeState
   randomizer: RandomizerState
   dmxOut: number[]
@@ -24,7 +23,6 @@ export interface RealtimeState {
 
 export function initRealtimeState(): RealtimeState {
   return {
-    outputParams: defaultOutputParams(),
     time: initTimeState(),
     randomizer: initRandomizerState(),
     dmxOut: initDmxOut(),
@@ -71,12 +69,10 @@ export const useRealtimeDispatch = createDispatchHook(realtimeContext)
 
 export function useOutputParam(
   param: DefaultParam | string,
-  splitIndex: number | null
+  splitIndex: number
 ): number {
   const outputParam = useRealtimeSelector((state) => {
-    return splitIndex === null
-      ? state.outputParams[param]
-      : state.splitScenes[splitIndex]?.outputParams[param]
+    return state.splitScenes[splitIndex]?.outputParams[param]
   })
   if (outputParam === undefined) {
     console.error(
@@ -88,11 +84,9 @@ export function useOutputParam(
   }
 }
 
-export function useOutputParams(splitIndex: number | null): Params {
+export function useOutputParams(splitIndex: number): Params {
   const params = useRealtimeSelector((state) => {
-    return splitIndex === null
-      ? state.outputParams
-      : state.splitScenes[splitIndex]?.outputParams
+    return state.splitScenes[splitIndex]?.outputParams
   })
   if (params === undefined) {
     return defaultOutputParams()

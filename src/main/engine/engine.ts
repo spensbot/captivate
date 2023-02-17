@@ -9,7 +9,7 @@ import {
   initRealtimeState,
 } from '../../renderer/redux/realtimeStore'
 import { TimeState } from '../../shared/TimeState'
-import { resizeRandomizer, updateIndexes } from '../../shared/randomizer'
+import { resizeRandomizer } from '../../shared/randomizer'
 import { getOutputParams } from '../../shared/modulation'
 import { handleMessage } from './handleMidi'
 import openVisualizerWindow, {
@@ -19,12 +19,7 @@ import { calculateDmx } from './dmxEngine'
 import { handleAutoScene } from '../../shared/autoScene'
 import { setActiveScene } from '../../renderer/redux/controlSlice'
 import TapTempoEngine from './TapTempoEngine'
-import {
-  flatten_fixtures,
-  getFixturesInGroups,
-  getMainGroups,
-  getSortedGroups,
-} from '../../shared/dmxUtil'
+// import { flatten_fixtures, getFixturesInGroups } from '../../shared/dmxUtil'
 import { ThrottleMap } from './midiConnection'
 import { MidiMessage, midiInputID } from '../../shared/midi'
 import { getAllParamKeys } from '../../renderer/redux/dmxSlice'
@@ -193,13 +188,6 @@ function getNextRealtimeState(
     }
   )
 
-  const outputParams = getOutputParams(
-    nextTimeState.beats,
-    scene,
-    null,
-    allParamKeys
-  )
-
   let newRandomizerState = resizeRandomizer(
     realtimeState.randomizer,
     dmx.universe.length
@@ -222,7 +210,7 @@ function getNextRealtimeState(
   //   scene.randomizer
   // )
 
-  const fixtures = flatten_fixtures(dmx.universe, dmx.fixtureTypesByID)
+  // const fixtures = flatten_fixtures(dmx.universe, dmx.fixtureTypesByID)
 
   const splitScenes = scene.splitScenes.map((_split, splitIndex) => {
     const splitOutputParams = getOutputParams(
@@ -231,10 +219,10 @@ function getNextRealtimeState(
       splitIndex,
       allParamKeys
     )
-    let splitSceneFixtures = getFixturesInGroups(fixtures, _split.groups)
-    let splitSceneFixturesWithinEpicness = splitSceneFixtures.filter(
-      (fixture) => fixture.intensity <= (outputParams.intensity ?? 0)
-    )
+    // let splitSceneFixtures = getFixturesInGroups(fixtures, _split.groups)
+    // let splitSceneFixturesWithinEpicness = splitSceneFixtures.filter(
+    //   (fixture) => fixture.intensity <= (outputParams.intensity ?? 0)
+    // )
     // newRandomizerState = updateIndexes(
     //   realtimeState.time.beats,
     //   newRandomizerState,
@@ -250,12 +238,10 @@ function getNextRealtimeState(
   })
 
   return {
-    outputParams,
     time: nextTimeState,
     randomizer: newRandomizerState,
     dmxOut: calculateDmx(
       controlState,
-      outputParams,
       newRandomizerState,
       splitScenes,
       nextTimeState

@@ -6,35 +6,30 @@ import { useDmxSelector } from 'renderer/redux/store'
 import styled from 'styled-components'
 import Popup from '../base/Popup'
 import { useDispatch } from 'react-redux'
-import { setGroupForAllFixturesOfActiveType } from '../redux/dmxSlice'
+import { addActiveFixtureTypeGroup } from '../redux/dmxSlice'
 import { Button } from '@mui/material'
-import { getSortedGroups } from 'shared/dmxUtil'
+import { getSortedGroups, getSortedGroupsForFixtureType } from 'shared/dmxUtil'
 
 interface Props {}
 
-export default function EditGroup({}: Props) {
+export default function EditGroups({}: Props) {
   const dispatch = useDispatch()
   const [newGroup, setNewGroup] = useState('')
   const [isOpen, setIsOpen] = useState(false)
   const activeFixtureTypeID = useDmxSelector((dmx) => dmx.activeFixtureType)
   const universe = useDmxSelector((dmx) => dmx.universe)
+  const fixtureTypesById = useDmxSelector((dmx) => dmx.fixtureTypesByID)
   const fixtureGroupString = useDmxSelector((dmx) => {
-    const groupSet: Set<string> = new Set()
-    for (const fixture of dmx.universe) {
-      if (fixture.type === activeFixtureTypeID) {
-        groupSet.add(fixture.group)
-      }
+    if (activeFixtureTypeID !== null) {
+      const groups = getSortedGroupsForFixtureType(
+        dmx.fixtureTypesByID[activeFixtureTypeID]
+      )
+      return groups.join(' ')
     }
-    const groups = Array.from(groupSet)
-    if (groups.length < 1) {
-      return 'unused'
-    } else if (groups.length === 1) {
-      return groups[0]
-    } else {
-      return 'Various'
-    }
+    return ''
   })
-  const groups = getSortedGroups(universe)
+  const groups = getSortedGroups(universe, fixtureTypesById)
+  console.log(groups)
 
   return (
     <Root>
@@ -49,13 +44,11 @@ export default function EditGroup({}: Props) {
         <EditIcon />
       </IconButton>
       {isOpen && (
-        <Popup title="Edit Group" onClose={() => setIsOpen(false)}>
+        <Popup title="Edit Groups" onClose={() => setIsOpen(false)}>
           {groups.map((group) => (
             <AvailableGroup
               key={group}
-              onClick={() =>
-                dispatch(setGroupForAllFixturesOfActiveType(group))
-              }
+              onClick={() => dispatch(addActiveFixtureTypeGroup(group))}
             >
               {group}
             </AvailableGroup>
@@ -67,9 +60,7 @@ export default function EditGroup({}: Props) {
           />
           <Button
             disabled={newGroup.length < 1}
-            onClick={() =>
-              dispatch(setGroupForAllFixturesOfActiveType(newGroup))
-            }
+            onClick={() => dispatch(addActiveFixtureTypeGroup(newGroup))}
           >
             Add
           </Button>
