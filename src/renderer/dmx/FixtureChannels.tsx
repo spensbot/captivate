@@ -23,6 +23,8 @@ import {
   addColorMapColor,
   setColorMapColor,
   removeColorMapColor,
+  assignChannelToSubFixture,
+  removeChannelFromSubFixtures,
 } from '../redux/dmxSlice'
 import { IconButton } from '@mui/material'
 import Checkbox from '../base/LabelledCheckbox'
@@ -122,6 +124,18 @@ function Channel(props: Props2) {
   const ch = useDmxSelector(
     (state) => state.fixtureTypesByID[fixtureID].channels[channelIndex]
   )
+  const activeSubfixture = useDmxSelector((dmx) => dmx.activeSubFixture)
+  const isPartOfActiveSubfixture = useDmxSelector((dmx) => {
+    if (dmx.activeFixtureType !== null && dmx.activeSubFixture !== null) {
+      return (
+        dmx.fixtureTypesByID[dmx.activeFixtureType].subFixtures[
+          dmx.activeSubFixture
+        ].channels.find((ci) => ci === channelIndex) !== undefined
+      )
+    } else {
+      return false
+    }
+  })
   const dispatch = useDispatch()
 
   const props3 = { ...props, ch: ch }
@@ -135,6 +149,26 @@ function Channel(props: Props2) {
         }
       }}
     >
+      {activeSubfixture !== null && (
+        <Toggle
+          enabled={isPartOfActiveSubfixture}
+          onClick={(e) => {
+            if (!e.defaultPrevented) {
+              e.preventDefault()
+              if (isPartOfActiveSubfixture) {
+                dispatch(removeChannelFromSubFixtures({ channelIndex }))
+              } else {
+                dispatch(
+                  assignChannelToSubFixture({
+                    channelIndex,
+                    subFixtureIndex: activeSubfixture,
+                  })
+                )
+              }
+            }
+          }}
+        />
+      )}
       <Ch>{`${channelIndex + 1}`}</Ch>
       <Info>{`${getInfo(props3)}`}</Info>
       <SubInfo>{getSubInfo(props3)}</SubInfo>
@@ -200,6 +234,14 @@ const Sp = styled.div`
 
 const Sp2 = styled.div`
   width: 1rem;
+`
+
+const Toggle = styled.div<{ enabled: boolean }>`
+  width: 1rem;
+  height: 1rem;
+  border-radius: 1rem;
+  border: 1px solid white;
+  background-color: ${(props) => (props.enabled ? 'white' : undefined)};
 `
 
 interface Props3 extends Props2 {

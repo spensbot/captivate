@@ -5,6 +5,7 @@ import {
   Universe,
   FixtureChannel,
   ColorMapColor,
+  initSubFixture,
 } from '../../shared/dmxFixtures'
 import { clampNormalized } from '../../math/util'
 import { defaultParamsList } from '../../shared/params'
@@ -15,6 +16,7 @@ export interface DmxState {
   fixtureTypesByID: { [id: string]: FixtureType }
   activeFixtureType: null | string
   activeFixture: null | number
+  activeSubFixture: null | number
 }
 
 export function getCustomChannels(dmx: DmxState): Set<string> {
@@ -62,6 +64,21 @@ export function initDmxState(): DmxState {
     fixtureTypesByID: {},
     activeFixtureType: null,
     activeFixture: null,
+    activeSubFixture: null,
+  }
+}
+
+function modifyActiveFixtureType(
+  state: DmxState,
+  f: (fixtureType: FixtureType) => void
+) {
+  if (state.activeFixtureType !== null) {
+    const fixtureType = state.fixtureTypesByID[state.activeFixtureType]
+    f(fixtureType)
+  } else {
+    console.error(
+      `Tried to modifyActiveFixtureType when activeFixtureType is null`
+    )
   }
 }
 
@@ -274,6 +291,54 @@ export const dmxSlice = createSlice({
         )
       }
     },
+    addSubFixture: (state, _: PayloadAction<undefined>) => {
+      modifyActiveFixtureType(state, (ft) =>
+        ft.subFixtures.push(initSubFixture())
+      )
+    },
+    removeSubFixture: (state, { payload }: PayloadAction<number>) => {
+      modifyActiveFixtureType(state, (ft) => ft.subFixtures.splice(payload, 1))
+      state.activeSubFixture = null
+    },
+    setActiveSubFixture: (state, { payload }: PayloadAction<number | null>) => {
+      console.log(payload)
+      state.activeSubFixture = payload
+    },
+    assignChannelToSubFixture: (
+      state,
+      {
+        payload: { channelIndex, subFixtureIndex },
+      }: PayloadAction<{
+        channelIndex: number
+        subFixtureIndex: number
+      }>
+    ) => {
+      modifyActiveFixtureType(state, (ft) => {
+        for (const subFixture of ft.subFixtures) {
+          subFixture.channels = subFixture.channels.filter(
+            (ci) => ci !== channelIndex
+          )
+        }
+
+        ft.subFixtures[subFixtureIndex].channels.push(channelIndex)
+      })
+    },
+    removeChannelFromSubFixtures: (
+      state,
+      {
+        payload: { channelIndex },
+      }: PayloadAction<{
+        channelIndex: number
+      }>
+    ) => {
+      modifyActiveFixtureType(state, (ft) => {
+        for (const subFixture of ft.subFixtures) {
+          subFixture.channels = subFixture.channels.filter(
+            (ci) => ci !== channelIndex
+          )
+        }
+      })
+    },
   },
 })
 
@@ -297,6 +362,11 @@ export const {
   addColorMapColor,
   removeColorMapColor,
   setColorMapColor,
+  addSubFixture,
+  removeSubFixture,
+  setActiveSubFixture,
+  assignChannelToSubFixture,
+  removeChannelFromSubFixtures,
 } = dmxSlice.actions
 
 export default dmxSlice.reducer

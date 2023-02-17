@@ -14,6 +14,7 @@ import FixtureChannels from './FixtureChannels'
 import { Button } from '@mui/material'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import EditGroup from './EditGroup'
+import Subfixtures from './Subfixtures'
 
 type Props = {
   id: string
@@ -136,6 +137,8 @@ export default function MyFixture({ id }: Props) {
           </Row>
 
           <FixtureChannels fixtureID={id} isInUse={isInUse} />
+          <Sp />
+          <Subfixtures />
           <Sp />
           <Row>
             <Button
