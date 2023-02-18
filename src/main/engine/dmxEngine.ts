@@ -12,17 +12,17 @@ import {
   getFixturesInGroups,
   flatten_fixtures,
 } from '../../shared/dmxUtil'
-import { indexArray } from '../../shared/util'
+import { indexArray, zip } from '../../shared/util'
 import { TimeState } from '../../shared/TimeState'
+import { SplitState } from 'renderer/redux/realtimeStore'
 
 export function calculateDmx(
   state: CleanReduxState,
-  randomizerState: RandomizerState,
-  splitScenes: { outputParams: Params }[],
+  splitStates: SplitState[],
   timeState: TimeState
 ): number[] {
   const universe = state.dmx.universe
-  const fixtures = flatten_fixtures(universe, state.dmx.fixtureTypesByID)
+  const all_fixtures = flatten_fixtures(universe, state.dmx.fixtureTypesByID)
 
   let channels = Array(DMX_NUM_CHANNELS).fill(0)
 
@@ -31,25 +31,24 @@ export function calculateDmx(
     const activeScene = scenes.byId[scenes.active]
 
     const applyFixtures = (
-      _fixtures: FlattenedFixture[],
-      _outputParams: Params,
-      _randomizerState: RandomizerState
+      fixtures: FlattenedFixture[],
+      outputParams: Params,
+      randomizerState: RandomizerState
     ) => {
-      _fixtures.forEach((fixture) => {
+      fixtures.forEach((fixture, i) => {
         fixture.channels.forEach(([outputChannel, channelType]) => {
           let new_channel_value = DMX_DEFAULT_VALUE
           let current_channel_value = channels[outputChannel - 1]
           if (
-            _outputParams.intensity !== undefined &&
-            _outputParams.intensity >= fixture.intensity
+            outputParams.intensity !== undefined &&
+            outputParams.intensity >= fixture.intensity
           ) {
             new_channel_value = getDmxValue(
               channelType,
-              _outputParams,
+              outputParams,
               fixture,
               state.control.master,
-              // TODO: Fix randomizer now that we have subfixtures
-              1.0 // _randomizerState[universeIndex].level
+              randomizerState[i]?.level ?? 1
             )
           }
           channels[outputChannel - 1] = Math.max(
@@ -60,13 +59,16 @@ export function calculateDmx(
       })
     }
 
-    splitScenes.forEach((split, i) => {
-      const splitGroups = activeScene.splitScenes[i]?.groups ?? []
+    for (const [{ outputParams, randomizer }, splitScene] of zip(
+      splitStates,
+      activeScene.splitScenes
+    )) {
+      const splitGroups = splitScene.groups
 
-      const splitSceneFixtures = getFixturesInGroups(fixtures, splitGroups)
+      const splitSceneFixtures = getFixturesInGroups(all_fixtures, splitGroups)
 
-      applyFixtures(splitSceneFixtures, split.outputParams, randomizerState)
-    })
+      applyFixtures(splitSceneFixtures, outputParams, randomizer)
+    }
 
     // Apply any overwrites
     indexArray(DMX_NUM_CHANNELS).forEach((i) => {

@@ -1,4 +1,5 @@
 import { TimeState, isNewPeriod } from './TimeState'
+import { lerp } from '../math/util'
 
 type Normalized = number
 
@@ -31,15 +32,13 @@ export function initRandomizerState(): RandomizerState {
   return []
 }
 
-// export function syncAndUpdate(
-//   beatsLast: number,
-//   state: RandomizerState,
-//   size: number,
-//   ts: TimeState,
-//   options: RandomizerOptions
-// ) {
-//   return update(beatsLast, sync(state, size), ts, options)
-// }
+export function applyRandomization(
+  value: number,
+  randomizerLevel: number,
+  randomizationAmount: number
+) {
+  return lerp(value, value * randomizerLevel, randomizationAmount)
+}
 
 // returns a new randomizerState with the desired size. Growing or shrinking as necessary
 export function resizeRandomizer(state: RandomizerState, size: number) {

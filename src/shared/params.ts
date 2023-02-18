@@ -36,7 +36,7 @@ export function defaultBaseParams(): Params {
     height: 1.0,
     intensity: 1.0,
     strobe: 0.0,
-    randomize: 0.0,
+    randomize: 1.0,
     xAxis: 0.5,
     yAxis: 0.5,
     xMirror: 0.0,

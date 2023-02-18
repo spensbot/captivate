@@ -16,6 +16,7 @@ import {
 import { Params } from './params'
 import { lerp, Normalized } from '../math/util'
 import { rLerp } from '../math/range'
+import { applyRandomization } from './randomizer'
 
 function getWindowMultiplier2D(
   fixtureWindow: Window2D_t,
@@ -160,14 +161,6 @@ export function getMovingWindow(params: Params): Window2D_t {
   }
 }
 
-export function applyRandomization(
-  value: number,
-  randomizerLevel: number,
-  randomizationAmount: number
-) {
-  return lerp(value, value * randomizerLevel, randomizationAmount)
-}
-
 export function getFixturesInGroups(
   fixtures: FlattenedFixture[],
   groups: string[]
@@ -286,7 +279,9 @@ export function flatten_fixture(
     groups,
   })
 
-  return flattened
+  // For now, only return fixtures that actually have channels.
+  // This improves the behavior of the randomizer engine
+  return flattened.filter((fixture) => fixture.channels.length > 0)
 }
 
 export function flatten_fixtures(

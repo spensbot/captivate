@@ -8,25 +8,28 @@ import {
 import React from 'react'
 import { initTimeState, TimeState } from '../../shared/TimeState'
 import { defaultOutputParams, DefaultParam, Params } from '../../shared/params'
-import { initRandomizerState, RandomizerState } from '../../shared/randomizer'
+import { RandomizerState } from '../../shared/randomizer'
 
 function initDmxOut(): number[] {
   return Array(512).fill(0)
 }
 
+export interface SplitState {
+  outputParams: Params
+  randomizer: RandomizerState
+}
+
 export interface RealtimeState {
   time: TimeState
-  randomizer: RandomizerState
   dmxOut: number[]
-  splitScenes: { outputParams: Params }[]
+  splitStates: SplitState[]
 }
 
 export function initRealtimeState(): RealtimeState {
   return {
     time: initTimeState(),
-    randomizer: initRandomizerState(),
     dmxOut: initDmxOut(),
-    splitScenes: [],
+    splitStates: [],
   }
 }
 
@@ -72,11 +75,11 @@ export function useOutputParam(
   splitIndex: number
 ): number {
   const outputParam = useRealtimeSelector((state) => {
-    return state.splitScenes[splitIndex]?.outputParams[param]
+    return state.splitStates[splitIndex]?.outputParams?.[param]
   })
   if (outputParam === undefined) {
     console.error(
-      "useOutputParam called on undefined output param. That's probably not what you wanted."
+      `useOutputParam called on undefined output param ${param}. That's probably not what you wanted.`
     )
     return 0
   } else {
@@ -86,7 +89,7 @@ export function useOutputParam(
 
 export function useOutputParams(splitIndex: number): Params {
   const params = useRealtimeSelector((state) => {
-    return state.splitScenes[splitIndex]?.outputParams
+    return state.splitStates[splitIndex]?.outputParams
   })
   if (params === undefined) {
     return defaultOutputParams()

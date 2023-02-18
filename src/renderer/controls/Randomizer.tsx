@@ -1,7 +1,7 @@
 import styled from 'styled-components'
 import ADSRWrapper from './ADSRWrapper'
 import { useActiveLightScene, useBaseParam } from '../redux/store'
-import TriggerDensity from './TriggerDensity'
+import RandomizerVisualizer from './RandomizerVisualizer'
 import DraggableNumber from '../base/DraggableNumber'
 import { useDispatch } from 'react-redux'
 import { setRandomizer } from '../redux/controlSlice'
@@ -28,7 +28,7 @@ export default function Randomizer({ splitIndex }: Props) {
     <>
       <Root>
         <ADSRWrapper splitIndex={splitIndex} />
-        <TriggerDensity splitIndex={splitIndex} />
+        <RandomizerVisualizer splitIndex={splitIndex} />
         <Row>
           <div
             style={{
