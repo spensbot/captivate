@@ -44,7 +44,7 @@ export type ChannelAxis = {
   max: DmxValue
 }
 
-export type ColorMapColor = { max: number; hue: number }
+export type ColorMapColor = { max: number; hue: number; saturation: number }
 
 type ChannelColorMap = {
   type: 'colorMap'

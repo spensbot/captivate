@@ -13,7 +13,7 @@ import {
   DMX_MAX_VALUE,
   DMX_MIN_VALUE,
 } from '../../shared/dmxFixtures'
-import { colorList, Color } from '../../shared/dmxColors'
+import { colorList, StandardColor } from '../../shared/dmxColors'
 import NumberField from '../base/NumberField'
 import Input from '../base/Input'
 import {
@@ -33,6 +33,7 @@ import RemoveIcon from '@mui/icons-material/Remove'
 import Add from '@mui/icons-material/Add'
 import Remove from '@mui/icons-material/Remove'
 import Popup from 'renderer/base/Popup'
+import HSpad from 'renderer/controls/HSpad'
 
 interface Props {
   fixtureID: string
@@ -356,18 +357,52 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
   }
 
   if (ch.type === 'color') {
+    const c = ch.color
+    const cType =
+      c === 'red' || c === 'green' || c === 'blue' || c === 'white'
+        ? c
+        : 'custom'
+
     return (
-      <Select
-        label="color"
-        val={ch.color}
-        items={colorList}
-        onChange={(newColor) =>
-          updateChannel({
-            type: 'color',
-            color: newColor as Color,
-          })
-        }
-      />
+      <>
+        <Select
+          label="color"
+          val={cType}
+          items={colorList.concat(['custom'])}
+          onChange={(_newColor) => {
+            const newColor = _newColor as StandardColor | 'custom'
+            if (newColor === 'custom') {
+              updateChannel({
+                type: 'color',
+                color: {
+                  hue: 0,
+                  saturation: 1,
+                },
+              })
+            } else {
+              updateChannel({
+                type: 'color',
+                color: newColor,
+              })
+            }
+          }}
+        />
+        {!(c === 'red' || c === 'green' || c === 'blue' || c === 'white') && (
+          <HSpad
+            hue={c.hue}
+            saturation={c.saturation}
+            onChange={(newHue, newSaturation) => {
+              updateChannel({
+                type: 'color',
+                color: {
+                  hue: newHue,
+                  saturation: newSaturation,
+                },
+              })
+            }}
+          />
+        )}
+      </>
     )
   } else if (ch.type === 'master') {
     return (
@@ -462,7 +497,11 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
                       fixtureTypeId: fixtureID,
                       channelIndex,
                       colorIndex: i,
-                      newColor: { max: newMax, hue: color.hue },
+                      newColor: {
+                        max: newMax,
+                        hue: color.hue,
+                        saturation: 1.0,
+                      },
                     })
                   )
                 }
@@ -479,7 +518,11 @@ function Fields({ ch, fixtureID, channelIndex }: Props3) {
                       fixtureTypeId: fixtureID,
                       channelIndex,
                       colorIndex: i,
-                      newColor: { max: color.max, hue: newHue },
+                      newColor: {
+                        max: color.max,
+                        hue: newHue,
+                        saturation: 1.0,
+                      },
                     })
                   )
                 }

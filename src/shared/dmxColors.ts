@@ -1,13 +1,15 @@
 import { lerp, Normalized } from '../math/util'
 import { Params } from './params'
 
-export type Color = 'red' | 'green' | 'blue' | 'white'
+export type StandardColor = 'red' | 'green' | 'blue' | 'white'
+
+export type Color = StandardColor | CustomColorChannel
 
 type RGB = [number, number, number]
 
 export const colorList = ['red', 'green', 'blue', 'white']
 
-export type Colors = { [key in Color]: Normalized }
+export type StandardColors = { [key in StandardColor]: Normalized }
 
 function intermediate(C: number, X: number, hp: Normalized) {
   if (hp < 1) {
@@ -54,7 +56,7 @@ export function hsi2rgb(h: Normalized, s: Normalized, i: Normalized): RGB {
   return [r1 + m, g1 + m, b1 + m]
 }
 
-export function getColors(params: Params): Colors {
+export function getStandardColors(params: Params): StandardColors {
   const [r, g, b] = hsv2rgb(
     params.hue ?? 0,
     params.saturation ?? 0,
@@ -99,18 +101,17 @@ function saturationLevelFactor(
 }
 
 /// My best guess at handling channels of any hue & saturation
-export function customColorLevel(
-  hue: Normalized,
-  saturation: Normalized,
-  value: Normalized,
-  channel: CustomColorChannel
-) {
+export function getCustomColor(params: Params, channel: CustomColorChannel) {
+  const hue = params.hue ?? 0
+  const saturation = params.saturation ?? 0
+  const brightness = params.brightness ?? 0
+
   const hlf = hueLevelFactor(hue, channel.hue)
 
   const saturationCorrectedHueLevelFactor = lerp(1.0, hlf, saturation)
 
   return (
-    value *
+    brightness *
     saturationCorrectedHueLevelFactor *
     saturationLevelFactor(saturation, channel.saturation)
   )

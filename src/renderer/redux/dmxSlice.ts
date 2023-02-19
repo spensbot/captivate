@@ -252,6 +252,7 @@ export const dmxSlice = createSlice({
         channel.colors.push({
           max: lastColorMax ?? 0,
           hue: 0,
+          saturation: 1.0,
         })
       } else {
         console.error(

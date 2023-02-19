@@ -6,7 +6,7 @@ import { Normalized } from 'math/util'
 interface Props {
   hue: Normalized
   saturation: Normalized
-  onChange: (newHue: Normalized, newSaturation: Normalized) => {}
+  onChange: (newHue: Normalized, newSaturation: Normalized) => void
 }
 
 export default function HSpad({ hue, saturation, onChange }: Props) {
@@ -24,7 +24,7 @@ export default function HSpad({ hue, saturation, onChange }: Props) {
       onMouseDown={onMouseDown}
     >
       <White>
-        <Cursor x={hue} y={saturation} />
+        <Cursor x={hue} y={saturation} color={'#000'} />
       </White>
     </Root>
   )
@@ -33,7 +33,7 @@ export default function HSpad({ hue, saturation, onChange }: Props) {
 const Root = styled.div`
   position: relative;
   width: 200px;
-  height: 160px;
+  height: 60px;
   overflow: hidden;
 `
 
