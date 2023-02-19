@@ -13,8 +13,6 @@ export type DefaultParam =
   | 'yAxis'
   | 'xMirror'
 
-// export type CustomChannelParams = { [key: string]: number | undefined }
-
 export type Params = { [key: string]: number | undefined }
 
 export function initBaseParams(): Params {

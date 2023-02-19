@@ -1,4 +1,4 @@
-import { Normalized } from '../math/util'
+import { lerp, Normalized } from '../math/util'
 import { Params } from './params'
 
 export type Color = 'red' | 'green' | 'blue' | 'white'
@@ -68,4 +68,50 @@ export function getColors(params: Params): Colors {
     // The min of r g b represents a little bit of white
     white: Math.min(r, g, b),
   }
+}
+
+interface CustomColorChannel {
+  hue: Normalized
+  saturation: Normalized
+}
+
+/// Handles channels of any hue
+function hueLevelFactor(hue: Normalized, channelHue: Normalized): Normalized {
+  const RUN = 1.0 / 3.0
+
+  const hueDelta = Math.min(
+    Math.abs(channelHue - hue),
+    channelHue + 1 - hue,
+    hue - (channelHue - 1)
+  )
+
+  return 1 - Math.min(hueDelta, RUN) / RUN
+}
+
+/// Scale down the channel if it contributes more white than the color calls for
+function saturationLevelFactor(
+  saturation: Normalized,
+  channelSaturation: Normalized
+): Normalized {
+  const white = 1.0 - saturation
+  const channelWhite = 1.0 - channelSaturation
+  return Math.min(white / channelWhite, 1.0)
+}
+
+/// My best guess at handling channels of any hue & saturation
+export function customColorLevel(
+  hue: Normalized,
+  saturation: Normalized,
+  value: Normalized,
+  channel: CustomColorChannel
+) {
+  const hlf = hueLevelFactor(hue, channel.hue)
+
+  const saturationCorrectedHueLevelFactor = lerp(1.0, hlf, saturation)
+
+  return (
+    value *
+    saturationCorrectedHueLevelFactor *
+    saturationLevelFactor(saturation, channel.saturation)
+  )
 }
