@@ -10,11 +10,12 @@ import {
 import { IconButton } from '@mui/material'
 import Add from '@mui/icons-material/Add'
 import Remove from '@mui/icons-material/Remove'
-import HSpad from 'renderer/base/HSpad'
+import HSpad, { ColorChannelProps } from 'renderer/base/HSpad'
 import { ChannelColorMap } from '../../shared/dmxFixtures'
 import { useState } from 'react'
 import wrapClick from 'renderer/base/wrapClick'
 import { lerp } from 'math/util'
+import ColorPicker from 'renderer/base/ColorPicker'
 
 interface Props {
   ch: ChannelColorMap
@@ -32,26 +33,29 @@ export default function ColorMapChannel({
 
   let activeColor = ch.colors[activeColorIndex]
 
+  const colorProps: ColorChannelProps = {
+    hue: activeColor.hue,
+    saturation: activeColor.saturation,
+    onChange: (newHue, newSaturation) => {
+      dispatch(
+        setColorMapColor({
+          fixtureTypeId: fixtureID,
+          channelIndex,
+          colorIndex: activeColorIndex,
+          newColor: {
+            max: activeColor.max,
+            hue: newHue,
+            saturation: newSaturation,
+          },
+        })
+      )
+    },
+  }
+
   return (
     <div>
-      <HSpad
-        hue={activeColor.hue}
-        saturation={activeColor.saturation}
-        onChange={(newHue, newSaturation) => {
-          dispatch(
-            setColorMapColor({
-              fixtureTypeId: fixtureID,
-              channelIndex,
-              colorIndex: activeColorIndex,
-              newColor: {
-                max: activeColor.max,
-                hue: newHue,
-                saturation: newSaturation,
-              },
-            })
-          )
-        }}
-      />
+      <ColorPicker {...colorProps} />
+      <HSpad {...colorProps} />
       <Sp />
       <ColorMapColor>
         <ColorMapVisualizer isActive={false} />

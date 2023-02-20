@@ -85,6 +85,16 @@ export function getCustomColorChannelName(channel: ColorChannel) {
 
 type StandardColorName = StandardHueName | 'White'
 
+export const standardColorNames: StandardColorName[] = [
+  'Red',
+  'Yellow',
+  'Green',
+  'Cyan',
+  'Blue',
+  'Magenta',
+  'White',
+]
+
 export function colorByName(color: StandardColorName): ColorChannel {
   if (color === 'White') {
     return { hue: 0, saturation: 0 }
@@ -96,10 +106,10 @@ export function colorByName(color: StandardColorName): ColorChannel {
 export function approximateStandardColor(
   color: ColorChannel
 ): StandardColorName | null {
-  const delta = 0.05
-  if (1.0 - color.saturation < delta) {
+  const delta = 0.02
+  if (color.saturation < delta) {
     return 'White'
-  } else {
+  } else if (1.0 - color.saturation < delta) {
     for (const [hue, name] of hueNames) {
       if (Math.abs(hue - color.hue) < delta) {
         return name

@@ -3,13 +3,17 @@ import useDragMapped from '../hooks/useDragMapped'
 import Cursor from './Cursor'
 import { Normalized } from 'math/util'
 
-interface Props {
+export interface ColorChannelProps {
   hue: Normalized
   saturation: Normalized
   onChange: (newHue: Normalized, newSaturation: Normalized) => void
 }
 
-export default function HSpad({ hue, saturation, onChange }: Props) {
+export default function HSpad({
+  hue,
+  saturation,
+  onChange,
+}: ColorChannelProps) {
   const [dragContainer, onMouseDown] = useDragMapped(({ x, y }) => {
     onChange(x, y)
   })

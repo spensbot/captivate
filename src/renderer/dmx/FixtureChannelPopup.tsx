@@ -10,14 +10,14 @@ import {
   DMX_MAX_VALUE,
   DMX_MIN_VALUE,
 } from '../../shared/dmxFixtures'
-import { getCustomColorChannelName } from '../../shared/dmxColors'
 import NumberField from '../base/NumberField'
 import Input from '../base/Input'
 import { editFixtureChannel } from '../redux/dmxSlice'
 import Checkbox from '../base/LabelledCheckbox'
-import HSpad from 'renderer/base/HSpad'
+import HSpad, { ColorChannelProps } from 'renderer/base/HSpad'
 import { FixtureChannelItemProps } from './FixtureChannelItem'
 import ColorMapChannel from './ColorMapChannel'
+import ColorPicker from 'renderer/base/ColorPicker'
 
 interface Props extends FixtureChannelItemProps {
   ch: FixtureChannel
@@ -91,22 +91,25 @@ function Fields({ ch, fixtureID, channelIndex }: Props) {
   }
 
   if (ch.type === 'color') {
+    const colorProps: ColorChannelProps = {
+      hue: ch.color.hue,
+      saturation: ch.color.saturation,
+      onChange: (newHue, newSaturation) => {
+        updateChannel({
+          type: 'color',
+          color: {
+            hue: newHue,
+            saturation: newSaturation,
+          },
+        })
+      },
+    }
+
     return (
       <>
-        {getCustomColorChannelName(ch.color)}
-        <HSpad
-          hue={ch.color.hue}
-          saturation={ch.color.saturation}
-          onChange={(newHue, newSaturation) => {
-            updateChannel({
-              type: 'color',
-              color: {
-                hue: newHue,
-                saturation: newSaturation,
-              },
-            })
-          }}
-        />
+        {/* {getCustomColorChannelName(ch.color)} */}
+        <ColorPicker {...colorProps} />
+        <HSpad {...colorProps} />
       </>
     )
   } else if (ch.type === 'master') {
