@@ -1,78 +1,7 @@
 import { findClosest, lerp, Normalized } from '../math/util'
 import { Params } from './params'
 
-export type StandardColor = 'red' | 'green' | 'blue' | 'white'
-
-export type Color = StandardColor | CustomColorChannel
-
-type RGB = [number, number, number]
-
-export const colorList = ['red', 'green', 'blue', 'white']
-
-export type StandardColors = { [key in StandardColor]: Normalized }
-
-function intermediate(C: number, X: number, hp: Normalized) {
-  if (hp < 1) {
-    return [C, X, 0]
-  } else if (hp < 2) {
-    return [X, C, 0]
-  } else if (hp < 3) {
-    return [0, C, X]
-  } else if (hp < 4) {
-    return [0, X, C]
-  } else if (hp < 5) {
-    return [X, 0, C]
-  } else {
-    return [C, 0, X]
-  }
-}
-
-// https://en.wikipedia.org/wiki/HSL_and_HSV
-export function hsl2rgb(h: Normalized, s: Normalized, l: Normalized): RGB {
-  const hp = h * 6
-  const c = (1 - Math.abs(2 * l - 1)) * s
-  const x = c * (1 - Math.abs((hp % 2) - 1))
-  const [r1, g1, b1] = intermediate(c, x, hp)
-  const m = l - c / 2
-  return [r1 + m, g1 + m, b1 + m]
-}
-
-export function hsv2rgb(h: Normalized, s: Normalized, v: Normalized): RGB {
-  const hp = h * 6
-  const c = v * s
-  const x = c * (1 - Math.abs((hp % 2) - 1))
-  const [r1, g1, b1] = intermediate(c, x, hp)
-  const m = v - c
-  return [r1 + m, g1 + m, b1 + m]
-}
-
-export function hsi2rgb(h: Normalized, s: Normalized, i: Normalized): RGB {
-  const hp = h * 6
-  const z = 1 - Math.abs((hp % 2) - 1)
-  const c = (3 * i * s) / (1 + z)
-  const x = c * z
-  const [r1, g1, b1] = intermediate(c, x, hp)
-  const m = i * (1 - s)
-  return [r1 + m, g1 + m, b1 + m]
-}
-
-export function getStandardColors(params: Params): StandardColors {
-  const [r, g, b] = hsv2rgb(
-    params.hue ?? 0,
-    params.saturation ?? 0,
-    params.brightness ?? 0
-  )
-
-  return {
-    red: r,
-    green: g,
-    blue: b,
-    // The min of r g b represents a little bit of white
-    white: Math.min(r, g, b),
-  }
-}
-
-interface CustomColorChannel {
+export interface ColorChannel {
   hue: Normalized
   saturation: Normalized
 }
@@ -101,7 +30,7 @@ function saturationLevelFactor(
 }
 
 /// My best guess at handling channels of any hue & saturation
-export function getCustomColor(params: Params, channel: CustomColorChannel) {
+export function getColorChannelLevel(params: Params, channel: ColorChannel) {
   const hue = params.hue ?? 0
   const saturation = params.saturation ?? 0
   const brightness = params.brightness ?? 0
@@ -117,7 +46,18 @@ export function getCustomColor(params: Params, channel: CustomColorChannel) {
   )
 }
 
-const hueNames: [Normalized, string][] = [
+type StandardHueName = 'Red' | 'Yellow' | 'Green' | 'Cyan' | 'Blue' | 'Magenta'
+
+export const huesByName: { [key in StandardHueName]: Normalized } = {
+  Red: 0.0,
+  Yellow: 0.16,
+  Green: 0.33,
+  Cyan: 0.5,
+  Blue: 0.66,
+  Magenta: 0.83,
+}
+
+const hueNames: [Normalized, StandardHueName][] = [
   [0.0, 'Red'],
   [0.16, 'Yellow'],
   [0.33, 'Green'],
@@ -127,17 +67,44 @@ const hueNames: [Normalized, string][] = [
   [1.0, 'Red'],
 ]
 
-export function getHueName(hue: Normalized): string {
+function getHueName(hue: Normalized): string {
   return findClosest(hueNames, hue) ?? 'Error'
 }
 
-const customColorNames: [Normalized, (hueName: string) => string][] = [
-  [0.0, (hueName) => hueName],
+const colorChannelNames: [Normalized, (hueName: string) => string][] = [
+  [0.0, () => 'White'],
   [0.5, (hueName) => `${hueName}/White`],
-  [1.0, () => 'White'],
+  [1.0, (hueName) => hueName],
 ]
 
-export function getCustomColorChannelName(channel: CustomColorChannel) {
-  const f = findClosest(customColorNames, channel.saturation) ?? (() => 'Error')
+export function getCustomColorChannelName(channel: ColorChannel) {
+  const f =
+    findClosest(colorChannelNames, channel.saturation) ?? (() => 'Error')
   return f(getHueName(channel.hue))
+}
+
+type StandardColorName = StandardHueName | 'White'
+
+export function colorByName(color: StandardColorName): ColorChannel {
+  if (color === 'White') {
+    return { hue: 0, saturation: 0 }
+  } else {
+    return { hue: huesByName[color], saturation: 1.0 }
+  }
+}
+
+export function approximateStandardColor(
+  color: ColorChannel
+): StandardColorName | null {
+  const delta = 0.05
+  if (1.0 - color.saturation < delta) {
+    return 'White'
+  } else {
+    for (const [hue, name] of hueNames) {
+      if (Math.abs(hue - color.hue) < delta) {
+        return name
+      }
+    }
+  }
+  return null
 }

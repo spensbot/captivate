@@ -10,11 +10,7 @@ import {
   DMX_MAX_VALUE,
   DMX_MIN_VALUE,
 } from '../../shared/dmxFixtures'
-import {
-  colorList,
-  getCustomColorChannelName,
-  StandardColor,
-} from '../../shared/dmxColors'
+import { getCustomColorChannelName } from '../../shared/dmxColors'
 import NumberField from '../base/NumberField'
 import Input from '../base/Input'
 import { editFixtureChannel } from '../redux/dmxSlice'
@@ -95,54 +91,22 @@ function Fields({ ch, fixtureID, channelIndex }: Props) {
   }
 
   if (ch.type === 'color') {
-    const c = ch.color
-    const cType =
-      c === 'red' || c === 'green' || c === 'blue' || c === 'white'
-        ? c
-        : 'custom'
-
     return (
       <>
-        <Select
-          label="color"
-          val={cType}
-          items={colorList.concat(['custom'])}
-          onChange={(_newColor) => {
-            const newColor = _newColor as StandardColor | 'custom'
-            if (newColor === 'custom') {
-              updateChannel({
-                type: 'color',
-                color: {
-                  hue: 0,
-                  saturation: 1,
-                },
-              })
-            } else {
-              updateChannel({
-                type: 'color',
-                color: newColor,
-              })
-            }
+        {getCustomColorChannelName(ch.color)}
+        <HSpad
+          hue={ch.color.hue}
+          saturation={ch.color.saturation}
+          onChange={(newHue, newSaturation) => {
+            updateChannel({
+              type: 'color',
+              color: {
+                hue: newHue,
+                saturation: newSaturation,
+              },
+            })
           }}
         />
-        {!(c === 'red' || c === 'green' || c === 'blue' || c === 'white') && (
-          <>
-            <HSpad
-              hue={c.hue}
-              saturation={c.saturation}
-              onChange={(newHue, newSaturation) => {
-                updateChannel({
-                  type: 'color',
-                  color: {
-                    hue: newHue,
-                    saturation: newSaturation,
-                  },
-                })
-              }}
-            />
-            {getCustomColorChannelName(c)}
-          </>
-        )}
       </>
     )
   } else if (ch.type === 'master') {

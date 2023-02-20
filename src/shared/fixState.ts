@@ -1,6 +1,7 @@
 import { DeviceState } from 'renderer/redux/deviceState'
 import { DmxState } from 'renderer/redux/dmxSlice'
 import { CleanReduxState } from '../renderer/redux/store'
+import { ColorChannel } from './dmxColors'
 import { DmxValue, FixtureChannel } from './dmxFixtures'
 import { Modulator } from './modulation'
 import { Modulation, Params } from './params'
@@ -26,6 +27,8 @@ interface Deprecated_LightScene_t extends LightScene_t {
 interface Deprecated_Modulator extends Modulator {
   modulation?: Modulation
 }
+
+type Deprecated_Color = 'red' | 'green' | 'blue' | 'white' | ColorChannel
 
 // Modify this function to fix any breaking state changes between upgrades
 export default function fixState(state: CleanReduxState): CleanReduxState {
@@ -104,6 +107,40 @@ export function fixDmxState(dmx: DmxState) {
   for (const fixture of dmx.universe) {
     if (!Array.isArray(fixture.groups)) {
       fixture.groups = []
+    }
+  }
+
+  // Change to new ColorChannels
+  for (const channel of channels(dmx)) {
+    if (channel.type === 'color') {
+      const c = channel.color as Deprecated_Color
+      if (c === 'red') {
+        channel.color = {
+          hue: 0.0,
+          saturation: 1.0,
+        }
+      } else if (c === 'green') {
+        channel.color = {
+          hue: 0.333,
+          saturation: 1.0,
+        }
+      } else if (c === 'blue') {
+        channel.color = {
+          hue: 0.666,
+          saturation: 1.0,
+        }
+      } else if (c === 'white') {
+        channel.color = {
+          hue: 0.0,
+          saturation: 0.0,
+        }
+      }
+    } else if (channel.type === 'colorMap') {
+      for (const color of channel.colors) {
+        if (color.saturation === undefined) {
+          color.saturation = 1.0
+        }
+      }
     }
   }
 }

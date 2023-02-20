@@ -1,4 +1,3 @@
-import { getCustomColor, getStandardColors } from './dmxColors'
 import { Window, Window2D_t } from '../shared/window'
 import {
   DmxValue,
@@ -17,6 +16,7 @@ import { Params } from './params'
 import { lerp, Normalized } from '../math/util'
 import { rLerp } from '../math/range'
 import { applyRandomization } from './randomizer'
+import { getColorChannelLevel } from './dmxColors'
 
 function getWindowMultiplier2D(
   fixtureWindow: Window2D_t,
@@ -59,7 +59,6 @@ export function getDmxValue(
   randomizerLevel: number
 ): DmxValue {
   const movingWindow = getMovingWindow(params)
-  const colors = getStandardColors(params)
 
   switch (ch.type) {
     case 'master':
@@ -83,17 +82,12 @@ export function getDmxValue(
     case 'other':
       return ch.default
     case 'color':
-      const c = ch.color
-      if (c === 'blue' || c === 'green' || c === 'red' || c === 'white') {
-        return colors[c] * DMX_MAX_VALUE
-      } else {
-        return (
-          getCustomColor(params, {
-            hue: c.hue,
-            saturation: c.saturation,
-          }) * DMX_DEFAULT_VALUE
-        )
-      }
+      return (
+        getColorChannelLevel(params, {
+          hue: ch.color.hue,
+          saturation: ch.color.saturation,
+        }) * DMX_DEFAULT_VALUE
+      )
     case 'strobe':
       return params.strobe !== undefined && params.strobe > 0.5
         ? ch.default_strobe

@@ -4,7 +4,7 @@ import fragmentShader from '../shaders/LightSync.frag'
 import { Uniform } from 'three'
 import UpdateResource from '../UpdateResource'
 import { Strobe } from '../util/animations'
-import { getStandardColors } from 'shared/dmxColors'
+import { getBaseColors } from 'shared/baseColors'
 import CustomPassShader from './CustomPassShader'
 import EffectBase from './EffectBase'
 import { LightSyncConfig } from './effectConfigs'
@@ -54,7 +54,7 @@ export class LightSync extends EffectBase {
 
     this.pass.uniforms.brightnessMultiplier.value = brightnessMultiplier
 
-    const colors = getStandardColors(params)
+    const colors = getBaseColors(params)
     this.pass.uniforms.colorMultipler.value = [
       colors.red,
       colors.green,

@@ -148,12 +148,7 @@ function getInfo(ch: FixtureChannel): string {
     case 'axis':
       return `${ch.dir} Axis`
     case 'color':
-      const c = ch.color
-      if (c === 'blue' || c === 'green' || c === 'red' || c === 'white') {
-        return `${ch.color}`
-      } else {
-        return getCustomColorChannelName(c)
-      }
+      return getCustomColorChannelName(ch.color)
     case 'colorMap':
       return `Color Map`
     case 'master':

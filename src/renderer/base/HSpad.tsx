@@ -39,7 +39,7 @@ const Root = styled.div`
 
 const White = styled.div`
   position: absolute;
-  background: linear-gradient(to bottom, #fff, #fff0);
+  background: linear-gradient(to top, #fff, #fff0);
   top: 0;
   right: 0;
   bottom: 0;

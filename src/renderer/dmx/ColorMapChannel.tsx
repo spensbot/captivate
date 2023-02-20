@@ -12,6 +12,9 @@ import Add from '@mui/icons-material/Add'
 import Remove from '@mui/icons-material/Remove'
 import HSpad from 'renderer/base/HSpad'
 import { ChannelColorMap } from '../../shared/dmxFixtures'
+import { useState } from 'react'
+import wrapClick from 'renderer/base/wrapClick'
+import { lerp } from 'math/util'
 
 interface Props {
   ch: ChannelColorMap
@@ -25,22 +28,47 @@ export default function ColorMapChannel({
   channelIndex,
 }: Props) {
   const dispatch = useDispatch()
+  const [activeColorIndex, setActiveIndex] = useState(0)
+
+  let activeColor = ch.colors[activeColorIndex]
 
   return (
     <div>
-      <HSpad hue={0} saturation={0} onChange={() => {}} />
+      <HSpad
+        hue={activeColor.hue}
+        saturation={activeColor.saturation}
+        onChange={(newHue, newSaturation) => {
+          dispatch(
+            setColorMapColor({
+              fixtureTypeId: fixtureID,
+              channelIndex,
+              colorIndex: activeColorIndex,
+              newColor: {
+                max: activeColor.max,
+                hue: newHue,
+                saturation: newSaturation,
+              },
+            })
+          )
+        }}
+      />
+      <Sp />
       <ColorMapColor>
-        <ColorMapVisualizer />
+        <ColorMapVisualizer isActive={false} />
         <Info style={{ flex: '1 0 0' }}>DMX Value</Info>
-        <Info style={{ flex: '1 0 0' }}>Hue</Info>
       </ColorMapColor>
       {ch.colors.map((color, i) => {
+        const isActive = activeColorIndex === i
         return (
           <ColorMapColor key={fixtureID + channelIndex + i}>
             <ColorMapVisualizer
+              onClick={wrapClick(() => setActiveIndex(i))}
               style={{
-                backgroundColor: `hsl(${color.hue * 360}, 100%, 50%)`,
+                backgroundColor: `hsl(${color.hue * 360}, ${
+                  color.saturation * 100
+                }%, ${lerp(100, 50, color.saturation)}%)`,
               }}
+              isActive={isActive}
             />
             <NumberField
               val={color.max}
@@ -62,43 +90,9 @@ export default function ColorMapChannel({
                 )
               }
             />
-            <Sp />
-            <NumberField
-              val={color.hue}
-              label=""
-              min={0}
-              max={1}
-              onChange={(newHue) =>
-                dispatch(
-                  setColorMapColor({
-                    fixtureTypeId: fixtureID,
-                    channelIndex,
-                    colorIndex: i,
-                    newColor: {
-                      max: color.max,
-                      hue: newHue,
-                      saturation: 1.0,
-                    },
-                  })
-                )
-              }
-              numberType="float"
-            />
           </ColorMapColor>
         )
       })}
-      <IconButton
-        onClick={() => {
-          dispatch(
-            removeColorMapColor({
-              fixtureTypeId: fixtureID,
-              channelIndex,
-            })
-          )
-        }}
-      >
-        <Remove />
-      </IconButton>
       <IconButton
         onClick={() =>
           dispatch(
@@ -111,6 +105,20 @@ export default function ColorMapChannel({
       >
         <Add />
       </IconButton>
+      {ch.colors.length > 1 && (
+        <IconButton
+          onClick={() => {
+            dispatch(
+              removeColorMapColor({
+                fixtureTypeId: fixtureID,
+                channelIndex,
+              })
+            )
+          }}
+        >
+          <Remove />
+        </IconButton>
+      )}
     </div>
   )
 }
@@ -120,10 +128,12 @@ const ColorMapColor = styled.div`
   align-items: center;
 `
 
-const ColorMapVisualizer = styled.div`
+const ColorMapVisualizer = styled.div<{ isActive: boolean }>`
   width: 2rem;
   height: 1.5rem;
   margin-right: 0.5rem;
+  border: ${(props) => props.isActive && '1.5px solid white'};
+  box-sizing: border-box;
 `
 
 const Info = styled.div`
@@ -133,4 +143,5 @@ const Info = styled.div`
 
 const Sp = styled.div`
   width: 1rem;
+  height: 1rem;
 `

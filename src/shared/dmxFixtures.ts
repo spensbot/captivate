@@ -1,5 +1,5 @@
 import { Window2D_t } from '../shared/window'
-import { Color } from './dmxColors'
+import { ColorChannel } from './dmxColors'
 import { nanoid } from 'nanoid'
 
 export const DMX_MIN_VALUE = 0
@@ -22,7 +22,7 @@ type ChannelMaster = {
 
 type ChannelColor = {
   type: 'color'
-  color: Color
+  color: ColorChannel
 }
 
 type ChannelStrobe = {
@@ -95,7 +95,10 @@ export function initFixtureChannel(
   if (type === 'color') {
     return {
       type: type,
-      color: 'white',
+      color: {
+        hue: 0,
+        saturation: 1.0,
+      },
     }
   } else if (type === 'other') {
     return {
@@ -119,7 +122,7 @@ export function initFixtureChannel(
   } else if (type === 'colorMap') {
     return {
       type: type,
-      colors: [],
+      colors: [{ max: 0, hue: 0, saturation: 1.0 }],
     }
   } else if (type === 'reset') {
     return {
