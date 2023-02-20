@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 import useDragMapped from '../hooks/useDragMapped'
-import Cursor from '../base/Cursor'
+import Cursor from './Cursor'
 import { Normalized } from 'math/util'
 
 interface Props {

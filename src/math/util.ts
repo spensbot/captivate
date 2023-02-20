@@ -50,3 +50,16 @@ export function randomRanged(min: number, max: number) {
 export function randomBool() {
   return Math.random() > 0.5
 }
+
+export function findClosest<T>(items: [number, T][], target: number): T | null {
+  const f: (
+    acc: [number, T | null],
+    cur: [number, T | null]
+  ) => [number, T | null] = ([min_delta, min_t], [val, t]) => {
+    const delta = Math.abs(target - val)
+
+    return delta < min_delta ? [delta, t] : [min_delta, min_t]
+  }
+
+  return items.reduce(f, [Number.MAX_VALUE, null])[1]
+}

@@ -1,0 +1,266 @@
+import styled from 'styled-components'
+import { useDispatch } from 'react-redux'
+import Select from '../base/Select'
+import {
+  FixtureChannel,
+  channelTypes,
+  initFixtureChannel,
+  AxisDir,
+  axisDirList,
+  DMX_MAX_VALUE,
+  DMX_MIN_VALUE,
+} from '../../shared/dmxFixtures'
+import {
+  colorList,
+  getCustomColorChannelName,
+  StandardColor,
+} from '../../shared/dmxColors'
+import NumberField from '../base/NumberField'
+import Input from '../base/Input'
+import { editFixtureChannel } from '../redux/dmxSlice'
+import Checkbox from '../base/LabelledCheckbox'
+import HSpad from 'renderer/base/HSpad'
+import { FixtureChannelItemProps } from './FixtureChannelItem'
+import ColorMapChannel from './ColorMapChannel'
+
+interface Props extends FixtureChannelItemProps {
+  ch: FixtureChannel
+}
+
+export default function FixtureChannelPopup(props: Props) {
+  const { ch, hasMaster, fixtureID, channelIndex } = props
+  const dispatch = useDispatch()
+
+  return (
+    <Content>
+      <Row>
+        <Info>Type:</Info>
+        <Select
+          label="Channel Type"
+          val={ch.type}
+          items={
+            hasMaster && ch.type !== 'master'
+              ? channelTypes.slice(1)
+              : channelTypes
+          }
+          onChange={(newType) =>
+            dispatch(
+              editFixtureChannel({
+                fixtureID: fixtureID,
+                channelIndex: channelIndex,
+                newChannel: initFixtureChannel(newType),
+              })
+            )
+          }
+        />
+      </Row>
+      <Fields {...props} />
+    </Content>
+  )
+}
+
+function Fields({ ch, fixtureID, channelIndex }: Props) {
+  const dispatch = useDispatch()
+
+  function updateChannel(newChannel: FixtureChannel) {
+    dispatch(
+      editFixtureChannel({
+        fixtureID: fixtureID,
+        channelIndex: channelIndex,
+        newChannel: newChannel,
+      })
+    )
+  }
+
+  function dmxNumberField<Ch extends FixtureChannel, Key extends keyof Ch>(
+    ch: Ch,
+    field: Key,
+    label: string
+  ) {
+    return (
+      <NumberField
+        // @ts-ignore  It's gross but it saves so much time here
+        val={ch[field]}
+        label={label}
+        min={DMX_MIN_VALUE}
+        max={DMX_MAX_VALUE}
+        onChange={(newVal) =>
+          updateChannel({
+            ...ch,
+            [field]: newVal,
+          })
+        }
+      />
+    )
+  }
+
+  if (ch.type === 'color') {
+    const c = ch.color
+    const cType =
+      c === 'red' || c === 'green' || c === 'blue' || c === 'white'
+        ? c
+        : 'custom'
+
+    return (
+      <>
+        <Select
+          label="color"
+          val={cType}
+          items={colorList.concat(['custom'])}
+          onChange={(_newColor) => {
+            const newColor = _newColor as StandardColor | 'custom'
+            if (newColor === 'custom') {
+              updateChannel({
+                type: 'color',
+                color: {
+                  hue: 0,
+                  saturation: 1,
+                },
+              })
+            } else {
+              updateChannel({
+                type: 'color',
+                color: newColor,
+              })
+            }
+          }}
+        />
+        {!(c === 'red' || c === 'green' || c === 'blue' || c === 'white') && (
+          <>
+            <HSpad
+              hue={c.hue}
+              saturation={c.saturation}
+              onChange={(newHue, newSaturation) => {
+                updateChannel({
+                  type: 'color',
+                  color: {
+                    hue: newHue,
+                    saturation: newSaturation,
+                  },
+                })
+              }}
+            />
+            {getCustomColorChannelName(c)}
+          </>
+        )}
+      </>
+    )
+  } else if (ch.type === 'master') {
+    return (
+      <>
+        {dmxNumberField(ch, 'min', 'Min')}
+        <Sp2 />
+        {dmxNumberField(ch, 'max', 'MAX')}
+        <Sp2 />
+        <Checkbox
+          label="On/Off"
+          checked={ch.isOnOff}
+          onChange={(isOnOff) =>
+            updateChannel({
+              ...ch,
+              isOnOff,
+            })
+          }
+        />
+      </>
+    )
+  } else if (ch.type === 'other') {
+    return dmxNumberField(ch, 'default', 'Default')
+  } else if (ch.type === 'strobe') {
+    return (
+      <>
+        {dmxNumberField(ch, 'default_solid', 'Solid')}
+        <Sp2 />
+        {dmxNumberField(ch, 'default_strobe', 'Strobe')}
+      </>
+    )
+  } else if (ch.type === 'axis') {
+    return (
+      <>
+        <Row>
+          <Info>Direction: </Info>
+          <Select
+            label="Direction:"
+            val={ch.dir}
+            items={axisDirList}
+            onChange={(newAxisDir) =>
+              updateChannel({
+                ...ch,
+                dir: newAxisDir as AxisDir,
+              })
+            }
+          />
+        </Row>
+        <Checkbox
+          label="Fine"
+          checked={ch.isFine}
+          onChange={(isFine) =>
+            updateChannel({
+              ...ch,
+              isFine,
+            })
+          }
+        />
+        {!ch.isFine && (
+          <>
+            <Sp2 />
+            {dmxNumberField(ch, 'min', 'Min')}
+            <Sp2 />
+            {dmxNumberField(ch, 'max', 'Max')}
+          </>
+        )}
+      </>
+    )
+  } else if (ch.type === 'colorMap') {
+    return (
+      <ColorMapChannel
+        ch={ch}
+        fixtureID={fixtureID}
+        channelIndex={channelIndex}
+      />
+    )
+  } else if (ch.type === 'reset') {
+    return dmxNumberField(ch, 'resetVal', 'Reset Value')
+  } else if (ch.type === 'custom') {
+    return (
+      <>
+        <Input
+          value={ch.name}
+          onChange={(newName) =>
+            updateChannel({
+              ...ch,
+              name: newName,
+            })
+          }
+        />
+        {dmxNumberField(ch, 'default', 'Default')}
+        <Sp2 />
+        {dmxNumberField(ch, 'min', 'Min')}
+        <Sp2 />
+        {dmxNumberField(ch, 'max', 'Max')}
+      </>
+    )
+  } else {
+    return null
+  }
+}
+
+const Row = styled.div`
+  display: flex;
+  align-items: center;
+`
+
+const Content = styled.div`
+  & > * {
+    margin-bottom: 1rem;
+  }
+`
+
+const Sp2 = styled.div`
+  width: 1rem;
+`
+
+const Info = styled.div`
+  font-size: 0.9rem;
+  margin-right: 0.5rem;
+`

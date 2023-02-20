@@ -1,4 +1,4 @@
-import { lerp, Normalized } from '../math/util'
+import { findClosest, lerp, Normalized } from '../math/util'
 import { Params } from './params'
 
 export type StandardColor = 'red' | 'green' | 'blue' | 'white'
@@ -115,4 +115,29 @@ export function getCustomColor(params: Params, channel: CustomColorChannel) {
     saturationCorrectedHueLevelFactor *
     saturationLevelFactor(saturation, channel.saturation)
   )
+}
+
+const hueNames: [Normalized, string][] = [
+  [0.0, 'Red'],
+  [0.16, 'Yellow'],
+  [0.33, 'Green'],
+  [0.5, 'Cyan'],
+  [0.66, 'Blue'],
+  [0.83, 'Magenta'],
+  [1.0, 'Red'],
+]
+
+export function getHueName(hue: Normalized): string {
+  return findClosest(hueNames, hue) ?? 'Error'
+}
+
+const customColorNames: [Normalized, (hueName: string) => string][] = [
+  [0.0, (hueName) => hueName],
+  [0.5, (hueName) => `${hueName}/White`],
+  [1.0, () => 'White'],
+]
+
+export function getCustomColorChannelName(channel: CustomColorChannel) {
+  const f = findClosest(customColorNames, channel.saturation) ?? (() => 'Error')
+  return f(getHueName(channel.hue))
 }

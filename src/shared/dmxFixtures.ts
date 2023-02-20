@@ -46,7 +46,7 @@ export type ChannelAxis = {
 
 export type ColorMapColor = { max: number; hue: number; saturation: number }
 
-type ChannelColorMap = {
+export type ChannelColorMap = {
   type: 'colorMap'
   colors: ColorMapColor[]
 }
