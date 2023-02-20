@@ -192,11 +192,13 @@ export function getSortedGroupsForFixture(
 }
 
 export function getSortedGroupsForFixtureType(fixtureType: FixtureType) {
-  return fixtureType.groups.sort((a, b) => (a > b ? 1 : -1))
+  const groups = [...fixtureType.groups]
+  return groups.sort((a, b) => (a > b ? 1 : -1))
 }
 
 export function getSortedGroups(
   universe: Universe,
+  fixtureTypeIds: string[],
   fixtureTypesById: { [id: string]: FixtureType }
 ) {
   const groupSet: Set<string> = new Set()
@@ -212,6 +214,11 @@ export function getSortedGroups(
       for (const group of sub.groups) {
         groupSet.add(group)
       }
+    }
+  }
+  for (const id of fixtureTypeIds) {
+    for (const group of fixtureTypesById[id].groups) {
+      groupSet.add(group)
     }
   }
   return Array.from(groupSet.keys()).sort((a, b) => (a > b ? 1 : -1))

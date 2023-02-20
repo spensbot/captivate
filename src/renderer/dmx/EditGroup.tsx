@@ -6,7 +6,10 @@ import { useDmxSelector } from 'renderer/redux/store'
 import styled from 'styled-components'
 import Popup from '../base/Popup'
 import { useDispatch } from 'react-redux'
-import { addActiveFixtureTypeGroup } from '../redux/dmxSlice'
+import {
+  addActiveFixtureTypeGroup,
+  removeActiveFixtureTypeGroup,
+} from '../redux/dmxSlice'
 import { Button } from '@mui/material'
 import { getSortedGroups, getSortedGroupsForFixtureType } from 'shared/dmxUtil'
 
@@ -16,24 +19,22 @@ export default function EditGroups({}: Props) {
   const dispatch = useDispatch()
   const [newGroup, setNewGroup] = useState('')
   const [isOpen, setIsOpen] = useState(false)
-  const activeFixtureTypeID = useDmxSelector((dmx) => dmx.activeFixtureType)
-  const universe = useDmxSelector((dmx) => dmx.universe)
-  const fixtureTypesById = useDmxSelector((dmx) => dmx.fixtureTypesByID)
-  const fixtureGroupString = useDmxSelector((dmx) => {
-    if (activeFixtureTypeID !== null) {
-      const groups = getSortedGroupsForFixtureType(
-        dmx.fixtureTypesByID[activeFixtureTypeID]
-      )
-      return groups.join(' ')
-    }
-    return ''
-  })
-  const groups = getSortedGroups(universe, fixtureTypesById)
-  console.log(groups)
+  const dmx = useDmxSelector((dmx) => dmx)
+  const fixtureGroups =
+    dmx.activeFixtureType === null
+      ? []
+      : getSortedGroupsForFixtureType(
+          dmx.fixtureTypesByID[dmx.activeFixtureType]
+        )
+  const allGroups = getSortedGroups(
+    dmx.universe,
+    dmx.fixtureTypes,
+    dmx.fixtureTypesByID
+  )
 
   return (
     <Root>
-      <GroupName>{`${fixtureGroupString}`}</GroupName>
+      <GroupName>{`${fixtureGroups.join(', ')}`}</GroupName>
       <IconButton
         size="small"
         onClick={(e) => {
@@ -45,14 +46,25 @@ export default function EditGroups({}: Props) {
       </IconButton>
       {isOpen && (
         <Popup title="Edit Groups" onClose={() => setIsOpen(false)}>
-          {groups.map((group) => (
-            <AvailableGroup
-              key={group}
-              onClick={() => dispatch(addActiveFixtureTypeGroup(group))}
-            >
-              {group}
-            </AvailableGroup>
-          ))}
+          {allGroups.map((group) => {
+            const isActive =
+              fixtureGroups.find((g) => g === group) !== undefined
+            return (
+              <AvailableGroup
+                isActive={isActive}
+                key={group}
+                onClick={() => {
+                  if (isActive) {
+                    dispatch(removeActiveFixtureTypeGroup(group))
+                  } else {
+                    dispatch(addActiveFixtureTypeGroup(group))
+                  }
+                }}
+              >
+                {group}
+              </AvailableGroup>
+            )
+          })}
           <TextField
             size="small"
             value={newGroup}
@@ -81,10 +93,12 @@ const GroupName = styled.div`
   font-size: 1rem;
 `
 
-const AvailableGroup = styled.div`
+const AvailableGroup = styled.div<{ isActive: boolean }>`
   cursor: pointer;
   :hover {
-    text-decoration: underline;
+    text-decoration: ${(props) =>
+      props.isActive ? 'line-through' : 'underline'};
   }
+  color: ${(props) => !props.isActive && props.theme.colors.text.secondary};
   margin-bottom: 1rem;
 `

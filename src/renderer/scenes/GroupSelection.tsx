@@ -20,9 +20,12 @@ interface Props {
 export default function GroupSelection({ splitIndex }: Props) {
   const dispatch = useDispatch()
   const [isOpen, setIsOpen] = useState(false)
-  const universe = useDmxSelector((dmx) => dmx.universe)
-  const fixtureTypesById = useDmxSelector((dmx) => dmx.fixtureTypesByID)
-  const availableGroups = getSortedGroups(universe, fixtureTypesById)
+  const dmx = useDmxSelector((dmx) => dmx)
+  const availableGroups = getSortedGroups(
+    dmx.universe,
+    dmx.fixtureTypes,
+    dmx.fixtureTypesByID
+  )
   const activeGroups = useActiveLightScene(
     (scene) => scene.splitScenes[splitIndex].groups
   )
@@ -64,6 +67,7 @@ export default function GroupSelection({ splitIndex }: Props) {
             }
             return (
               <AvailableGroup
+                isActive={isActive}
                 key={group}
                 style={
                   isActive
@@ -97,10 +101,11 @@ const GroupName = styled.div`
   font-size: 1rem;
 `
 
-const AvailableGroup = styled.div`
+const AvailableGroup = styled.div<{ isActive: boolean }>`
   cursor: pointer;
   :hover {
-    text-decoration: underline;
+    text-decoration: ${(props) =>
+      props.isActive ? 'line-through' : 'underline'};
   }
   margin-bottom: 1rem;
 `

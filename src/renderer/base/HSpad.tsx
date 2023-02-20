@@ -36,8 +36,8 @@ export default function HSpad({
 
 const Root = styled.div`
   position: relative;
-  width: 200px;
-  height: 60px;
+  width: 300px;
+  height: 100px;
   overflow: hidden;
 `
 

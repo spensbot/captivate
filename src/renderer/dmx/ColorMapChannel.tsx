@@ -29,7 +29,7 @@ export default function ColorMapChannel({
   channelIndex,
 }: Props) {
   const dispatch = useDispatch()
-  const [activeColorIndex, setActiveIndex] = useState(0)
+  const [activeColorIndex, setActiveColorIndex] = useState(0)
 
   let activeColor = ch.colors[activeColorIndex]
 
@@ -55,6 +55,7 @@ export default function ColorMapChannel({
   return (
     <div>
       <ColorPicker {...colorProps} />
+      <div style={{ height: '0.5rem' }} />
       <HSpad {...colorProps} />
       <Sp />
       <ColorMapColor>
@@ -66,7 +67,7 @@ export default function ColorMapChannel({
         return (
           <ColorMapColor key={fixtureID + channelIndex + i}>
             <ColorMapVisualizer
-              onClick={wrapClick(() => setActiveIndex(i))}
+              onClick={wrapClick(() => setActiveColorIndex(i))}
               style={{
                 backgroundColor: `hsl(${color.hue * 360}, ${
                   color.saturation * 100
@@ -112,6 +113,12 @@ export default function ColorMapChannel({
       {ch.colors.length > 1 && (
         <IconButton
           onClick={() => {
+            console.log(`activeColorIndex ${activeColorIndex}`)
+            console.log(`colorCount - 1 ${ch.colors.length - 1}`)
+
+            if (activeColorIndex === ch.colors.length - 1) {
+              setActiveColorIndex(activeColorIndex - 1)
+            }
             dispatch(
               removeColorMapColor({
                 fixtureTypeId: fixtureID,

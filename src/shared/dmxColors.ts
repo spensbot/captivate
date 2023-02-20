@@ -50,11 +50,11 @@ type StandardHueName = 'Red' | 'Yellow' | 'Green' | 'Cyan' | 'Blue' | 'Magenta'
 
 export const huesByName: { [key in StandardHueName]: Normalized } = {
   Red: 0.0,
-  Yellow: 0.16,
-  Green: 0.33,
+  Yellow: 0.166,
+  Green: 0.333,
   Cyan: 0.5,
-  Blue: 0.66,
-  Magenta: 0.83,
+  Blue: 0.666,
+  Magenta: 0.833,
 }
 
 const hueNames: [Normalized, StandardHueName][] = [
