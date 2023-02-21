@@ -6,6 +6,7 @@ import {
   FixtureChannel,
   ColorMapColor,
   initSubFixture,
+  SubFixture,
 } from '../../shared/dmxFixtures'
 import { clampNormalized } from '../../math/util'
 import { defaultParamsList } from '../../shared/params'
@@ -347,6 +348,16 @@ export const dmxSlice = createSlice({
         }
       })
     },
+    replaceActiveFixtureTypeSubFixture: (
+      state,
+      {
+        payload,
+      }: PayloadAction<{ subFixtureIndex: number; subFixture: SubFixture }>
+    ) => {
+      modifyActiveFixtureType(state, (ft) => {
+        ft.subFixtures[payload.subFixtureIndex] = payload.subFixture
+      })
+    },
   },
 })
 
@@ -375,6 +386,7 @@ export const {
   setActiveSubFixture,
   assignChannelToSubFixture,
   removeChannelFromSubFixtures,
+  replaceActiveFixtureTypeSubFixture,
 } = dmxSlice.actions
 
 export default dmxSlice.reducer

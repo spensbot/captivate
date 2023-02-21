@@ -5,17 +5,15 @@ import { IconButton } from '@mui/material'
 import FixtureChannelPopup from './FixtureChannelPopup'
 import Popup from '../base/Popup'
 import RemoveIcon from '@mui/icons-material/Remove'
-import { FixtureChannel } from 'shared/dmxFixtures'
-import {
-  removeChannelFromSubFixtures,
-  assignChannelToSubFixture,
-  removeFixtureChannel,
-} from 'renderer/redux/dmxSlice'
-import { getCustomColorChannelName } from 'shared/dmxColors'
+import { FixtureChannel } from '../../shared/dmxFixtures'
+import { removeFixtureChannel } from '..//redux/dmxSlice'
+import { getCustomColorChannelName } from '../../shared/dmxColors'
+import { ChannelToggle } from './Subfixtures'
 
 export interface FixtureChannelItemProps {
   fixtureID: string
   channelIndex: number
+  channelCount: number
   hasMaster: boolean
   isInUse: boolean
   editing: number | null
@@ -23,22 +21,18 @@ export interface FixtureChannelItemProps {
 }
 
 export default function FixtureChannelItem(props: FixtureChannelItemProps) {
-  const { fixtureID, channelIndex, editing, setEditing, isInUse } = props
+  const {
+    fixtureID,
+    channelIndex,
+    channelCount,
+    editing,
+    setEditing,
+    isInUse,
+  } = props
   const ch = useDmxSelector(
     (state) => state.fixtureTypesByID[fixtureID].channels[channelIndex]
   )
-  const activeSubfixture = useDmxSelector((dmx) => dmx.activeSubFixture)
-  const isPartOfActiveSubfixture = useDmxSelector((dmx) => {
-    if (dmx.activeFixtureType !== null && dmx.activeSubFixture !== null) {
-      return (
-        dmx.fixtureTypesByID[dmx.activeFixtureType].subFixtures[
-          dmx.activeSubFixture
-        ].channels.find((ci) => ci === channelIndex) !== undefined
-      )
-    } else {
-      return false
-    }
-  })
+
   const dispatch = useDispatch()
 
   const props3 = { ...props, ch: ch }
@@ -51,32 +45,14 @@ export default function FixtureChannelItem(props: FixtureChannelItemProps) {
           setEditing(channelIndex)
         }
       }}
+      style={{ opacity: 1.0 }}
     >
-      {activeSubfixture !== null && (
-        <Toggle
-          enabled={isPartOfActiveSubfixture}
-          onClick={(e) => {
-            if (!e.defaultPrevented) {
-              e.preventDefault()
-              if (isPartOfActiveSubfixture) {
-                dispatch(removeChannelFromSubFixtures({ channelIndex }))
-              } else {
-                dispatch(
-                  assignChannelToSubFixture({
-                    channelIndex,
-                    subFixtureIndex: activeSubfixture,
-                  })
-                )
-              }
-            }
-          }}
-        />
-      )}
+      <ChannelToggle channelIndex={channelIndex} />
       <Ch>{`${channelIndex + 1}`}</Ch>
       <Info>{`${getInfo(ch)}`}</Info>
       <SubInfo>{getSubInfo(ch)}</SubInfo>
       <Sp />
-      {!isInUse && (
+      {!isInUse && channelCount > 1 && (
         <IconButton
           size="small"
           style={{ margin: '-0.9rem 0' }}
@@ -133,14 +109,6 @@ const SubInfo = styled.div`
 
 const Sp = styled.div`
   flex: 1 0 0;
-`
-
-const Toggle = styled.div<{ enabled: boolean }>`
-  width: 1rem;
-  height: 1rem;
-  border-radius: 1rem;
-  border: 1px solid white;
-  background-color: ${(props) => (props.enabled ? 'white' : undefined)};
 `
 
 function getInfo(ch: FixtureChannel): string {

@@ -121,3 +121,14 @@ export function zip<T, U>(a: T[], b: U[]): [T, U][] {
   }
   return output
 }
+
+export function fMap<T, U>(
+  val: T | null | undefined,
+  f: (t: T) => U
+): U | null {
+  if (val === null || val === undefined) {
+    return null
+  } else {
+    return f(val)
+  }
+}

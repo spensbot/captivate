@@ -14,7 +14,7 @@ interface Props {
   splitIndex: number
 }
 
-export default function XYpad({ splitIndex }: Props) {
+export default function XyParamsPad({ splitIndex }: Props) {
   const dispatch = useDispatch()
 
   const [dragContainer, onMouseDown] = useDragMapped(({ x, y, dx, dy }, e) => {

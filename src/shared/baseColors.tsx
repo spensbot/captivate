@@ -65,3 +65,20 @@ export function getBaseColors(params: Params): BaseColors {
     blue: b,
   }
 }
+
+export function separateHue(n: number, i: number) {
+  const HUE_RANGE = 1
+  const HUE_START = 60 / 360
+  const hueDelta = HUE_RANGE / n
+
+  return (HUE_START + i * hueDelta) % HUE_RANGE
+}
+
+export function hsvaForCss(
+  h: Normalized,
+  s: Normalized,
+  v: Normalized,
+  a: Normalized
+) {
+  return `hsla(${h * 360}, ${s * 100}%, ${v * 50}%, ${a})`
+}

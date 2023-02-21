@@ -206,7 +206,9 @@ export function getSortedGroups(
     for (const group of fixture.groups) {
       groupSet.add(group)
     }
-    const fixtureType = fixtureTypesById[fixture.type]
+  }
+  for (const id of fixtureTypeIds) {
+    const fixtureType = fixtureTypesById[id]
     for (const group of fixtureType.groups) {
       groupSet.add(group)
     }
@@ -214,11 +216,6 @@ export function getSortedGroups(
       for (const group of sub.groups) {
         groupSet.add(group)
       }
-    }
-  }
-  for (const id of fixtureTypeIds) {
-    for (const group of fixtureTypesById[id].groups) {
-      groupSet.add(group)
     }
   }
   return Array.from(groupSet.keys()).sort((a, b) => (a > b ? 1 : -1))

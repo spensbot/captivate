@@ -1,6 +1,6 @@
 import HsvPad from './HsvPad'
 import ParamSlider from './ParamSlider'
-import XYpad from './XYpad'
+import XyPad from './XyParamsPad'
 import styled from 'styled-components'
 import Randomizer from './Randomizer'
 import XYAxispad from './XYAxisPad'
@@ -18,7 +18,7 @@ export default function ParamsControl({ splitIndex }: Params) {
   return (
     <Root>
       <HsvPad splitIndex={splitIndex} />
-      <XYpad splitIndex={splitIndex} />
+      <XyPad splitIndex={splitIndex} />
       <XYAxispad splitIndex={splitIndex} />
       <Randomizer splitIndex={splitIndex} />
       <ParamSlider param={'strobe'} splitIndex={splitIndex} />

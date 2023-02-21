@@ -2,62 +2,50 @@ import IconButton from '@mui/material/IconButton'
 import EditIcon from '@mui/icons-material/Edit'
 import { TextField } from '@mui/material'
 import { useState } from 'react'
-import { useDmxSelector } from 'renderer/redux/store'
 import styled from 'styled-components'
 import Popup from '../base/Popup'
-import { useDispatch } from 'react-redux'
-import {
-  addActiveFixtureTypeGroup,
-  removeActiveFixtureTypeGroup,
-} from '../redux/dmxSlice'
 import { Button } from '@mui/material'
-import { getSortedGroups, getSortedGroupsForFixtureType } from 'shared/dmxUtil'
+import wrapClick from './wrapClick'
 
-interface Props {}
+interface Props {
+  groups: string[]
+  availableGroups: string[]
+  addGroup: (newGroup: string) => void
+  removeGroup: (newGroup: string) => void
+}
 
-export default function EditGroups({}: Props) {
-  const dispatch = useDispatch()
+export default function GroupPicker({
+  groups,
+  availableGroups,
+  addGroup,
+  removeGroup,
+}: Props) {
   const [newGroup, setNewGroup] = useState('')
   const [isOpen, setIsOpen] = useState(false)
-  const dmx = useDmxSelector((dmx) => dmx)
-  const fixtureGroups =
-    dmx.activeFixtureType === null
-      ? []
-      : getSortedGroupsForFixtureType(
-          dmx.fixtureTypesByID[dmx.activeFixtureType]
-        )
-  const allGroups = getSortedGroups(
-    dmx.universe,
-    dmx.fixtureTypes,
-    dmx.fixtureTypesByID
-  )
+
+  const groupsText = groups.join(', ')
 
   return (
     <Root>
-      <GroupName>{`${fixtureGroups.join(', ')}`}</GroupName>
-      <IconButton
-        size="small"
-        onClick={(e) => {
-          e.preventDefault()
-          setIsOpen(true)
-        }}
-      >
+      <GroupList>{`${
+        groupsText.length > 0 ? groupsText : 'Groups (none)'
+      }`}</GroupList>
+      <IconButton size="small" onClick={wrapClick(() => setIsOpen(true))}>
         <EditIcon />
       </IconButton>
       {isOpen && (
         <Popup title="Edit Groups" onClose={() => setIsOpen(false)}>
-          {allGroups.map((group) => {
-            const isActive =
-              fixtureGroups.find((g) => g === group) !== undefined
+          {availableGroups.map((group) => {
+            const isActive = groups.find((g) => g === group) !== undefined
             return (
               <AvailableGroup
                 isActive={isActive}
                 key={group}
                 onClick={() => {
                   if (isActive) {
-                    dispatch(removeActiveFixtureTypeGroup(group))
+                    removeGroup(group)
                   } else {
-                    dispatch(addActiveFixtureTypeGroup(group))
+                    addGroup(group)
                   }
                 }}
               >
@@ -72,7 +60,7 @@ export default function EditGroups({}: Props) {
           />
           <Button
             disabled={newGroup.length < 1}
-            onClick={() => dispatch(addActiveFixtureTypeGroup(newGroup))}
+            onClick={() => addGroup(newGroup)}
           >
             Add
           </Button>
@@ -88,9 +76,9 @@ const Root = styled.div`
   align-items: center;
 `
 
-const GroupName = styled.div`
+const GroupList = styled.div`
   margin-right: 0.5rem;
-  font-size: 1rem;
+  font-size: 0.9rem;
 `
 
 const AvailableGroup = styled.div<{ isActive: boolean }>`

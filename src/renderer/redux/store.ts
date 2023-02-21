@@ -16,6 +16,7 @@ import { VisualScene_t, SceneType } from '../../shared/Scenes'
 import { DefaultParam, Params } from '../../shared/params'
 import { SaveInfo } from 'shared/save'
 import eventLogger from './eventLogger'
+import { FixtureType } from 'shared/dmxFixtures'
 
 export interface UndoActionTypes {
   undo: string
@@ -230,6 +231,18 @@ export function useActiveVisualScene<T>(getVal: (scene: VisualScene_t) => T) {
 
 export function useDmxSelector<T>(getVal: (dmx: DmxState) => T) {
   return useTypedSelector((state) => getVal(state.dmx.present))
+}
+
+export function useActiveFixtureType<T>(
+  getVal: (ft: FixtureType) => T | null
+): T | null {
+  return useDmxSelector((dmx) => {
+    if (dmx.activeFixtureType === null) {
+      return null
+    } else {
+      return getVal(dmx.fixtureTypesByID[dmx.activeFixtureType])
+    }
+  })
 }
 
 export function useDeviceSelector<T>(getVal: (midi: DeviceState) => T) {

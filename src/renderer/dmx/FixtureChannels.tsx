@@ -57,6 +57,7 @@ export default function FixtureChannels({ fixtureID, isInUse }: Props) {
             key={channelIndex}
             fixtureID={fixtureID}
             channelIndex={channelIndex}
+            channelCount={channelCount}
             editing={editing}
             setEditing={setEditing}
             hasMaster={hasMaster}

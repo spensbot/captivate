@@ -162,7 +162,7 @@ export function initFixtureType(): FixtureType {
     name: 'Name',
     manufacturer: 'Manufacturer',
     intensity: 0,
-    channels: [],
+    channels: [initFixtureChannel()],
     subFixtures: [],
     groups: [],
   }
