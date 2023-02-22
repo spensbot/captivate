@@ -82,12 +82,12 @@ export function getDmxValue(
     case 'other':
       return ch.default
     case 'color':
-      return (
-        getColorChannelLevel(params, {
-          hue: ch.color.hue,
-          saturation: ch.color.saturation,
-        }) * DMX_DEFAULT_VALUE
-      )
+      // console.log(
+      //   `${ch.color.hue} | ${
+      //     getColorChannelLevel(params, ch.color) * DMX_DEFAULT_VALUE
+      //   }`
+      // )
+      return getColorChannelLevel(params, ch.color) * DMX_MAX_VALUE
     case 'strobe':
       return params.strobe !== undefined && params.strobe > 0.5
         ? ch.default_strobe

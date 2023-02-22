@@ -308,7 +308,6 @@ export const dmxSlice = createSlice({
       state.activeSubFixture = null
     },
     setActiveSubFixture: (state, { payload }: PayloadAction<number | null>) => {
-      console.log(payload)
       state.activeSubFixture = payload
     },
     assignChannelToSubFixture: (

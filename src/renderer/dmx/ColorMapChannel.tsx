@@ -113,9 +113,6 @@ export default function ColorMapChannel({
       {ch.colors.length > 1 && (
         <IconButton
           onClick={() => {
-            console.log(`activeColorIndex ${activeColorIndex}`)
-            console.log(`colorCount - 1 ${ch.colors.length - 1}`)
-
             if (activeColorIndex === ch.colors.length - 1) {
               setActiveColorIndex(activeColorIndex - 1)
             }

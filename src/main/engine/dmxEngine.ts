@@ -39,10 +39,7 @@ export function calculateDmx(
         fixture.channels.forEach(([outputChannel, channelType]) => {
           let new_channel_value = DMX_DEFAULT_VALUE
           let current_channel_value = channels[outputChannel - 1]
-          if (
-            outputParams.intensity !== undefined &&
-            outputParams.intensity >= fixture.intensity
-          ) {
+          if (fixture.intensity <= (outputParams.intensity ?? 1)) {
             new_channel_value = getDmxValue(
               channelType,
               outputParams,

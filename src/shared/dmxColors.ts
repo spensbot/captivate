@@ -26,6 +26,9 @@ function saturationLevelFactor(
 ): Normalized {
   const white = 1.0 - saturation
   const channelWhite = 1.0 - channelSaturation
+  if (channelWhite < 0.01) {
+    return 1.0
+  }
   return Math.min(white / channelWhite, 1.0)
 }
 

@@ -69,17 +69,10 @@ export function findClosest<T>(
     acc: [T | null, number],
     current: [T | null, ...number[]]
   ) => [T | null, number] = ([min_t, min_delta], [t, ...point]) => {
-    console.log('point', point)
-    console.log('target', target)
-    // console.log(point_delta(point, target))
     const delta = magnitude(point_delta(point, target))
 
     return delta < min_delta ? [t, delta] : [min_t, min_delta]
   }
 
-  const result = items.reduce(f, [null, Number.MAX_VALUE])
-
-  console.log(`${result[1]} | ${result[0]}`)
-
-  return result[0]
+  return items.reduce(f, [null, Number.MAX_VALUE])[0]
 }
