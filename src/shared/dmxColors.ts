@@ -57,24 +57,24 @@ export const huesByName: { [key in StandardHueName]: Normalized } = {
   Magenta: 0.833,
 }
 
-const hueNames: [Normalized, StandardHueName][] = [
-  [0.0, 'Red'],
-  [0.16, 'Yellow'],
-  [0.33, 'Green'],
-  [0.5, 'Cyan'],
-  [0.66, 'Blue'],
-  [0.83, 'Magenta'],
-  [1.0, 'Red'],
+const hueNames: [StandardHueName, Normalized][] = [
+  ['Red', 0.0],
+  ['Yellow', 0.16],
+  ['Green', 0.33],
+  ['Cyan', 0.5],
+  ['Blue', 0.66],
+  ['Magenta', 0.83],
+  ['Red', 1.0],
 ]
 
 function getHueName(hue: Normalized): string {
   return findClosest(hueNames, hue) ?? 'Error'
 }
 
-const colorChannelNames: [Normalized, (hueName: string) => string][] = [
-  [0.0, () => 'White'],
-  [0.5, (hueName) => `${hueName}/White`],
-  [1.0, (hueName) => hueName],
+const colorChannelNames: [(hueName: string) => string, Normalized][] = [
+  [() => 'White', 0.0],
+  [(hueName) => `${hueName}/White`, 0.5],
+  [(hueName) => hueName, 1.0],
 ]
 
 export function getCustomColorChannelName(channel: ColorChannel) {
@@ -110,7 +110,7 @@ export function approximateStandardColor(
   if (color.saturation < delta) {
     return 'White'
   } else if (1.0 - color.saturation < delta) {
-    for (const [hue, name] of hueNames) {
+    for (const [name, hue] of hueNames) {
       if (Math.abs(hue - color.hue) < delta) {
         return name
       }

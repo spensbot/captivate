@@ -1,3 +1,5 @@
+import { zip } from '../shared/util'
+
 export type Normalized = number // 0 to 1
 
 export function clampNormalized(val: number) {
@@ -51,15 +53,33 @@ export function randomBool() {
   return Math.random() > 0.5
 }
 
-export function findClosest<T>(items: [number, T][], target: number): T | null {
-  const f: (
-    acc: [number, T | null],
-    cur: [number, T | null]
-  ) => [number, T | null] = ([min_delta, min_t], [val, t]) => {
-    const delta = Math.abs(target - val)
+export function magnitude(point: number[]) {
+  return point.reduce((acc, dim) => acc + dim ** 2, 0) ** 0.5
+}
 
-    return delta < min_delta ? [delta, t] : [min_delta, min_t]
+export function point_delta(start: number[], end: number[]): number[] {
+  return zip(start, end).map(([s, e]) => e - s)
+}
+
+export function findClosest<T>(
+  items: [T, ...number[]][],
+  ...target: number[]
+): T | null {
+  const f: (
+    acc: [T | null, number],
+    current: [T | null, ...number[]]
+  ) => [T | null, number] = ([min_t, min_delta], [t, ...point]) => {
+    console.log('point', point)
+    console.log('target', target)
+    // console.log(point_delta(point, target))
+    const delta = magnitude(point_delta(point, target))
+
+    return delta < min_delta ? [t, delta] : [min_t, min_delta]
   }
 
-  return items.reduce(f, [Number.MAX_VALUE, null])[1]
+  const result = items.reduce(f, [null, Number.MAX_VALUE])
+
+  console.log(`${result[1]} | ${result[0]}`)
+
+  return result[0]
 }

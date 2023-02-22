@@ -13,7 +13,7 @@ import {
   FlattenedFixture,
 } from './dmxFixtures'
 import { Params } from './params'
-import { lerp, Normalized } from '../math/util'
+import { findClosest, lerp, Normalized } from '../math/util'
 import { rLerp } from '../math/range'
 import { applyRandomization } from './randomizer'
 import { getColorChannelLevel } from './dmxColors'
@@ -112,27 +112,17 @@ export function getDmxValue(
       }
     case 'colorMap':
       const _colors = ch.colors
-      const firstColor = _colors[0]
       const hue = params.hue
       const saturation = params.saturation
-      if (
-        hue !== undefined &&
-        saturation !== undefined &&
-        firstColor &&
-        saturation > 0.5
-      ) {
-        const closestColor = _colors.reduce((current, color) => {
-          const currentDif = Math.min(
-            Math.abs(current.hue - hue),
-            Math.abs(current.hue - (hue - 1))
-          )
-          const dif = Math.min(
-            Math.abs(color.hue - hue),
-            Math.abs(color.hue - (hue - 1))
-          )
-          return dif < currentDif ? color : current
-        }, firstColor)
-        return closestColor.max
+      if (hue !== undefined && saturation !== undefined) {
+        let closestColor = findClosest(
+          _colors.map((color) => {
+            return [color, color.hue, color.saturation * 2]
+          }),
+          hue,
+          saturation * 2
+        )
+        return closestColor?.max ?? DMX_DEFAULT_VALUE
       } else {
         return DMX_DEFAULT_VALUE
       }
