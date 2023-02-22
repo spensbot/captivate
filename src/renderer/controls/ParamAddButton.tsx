@@ -7,7 +7,7 @@ import Popup from '../base/Popup'
 import { useDispatch } from 'react-redux'
 import { DefaultParam, Params, defaultParamsList } from 'shared/params'
 import { setBaseParams } from 'renderer/redux/controlSlice'
-import { defaultBaseParams } from 'shared/params'
+import { initParams } from 'shared/params'
 import IntensityIcon from '@mui/icons-material/LocalFireDepartment'
 import StrobeIcon from '@mui/icons-material/LightMode'
 import RandomizeIcon from '@mui/icons-material/Shuffle'
@@ -43,7 +43,7 @@ const icons: {
   mode: () => <ModeIcon />,
 }
 
-const defalt = defaultBaseParams()
+const initialParams = initParams()
 
 function getOptions(
   custom_channels: Set<string>,
@@ -114,10 +114,11 @@ export default function ParamAddButton({ splitIndex }: Props) {
                   const newParams: Params = {}
                   if (option === 'axis' || option === 'position') {
                     for (const param of paramBundles[option]) {
-                      newParams[param] = defalt[param] ?? 0
+                      newParams[param] = initialParams[param] ?? 0
                     }
                   } else {
-                    newParams[option] = defalt[option] ?? 0
+                    let _initialParams = initialParams as Params
+                    newParams[option] = _initialParams[option] ?? 0
                   }
                   dispatch(
                     setBaseParams({

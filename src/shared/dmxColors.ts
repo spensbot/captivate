@@ -1,5 +1,4 @@
 import { findClosest, lerp, Normalized } from '../math/util'
-import { Params } from './params'
 
 export interface ColorChannel {
   hue: Normalized
@@ -33,11 +32,12 @@ function saturationLevelFactor(
 }
 
 /// My best guess at handling channels of any hue & saturation
-export function getColorChannelLevel(params: Params, channel: ColorChannel) {
-  const hue = params.hue ?? 0
-  const saturation = params.saturation ?? 0
-  const brightness = params.brightness ?? 0
-
+export function getColorChannelLevel(
+  hue: Normalized,
+  saturation: Normalized,
+  brightness: Normalized,
+  channel: ColorChannel
+) {
   const hlf = hueLevelFactor(hue, channel.hue)
 
   const saturationCorrectedHueLevelFactor = lerp(1.0, hlf, saturation)

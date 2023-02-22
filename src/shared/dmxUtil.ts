@@ -12,7 +12,7 @@ import {
   DMX_MIN_VALUE,
   FlattenedFixture,
 } from './dmxFixtures'
-import { Params } from './params'
+import { getParam, Params } from './params'
 import { findClosest, lerp, Normalized } from '../math/util'
 import { rLerp } from '../math/range'
 import { applyRandomization } from './randomizer'
@@ -62,18 +62,9 @@ export function getDmxValue(
 
   switch (ch.type) {
     case 'master':
-      const brightnessParam = params.brightness ?? 0
-      const randomizeParam = params.randomize ?? 0
-
-      const unrandomizedLevel =
-        brightnessParam *
-        getWindowMultiplier2D(fixture.window, movingWindow) *
+      const level =
+        getBrightness(params, randomizerLevel, fixture.window, movingWindow) *
         master
-      const level = applyRandomization(
-        unrandomizedLevel,
-        randomizerLevel,
-        randomizeParam
-      )
       if (ch.isOnOff) {
         return level > 0.5 ? ch.max : ch.min
       } else {
@@ -82,12 +73,20 @@ export function getDmxValue(
     case 'other':
       return ch.default
     case 'color':
-      // console.log(
-      //   `${ch.color.hue} | ${
-      //     getColorChannelLevel(params, ch.color) * DMX_DEFAULT_VALUE
-      //   }`
-      // )
-      return getColorChannelLevel(params, ch.color) * DMX_MAX_VALUE
+      const brightness = getBrightness(
+        params,
+        randomizerLevel,
+        fixture.window,
+        movingWindow
+      )
+      return (
+        getColorChannelLevel(
+          getParam(params, 'hue'),
+          getParam(params, 'saturation'),
+          brightness,
+          ch.color
+        ) * DMX_MAX_VALUE
+      )
     case 'strobe':
       return params.strobe !== undefined && params.strobe > 0.5
         ? ch.default_strobe
@@ -136,6 +135,22 @@ export function getDmxValue(
     default:
       return DMX_DEFAULT_VALUE
   }
+}
+
+export function getBrightness(
+  params: Params,
+  randomizerLevel: Normalized,
+  fixtureWindow: Window2D_t,
+  movingWindow: Window2D_t
+): Normalized {
+  const unrandomizedBrightness =
+    getParam(params, 'brightness') *
+    getWindowMultiplier2D(fixtureWindow, movingWindow)
+  return applyRandomization(
+    unrandomizedBrightness,
+    randomizerLevel,
+    getParam(params, 'randomize')
+  )
 }
 
 export function getMovingWindow(params: Params): Window2D_t {

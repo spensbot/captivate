@@ -88,4 +88,5 @@ const Root = styled.div`
   background: #000;
   overflow: hidden;
   border: 1px solid ${(props) => props.theme.colors.divider};
+  margin-right: 1rem;
 `
