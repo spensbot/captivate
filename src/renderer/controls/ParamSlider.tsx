@@ -61,6 +61,7 @@ export default function ParamSlider({ param, splitIndex }: Props) {
     alignItems: 'center',
     height: '10rem',
     marginRight: '1rem',
+    position: 'relative',
   }
 
   return splitIndex === 0 ? (

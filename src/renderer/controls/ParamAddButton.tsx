@@ -13,7 +13,6 @@ import StrobeIcon from '@mui/icons-material/LightMode'
 import RandomizeIcon from '@mui/icons-material/Shuffle'
 import PositionIcon from '@mui/icons-material/PictureInPicture'
 import axisIconSrc from '../../../assets/axis.svg'
-import ModeIcon from '@mui/icons-material/Category'
 import { getCustomChannels } from 'renderer/redux/dmxSlice'
 
 interface Props {
@@ -40,7 +39,6 @@ const icons: {
   position: () => <PositionIcon />,
   intensity: () => <IntensityIcon />,
   axis: Axis,
-  mode: () => <ModeIcon />,
 }
 
 const initialParams = initParams()
@@ -64,10 +62,11 @@ function getOptions(
     )
     return !isActive
   })
+  const customParamOptions = Array.from(custom_channels).filter(
+    (cpo) => baseParams[cpo] === undefined
+  )
 
-  return paramOptions
-    .concat(paramBundleOptions)
-    .concat(Array.from(custom_channels))
+  return paramOptions.concat(paramBundleOptions).concat(customParamOptions)
 }
 
 export default function ParamAddButton({ splitIndex }: Props) {
