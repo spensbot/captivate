@@ -204,6 +204,7 @@ function getNextRealtimeState(
       let splitSceneFixturesWithinEpicness = splitSceneFixtures.filter(
         (fixture) => fixture.intensity <= (splitOutputParams.intensity ?? 1)
       )
+
       let newRandomizerState = resizeRandomizer(
         realtimeState.splitStates[splitIndex]?.randomizer ??
           initRandomizerState(),

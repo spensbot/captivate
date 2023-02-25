@@ -292,7 +292,7 @@ export function flatten_fixture(
     groups,
   })
 
-  // For now, only return fixtures that actually have channels.
+  // Only return fixtures that actually have channels.
   // This improves the behavior of the randomizer engine
   return flattened.filter((fixture) => fixture.channels.length > 0)
 }

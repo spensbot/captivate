@@ -24,7 +24,7 @@ interface Props extends FixtureChannelItemProps {
 }
 
 export default function FixtureChannelPopup(props: Props) {
-  const { ch, hasMaster, fixtureID, channelIndex } = props
+  const { ch, fixtureID, channelIndex } = props
   const dispatch = useDispatch()
 
   return (
@@ -34,11 +34,7 @@ export default function FixtureChannelPopup(props: Props) {
         <Select
           label="Channel Type"
           val={ch.type}
-          items={
-            hasMaster && ch.type !== 'master'
-              ? channelTypes.slice(1)
-              : channelTypes
-          }
+          items={channelTypes}
           onChange={(newType) =>
             dispatch(
               editFixtureChannel({
