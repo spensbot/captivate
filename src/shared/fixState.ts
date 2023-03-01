@@ -51,7 +51,7 @@ export function fixLightScenes(light: LightScenes_t) {
       const oldMainScene: SplitScene_t = {
         baseParams: _lightScene.baseParams,
         randomizer: _lightScene.randomizer,
-        groups: [],
+        groups: {},
       }
       delete _lightScene.baseParams
       delete _lightScene.randomizer
@@ -64,6 +64,16 @@ export function fixLightScenes(light: LightScenes_t) {
     if (_modulator.modulation !== undefined) {
       modulator.splitModulations.unshift(_modulator.modulation)
       delete _modulator.modulation
+    }
+  }
+
+  for (const split of splits(light)) {
+    if (Array.isArray(split.groups)) {
+      const groups = split.groups as string[]
+      split.groups = {}
+      for (const group of groups) {
+        split.groups[group] = true
+      }
     }
   }
 }

@@ -364,24 +364,22 @@ export const scenesSlice = createSlice({
         })
       })
     },
-    addSceneGroup: (
+    setSceneGroup: (
       state,
       {
-        payload: { group, index },
-      }: PayloadAction<{ group: string; index: number }>
+        payload: { index, group, val },
+      }: PayloadAction<{
+        index: number
+        group: string
+        val: boolean | undefined
+      }>
     ) => {
       modifyActiveLightScene(state, (scene) => {
-        scene.splitScenes[index].groups.push(group)
-      })
-    },
-    removeSceneGroup: (
-      state,
-      {
-        payload: { group, index },
-      }: PayloadAction<{ group: string; index: number }>
-    ) => {
-      modifyActiveLightScene(state, (scene) => {
-        removeItemByValue(scene.splitScenes[index].groups, group)
+        if (val === undefined) {
+          delete scene.splitScenes[index].groups[group]
+        } else {
+          scene.splitScenes[index].groups[group] = val
+        }
       })
     },
     // =====================   VISUAL SCENES ONLY   ===========================
@@ -489,8 +487,7 @@ export const {
   setRandomizer,
   addSplitScene,
   removeSplitSceneByIndex,
-  addSceneGroup,
-  removeSceneGroup,
+  setSceneGroup,
 
   // VISUAL SCENES
   resetVisualScenes,
@@ -512,10 +509,3 @@ export const {
 } = scenesSlice.actions
 
 export default scenesSlice.reducer
-
-function removeItemByValue<T>(array: T[], itemToRemove: T) {
-  const index = array.findIndex((item) => item === itemToRemove)
-  if (index > -1) {
-    array.splice(index, 1)
-  }
-}

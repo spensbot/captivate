@@ -172,14 +172,25 @@ export function getMovingWindow(params: Params): Window2D_t {
 
 export function getFixturesInGroups(
   fixtures: FlattenedFixture[],
-  groups: string[]
+  scene_groups: { [key: string]: boolean | undefined }
 ) {
-  return groups.length === 0
-    ? fixtures
-    : fixtures.filter(
-        (fixture) =>
-          fixture.groups.find((g) => groups.includes(g)) !== undefined
-      )
+  let entries = Object.entries(scene_groups)
+
+  let groups = entries
+    .filter(([_, include]) => include === true)
+    .map(([group, _]) => group)
+  let not_groups = entries
+    .filter(([_, include]) => include === false)
+    .map(([group, _]) => group)
+
+  // Scenes with no groups specified affect
+  if (entries.length === 0) return fixtures
+
+  return fixtures.filter((fixture) => {
+    if (groups.find((g) => fixture.groups.includes(g))) return true
+    if (not_groups.find((g) => !fixture.groups.includes(g))) return true
+    return false
+  })
 }
 
 export function getSortedGroupsForFixture(

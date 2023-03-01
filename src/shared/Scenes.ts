@@ -20,15 +20,18 @@ export interface SceneBase {
 export interface SplitScene_t {
   baseParams: Params
   randomizer: RandomizerOptions
-  groups: string[]
+  // true = include group | false = include not group
+  groups: { [key: string]: boolean | undefined }
 }
+
 export function initSplitScene(): SplitScene_t {
   return {
     baseParams: initBaseParams(),
     randomizer: initRandomizerOptions(),
-    groups: [],
+    groups: {},
   }
 }
+
 export interface LightScene_t extends SceneBase {
   modulators: Modulator[]
   splitScenes: SplitScene_t[]
