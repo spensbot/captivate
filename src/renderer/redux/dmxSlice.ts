@@ -10,6 +10,8 @@ import {
 } from '../../shared/dmxFixtures'
 import { clampNormalized } from '../../math/util'
 import { defaultParamsList } from '../../shared/params'
+import { initLedState, LedState } from './ledState'
+import { LedFixture } from 'shared/ledFixtures'
 
 export interface DmxState {
   universe: Universe
@@ -18,6 +20,7 @@ export interface DmxState {
   activeFixtureType: null | string
   activeFixture: null | number
   activeSubFixture: null | number
+  led: LedState
 }
 
 export function getCustomChannels(dmx: DmxState): Set<string> {
@@ -66,6 +69,7 @@ export function initDmxState(): DmxState {
     activeFixtureType: null,
     activeFixture: null,
     activeSubFixture: null,
+    led: initLedState(),
   }
 }
 
@@ -357,6 +361,20 @@ export const dmxSlice = createSlice({
         ft.subFixtures[payload.subFixtureIndex] = payload.subFixture
       })
     },
+    setActiveLedFixture: (state, { payload }: PayloadAction<number | null>) => {
+      state.led.activeFixture = payload
+    },
+    updateActiveLedFixture: (state, { payload }: PayloadAction<LedFixture>) => {
+      if (state.led.activeFixture !== null) {
+        state.led.ledFixtures[state.led.activeFixture] = payload
+      }
+    },
+    addLedFixture: (state, { payload }: PayloadAction<number | null>) => {
+      state.led.activeFixture = payload
+    },
+    removeLedFixture: (state, { payload }: PayloadAction<number | null>) => {
+      state.led.activeFixture = payload
+    },
   },
 })
 
@@ -386,6 +404,10 @@ export const {
   assignChannelToSubFixture,
   removeChannelFromSubFixtures,
   replaceActiveFixtureTypeSubFixture,
+  setActiveLedFixture,
+  updateActiveLedFixture,
+  addLedFixture,
+  removeLedFixture,
 } = dmxSlice.actions
 
 export default dmxSlice.reducer

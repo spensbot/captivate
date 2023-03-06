@@ -5,6 +5,7 @@ import zIndexes from '../zIndexes'
 import UniverseIcon from '@mui/icons-material/Settings'
 // import LightingIcon from '@mui/icons-material/MovieFilter'
 import LightingIcon from '@mui/icons-material/LightBulb'
+import WbIncandescentIcon from '@mui/icons-material/WbIncandescent'
 import VisualsIcon from '../images/Thick.png'
 import MixerIcon from '@mui/icons-material/BarChart'
 import { useTypedSelector } from '../redux/store'
@@ -75,6 +76,9 @@ export default function MenuBar() {
       </MenuItem> */}
       <MenuItem page="Mixer" tooltipText="DMX Mixer">
         <MixerIcon fontSize="inherit" />
+      </MenuItem>
+      <MenuItem page="Led" tooltipText="Led Editor">
+        <WbIncandescentIcon fontSize="inherit" />
       </MenuItem>
       <Spacer />
       <MasterSlider />

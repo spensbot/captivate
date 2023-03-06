@@ -7,7 +7,13 @@ import {
   initMidiConnections,
 } from '../../shared/connection'
 
-export type Page = 'Universe' | 'Modulation' | 'Video' | 'Share' | 'Mixer'
+export type Page =
+  | 'Universe'
+  | 'Modulation'
+  | 'Video'
+  | 'Share'
+  | 'Mixer'
+  | 'Led'
 
 export interface GuiState {
   activePage: Page
