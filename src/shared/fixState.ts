@@ -1,5 +1,6 @@
 import { DeviceState } from 'renderer/redux/deviceState'
 import { DmxState } from 'renderer/redux/dmxSlice'
+import { initLedState } from 'renderer/redux/ledState'
 import { CleanReduxState } from '../renderer/redux/store'
 import { ColorChannel } from './dmxColors'
 import { DmxValue, FixtureChannel } from './dmxFixtures'
@@ -152,6 +153,11 @@ export function fixDmxState(dmx: DmxState) {
         }
       }
     }
+  }
+
+  // Add Led State
+  if (dmx.led === undefined) {
+    dmx.led = initLedState()
   }
 }
 

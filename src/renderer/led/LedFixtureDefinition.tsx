@@ -2,7 +2,7 @@ import { useDispatch } from 'react-redux'
 import Input from 'renderer/base/Input'
 import { updateActiveLedFixture } from 'renderer/redux/dmxSlice'
 import { useDmxSelector } from 'renderer/redux/store'
-import { LedFixture } from 'shared/ledFixtures'
+import { LedFixture, MAX_LED_COUNT } from 'shared/ledFixtures'
 import styled from 'styled-components'
 import NumberField from 'renderer/base/NumberField'
 
@@ -42,7 +42,7 @@ export default function LedFixtureDefinition({ index }: Props) {
           val={def.led_count}
           onChange={(newCount) => setField('led_count', newCount)}
           min={0}
-          max={500}
+          max={MAX_LED_COUNT}
         />
         <Input
           value={def.mdns}
@@ -50,8 +50,8 @@ export default function LedFixtureDefinition({ index }: Props) {
             setField('name', newMdns)
           }}
         />
-        {def.points.map((p) => (
-          <div>
+        {def.points.map((p, i) => (
+          <div key={i}>
             `(${p.x}, ${p.y})`
           </div>
         ))}
