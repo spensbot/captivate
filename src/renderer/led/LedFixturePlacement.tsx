@@ -1,18 +1,63 @@
 import styled from 'styled-components'
-import Cursor from 'renderer/base/Cursor'
-import useDragMapped from 'renderer/hooks/useDragMapped'
+import useDragMapped, { MappedPos } from 'renderer/hooks/useDragMapped'
+import { useDispatch } from 'react-redux'
+import { useDmxSelector } from 'renderer/redux/store'
+import { distanceBetween, Point } from 'math/point'
+import {
+  addLedFixturePoint,
+  removeLedFixturePoint,
+  updateLedFixturePoint,
+} from 'renderer/redux/dmxSlice'
+import { secondaryEnabled } from 'renderer/base/keyUtil'
+import { indexArray } from 'shared/util'
+import LedFixturePoints from './LedFixturePoints'
 
 interface Props {}
 
 export default function LedFixturePlacement({}: Props) {
-  useDragMapped((pos, e) => {})
+  const numLedFixtures = useDmxSelector((dmx) => dmx.led.ledFixtures.length)
+  const activeLedFixture = useDmxSelector((dmx) => {
+    if (dmx.led.activeFixture !== null) {
+      return dmx.led.ledFixtures[dmx.led.activeFixture]
+    } else {
+      return null
+    }
+  })
+
+  const dispatch = useDispatch()
+
+  const [dragContainer, onMouseDown] = useDragMapped((pos, e) => {
+    if (activeLedFixture !== null) {
+      let point: Point = {
+        x: pos.x,
+        y: pos.y,
+      }
+
+      let nearbyIndex = isOnPoint(pos, activeLedFixture.points)
+      if (nearbyIndex !== null) {
+        if (secondaryEnabled(e)) {
+          dispatch(removeLedFixturePoint(nearbyIndex))
+        } else {
+          dispatch(
+            updateLedFixturePoint({ index: nearbyIndex, newPoint: point })
+          )
+        }
+      } else {
+        if (secondaryEnabled(e)) {
+          dispatch(addLedFixturePoint(point))
+        }
+      }
+    }
+  })
 
   return (
     <Root>
-      <Background>
+      <Background ref={dragContainer} onMouseDown={onMouseDown}>
         <Vertical />
         <Horizontal />
-        <Cursor x={0.25} y={0.25} />
+        {indexArray(numLedFixtures).map((index) => (
+          <LedFixturePoints key={index} index={index} />
+        ))}
       </Background>
     </Root>
   )
@@ -47,3 +92,15 @@ const Horizontal = styled.div`
   right: 0;
   background-color: #fff3;
 `
+
+function isOnPoint(mappedPos: MappedPos, points: Point[]): number | null {
+  let sortedByDistance = points
+    .map<[number, number]>((p, i) => [i, distanceBetween(mappedPos, p)])
+    .sort(([_ia, a], [_ib, b]) => a - b)
+
+  if (sortedByDistance.length === 0) {
+    return null
+  } else {
+    return sortedByDistance[0][0]
+  }
+}

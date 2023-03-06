@@ -1,6 +1,9 @@
 import { useDispatch } from 'react-redux'
 import Input from 'renderer/base/Input'
-import { updateActiveLedFixture } from 'renderer/redux/dmxSlice'
+import {
+  setActiveLedFixture,
+  updateActiveLedFixture,
+} from 'renderer/redux/dmxSlice'
 import { useDmxSelector } from 'renderer/redux/store'
 import { LedFixture, MAX_LED_COUNT } from 'shared/ledFixtures'
 import styled from 'styled-components'
@@ -30,7 +33,7 @@ export default function LedFixtureDefinition({ index }: Props) {
 
   if (isActive)
     return (
-      <Root>
+      <ActiveRoot>
         <Input
           value={def.name}
           onChange={(newName) => {
@@ -51,22 +54,36 @@ export default function LedFixtureDefinition({ index }: Props) {
           }}
         />
         {def.points.map((p, i) => (
-          <div key={i}>
-            `(${p.x}, ${p.y})`
-          </div>
+          <div key={i}>{`(${p.x.toFixed(2)}, ${p.y.toFixed(2)})`}</div>
         ))}
-      </Root>
+      </ActiveRoot>
     )
 
   return (
-    <Root>
-      {def.name}
-      <br />
-      {`${def.led_count} leds`}
-      <br />
-      {def.mdns}
-    </Root>
+    <InactiveRoot onClick={() => dispatch(setActiveLedFixture(index))}>
+      <Name>{def.name}</Name>
+      <Info>{`(${def.led_count}) ${def.mdns}`}</Info>
+    </InactiveRoot>
   )
 }
 
-const Root = styled.div``
+const ActiveRoot = styled.div`
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+`
+
+const InactiveRoot = styled.div`
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+`
+
+const Name = styled.div`
+  margin-right: 1rem;
+`
+
+const Info = styled.div`
+  color: ${(props) => props.theme.colors.text.secondary};
+`

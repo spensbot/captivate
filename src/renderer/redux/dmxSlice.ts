@@ -11,7 +11,8 @@ import {
 import { clampNormalized } from '../../math/util'
 import { defaultParamsList } from '../../shared/params'
 import { initLedState, LedState } from './ledState'
-import { LedFixture } from 'shared/ledFixtures'
+import { initLedFixture, LedFixture } from '../../shared/ledFixtures'
+import { Point } from '../../math/point'
 
 export interface DmxState {
   universe: Universe
@@ -83,6 +84,20 @@ function modifyActiveFixtureType(
   } else {
     console.error(
       `Tried to modifyActiveFixtureType when activeFixtureType is null`
+    )
+  }
+}
+
+function modifyActiveLedFixture(
+  state: DmxState,
+  f: (ledFixture: LedFixture) => void
+) {
+  if (state.led.activeFixture !== null) {
+    const activeLedFixture = state.led.ledFixtures[state.led.activeFixture]
+    f(activeLedFixture)
+  } else {
+    console.error(
+      `Tried to modifyActiveLedFixture when led.activeFixture is null`
     )
   }
 }
@@ -369,11 +384,26 @@ export const dmxSlice = createSlice({
         state.led.ledFixtures[state.led.activeFixture] = payload
       }
     },
-    addLedFixture: (state, { payload }: PayloadAction<number | null>) => {
-      state.led.activeFixture = payload
+    addLedFixture: (state, _: PayloadAction<undefined>) => {
+      state.led.ledFixtures.push(initLedFixture())
     },
-    removeLedFixture: (state, { payload }: PayloadAction<number | null>) => {
-      state.led.activeFixture = payload
+    removeLedFixture: (state, { payload }: PayloadAction<number>) => {
+      state.led.ledFixtures.splice(payload, 1)
+    },
+    addLedFixturePoint: (state, { payload }: PayloadAction<Point>) => {
+      modifyActiveLedFixture(state, (f) => f.points.push(payload))
+    },
+    removeLedFixturePoint: (state, { payload }: PayloadAction<number>) => {
+      modifyActiveLedFixture(state, (f) => f.points.splice(payload, 1))
+    },
+    updateLedFixturePoint: (
+      state,
+      { payload }: PayloadAction<{ index: number; newPoint: Point }>
+    ) => {
+      modifyActiveLedFixture(
+        state,
+        (f) => (f.points[payload.index] = payload.newPoint)
+      )
     },
   },
 })
@@ -408,6 +438,9 @@ export const {
   updateActiveLedFixture,
   addLedFixture,
   removeLedFixture,
+  addLedFixturePoint,
+  removeLedFixturePoint,
+  updateLedFixturePoint,
 } = dmxSlice.actions
 
 export default dmxSlice.reducer
