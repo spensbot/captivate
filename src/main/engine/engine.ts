@@ -29,6 +29,7 @@ import { ThrottleMap } from './midiConnection'
 import { MidiMessage, midiInputID } from '../../shared/midi'
 import { getAllParamKeys } from '../../renderer/redux/dmxSlice'
 import { indexArray } from '../../shared/util'
+import WledManager from './wled/wled_manager'
 
 let _nodeLink = new NodeLink()
 _nodeLink.setIsPlaying(true)
@@ -232,3 +233,8 @@ function getNextRealtimeState(
     splitStates,
   }
 }
+
+new WledManager(
+  () => _controlState,
+  () => _realtimeState
+)

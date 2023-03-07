@@ -18,7 +18,7 @@ import { rLerp } from '../math/range'
 import { applyRandomization } from './randomizer'
 import { getColorChannelLevel } from './dmxColors'
 
-function getWindowMultiplier2D(
+export function getWindowMultiplier2D(
   fixtureWindow: Window2D_t,
   movingWindow: Window2D_t
 ) {

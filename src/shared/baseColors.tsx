@@ -66,6 +66,20 @@ export function getBaseColors(params: Params): BaseColors {
   }
 }
 
+export function getBaseColorsFromHsv(
+  h: number,
+  s: number,
+  v: number
+): BaseColors {
+  const [r, g, b] = hsv2rgb(h, s, v)
+
+  return {
+    red: r,
+    green: g,
+    blue: b,
+  }
+}
+
 export function separateHue(n: number, i: number) {
   const HUE_RANGE = 1
   const HUE_START = 60 / 360
