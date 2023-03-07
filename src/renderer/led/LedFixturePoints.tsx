@@ -17,12 +17,18 @@ function DynamicSvg({
 }) {
   const pointsString = points
     .map(({ x, y }) => {
-      return `${x},${y}`
+      return `${x},${1.0 - y}`
     })
     .join(' ')
 
   return (
-    <svg viewBox="0 0 1 1" height="10rem" width="10rem">
+    <svg
+      viewBox="0 0 1 1"
+      height="100%"
+      width="100%"
+      style={{ objectFit: 'fill' }}
+      preserveAspectRatio="none"
+    >
       <polyline
         points={pointsString}
         style={{ fill: 'none', stroke: lineColor, strokeWidth: lineWidth }}
@@ -40,10 +46,16 @@ export default function LedFixturePoints({ index }: Props) {
       <DynamicSvg
         points={points}
         lineColor={isActive ? '#eee' : '#fff5'}
-        lineWidth={isActive ? '0.01' : '0.01'}
+        lineWidth={isActive ? '0.005' : '0.003'}
       />
     </Root>
   )
 }
 
-const Root = styled.div``
+const Root = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+`

@@ -4,6 +4,7 @@ type Props = {
   radius?: number
   thickness?: number
   color?: string
+  bgColor?: string
   withHorizontal?: boolean
   withVertical?: boolean
   onClick?: (e: React.MouseEvent) => void
@@ -15,6 +16,7 @@ export default function Cursor({
   radius = 0.4,
   thickness = 1,
   color = '#fff',
+  bgColor = '#0000',
   withHorizontal = false,
   withVertical = false,
   onClick,
@@ -28,6 +30,7 @@ export default function Cursor({
       height: `${radius * 2}rem`,
       borderRadius: '50%',
       border: `${thickness}px solid ${color}`,
+      backgroundColor: bgColor,
       transform: `translate(-${radius}rem, -${radius}rem)`,
       cursor: onClick ? 'pointer' : undefined,
       boxSizing: 'border-box',

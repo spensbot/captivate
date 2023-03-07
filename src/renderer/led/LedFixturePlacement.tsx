@@ -9,42 +9,52 @@ import {
   updateLedFixturePoint,
 } from 'renderer/redux/dmxSlice'
 import { secondaryEnabled } from 'renderer/base/keyUtil'
-import { indexArray } from 'shared/util'
+import { fMap, indexArray } from 'shared/util'
 import LedFixturePoints from './LedFixturePoints'
+import Cursor from 'renderer/base/Cursor'
 
 interface Props {}
+
+let draggedPointIndex: number | null = null
 
 export default function LedFixturePlacement({}: Props) {
   const numLedFixtures = useDmxSelector((dmx) => dmx.led.ledFixtures.length)
   const activeLedFixture = useDmxSelector((dmx) => {
-    if (dmx.led.activeFixture !== null) {
-      return dmx.led.ledFixtures[dmx.led.activeFixture]
-    } else {
-      return null
-    }
+    return fMap(dmx.led.activeFixture, (index) => dmx.led.ledFixtures[index])
   })
 
   const dispatch = useDispatch()
 
-  const [dragContainer, onMouseDown] = useDragMapped((pos, e) => {
+  const [dragContainer, onMouseDown] = useDragMapped((pos, e, status) => {
     if (activeLedFixture !== null) {
       let point: Point = {
         x: pos.x,
         y: pos.y,
       }
 
-      let nearbyIndex = isOnPoint(pos, activeLedFixture.points)
-      if (nearbyIndex !== null) {
-        if (secondaryEnabled(e)) {
-          dispatch(removeLedFixturePoint(nearbyIndex))
+      if (status === 'Start') {
+        let nearbyIndex = isOnPoint(pos, activeLedFixture.points)
+        if (nearbyIndex === null) {
+          if (secondaryEnabled(e)) {
+            dispatch(addLedFixturePoint(point))
+          }
         } else {
-          dispatch(
-            updateLedFixturePoint({ index: nearbyIndex, newPoint: point })
-          )
+          if (secondaryEnabled(e)) {
+            dispatch(removeLedFixturePoint(nearbyIndex))
+          } else {
+            draggedPointIndex = nearbyIndex
+          }
         }
+      } else if (status === 'End') {
+        draggedPointIndex = null
       } else {
-        if (secondaryEnabled(e)) {
-          dispatch(addLedFixturePoint(point))
+        if (draggedPointIndex !== null) {
+          console.log('!== null')
+          dispatch(
+            updateLedFixturePoint({ index: draggedPointIndex, newPoint: point })
+          )
+        } else {
+          console.log('null')
         }
       }
     }
@@ -58,6 +68,24 @@ export default function LedFixturePlacement({}: Props) {
         {indexArray(numLedFixtures).map((index) => (
           <LedFixturePoints key={index} index={index} />
         ))}
+        {activeLedFixture !== null &&
+          indexArray(activeLedFixture.points.length).map((index) => {
+            let point = activeLedFixture.points[index]
+            let isStart = index === 0
+            let radius = isStart ? 0.5 : 0.5
+            let color = isStart ? '#afa' : '#fff'
+            let bgColor = isStart ? '#afa' : undefined
+
+            return (
+              <Cursor
+                x={point.x}
+                y={point.y}
+                radius={radius}
+                color={color}
+                bgColor={bgColor}
+              />
+            )
+          })}
       </Background>
     </Root>
   )
@@ -96,11 +124,14 @@ const Horizontal = styled.div`
 function isOnPoint(mappedPos: MappedPos, points: Point[]): number | null {
   let sortedByDistance = points
     .map<[number, number]>((p, i) => [i, distanceBetween(mappedPos, p)])
+    .filter(([_i, a]) => a < 0.05)
     .sort(([_ia, a], [_ib, b]) => a - b)
 
   if (sortedByDistance.length === 0) {
     return null
   } else {
+    console.log(sortedByDistance[0])
+
     return sortedByDistance[0][0]
   }
 }

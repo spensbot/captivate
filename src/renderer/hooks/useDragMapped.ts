@@ -10,20 +10,26 @@ export interface MappedPos {
 type Ref = React.MutableRefObject<any>
 type MouseEventHandler = (e: MouseEvent) => any
 
+type DragStatus = 'Start' | 'Moved' | 'End'
+
+type Handler = (mappedPos: MappedPos, e: MouseEvent, status: DragStatus) => void
+
 export default function useDragMapped(
-  onChange: (mappedPos: MappedPos, e: MouseEvent) => void
+  onChange: Handler
 ): [Ref, React.MouseEventHandler<HTMLDivElement>] {
   const dragContainer = useRef<Element>(null)
 
   const onMouseMove: MouseEventHandler = (e: MouseEvent) => {
-    update(e)
+    update(e, 'Moved')
   }
 
-  const onMouseUp: MouseEventHandler = (_e: MouseEvent) => {
+  const onMouseUp: MouseEventHandler = (e: MouseEvent) => {
+    update(e, 'End')
     stopListening()
   }
 
-  const onMouseLeave: MouseEventHandler = (_e: MouseEvent) => {
+  const onMouseLeave: MouseEventHandler = (e: MouseEvent) => {
+    update(e, 'End')
     stopListening()
   }
 
@@ -42,12 +48,12 @@ export default function useDragMapped(
   const onMouseDown: MouseEventHandler = (e: MouseEvent) => {
     if (!e.defaultPrevented) {
       e.preventDefault()
-      update(e)
+      update(e, 'Start')
       startListening()
     }
   }
 
-  const update = (e: MouseEvent) => {
+  const update = (e: MouseEvent, status: DragStatus) => {
     if (dragContainer.current !== null) {
       const { width, height, left, top, right, bottom } =
         dragContainer.current.getBoundingClientRect()
@@ -58,7 +64,8 @@ export default function useDragMapped(
           dx: e.movementX / width,
           dy: -e.movementY / height,
         },
-        e
+        e,
+        status
       )
     }
   }

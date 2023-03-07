@@ -388,6 +388,7 @@ export const dmxSlice = createSlice({
       state.led.ledFixtures.push(initLedFixture())
     },
     removeLedFixture: (state, { payload }: PayloadAction<number>) => {
+      state.led.activeFixture = null
       state.led.ledFixtures.splice(payload, 1)
     },
     addLedFixturePoint: (state, { payload }: PayloadAction<Point>) => {
