@@ -1,6 +1,7 @@
 import NodeLink from 'node-link'
 import NodeAudio, { AudioConnectionState } from 'node-audio'
 import { TimeState } from '../../shared/TimeState'
+import { RollingAverageBiased, RollingRange } from '../../math/rollingAverage'
 
 export const _nodeLink = new NodeLink()
 _nodeLink.setIsPlaying(true)
@@ -12,6 +13,8 @@ let _lastConnectionstate: AudioConnectionState = {
   available: [],
   connected: null,
 }
+let _rmsRange = new RollingRange(90, 0.1, 10)
+let _rmsAvg = new RollingAverageBiased(90, 0, 0.5)
 
 interface Config {
   update_ms: number
@@ -43,6 +46,19 @@ export function setTempo(bpm: number) {
 export function getNextTimeState(): TimeState {
   const linkState = _nodeLink.getSessionInfoCurrent()
   const audioState = _nodeAudio.getSessionState()
+
+  _rmsAvg.push(audioState.rms)
+  const rmsAvg = _rmsAvg.get()
+  _rmsRange.push(rmsAvg)
+  const rmsRatio = _rmsRange.getRatio(rmsAvg)
+
+  console.log(
+    `min: ${_rmsRange.getMin().toFixed(2)} | max: ${_rmsRange
+      .getMax()
+      .toFixed(2)}`
+  )
+
+  audioState.rms = rmsRatio
 
   const nextTimeState: TimeState = {
     bpm: linkState.isEnabled ? linkState.bpm : audioState.bpm,
