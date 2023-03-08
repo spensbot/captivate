@@ -1,7 +1,7 @@
 import styled from 'styled-components'
 import ADSRWrapper from './ADSRWrapper'
 import { useActiveLightScene, useBaseParam } from '../redux/store'
-import TriggerDensity from './TriggerDensity'
+import RandomizerVisualizer from './RandomizerVisualizer'
 import DraggableNumber from '../base/DraggableNumber'
 import { useDispatch } from 'react-redux'
 import { setRandomizer } from '../redux/controlSlice'
@@ -10,16 +10,12 @@ import ParamXButton from './ParamXButton'
 import ParamSlider from './ParamSlider'
 
 interface Props {
-  splitIndex: number | null
+  splitIndex: number
 }
 
 export default function Randomizer({ splitIndex }: Props) {
   const { triggerPeriod, triggerDensity } = useActiveLightScene((scene) => {
-    if (splitIndex === null) {
-      return scene.randomizer
-    } else {
-      return scene.splitScenes[splitIndex].randomizer
-    }
+    return scene.splitScenes[splitIndex].randomizer
   })
   const dispatch = useDispatch()
   const randomize = useBaseParam('randomize', splitIndex)
@@ -32,7 +28,7 @@ export default function Randomizer({ splitIndex }: Props) {
     <>
       <Root>
         <ADSRWrapper splitIndex={splitIndex} />
-        <TriggerDensity splitIndex={splitIndex} />
+        <RandomizerVisualizer splitIndex={splitIndex} />
         <Row>
           <div
             style={{

@@ -113,3 +113,22 @@ export function mapFn(
 
   return (normalized: number) => normalized ** skew * range + min
 }
+
+export function zip<T, U>(a: T[], b: U[]): [T, U][] {
+  let output: [T, U][] = Array(Math.min(a.length, b.length)).fill(0)
+  for (let i = 0; i < output.length; i++) {
+    output[i] = [a[i], b[i]]
+  }
+  return output
+}
+
+export function fMap<T, U>(
+  val: T | null | undefined,
+  f: (t: T) => U
+): U | null {
+  if (val === null || val === undefined) {
+    return null
+  } else {
+    return f(val)
+  }
+}

@@ -64,9 +64,10 @@ export default class Spheres extends LayerBase {
     const epicness = scene.epicness
 
     const color = colorFromHSV(
-      params.hue,
-      params.saturation / 2,
-      params.brightness * epicness * this.strobe.update(dt, params.strobe)
+      params.hue ?? 0.0,
+      params.saturation ?? 0.0 / 2,
+      params.brightness ??
+        0.0 * epicness * this.strobe.update(dt, params.strobe ?? 0.0)
     )
 
     this.globeMaterial.color = new THREE.Color(color)

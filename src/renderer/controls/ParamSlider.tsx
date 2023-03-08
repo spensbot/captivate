@@ -1,4 +1,4 @@
-import { Param } from '../../shared/params'
+import { DefaultParam } from '../../shared/params'
 import SliderBase from '../base/SliderBase'
 import SliderCursor from '../base/SliderCursor'
 import { useBaseParam } from '../redux/store'
@@ -9,8 +9,8 @@ import { SliderMidiOverlay } from '../base/MidiOverlay'
 import ParamXButton from './ParamXButton'
 
 interface Props {
-  param: Param
-  splitIndex: number | null
+  param: DefaultParam | string
+  splitIndex: number
 }
 
 export default function ParamSlider({ param, splitIndex }: Props) {
@@ -61,9 +61,10 @@ export default function ParamSlider({ param, splitIndex }: Props) {
     alignItems: 'center',
     height: '10rem',
     marginRight: '1rem',
+    position: 'relative',
   }
 
-  return splitIndex === null ? (
+  return splitIndex === 0 ? (
     <SliderMidiOverlay
       action={{ type: 'setBaseParam', paramKey: param }}
       style={wrapperStyle}

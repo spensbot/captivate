@@ -1,7 +1,8 @@
 import { Window2D_t } from '../shared/window'
-import { Color } from './dmxColors'
+import { ColorChannel } from './dmxColors'
 import { nanoid } from 'nanoid'
 
+export const DMX_MIN_VALUE = 0
 export const DMX_MAX_VALUE = 255
 export const DMX_NUM_CHANNELS = 512
 export const DMX_DEFAULT_VALUE = 0
@@ -21,7 +22,7 @@ type ChannelMaster = {
 
 type ChannelColor = {
   type: 'color'
-  color: Color
+  color: ColorChannel
 }
 
 type ChannelStrobe = {
@@ -35,22 +36,17 @@ type ChannelOther = {
   default: DmxValue
 }
 
-type ChannelAxis = {
+export type ChannelAxis = {
   type: 'axis'
   dir: AxisDir
+  isFine: boolean
   min: DmxValue
   max: DmxValue
 }
 
-type ChannelMode = {
-  type: 'mode'
-  min: DmxValue
-  max: DmxValue
-}
+export type ColorMapColor = { max: number; hue: number; saturation: number }
 
-export type ColorMapColor = { max: number; hue: number }
-
-type ChannelColorMap = {
+export type ChannelColorMap = {
   type: 'colorMap'
   colors: ColorMapColor[]
 }
@@ -60,6 +56,16 @@ type ChannelReset = {
   resetVal: DmxValue
 }
 
+export type ChannelCustom = {
+  type: 'custom'
+  name: string
+  default: DmxValue
+  min: DmxValue
+  max: DmxValue
+}
+
+export const defaultCustomChannels = ['speed']
+
 export type FixtureChannel =
   | ChannelMaster
   | ChannelColor
@@ -68,7 +74,7 @@ export type FixtureChannel =
   | ChannelColorMap
   | ChannelOther
   | ChannelReset
-  | ChannelMode
+  | ChannelCustom
 
 export type ChannelType = FixtureChannel['type']
 
@@ -79,8 +85,8 @@ export const channelTypes: ChannelType[] = [
   'axis',
   'colorMap',
   'other',
-  'mode',
   'reset',
+  'custom',
 ]
 
 export function initFixtureChannel(
@@ -89,47 +95,53 @@ export function initFixtureChannel(
   if (type === 'color') {
     return {
       type: type,
-      color: 'white',
+      color: {
+        hue: 0,
+        saturation: 1.0,
+      },
     }
   } else if (type === 'other') {
     return {
       type: type,
-      default: 0,
+      default: DMX_MIN_VALUE,
     }
   } else if (type === 'strobe') {
     return {
       type: type,
-      default_solid: 0,
-      default_strobe: 255,
+      default_solid: DMX_MIN_VALUE,
+      default_strobe: DMX_MAX_VALUE,
     }
   } else if (type === 'axis') {
     return {
       type: type,
       dir: 'x',
-      min: 1,
-      max: 255,
+      isFine: false,
+      min: DMX_MIN_VALUE,
+      max: DMX_MAX_VALUE,
     }
   } else if (type === 'colorMap') {
     return {
       type: type,
-      colors: [],
-    }
-  } else if (type === 'mode') {
-    return {
-      type: type,
-      min: 0,
-      max: 255,
+      colors: [{ max: 0, hue: 0, saturation: 1.0 }],
     }
   } else if (type === 'reset') {
     return {
       type: 'reset',
-      resetVal: 255,
+      resetVal: DMX_MAX_VALUE,
+    }
+  } else if (type === 'custom') {
+    return {
+      type: 'custom',
+      name: 'custom',
+      default: DMX_MIN_VALUE,
+      min: DMX_MIN_VALUE,
+      max: DMX_MAX_VALUE,
     }
   }
   return {
     type: 'master',
-    min: 0,
-    max: 255,
+    min: DMX_MIN_VALUE,
+    max: DMX_MAX_VALUE,
     isOnOff: false,
   }
 }
@@ -140,6 +152,8 @@ export type FixtureType = {
   intensity: number
   manufacturer?: string
   channels: FixtureChannel[]
+  subFixtures: SubFixture[]
+  groups: string[]
 }
 
 export function initFixtureType(): FixtureType {
@@ -148,7 +162,9 @@ export function initFixtureType(): FixtureType {
     name: 'Name',
     manufacturer: 'Manufacturer',
     intensity: 0,
-    channels: [],
+    channels: [initFixtureChannel()],
+    subFixtures: [],
+    groups: [],
   }
 }
 
@@ -156,7 +172,30 @@ export interface Fixture {
   ch: number
   type: string // FixtureType id
   window: Window2D_t
-  group: string
+  groups: string[]
 }
 
 export type Universe = Fixture[]
+
+export type SubFixture = {
+  name: string
+  intensity?: number
+  channels: number[] // Channel indexes from the parent fixture
+  relative_window?: Window2D_t
+  groups: string[]
+}
+
+export function initSubFixture(): SubFixture {
+  return {
+    name: 'Name',
+    channels: [],
+    groups: [],
+  }
+}
+
+export type FlattenedFixture = {
+  intensity: number
+  channels: [number, FixtureChannel][]
+  window: Window2D_t
+  groups: string[]
+}

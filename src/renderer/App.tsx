@@ -9,6 +9,7 @@ import { useTypedSelector } from './redux/store'
 import FullscreenOverlay from './overlays/FullscreenOverlay'
 import ErrorBoundarySentry from './error-boundary/ErrorBoundarySentry'
 import BottomStatus from './menu/BottomStatus'
+import LedPage from './pages/LedPage'
 
 export default function App() {
   const activePage = useTypedSelector((state) => state.gui.activePage)
@@ -19,6 +20,7 @@ export default function App() {
     if (activePage == 'Video') return <Video />
     if (activePage == 'Share') return <Share />
     if (activePage == 'Mixer') return <Mixer />
+    if (activePage == 'Led') return <LedPage />
     console.error(`Bad activePage value: ${activePage}`)
     return null
   }

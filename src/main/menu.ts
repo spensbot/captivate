@@ -8,6 +8,10 @@ import {
 } from 'electron'
 import { IPC_Callbacks } from './engine/ipcHandler'
 import { listPorts } from './engine/dmxConnection'
+import {
+  toggleLedEnabled,
+  toggleVideoEnabled,
+} from '../renderer/redux/guiSlice'
 
 interface DarwinMenuItemConstructorOptions extends MenuItemConstructorOptions {
   selector?: string
@@ -167,6 +171,18 @@ export default class MenuBuilder {
             this.mainWindow.webContents.toggleDevTools()
           },
         },
+        {
+          label: 'Toggle Visuals (Alpha)',
+          click: () => {
+            this.res.ipcCallbacks.send_dispatch(toggleVideoEnabled())
+          },
+        },
+        {
+          label: 'Toggle Led (Alpha)',
+          click: () => {
+            this.res.ipcCallbacks.send_dispatch(toggleLedEnabled())
+          },
+        },
       ],
     }
     const subMenuViewProd: MenuItemConstructorOptions = {
@@ -177,6 +193,18 @@ export default class MenuBuilder {
           accelerator: 'Ctrl+Command+F',
           click: () => {
             this.mainWindow.setFullScreen(!this.mainWindow.isFullScreen())
+          },
+        },
+        {
+          label: 'Toggle Visuals (Alpha)',
+          click: () => {
+            this.res.ipcCallbacks.send_dispatch(toggleVideoEnabled())
+          },
+        },
+        {
+          label: 'Toggle Led (Alpha)',
+          click: () => {
+            this.res.ipcCallbacks.send_dispatch(toggleLedEnabled())
           },
         },
       ],
@@ -305,6 +333,18 @@ export default class MenuBuilder {
                     this.mainWindow.webContents.toggleDevTools()
                   },
                 },
+                {
+                  label: 'Toggle Visuals (Alpha)',
+                  click: () => {
+                    this.res.ipcCallbacks.send_dispatch(toggleVideoEnabled())
+                  },
+                },
+                {
+                  label: 'Toggle Led (Alpha)',
+                  click: () => {
+                    this.res.ipcCallbacks.send_dispatch(toggleLedEnabled())
+                  },
+                },
               ]
             : [
                 {
@@ -314,6 +354,18 @@ export default class MenuBuilder {
                     this.mainWindow.setFullScreen(
                       !this.mainWindow.isFullScreen()
                     )
+                  },
+                },
+                {
+                  label: 'Toggle Visuals (Alpha)',
+                  click: () => {
+                    this.res.ipcCallbacks.send_dispatch(toggleVideoEnabled())
+                  },
+                },
+                {
+                  label: 'Toggle Led (Alpha)',
+                  click: () => {
+                    this.res.ipcCallbacks.send_dispatch(toggleLedEnabled())
                   },
                 },
               ],

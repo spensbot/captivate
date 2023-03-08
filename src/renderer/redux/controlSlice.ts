@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { Param, Params } from '../../shared/params'
+import { DefaultParam, Params } from '../../shared/params'
 import { ReorderParams } from '../../shared/util'
 import { clampNormalized, clamp } from '../../math/util'
 import { initModulator, ModulatorType } from '../../shared/modulation'
@@ -45,9 +45,9 @@ interface IncrementModulatorPayload {
 }
 
 interface SetModulationPayload {
-  splitIndex: number | null
+  splitIndex: number
   modIndex: number
-  param: Param
+  param: DefaultParam | string
   value: number | undefined
 }
 
@@ -88,8 +88,8 @@ type ScopedAction<T> = PayloadAction<{
 }>
 
 type ParamsAction = PayloadAction<{
-  splitIndex: number | null
-  params: Partial<Params>
+  splitIndex: number
+  params: Params
 }>
 
 export const scenesSlice = createSlice({
@@ -281,11 +281,7 @@ export const scenesSlice = createSlice({
     ) => {
       const { splitIndex, modIndex, param, value } = payload
       modifyActiveLightScene(state, (scene) => {
-        if (splitIndex === null) {
-          scene.modulators[modIndex].modulation[param] = value
-        } else {
-          scene.modulators[modIndex].splitModulations[splitIndex][param] = value
-        }
+        scene.modulators[modIndex].splitModulations[splitIndex][param] = value
       })
     },
     setBaseParams: (
@@ -294,11 +290,8 @@ export const scenesSlice = createSlice({
     ) => {
       for (let [key, value] of Object.entries(params)) {
         modifyActiveLightScene(state, (scene) => {
-          const baseParams =
-            splitIndex === null
-              ? scene.baseParams
-              : scene.splitScenes[splitIndex].baseParams
-          baseParams[key as Param] = value
+          const baseParams = scene.splitScenes[splitIndex].baseParams
+          baseParams[key] = value
         })
       }
     },
@@ -307,24 +300,18 @@ export const scenesSlice = createSlice({
       {
         payload: { params, splitIndex },
       }: PayloadAction<{
-        splitIndex: number | null
-        params: readonly Param[]
+        splitIndex: number
+        params: readonly (DefaultParam | string)[]
       }>
     ) => {
       for (const param of params) {
         modifyActiveLightScene(state, (scene) => {
-          const baseParams =
-            splitIndex === null
-              ? scene.baseParams
-              : scene.splitScenes[splitIndex].baseParams
+          const baseParams = scene.splitScenes[splitIndex].baseParams
           delete baseParams[param]
 
           // Now remove the params from any modulators
           scene.modulators.forEach((modulator) => {
-            const modulation =
-              splitIndex === null
-                ? modulator.modulation
-                : modulator.splitModulations[splitIndex]
+            const modulation = modulator.splitModulations[splitIndex]
             delete modulation[param]
           })
         })
@@ -336,13 +323,14 @@ export const scenesSlice = createSlice({
     ) => {
       for (let [key, amount] of Object.entries(params)) {
         modifyActiveLightScene(state, (scene) => {
-          const baseParams =
-            splitIndex === null
-              ? scene.baseParams
-              : scene.splitScenes[splitIndex].baseParams
-          const currentVal = baseParams[key as Param]
-          if (currentVal !== undefined) {
-            baseParams[key as Param] = clampNormalized(currentVal + amount)
+          if (amount !== undefined) {
+            const baseParams = scene.splitScenes[splitIndex].baseParams
+            const currentVal = baseParams[key as DefaultParam]
+            if (currentVal !== undefined) {
+              baseParams[key as DefaultParam] = clampNormalized(
+                currentVal + amount
+              )
+            }
           }
         })
       }
@@ -354,15 +342,11 @@ export const scenesSlice = createSlice({
       }: PayloadAction<{
         key: keyof RandomizerOptions
         value: number
-        splitIndex: number | null
+        splitIndex: number
       }>
     ) => {
       modifyActiveLightScene(state, (scene) => {
-        if (splitIndex === null) {
-          scene.randomizer[key] = value
-        } else {
-          scene.splitScenes[splitIndex].randomizer[key] = value
-        }
+        scene.splitScenes[splitIndex].randomizer[key] = value
       })
     },
     addSplitScene: (state, {}: PayloadAction<undefined>) => {
@@ -381,24 +365,22 @@ export const scenesSlice = createSlice({
         })
       })
     },
-    addSceneGroup: (
+    setSceneGroup: (
       state,
       {
-        payload: { group, index },
-      }: PayloadAction<{ group: string; index: number }>
+        payload: { index, group, val },
+      }: PayloadAction<{
+        index: number
+        group: string
+        val: boolean | undefined
+      }>
     ) => {
       modifyActiveLightScene(state, (scene) => {
-        scene.splitScenes[index].groups.push(group)
-      })
-    },
-    removeSceneGroup: (
-      state,
-      {
-        payload: { group, index },
-      }: PayloadAction<{ group: string; index: number }>
-    ) => {
-      modifyActiveLightScene(state, (scene) => {
-        removeItemByValue(scene.splitScenes[index].groups, group)
+        if (val === undefined) {
+          delete scene.splitScenes[index].groups[group]
+        } else {
+          scene.splitScenes[index].groups[group] = val
+        }
       })
     },
     // =====================   VISUAL SCENES ONLY   ===========================
@@ -508,8 +490,7 @@ export const {
   setRandomizer,
   addSplitScene,
   removeSplitSceneByIndex,
-  addSceneGroup,
-  removeSceneGroup,
+  setSceneGroup,
 
   // VISUAL SCENES
   resetVisualScenes,
@@ -532,10 +513,3 @@ export const {
 } = scenesSlice.actions
 
 export default scenesSlice.reducer
-
-function removeItemByValue<T>(array: T[], itemToRemove: T) {
-  const index = array.findIndex((item) => item === itemToRemove)
-  if (index > -1) {
-    array.splice(index, 1)
-  }
-}

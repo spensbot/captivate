@@ -13,9 +13,10 @@ import mixerReducer from './mixerSlice'
 import undoable, { StateWithHistory } from 'redux-undo'
 import { DeviceState } from './deviceState'
 import { VisualScene_t, SceneType } from '../../shared/Scenes'
-import { Param, Params } from '../../shared/params'
+import { DefaultParam, Params } from '../../shared/params'
 import { SaveInfo } from 'shared/save'
 import eventLogger from './eventLogger'
+import { FixtureType } from 'shared/dmxFixtures'
 
 export interface UndoActionTypes {
   undo: string
@@ -232,42 +233,45 @@ export function useDmxSelector<T>(getVal: (dmx: DmxState) => T) {
   return useTypedSelector((state) => getVal(state.dmx.present))
 }
 
+export function useActiveFixtureType<T>(
+  getVal: (ft: FixtureType) => T | null
+): T | null {
+  return useDmxSelector((dmx) => {
+    if (dmx.activeFixtureType === null) {
+      return null
+    } else {
+      return getVal(dmx.fixtureTypesByID[dmx.activeFixtureType])
+    }
+  })
+}
+
 export function useDeviceSelector<T>(getVal: (midi: DeviceState) => T) {
   return useTypedSelector((state) => getVal(state.control.present.device))
 }
 
 export function useBaseParam(
-  param: Param,
-  splitIndex: number | null
+  param: DefaultParam | string,
+  splitIndex: number
 ): number | undefined {
   const baseParam = useActiveLightScene((state) => {
-    return splitIndex === null
-      ? state.baseParams[param]
-      : state.splitScenes[splitIndex].baseParams[param]
+    return state.splitScenes[splitIndex].baseParams[param]
   })
   return baseParam
 }
 
-export function useBaseParams(splitIndex: number | null): Partial<Params> {
+export function useBaseParams(splitIndex: number): Params {
   const baseParams = useActiveLightScene((state) => {
-    return splitIndex === null
-      ? state.baseParams
-      : state.splitScenes[splitIndex].baseParams
+    return state.splitScenes[splitIndex].baseParams
   })
   return baseParams
 }
 
 export function useModParam(
-  param: Param,
+  param: DefaultParam | string,
   modIndex: number,
-  splitIndex: number | null
+  splitIndex: number
 ) {
   return useActiveLightScene((scene) => {
-    const modulator = scene.modulators[modIndex]
-    if (splitIndex === null) {
-      return modulator.modulation[param]
-    } else {
-      return modulator.splitModulations[splitIndex][param]
-    }
+    return scene.modulators[modIndex].splitModulations[splitIndex][param]
   })
 }

@@ -1,14 +1,13 @@
-import { initModulation, paramsList, Param, Modulation } from './params'
+import { initModulation, DefaultParam, Modulation } from './params'
 import { Lfo, oscillatorValue, GetRamp } from './oscillator'
 import { AudioModulator, audioModulatorValue } from './audioModulator'
 import { LightScene_t } from './Scenes'
 import { clampNormalized } from '../math/util'
-import { mapUndefinedParamsToDefault, defaultOutputParams } from './params'
 import { TimeState } from './TimeState'
+import { defaultOutputParams } from './params'
 
 export interface Modulator {
   mod: Lfo | AudioModulator
-  modulation: Modulation
   splitModulations: Modulation[]
 }
 
@@ -40,10 +39,9 @@ function modulatorValue(modulator: Lfo | AudioModulator, timeState: TimeState) {
 export function initModulator(splitCount: number): Modulator {
   return {
     mod: GetRamp(),
-    modulation: initModulation(),
     splitModulations: Array(splitCount)
       .fill(0)
-      .map(() => ({})),
+      .map(() => initModulation()),
   }
 }
 
@@ -55,38 +53,29 @@ interface ModSnapshot {
 export function getOutputParams(
   timeState: TimeState,
   scene: LightScene_t,
-  splitIndex: number | null
+  splitIndex: number,
+  allParamKeys: string[]
 ) {
   const outputParams = defaultOutputParams()
-  const baseParams =
-    splitIndex === null
-      ? scene.baseParams
-      : scene.splitScenes[splitIndex].baseParams
-  // const baseParams = defaultOutputParams()
-  const mappedParams = mapUndefinedParamsToDefault(baseParams)
-  const snapshots: ModSnapshot[] =
-    splitIndex === null
-      ? scene.modulators.map((modulator) => ({
-          modulation: modulator.modulation,
-          lfoVal: modulatorValue(modulator.mod, timeState),
-        }))
-      : scene.modulators.map((modulator) => ({
-          modulation: modulator.splitModulations[splitIndex],
-          lfoVal: modulatorValue(modulator.mod, timeState),
-        }))
+  const baseParams = scene.splitScenes[splitIndex].baseParams
+  const snapshots: ModSnapshot[] = scene.modulators.map((modulator) => ({
+    modulation: modulator.splitModulations[splitIndex],
+    lfoVal: modulatorValue(modulator.mod, timeState),
+  }))
 
-  paramsList.forEach((param) => {
-    outputParams[param] = getOutputParam(mappedParams[param], param, snapshots)
+  allParamKeys.forEach((param) => {
+    outputParams[param] = getOutputParam(baseParams[param], param, snapshots)
   })
 
   return outputParams
 }
 
 function getOutputParam(
-  baseParam: number,
-  param: Param,
+  baseParam: number | undefined,
+  param: DefaultParam | string,
   snapshots: ModSnapshot[]
 ) {
+  if (baseParam === undefined) return undefined
   return clampNormalized(
     snapshots.reduce((sum, { modulation, lfoVal }) => {
       const modAmount = modulation[param]

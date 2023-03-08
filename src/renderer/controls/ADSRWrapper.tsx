@@ -4,16 +4,12 @@ import { setRandomizer } from '../redux/controlSlice'
 import { useDispatch } from 'react-redux'
 
 interface Props {
-  splitIndex: number | null
+  splitIndex: number
 }
 
 export default function ADSRWrapper({ splitIndex }: Props) {
   const state = useActiveLightScene((scene) => {
-    if (splitIndex === null) {
-      return scene.randomizer
-    } else {
-      return scene.splitScenes[splitIndex].randomizer
-    }
+    return scene.splitScenes[splitIndex].randomizer
   })
   const dispatch = useDispatch()
 

@@ -11,10 +11,10 @@ import { paramBundles } from './ParamAddButton'
 import { secondaryEnabled } from 'renderer/base/keyUtil'
 
 interface Props {
-  splitIndex: number | null
+  splitIndex: number
 }
 
-export default function XYpad({ splitIndex }: Props) {
+export default function XyParamsPad({ splitIndex }: Props) {
   const dispatch = useDispatch()
 
   const [dragContainer, onMouseDown] = useDragMapped(({ x, y, dx, dy }, e) => {
@@ -64,7 +64,7 @@ export default function XYpad({ splitIndex }: Props) {
     </Root>
   )
 
-  return splitIndex === null ? (
+  return splitIndex === 0 ? (
     <MidiOverlay_xy
       style={{ marginRight: '1rem' }}
       actions={[
@@ -88,4 +88,5 @@ const Root = styled.div`
   background: #000;
   overflow: hidden;
   border: 1px solid ${(props) => props.theme.colors.divider};
+  margin-right: 1rem;
 `

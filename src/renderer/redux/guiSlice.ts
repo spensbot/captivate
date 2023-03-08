@@ -9,7 +9,13 @@ import {
 } from '../../shared/connection'
 import { AudioConnectionState } from 'node-audio'
 
-export type Page = 'Universe' | 'Modulation' | 'Video' | 'Share' | 'Mixer'
+export type Page =
+  | 'Universe'
+  | 'Modulation'
+  | 'Video'
+  | 'Share'
+  | 'Mixer'
+  | 'Led'
 
 export interface GuiState {
   activePage: Page
@@ -21,6 +27,8 @@ export interface GuiState {
   saving: boolean
   loading: SaveInfo | null
   newProjectDialog: boolean
+  ledEnabled: boolean
+  videoEnabled: boolean
 }
 
 export function initGuiState(): GuiState {
@@ -34,6 +42,8 @@ export function initGuiState(): GuiState {
     saving: false,
     loading: null,
     newProjectDialog: false,
+    ledEnabled: false,
+    videoEnabled: false,
   }
 }
 
@@ -68,6 +78,12 @@ export const guiSlice = createSlice({
     setNewProjectDialog: (state, { payload }: PayloadAction<boolean>) => {
       state.newProjectDialog = payload
     },
+    toggleLedEnabled: (state, _: PayloadAction<undefined>) => {
+      state.ledEnabled = !state.ledEnabled
+    },
+    toggleVideoEnabled: (state, _: PayloadAction<undefined>) => {
+      state.videoEnabled = !state.videoEnabled
+    },
   },
 })
 
@@ -81,6 +97,8 @@ export const {
   setSaving,
   setLoading,
   setNewProjectDialog,
+  toggleLedEnabled,
+  toggleVideoEnabled,
 } = guiSlice.actions
 
 export default guiSlice.reducer

@@ -53,7 +53,7 @@ export default class VisualizerManager {
     const layerConfig = visualScene.config
     const stuff = {
       dt: Math.min(dt, MAX_DT),
-      params: res.rt.outputParams,
+      params: res.rt.splitStates[0].outputParams,
       time: res.rt.time,
       scene: control.light.byId[control.light.active],
       master: control.master,
@@ -107,7 +107,7 @@ export default class VisualizerManager {
   // I've spent so much time trying and I can't squash them all
   // So this is a temporary fix.
   ruthlessly_nuke_all_memory_I_dont_even_care_kill_it_with_fire() {
-    console.log(`WebGLRenderer Memory Wiped!!!`)
+    // console.log(`WebGLRenderer Memory Wiped!!!`)
     this.renderer.dispose()
   }
 

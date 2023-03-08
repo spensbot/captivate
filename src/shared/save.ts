@@ -1,6 +1,12 @@
 import { LightScenes_t, VisualScenes_t } from 'shared/Scenes'
 import { DmxState } from 'renderer/redux/dmxSlice'
 import { DeviceState } from 'renderer/redux/deviceState'
+import {
+  fixLightScenes,
+  fixVisualScenes,
+  fixDmxState,
+  fixDeviceState,
+} from './fixState'
 
 export interface SaveState {
   light?: LightScenes_t
@@ -29,7 +35,14 @@ export function displaySaveType(saveType: SaveType) {
   }
 }
 
-export function fixState(_state: SaveState) {}
+export function fixSaveState(state: SaveState) {
+  state.light && fixLightScenes(state.light)
+  state.visual && fixVisualScenes(state.visual)
+  state.dmx && fixDmxState(state.dmx)
+  state.device && fixDeviceState(state.device)
+
+  return state
+}
 
 export function getSaveConfig(save: SaveState): SaveConfig {
   let config: Partial<SaveConfig> = {}

@@ -1,4 +1,3 @@
-import { getColors } from './dmxColors'
 import { Window, Window2D_t } from '../shared/window'
 import {
   DmxValue,
@@ -6,13 +5,20 @@ import {
   FixtureChannel,
   Fixture,
   Universe,
+  DMX_DEFAULT_VALUE,
+  ChannelAxis,
+  FixtureType,
+  AxisDir,
+  DMX_MIN_VALUE,
+  FlattenedFixture,
 } from './dmxFixtures'
-import { Params } from './params'
-import { lerp } from '../math/util'
+import { getParam, Params } from './params'
+import { findClosest, lerp, Normalized } from '../math/util'
 import { rLerp } from '../math/range'
-import { LightScene_t } from 'shared/Scenes'
+import { applyRandomization } from './randomizer'
+import { getColorChannelLevel } from './dmxColors'
 
-function getWindowMultiplier2D(
+export function getWindowMultiplier2D(
   fixtureWindow: Window2D_t,
   movingWindow: Window2D_t
 ) {
@@ -32,7 +38,14 @@ function getWindowMultiplier(fixtureWindow?: Window, movingWindow?: Window) {
 }
 
 // Value and MirrorAmount should be normalized (0 - 1)
-export function applyMirror(value: number, mirrorAmount: number) {
+export function applyMirror(
+  value: Normalized,
+  mirrorAmount: Normalized | undefined
+) {
+  if (mirrorAmount === undefined) {
+    mirrorAmount = 0
+  }
+
   const doubleNorm = value * 2 - 1
   const mirroredDoubleNorm = lerp(doubleNorm, -doubleNorm, mirrorAmount)
   return (mirroredDoubleNorm + 1) / 2
@@ -41,24 +54,17 @@ export function applyMirror(value: number, mirrorAmount: number) {
 export function getDmxValue(
   ch: FixtureChannel,
   params: Params,
-  fixture: Fixture,
+  fixture: FlattenedFixture,
   master: number,
   randomizerLevel: number
 ): DmxValue {
   const movingWindow = getMovingWindow(params)
-  const colors = getColors(params)
 
   switch (ch.type) {
     case 'master':
-      const unrandomizedLevel =
-        params.brightness *
-        getWindowMultiplier2D(fixture.window, movingWindow) *
+      const level =
+        getBrightness(params, randomizerLevel, fixture.window, movingWindow) *
         master
-      const level = applyRandomization(
-        unrandomizedLevel,
-        randomizerLevel,
-        params.randomize
-      )
       if (ch.isOnOff) {
         return level > 0.5 ? ch.max : ch.min
       } else {
@@ -67,109 +73,246 @@ export function getDmxValue(
     case 'other':
       return ch.default
     case 'color':
-      return colors[ch.color] * DMX_MAX_VALUE
+      const brightness = getBrightness(
+        params,
+        randomizerLevel,
+        fixture.window,
+        movingWindow
+      )
+      return (
+        getColorChannelLevel(
+          getParam(params, 'hue'),
+          getParam(params, 'saturation'),
+          brightness,
+          ch.color
+        ) * DMX_MAX_VALUE
+      )
     case 'strobe':
-      return params.strobe > 0.5 ? ch.default_strobe : ch.default_solid
+      return params.strobe !== undefined && params.strobe > 0.5
+        ? ch.default_strobe
+        : ch.default_solid
     case 'axis':
       if (ch.dir === 'x') {
-        const fixtureXPos = fixture.window?.x?.pos ?? 0
-        const xAxis =
-          fixtureXPos < 0.5
-            ? params.xAxis
-            : applyMirror(params.xAxis, params.xMirror)
-        return rLerp(ch, xAxis)
-      } else if (ch.dir === 'y') {
-        return rLerp(ch, params.yAxis)
+        return calculate_axis_channel(
+          ch,
+          params.xAxis,
+          fixture.window?.x?.pos,
+          params.xMirror,
+          fixture
+        )
       } else {
-        console.error('Unhandled axis dir')
-        return 0
+        return calculate_axis_channel(
+          ch,
+          params.yAxis,
+          fixture.window?.y?.pos,
+          undefined, // No y-mirroring yet
+          fixture
+        )
       }
     case 'colorMap':
       const _colors = ch.colors
-      const firstColor = _colors[0]
       const hue = params.hue
-      if (firstColor && params.saturation > 0.5) {
-        const closestColor = _colors.reduce((current, color) => {
-          const currentDif = Math.min(
-            Math.abs(current.hue - hue),
-            Math.abs(current.hue - (hue - 1))
-          )
-          const dif = Math.min(
-            Math.abs(color.hue - hue),
-            Math.abs(color.hue - (hue - 1))
-          )
-          return dif < currentDif ? color : current
-        }, firstColor)
-        return closestColor.max
+      const saturation = params.saturation
+      if (hue !== undefined && saturation !== undefined) {
+        let closestColor = findClosest(
+          _colors.map((color) => {
+            return [color, color.hue, color.saturation * 2]
+          }),
+          hue,
+          saturation * 2
+        )
+        return closestColor?.max ?? DMX_DEFAULT_VALUE
       } else {
-        return 0
+        return DMX_DEFAULT_VALUE
       }
-    case 'mode':
-      return rLerp(ch, params.mode)
+    case 'custom':
+      const customParam = params[ch.name]
+      if (customParam === undefined) {
+        return ch.default
+      } else {
+        return rLerp(ch, customParam)
+      }
     default:
-      return 0
+      return DMX_DEFAULT_VALUE
   }
+}
+
+export function getBrightness(
+  params: Params,
+  randomizerLevel: Normalized,
+  fixtureWindow: Window2D_t,
+  movingWindow: Window2D_t
+): Normalized {
+  const unrandomizedBrightness =
+    getParam(params, 'brightness') *
+    getWindowMultiplier2D(fixtureWindow, movingWindow)
+  return applyRandomization(
+    unrandomizedBrightness,
+    randomizerLevel,
+    getParam(params, 'randomize')
+  )
 }
 
 export function getMovingWindow(params: Params): Window2D_t {
+  const x =
+    params.x !== undefined && params.width !== undefined
+      ? { pos: params.x, width: params.width }
+      : undefined
+
+  const y =
+    params.y !== undefined && params.height !== undefined
+      ? { pos: params.y, width: params.height }
+      : undefined
+
   return {
-    x: { pos: params.x, width: params.width },
-    y: { pos: params.y, width: params.height },
+    x: x,
+    y: y,
   }
 }
 
-export function applyRandomization(
-  value: number,
-  randomizerLevel: number,
-  randomizationAmount: number
+export function getFixturesInGroups(
+  fixtures: FlattenedFixture[],
+  scene_groups: { [key: string]: boolean | undefined }
 ) {
-  return lerp(value, value * randomizerLevel, randomizationAmount)
-}
-export interface UniverseFixture {
-  fixture: Fixture
-  universeIndex: number
+  let entries = Object.entries(scene_groups)
+
+  let groups = entries
+    .filter(([_, include]) => include === true)
+    .map(([group, _]) => group)
+  let not_groups = entries
+    .filter(([_, include]) => include === false)
+    .map(([group, _]) => group)
+
+  // Scenes with no groups specified affect
+  if (entries.length === 0) return fixtures
+
+  return fixtures.filter((fixture) => {
+    if (groups.find((g) => fixture.groups.includes(g))) return true
+    if (not_groups.find((g) => !fixture.groups.includes(g))) return true
+    return false
+  })
 }
 
-export function getFixturesWithIndexes(universe: Universe): UniverseFixture[] {
-  return universe.map((fixture, universeIndex) => ({ fixture, universeIndex }))
-}
-
-export function getFixturesNotInGroups(
-  universe: Universe,
-  groups: Set<string>
+export function getSortedGroupsForFixture(
+  fixture: Fixture,
+  fixtureType: FixtureType
 ) {
-  return getFixturesWithIndexes(universe).filter(
-    ({ fixture }) => !groups.has(fixture.group)
-  )
-}
-
-export function getFixturesInGroups(universe: Universe, groups: string[]) {
-  return getFixturesWithIndexes(universe).filter(({ fixture }) =>
-    groups.includes(fixture.group)
-  )
-}
-
-export function getMainGroups(
-  activeScene: LightScene_t,
-  all_groups: string[]
-): string[] {
-  let splitSceneGroups = getAllSplitSceneGroups(activeScene)
-  return all_groups.filter((group) => !splitSceneGroups.has(group))
-}
-
-function getAllSplitSceneGroups(activeScene: LightScene_t) {
-  return activeScene.splitScenes.reduce<Set<string>>((accum, splitScene) => {
-    for (const group of splitScene.groups) {
-      accum.add(group)
-    }
-    return accum
-  }, new Set())
-}
-
-export function getSortedGroups(universe: Universe) {
   const groupSet: Set<string> = new Set()
-  for (const fixture of universe) {
-    groupSet.add(fixture.group)
+  for (const group of fixture.groups) {
+    groupSet.add(group)
+  }
+  for (const group of fixtureType.groups) {
+    groupSet.add(group)
   }
   return Array.from(groupSet.keys()).sort((a, b) => (a > b ? 1 : -1))
+}
+
+export function getSortedGroupsForFixtureType(fixtureType: FixtureType) {
+  const groups = [...fixtureType.groups]
+  return groups.sort((a, b) => (a > b ? 1 : -1))
+}
+
+export function getSortedGroups(
+  universe: Universe,
+  fixtureTypeIds: string[],
+  fixtureTypesById: { [id: string]: FixtureType }
+) {
+  const groupSet: Set<string> = new Set()
+  for (const fixture of universe) {
+    for (const group of fixture.groups) {
+      groupSet.add(group)
+    }
+  }
+  for (const id of fixtureTypeIds) {
+    const fixtureType = fixtureTypesById[id]
+    for (const group of fixtureType.groups) {
+      groupSet.add(group)
+    }
+    for (const sub of fixtureType.subFixtures) {
+      for (const group of sub.groups) {
+        groupSet.add(group)
+      }
+    }
+  }
+  return Array.from(groupSet.keys()).sort((a, b) => (a > b ? 1 : -1))
+}
+
+function calculate_axis_channel(
+  ch: ChannelAxis,
+  axis_param: Normalized | undefined,
+  fixture_position: Normalized | undefined,
+  mirror_param: Normalized | undefined,
+  fixture: FlattenedFixture
+) {
+  if (axis_param === undefined) return 0
+
+  let mirrored_param =
+    fixture_position && fixture_position > 0.5
+      ? applyMirror(axis_param, mirror_param)
+      : axis_param
+
+  if (ch.isFine) {
+    const step_count = axis_range(fixture, ch.dir)
+    const step_delta = 1 / step_count
+    let remainder = mirrored_param % step_delta
+    let remainder_ratio = remainder / step_delta
+    return remainder_ratio * DMX_MAX_VALUE
+  } else {
+    return Math.floor(rLerp(ch, mirrored_param))
+  }
+}
+
+function axis_range(fixture: FlattenedFixture, dir: AxisDir) {
+  for (const [_channel_num, ch] of fixture.channels) {
+    if (ch.type === 'axis' && ch.dir === dir && !ch.isFine)
+      return ch.max - ch.min
+  }
+  return DMX_MAX_VALUE - DMX_MIN_VALUE
+}
+
+export function flatten_fixture(
+  fixture: Fixture,
+  fixture_type: FixtureType,
+  base_channel: number // DMX Channel assigned to the fixture
+): FlattenedFixture[] {
+  let subfixture_ch_indexes: Set<number> = new Set()
+
+  let groups = fixture.groups.concat(fixture_type.groups)
+
+  let flattened: FlattenedFixture[] = fixture_type.subFixtures.map((sub) => {
+    return {
+      intensity: sub.intensity ?? fixture_type.intensity,
+      window: sub.relative_window ?? fixture.window,
+      channels: sub.channels.map((ch_index) => {
+        subfixture_ch_indexes.add(ch_index)
+        return [base_channel + ch_index, fixture_type.channels[ch_index]]
+      }),
+      groups: groups.concat(sub.groups),
+    }
+  })
+
+  flattened.push({
+    intensity: fixture_type.intensity,
+    window: fixture.window,
+    channels: fixture_type.channels
+      .map((ch, ch_index) => {
+        return [ch_index, ch] as [number, FixtureChannel]
+      })
+      .filter(([ch_index]) => !subfixture_ch_indexes.has(ch_index))
+      .map(([ch_index, ch]) => [base_channel + ch_index, ch]),
+    groups,
+  })
+
+  // Only return fixtures that actually have channels.
+  // This improves the behavior of the randomizer engine
+  return flattened.filter((fixture) => fixture.channels.length > 0)
+}
+
+export function flatten_fixtures(
+  universe: Universe,
+  fixture_types_by_id: { [id: string]: FixtureType }
+): FlattenedFixture[] {
+  return universe
+    .map((f) => flatten_fixture(f, fixture_types_by_id[f.type], f.ch))
+    .flat(1)
 }

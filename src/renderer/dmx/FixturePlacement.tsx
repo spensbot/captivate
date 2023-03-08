@@ -39,25 +39,6 @@ export default function FixturePlacement() {
     return <FixtureCursor key={index} index={index} />
   })
 
-  const styles: { [key: string]: React.CSSProperties } = {
-    vertical: {
-      position: 'absolute',
-      top: '0',
-      bottom: '0',
-      left: '50%',
-      width: '1px',
-      backgroundColor: '#fff3',
-    },
-    horizontal: {
-      position: 'absolute',
-      top: '50%',
-      height: '1px',
-      left: 0,
-      right: 0,
-      backgroundColor: '#fff3',
-    },
-  }
-
   return (
     <Root>
       <div
@@ -65,8 +46,8 @@ export default function FixturePlacement() {
         onMouseDown={onMouseDown}
         style={{ position: 'relative', width: '100%', height: '100%' }}
       >
-        <div style={styles.vertical} />
-        <div style={styles.horizontal} />
+        <Vertical />
+        <Horizontal />
         {cursors}
       </div>
     </Root>
@@ -79,4 +60,22 @@ const Root = styled.div`
   overflow: hidden;
   padding: 0.5rem;
   flex: 1 0 50%;
+`
+
+const Vertical = styled.div`
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background-color: #fff3;
+`
+
+const Horizontal = styled.div`
+  position: absolute;
+  top: 50%;
+  height: 1px;
+  left: 0;
+  right: 0;
+  background-color: #fff3;
 `

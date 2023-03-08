@@ -1,10 +1,9 @@
 import React from 'react'
 import styled from 'styled-components'
 import zIndexes from '../zIndexes'
-// import UniverseIcon from '@mui/icons-material/List'
 import UniverseIcon from '@mui/icons-material/Settings'
-// import LightingIcon from '@mui/icons-material/MovieFilter'
 import LightingIcon from '@mui/icons-material/LightBulb'
+import WbIncandescentIcon from '@mui/icons-material/WbIncandescent'
 import VisualsIcon from '../images/Thick.png'
 import MixerIcon from '@mui/icons-material/BarChart'
 import { useTypedSelector } from '../redux/store'
@@ -17,6 +16,8 @@ const selectedBorder = 0.2 //rem
 export default function MenuBar() {
   const activePage = useTypedSelector((state) => state.gui.activePage)
   const dispatch = useDispatch()
+  const ledEnabled = useTypedSelector((state) => state.gui.ledEnabled)
+  const videoEnabled = useTypedSelector((state) => state.gui.videoEnabled)
 
   const setPage = (newPage: Page) => {
     return () => {
@@ -53,34 +54,30 @@ export default function MenuBar() {
   return (
     <Root>
       <MenuItem page="Universe" tooltipText="DMX Setup">
-        {/* <ViewComfyIcon /> */}
-        {/* <PlaylistAddIcon /> */}
         <UniverseIcon fontSize="inherit" />
       </MenuItem>
+      {ledEnabled && (
+        <MenuItem page="Led" tooltipText="Led Editor">
+          <WbIncandescentIcon fontSize="inherit" />
+        </MenuItem>
+      )}
       <MenuItem page="Modulation" tooltipText="Scene Editor">
-        {/* <WhatshotIcon /> */}
         <LightingIcon fontSize="inherit" />
-        {/* <StarBorderIcon /> */}
       </MenuItem>
-      <MenuItem page="Video" tooltipText="Visualizer" paddingRem={0.5}>
-        {/* <FeaturedVideoIcon /> */}
-        {/* <MovieFilterIcon /> */}
-        <img
-          src={VisualsIcon}
-          style={{ width: '2.3rem', height: '2.3rem', margin: '0' }}
-        />
-      </MenuItem>
-      {/* <MenuItem page='Share' tooltipText="Share">
-        <CloudUploadIcon />
-      </MenuItem> */}
+      {videoEnabled && (
+        <MenuItem page="Video" tooltipText="Visualizer" paddingRem={0.5}>
+          <img
+            src={VisualsIcon}
+            style={{ width: '2.3rem', height: '2.3rem', margin: '0' }}
+          />
+        </MenuItem>
+      )}
       <MenuItem page="Mixer" tooltipText="DMX Mixer">
         <MixerIcon fontSize="inherit" />
       </MenuItem>
       <Spacer />
       <MasterSlider />
       <div style={{ height: '0.5rem' }} />
-      {/* <BlackoutButton /> */}
-      {/* <StartStopButton /> */}
     </Root>
   )
 }

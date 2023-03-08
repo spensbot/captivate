@@ -6,7 +6,7 @@ import { SVCursorBase, SVCursorOutput } from './SVCursor'
 import { useOutputParam } from '../redux/realtimeStore'
 
 interface Props {
-  splitIndex: number | null
+  splitIndex: number
 }
 
 export default function SVpad({ splitIndex }: Props) {

@@ -11,30 +11,29 @@ import {
   initEffectsConfig,
 } from '../visualizer/threejs/effects/effectConfigs'
 
-export const DEFAULT_GROUP = 'Default'
-
-interface Scene_base {
+export interface SceneBase {
   name: string
   epicness: number
   autoEnabled: boolean
 }
 
 export interface SplitScene_t {
-  baseParams: Partial<Params>
+  baseParams: Params
   randomizer: RandomizerOptions
-  groups: string[]
+  // true = include group | false = include not group
+  groups: { [key: string]: boolean | undefined }
 }
+
 export function initSplitScene(): SplitScene_t {
   return {
     baseParams: initBaseParams(),
     randomizer: initRandomizerOptions(),
-    groups: [],
+    groups: {},
   }
 }
-export interface LightScene_t extends Scene_base {
+
+export interface LightScene_t extends SceneBase {
   modulators: Modulator[]
-  baseParams: Partial<Params>
-  randomizer: RandomizerOptions
   splitScenes: SplitScene_t[]
 }
 
@@ -43,14 +42,12 @@ export function initLightScene(): LightScene_t {
     name: 'Name',
     epicness: 0,
     autoEnabled: true,
-    modulators: [initModulator(0)],
-    baseParams: initBaseParams(),
-    randomizer: initRandomizerOptions(),
-    splitScenes: [],
+    modulators: [initModulator(1)],
+    splitScenes: [initSplitScene()],
   }
 }
 
-export interface VisualScene_t extends Scene_base {
+export interface VisualScene_t extends SceneBase {
   config: LayerConfig
   effectsConfig: EffectsConfig
   activeEffectIndex: number

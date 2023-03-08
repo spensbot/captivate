@@ -8,8 +8,7 @@ import Popup from '../base/Popup'
 import { useDispatch } from 'react-redux'
 import {
   removeSplitSceneByIndex,
-  addSceneGroup,
-  removeSceneGroup,
+  setSceneGroup,
 } from 'renderer/redux/controlSlice'
 import { getSortedGroups } from 'shared/dmxUtil'
 
@@ -20,27 +19,42 @@ interface Props {
 export default function GroupSelection({ splitIndex }: Props) {
   const dispatch = useDispatch()
   const [isOpen, setIsOpen] = useState(false)
-  const universe = useDmxSelector((dmx) => dmx.universe)
-  const availableGroups = getSortedGroups(universe)
+  const dmx = useDmxSelector((dmx) => dmx)
+  let availableGroups = getSortedGroups(
+    dmx.universe,
+    dmx.fixtureTypes,
+    dmx.fixtureTypesByID
+  )
   const activeGroups = useActiveLightScene(
     (scene) => scene.splitScenes[splitIndex].groups
   )
+  const entries = Object.entries(activeGroups)
 
-  const activeGroupsString = activeGroups.join(', ')
+  let allAvailableGroups = new Set(availableGroups)
+  for (const [group, _] of entries) {
+    allAvailableGroups.add(group)
+  }
+  availableGroups = Array.from(allAvailableGroups)
+
+  const activeGroupsString = entries
+    .map(([group, inclusive]) => `${inclusive ? '' : 'not'} ${group}`)
+    .join(', ')
 
   return (
     <Root>
-      <IconButton
-        size="small"
-        onClick={(e) => {
-          e.preventDefault()
-          dispatch(removeSplitSceneByIndex(splitIndex))
-        }}
-      >
-        <RemoveIcon />
-      </IconButton>
+      {splitIndex > 0 && (
+        <IconButton
+          size="small"
+          onClick={(e) => {
+            e.preventDefault()
+            dispatch(removeSplitSceneByIndex(splitIndex))
+          }}
+        >
+          <RemoveIcon />
+        </IconButton>
+      )}
       <GroupName>
-        {activeGroups.length > 0 ? `${activeGroupsString}` : `none`}
+        {entries.length > 0 ? `${activeGroupsString}` : `all`}
       </GroupName>
       <IconButton
         size="small"
@@ -54,26 +68,28 @@ export default function GroupSelection({ splitIndex }: Props) {
       {isOpen && (
         <Popup title="Select Groups" onClose={() => setIsOpen(false)}>
           {availableGroups.map((group) => {
-            const isActive = activeGroups.includes(group)
-            const payload = {
-              index: splitIndex,
-              group,
-            }
+            const activeState = activeGroups[group]
             return (
               <AvailableGroup
+                activeState={activeState}
                 key={group}
-                style={
-                  isActive
-                    ? {}
-                    : { opacity: 0.5, textDecoration: 'line-through' }
-                }
-                onClick={() =>
-                  isActive
-                    ? dispatch(removeSceneGroup(payload))
-                    : dispatch(addSceneGroup(payload))
-                }
+                onClick={() => {
+                  let next =
+                    activeState === undefined
+                      ? true
+                      : activeState === true
+                      ? false
+                      : undefined
+                  dispatch(
+                    setSceneGroup({
+                      index: splitIndex,
+                      group,
+                      val: next,
+                    })
+                  )
+                }}
               >
-                {group}
+                {`${activeState === false ? 'not ' : ''}${group}`}
               </AvailableGroup>
             )
           })}
@@ -94,10 +110,13 @@ const GroupName = styled.div`
   font-size: 1rem;
 `
 
-const AvailableGroup = styled.div`
+const AvailableGroup = styled.div<{ activeState: boolean | undefined }>`
   cursor: pointer;
-  :hover {
-    text-decoration: underline;
-  }
+  /* :hover {
+    text-decoration: ${(props) =>
+    props.activeState === false ? 'line-through' : 'underline'};
+  } */
+  color: ${(props) =>
+    props.activeState === undefined && props.theme.colors.text.secondary};
   margin-bottom: 1rem;
 `

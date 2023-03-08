@@ -5,7 +5,6 @@ import SceneSelection from '../scenes/SceneSelection'
 import SplitPane from '../base/SplitPane'
 import styled from 'styled-components'
 import SplitScenes from 'renderer/scenes/SplitScenes'
-import ParamsControl from 'renderer/controls/ParamsControl'
 
 export default function Scenes() {
   const splitPaneStyle: React.CSSProperties = {
@@ -30,8 +29,6 @@ export default function Scenes() {
         <Pane>
           <Column>
             <Modulators />
-            <Sp />
-            <ParamsControl splitIndex={null} />
             <Sp />
             <SplitScenes />
           </Column>

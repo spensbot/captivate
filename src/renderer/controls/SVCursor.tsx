@@ -3,7 +3,7 @@ import Cursor from '../base/Cursor'
 import { useBaseParam } from 'renderer/redux/store'
 
 interface Props {
-  splitIndex: number | null
+  splitIndex: number
 }
 
 export function SVCursorOutput({ splitIndex }: Props) {

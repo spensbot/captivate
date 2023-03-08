@@ -13,7 +13,8 @@ import styled from 'styled-components'
 import FixtureChannels from './FixtureChannels'
 import { Button } from '@mui/material'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
-import EditGroup from './EditGroup'
+import EditGroups from './EditGroups'
+import Subfixtures from './Subfixtures'
 
 type Props = {
   id: string
@@ -21,10 +22,6 @@ type Props = {
 
 export default function MyFixture({ id }: Props) {
   const ft = useDmxSelector((state) => state.fixtureTypesByID[id])
-  const isInUse = useDmxSelector(
-    (state) =>
-      state.universe.find((fixture) => fixture.type === ft.id) !== undefined
-  )
   const isEditing = useDmxSelector((state) => state.activeFixtureType === id)
   const dispatch = useDispatch()
 
@@ -78,78 +75,7 @@ export default function MyFixture({ id }: Props) {
         </IconButton> */}
         </Header>
       ) : (
-        <Body>
-          <Row>
-            <IconButton
-              onClick={() => {
-                dispatch(setEditedFixture(null))
-              }}
-              style={{ marginRight: '1rem' }}
-            >
-              <ExpandLessIcon />
-            </IconButton>
-            <div style={{ flex: '1 0 0' }}>
-              <Input
-                value={ft.name}
-                onChange={(newVal) =>
-                  dispatch(
-                    updateFixtureType({
-                      ...ft,
-                      name: newVal,
-                    })
-                  )
-                }
-              />
-              <Sp2 />
-              <Input
-                value={ft.manufacturer || ''}
-                onChange={(newVal) =>
-                  dispatch(
-                    updateFixtureType({
-                      ...ft,
-                      manufacturer: newVal,
-                    })
-                  )
-                }
-              />
-            </div>
-          </Row>
-          <Sp2 />
-          <Row>
-            <Intensity>Intensity:</Intensity>
-            <Slider
-              id="intensity"
-              value={ft.intensity}
-              step={0.01}
-              min={0}
-              max={1}
-              valueLabelDisplay="off"
-              onChange={(_e, newVal) =>
-                dispatch(
-                  updateFixtureType({
-                    ...ft,
-                    intensity: Array.isArray(newVal) ? newVal[0] : newVal,
-                  })
-                )
-              }
-            />
-          </Row>
-
-          <FixtureChannels fixtureID={id} isInUse={isInUse} />
-          <Sp />
-          <Row>
-            <Button
-              size="small"
-              disabled={isInUse}
-              variant="contained"
-              onClick={() => dispatch(deleteFixtureType(id))}
-            >
-              Delete Fixture
-            </Button>
-            <div style={{ flex: '1 0 1rem' }} />
-            <EditGroup />
-          </Row>
-        </Body>
+        <ActiveFixtureType />
       )}
     </Root>
   )
@@ -173,7 +99,98 @@ const Header = styled.div`
   padding: 0.5rem;
 `
 
-const Body = styled.div``
+function ActiveFixtureType() {
+  const ft = useDmxSelector((dmx) => {
+    if (dmx.activeFixtureType !== null) {
+      return dmx.fixtureTypesByID[dmx.activeFixtureType]
+    }
+    return null
+  })
+  if (ft === null) return null
+
+  const isInUse = useDmxSelector(
+    (state) =>
+      state.universe.find((fixture) => fixture.type === ft.id) !== undefined
+  )
+  const dispatch = useDispatch()
+
+  return (
+    <>
+      <Row>
+        <IconButton
+          onClick={() => {
+            dispatch(setEditedFixture(null))
+          }}
+          style={{ marginRight: '1rem' }}
+        >
+          <ExpandLessIcon />
+        </IconButton>
+        <div style={{ flex: '1 0 0' }}>
+          <Input
+            value={ft.name}
+            onChange={(newVal) =>
+              dispatch(
+                updateFixtureType({
+                  ...ft,
+                  name: newVal,
+                })
+              )
+            }
+          />
+          <Sp2 />
+          <Input
+            value={ft.manufacturer || ''}
+            onChange={(newVal) =>
+              dispatch(
+                updateFixtureType({
+                  ...ft,
+                  manufacturer: newVal,
+                })
+              )
+            }
+          />
+        </div>
+      </Row>
+      <Sp2 />
+      <Row>
+        <Intensity>Intensity:</Intensity>
+        <Slider
+          id="intensity"
+          value={ft.intensity}
+          step={0.01}
+          min={0}
+          max={1}
+          valueLabelDisplay="off"
+          onChange={(_e, newVal) =>
+            dispatch(
+              updateFixtureType({
+                ...ft,
+                intensity: Array.isArray(newVal) ? newVal[0] : newVal,
+              })
+            )
+          }
+        />
+      </Row>
+
+      <FixtureChannels fixtureID={ft.id} isInUse={isInUse} />
+      <Sp />
+      <Subfixtures />
+      <Sp />
+      <Row>
+        <Button
+          size="small"
+          disabled={isInUse}
+          variant="contained"
+          onClick={() => dispatch(deleteFixtureType(ft.id))}
+        >
+          Delete Fixture
+        </Button>
+        <div style={{ flex: '1 0 1rem' }} />
+        <EditGroups />
+      </Row>
+    </>
+  )
+}
 
 const Sp = styled.div`
   height: 1rem;

@@ -1,17 +1,23 @@
 import { useState } from 'react'
 import { useDispatch } from 'react-redux'
-import { Param, paramsList } from '../../shared/params'
-import { useActiveLightScene, useBaseParams, useModParam } from '../redux/store'
+import { DefaultParam } from '../../shared/params'
+import {
+  useActiveLightScene,
+  useBaseParams,
+  useDmxSelector,
+  useModParam,
+} from '../redux/store'
 import { setModulation } from '../redux/controlSlice'
 import useDragMapped from '../hooks/useDragMapped'
 import styled from 'styled-components'
 import Popup from 'renderer/base/Popup'
 import { indexArray } from 'shared/util'
+import { getAllParamKeys } from 'renderer/redux/dmxSlice'
 
 interface Props {
-  splitIndex: number | null
+  splitIndex: number
   modIndex: number
-  param: Param
+  param: DefaultParam | string
 }
 
 export default function ModulationSlider({
@@ -34,7 +40,7 @@ export default function ModulationSlider({
 
   return (
     <Root ref={dragContainer} onMouseDown={onMouseDown}>
-      {splitIndex === null ? param : `Split ${splitIndex} ${param}`}
+      {`Split ${splitIndex} ${param}`}
       <Amount
         style={{
           left: `${left * 100}%`,
@@ -72,7 +78,6 @@ function AddModulation({ modIndex }: { modIndex: number }) {
 
   return (
     <AddModRoot>
-      <ParamsGroup splitIndex={null} modIndex={modIndex} />
       {indexArray(numSplits).map((splitIndex) => (
         <ParamsGroup splitIndex={splitIndex} modIndex={modIndex} />
       ))}
@@ -90,17 +95,18 @@ function ParamsGroup({
   splitIndex,
   modIndex,
 }: {
-  splitIndex: number | null
+  splitIndex: number
   modIndex: number
 }) {
   const baseParams = useBaseParams(splitIndex)
+  const allParamKeys = useDmxSelector((dmx) => getAllParamKeys(dmx))
 
   return (
     <Group isDefault={false}>
       <GroupHeader>
         {splitIndex === null ? `Default` : `Split ${splitIndex + 1}`}
       </GroupHeader>
-      {paramsList.map((param) => {
+      {allParamKeys.map((param) => {
         if (baseParams[param] === undefined) return null
         return (
           <ParamEditor
@@ -120,9 +126,9 @@ function ParamEditor({
   modIndex,
   param,
 }: {
-  splitIndex: number | null
+  splitIndex: number
   modIndex: number
-  param: Param
+  param: DefaultParam | string
 }) {
   const modVal = useModParam(param, modIndex, splitIndex)
   const dispatch = useDispatch()

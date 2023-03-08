@@ -49,11 +49,12 @@ export default class TextSpin extends LayerBase {
     const epicness = scene.epicness
     this.text.mesh.rotation.y = this.spin.update(dt, epicness)
     const color = colorFromHSV(
-      params.hue,
-      params.saturation * 1,
-      params.brightness *
-        (epicness / 2 + 0.5) *
-        this.strobe.update(dt, params.strobe)
+      params.hue ?? 0.0,
+      params.saturation ?? 0.0 * 1,
+      params.brightness ??
+        0.0 *
+          (epicness / 2 + 0.5) *
+          this.strobe.update(dt, params.strobe ?? 0.0)
     )
     this.text.material = new THREE.MeshBasicMaterial({
       color: color,

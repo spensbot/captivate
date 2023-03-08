@@ -1,3 +1,5 @@
+import { zip } from '../shared/util'
+
 export type Normalized = number // 0 to 1
 
 export function clampNormalized(val: number) {
@@ -49,4 +51,28 @@ export function randomRanged(min: number, max: number) {
 
 export function randomBool() {
   return Math.random() > 0.5
+}
+
+export function magnitude(point: number[]) {
+  return point.reduce((acc, dim) => acc + dim ** 2, 0) ** 0.5
+}
+
+export function point_delta(start: number[], end: number[]): number[] {
+  return zip(start, end).map(([s, e]) => e - s)
+}
+
+export function findClosest<T>(
+  items: [T, ...number[]][],
+  ...target: number[]
+): T | null {
+  const f: (
+    acc: [T | null, number],
+    current: [T | null, ...number[]]
+  ) => [T | null, number] = ([min_t, min_delta], [t, ...point]) => {
+    const delta = magnitude(point_delta(point, target))
+
+    return delta < min_delta ? [t, delta] : [min_t, min_delta]
+  }
+
+  return items.reduce(f, [null, Number.MAX_VALUE])[0]
 }

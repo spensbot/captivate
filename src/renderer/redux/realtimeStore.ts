@@ -7,28 +7,29 @@ import {
 } from 'react-redux'
 import React from 'react'
 import { initTimeState, TimeState } from '../../shared/TimeState'
-import { defaultOutputParams, Param, Params } from '../../shared/params'
-import { initRandomizerState, RandomizerState } from '../../shared/randomizer'
+import { defaultOutputParams, DefaultParam, Params } from '../../shared/params'
+import { RandomizerState } from '../../shared/randomizer'
 
 function initDmxOut(): number[] {
   return Array(512).fill(0)
 }
 
-export interface RealtimeState {
+export interface SplitState {
   outputParams: Params
-  time: TimeState
   randomizer: RandomizerState
+}
+
+export interface RealtimeState {
+  time: TimeState
   dmxOut: number[]
-  splitScenes: { outputParams: Params }[]
+  splitStates: SplitState[]
 }
 
 export function initRealtimeState(): RealtimeState {
   return {
-    outputParams: defaultOutputParams(),
     time: initTimeState(),
-    randomizer: initRandomizerState(),
     dmxOut: initDmxOut(),
-    splitScenes: [],
+    splitStates: [],
   }
 }
 
@@ -69,28 +70,26 @@ export const useRealtimeSelector: TypedUseSelectorHook<RealtimeState> =
   createSelectorHook(realtimeContext)
 export const useRealtimeDispatch = createDispatchHook(realtimeContext)
 
-const initParamsCache = defaultOutputParams()
-
 export function useOutputParam(
-  param: Param,
-  splitIndex: number | null
+  param: DefaultParam | string,
+  splitIndex: number
 ): number {
   const outputParam = useRealtimeSelector((state) => {
-    return splitIndex === null
-      ? state.outputParams[param]
-      : state.splitScenes[splitIndex]?.outputParams[param]
+    return state.splitStates[splitIndex]?.outputParams?.[param]
   })
   if (outputParam === undefined) {
-    return initParamsCache[param]
+    console.error(
+      `useOutputParam called on undefined output param ${param}. That's probably not what you wanted.`
+    )
+    return 0
+  } else {
+    return outputParam
   }
-  return outputParam
 }
 
-export function useOutputParams(splitIndex: number | null): Params {
+export function useOutputParams(splitIndex: number): Params {
   const params = useRealtimeSelector((state) => {
-    return splitIndex === null
-      ? state.outputParams
-      : state.splitScenes[splitIndex]?.outputParams
+    return state.splitStates[splitIndex]?.outputParams
   })
   if (params === undefined) {
     return defaultOutputParams()

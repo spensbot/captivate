@@ -28,9 +28,9 @@ export default function BPM() {
         <Small>{`${Math.round(bpmUnconfident)} - ${confidence.toFixed(
           3
         )}`}</Small>
-        {/* <Bar>
+        <Bar>
           <Confidence style={{ width: `${confidence * 0.12 * 2 * 100}%` }} />
-        </Bar> */}
+        </Bar>
       </Root>
     </SliderMidiOverlay>
   )
