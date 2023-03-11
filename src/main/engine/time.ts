@@ -14,7 +14,7 @@ let _lastConnectionstate: AudioConnectionState = {
   connected: null,
 }
 let _rmsRange = new RollingRange(90, 0.1, 10)
-let _rmsAvg = new RollingAverageBiased(90, 0, 0.5)
+let _rmsAvg = new RollingAverageBiased(90, 0, 0.3)
 
 interface Config {
   update_ms: number
@@ -68,6 +68,7 @@ export function getNextTimeState(): TimeState {
       quantum: 4.0,
     },
     audio: audioState,
+    date: Date.now(),
   }
 
   if (linkState.isEnabled) {

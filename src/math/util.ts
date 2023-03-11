@@ -33,6 +33,10 @@ export function lerp(start: number, end: number, amount: number) {
   return start + delta * amount
 }
 
+export function lerp_clamped(start: number, end: number, amount: number) {
+  return lerp(start, end, clamp(amount, 0, 1))
+}
+
 // determines the t that val lives at between start and end
 export function unlerp(start: number, end: number, val: number) {
   let delta = end - start

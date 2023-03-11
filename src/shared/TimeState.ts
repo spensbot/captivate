@@ -40,6 +40,7 @@ export interface TimeState {
   beats: number
   link: LinkState
   audio: SessionState
+  instant: number // Date.now()
 }
 
 export function initTimeState(): TimeState {
@@ -48,6 +49,7 @@ export function initTimeState(): TimeState {
     beats: 0.0, // running total of beats (from LINK)
     link: initLinkState(),
     audio: initSessionState(),
+    instant: Date.now(),
   }
 }
 

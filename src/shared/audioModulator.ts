@@ -37,7 +37,7 @@ export function audioModulatorValueIn(
     case 'Pitch':
       return 0.0
     case 'RMS':
-      return timeState.audio.rms ** 0.4
+      return timeState.audio.rms
   }
 }
 
