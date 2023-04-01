@@ -1,7 +1,7 @@
-import { useRealtimeSelector } from '../redux/realtimeStore'
-import Cursor from '../base/Cursor'
-import { GetValueFromPhase, GetPhase } from '../../shared/oscillator'
-import { useActiveLightScene } from '../redux/store'
+import { useRealtimeSelector } from '../../../redux/realtimeStore'
+import Cursor from '../../../base/Cursor'
+import { GetValueFromPhase, GetPhase } from '../../../../shared/oscillator'
+import { useActiveLightScene } from '../../../redux/store'
 
 export default function LfoCursor({
   index,

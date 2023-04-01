@@ -1,7 +1,7 @@
 import { useDispatch } from 'react-redux'
-import { useActiveLightScene } from '../redux/store'
-import { setPeriod } from '../redux/controlSlice'
-import DraggableNumber from '../base/DraggableNumber'
+import { useActiveLightScene } from '../../../redux/store'
+import { setPeriod } from '../../../redux/controlSlice'
+import DraggableNumber from '../../../base/DraggableNumber'
 
 type Props = {
   index: number
@@ -19,6 +19,7 @@ export default function LfoPeriod({ index }: Props) {
   }
 
   return (
+
     <DraggableNumber
       value={period}
       min={0.25}
@@ -26,5 +27,6 @@ export default function LfoPeriod({ index }: Props) {
       onChange={onChange}
       style={{}}
     />
+
   )
 }

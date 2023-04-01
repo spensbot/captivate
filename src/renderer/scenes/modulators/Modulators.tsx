@@ -1,4 +1,4 @@
-import { useActiveLightScene } from '../redux/store'
+import { useActiveLightScene } from '../../redux/store'
 import ModulatorControl from './ModulatorControl'
 import NewModulator from './NewModulator'
 
