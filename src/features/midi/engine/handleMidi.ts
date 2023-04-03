@@ -1,11 +1,11 @@
-import { MidiMessage, midiInputID } from '../../shared/midi'
-import { CleanReduxState } from '../../renderer/redux/store'
-import { RealtimeState } from '../../renderer/redux/realtimeStore'
-import { getActionID, SliderAction } from '../../renderer/redux/deviceState'
+import { MidiMessage, midiInputID } from '../../../shared/midi'
+import { CleanReduxState } from '../../../renderer/redux/store'
+import { RealtimeState } from '../../../renderer/redux/realtimeStore'
+import { getActionID, SliderAction } from '../../../renderer/redux/deviceState'
 import {
   midiSetButtonAction,
   midiSetSliderAction,
-} from '../../renderer/redux/controlSlice'
+} from '../../../renderer/redux/controlSlice'
 import NodeLink from 'node-link'
 import { PayloadAction } from '@reduxjs/toolkit'
 import midiConfig from './midi.config'

@@ -4,9 +4,9 @@ import {
   setBaseParams,
   setPeriod,
   setActiveSceneIndex,
-} from '../../renderer/redux/controlSlice'
+} from '../../../renderer/redux/controlSlice'
 
-import { MidiConfig } from 'main/engine/handleMidi'
+import { MidiConfig } from './handleMidi'
 
 const createMidiConfig = <T extends MidiConfig>(t: T) => {
   return t
