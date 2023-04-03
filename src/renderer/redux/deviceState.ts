@@ -3,6 +3,7 @@ import { DefaultParam } from '../../shared/params'
 import { SceneType } from '.../../shared/Scenes'
 import { ConnectionId } from '../../shared/connection'
 
+type ModulationParam = 'period'
 interface Range {
   min: number
   max: number
@@ -21,6 +22,13 @@ export type SliderControlOptions = SliderControl_cc | SliderControl_note
 interface SetActiveSceneIndex {
   type: 'setActiveSceneIndex'
   sceneType: SceneType
+  index: number
+}
+
+interface SetModulationParam {
+  type: 'setModulationParam'
+  param: ModulationParam
+  sceneId: string;
   index: number
 }
 
@@ -49,6 +57,7 @@ export type MidiAction =
   | SetAutoSceneBombacity
   | SetMaster
   | SetBaseParam
+  | SetModulationParam
   | SetBpm
   | TapTempo
 
@@ -60,6 +69,9 @@ export function getActionID(action: MidiAction) {
   }
   if (action.type === 'setBaseParam') {
     return action.type + action.paramKey
+  }
+  if (action.type === 'setModulationParam') {
+    return `${action.type}:${action.sceneId}:${action.index}:${action.param}`
   }
   return action.type
 }
@@ -128,6 +140,9 @@ export const midiActions = {
   },
   listen: (state: DeviceState, { payload }: PayloadAction<MidiAction>) => {
     state.listening = payload
+  },
+  stopListening: (state: DeviceState) => {
+    delete state.listening
   },
   setIsEditing: (state: DeviceState, { payload }: PayloadAction<boolean>) => {
     delete state.listening

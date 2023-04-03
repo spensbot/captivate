@@ -9,6 +9,7 @@ import {
   setAutoSceneBombacity,
   setMaster,
   setBaseParams,
+  setPeriod,
 } from '../../renderer/redux/controlSlice'
 import NodeLink from 'node-link'
 import { PayloadAction } from '@reduxjs/toolkit'
@@ -107,6 +108,7 @@ export function handleMessage(
     const sliderAction = Object.entries(midiState.sliderActions).find(
       ([_actionId, action]) => action.inputID === input.id
     )?.[1]
+
     if (sliderAction) {
       const action = sliderAction.action
       const getOldVal = () => {
@@ -146,6 +148,16 @@ export function handleMessage(
           nodeLink.setTempo(newVal)
         } else if (action.type === 'tapTempo') {
           tapTempo()
+        } else if (action.type === 'setModulationParam') {
+          if (action.param === 'period') {
+            dispatch(
+              setPeriod({
+                index: action.index,
+                newVal: newVal,
+                sceneId: action.sceneId,
+              })
+            )
+          }
         }
       }
       const op = sliderAction.options

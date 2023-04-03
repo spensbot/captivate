@@ -1,7 +1,17 @@
 import { useDispatch } from 'react-redux'
-import { useActiveLightScene } from '../../../redux/store'
+import { useActiveLightScene, useControlSelector } from '../../../redux/store'
 import { setPeriod } from '../../../redux/controlSlice'
 import DraggableNumber from '../../../base/DraggableNumber'
+import { RangeMidiOverlay } from 'renderer/base/MidiOverlay'
+
+// const Notes = {
+//   '1/4': 0.25,
+//   '1/2': 0.5,
+//   '1': 1,
+//   '2': 2,
+//   '4': 2,
+//   '8': 2,
+// } as const
 
 type Props = {
   index: number
@@ -11,6 +21,7 @@ export default function LfoPeriod({ index }: Props) {
   const period = useActiveLightScene(
     (activeScene) => activeScene.modulators[index].lfo.period
   )
+  const sceneId = useControlSelector((state) => state.light.active)
 
   const dispatch = useDispatch()
 
@@ -18,15 +29,27 @@ export default function LfoPeriod({ index }: Props) {
     dispatch(setPeriod({ index: index, newVal: newVal }))
   }
 
+  const wrapperStyle: React.CSSProperties = {}
+
+  const min = 0.25
+  const max = 32
+
   return (
-
-    <DraggableNumber
-      value={period}
-      min={0.25}
-      max={32}
-      onChange={onChange}
-      style={{}}
-    />
-
+    <>
+      <RangeMidiOverlay
+        action={{ type: 'setModulationParam', index, param: 'period', sceneId }}
+        style={wrapperStyle}
+        min={min}
+        max={max}
+      >
+        <DraggableNumber
+          value={period}
+          min={min}
+          max={max}
+          onChange={onChange}
+          style={{}}
+        />
+      </RangeMidiOverlay>
+    </>
   )
 }

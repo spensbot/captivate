@@ -62,6 +62,22 @@ function modifyActiveLightScene(
   }
 }
 
+const modifyScene = {
+  light: {
+    active: modifyActiveLightScene,
+    byId: (
+      state: ControlState,
+      sceneId: string,
+      callback: (scene: LightScene_t) => void
+    ) => {
+      const scene = state.light.byId[sceneId]
+      if (scene) {
+        callback(scene)
+      }
+    },
+  },
+}
+
 function modifyActiveVisualScene(
   state: ControlState,
   callback: (scene: VisualScene_t) => void
@@ -225,11 +241,18 @@ export const scenesSlice = createSlice({
     },
     setPeriod: (
       state,
-      { payload }: PayloadAction<{ index: number; newVal: number }>
+      {
+        payload,
+      }: PayloadAction<{ index: number; newVal: number; sceneId?: string }>
     ) => {
-      modifyActiveLightScene(state, (scene) => {
+      const handle = (scene: LightScene_t) => {
         scene.modulators[payload.index].lfo.period = payload.newVal
-      })
+      }
+      if (payload.sceneId) {
+        modifyScene.light.byId(state, payload.sceneId, handle)
+      } else {
+        modifyActiveLightScene(state, handle)
+      }
     },
     incrementPeriod: (
       state,
@@ -437,6 +460,7 @@ export const scenesSlice = createSlice({
 
     // =====================   MIDI   ===========================================
     midiListen: (state, action) => midiActions.listen(state.device, action),
+    midiStopListening: (state) => midiActions.stopListening(state.device),
     midiSetButtonAction: (state, action) =>
       midiActions.setButtonAction(state.device, action),
     midiSetIsEditing: (state, action) =>
@@ -500,6 +524,7 @@ export const {
 
   // MIDI
   midiListen,
+  midiStopListening,
   midiSetButtonAction,
   midiSetIsEditing,
   midiSetSliderAction,
