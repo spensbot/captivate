@@ -6,8 +6,9 @@ import {
   setActiveSceneIndex,
 } from '../../../renderer/redux/controlSlice'
 import { AllowedMidiActions, Config } from '../shared/actions'
+import { createMidiConfig } from '../shared/config'
 
-import { createMidiConfig } from './handleMidi'
+
 
 export default createMidiConfig<AllowedMidiActions, Config<AllowedMidiActions>>(
   {

@@ -10,6 +10,7 @@ import NodeLink from 'node-link'
 import { PayloadAction } from '@reduxjs/toolkit'
 import _midiConfig from './midi.config'
 import { getActionID } from '../redux'
+import { ButtonFunction, SlidersFunction } from '../shared/config'
 interface MidiInput {
   id: string
   message: MidiMessage
@@ -22,37 +23,6 @@ function getInput(msg: MidiMessage): MidiInput {
   }
 }
 
-type MidiContext = {
-  rt_state: RealtimeState
-  dispatch: (action: PayloadAction<any>) => void
-  tapTempo: () => void
-  nodeLink: NodeLink
-  state: CleanReduxState
-}
-
-export type SlidersFunction<Action = unknown> = {
-  set: (
-    input: {
-      action: Action
-
-      newVal: number
-    },
-    context: MidiContext
-  ) => void
-  get?: (input: { action: Action }, context: MidiContext) => number
-  key?: (action: Action) => string
-}
-
-export type ButtonFunction<Action = unknown> = {
-  set: (
-    input: {
-      action: Action
-    },
-    context: MidiContext
-  ) => void
-  key?: (action: Action) => string
-}
-
 export type MidiConfig = {
   buttons: {
     [k: string]: ButtonFunction
@@ -60,29 +30,6 @@ export type MidiConfig = {
   range: {
     [k: string]: SlidersFunction
   }
-}
-
-export const createMidiConfig = <
-  Keys extends string,
-  T extends {
-    buttons: Partial<{
-      [k in Keys]: ButtonFunction
-    }>
-    range: Partial<{
-      [k in Keys]: SlidersFunction
-    }>
-  } = {
-    buttons: Partial<{
-      [k in Keys]: ButtonFunction
-    }>
-    range: Partial<{
-      [k in Keys]: SlidersFunction
-    }>
-  }
->(
-  t: T
-) => {
-  return t
 }
 
 const midiConfig = _midiConfig as MidiConfig

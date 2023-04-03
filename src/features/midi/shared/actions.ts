@@ -1,11 +1,12 @@
 import type { actions } from '../../../renderer/redux/controlSlice/reducers/actions'
 import type { UserCommand } from 'shared/ipc_channels'
-import type { ButtonFunction, SlidersFunction } from '../engine/handleMidi'
+
 import type {
   CaseReducer,
   CaseReducerWithPrepare,
   PayloadAction,
 } from '@reduxjs/toolkit'
+import { ButtonFunction, SlidersFunction } from './config'
 
 /**
  * From T, pick a set of properties whose keys are in the union K
