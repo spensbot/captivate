@@ -13,7 +13,7 @@ export default function BPM() {
   })
 
   return (
-    <SliderMidiOverlay action={{ type: 'setBpm' }}>
+    <SliderMidiOverlay action={{ type: 'SetBPM' }}>
       <div
         ref={dragContainer}
         onMouseDown={onMouseDown}

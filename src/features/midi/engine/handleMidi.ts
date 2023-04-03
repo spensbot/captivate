@@ -40,6 +40,7 @@ export type SlidersFunction<Action = unknown> = {
     context: MidiContext
   ) => void
   get?: (input: { action: Action }, context: MidiContext) => number
+  key?: (action: Action) => string
 }
 
 export type ButtonFunction<Action = unknown> = {
@@ -49,13 +50,14 @@ export type ButtonFunction<Action = unknown> = {
     },
     context: MidiContext
   ) => void
+  key?: (action: Action) => string
 }
 
 export type MidiConfig = {
   buttons: {
     [k: string]: ButtonFunction
   }
-  sliders: {
+  range: {
     [k: string]: SlidersFunction
   }
 }
@@ -66,14 +68,14 @@ export const createMidiConfig = <
     buttons: Partial<{
       [k in Keys]: ButtonFunction
     }>
-    sliders: Partial<{
+    range: Partial<{
       [k in Keys]: SlidersFunction
     }>
   } = {
     buttons: Partial<{
       [k in Keys]: ButtonFunction
     }>
-    sliders: Partial<{
+    range: Partial<{
       [k in Keys]: SlidersFunction
     }>
   }
@@ -173,8 +175,8 @@ export function handleMessage(
 
     if (sliderAction) {
       const action = sliderAction.action
-      const sliderConfig: MidiConfig['sliders'][string] =
-        midiConfig.sliders[action.type]
+      const sliderConfig: MidiConfig['range'][string] =
+        midiConfig.range[action.type]
 
       const getOldVal = () => {
         const get: SlidersFunction['get'] = sliderConfig.get

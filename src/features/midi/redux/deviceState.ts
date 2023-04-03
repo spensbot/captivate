@@ -1,7 +1,8 @@
 import { PayloadAction } from '@reduxjs/toolkit'
-import { getActionID, MidiAction } from './actions'
+import { getActionID } from './actions'
 
 import { ConnectionId } from '../../../shared/connection'
+import { MidiActions } from '../shared/actions'
 
 interface Range {
   min: number
@@ -20,7 +21,7 @@ export type SliderControlOptions = SliderControl_cc | SliderControl_note
 
 export interface ButtonAction {
   inputID: string
-  action: MidiAction
+  action: MidiActions
 }
 export interface SliderAction extends ButtonAction {
   options: SliderControlOptions
@@ -29,7 +30,7 @@ export interface SliderAction extends ButtonAction {
 // ActionID = setAutoSceneBombacity, setActiveSceneIndex0, etc.
 // InputID = note70, cc50, etc.
 export interface DeviceState {
-  listening?: MidiAction
+  listening?: MidiActions
   isEditing: boolean
   connectable: {
     midi: ConnectionId[]
@@ -54,7 +55,7 @@ export function initDeviceState(): DeviceState {
 export const midiActions = {
   setButtonAction: (
     state: DeviceState,
-    { payload }: PayloadAction<{ inputID: string; action: MidiAction }>
+    { payload }: PayloadAction<{ inputID: string; action: MidiActions }>
   ) => {
     clearInputID(state, payload.inputID)
     state.buttonActions[getActionID(payload.action)] = payload
@@ -65,7 +66,7 @@ export const midiActions = {
       payload,
     }: PayloadAction<{
       inputID: string
-      action: MidiAction
+      action: MidiActions
       options: SliderControlOptions
     }>
   ) => {
@@ -74,13 +75,13 @@ export const midiActions = {
   },
   removeMidiAction: (
     state: DeviceState,
-    { payload }: PayloadAction<MidiAction>
+    { payload }: PayloadAction<MidiActions>
   ) => {
     const actionId = getActionID(payload)
     delete state.buttonActions[actionId]
     delete state.sliderActions[actionId]
   },
-  listen: (state: DeviceState, { payload }: PayloadAction<MidiAction>) => {
+  listen: (state: DeviceState, { payload }: PayloadAction<MidiActions>) => {
     state.listening = payload
   },
   stopListening: (state: DeviceState) => {

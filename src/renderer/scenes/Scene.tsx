@@ -104,7 +104,7 @@ export function Scene({ sceneType, index, id }: Props) {
             action={{
               type: 'setActiveSceneIndex',
               sceneType: sceneType,
-              index: index,
+              val: index
             }}
           >
             <Root

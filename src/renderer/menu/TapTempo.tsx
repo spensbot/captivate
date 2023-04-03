@@ -8,7 +8,7 @@ export default function TapTempo({}: Props) {
   return (
     <ButtonMidiOverlay
       action={{
-        type: 'tapTempo',
+        type: 'TapTempo',
       }}
     >
       <Button onClick={() => send_user_command({ type: 'TapTempo' })}>

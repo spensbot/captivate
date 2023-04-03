@@ -37,7 +37,7 @@ export default function LfoPeriod({ index }: Props) {
   return (
     <>
       <RangeMidiOverlay
-        action={{ type: 'setModulationParam', index, param: 'period', sceneId }}
+        action={{ type: 'setPeriod', index, sceneId }}
         style={wrapperStyle}
         min={min}
         max={max}

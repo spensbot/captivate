@@ -13,10 +13,11 @@ import DraggableNumber from '../../../renderer/base/DraggableNumber'
 import Button from '../../../renderer/base/Button'
 import './midi-overlay-styles.css'
 import { useEffect, useRef } from 'react'
-import { getActionID, MidiAction } from '../redux'
+import { getActionID } from '../redux'
+import { MidiActions } from '../shared/actions'
 interface Props {
   children?: React.ReactNode
-  action: MidiAction
+  action: MidiActions
   style?: React.CSSProperties
 }
 
@@ -456,7 +457,7 @@ const MinMax = styled.div`
   justify-content: center;
 `
 
-function X({ action }: { action: MidiAction }) {
+function X({ action }: { action: MidiActions }) {
   const dispatch = useDispatch()
   const onClick = () => dispatch(removeMidiAction(action))
   return (

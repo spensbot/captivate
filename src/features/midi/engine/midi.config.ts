@@ -16,6 +16,7 @@ export default createMidiConfig<AllowedMidiActions, Config<AllowedMidiActions>>(
         set: ({ action }, { dispatch }) => {
           dispatch(setActiveSceneIndex(action))
         },
+        key: (action) => action.type + action.sceneType + action.val.toString(),
       },
 
       TapTempo: {
@@ -24,7 +25,7 @@ export default createMidiConfig<AllowedMidiActions, Config<AllowedMidiActions>>(
         },
       },
     },
-    sliders: {
+    range: {
       setAutoSceneBombacity: {
         get: (_, { state }) => state.control.light.auto.epicness,
         set: ({ newVal }, { dispatch }) =>
@@ -40,6 +41,7 @@ export default createMidiConfig<AllowedMidiActions, Config<AllowedMidiActions>>(
         set: ({ newVal }, { dispatch }) => dispatch(setMaster(newVal)),
       },
       setBaseParam: {
+        key: (action) => action.type + action.paramKey,
         get: ({ action }, { state }) =>
           state.control.light.byId[state.control.light.active]?.splitScenes[0]
             .baseParams[action.paramKey] || 0.5,
@@ -65,6 +67,7 @@ export default createMidiConfig<AllowedMidiActions, Config<AllowedMidiActions>>(
         },
       },
       setPeriod: {
+        key: (action) => `${action.type}:${action.sceneId}:${action.index}`,
         set: ({ action, newVal }, { dispatch }) => {
           dispatch(
             setPeriod({

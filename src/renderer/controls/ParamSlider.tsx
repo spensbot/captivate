@@ -9,7 +9,7 @@ import { SliderMidiOverlay } from 'features/midi/react/MidiOverlay'
 import ParamXButton from './ParamXButton'
 
 interface Props {
-  param: DefaultParam | string
+  param: DefaultParam
   splitIndex: number
 }
 
