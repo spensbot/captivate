@@ -1,7 +1,7 @@
 import { MidiMessage, midiInputID } from '../../../shared/midi'
 import { CleanReduxState } from '../../../renderer/redux/store'
 import { RealtimeState } from '../../../renderer/redux/realtimeStore'
-import { getActionID, SliderAction } from '../../../renderer/redux/deviceState'
+import { SliderAction } from '../../../renderer/redux/deviceState'
 import {
   midiSetButtonAction,
   midiSetSliderAction,
@@ -9,6 +9,7 @@ import {
 import NodeLink from 'node-link'
 import { PayloadAction } from '@reduxjs/toolkit'
 import midiConfig from './midi.config'
+import { getActionID } from '../redux'
 interface MidiInput {
   id: string
   message: MidiMessage

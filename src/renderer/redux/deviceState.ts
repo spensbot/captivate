@@ -1,8 +1,7 @@
 import { PayloadAction } from '@reduxjs/toolkit'
-import { MidiAction } from 'features/midi/redux'
+import { getActionID, MidiAction } from 'features/midi/redux'
 
 import { ConnectionId } from '../../shared/connection'
-
 
 interface Range {
   min: number
@@ -18,22 +17,6 @@ interface SliderControl_note extends Range {
   mode: 'toggle' | 'hold'
 }
 export type SliderControlOptions = SliderControl_cc | SliderControl_note
-
-
-// must uniquely identify an action (for use in a hash table)
-// does not need to be human readable. Just unique for a given action
-export function getActionID(action: MidiAction) {
-  if (action.type === 'setActiveSceneIndex') {
-    return action.type + action.sceneType + action.index.toString()
-  }
-  if (action.type === 'setBaseParam') {
-    return action.type + action.paramKey
-  }
-  if (action.type === 'setModulationParam') {
-    return `${action.type}:${action.sceneId}:${action.index}:${action.param}`
-  }
-  return action.type
-}
 
 export interface ButtonAction {
   inputID: string

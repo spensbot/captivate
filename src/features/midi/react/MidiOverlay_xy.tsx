@@ -1,6 +1,6 @@
 import styled from 'styled-components'
-import { getActionID } from '../../../renderer/redux/deviceState'
-import { MidiAction } from '../redux'
+
+import { getActionID, MidiAction } from '../redux'
 import { useDeviceSelector } from '../../../renderer/redux/store'
 import { SliderMidiOverlay } from './MidiOverlay'
 
