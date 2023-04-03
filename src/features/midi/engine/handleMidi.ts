@@ -1,4 +1,4 @@
-import { MidiMessage, midiInputID } from '../../../shared/midi'
+import { MidiMessage, midiInputID } from '../shared/midi'
 import { CleanReduxState } from '../../../renderer/redux/store'
 import { RealtimeState } from '../../../renderer/redux/realtimeStore'
 import { SliderAction } from '../redux'

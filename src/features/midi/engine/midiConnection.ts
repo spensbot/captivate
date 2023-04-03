@@ -1,5 +1,5 @@
 import { Input } from 'midi'
-import { parseMessage, MidiMessage } from '../../../shared/midi'
+import { parseMessage, MidiMessage } from '../shared/midi'
 import {
   MidiConnections,
   ConnectionId,
