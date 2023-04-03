@@ -109,6 +109,12 @@ type ParamsAction = PayloadAction<{
   params: Params
 }>
 
+type ParamAction = PayloadAction<{
+  splitIndex: number
+  paramKey: DefaultParam
+  value: number | undefined
+}>
+
 export const scenesSlice = createSlice({
   name: 'scenes',
   initialState: initControlState(),
@@ -317,6 +323,15 @@ export const scenesSlice = createSlice({
         })
       }
     },
+    setBaseParam: (
+      state,
+      { payload: { paramKey, value, splitIndex } }: ParamAction
+    ) => {
+      modifyActiveLightScene(state, (scene) => {
+        const baseParams = scene.splitScenes[splitIndex].baseParams
+        baseParams[paramKey] = value
+      })
+    },
     deleteBaseParams: (
       state,
       {
@@ -498,6 +513,7 @@ export const {
   // LIGHT SCENES
   resetLightScenes,
   setBaseParams,
+  setBaseParam,
   deleteBaseParams,
   incrementBaseParams,
   setModulatorShape,

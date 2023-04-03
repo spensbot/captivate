@@ -8,7 +8,7 @@ import {
 } from '../../../renderer/redux/controlSlice'
 import NodeLink from 'node-link'
 import { PayloadAction } from '@reduxjs/toolkit'
-import midiConfig from './midi.config'
+import _midiConfig from './midi.config'
 import { getActionID } from '../redux'
 interface MidiInput {
   id: string
@@ -30,47 +30,60 @@ type MidiContext = {
   state: CleanReduxState
 }
 
-export type SlidersFunction = {
+export type SlidersFunction<Action = unknown> = {
   set: (
     input: {
-      action: unknown
+      action: Action
 
       newVal: number
     },
     context: MidiContext
   ) => void
-  get?: (input: {}, context: MidiContext) => number
+  get?: (input: { action: Action }, context: MidiContext) => number
 }
 
-export type ButtonFunction = {
+export type ButtonFunction<Action = unknown> = {
   set: (
     input: {
-      action: unknown
+      action: Action
     },
     context: MidiContext
   ) => void
 }
 
-const isSliderFunction = (t: object): t is SlidersFunction => {
-  return t.hasOwnProperty('set')
-}
-
 export type MidiConfig = {
   buttons: {
-    [k: string]:
-      | ButtonFunction
-      | {
-          [k: string]: ButtonFunction
-        }
+    [k: string]: ButtonFunction
   }
   sliders: {
-    [k: string]:
-      | SlidersFunction
-      | {
-          [k: string]: SlidersFunction
-        }
+    [k: string]: SlidersFunction
   }
 }
+
+export const createMidiConfig = <
+  Keys extends string,
+  T extends {
+    buttons: Partial<{
+      [k in Keys]: ButtonFunction
+    }>
+    sliders: Partial<{
+      [k in Keys]: SlidersFunction
+    }>
+  } = {
+    buttons: Partial<{
+      [k in Keys]: ButtonFunction
+    }>
+    sliders: Partial<{
+      [k in Keys]: SlidersFunction
+    }>
+  }
+>(
+  t: T
+) => {
+  return t
+}
+
+const midiConfig = _midiConfig as MidiConfig
 
 export function handleMessage(
   message: MidiMessage,
@@ -84,6 +97,9 @@ export function handleMessage(
   const midiState = state.control.device
 
   if (midiState.isEditing && midiState.listening) {
+    /**
+     * When we receive first signal from midi attach to action
+     */
     const listenType = midiState.listening.type
     if (midiConfig.buttons[listenType]) {
       dispatch(
@@ -134,17 +150,19 @@ export function handleMessage(
       }
     }
   } else {
+    /**
+     * Receive Midi Data
+     */
     const context = { dispatch, nodeLink, rt_state, state, tapTempo }
     const buttonAction = Object.entries(midiState.buttonActions).find(
       ([_actionId, action]) => action.inputID === input.id
     )?.[1]
     if (buttonAction) {
       if (input.message.type !== 'Off') {
-        const buttonConfig: MidiConfig['buttons'] =
-          midiConfig.buttons[action.type]
-        const set: ButtonFunction['set'] = isSliderFunction(buttonConfig)
-          ? buttonConfig.set
-          : buttonConfig[buttonAction.action.param].set
+        const buttonConfig: MidiConfig['buttons'][string] =
+          midiConfig.buttons[buttonAction.action.type]
+
+        const set: ButtonFunction['set'] = buttonConfig.set
 
         set({ action: buttonAction.action }, context)
       }
@@ -155,24 +173,20 @@ export function handleMessage(
 
     if (sliderAction) {
       const action = sliderAction.action
-      const sliderConfig: MidiConfig['sliders'] =
+      const sliderConfig: MidiConfig['sliders'][string] =
         midiConfig.sliders[action.type]
 
       const getOldVal = () => {
-        const get: SlidersFunction['get'] = isSliderFunction(sliderAction)
-          ? sliderAction.get
-          : sliderAction[action.param].get
+        const get: SlidersFunction['get'] = sliderConfig.get
 
         if (get) {
-          return get({}, context)
+          return get({ action }, context)
         } else {
           return 0
         }
       }
       const setNewVal = (newVal: number) => {
-        const set: SlidersFunction['set'] = isSliderFunction(sliderConfig)
-          ? sliderConfig.set
-          : sliderConfig[action.param].set
+        const set: SlidersFunction['set'] = sliderConfig.set
 
         set({ newVal, action }, context)
       }
@@ -212,3 +226,53 @@ export function handleMessage(
     }
   }
 }
+
+/**
+ * Idea for control flow configuration
+ *
+const t = {
+  button: {
+    On: () => {},
+    CC: () => {},
+  },
+  slider: {
+    cc: {
+      CC: {
+        absolute: ({ setNewVal, op, input, range }) => {
+          setNewVal(op.min + (input.message.value / 127) * range)
+        },
+        $default: ({ input, setNewVal, getOldVal }) => {
+          // relative
+          let mapped = (input.message.value - 64) / 5
+          setNewVal(getOldVal() + mapped)
+        },
+      },
+    },
+    note: {
+      On: ({ op, input, range }) => {
+        const val =
+          op.value === 'velocity'
+            ? op.min + (input.message.velocity / 127) * range
+            : op.max
+        return {
+          hold: ({ setNewVal }) => {
+            setNewVal(val)
+          },
+          toggle: ({ getOldVal, setNewVal }) => {
+            if (getOldVal() > op.min) {
+              setNewVal(op.min)
+            } else {
+              setNewVal(val)
+            }
+          },
+        }
+      },
+      Off: {
+        hold: () => {
+          setNewVal(op.min)
+        },
+      },
+    },
+  },
+}
+ */

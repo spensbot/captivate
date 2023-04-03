@@ -1,88 +1,79 @@
 import {
   setAutoSceneBombacity,
   setMaster,
-  setBaseParams,
+  setBaseParam,
   setPeriod,
   setActiveSceneIndex,
 } from '../../../renderer/redux/controlSlice'
+import { AllowedMidiActions, Config } from '../shared/actions'
 
-import { MidiConfig } from './handleMidi'
+import { createMidiConfig } from './handleMidi'
 
-const createMidiConfig = <T extends MidiConfig>(t: T) => {
-  return t
-}
+export default createMidiConfig<AllowedMidiActions, Config<AllowedMidiActions>>(
+  {
+    buttons: {
+      setActiveSceneIndex: {
+        set: ({ action }, { dispatch }) => {
+          dispatch(setActiveSceneIndex(action))
+        },
+      },
 
-export default createMidiConfig({
-  buttons: {
-    setActiveSceneIndex: {
-      set: ({ action }, { dispatch }) => {
-        dispatch(
-          setActiveSceneIndex({
-            sceneType: action.sceneType,
-            val: action.index,
-          })
-        )
+      TapTempo: {
+        set: (_, { tapTempo }) => {
+          tapTempo()
+        },
       },
     },
-    tapTempo: {
-      set: (_, { tapTempo }) => {
-        tapTempo()
+    sliders: {
+      setAutoSceneBombacity: {
+        get: (_, { state }) => state.control.light.auto.epicness,
+        set: ({ newVal }, { dispatch }) =>
+          dispatch(
+            setAutoSceneBombacity({
+              sceneType: 'light',
+              val: newVal,
+            })
+          ),
       },
-    },
-  },
-  sliders: {
-    setAutoSceneBombacity: {
-      get: (_, { state }) => state.control.light.auto.epicness,
-      set: ({ newVal }, { dispatch }) =>
-        dispatch(
-          setAutoSceneBombacity({
-            sceneType: 'light',
-            val: newVal,
-          })
-        ),
-    },
-    setMaster: {
-      get: (_, { state }) => state.control.master,
-      set: ({ newVal }, { dispatch }) => dispatch(setMaster(newVal)),
-    },
-    setBaseParam: {
-      get: (_, { state }) =>
-        state.control.light.byId[state.control.light.active]?.splitScenes[0]
-          .baseParams[action.paramKey] || 0.5,
-      set: ({ action, newVal }, { dispatch }) => {
-        dispatch(
-          setBaseParams({
-            splitIndex: 0,
-            params: {
-              [action.paramKey]: newVal,
-            },
-          })
-        )
+      setMaster: {
+        get: (_, { state }) => state.control.master,
+        set: ({ newVal }, { dispatch }) => dispatch(setMaster(newVal)),
       },
-    },
-    setBpm: {
-      get: (_, { rt_state }) => rt_state.time.bpm,
-      set: ({ newVal }, { nodeLink }) => {
-        nodeLink.setTempo(newVal)
+      setBaseParam: {
+        get: ({ action }, { state }) =>
+          state.control.light.byId[state.control.light.active]?.splitScenes[0]
+            .baseParams[action.paramKey] || 0.5,
+        set: ({ action, newVal }, { dispatch }) => {
+          dispatch(
+            setBaseParam({
+              splitIndex: 0,
+              paramKey: action.paramKey,
+              value: newVal,
+            })
+          )
+        },
       },
-    },
-    tapTempo: {
-      set: (_, { tapTempo }) => {
-        tapTempo()
+      SetBPM: {
+        get: (_, { rt_state }) => rt_state.time.bpm,
+        set: ({ newVal }, { nodeLink }) => {
+          nodeLink.setTempo(newVal)
+        },
       },
-    },
-    setModulationParam: {
-      period: {
+      TapTempo: {
+        set: (_, { tapTempo }) => {
+          tapTempo()
+        },
+      },
+      setPeriod: {
         set: ({ action, newVal }, { dispatch }) => {
           dispatch(
             setPeriod({
-              index: action.index,
+              ...action,
               newVal: newVal,
-              sceneId: action.sceneId,
             })
           )
         },
       },
     },
-  },
-})
+  }
+)
