@@ -1,7 +1,7 @@
 import SVpad from './SVpad'
 import Hue from './Hue'
 import MidiOverlay_xy from '../base/MidiOverlay_xy'
-import { SliderMidiOverlay } from '../base/MidiOverlay'
+import { SliderMidiOverlay } from '../../features/midi/react/MidiOverlay'
 import styled from 'styled-components'
 
 interface Props {

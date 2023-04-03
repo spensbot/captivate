@@ -2,7 +2,7 @@ import { useDispatch } from 'react-redux'
 import { useActiveLightScene, useControlSelector } from '../../../redux/store'
 import { setPeriod } from '../../../redux/controlSlice'
 import DraggableNumber from '../../../base/DraggableNumber'
-import { RangeMidiOverlay } from 'renderer/base/MidiOverlay'
+import { RangeMidiOverlay } from 'features/midi/react/MidiOverlay'
 
 // const Notes = {
 //   '1/4': 0.25,

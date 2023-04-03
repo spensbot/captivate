@@ -5,15 +5,10 @@ import { getActionID, SliderAction } from '../../renderer/redux/deviceState'
 import {
   midiSetButtonAction,
   midiSetSliderAction,
-  setActiveSceneIndex,
-  setAutoSceneBombacity,
-  setMaster,
-  setBaseParams,
-  setPeriod,
 } from '../../renderer/redux/controlSlice'
 import NodeLink from 'node-link'
 import { PayloadAction } from '@reduxjs/toolkit'
-
+import midiConfig from './midi.config'
 interface MidiInput {
   id: string
   message: MidiMessage
@@ -23,6 +18,56 @@ function getInput(msg: MidiMessage): MidiInput {
   return {
     id: midiInputID(msg),
     message: msg,
+  }
+}
+
+type MidiContext = {
+  rt_state: RealtimeState
+  dispatch: (action: PayloadAction<any>) => void
+  tapTempo: () => void
+  nodeLink: NodeLink
+  state: CleanReduxState
+}
+
+export type SlidersFunction = {
+  set: (
+    input: {
+      action: unknown
+
+      newVal: number
+    },
+    context: MidiContext
+  ) => void
+  get?: (input: {}, context: MidiContext) => number
+}
+
+export type ButtonFunction = {
+  set: (
+    input: {
+      action: unknown
+    },
+    context: MidiContext
+  ) => void
+}
+
+const isSliderFunction = (t: object): t is SlidersFunction => {
+  return t.hasOwnProperty('set')
+}
+
+export type MidiConfig = {
+  buttons: {
+    [k: string]:
+      | ButtonFunction
+      | {
+          [k: string]: ButtonFunction
+        }
+  }
+  sliders: {
+    [k: string]:
+      | SlidersFunction
+      | {
+          [k: string]: SlidersFunction
+        }
   }
 }
 
@@ -39,7 +84,7 @@ export function handleMessage(
 
   if (midiState.isEditing && midiState.listening) {
     const listenType = midiState.listening.type
-    if (listenType === 'setActiveSceneIndex' || listenType === 'tapTempo') {
+    if (midiConfig.buttons[listenType]) {
       dispatch(
         midiSetButtonAction({
           inputID: input.id,
@@ -88,21 +133,19 @@ export function handleMessage(
       }
     }
   } else {
+    const context = { dispatch, nodeLink, rt_state, state, tapTempo }
     const buttonAction = Object.entries(midiState.buttonActions).find(
       ([_actionId, action]) => action.inputID === input.id
     )?.[1]
     if (buttonAction) {
       if (input.message.type !== 'Off') {
-        if (buttonAction.action.type === 'setActiveSceneIndex') {
-          dispatch(
-            setActiveSceneIndex({
-              sceneType: buttonAction.action.sceneType,
-              val: buttonAction.action.index,
-            })
-          )
-        } else if (buttonAction.action.type === 'tapTempo') {
-          tapTempo()
-        }
+        const buttonConfig: MidiConfig['buttons'] =
+          midiConfig.buttons[action.type]
+        const set: ButtonFunction['set'] = isSliderFunction(buttonConfig)
+          ? buttonConfig.set
+          : buttonConfig[buttonAction.action.param].set
+
+        set({ action: buttonAction.action }, context)
       }
     }
     const sliderAction = Object.entries(midiState.sliderActions).find(
@@ -111,54 +154,26 @@ export function handleMessage(
 
     if (sliderAction) {
       const action = sliderAction.action
+      const sliderConfig: MidiConfig['sliders'] =
+        midiConfig.sliders[action.type]
+
       const getOldVal = () => {
-        if (action.type === 'setAutoSceneBombacity') {
-          return state.control.light.auto.epicness
-        } else if (action.type === 'setBpm') {
-          return rt_state.time.bpm
-        } else if (action.type === 'setBaseParam') {
-          return (
-            state.control.light.byId[state.control.light.active]?.splitScenes[0]
-              .baseParams[action.paramKey] || 0.5
-          )
-        } else if (action.type === 'setMaster') {
-          return state.control.master
-        } else return 0
+        const get: SlidersFunction['get'] = isSliderFunction(sliderAction)
+          ? sliderAction.get
+          : sliderAction[action.param].get
+
+        if (get) {
+          return get({}, context)
+        } else {
+          return 0
+        }
       }
       const setNewVal = (newVal: number) => {
-        if (action.type === 'setAutoSceneBombacity') {
-          dispatch(
-            setAutoSceneBombacity({
-              sceneType: 'light',
-              val: newVal,
-            })
-          )
-        } else if (action.type === 'setMaster') {
-          dispatch(setMaster(newVal))
-        } else if (action.type === 'setBaseParam') {
-          dispatch(
-            setBaseParams({
-              splitIndex: 0,
-              params: {
-                [action.paramKey]: newVal,
-              },
-            })
-          )
-        } else if (action.type === 'setBpm') {
-          nodeLink.setTempo(newVal)
-        } else if (action.type === 'tapTempo') {
-          tapTempo()
-        } else if (action.type === 'setModulationParam') {
-          if (action.param === 'period') {
-            dispatch(
-              setPeriod({
-                index: action.index,
-                newVal: newVal,
-                sceneId: action.sceneId,
-              })
-            )
-          }
-        }
+        const set: SlidersFunction['set'] = isSliderFunction(sliderConfig)
+          ? sliderConfig.set
+          : sliderConfig[action.param].set
+
+        set({ newVal, action }, context)
       }
       const op = sliderAction.options
       const range = op.max - op.min

@@ -1,16 +1,16 @@
 import styled from 'styled-components'
 import * as Popover from '@radix-ui/react-popover'
-import { getActionID, MidiAction, SliderAction } from '../redux/deviceState'
+import { getActionID, MidiAction, SliderAction } from '../../../renderer/redux/deviceState'
 import {
   midiListen,
   midiStopListening,
   midiSetSliderAction,
   removeMidiAction,
-} from '../redux/controlSlice'
-import { useDeviceSelector } from '../redux/store'
+} from '../../../renderer/redux/controlSlice'
+import { useDeviceSelector } from '../../../renderer/redux/store'
 import { useDispatch } from 'react-redux'
-import DraggableNumber from './DraggableNumber'
-import Button from './Button'
+import DraggableNumber from '../../../renderer/base/DraggableNumber'
+import Button from '../../../renderer/base/Button'
 import './midi-overlay-styles.css'
 import { useEffect, useRef } from 'react'
 interface Props {

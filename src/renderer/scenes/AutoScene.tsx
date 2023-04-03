@@ -9,7 +9,7 @@ import {
 } from '../redux/controlSlice'
 import { SceneType } from '../../shared/Scenes'
 import DraggableNumber from '../base/DraggableNumber'
-import { SliderMidiOverlay } from 'renderer/base/MidiOverlay'
+import { SliderMidiOverlay } from 'features/midi/react/MidiOverlay'
 
 export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
   const dispatch = useDispatch()
