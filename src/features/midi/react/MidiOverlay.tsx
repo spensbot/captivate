@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 import * as Popover from '@radix-ui/react-popover'
-import { getActionID, MidiAction, SliderAction } from '../../../renderer/redux/deviceState'
+import { getActionID, SliderAction } from '../../../renderer/redux/deviceState'
 import {
   midiListen,
   midiStopListening,
@@ -13,6 +13,7 @@ import DraggableNumber from '../../../renderer/base/DraggableNumber'
 import Button from '../../../renderer/base/Button'
 import './midi-overlay-styles.css'
 import { useEffect, useRef } from 'react'
+import { MidiAction } from '../redux'
 interface Props {
   children?: React.ReactNode
   action: MidiAction
