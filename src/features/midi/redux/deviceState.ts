@@ -1,7 +1,7 @@
 import { PayloadAction } from '@reduxjs/toolkit'
-import { getActionID, MidiAction } from 'features/midi/redux'
+import { getActionID, MidiAction } from './actions'
 
-import { ConnectionId } from '../../shared/connection'
+import { ConnectionId } from '../../../shared/connection'
 
 interface Range {
   min: number

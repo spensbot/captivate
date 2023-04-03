@@ -1,6 +1,6 @@
 import { LightScenes_t, VisualScenes_t } from 'shared/Scenes'
 import { DmxState } from 'renderer/redux/dmxSlice'
-import { DeviceState } from 'renderer/redux/deviceState'
+import { DeviceState } from 'features/midi/redux'
 import {
   fixLightScenes,
   fixVisualScenes,

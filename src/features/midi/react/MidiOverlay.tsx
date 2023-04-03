@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 import * as Popover from '@radix-ui/react-popover'
-import { SliderAction } from '../../../renderer/redux/deviceState'
+import { SliderAction } from '../redux'
 import {
   midiListen,
   midiStopListening,

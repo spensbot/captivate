@@ -9,7 +9,7 @@ import { RandomizerOptions } from '../../shared/randomizer'
 import cloneDeep from 'lodash.clonedeep'
 import { LayerConfig } from '../../visualizer/threejs/layers/LayerConfig'
 import { EffectConfig } from '../../visualizer/threejs/effects/effectConfigs'
-import { DeviceState, initDeviceState, midiActions } from './deviceState'
+import { DeviceState, initDeviceState, midiActions } from 'features/midi/redux'
 import {
   ScenesStateBundle,
   initScenesState,
