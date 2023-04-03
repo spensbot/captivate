@@ -5,7 +5,7 @@ import { useBaseParam } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import { setBaseParams } from '../redux/controlSlice'
 import ParamCursor from './ParamCursor'
-import { SliderMidiOverlay } from '../../features/midi/react/MidiOverlay'
+import { SliderMidiOverlay } from 'features/midi/react/MidiOverlay'
 import ParamXButton from './ParamXButton'
 
 interface Props {
