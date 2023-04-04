@@ -4,7 +4,7 @@ import {
   addActiveFixtureTypeGroup,
   removeActiveFixtureTypeGroup,
 } from '../../../renderer/redux/dmxSlice'
-import { getSortedGroups, getSortedGroupsForFixtureType } from 'shared/dmxUtil'
+import { getSortedGroups, getSortedGroupsForFixtureType } from 'features/dmx/shared/dmxUtil'
 import GroupPicker from 'renderer/base/GroupPicker'
 
 interface Props {}

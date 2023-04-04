@@ -1,6 +1,6 @@
 import { distanceBetween, pLerp, Point } from '../math/point'
 import { BaseColors, getBaseColorsFromHsv } from './baseColors'
-import { getMovingWindow, getWindowMultiplier2D } from './dmxUtil'
+import { getMovingWindow, getWindowMultiplier2D } from '../features/dmx/shared/dmxUtil'
 import { getParam, Params } from './params'
 import { indexArray } from './util'
 import { Window2D_t } from './window'

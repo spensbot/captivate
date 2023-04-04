@@ -1,4 +1,4 @@
-import { Window, Window2D_t } from '../shared/window'
+import { Window, Window2D_t } from '../../../shared/window'
 import {
   DmxValue,
   DMX_MAX_VALUE,
@@ -12,10 +12,10 @@ import {
   DMX_MIN_VALUE,
   FlattenedFixture,
 } from './dmxFixtures'
-import { getParam, Params } from './params'
-import { findClosest, lerp, Normalized } from '../math/util'
-import { rLerp } from '../math/range'
-import { applyRandomization } from './randomizer'
+import { getParam, Params } from '../../../shared/params'
+import { findClosest, lerp, Normalized } from '../../../math/util'
+import { rLerp } from '../../../math/range'
+import { applyRandomization } from '../../../shared/randomizer'
 import { getColorChannelLevel } from './dmxColors'
 
 export function getWindowMultiplier2D(

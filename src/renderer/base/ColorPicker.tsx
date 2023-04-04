@@ -4,7 +4,7 @@ import {
   approximateStandardColor,
   colorByName,
   standardColorNames,
-} from '../../shared/dmxColors'
+} from 'features/dmx/shared/dmxColors'
 import wrapClick from './wrapClick'
 
 interface Props {

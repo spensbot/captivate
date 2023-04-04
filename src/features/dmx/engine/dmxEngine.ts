@@ -3,7 +3,7 @@ import {
   DMX_DEFAULT_VALUE,
   DMX_NUM_CHANNELS,
   FlattenedFixture,
-} from '../../../shared/dmxFixtures'
+} from '../shared/dmxFixtures'
 import { Params } from '../../../shared/params'
 import { RandomizerState } from '../../../shared/randomizer'
 import { CleanReduxState } from '../../../renderer/redux/store'
@@ -11,7 +11,7 @@ import {
   getDmxValue,
   getFixturesInGroups,
   flatten_fixtures,
-} from '../../../shared/dmxUtil'
+} from '../shared/dmxUtil'
 import { indexArray, zip } from '../../../shared/util'
 import { TimeState } from '../../../shared/TimeState'
 import { SplitState } from 'renderer/redux/realtimeStore'

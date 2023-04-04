@@ -9,7 +9,7 @@ import {
   axisDirList,
   DMX_MAX_VALUE,
   DMX_MIN_VALUE,
-} from '../../../shared/dmxFixtures'
+} from '../shared/dmxFixtures'
 import NumberField from '../../../renderer/base/NumberField'
 import Input from '../../../renderer/base/Input'
 import { editFixtureChannel } from '../../../renderer/redux/dmxSlice'

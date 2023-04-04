@@ -1,6 +1,6 @@
 import { useDispatch } from 'react-redux'
 import styled from 'styled-components'
-import { DMX_MAX_VALUE } from '../../../shared/dmxFixtures'
+import { DMX_MAX_VALUE } from '../shared/dmxFixtures'
 import NumberField from '../../../renderer/base/NumberField'
 import {
   addColorMapColor,
@@ -11,7 +11,7 @@ import { IconButton } from '@mui/material'
 import Add from '@mui/icons-material/Add'
 import Remove from '@mui/icons-material/Remove'
 import HSpad, { ColorChannelProps } from 'renderer/base/HSpad'
-import { ChannelColorMap } from '../../../shared/dmxFixtures'
+import { ChannelColorMap } from '../shared/dmxFixtures'
 import { useState } from 'react'
 import wrapClick from 'renderer/base/wrapClick'
 import { lerp } from 'math/util'

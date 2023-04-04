@@ -15,7 +15,7 @@ import { useRealtimeSelector } from '../redux/realtimeStore'
 import StatusBar from '../menu/StatusBar'
 import React from 'react'
 import useHover from 'renderer/hooks/useHover'
-import { DMX_MAX_VALUE, FixtureChannel, FixtureType } from 'shared/dmxFixtures'
+import { DMX_MAX_VALUE, FixtureChannel, FixtureType } from 'features/dmx/shared/dmxFixtures'
 import zIndexes from 'renderer/zIndexes'
 import useMousePosition from 'renderer/hooks/useMousePosition'
 

@@ -10,7 +10,7 @@ import {
   removeSplitSceneByIndex,
   setSceneGroup,
 } from 'renderer/redux/controlSlice'
-import { getSortedGroups } from 'shared/dmxUtil'
+import { getSortedGroups } from 'features/dmx/shared/dmxUtil'
 
 interface Props {
   splitIndex: number

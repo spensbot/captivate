@@ -19,7 +19,7 @@ import Input from '../../../renderer/base/Input'
 import Slider from 'renderer/base/Slider'
 import XyPad from 'renderer/base/XyPad'
 import GroupPicker from 'renderer/base/GroupPicker'
-import { getSortedGroups } from 'shared/dmxUtil'
+import { getSortedGroups } from 'features/dmx/shared/dmxUtil'
 
 export default function Subfixtures() {
   const subFixtures = useDmxSelector((dmx) => {

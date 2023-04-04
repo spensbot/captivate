@@ -1,6 +1,6 @@
 import { useOutputParam } from '../redux/realtimeStore'
 import Cursor from '../base/Cursor'
-import { applyMirror } from 'shared/dmxUtil'
+import { applyMirror } from 'features/dmx/shared/dmxUtil'
 
 interface Props {
   splitIndex: number

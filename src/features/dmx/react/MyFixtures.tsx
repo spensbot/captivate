@@ -4,7 +4,7 @@ import AddIcon from '@mui/icons-material/Add'
 import { IconButton } from '@mui/material'
 import { addFixtureType } from '../../../renderer/redux/dmxSlice'
 import { useDispatch } from 'react-redux'
-import { initFixtureType } from '../../../shared/dmxFixtures'
+import { initFixtureType } from 'features/dmx/shared/dmxFixtures'
 import styled from 'styled-components'
 
 export default function MyFixtures() {

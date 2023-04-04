@@ -7,7 +7,7 @@ import {
   ColorMapColor,
   initSubFixture,
   SubFixture,
-} from '../../shared/dmxFixtures'
+} from 'features/dmx/shared/dmxFixtures'
 import { clampNormalized } from '../../math/util'
 import { defaultParamsList } from '../../shared/params'
 import { initLedState, LedState } from './ledState'
