@@ -5,7 +5,7 @@ import styled from 'styled-components'
 import zIndexes from '../zIndexes'
 import Blackout from './Blackout'
 import Devices from '../../features/devices/react/overlays/Devices'
-import NewProjectDialog from './NewProjectDialog'
+import NewProjectDialog from '../../features/fileSaving/react/overlays/NewProjectDialog'
 
 interface Props {}
 

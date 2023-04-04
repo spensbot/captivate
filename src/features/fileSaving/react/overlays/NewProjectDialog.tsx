@@ -1,8 +1,8 @@
 import styled from 'styled-components'
 import { useDispatch } from 'react-redux'
-import initState from '../redux/initState'
-import defaultState from '../redux/defaultState'
-import { resetState } from '../redux/store'
+import initState from '../../../../renderer/redux/initState'
+import defaultState from '../../../../renderer/redux/defaultState'
+import { resetState } from '../../../../renderer/redux/store'
 import { Button } from '@mui/material'
 import { setNewProjectDialog } from 'renderer/redux/guiSlice'
 
