@@ -1,6 +1,6 @@
 import styled from 'styled-components'
-import StatusBar from '../menu/StatusBar'
-import SplitPane from '../base/SplitPane'
+import StatusBar from '../../menu/StatusBar'
+import SplitPane from '../../base/SplitPane'
 import LedFixtureList from 'features/led/react/LedFixtureList'
 import LedFixturePlacement from 'features/led/react/LedFixturePlacement'
 

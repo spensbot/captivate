@@ -1,6 +1,6 @@
 import styled from 'styled-components'
-import Slider from '../base/Slider'
-import { useTypedSelector, useDmxSelector } from '../redux/store'
+import Slider from '../../base/Slider'
+import { useTypedSelector, useDmxSelector } from '../../redux/store'
 import { useDispatch } from 'react-redux'
 import { TextField, Button, IconButton } from '@mui/material'
 import ForwardIcon from '@mui/icons-material/ArrowForward'
@@ -10,9 +10,9 @@ import {
   setChannelsPerPage,
   setOverwrite,
   clearOverwrites,
-} from '../redux/mixerSlice'
-import { useRealtimeSelector } from '../redux/realtimeStore'
-import StatusBar from '../menu/StatusBar'
+} from '../../redux/mixerSlice'
+import { useRealtimeSelector } from '../../redux/realtimeStore'
+import StatusBar from '../../menu/StatusBar'
 import React from 'react'
 import useHover from 'renderer/hooks/useHover'
 import { DMX_MAX_VALUE, FixtureChannel, FixtureType } from 'features/dmx/shared/dmxFixtures'

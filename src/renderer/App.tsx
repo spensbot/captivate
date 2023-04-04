@@ -1,15 +1,15 @@
 import styled from 'styled-components'
-import Video from './pages/VisualizerPage'
-import Modulation from './pages/Scenes'
-import Universe from './pages/Universe'
-import Share from './pages/Share'
-import Mixer from './pages/Mixer'
+import Video from './pages/visualizer/page'
+import Modulation from './pages/scenes/page'
+import Universe from './pages/universe/page'
+import Share from './pages/share/page'
+import Mixer from './pages/mixer/page'
 import MenuBar from './menu/SideBar'
 import { useTypedSelector } from './redux/store'
 import FullscreenOverlay from './overlays/FullscreenOverlay'
 import ErrorBoundarySentry from './error-boundary/ErrorBoundarySentry'
 import BottomStatus from './menu/BottomStatus'
-import LedPage from './pages/LedPage'
+import LedPage from './pages/led/page'
 
 export default function App() {
   const activePage = useTypedSelector((state) => state.gui.activePage)
