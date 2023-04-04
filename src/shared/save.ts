@@ -1,4 +1,4 @@
-import { LightScenes_t, VisualScenes_t } from 'shared/Scenes'
+import { LightScenes_t, VisualScenes_t } from 'features/scenes/shared/Scenes'
 import { DmxState } from 'features/dmx/redux/dmxSlice'
 import { DeviceState } from 'features/midi/redux'
 import {

@@ -1,15 +1,15 @@
-import { Params, initBaseParams } from './params'
-import { Modulator, initModulator } from '../features/modulation/shared/modulation'
-import { RandomizerOptions, initRandomizerOptions } from './randomizer'
+import { Params, initBaseParams } from '../../../shared/params'
+import { Modulator, initModulator } from '../../modulation/shared/modulation'
+import { RandomizerOptions, initRandomizerOptions } from '../../../shared/randomizer'
 import { nanoid } from 'nanoid'
 import {
   LayerConfig,
   initLayerConfig,
-} from '../features/visualizer/threejs/layers/LayerConfig'
+} from '../../visualizer/threejs/layers/LayerConfig'
 import {
   EffectsConfig,
   initEffectsConfig,
-} from '../features/visualizer/threejs/effects/effectConfigs'
+} from '../../visualizer/threejs/effects/effectConfigs'
 
 export interface SceneBase {
   name: string

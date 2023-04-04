@@ -19,7 +19,7 @@ import {
   ScenesStateBundle,
   initLightScene,
   initVisualScene,
-} from '../../../../shared/Scenes'
+} from '../../../../features/scenes/shared/Scenes'
 
 import { DefaultParam, Params } from '../../../../shared/params'
 

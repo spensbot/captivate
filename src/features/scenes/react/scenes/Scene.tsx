@@ -20,7 +20,7 @@ import Input from '../../../ui/react/base/Input'
 import { Draggable } from 'react-beautiful-dnd'
 import DragHandleIcon from '@mui/icons-material/DragHandle'
 import CopyIcon from '@mui/icons-material/FileCopy'
-import { SceneType } from '../../../../shared/Scenes'
+import { SceneType } from '../../shared/Scenes'
 
 function getColor(epicness: number) {
   const hueStart = 250

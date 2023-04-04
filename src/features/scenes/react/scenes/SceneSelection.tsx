@@ -1,5 +1,5 @@
 import { sortScenesByBombacity, autoBombacity } from '../../../../renderer/redux/controlSlice'
-import { SceneType } from '../../../../shared/Scenes'
+import { SceneType } from '../../shared/Scenes'
 import { IconButton } from '@mui/material'
 import styled from 'styled-components'
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'

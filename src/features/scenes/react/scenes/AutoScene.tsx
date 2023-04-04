@@ -7,7 +7,7 @@ import {
   setAutoSceneBombacity,
   setAutoScenePeriod,
 } from '../../../../renderer/redux/controlSlice'
-import { SceneType } from '../../../../shared/Scenes'
+import { SceneType } from '../../shared/Scenes'
 import DraggableNumber from '../../../ui/react/base/DraggableNumber'
 import { SliderMidiOverlay } from 'features/midi/react/MidiOverlay'
 

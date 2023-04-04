@@ -12,7 +12,7 @@ import {
   LightScene_t,
   SplitScene_t,
   VisualScenes_t,
-} from './Scenes'
+} from '../features/scenes/shared/Scenes'
 
 type Deprecated_ChannelMode = {
   type: 'mode'

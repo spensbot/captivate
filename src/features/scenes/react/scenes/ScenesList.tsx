@@ -4,7 +4,7 @@ import { useControlSelector } from '../../../../renderer/redux/store'
 import { DragDropContext, Droppable } from 'react-beautiful-dnd'
 import { useDispatch } from 'react-redux'
 import { reorderScene } from '../../../../renderer/redux/controlSlice'
-import { SceneType } from '../../../../shared/Scenes'
+import { SceneType } from '../../shared/Scenes'
 
 interface Props {
   sceneType: SceneType

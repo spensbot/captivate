@@ -5,7 +5,7 @@ import {
   initScenesState,
   initLightScene,
   initVisualScene,
-} from '../../../shared/Scenes'
+} from '../../../features/scenes/shared/Scenes'
 import { ActionState, actions } from './reducers/actions'
 
 export interface ControlState extends ActionState {
