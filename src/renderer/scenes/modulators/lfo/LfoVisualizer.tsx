@@ -1,4 +1,4 @@
-import { GetValueFromPhase } from '../../../../shared/oscillator'
+import { GetValueFromPhase } from '../../../../features/modulation/shared/oscillator'
 import { useDispatch } from 'react-redux'
 import useDragBasic from '../../../hooks/useDragBasic'
 import { incrementModulator } from '../../../redux/controlSlice'

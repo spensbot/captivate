@@ -15,7 +15,7 @@ import {
   resizeRandomizer,
   updateIndexes,
 } from '../../shared/randomizer'
-import { getOutputParams } from '../../shared/modulation'
+import { getOutputParams } from '../../features/modulation/shared/modulation'
 import { handleMessage } from 'features/midi/engine/handleMidi'
 import openVisualizerWindow, {
   VisualizerContainer,

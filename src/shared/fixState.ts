@@ -4,7 +4,7 @@ import { initLedState } from 'features/led/redux/ledState'
 import { CleanReduxState } from '../renderer/redux/store'
 import { ColorChannel } from 'features/dmx/shared/dmxColors'
 import { DmxValue, FixtureChannel } from 'features/dmx/shared/dmxFixtures'
-import { Modulator } from './modulation'
+import { Modulator } from '../features/modulation/shared/modulation'
 import { Modulation, Params } from './params'
 import { RandomizerOptions } from './randomizer'
 import {

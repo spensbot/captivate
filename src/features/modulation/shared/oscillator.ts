@@ -1,5 +1,5 @@
-import { Normalized } from '../math/util'
-import { skewPower3, skewSymmetric } from '../math/skew'
+import { Normalized } from '../../../math/util'
+import { skewPower3, skewSymmetric } from '../../../math/skew'
 
 // const SKEW_FN = skewBezier2
 const SKEW_FN = skewPower3

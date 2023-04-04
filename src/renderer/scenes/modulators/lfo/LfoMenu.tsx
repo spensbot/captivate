@@ -1,4 +1,4 @@
-import { LfoShape } from '../../../../shared/oscillator'
+import { LfoShape } from '../../../../features/modulation/shared/oscillator'
 import { useDispatch } from 'react-redux'
 import { useActiveLightScene } from '../../../redux/store'
 import {

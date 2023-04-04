@@ -1,5 +1,5 @@
 import { Params, initBaseParams } from './params'
-import { Modulator, initModulator } from './modulation'
+import { Modulator, initModulator } from '../features/modulation/shared/modulation'
 import { RandomizerOptions, initRandomizerOptions } from './randomizer'
 import { nanoid } from 'nanoid'
 import {
