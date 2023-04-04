@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 import { useRealtimeSelector } from '../../../../renderer/redux/realtimeStore'
-import { send_user_command } from '../../../../renderer/ipcHandler'
+import * as api from 'renderer/api'
 
 interface Props {}
 
@@ -17,7 +17,7 @@ export default function StartStopSyncButton({}: Props) {
   return (
     <Root
       onClick={() =>
-        send_user_command({
+        api.mutations.send_user_command({
           type: 'EnableStartStopSync',
           isEnabled: !sssEnabled,
         })

@@ -1,7 +1,7 @@
 import StartIcon from '@mui/icons-material/PlayArrow'
 import StopIcon from '@mui/icons-material/Stop'
 import styled from 'styled-components'
-import { send_user_command } from '../../../../renderer/ipcHandler'
+import * as api from 'renderer/api'
 import { useRealtimeSelector } from 'renderer/redux/realtimeStore'
 
 export default function StartStopButton() {
@@ -10,7 +10,7 @@ export default function StartStopButton() {
   return (
     <Root
       onClick={() =>
-        send_user_command({
+        api.mutations.send_user_command({
           type: 'SetIsPlaying',
           isPlaying: !time.isPlaying,
         })

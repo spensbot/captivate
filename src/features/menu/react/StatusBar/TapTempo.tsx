@@ -1,4 +1,5 @@
-import { send_user_command } from '../../../../renderer/ipcHandler'
+
+import * as api from 'renderer/api'
 import { ButtonMidiOverlay } from 'features/midi/react/MidiOverlay'
 import styled from 'styled-components'
 
@@ -11,7 +12,7 @@ export default function TapTempo({}: Props) {
         type: 'TapTempo',
       }}
     >
-      <Button onClick={() => send_user_command({ type: 'TapTempo' })}>
+      <Button onClick={() => api.mutations.send_user_command({ type: 'TapTempo' })}>
         TAP
       </Button>
       {/* <IconButton

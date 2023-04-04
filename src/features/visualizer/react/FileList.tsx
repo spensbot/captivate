@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 import { useEffect } from 'react'
-import { getLocalFilepaths } from 'renderer/ipcHandler'
+import * as api from 'renderer/api'
 import { IconButton } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import path from 'path-browserify'
@@ -24,7 +24,7 @@ interface Props {
 
 export default function FileList(props: Props) {
   let onAdd = () => {
-    getLocalFilepaths('Select Media', localMediaFileFilters)
+    api.queries.getLocalFilepaths('Select Media', localMediaFileFilters)
       .then(onAddSuccess)
       .catch((_err) => {})
   }

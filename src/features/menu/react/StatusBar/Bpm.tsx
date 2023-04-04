@@ -1,4 +1,4 @@
-import { send_user_command } from '../../../../renderer/ipcHandler'
+import * as api from 'renderer/api'
 import { useRealtimeSelector } from 'renderer/redux/realtimeStore'
 import useDragBasic from 'features/ui/react/hooks/useDragBasic'
 import { SliderMidiOverlay } from 'features/midi/react/MidiOverlay'
@@ -9,7 +9,7 @@ export default function BPM() {
   const [dragContainer, onMouseDown] = useDragBasic((e) => {
     const dx = e.movementX / 3
     const dy = -e.movementY / 3
-    send_user_command({ type: 'IncrementTempo', amount: dx + dy })
+    api.mutations.send_user_command({ type: 'IncrementTempo', amount: dx + dy })
   })
 
   return (
