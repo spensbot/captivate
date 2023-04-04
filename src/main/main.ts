@@ -17,7 +17,7 @@ import { resolveHtmlPath } from './util'
 import * as engine from './engine/engine'
 import { VisualizerContainer } from '../features/visualizer/engine/createVisualizerWindow'
 import './prevent_sleep'
-import './electron_error_logging'
+import '../features/logging/engine/electron_error_logging'
 export default class AppUpdater {
   constructor() {
     log.transports.file.level = 'info'

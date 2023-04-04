@@ -7,7 +7,7 @@ import Mixer from './pages/mixer/page'
 import MenuBar from '../features/menu/react/SideBar'
 import { useTypedSelector } from './redux/store'
 import FullscreenOverlay from './overlays/FullscreenOverlay'
-import ErrorBoundarySentry from '../features/ui/react/error-boundary/ErrorBoundarySentry'
+import ErrorBoundarySentry from '../features/logging/react/error-boundary/ErrorBoundarySentry'
 import BottomStatus from '../features/menu/react/BottomStatus'
 import LedPage from './pages/led/page'
 
