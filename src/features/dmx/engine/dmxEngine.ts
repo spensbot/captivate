@@ -3,17 +3,17 @@ import {
   DMX_DEFAULT_VALUE,
   DMX_NUM_CHANNELS,
   FlattenedFixture,
-} from '../../shared/dmxFixtures'
-import { Params } from '../../shared/params'
-import { RandomizerState } from '../../shared/randomizer'
-import { CleanReduxState } from '../../renderer/redux/store'
+} from '../../../shared/dmxFixtures'
+import { Params } from '../../../shared/params'
+import { RandomizerState } from '../../../shared/randomizer'
+import { CleanReduxState } from '../../../renderer/redux/store'
 import {
   getDmxValue,
   getFixturesInGroups,
   flatten_fixtures,
-} from '../../shared/dmxUtil'
-import { indexArray, zip } from '../../shared/util'
-import { TimeState } from '../../shared/TimeState'
+} from '../../../shared/dmxUtil'
+import { indexArray, zip } from '../../../shared/util'
+import { TimeState } from '../../../shared/TimeState'
 import { SplitState } from 'renderer/redux/realtimeStore'
 
 export function calculateDmx(

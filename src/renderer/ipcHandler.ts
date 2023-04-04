@@ -1,8 +1,8 @@
 import ipc_channels, { UserCommand, MainCommand } from '../shared/ipc_channels'
 import { CleanReduxState } from './redux/store'
 import { RealtimeState } from './redux/realtimeStore'
-import * as dmxConnection from '../main/engine/dmxConnection'
-import * as midiConnection from '../features/midi/engine/midiConnection'
+import * as dmxConnection from 'features/dmx/engine/dmxConnection'
+import * as midiConnection from 'features/midi/engine/midiConnection'
 import { PayloadAction } from '@reduxjs/toolkit'
 
 interface Config {

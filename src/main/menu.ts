@@ -7,7 +7,7 @@ import {
   dialog,
 } from 'electron'
 import { IPC_Callbacks } from './engine/ipcHandler'
-import { listPorts } from './engine/dmxConnection'
+import { listPorts } from 'features/dmx/engine/dmxConnection'
 import {
   toggleLedEnabled,
   toggleVideoEnabled,
