@@ -1,4 +1,4 @@
-import { DownIcon, UpIcon } from 'renderer/icons/arrows'
+import { DownIcon, UpIcon } from 'features/ui/react/icons/arrows'
 import { clamp } from 'math/util'
 import useDragBasic from '../hooks/useDragBasic'
 import styled from 'styled-components'
