@@ -11,7 +11,7 @@ import {
 import { clampNormalized } from '../../../math/util'
 import { defaultParamsList } from '../../../shared/params'
 import { initLedState, LedState } from '../../../renderer/redux/ledState'
-import { initLedFixture, LedFixture } from '../../../shared/ledFixtures'
+import { initLedFixture, LedFixture } from '../../led/shared/ledFixtures'
 import { Point } from '../../../math/point'
 
 export interface DmxState {

@@ -6,7 +6,7 @@ import {
   updateActiveLedFixture,
 } from 'features/dmx/redux/dmxSlice'
 import { useDmxSelector } from 'renderer/redux/store'
-import { LedFixture, MAX_LED_COUNT } from 'shared/ledFixtures'
+import { LedFixture, MAX_LED_COUNT } from 'features/led/shared/ledFixtures'
 import styled from 'styled-components'
 import NumberField from 'renderer/base/NumberField'
 import Dropdown from 'renderer/base/Dropdown'

@@ -1,6 +1,6 @@
 import { RealtimeState } from '../../../renderer/redux/realtimeStore'
 import { CleanReduxState } from '../../../renderer/redux/store'
-import { getLedValues } from '../../../shared/ledFixtures'
+import { getLedValues } from '../../../features/led/shared/ledFixtures'
 import WledDevice from './wled_device'
 
 export default class WledManager {
