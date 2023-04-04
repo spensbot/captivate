@@ -1,4 +1,4 @@
-import { ipcMain, WebContents, dialog } from 'electron'
+import { ipcMain, WebContents } from 'electron'
 import ipcChannels, {
   UserCommand,
   MainCommand,
@@ -9,10 +9,9 @@ import { RealtimeState } from '../../renderer/redux/realtimeStore'
 import * as dmxConnection from 'features/dmx/engine/dmxConnection'
 import * as midiConnection from 'features/midi/engine/midiConnection'
 import { PayloadAction } from '@reduxjs/toolkit'
-import { promises } from 'fs'
 import { VisualizerResource } from '../../features/visualizer/threejs/VisualizerManager'
 import { VisualizerContainer } from './createVisualizerWindow'
-
+import * as fileApi from 'features/fileSaving/engine/api'
 interface Config {
   renderer: WebContents
   visualizerContainer: VisualizerContainer
@@ -64,55 +63,6 @@ export function ipcSetup(config: Config) {
 
 export type IPC_Callbacks = ReturnType<typeof ipcSetup>
 
-ipcMain.handle(
-  ipcChannels.load_file,
-  async (_event, title: string, fileFilters: Electron.FileFilter[]) => {
-    const dialogResult = await dialog.showOpenDialog({
-      title: title,
-      filters: fileFilters,
-      properties: ['openFile'],
-    })
-    if (!dialogResult.canceled && dialogResult.filePaths.length > 0) {
-      return await promises.readFile(dialogResult.filePaths[0], 'utf8')
-    } else {
-      throw new Error('User cancelled the file load')
-    }
-  }
-)
-
-ipcMain.handle(
-  ipcChannels.save_file,
-  async (
-    _event,
-    title: string,
-    data: string,
-    fileFilters: Electron.FileFilter[]
-  ) => {
-    const dialogResult = await dialog.showSaveDialog({
-      title: title,
-      filters: fileFilters,
-      properties: ['createDirectory'],
-    })
-    if (!dialogResult.canceled && dialogResult.filePath !== undefined) {
-      return await promises.writeFile(dialogResult.filePath, data)
-    } else {
-      throw new Error('User cancelled the file save')
-    }
-  }
-)
-
-ipcMain.handle(
-  ipcChannels.get_local_filepaths,
-  async (_event, title: string, fileFilters: Electron.FileFilter[]) => {
-    const dialogResult = await dialog.showOpenDialog({
-      title: title,
-      filters: fileFilters,
-      properties: ['openFile', 'multiSelections'],
-    })
-    if (!dialogResult.canceled && dialogResult.filePaths.length > 0) {
-      return dialogResult.filePaths
-    } else {
-      throw new Error('User cancelled the file load')
-    }
-  }
-)
+ipcMain.handle(fileApi.load.channel, fileApi.load.resolve)
+ipcMain.handle(fileApi.save.channel, fileApi.save.resolve)
+ipcMain.handle(fileApi.getFilePaths.channel, fileApi.getFilePaths.resolve)
