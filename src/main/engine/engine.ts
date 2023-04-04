@@ -1,7 +1,6 @@
 import { WebContents } from 'electron'
 import * as DmxConnection from 'features/dmx/engine/dmxConnection'
 import * as MidiConnection from 'features/midi/engine/midiConnection'
-import NodeLink from 'node-link'
 import { ipcSetup, IPC_Callbacks } from './ipcHandler'
 import { CleanReduxState } from '../../renderer/redux/store'
 import {
@@ -23,28 +22,25 @@ import openVisualizerWindow, {
 import { calculateDmx } from 'features/dmx/engine/dmxEngine'
 import { handleAutoScene } from '../../features/scenes/engine/autoScene'
 import { setActiveScene } from '../../renderer/redux/controlSlice'
-import TapTempoEngine from '../../features/bpm/engine/TapTempoEngine'
-import { flatten_fixtures, getFixturesInGroups } from '../../features/dmx/shared/dmxUtil'
+import {
+  flatten_fixtures,
+  getFixturesInGroups,
+} from '../../features/dmx/shared/dmxUtil'
 import { ThrottleMap } from 'features/midi/engine/midiConnection'
 import { MidiMessage, midiInputID } from 'features/midi/shared/midi'
 import { getAllParamKeys } from '../../features/dmx/redux/dmxSlice'
 import { indexArray } from '../../features/utils/util'
 import WledManager from '../../features/led/engine/wled_manager'
+import {
+  getNextTimeState,
+  onLinkUserCommand,
+  _nodeLink,
+  _tapTempo,
+} from 'features/bpm/engine/Link'
 
-let _nodeLink = new NodeLink()
-_nodeLink.setIsPlaying(true)
-_nodeLink.enableStartStopSync(true)
-_nodeLink.enable(true)
 let _ipcCallbacks: IPC_Callbacks | null = null
 let _controlState: CleanReduxState | null = null
 let _realtimeState: RealtimeState = initRealtimeState()
-let _lastFrameTime = 0
-const _tapTempoEngine = new TapTempoEngine()
-function _tapTempo() {
-  _tapTempoEngine.tap((newBpm) => {
-    _nodeLink.setTempo(newBpm)
-  })
-}
 
 const _midiThrottle = new ThrottleMap((message: MidiMessage) => {
   if (_controlState !== null && _ipcCallbacks !== null) {
@@ -73,21 +69,7 @@ export function start(
     on_new_control_state: (newState) => {
       _controlState = newState
     },
-    on_user_command: (command) => {
-      if (command.type === 'IncrementTempo') {
-        _nodeLink.setTempo(_realtimeState.time.bpm + command.amount)
-      } else if (command.type === 'SetLinkEnabled') {
-        _nodeLink.enable(command.isEnabled)
-      } else if (command.type === 'EnableStartStopSync') {
-        _nodeLink.enableStartStopSync(command.isEnabled)
-      } else if (command.type === 'SetIsPlaying') {
-        _nodeLink.setIsPlaying(command.isPlaying)
-      } else if (command.type === 'SetBPM') {
-        _nodeLink.setTempo(command.bpm)
-      } else if (command.type === 'TapTempo') {
-        _tapTempo()
-      }
-    },
+    on_user_command: (command) => onLinkUserCommand(command, _realtimeState),
     on_open_visualizer: () => {
       openVisualizerWindow(visualizerContainer)
     },
@@ -143,20 +125,6 @@ MidiConnection.maintain({
     return _controlState ? _controlState.control.device.connectable.midi : []
   },
 })
-
-// Todo: Desimate dt in this context
-function getNextTimeState(): TimeState {
-  let currentTime = Date.now()
-  const dt = currentTime - _lastFrameTime
-
-  _lastFrameTime = currentTime
-
-  return {
-    ..._nodeLink.getSessionInfoCurrent(),
-    dt: dt,
-    quantum: 4.0,
-  }
-}
 
 function getNextRealtimeState(
   realtimeState: RealtimeState,
