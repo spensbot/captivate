@@ -1,6 +1,6 @@
 import { useDispatch } from 'react-redux'
 import styled from 'styled-components'
-import { DMX_MAX_VALUE } from '../../../../shared/dmxFixtures'
+import { DMX_MAX_VALUE, GetFixturePayload } from '../../../../shared/dmxFixtures'
 import NumberField from '../../../../../ui/react/base/NumberField'
 import {
   addColorMapColor,
@@ -11,14 +11,14 @@ import { IconButton } from '@mui/material'
 import Add from '@mui/icons-material/Add'
 import Remove from '@mui/icons-material/Remove'
 import HSpad, { ColorChannelProps } from 'features/ui/react/base/HSpad'
-import { ChannelColorMap } from '../../../../shared/dmxFixtures'
+
 import { useState } from 'react'
 import wrapClick from 'features/ui/react/base/wrapClick'
 import { lerp } from 'features/utils/math/util'
 import ColorPicker from 'features/ui/react/base/ColorPicker'
 
 interface Props {
-  ch: ChannelColorMap
+  ch: GetFixturePayload<'colorMap'>
   fixtureID: string
   channelIndex: number
 }

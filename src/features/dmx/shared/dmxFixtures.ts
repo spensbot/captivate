@@ -1,3 +1,4 @@
+import { Pretty } from 'features/shared/shared/type-utils'
 import { Window2D_t } from '../../shared/shared/window'
 import { ColorChannel } from './dmxColors'
 import { nanoid } from 'nanoid'
@@ -13,70 +14,33 @@ export type DmxValue = number // 0 - 255
 export type AxisDir = 'x' | 'y'
 export const axisDirList = ['x', 'y']
 
-type ChannelMaster = {
-  type: 'master'
-  min: DmxValue
-  max: DmxValue
-  isOnOff: boolean
-}
-
-type ChannelColor = {
-  type: 'color'
-  color: ColorChannel
-}
-
-type ChannelStrobe = {
-  type: 'strobe'
-  default_strobe: DmxValue
-  default_solid: DmxValue
-}
-
-type ChannelOther = {
-  type: 'other'
-  default: DmxValue
-}
-
-export type ChannelAxis = {
-  type: 'axis'
-  dir: AxisDir
-  isFine: boolean
-  min: DmxValue
-  max: DmxValue
-}
-
 export type ColorMapColor = { max: number; hue: number; saturation: number }
 
-export type ChannelColorMap = {
-  type: 'colorMap'
-  colors: ColorMapColor[]
+export type FixtureApi = {
+  custom: { name: string; default: DmxValue; min: DmxValue; max: DmxValue }
+  reset: { resetVal: DmxValue }
+  other: { default: DmxValue }
+  colorMap: { colors: ColorMapColor[] }
+  axis: { dir: AxisDir; isFine: boolean; min: DmxValue; max: DmxValue }
+  strobe: { default_strobe: DmxValue; default_solid: DmxValue }
+  color: { color: ColorChannel }
+  master: { min: DmxValue; max: DmxValue; isOnOff: boolean }
 }
 
-type ChannelReset = {
-  type: 'reset'
-  resetVal: DmxValue
-}
+export type ChannelType = keyof FixtureApi
 
-export type ChannelCustom = {
-  type: 'custom'
-  name: string
-  default: DmxValue
-  min: DmxValue
-  max: DmxValue
-}
+type ConvertApiToPayload = {
+  [k in ChannelType]: Pretty<FixtureApi[k] & { type: k }>
+}[ChannelType]
+
+export type GetFixturePayload<Type extends ChannelType> = Extract<
+  ConvertApiToPayload,
+  { type: Type }
+>
 
 export const defaultCustomChannels = ['speed']
 
-export type FixtureChannel =
-  | ChannelMaster
-  | ChannelColor
-  | ChannelStrobe
-  | ChannelAxis
-  | ChannelColorMap
-  | ChannelOther
-  | ChannelReset
-  | ChannelCustom
-
-export type ChannelType = FixtureChannel['type']
+export type FixtureChannel = ConvertApiToPayload
 
 export const channelTypes: ChannelType[] = [
   'master',

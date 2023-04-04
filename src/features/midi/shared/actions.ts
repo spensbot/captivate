@@ -7,6 +7,7 @@ import type {
   PayloadAction,
 } from '@reduxjs/toolkit'
 import { ButtonFunction, SlidersFunction } from './config'
+import { Pretty } from 'features/shared/shared/type-utils'
 
 /**
  * From T, pick a set of properties whose keys are in the union K
@@ -65,11 +66,7 @@ type GetReduxPayload<T> = T extends CaseReducer<
     : {}
   : never
 
-type Pretty<T> = T extends object
-  ? {} & {
-      [P in keyof T]: T[P]
-    }
-  : T
+
 
 export type GetMidiAction<T extends AllowedMidiActions> =
   T extends UserCommand['type']

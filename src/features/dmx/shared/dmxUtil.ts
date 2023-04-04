@@ -6,11 +6,12 @@ import {
   Fixture,
   Universe,
   DMX_DEFAULT_VALUE,
-  ChannelAxis,
+
   FixtureType,
   AxisDir,
   DMX_MIN_VALUE,
   FlattenedFixture,
+  GetFixturePayload,
 } from './dmxFixtures'
 import { getParam, Params } from './params'
 import { findClosest, lerp, Normalized } from '../../utils/math/util'
@@ -238,7 +239,7 @@ export function getSortedGroups(
 }
 
 function calculate_axis_channel(
-  ch: ChannelAxis,
+  ch: GetFixturePayload<'axis'>,
   axis_param: Normalized | undefined,
   fixture_position: Normalized | undefined,
   mirror_param: Normalized | undefined,
