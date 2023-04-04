@@ -87,7 +87,7 @@ export function start(
   renderer: WebContents,
   visualizerContainer: VisualizerContainer
 ) {
-  const ipcCallbacks = disposer.push(
+  const api = disposer.push(
     createApi({
       ipcMain,
       realtimeState: _realtimeState,
@@ -109,11 +109,11 @@ export function start(
       _realtimeState = getNextRealtimeState(
         _realtimeState,
         nextTimeState,
-        ipcCallbacks,
+        api,
         controlState.controlState!
       )
-      ipcCallbacks.publishers.new_time_state(_realtimeState)
-      ipcCallbacks.publishers.new_visualizer_state({
+      api.publishers.new_time_state(_realtimeState)
+      api.publishers.new_visualizer_state({
         rt: _realtimeState,
         state: controlState.controlState!,
       })
@@ -135,7 +135,7 @@ export function start(
           controlState.controlState!,
           _realtimeState,
           _nodeLink,
-          ipcCallbacks.publishers.dispatch,
+          api.publishers.dispatch,
           _tapTempo
         )
       }, 1000 / 60)
@@ -145,7 +145,7 @@ export function start(
       DmxConnection.maintain({
         update_ms: 1000,
         onUpdate: (dmxStatus) => {
-          ipcCallbacks.publishers.dmx_connection_update(dmxStatus)
+          api.publishers.dmx_connection_update(dmxStatus)
         },
         getChannels: () => _realtimeState.dmxOut,
         getConnectable: () => {
@@ -158,7 +158,7 @@ export function start(
       MidiConnection.maintain({
         update_ms: 1000,
         onUpdate: (activeDevices) => {
-          ipcCallbacks.publishers.midi_connection_update(activeDevices)
+          api.publishers.midi_connection_update(activeDevices)
         },
         onMessage: (message) => {
           _midiThrottle.call(midiInputID(message), message)
@@ -177,7 +177,7 @@ export function start(
     )
   })
 
-  return ipcCallbacks
+  return api
 }
 
 export function stop() {
@@ -187,7 +187,7 @@ export function stop() {
 function getNextRealtimeState(
   realtimeState: RealtimeState,
   nextTimeState: TimeState,
-  ipcCallbacks: IPC_Callbacks,
+  api: IPC_Callbacks,
   controlState: CleanReduxState
 ): RealtimeState {
   const scene =
@@ -200,7 +200,7 @@ function getNextRealtimeState(
     nextTimeState,
     controlState,
     (newLightScene) => {
-      ipcCallbacks.publishers.dispatch(
+      api.publishers.dispatch(
         setActiveScene({
           sceneType: 'light',
           val: newLightScene,
@@ -208,7 +208,7 @@ function getNextRealtimeState(
       )
     },
     (newVisualScene) => {
-      ipcCallbacks.publishers.dispatch(
+      api.publishers.dispatch(
         setActiveScene({
           sceneType: 'visual',
           val: newVisualScene,
