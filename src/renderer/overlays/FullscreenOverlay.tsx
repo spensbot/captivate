@@ -4,7 +4,7 @@ import { setBlackout } from '../redux/guiSlice'
 import styled from 'styled-components'
 import zIndexes from '../zIndexes'
 import Blackout from './Blackout'
-import Devices from './Devices'
+import Devices from '../../features/devices/react/overlays/Devices'
 import NewProjectDialog from './NewProjectDialog'
 
 interface Props {}

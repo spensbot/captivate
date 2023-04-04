@@ -1,15 +1,15 @@
 import styled from 'styled-components'
-import { useControlSelector, useTypedSelector } from '../redux/store'
-import { setConnectionsMenu } from '../redux/guiSlice'
+import { useControlSelector, useTypedSelector } from '../../../../renderer/redux/store'
+import { setConnectionsMenu } from '../../../../renderer/redux/guiSlice'
 import { useDispatch } from 'react-redux'
-import { setDmxConnectable, setMidiConnectable } from '../redux/controlSlice'
+import { setDmxConnectable, setMidiConnectable } from '../../../../renderer/redux/controlSlice'
 import CloseIcon from '@mui/icons-material/Close'
 import IconButton from '@mui/material/IconButton'
 import {
   DmxDevice_t,
   MidiDevice_t,
   ConnectionId,
-} from '../../shared/connection'
+} from '../../../../shared/connection'
 import DmxTroubleShoot from './DmxTroubleshoot'
 
 interface Props {}
