@@ -1,14 +1,14 @@
 import styled from 'styled-components'
-import { useDmxSelector } from '../../../renderer/redux/store'
+import { useDmxSelector } from '../../../../../../renderer/redux/store'
 import { useDispatch } from 'react-redux'
 import { IconButton } from '@mui/material'
-import FixtureChannelPopup from 'features/dmx/react/FixtureChannelPopup'
-import Popup from '../../ui/react/base/Popup'
+import FixtureChannelPopup from 'features/dmx/react/fixtures/channels/editor'
+import Popup from '../../../../../ui/react/base/Popup'
 import RemoveIcon from '@mui/icons-material/Remove'
-import { FixtureChannel } from '../shared/dmxFixtures'
-import { removeFixtureChannel } from '../../fixtures/redux/fixturesSlice'
-import { getCustomColorChannelName } from '../shared/dmxColors'
-import { ChannelToggle } from './Subfixtures'
+import { FixtureChannel } from '../../../../shared/dmxFixtures'
+import { removeFixtureChannel } from '../../../../../fixtures/redux/fixturesSlice'
+import { getCustomColorChannelName } from '../../../../shared/dmxColors'
+import { ChannelToggle } from '../../list/Subfixtures'
 
 export interface FixtureChannelItemProps {
   fixtureID: string

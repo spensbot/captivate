@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import styled from 'styled-components'
-import { useDmxSelector } from '../../../renderer/redux/store'
+import { useDmxSelector } from '../../../../../../renderer/redux/store'
 import { useDispatch } from 'react-redux'
-import { indexArray } from '../../utils/util'
-import { initFixtureChannel } from '../shared/dmxFixtures'
-import { addFixtureChannel } from '../../fixtures/redux/fixturesSlice'
+import { indexArray } from '../../../../../utils/util'
+import { initFixtureChannel } from '../../../../shared/dmxFixtures'
+import { addFixtureChannel } from '../../../../../fixtures/redux/fixturesSlice'
 import { IconButton } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
-import FixtureChannelItem from 'features/dmx/react/FixtureChannelItem'
+import FixtureChannelItem from 'features/dmx/react/fixtures/channels/list/FixtureChannelItem'
 
 interface Props {
   fixtureID: string

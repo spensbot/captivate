@@ -1,17 +1,17 @@
 import { useDispatch } from 'react-redux'
 import styled from 'styled-components'
-import { DMX_MAX_VALUE } from '../shared/dmxFixtures'
-import NumberField from '../../ui/react/base/NumberField'
+import { DMX_MAX_VALUE } from '../../../../shared/dmxFixtures'
+import NumberField from '../../../../../ui/react/base/NumberField'
 import {
   addColorMapColor,
   setColorMapColor,
   removeColorMapColor,
-} from '../../fixtures/redux/fixturesSlice'
+} from '../../../../../fixtures/redux/fixturesSlice'
 import { IconButton } from '@mui/material'
 import Add from '@mui/icons-material/Add'
 import Remove from '@mui/icons-material/Remove'
 import HSpad, { ColorChannelProps } from 'features/ui/react/base/HSpad'
-import { ChannelColorMap } from '../shared/dmxFixtures'
+import { ChannelColorMap } from '../../../../shared/dmxFixtures'
 import { useState } from 'react'
 import wrapClick from 'features/ui/react/base/wrapClick'
 import { lerp } from 'features/utils/math/util'
