@@ -14,7 +14,7 @@ import {
   saveTypes,
   displaySaveType,
   getSaveConfig,
-} from 'shared/save'
+} from 'features/fileSaving/shared/save'
 import { useDispatch } from 'react-redux'
 import { setSaving, setLoading } from 'renderer/redux/guiSlice'
 

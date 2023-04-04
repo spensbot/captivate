@@ -26,7 +26,7 @@ import { createTheme } from '@mui/material/styles'
 import { autoSave } from '../features/fileSaving/react/autosave'
 import { getUndoGroup, undoAction, redoAction } from '../features/scenes/react/controls/UndoRedo'
 import { load } from '../features/fileSaving/react/SaveLoad'
-import { getSaveConfig } from 'shared/save'
+import { getSaveConfig } from 'features/fileSaving/shared/save'
 
 const theme = themes.dark()
 const muiTheme = createTheme({

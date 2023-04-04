@@ -1,5 +1,5 @@
 import defaultSave from './defaultSave.json'
-import { SaveState } from 'shared/save'
+import { SaveState } from 'features/fileSaving/shared/save'
 import initState from './initState'
 import { CleanReduxState } from './store'
 

@@ -14,7 +14,7 @@ import undoable, { StateWithHistory } from 'redux-undo'
 import { DeviceState } from 'features/midi/redux'
 import { VisualScene_t, SceneType } from '../../features/scenes/shared/Scenes'
 import { DefaultParam, Params } from '../../shared/params'
-import { SaveInfo } from 'shared/save'
+import { SaveInfo } from 'features/fileSaving/shared/save'
 import eventLogger from './eventLogger'
 import { FixtureType } from 'features/dmx/shared/dmxFixtures'
 

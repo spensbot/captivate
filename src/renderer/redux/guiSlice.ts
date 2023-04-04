@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { SaveInfo } from '../../shared/save'
+import { SaveInfo } from '../../features/fileSaving/shared/save'
 import {
   MidiConnections,
   DmxConnections,

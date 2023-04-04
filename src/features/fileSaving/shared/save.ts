@@ -6,7 +6,7 @@ import {
   fixVisualScenes,
   fixDmxState,
   fixDeviceState,
-} from './fixState'
+} from '../../../shared/fixState'
 
 export interface SaveState {
   light?: LightScenes_t
