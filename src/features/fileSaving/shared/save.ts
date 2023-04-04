@@ -6,7 +6,7 @@ import {
   fixVisualScenes,
   fixDmxState,
   fixDeviceState,
-} from '../../../shared/fixState'
+} from '../../shared/redux/fixState'
 
 export interface SaveState {
   light?: LightScenes_t

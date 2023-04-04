@@ -1,18 +1,23 @@
+/**
+ * This file seems to directly only relate to file saving
+src/features/fileSaving/shared/save.ts
+src/features/fileSaving/react/autosave.ts
+ */
 import { DeviceState } from 'features/midi/redux'
 import { DmxState } from 'features/dmx/redux/dmxSlice'
 import { initLedState } from 'features/led/redux/ledState'
-import { CleanReduxState } from '../renderer/redux/store'
+import { CleanReduxState } from '../../../renderer/redux/store'
 import { ColorChannel } from 'features/dmx/shared/dmxColors'
 import { DmxValue, FixtureChannel } from 'features/dmx/shared/dmxFixtures'
-import { Modulator } from '../features/modulation/shared/modulation'
-import { Modulation, Params } from '../features/dmx/shared/params'
-import { RandomizerOptions } from '../features/bpm/shared/randomizer'
+import { Modulator } from '../../modulation/shared/modulation'
+import { Modulation, Params } from '../../dmx/shared/params'
+import { RandomizerOptions } from '../../bpm/shared/randomizer'
 import {
   LightScenes_t,
   LightScene_t,
   SplitScene_t,
   VisualScenes_t,
-} from '../features/scenes/shared/Scenes'
+} from '../../scenes/shared/Scenes'
 
 type Deprecated_ChannelMode = {
   type: 'mode'
