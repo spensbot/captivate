@@ -1,4 +1,4 @@
-import { Window2D_t } from '../../../shared/window'
+import { Window2D_t } from '../../shared/shared/window'
 import { ColorChannel } from './dmxColors'
 import { nanoid } from 'nanoid'
 

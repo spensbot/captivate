@@ -1,4 +1,4 @@
-import { Window, Window2D_t } from '../../../shared/window'
+import { Window, Window2D_t } from '../../shared/shared/window'
 import {
   DmxValue,
   DMX_MAX_VALUE,
