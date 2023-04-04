@@ -1,6 +1,6 @@
 import styled from 'styled-components'
-import { useDmxSelector } from '../redux/store'
-import { Fixture, FixtureType } from '../../shared/dmxFixtures'
+import { useDmxSelector } from '../../../renderer/redux/store'
+import { Fixture, FixtureType } from '../../../shared/dmxFixtures'
 import { Slot_t } from './MyUniverse'
 import { useDispatch } from 'react-redux'
 import {
@@ -8,14 +8,14 @@ import {
   setFixtureWindowEnabled,
   addFixture,
   removeFixture,
-} from '../redux/dmxSlice'
-import ToggleButton from '../base/ToggleButton'
-import Popup from '../base/Popup'
+} from '../../../renderer/redux/dmxSlice'
+import ToggleButton from '../../../renderer/base/ToggleButton'
+import Popup from '../../../renderer/base/Popup'
 import { useState } from 'react'
 import { TextField, IconButton } from '@mui/material'
 import RemoveIcon from '@mui/icons-material/Remove'
 import AddIcon from '@mui/icons-material/Add'
-import { clamp } from '../../math/util'
+import { clamp } from '../../../math/util'
 
 function ChannelSpan({ start, count }: { start: number; count: number }) {
   const end = start + count - 1

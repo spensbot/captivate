@@ -1,9 +1,9 @@
 import styled from 'styled-components'
-import { useDmxSelector } from '../redux/store'
+import { useDmxSelector } from '../../../renderer/redux/store'
 import FixtureCursor from './FixtureCursor'
-import useDragMapped from '../hooks/useDragMapped'
+import useDragMapped from '../../../renderer/hooks/useDragMapped'
 import { useDispatch } from 'react-redux'
-import { setFixtureWindow, incrementFixtureWindow } from '../redux/dmxSlice'
+import { setFixtureWindow, incrementFixtureWindow } from '../../../renderer/redux/dmxSlice'
 import { secondaryEnabled } from 'renderer/base/keyUtil'
 
 export default function FixturePlacement() {

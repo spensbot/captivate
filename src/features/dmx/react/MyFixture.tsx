@@ -1,16 +1,16 @@
 import React from 'react'
 import { IconButton } from '@mui/material'
-import { useDmxSelector } from '../redux/store'
+import { useDmxSelector } from '../../../renderer/redux/store'
 import { useDispatch } from 'react-redux'
 import {
   setEditedFixture,
   updateFixtureType,
   deleteFixtureType,
-} from '../redux/dmxSlice'
-import Input from '../base/Input'
+} from '../../../renderer/redux/dmxSlice'
+import Input from '../../../renderer/base/Input'
 import Slider from '@mui/material/Slider'
 import styled from 'styled-components'
-import FixtureChannels from './FixtureChannels'
+import FixtureChannels from 'features/dmx/react/FixtureChannels'
 import { Button } from '@mui/material'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import EditGroups from './EditGroups'

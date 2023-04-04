@@ -3,7 +3,7 @@ import { useDispatch } from 'react-redux'
 import {
   addActiveFixtureTypeGroup,
   removeActiveFixtureTypeGroup,
-} from '../redux/dmxSlice'
+} from '../../../renderer/redux/dmxSlice'
 import { getSortedGroups, getSortedGroupsForFixtureType } from 'shared/dmxUtil'
 import GroupPicker from 'renderer/base/GroupPicker'
 

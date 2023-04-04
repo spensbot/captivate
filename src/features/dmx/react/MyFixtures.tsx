@@ -1,10 +1,10 @@
-import { useDmxSelector } from '../redux/store'
+import { useDmxSelector } from '../../../renderer/redux/store'
 import MyFixture from './MyFixture'
 import AddIcon from '@mui/icons-material/Add'
 import { IconButton } from '@mui/material'
-import { addFixtureType } from '../redux/dmxSlice'
+import { addFixtureType } from '../../../renderer/redux/dmxSlice'
 import { useDispatch } from 'react-redux'
-import { initFixtureType } from '../../shared/dmxFixtures'
+import { initFixtureType } from '../../../shared/dmxFixtures'
 import styled from 'styled-components'
 
 export default function MyFixtures() {

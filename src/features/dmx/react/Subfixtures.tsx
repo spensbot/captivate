@@ -1,4 +1,4 @@
-import { useActiveFixtureType, useDmxSelector } from '../redux/store'
+import { useActiveFixtureType, useDmxSelector } from '../../../renderer/redux/store'
 import styled from 'styled-components'
 import { IconButton } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
@@ -10,12 +10,12 @@ import {
   removeSubFixture,
   replaceActiveFixtureTypeSubFixture,
   setActiveSubFixture,
-} from '../redux/dmxSlice'
-import { SubFixture } from '../../shared/dmxFixtures'
+} from '../../../renderer/redux/dmxSlice'
+import { SubFixture } from '../../../shared/dmxFixtures'
 import RemoveIcon from '@mui/icons-material/Remove'
-import wrapClick from '../base/wrapClick'
-import { hsvaForCss, separateHue } from '../../shared/baseColors'
-import Input from '../base/Input'
+import wrapClick from '../../../renderer/base/wrapClick'
+import { hsvaForCss, separateHue } from '../../../shared/baseColors'
+import Input from '../../../renderer/base/Input'
 import Slider from 'renderer/base/Slider'
 import XyPad from 'renderer/base/XyPad'
 import GroupPicker from 'renderer/base/GroupPicker'

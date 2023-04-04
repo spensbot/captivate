@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 import { useDispatch } from 'react-redux'
-import Select from '../base/Select'
+import Select from '../../../renderer/base/Select'
 import {
   FixtureChannel,
   channelTypes,
@@ -9,14 +9,14 @@ import {
   axisDirList,
   DMX_MAX_VALUE,
   DMX_MIN_VALUE,
-} from '../../shared/dmxFixtures'
-import NumberField from '../base/NumberField'
-import Input from '../base/Input'
-import { editFixtureChannel } from '../redux/dmxSlice'
-import Checkbox from '../base/LabelledCheckbox'
+} from '../../../shared/dmxFixtures'
+import NumberField from '../../../renderer/base/NumberField'
+import Input from '../../../renderer/base/Input'
+import { editFixtureChannel } from '../../../renderer/redux/dmxSlice'
+import Checkbox from '../../../renderer/base/LabelledCheckbox'
 import HSpad, { ColorChannelProps } from 'renderer/base/HSpad'
 import { FixtureChannelItemProps } from './FixtureChannelItem'
-import ColorMapChannel from './ColorMapChannel'
+import ColorMapChannel from 'features/dmx/react/ColorMapChannel'
 import ColorPicker from 'renderer/base/ColorPicker'
 
 interface Props extends FixtureChannelItemProps {
