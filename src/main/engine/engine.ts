@@ -41,23 +41,23 @@ let _realtimeState: RealtimeState = initRealtimeState()
 
 // TODO: this should live in control state feature
 const controlStateManager = () => {
-  let _controlState: CleanReduxState | null = null
   let resolveFirstState: () => void
   const firstControlState = new Promise<void>((resolve) => {
     resolveFirstState = resolve
   })
-  return {
+
+  const manager = {
     set(state: CleanReduxState) {
-      if (!_controlState) resolveFirstState()
-      _controlState = state
+      if (!manager.controlState) resolveFirstState()
+      manager.controlState = state
     },
+    controlState: null as CleanReduxState | null,
 
     waitForFirstControlState: firstControlState,
 
-    get() {
-      return _controlState
-    },
+
   }
+  return manager
 }
 
 const controlState = controlStateManager()
@@ -65,10 +65,10 @@ const controlState = controlStateManager()
 const _midiThrottle = new ThrottleMap((message: MidiMessage) => {
   // TODO: maybe we could cancel the throttle on close and initialize throttle after callbacks and control state are initialized
   // to avoid null checks
-  if (controlState.get() !== null && _ipcCallbacks !== null) {
+  if (controlState.controlState !== null && _ipcCallbacks !== null) {
     handleMessage(
       message,
-      controlState.get(),
+      controlState.controlState,
       _realtimeState,
       _nodeLink,
       _ipcCallbacks.publishers.dispatch,
@@ -101,17 +101,17 @@ export function start(
     // The renderer should have a new realtime state on each animation frame (assuming a refresh rate of 60 hz)
     setInterval(() => {
       const nextTimeState = getNextTimeState()
-      if (_ipcCallbacks !== null && controlState.get() !== null) {
+      if (_ipcCallbacks !== null && controlState.controlState !== null) {
         _realtimeState = getNextRealtimeState(
           _realtimeState,
           nextTimeState,
           _ipcCallbacks,
-          controlState.get()
+          controlState.controlState
         )
         _ipcCallbacks.publishers.new_time_state(_realtimeState)
         _ipcCallbacks.publishers.new_visualizer_state({
           rt: _realtimeState,
-          state: controlState.get(),
+          state: controlState.controlState,
         })
       }
     }, 1000 / 90)
@@ -133,8 +133,8 @@ DmxConnection.maintain({
   },
   getChannels: () => _realtimeState.dmxOut,
   getConnectable: () => {
-    return controlState.get()
-      ? controlState.get().control.device.connectable.dmx
+    return controlState.controlState
+      ? controlState.controlState.control.device.connectable.dmx
       : []
   },
 })
@@ -149,8 +149,8 @@ MidiConnection.maintain({
     _midiThrottle.call(midiInputID(message), message)
   },
   getConnectable: () => {
-    return controlState.get()
-      ? controlState.get().control.device.connectable.midi
+    return controlState.controlState
+      ? controlState.controlState.control.device.connectable.midi
       : []
   },
 })
@@ -232,6 +232,6 @@ function getNextRealtimeState(
 }
 
 new WledManager(
-  () => controlState.get(),
+  () => controlState.controlState,
   () => _realtimeState
 )
