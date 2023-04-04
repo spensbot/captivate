@@ -16,7 +16,7 @@ import { VisualScene_t, SceneType } from '../../shared/Scenes'
 import { DefaultParam, Params } from '../../shared/params'
 import { SaveInfo } from 'shared/save'
 import eventLogger from './eventLogger'
-import { FixtureType } from 'shared/dmxFixtures'
+import { FixtureType } from 'features/dmx/shared/dmxFixtures'
 
 export interface UndoActionTypes {
   undo: string

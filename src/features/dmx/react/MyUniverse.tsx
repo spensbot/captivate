@@ -1,4 +1,4 @@
-import { Universe, Fixture } from '../../../shared/dmxFixtures'
+import { Universe, Fixture } from '../shared/dmxFixtures'
 import { useDmxSelector } from '../../../renderer/redux/store'
 import FixturePlacement from './FixturePlacement'
 import UniverseSlot from './UniverseSlot'

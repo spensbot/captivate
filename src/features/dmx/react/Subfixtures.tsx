@@ -11,7 +11,7 @@ import {
   replaceActiveFixtureTypeSubFixture,
   setActiveSubFixture,
 } from '../redux/dmxSlice'
-import { SubFixture } from '../../../shared/dmxFixtures'
+import { SubFixture } from '../shared/dmxFixtures'
 import RemoveIcon from '@mui/icons-material/Remove'
 import wrapClick from '../../../renderer/base/wrapClick'
 import { hsvaForCss, separateHue } from '../../../shared/baseColors'

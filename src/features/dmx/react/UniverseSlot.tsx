@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 import { useDmxSelector } from '../../../renderer/redux/store'
-import { Fixture, FixtureType } from '../../../shared/dmxFixtures'
+import { Fixture, FixtureType } from '../shared/dmxFixtures'
 import { Slot_t } from './MyUniverse'
 import { useDispatch } from 'react-redux'
 import {
