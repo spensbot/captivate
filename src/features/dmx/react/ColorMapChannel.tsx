@@ -6,7 +6,7 @@ import {
   addColorMapColor,
   setColorMapColor,
   removeColorMapColor,
-} from '../redux/dmxSlice'
+} from '../../fixtures/redux/fixturesSlice'
 import { IconButton } from '@mui/material'
 import Add from '@mui/icons-material/Add'
 import Remove from '@mui/icons-material/Remove'

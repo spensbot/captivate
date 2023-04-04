@@ -4,7 +4,7 @@ src/features/fileSaving/shared/save.ts
 src/features/fileSaving/react/autosave.ts
  */
 import { DeviceState } from 'features/midi/redux'
-import { DmxState } from 'features/dmx/redux/dmxSlice'
+import { DmxState } from 'features/fixtures/redux/fixturesSlice'
 import { initLedState } from 'features/led/redux/ledState'
 import { CleanReduxState } from '../../../renderer/redux/store'
 import { ColorChannel } from 'features/dmx/shared/dmxColors'

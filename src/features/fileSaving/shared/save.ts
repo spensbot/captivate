@@ -1,5 +1,5 @@
 import { LightScenes_t, VisualScenes_t } from 'features/scenes/shared/Scenes'
-import { DmxState } from 'features/dmx/redux/dmxSlice'
+import { DmxState } from 'features/fixtures/redux/fixturesSlice'
 import { DeviceState } from 'features/midi/redux'
 import {
   fixLightScenes,

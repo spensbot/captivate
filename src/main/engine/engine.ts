@@ -26,7 +26,7 @@ import {
 } from '../../features/dmx/shared/dmxUtil'
 import { ThrottleMap } from 'features/midi/engine/midiConnection'
 import { MidiMessage, midiInputID } from 'features/midi/shared/midi'
-import { getAllParamKeys } from '../../features/dmx/redux/dmxSlice'
+import { getAllParamKeys } from '../../features/fixtures/redux/fixturesSlice'
 import { indexArray } from '../../features/utils/util'
 import WledManager from '../../features/led/engine/wled_manager'
 import {

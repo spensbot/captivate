@@ -6,7 +6,7 @@ import Randomizer from './Randomizer'
 import XYAxispad from './XYAxisPad'
 import ParamAddButton from './ParamAddButton'
 import { useDmxSelector } from 'renderer/redux/store'
-import { getCustomChannels } from 'features/dmx/redux/dmxSlice'
+import { getCustomChannels } from 'features/fixtures/redux/fixturesSlice'
 
 interface Params {
   splitIndex: number

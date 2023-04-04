@@ -3,7 +3,7 @@ import { useDmxSelector } from '../../../renderer/redux/store'
 import FixtureCursor from './FixtureCursor'
 import useDragMapped from '../../ui/react/hooks/useDragMapped'
 import { useDispatch } from 'react-redux'
-import { setFixtureWindow, incrementFixtureWindow } from '../redux/dmxSlice'
+import { setFixtureWindow, incrementFixtureWindow } from '../../fixtures/redux/fixturesSlice'
 import { secondaryEnabled } from 'features/ui/react/base/keyUtil'
 
 export default function FixturePlacement() {

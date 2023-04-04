@@ -12,7 +12,7 @@ import useDragMapped from '../../ui/react/hooks/useDragMapped'
 import styled from 'styled-components'
 import Popup from 'features/ui/react/base/Popup'
 import { indexArray } from 'features/utils/util'
-import { getAllParamKeys } from 'features/dmx/redux/dmxSlice'
+import { getAllParamKeys } from 'features/fixtures/redux/fixturesSlice'
 
 interface Props {
   splitIndex: number

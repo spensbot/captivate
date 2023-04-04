@@ -6,7 +6,7 @@ import {
   setEditedFixture,
   updateFixtureType,
   deleteFixtureType,
-} from '../redux/dmxSlice'
+} from '../../fixtures/redux/fixturesSlice'
 import Input from '../../ui/react/base/Input'
 import Slider from '@mui/material/Slider'
 import styled from 'styled-components'
