@@ -23,7 +23,7 @@ import openVisualizerWindow, {
 import { calculateDmx } from 'features/dmx/engine/dmxEngine'
 import { handleAutoScene } from '../../features/scenes/engine/autoScene'
 import { setActiveScene } from '../../renderer/redux/controlSlice'
-import TapTempoEngine from './TapTempoEngine'
+import TapTempoEngine from '../../features/bpm/engine/TapTempoEngine'
 import { flatten_fixtures, getFixturesInGroups } from '../../features/dmx/shared/dmxUtil'
 import { ThrottleMap } from 'features/midi/engine/midiConnection'
 import { MidiMessage, midiInputID } from 'features/midi/shared/midi'
