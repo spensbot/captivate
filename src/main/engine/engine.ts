@@ -29,7 +29,7 @@ import { ThrottleMap } from 'features/midi/engine/midiConnection'
 import { MidiMessage, midiInputID } from 'features/midi/shared/midi'
 import { getAllParamKeys } from '../../features/dmx/redux/dmxSlice'
 import { indexArray } from '../../shared/util'
-import WledManager from './wled/wled_manager'
+import WledManager from '../../features/led/engine/wled_manager'
 
 let _nodeLink = new NodeLink()
 _nodeLink.setIsPlaying(true)
