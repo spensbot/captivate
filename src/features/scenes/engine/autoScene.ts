@@ -1,8 +1,8 @@
-import { randomElementExcludeCurrent } from './util'
-import { AutoScene_t } from './Scenes'
-import { TimeState, isNewPeriod } from './TimeState'
-import { CleanReduxState } from '../renderer/redux/store'
-import { RealtimeState } from '../renderer/redux/realtimeStore'
+import { randomElementExcludeCurrent } from '../../../shared/util'
+import { AutoScene_t } from '../../../shared/Scenes'
+import { TimeState, isNewPeriod } from '../../../shared/TimeState'
+import { CleanReduxState } from '../../../renderer/redux/store'
+import { RealtimeState } from '../../../renderer/redux/realtimeStore'
 
 type OnNewScene = (id: string) => void
 

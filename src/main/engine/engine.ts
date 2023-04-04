@@ -21,7 +21,7 @@ import openVisualizerWindow, {
   VisualizerContainer,
 } from './createVisualizerWindow'
 import { calculateDmx } from 'features/dmx/engine/dmxEngine'
-import { handleAutoScene } from '../../shared/autoScene'
+import { handleAutoScene } from '../../features/scenes/engine/autoScene'
 import { setActiveScene } from '../../renderer/redux/controlSlice'
 import TapTempoEngine from './TapTempoEngine'
 import { flatten_fixtures, getFixturesInGroups } from '../../features/dmx/shared/dmxUtil'
