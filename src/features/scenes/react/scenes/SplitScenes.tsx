@@ -1,4 +1,4 @@
-import ParamsControl from 'renderer/controls/ParamsControl'
+import ParamsControl from 'features/scenes/react/controls/ParamsControl'
 import { useActiveLightScene, useControlSelector } from 'renderer/redux/store'
 import { indexArray } from 'shared/util'
 import styled from 'styled-components'

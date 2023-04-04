@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import { useControlSelector } from '../redux/store'
+import { useControlSelector } from '../../../../renderer/redux/store'
 import { useDispatch } from 'react-redux'
 import {
   setActiveScene,
@@ -9,18 +9,18 @@ import {
   setActiveSceneName,
   copyActiveScene,
   setActiveSceneAutoEnabled,
-} from '../redux/controlSlice'
+} from '../../../../renderer/redux/controlSlice'
 import { IconButton } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import AddIcon from '@mui/icons-material/Add'
 import DisableIcon from '@mui/icons-material/DoNotDisturb'
-import Slider from '../../features/ui/react/base/Slider'
+import Slider from '../../../ui/react/base/Slider'
 import { ButtonMidiOverlay } from 'features/midi/react/MidiOverlay'
-import Input from '../../features/ui/react/base/Input'
+import Input from '../../../ui/react/base/Input'
 import { Draggable } from 'react-beautiful-dnd'
 import DragHandleIcon from '@mui/icons-material/DragHandle'
 import CopyIcon from '@mui/icons-material/FileCopy'
-import { SceneType } from '../../shared/Scenes'
+import { SceneType } from '../../../../shared/Scenes'
 
 function getColor(epicness: number) {
   const hueStart = 250

@@ -1,9 +1,9 @@
 import styled from 'styled-components'
-import useDragMapped from '../../features/ui/react/hooks/useDragMapped'
+import useDragMapped from '../../../ui/react/hooks/useDragMapped'
 import { useDispatch } from 'react-redux'
-import { setBaseParams } from '../redux/controlSlice'
+import { setBaseParams } from '../../../../renderer/redux/controlSlice'
 import { SVCursorBase, SVCursorOutput } from './SVCursor'
-import { useOutputParam } from '../redux/realtimeStore'
+import { useOutputParam } from '../../../../renderer/redux/realtimeStore'
 
 interface Props {
   splitIndex: number

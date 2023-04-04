@@ -4,7 +4,7 @@ import {
   undoActionTypes,
   UndoGroup,
   ReduxState,
-} from '../redux/store'
+} from '../../../../renderer/redux/store'
 import { useDispatch } from 'react-redux'
 import UndoIcon from '@mui/icons-material/Undo'
 import RedoIcon from '@mui/icons-material/Redo'

@@ -1,10 +1,10 @@
 import React from 'react'
 import StatusBar from '../../menu/StatusBar'
 import Modulators from '../../../features/modulation/react'
-import SceneSelection from '../../scenes/SceneSelection'
+import SceneSelection from '../../../features/scenes/react/scenes/SceneSelection'
 import SplitPane from '../../../features/ui/react/base/SplitPane'
 import styled from 'styled-components'
-import SplitScenes from 'renderer/scenes/SplitScenes'
+import SplitScenes from 'features/scenes/react/scenes/SplitScenes'
 
 export default function Scenes() {
   const splitPaneStyle: React.CSSProperties = {

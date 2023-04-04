@@ -4,7 +4,7 @@ import RemoveIcon from '@mui/icons-material/Remove'
 import { useState } from 'react'
 import { useActiveLightScene, useDmxSelector } from 'renderer/redux/store'
 import styled from 'styled-components'
-import Popup from '../../features/ui/react/base/Popup'
+import Popup from '../../../ui/react/base/Popup'
 import { useDispatch } from 'react-redux'
 import {
   removeSplitSceneByIndex,

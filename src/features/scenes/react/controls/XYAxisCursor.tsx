@@ -1,5 +1,5 @@
-import { useOutputParam } from '../redux/realtimeStore'
-import Cursor from '../../features/ui/react/base/Cursor'
+import { useOutputParam } from '../../../../renderer/redux/realtimeStore'
+import Cursor from '../../../ui/react/base/Cursor'
 import { applyMirror } from 'features/dmx/shared/dmxUtil'
 
 interface Props {

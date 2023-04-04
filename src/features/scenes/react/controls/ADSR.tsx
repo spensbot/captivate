@@ -1,7 +1,7 @@
 import styled from 'styled-components'
-import DraggableNumber from '../../features/ui/react/base/DraggableNumber'
-import { lerp } from '../../features/utils/math/util'
-import useDragMapped from '../../features/ui/react/hooks/useDragMapped'
+import DraggableNumber from '../../../ui/react/base/DraggableNumber'
+import { lerp } from '../../../utils/math/util'
+import useDragMapped from '../../../ui/react/hooks/useDragMapped'
 
 export interface Control {
   val: number

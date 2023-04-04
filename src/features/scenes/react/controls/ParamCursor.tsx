@@ -1,6 +1,6 @@
-import { useOutputParam } from '../redux/realtimeStore'
-import { DefaultParam } from '../../shared/params'
-import SliderCursor from '../../features/ui/react/base/SliderCursor'
+import { useOutputParam } from '../../../../renderer/redux/realtimeStore'
+import { DefaultParam } from '../../../../shared/params'
+import SliderCursor from '../../../ui/react/base/SliderCursor'
 
 interface Props {
   param: DefaultParam | string

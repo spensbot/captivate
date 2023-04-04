@@ -1,14 +1,14 @@
-import Slider from '../../features/ui/react/base/Slider'
+import Slider from '../../../ui/react/base/Slider'
 import styled from 'styled-components'
 import { useDispatch } from 'react-redux'
-import { useControlSelector } from '../redux/store'
+import { useControlSelector } from '../../../../renderer/redux/store'
 import {
   setAutoSceneEnabled,
   setAutoSceneBombacity,
   setAutoScenePeriod,
-} from '../redux/controlSlice'
-import { SceneType } from '../../shared/Scenes'
-import DraggableNumber from '../../features/ui/react/base/DraggableNumber'
+} from '../../../../renderer/redux/controlSlice'
+import { SceneType } from '../../../../shared/Scenes'
+import DraggableNumber from '../../../ui/react/base/DraggableNumber'
 import { SliderMidiOverlay } from 'features/midi/react/MidiOverlay'
 
 export default function AutoScene({ sceneType }: { sceneType: SceneType }) {

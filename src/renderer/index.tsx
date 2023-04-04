@@ -24,7 +24,7 @@ import { ipc_setup, send_control_state } from './ipcHandler'
 import { ThemeProvider as MuiThemeProvider } from '@emotion/react'
 import { createTheme } from '@mui/material/styles'
 import { autoSave } from '../features/fileSaving/react/autosave'
-import { getUndoGroup, undoAction, redoAction } from './controls/UndoRedo'
+import { getUndoGroup, undoAction, redoAction } from '../features/scenes/react/controls/UndoRedo'
 import { load } from '../features/fileSaving/react/SaveLoad'
 import { getSaveConfig } from 'shared/save'
 

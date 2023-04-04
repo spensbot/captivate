@@ -1,6 +1,6 @@
 import ADSR, { Control } from './ADSR'
-import { useActiveLightScene } from '../redux/store'
-import { setRandomizer } from '../redux/controlSlice'
+import { useActiveLightScene } from '../../../../renderer/redux/store'
+import { setRandomizer } from '../../../../renderer/redux/controlSlice'
 import { useDispatch } from 'react-redux'
 
 interface Props {

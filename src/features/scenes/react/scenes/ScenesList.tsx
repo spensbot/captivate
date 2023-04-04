@@ -1,10 +1,10 @@
 import styled from 'styled-components'
 import { Scene, NewScene } from './Scene'
-import { useControlSelector } from '../redux/store'
+import { useControlSelector } from '../../../../renderer/redux/store'
 import { DragDropContext, Droppable } from 'react-beautiful-dnd'
 import { useDispatch } from 'react-redux'
-import { reorderScene } from '../redux/controlSlice'
-import { SceneType } from '../../shared/Scenes'
+import { reorderScene } from '../../../../renderer/redux/controlSlice'
+import { SceneType } from '../../../../shared/Scenes'
 
 interface Props {
   sceneType: SceneType

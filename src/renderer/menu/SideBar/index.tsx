@@ -9,7 +9,7 @@ import MixerIcon from '@mui/icons-material/BarChart'
 import { useTypedSelector } from '../../redux/store'
 import { useDispatch } from 'react-redux'
 import { setActivePage, Page } from '../../redux/guiSlice'
-import MasterSlider from '../../controls/MasterSlider'
+import MasterSlider from '../../../features/scenes/react/controls/MasterSlider'
 
 const selectedBorder = 0.2 //rem
 
