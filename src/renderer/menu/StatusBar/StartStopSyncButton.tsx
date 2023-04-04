@@ -1,6 +1,6 @@
 import styled from 'styled-components'
-import { useRealtimeSelector } from '../redux/realtimeStore'
-import { send_user_command } from '../ipcHandler'
+import { useRealtimeSelector } from '../../redux/realtimeStore'
+import { send_user_command } from '../../ipcHandler'
 
 interface Props {}
 

@@ -1,4 +1,4 @@
-import { send_user_command } from '../ipcHandler'
+import { send_user_command } from '../../ipcHandler'
 import { ButtonMidiOverlay } from 'features/midi/react/MidiOverlay'
 import styled from 'styled-components'
 

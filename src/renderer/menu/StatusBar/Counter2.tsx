@@ -1,4 +1,4 @@
-import { useRealtimeSelector } from '../redux/realtimeStore'
+import { useRealtimeSelector } from '../../redux/realtimeStore'
 
 export default function Counter2() {
   const time = useRealtimeSelector((state) => state.time)

@@ -1,4 +1,4 @@
-import { useTypedSelector } from '../redux/store'
+import { useTypedSelector } from '../../redux/store'
 import styled from 'styled-components'
 
 interface Props {
