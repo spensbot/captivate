@@ -1,6 +1,6 @@
 import { DeviceState } from 'features/midi/redux'
 import { DmxState } from 'features/dmx/redux/dmxSlice'
-import { initLedState } from 'renderer/redux/ledState'
+import { initLedState } from 'features/led/redux/ledState'
 import { CleanReduxState } from '../renderer/redux/store'
 import { ColorChannel } from './dmxColors'
 import { DmxValue, FixtureChannel } from './dmxFixtures'

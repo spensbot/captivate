@@ -10,7 +10,7 @@ import {
 } from 'features/dmx/shared/dmxFixtures'
 import { clampNormalized } from '../../../math/util'
 import { defaultParamsList } from '../../../shared/params'
-import { initLedState, LedState } from '../../../renderer/redux/ledState'
+import { initLedState, LedState } from '../../led/redux/ledState'
 import { initLedFixture, LedFixture } from '../../led/shared/ledFixtures'
 import { Point } from '../../../math/point'
 
