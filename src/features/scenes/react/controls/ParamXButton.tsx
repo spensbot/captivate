@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import { DefaultParam } from 'shared/params'
+import { DefaultParam } from 'features/dmx/shared/params'
 import { useDispatch } from 'react-redux'
 import { deleteBaseParams } from 'renderer/redux/controlSlice'
 

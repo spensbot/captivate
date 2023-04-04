@@ -1,5 +1,5 @@
 import { Normalized } from './math/util'
-import { Params } from '../../shared/params'
+import { Params } from '../dmx/shared/params'
 
 export type BaseColor = 'red' | 'green' | 'blue'
 

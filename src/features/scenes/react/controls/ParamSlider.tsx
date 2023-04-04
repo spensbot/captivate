@@ -1,4 +1,4 @@
-import { DefaultParam } from '../../../../shared/params'
+import { DefaultParam } from '../../../dmx/shared/params'
 import SliderBase from '../../../ui/react/base/SliderBase'
 import SliderCursor from '../../../ui/react/base/SliderCursor'
 import { useBaseParam } from '../../../../renderer/redux/store'

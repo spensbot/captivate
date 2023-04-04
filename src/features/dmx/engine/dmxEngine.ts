@@ -4,7 +4,7 @@ import {
   DMX_NUM_CHANNELS,
   FlattenedFixture,
 } from '../shared/dmxFixtures'
-import { Params } from '../../../shared/params'
+import { Params } from '../shared/params'
 import { RandomizerState } from '../../../shared/randomizer'
 import { CleanReduxState } from '../../../renderer/redux/store'
 import {

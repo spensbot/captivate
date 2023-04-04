@@ -7,7 +7,7 @@ import {
 } from 'react-redux'
 import React from 'react'
 import { initTimeState, TimeState } from '../../shared/TimeState'
-import { defaultOutputParams, DefaultParam, Params } from '../../shared/params'
+import { defaultOutputParams, DefaultParam, Params } from '../../features/dmx/shared/params'
 import { RandomizerState } from '../../shared/randomizer'
 
 function initDmxOut(): number[] {

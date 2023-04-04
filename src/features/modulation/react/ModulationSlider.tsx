@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useDispatch } from 'react-redux'
-import { DefaultParam } from '../../../shared/params'
+import { DefaultParam } from '../../dmx/shared/params'
 import {
   useActiveLightScene,
   useBaseParams,

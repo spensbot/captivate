@@ -12,7 +12,7 @@ import {
   DMX_MIN_VALUE,
   FlattenedFixture,
 } from './dmxFixtures'
-import { getParam, Params } from '../../../shared/params'
+import { getParam, Params } from './params'
 import { findClosest, lerp, Normalized } from '../../utils/math/util'
 import { rLerp } from '../../utils/math/range'
 import { applyRandomization } from '../../../shared/randomizer'

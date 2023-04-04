@@ -1,4 +1,4 @@
-import { Params } from '../../../shared/params'
+import { Params } from '../../dmx/shared/params'
 import { TimeState } from '../../../shared/TimeState'
 import { isNewPeriod, beatsIn, beatsLeft } from '../../../shared/TimeState'
 import { LightScene_t } from '../../scenes/shared/Scenes'

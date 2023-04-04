@@ -1,4 +1,4 @@
-import { Params, initBaseParams } from '../../../shared/params'
+import { Params, initBaseParams } from '../../dmx/shared/params'
 import { Modulator, initModulator } from '../../modulation/shared/modulation'
 import { RandomizerOptions, initRandomizerOptions } from '../../../shared/randomizer'
 import { nanoid } from 'nanoid'

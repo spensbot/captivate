@@ -21,7 +21,7 @@ import {
   initVisualScene,
 } from '../../../../features/scenes/shared/Scenes'
 
-import { DefaultParam, Params } from '../../../../shared/params'
+import { DefaultParam, Params } from '../../../../features/dmx/shared/params'
 
 export interface ActionState extends ScenesStateBundle {
   master: number

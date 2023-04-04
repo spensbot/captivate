@@ -1,8 +1,8 @@
-import { initModulation, DefaultParam, Modulation } from '../../../shared/params'
+import { initModulation, DefaultParam, Modulation } from '../../dmx/shared/params'
 import { Lfo, GetValue, GetRamp } from './oscillator'
 import { LightScene_t } from '../../scenes/shared/Scenes'
 import { clampNormalized } from '../../utils/math/util'
-import { defaultOutputParams } from '../../../shared/params'
+import { defaultOutputParams } from '../../dmx/shared/params'
 
 export interface Modulator {
   lfo: Lfo

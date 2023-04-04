@@ -1,5 +1,5 @@
 import { useOutputParam } from '../../../../renderer/redux/realtimeStore'
-import { DefaultParam } from '../../../../shared/params'
+import { DefaultParam } from '../../../dmx/shared/params'
 import SliderCursor from '../../../ui/react/base/SliderCursor'
 
 interface Props {
