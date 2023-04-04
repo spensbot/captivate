@@ -9,7 +9,7 @@ import {
   initRealtimeState,
   SplitState,
 } from '../../renderer/redux/realtimeStore'
-import { TimeState } from '../../shared/TimeState'
+import { TimeState } from '../../features/bpm/shared/TimeState'
 import {
   initRandomizerState,
   resizeRandomizer,

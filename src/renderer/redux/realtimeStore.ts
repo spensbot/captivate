@@ -6,7 +6,7 @@ import {
   ReactReduxContextValue,
 } from 'react-redux'
 import React from 'react'
-import { initTimeState, TimeState } from '../../shared/TimeState'
+import { initTimeState, TimeState } from '../../features/bpm/shared/TimeState'
 import { defaultOutputParams, DefaultParam, Params } from '../../features/dmx/shared/params'
 import { RandomizerState } from '../../shared/randomizer'
 

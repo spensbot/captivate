@@ -1,6 +1,6 @@
 import { randomElementExcludeCurrent } from '../../../shared/util'
 import { AutoScene_t } from '../shared/Scenes'
-import { TimeState, isNewPeriod } from '../../../shared/TimeState'
+import { TimeState, isNewPeriod } from '../../bpm/shared/TimeState'
 import { CleanReduxState } from '../../../renderer/redux/store'
 import { RealtimeState } from '../../../renderer/redux/realtimeStore'
 

@@ -1,6 +1,6 @@
 import { Params } from '../../dmx/shared/params'
-import { TimeState } from '../../../shared/TimeState'
-import { isNewPeriod, beatsIn, beatsLeft } from '../../../shared/TimeState'
+import { TimeState } from '../../bpm/shared/TimeState'
+import { isNewPeriod, beatsIn, beatsLeft } from '../../bpm/shared/TimeState'
 import { LightScene_t } from '../../scenes/shared/Scenes'
 import { Size } from 'features/utils/math/size'
 import { Range, rLerp } from 'features/utils/math/range'

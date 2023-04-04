@@ -13,7 +13,7 @@ import {
   flatten_fixtures,
 } from '../shared/dmxUtil'
 import { indexArray, zip } from '../../../shared/util'
-import { TimeState } from '../../../shared/TimeState'
+import { TimeState } from '../../bpm/shared/TimeState'
 import { SplitState } from 'renderer/redux/realtimeStore'
 
 export function calculateDmx(
