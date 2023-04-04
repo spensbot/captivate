@@ -122,7 +122,7 @@ export const createMutations = (handlers: {
     const disposeableHandlers = Object.entries(handlers).map(
       ([channel, resolve]) => {
         const handler = (_event: Electron.IpcMainEvent, ...args: any[]) => {
-          resolve(_event, context, ...args)
+          return resolve(_event, context, ...args)
         }
         context.ipcMain.on(channel, handler)
         return {
@@ -155,7 +155,7 @@ export const createQueries = (handlers: {
           _event: Electron.IpcMainInvokeEvent,
           ...args: any[]
         ) => {
-          resolve(_event, context, ...args)
+          return resolve(_event, context, ...args)
         }
 
         context.ipcMain.handle(channel, handler)
