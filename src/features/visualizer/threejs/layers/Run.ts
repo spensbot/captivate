@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import {Vector3} from 'three'
 import LayerBase from './LayerBase'
 import UpdateResource from '../UpdateResource'
-import { zeroArray } from '../../../../shared/util'
+import { zeroArray } from '../../../utils/util'
 // import { Range } from '../../../math/range'
 
 // const Y_RANGE: Range = {

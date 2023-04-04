@@ -28,7 +28,7 @@ import { flatten_fixtures, getFixturesInGroups } from '../../features/dmx/shared
 import { ThrottleMap } from 'features/midi/engine/midiConnection'
 import { MidiMessage, midiInputID } from 'features/midi/shared/midi'
 import { getAllParamKeys } from '../../features/dmx/redux/dmxSlice'
-import { indexArray } from '../../shared/util'
+import { indexArray } from '../../features/utils/util'
 import WledManager from '../../features/led/engine/wled_manager'
 
 let _nodeLink = new NodeLink()

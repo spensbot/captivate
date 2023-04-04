@@ -4,7 +4,7 @@ import { Vector3 } from 'three'
 import UpdateResource from '../UpdateResource'
 import { randomRanged } from '../../../utils/math/util'
 import { Range, rLerp } from '../../../utils/math/range'
-import { mapFn } from '../../../../shared/util'
+import { mapFn } from '../../../utils/util'
 
 export interface CubeSphereConfig {
   type: 'CubeSphere'

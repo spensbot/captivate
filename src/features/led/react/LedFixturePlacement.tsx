@@ -9,7 +9,7 @@ import {
   updateLedFixturePoint,
 } from 'features/dmx/redux/dmxSlice'
 import { secondaryEnabled } from 'features/ui/react/base/keyUtil'
-import { fMap, indexArray } from 'shared/util'
+import { fMap, indexArray } from 'features/utils/util'
 import LedFixturePoints from './LedFixturePoints'
 import Cursor from 'features/ui/react/base/Cursor'
 

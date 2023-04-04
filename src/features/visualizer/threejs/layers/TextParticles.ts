@@ -9,7 +9,7 @@ import { gravity, ParticleState } from '../util/particlePhysics'
 import { TextParticlesConfig } from './TextParticlesConfig'
 import shaders from '../shaders/shaders'
 import UpdateResource from '../UpdateResource'
-import { mapFn } from '../../../../shared/util'
+import { mapFn } from '../../../utils/util'
 import { snapToMultipleOf2 } from '../util/util'
 import { rLerp } from 'features/utils/math/range'
 

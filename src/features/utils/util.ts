@@ -1,5 +1,5 @@
-import { random } from '../features/utils/math/util'
-import { Range } from '../features/utils/math/range'
+import { random } from './math/util'
+import { Range } from './math/range'
 
 export function randomElement<Type>(items: Type[]) {
   return items[randomIndex(items.length)]

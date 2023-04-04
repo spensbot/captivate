@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { pathUrl } from './loaders'
 import LoadQueue from './LoadQueue'
-import { randomIndexExcludeCurrent } from '../../../../shared/util'
+import { randomIndexExcludeCurrent } from '../../../utils/util'
 import no_media_image from '../../../../assets/no_media.png'
 import { LocalMediaConfig } from '../layers/LocalMediaConfig'
 import { Size, defaultSize, fit, cover } from '../../../utils/math/size'

@@ -4,7 +4,7 @@ import LayerBase from './LayerBase'
 import UpdateResource from '../UpdateResource'
 import { randomRanged } from '../../../utils/math/util'
 import { Range, rLerp } from '../../../utils/math/range'
-import { mapFn } from '../../../../shared/util'
+import { mapFn } from '../../../utils/util'
 import { snapToMultipleOf2 } from '../util/util'
 
 const MIN_XY = -2000

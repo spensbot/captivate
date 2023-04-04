@@ -1,4 +1,4 @@
-import { ReorderParams } from '../../../../shared/util'
+import { ReorderParams } from '../../../../features/utils/util'
 import { clampNormalized, clamp } from '../../../../features/utils/math/util'
 import { initModulator } from '../../../../features/modulation/shared/modulation'
 import { nanoid } from 'nanoid'
@@ -7,7 +7,7 @@ import cloneDeep from 'lodash.clonedeep'
 import { LayerConfig } from '../../../../features/visualizer/threejs/layers/LayerConfig'
 import { EffectConfig } from '../../../../features/visualizer/threejs/effects/effectConfigs'
 import { LfoShape } from '../../../../features/modulation/shared/oscillator'
-import { reorderArray } from '../../../../shared/util'
+import { reorderArray } from '../../../../features/utils/util'
 import { PayloadAction, SliceCaseReducers } from '@reduxjs/toolkit'
 import {
   LightScene_t,

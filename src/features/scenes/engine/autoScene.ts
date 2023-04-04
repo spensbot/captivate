@@ -1,4 +1,4 @@
-import { randomElementExcludeCurrent } from '../../../shared/util'
+import { randomElementExcludeCurrent } from '../../utils/util'
 import { AutoScene_t } from '../shared/Scenes'
 import { TimeState, isNewPeriod } from '../../bpm/shared/TimeState'
 import { CleanReduxState } from '../../../renderer/redux/store'

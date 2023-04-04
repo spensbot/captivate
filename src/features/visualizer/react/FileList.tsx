@@ -6,7 +6,7 @@ import AddIcon from '@mui/icons-material/Add'
 import path from 'path-browserify'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import DragHandle from '@mui/icons-material/DragHandle'
-import { reorderArray } from 'shared/util'
+import { reorderArray } from 'features/utils/util'
 import { FileFilter } from 'electron/renderer'
 import {
   videoExtensions,

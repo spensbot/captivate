@@ -12,7 +12,7 @@ import { Spin, Wobble, Strobe } from '../util/animations'
 import { colorFromHSV } from '../util/util'
 import UpdateResource from '../UpdateResource'
 import { TextSpinConfig } from './TextSpinConfig'
-import { mapFn } from 'shared/util'
+import { mapFn } from 'features/utils/util'
 
 const mapSize = mapFn(1.2, { min: 0.1, max: 2 })
 

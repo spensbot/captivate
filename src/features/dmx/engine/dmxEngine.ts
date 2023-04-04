@@ -12,7 +12,7 @@ import {
   getFixturesInGroups,
   flatten_fixtures,
 } from '../shared/dmxUtil'
-import { indexArray, zip } from '../../../shared/util'
+import { indexArray, zip } from '../../utils/util'
 import { TimeState } from '../../bpm/shared/TimeState'
 import { SplitState } from 'renderer/redux/realtimeStore'
 

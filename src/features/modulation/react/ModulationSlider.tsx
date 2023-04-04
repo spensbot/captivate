@@ -11,7 +11,7 @@ import { setModulation } from '../../../renderer/redux/controlSlice'
 import useDragMapped from '../../ui/react/hooks/useDragMapped'
 import styled from 'styled-components'
 import Popup from 'features/ui/react/base/Popup'
-import { indexArray } from 'shared/util'
+import { indexArray } from 'features/utils/util'
 import { getAllParamKeys } from 'features/dmx/redux/dmxSlice'
 
 interface Props {

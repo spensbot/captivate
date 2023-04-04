@@ -1,5 +1,5 @@
 import { useDmxSelector } from 'renderer/redux/store'
-import { indexArray } from 'shared/util'
+import { indexArray } from 'features/utils/util'
 import styled from 'styled-components'
 import LedFixtureDefinition from './LedFixtureDefinition'
 import AddIcon from '@mui/icons-material/Add'

@@ -2,7 +2,7 @@ import { DownIcon, UpIcon } from 'features/ui/react/icons/arrows'
 import { clamp } from 'features/utils/math/util'
 import useDragBasic from '../hooks/useDragBasic'
 import styled from 'styled-components'
-import { double_incremented, halve_incremented } from 'shared/util'
+import { double_incremented, halve_incremented } from 'features/utils/util'
 import React from 'react'
 import { secondaryEnabled } from './keyUtil'
 

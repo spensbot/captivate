@@ -1,4 +1,4 @@
-import { indexArray } from 'shared/util'
+import { indexArray } from 'features/utils/util'
 
 const FACTOR = 2
 const SLOT_COUNT = 12

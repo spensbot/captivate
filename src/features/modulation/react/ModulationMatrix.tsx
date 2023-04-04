@@ -4,7 +4,7 @@ import {
   useDmxSelector,
 } from 'renderer/redux/store'
 import styled from 'styled-components'
-import { indexArray } from 'shared/util'
+import { indexArray } from 'features/utils/util'
 import ModulationSlider, { AddModulationButton } from './ModulationSlider'
 import { getAllParamKeys } from 'features/dmx/redux/dmxSlice'
 
