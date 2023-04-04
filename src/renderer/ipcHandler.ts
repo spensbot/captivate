@@ -1,4 +1,4 @@
-import ipc_channels, { UserCommand, MainCommand } from '../shared/ipc_channels'
+import ipc_channels, { UserCommand, MainCommand } from '../features/shared/engine/ipc_channels'
 import { CleanReduxState } from './redux/store'
 import { RealtimeState } from './redux/realtimeStore'
 import * as dmxConnection from 'features/dmx/engine/dmxConnection'

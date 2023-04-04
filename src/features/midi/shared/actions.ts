@@ -1,5 +1,5 @@
 import type { actions } from '../../../renderer/redux/controlSlice/reducers/actions'
-import type { UserCommand } from 'shared/ipc_channels'
+import type { UserCommand } from 'features/shared/engine/ipc_channels'
 
 import type {
   CaseReducer,

@@ -2,7 +2,7 @@ import { ipcMain, WebContents } from 'electron'
 import ipcChannels, {
   UserCommand,
   MainCommand,
-} from '../../shared/ipc_channels'
+} from '../../features/shared/engine/ipc_channels'
 import ipcChannelsVisualizer from '../../visualizer/ipcChannels'
 import { CleanReduxState } from '../../renderer/redux/store'
 import { RealtimeState } from '../../renderer/redux/realtimeStore'

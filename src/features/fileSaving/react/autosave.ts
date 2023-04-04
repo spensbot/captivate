@@ -5,7 +5,7 @@ import {
   getCleanReduxState,
   store,
 } from '../../../renderer/redux/store'
-import ipcChannels from '../../../shared/ipc_channels'
+import ipcChannels from '../../shared/engine/ipc_channels'
 import AutoSavedVal, { printTimePassed } from './AutoSavedVal'
 import fixState from '../../../shared/fixState'
 import defaultState from '../../../renderer/redux/defaultState'

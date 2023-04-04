@@ -1,5 +1,5 @@
 import { dialog } from 'electron'
-import ipcChannels from '../../../../shared/ipc_channels'
+import ipcChannels from '../../../shared/engine/ipc_channels'
 import { createHandler } from './core'
 import fs from 'fs'
 export default createHandler({
