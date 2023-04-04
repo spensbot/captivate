@@ -1,14 +1,14 @@
 import styled from 'styled-components'
-import { useActiveVisualScene } from '../redux/store'
-import Select from '../../features/ui/react/base/Select'
+import { useActiveVisualScene } from '../../../renderer/redux/store'
+import Select from 'features/ui/react/base/Select'
 import {
   visualizerTypeList,
   initLayerConfig,
   layerDisplayNames,
   layerTypeFromDisplayName,
-} from '../../visualizer/threejs/layers/LayerConfig'
+} from '../threejs/layers/LayerConfig'
 import { useDispatch } from 'react-redux'
-import { setVisualSceneConfig } from '../redux/controlSlice'
+import { setVisualSceneConfig } from '../../../renderer/redux/controlSlice'
 import LayerEditor from './LayerEditor'
 
 interface Props {}

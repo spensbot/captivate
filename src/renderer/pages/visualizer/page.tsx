@@ -2,9 +2,9 @@ import styled from 'styled-components'
 import StatusBar from '../../menu/StatusBar'
 import SplitPane from '../../../features/ui/react/base/SplitPane'
 import SceneSelection from '../../scenes/SceneSelection'
-import VisualizerSceneEditor from 'renderer/visualizer/VisualizerSceneEditor'
-import Effects from 'renderer/visualizer/Effects'
-import Visualizer from 'renderer/visualizer/Visualizer'
+import VisualizerSceneEditor from 'features/visualizer/react/VisualizerSceneEditor'
+import Effects from 'features/visualizer/react/Effects'
+import Visualizer from 'features/visualizer/react/Visualizer'
 
 export default function VisualizerPage() {
   const splitPaneStyle: React.CSSProperties = {

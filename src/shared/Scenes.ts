@@ -5,11 +5,11 @@ import { nanoid } from 'nanoid'
 import {
   LayerConfig,
   initLayerConfig,
-} from '../visualizer/threejs/layers/LayerConfig'
+} from '../features/visualizer/threejs/layers/LayerConfig'
 import {
   EffectsConfig,
   initEffectsConfig,
-} from '../visualizer/threejs/effects/effectConfigs'
+} from '../features/visualizer/threejs/effects/effectConfigs'
 
 export interface SceneBase {
   name: string

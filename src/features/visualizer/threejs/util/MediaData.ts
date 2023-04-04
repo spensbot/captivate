@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { loadVideo, releaseVideo, loadImage } from './loaders'
 import { imageExtensions, videoExtensions } from '../layers/LocalMediaConfig'
-import { Size } from '../../../math/size'
+import { Size } from '../../../../math/size'
 
 interface MediaDataBase {
   size: Size

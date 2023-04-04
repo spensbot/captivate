@@ -1,16 +1,16 @@
 import cloneDeep from 'lodash.clonedeep'
 import deepEqual from 'deep-equal'
 import { useEffect, useState } from 'react'
-import { LayerConfig } from '../../visualizer/threejs/layers/LayerConfig'
+import { LayerConfig } from '../threejs/layers/LayerConfig'
 import {
   objectFits,
   orderTypes,
-} from '../../visualizer/threejs/layers/LocalMediaConfig'
-import { fontTypes } from '../../visualizer/threejs/fonts/FontType'
+} from '../threejs/layers/LocalMediaConfig'
+import { fontTypes } from '../threejs/fonts/FontType'
 import { Button } from '@mui/material'
 import makeControls from './makeControls'
 import FileList from './FileList'
-import { spaceShapes } from 'visualizer/threejs/layers/Space'
+import { spaceShapes } from 'features/visualizer/threejs/layers/Space'
 
 interface Props {
   config: LayerConfig

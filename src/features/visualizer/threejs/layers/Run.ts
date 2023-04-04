@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import {Vector3} from 'three'
 import LayerBase from './LayerBase'
 import UpdateResource from '../UpdateResource'
-import { zeroArray } from '../../../shared/util'
+import { zeroArray } from '../../../../shared/util'
 // import { Range } from '../../../math/range'
 
 // const Y_RANGE: Range = {
@@ -58,7 +58,7 @@ function section(mat: THREE.Material) {
 
 function firstRow(): Vector3[] {
   const n = Math.floor(RADIANS / radiansPerStep)
-  
+
 
   return zeroArray(n).map(_ => new THREE.Vector3(0,))
 }

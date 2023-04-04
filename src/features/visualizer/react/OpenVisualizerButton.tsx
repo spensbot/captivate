@@ -1,7 +1,8 @@
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import IconButton from '@mui/material/IconButton'
+import { send_open_visualizer } from 'renderer/ipcHandler'
 import styled from 'styled-components'
-import { send_open_visualizer } from '../ipcHandler'
+
 
 interface Props {}
 

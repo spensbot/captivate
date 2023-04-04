@@ -11,7 +11,7 @@ import { FileFilter } from 'electron/renderer'
 import {
   videoExtensions,
   imageExtensions,
-} from 'visualizer/threejs/layers/LocalMediaConfig'
+} from 'features/visualizer/threejs/layers/LocalMediaConfig'
 
 const localMediaFileFilters: FileFilter[] = [
   { name: 'Media', extensions: [...videoExtensions, ...imageExtensions] },

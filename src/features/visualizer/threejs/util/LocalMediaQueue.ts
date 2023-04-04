@@ -1,10 +1,10 @@
 import * as THREE from 'three'
 import { pathUrl } from './loaders'
 import LoadQueue from './LoadQueue'
-import { randomIndexExcludeCurrent } from '../../../shared/util'
+import { randomIndexExcludeCurrent } from '../../../../shared/util'
 import no_media_image from '../../../../assets/no_media.png'
 import { LocalMediaConfig } from '../layers/LocalMediaConfig'
-import { Size, defaultSize, fit, cover } from '../../../math/size'
+import { Size, defaultSize, fit, cover } from '../../../../math/size'
 import { getMediaData, MediaData, releaseMediaData } from './MediaData'
 
 const MIN_DELTA = 200 // ms

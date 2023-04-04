@@ -1,5 +1,5 @@
 import ipc_channels from './ipcChannels'
-import { VisualizerResource } from './threejs/VisualizerManager'
+import { VisualizerResource } from '../features/visualizer/threejs/VisualizerManager'
 
 interface Config {
   onNewVisualizerResource: (visualizerState: VisualizerResource) => void

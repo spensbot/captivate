@@ -1,7 +1,7 @@
 import { AfterimagePass } from 'three/examples/jsm/postprocessing/AfterImagePass'
 import EffectBase from './EffectBase'
 import { AfterImageConfig } from './effectConfigs'
-import { mapFn } from '../../../shared/util'
+import { mapFn } from '../../../../shared/util'
 
 const mapDamp = mapFn(0.3)
 

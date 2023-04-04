@@ -1,14 +1,14 @@
 import cloneDeep from 'lodash.clonedeep'
 import deepEqual from 'deep-equal'
 import { useState, useEffect } from 'react'
-import { EffectConfig } from '../../visualizer/threejs/effects/effectConfigs'
+import { EffectConfig } from '../threejs/effects/effectConfigs'
 import { Button } from '@mui/material'
 import LayerEditor from './LayerEditor'
 import Select from 'features/ui/react/base/Select'
 import {
   visualizerTypeList,
   initLayerConfig,
-} from '../../visualizer/threejs/layers/LayerConfig'
+} from '../threejs/layers/LayerConfig'
 import makeControls from './makeControls'
 
 interface Props {

@@ -8,9 +8,9 @@ import {
 } from 'renderer/redux/controlSlice'
 import { IconButton } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
-import { indexArray } from '../../shared/util'
+import { indexArray } from '../../../shared/util'
 import { useActiveVisualScene, useTypedSelector } from 'renderer/redux/store'
-import { initEffectConfig } from 'visualizer/threejs/effects/effectConfigs'
+import { initEffectConfig } from 'features/visualizer/threejs/effects/effectConfigs'
 
 interface Props {}
 

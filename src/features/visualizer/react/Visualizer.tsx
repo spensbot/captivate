@@ -1,10 +1,10 @@
 import { useRef, useEffect } from 'react'
-import FPS from '../visualizer/FPS'
-import VisualizerManager from 'visualizer/threejs/VisualizerManager'
+import FPS from './FPS'
+import VisualizerManager from 'features/visualizer/threejs/VisualizerManager'
 import styled from 'styled-components'
-import { realtimeStore, useRealtimeSelector } from '../redux/realtimeStore'
-import { store, getCleanReduxState } from '../redux/store'
-import OpenVisualizerButton from 'renderer/visualizer/OpenVisualizerButton'
+import { realtimeStore, useRealtimeSelector } from '../../../renderer/redux/realtimeStore'
+import { store, getCleanReduxState } from '../../../renderer/redux/store'
+import OpenVisualizerButton from './OpenVisualizerButton'
 
 export default function Visualizer() {
   const visualizerDiv = useRef<null | HTMLDivElement>(null)

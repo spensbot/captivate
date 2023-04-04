@@ -1,12 +1,12 @@
 import * as THREE from 'three'
 import LayerBase from './LayerBase'
-import { randomRanged } from '../../../math/util'
-import { skewPower3 } from '../../../math/skew'
+import { randomRanged } from '../../../../math/util'
+import { skewPower3 } from '../../../../math/skew'
 import { Strobe } from '../util/animations'
 import { colorFromHSV } from '../util/util'
 import UpdateResource from '../UpdateResource'
-import { indexArray } from '../../../shared/util'
-import { mapFn } from '../../../shared/util'
+import { indexArray } from '../../../../shared/util'
+import { mapFn } from '../../../../shared/util'
 
 const RATIO_MIN = 0.02
 const RATIO_MAX = 0.1

@@ -1,12 +1,12 @@
 import styled from 'styled-components'
-import Select from '../../features/ui/react/base/Select'
+import Select from '../../ui/react/base/Select'
 import {
   effectTypes,
   effectDisplayNames,
   effectTypeFromDisplayName,
   EffectConfig,
   initEffectConfig,
-} from 'visualizer/threejs/effects/effectConfigs'
+} from 'features/visualizer/threejs/effects/effectConfigs'
 import { activeVisualSceneEffect_set } from 'renderer/redux/controlSlice'
 import { useDispatch } from 'react-redux'
 import { useActiveVisualScene } from 'renderer/redux/store'

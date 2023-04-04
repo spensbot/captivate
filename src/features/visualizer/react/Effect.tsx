@@ -9,7 +9,7 @@ import { IconButton } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import DragHandleIcon from '@mui/icons-material/DragHandle'
 import { Draggable } from 'react-beautiful-dnd'
-import { effectDisplayNames } from 'visualizer/threejs/effects/effectConfigs'
+import { effectDisplayNames } from 'features/visualizer/threejs/effects/effectConfigs'
 
 interface Props {
   index: number

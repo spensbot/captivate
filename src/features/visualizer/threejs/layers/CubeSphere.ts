@@ -2,9 +2,9 @@ import * as THREE from 'three'
 import LayerBase from './LayerBase'
 import { Vector3 } from 'three'
 import UpdateResource from '../UpdateResource'
-import { randomRanged } from '../../../math/util'
-import { Range, rLerp } from '../../../math/range'
-import { mapFn } from '../../../shared/util'
+import { randomRanged } from '../../../../math/util'
+import { Range, rLerp } from '../../../../math/range'
+import { mapFn } from '../../../../shared/util'
 
 export interface CubeSphereConfig {
   type: 'CubeSphere'

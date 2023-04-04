@@ -1,4 +1,4 @@
-import { skewPower } from '../../../math/skew'
+import { skewPower } from '../../../../math/skew'
 
 export class Strobe {
   // Resets to 1, then is decremented according to strobe speed
