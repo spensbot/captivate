@@ -1,7 +1,7 @@
-import { WebContents } from 'electron'
+import { WebContents, ipcMain } from 'electron'
 import * as DmxConnection from 'features/dmx/engine/dmxConnection'
 import * as MidiConnection from 'features/midi/engine/midiConnection'
-import { ipcSetup, IPC_Callbacks } from './ipcHandler'
+
 import { CleanReduxState } from '../../renderer/redux/store'
 import {
   RealtimeState,
@@ -16,9 +16,7 @@ import {
 } from '../../features/bpm/shared/randomizer'
 import { getOutputParams } from '../../features/modulation/shared/modulation'
 import { handleMessage } from 'features/midi/engine/handleMidi'
-import openVisualizerWindow, {
-  VisualizerContainer,
-} from '../../features/visualizer/engine/createVisualizerWindow'
+import { VisualizerContainer } from '../../features/visualizer/engine/createVisualizerWindow'
 import { calculateDmx } from 'features/dmx/engine/dmxEngine'
 import { handleAutoScene } from '../../features/scenes/engine/autoScene'
 import { setActiveScene } from '../../renderer/redux/controlSlice'
@@ -33,11 +31,10 @@ import { indexArray } from '../../features/utils/util'
 import WledManager from '../../features/led/engine/wled_manager'
 import {
   getNextTimeState,
-  onLinkUserCommand,
   _nodeLink,
   _tapTempo,
 } from 'features/bpm/engine/Link'
-
+import { createApi, IPC_Callbacks } from './api'
 let _ipcCallbacks: IPC_Callbacks | null = null
 let _controlState: CleanReduxState | null = null
 let _realtimeState: RealtimeState = initRealtimeState()
@@ -51,7 +48,7 @@ const _midiThrottle = new ThrottleMap((message: MidiMessage) => {
       _controlState,
       _realtimeState,
       _nodeLink,
-      _ipcCallbacks.send_dispatch,
+      _ipcCallbacks.publishers.dispatch,
       _tapTempo
     )
   }
@@ -65,16 +62,14 @@ export function start(
   renderer: WebContents,
   visualizerContainer: VisualizerContainer
 ) {
-  _ipcCallbacks = ipcSetup({
-    renderer: renderer,
-    visualizerContainer: visualizerContainer,
-    on_new_control_state: (newState) => {
+  _ipcCallbacks = createApi({
+    ipcMain,
+    realtimeState: _realtimeState,
+    new_control_state: (newState) => {
       _controlState = newState
     },
-    on_user_command: (command) => onLinkUserCommand(command, _realtimeState),
-    on_open_visualizer: () => {
-      openVisualizerWindow(visualizerContainer)
-    },
+    renderer,
+    visualizerContainer,
   })
 
   // We're currently calculating the realtimeState 90x per second.
@@ -88,8 +83,8 @@ export function start(
         _ipcCallbacks,
         _controlState
       )
-      _ipcCallbacks.send_time_state(_realtimeState)
-      _ipcCallbacks.send_visualizer_state({
+      _ipcCallbacks.publishers.new_time_state(_realtimeState)
+      _ipcCallbacks.publishers.new_visualizer_state({
         rt: _realtimeState,
         state: _controlState,
       })
@@ -106,7 +101,7 @@ DmxConnection.maintain({
   update_ms: 1000,
   onUpdate: (dmxStatus) => {
     if (_ipcCallbacks !== null)
-      _ipcCallbacks.send_dmx_connection_update(dmxStatus)
+      _ipcCallbacks.publishers.dmx_connection_update(dmxStatus)
   },
   getChannels: () => _realtimeState.dmxOut,
   getConnectable: () => {
@@ -118,7 +113,7 @@ MidiConnection.maintain({
   update_ms: 1000,
   onUpdate: (activeDevices) => {
     if (_ipcCallbacks !== null)
-      _ipcCallbacks.send_midi_connection_update(activeDevices)
+      _ipcCallbacks.publishers.midi_connection_update(activeDevices)
   },
   onMessage: (message) => {
     _midiThrottle.call(midiInputID(message), message)
@@ -144,7 +139,7 @@ function getNextRealtimeState(
     nextTimeState,
     controlState,
     (newLightScene) => {
-      ipcCallbacks.send_dispatch(
+      ipcCallbacks.publishers.dispatch(
         setActiveScene({
           sceneType: 'light',
           val: newLightScene,
@@ -152,7 +147,7 @@ function getNextRealtimeState(
       )
     },
     (newVisualScene) => {
-      ipcCallbacks.send_dispatch(
+      ipcCallbacks.publishers.dispatch(
         setActiveScene({
           sceneType: 'visual',
           val: newVisualScene,

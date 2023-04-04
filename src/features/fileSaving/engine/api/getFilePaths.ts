@@ -1,13 +1,9 @@
 import { dialog } from 'electron'
 import ipcChannels from '../../../shared/engine/ipc_channels'
-import { createHandler } from './core'
-export default createHandler({
+import { createQuery } from 'main/engine/api/core'
+export default createQuery({
   channel: ipcChannels.get_local_filepaths,
-  resolve: async (
-    _event,
-    title: string,
-    fileFilters: Electron.FileFilter[]
-  ) => {
+  resolve: async (_, title, fileFilters) => {
     const dialogResult = await dialog.showOpenDialog({
       title: title,
       filters: fileFilters,

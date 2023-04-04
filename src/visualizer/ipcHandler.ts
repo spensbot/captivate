@@ -1,4 +1,4 @@
-import ipc_channels from './ipcChannels'
+import ipc_channels from '../features/visualizer/shared/ipcChannels'
 import { VisualizerResource } from '../features/visualizer/threejs/VisualizerManager'
 
 interface Config {

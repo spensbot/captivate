@@ -6,7 +6,7 @@ import {
   MenuItemConstructorOptions,
   dialog,
 } from 'electron'
-import { IPC_Callbacks } from '../../../main/engine/ipcHandler'
+import { IPC_Callbacks } from '../../../main/engine/api'
 import { listPorts } from 'features/dmx/engine/dmxConnection'
 import {
   toggleLedEnabled,
@@ -90,14 +90,14 @@ export default class MenuBuilder {
           label: 'New Project',
           accelerator: 'Command+N',
           click: () => {
-            this.res.ipcCallbacks.send_main_command({ type: 'new-project' })
+            this.res.ipcCallbacks.publishers.main_command({ type: 'new-project' })
           },
         },
         {
           label: 'Save',
           accelerator: 'Command+S',
           click: () => {
-            this.res.ipcCallbacks.send_main_command({ type: 'save' })
+            this.res.ipcCallbacks.publishers.main_command({ type: 'save' })
           },
         },
         // {
@@ -109,7 +109,7 @@ export default class MenuBuilder {
           label: 'Load',
           accelerator: 'Command+O',
           click: () => {
-            this.res.ipcCallbacks.send_main_command({ type: 'load' })
+            this.res.ipcCallbacks.publishers.main_command({ type: 'load' })
           },
         },
         // {
@@ -126,14 +126,14 @@ export default class MenuBuilder {
           label: 'Undo',
           accelerator: 'Command+Z',
           click: () => {
-            this.res.ipcCallbacks.send_main_command({ type: 'undo' })
+            this.res.ipcCallbacks.publishers.main_command({ type: 'undo' })
           },
         },
         {
           label: 'Redo',
           accelerator: 'Shift+Command+Z',
           click: () => {
-            this.res.ipcCallbacks.send_main_command({ type: 'redo' })
+            this.res.ipcCallbacks.publishers.main_command({ type: 'redo' })
           },
         },
         { type: 'separator' },
@@ -174,13 +174,13 @@ export default class MenuBuilder {
         {
           label: 'Toggle Visuals (Alpha)',
           click: () => {
-            this.res.ipcCallbacks.send_dispatch(toggleVideoEnabled())
+            this.res.ipcCallbacks.publishers.dispatch(toggleVideoEnabled())
           },
         },
         {
           label: 'Toggle Led (Alpha)',
           click: () => {
-            this.res.ipcCallbacks.send_dispatch(toggleLedEnabled())
+            this.res.ipcCallbacks.publishers.dispatch(toggleLedEnabled())
           },
         },
       ],
@@ -198,13 +198,13 @@ export default class MenuBuilder {
         {
           label: 'Toggle Visuals (Alpha)',
           click: () => {
-            this.res.ipcCallbacks.send_dispatch(toggleVideoEnabled())
+            this.res.ipcCallbacks.publishers.dispatch(toggleVideoEnabled())
           },
         },
         {
           label: 'Toggle Led (Alpha)',
           click: () => {
-            this.res.ipcCallbacks.send_dispatch(toggleLedEnabled())
+            this.res.ipcCallbacks.publishers.dispatch(toggleLedEnabled())
           },
         },
       ],
@@ -285,21 +285,21 @@ export default class MenuBuilder {
             label: 'New Project',
             accelerator: 'Ctrl+N',
             click: () => {
-              this.res.ipcCallbacks.send_main_command({ type: 'new-project' })
+              this.res.ipcCallbacks.publishers.main_command({ type: 'new-project' })
             },
           },
           {
             label: 'Save',
             accelerator: 'Ctrl+S',
             click: () => {
-              this.res.ipcCallbacks.send_main_command({ type: 'save' })
+              this.res.ipcCallbacks.publishers.main_command({ type: 'save' })
             },
           },
           {
             label: 'Load',
             accelerator: 'Ctrl+O',
             click: () => {
-              this.res.ipcCallbacks.send_main_command({ type: 'load' })
+              this.res.ipcCallbacks.publishers.main_command({ type: 'load' })
             },
           },
         ],
@@ -336,13 +336,13 @@ export default class MenuBuilder {
                 {
                   label: 'Toggle Visuals (Alpha)',
                   click: () => {
-                    this.res.ipcCallbacks.send_dispatch(toggleVideoEnabled())
+                    this.res.ipcCallbacks.publishers.dispatch(toggleVideoEnabled())
                   },
                 },
                 {
                   label: 'Toggle Led (Alpha)',
                   click: () => {
-                    this.res.ipcCallbacks.send_dispatch(toggleLedEnabled())
+                    this.res.ipcCallbacks.publishers.dispatch(toggleLedEnabled())
                   },
                 },
               ]
@@ -359,13 +359,13 @@ export default class MenuBuilder {
                 {
                   label: 'Toggle Visuals (Alpha)',
                   click: () => {
-                    this.res.ipcCallbacks.send_dispatch(toggleVideoEnabled())
+                    this.res.ipcCallbacks.publishers.dispatch(toggleVideoEnabled())
                   },
                 },
                 {
                   label: 'Toggle Led (Alpha)',
                   click: () => {
-                    this.res.ipcCallbacks.send_dispatch(toggleLedEnabled())
+                    this.res.ipcCallbacks.publishers.dispatch(toggleLedEnabled())
                   },
                 },
               ],

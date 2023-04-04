@@ -1,15 +1,10 @@
 import { dialog } from 'electron'
 import ipcChannels from '../../../shared/engine/ipc_channels'
-import { createHandler } from './core'
 import fs from 'fs'
-export default createHandler({
+import { createQuery } from 'main/engine/api/core'
+export default createQuery({
   channel: ipcChannels.save_file,
-  resolve: async (
-    _event,
-    title: string,
-    data: string,
-    fileFilters: Electron.FileFilter[]
-  ) => {
+  resolve: async (_, title, data, fileFilters) => {
     const dialogResult = await dialog.showSaveDialog({
       title: title,
       filters: fileFilters,
@@ -20,5 +15,5 @@ export default createHandler({
     } else {
       throw new Error('User cancelled the file save')
     }
-  }
+  },
 })

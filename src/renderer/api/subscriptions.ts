@@ -1,13 +1,9 @@
-import { MainCommand } from '../../features/shared/engine/ipc_channels'
 import {
-  RealtimeState,
   initRealtimeState,
   realtimeStore,
   update as updateRealtimeStore,
 } from '../redux/realtimeStore'
-import * as dmxConnection from 'features/dmx/engine/dmxConnection'
-import * as midiConnection from 'features/midi/engine/midiConnection'
-import { PayloadAction } from '@reduxjs/toolkit'
+
 import { subscribeIpc } from './core/ipcSubscription'
 import { getCleanReduxState, store } from '../redux/store'
 import { load } from '../../features/fileSaving/react/SaveLoad'
@@ -27,14 +23,7 @@ import { getSaveConfig } from 'features/fileSaving/shared/save'
 import * as mutations from './mutations'
 import { autoSave } from '../../features/fileSaving/react/autosave'
 import { animationLoop } from 'features/shared/react'
-
-type Emissions = {
-  main_command: [command: MainCommand]
-  dispatch: [action: PayloadAction<any>]
-  new_time_state: [realtimeState: RealtimeState]
-  midi_connection_update: [payload: midiConnection.UpdatePayload]
-  dmx_connection_update: [payload: dmxConnection.UpdatePayload]
-}
+import { API } from 'features/shared/engine/emissions'
 
 type Context = {
   store: typeof store
@@ -47,7 +36,7 @@ export const subcribe = ({ store }: Context) => {
 
   autoSave(store)
 
-  subscribeIpc<Emissions>({
+  subscribeIpc<API['renderer']['subscriptions']>({
     dmx_connection_update: (payload) => {
       store.dispatch(setDmx(payload))
     },
@@ -92,9 +81,7 @@ export const subcribe = ({ store }: Context) => {
   })
 
   animationLoop(() => {
-    realtimeStore.dispatch(
-      updateRealtimeStore(getUpatedRealtimeState())
-    )
+    realtimeStore.dispatch(updateRealtimeStore(getUpatedRealtimeState()))
   })
 
   mutations.send_control_state(getCleanReduxState(store.getState()))
