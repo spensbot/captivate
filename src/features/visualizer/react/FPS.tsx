@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import {DynamicSustainRollingAverage, dynamicSustain} from 'shared/RollingAverage'
+import {DynamicSustainRollingAverage, dynamicSustain} from 'features/utils/RollingAverage'
 
 function getRollingAverage() {
   const avg = new DynamicSustainRollingAverage(60, dynamicSustain(20, 0.3))

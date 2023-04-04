@@ -1,4 +1,4 @@
-import {DynamicSustainRollingAverage, dynamicSustain} from '../../../shared/RollingAverage'
+import {DynamicSustainRollingAverage, dynamicSustain} from '../../utils/RollingAverage'
 
 const BPM_LIMIT = 1000
 const SLEEP_TIME = 3000 // milliseconds between taps after which the engine resets
