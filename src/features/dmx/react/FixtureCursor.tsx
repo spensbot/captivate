@@ -1,9 +1,9 @@
 import React from 'react'
 import { useDispatch } from 'react-redux'
 import { useDmxSelector } from '../../../renderer/redux/store'
-import Cursor from '../../../renderer/base/Cursor'
+import Cursor from '../../ui/react/base/Cursor'
 import { setSelectedFixture } from '../redux/dmxSlice'
-import Window2D2 from '../../../renderer/base/Window2D2'
+import Window2D2 from '../../ui/react/base/Window2D2'
 
 export default function FixtureCursor({ index }: { index: number }) {
   const fixture = useDmxSelector((state) => state.universe[index])

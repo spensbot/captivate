@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 import { shell } from 'electron'
-import wrapClick from '../base/wrapClick'
+import wrapClick from './wrapClick'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 
 interface Props {

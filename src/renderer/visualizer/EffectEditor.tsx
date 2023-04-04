@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { EffectConfig } from '../../visualizer/threejs/effects/effectConfigs'
 import { Button } from '@mui/material'
 import LayerEditor from './LayerEditor'
-import Select from 'renderer/base/Select'
+import Select from 'features/ui/react/base/Select'
 import {
   visualizerTypeList,
   initLayerConfig,

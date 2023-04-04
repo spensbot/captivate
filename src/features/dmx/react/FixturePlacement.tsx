@@ -4,7 +4,7 @@ import FixtureCursor from './FixtureCursor'
 import useDragMapped from '../../ui/react/hooks/useDragMapped'
 import { useDispatch } from 'react-redux'
 import { setFixtureWindow, incrementFixtureWindow } from '../redux/dmxSlice'
-import { secondaryEnabled } from 'renderer/base/keyUtil'
+import { secondaryEnabled } from 'features/ui/react/base/keyUtil'
 
 export default function FixturePlacement() {
   const universe = useDmxSelector((state) => state.universe)

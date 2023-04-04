@@ -8,7 +8,7 @@ import ParamXButton from './ParamXButton'
 import { useBaseParam } from 'renderer/redux/store'
 import MidiOverlay_xy from 'features/midi/react/MidiOverlay_xy'
 import { paramBundles } from './ParamAddButton'
-import { secondaryEnabled } from 'renderer/base/keyUtil'
+import { secondaryEnabled } from 'features/ui/react/base/keyUtil'
 
 interface Props {
   splitIndex: number

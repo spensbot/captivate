@@ -1,4 +1,4 @@
-import Slider from '../base/Slider'
+import Slider from '../../features/ui/react/base/Slider'
 import { useControlSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import { setMaster } from '../redux/controlSlice'

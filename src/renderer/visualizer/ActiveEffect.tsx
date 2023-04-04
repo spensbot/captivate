@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import Select from '../base/Select'
+import Select from '../../features/ui/react/base/Select'
 import {
   effectTypes,
   effectDisplayNames,

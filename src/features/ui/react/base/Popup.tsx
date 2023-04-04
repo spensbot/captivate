@@ -1,8 +1,8 @@
 import styled from 'styled-components'
 import IconButton from '@mui/material/IconButton'
-import zIndexes from '../zIndexes'
+import zIndexes from '../../../../renderer/zIndexes'
 import CloseIcon from '@mui/icons-material/Close'
-import useBounds from '../../features/ui/react/hooks/useBounds'
+import useBounds from '../hooks/useBounds'
 
 interface Props {
   title: string

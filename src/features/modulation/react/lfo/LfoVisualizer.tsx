@@ -3,7 +3,7 @@ import { useDispatch } from 'react-redux'
 import useDragBasic from '../../../ui/react/hooks/useDragBasic'
 import { incrementModulator } from '../../../../renderer/redux/controlSlice'
 import { useActiveLightScene } from '../../../../renderer/redux/store'
-import { secondaryEnabled } from 'renderer/base/keyUtil'
+import { secondaryEnabled } from 'features/ui/react/base/keyUtil'
 
 type Props = {
   index: number

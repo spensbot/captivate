@@ -1,6 +1,6 @@
 import { DefaultParam } from '../../shared/params'
-import SliderBase from '../base/SliderBase'
-import SliderCursor from '../base/SliderCursor'
+import SliderBase from '../../features/ui/react/base/SliderBase'
+import SliderCursor from '../../features/ui/react/base/SliderCursor'
 import { useBaseParam } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import { setBaseParams } from '../redux/controlSlice'

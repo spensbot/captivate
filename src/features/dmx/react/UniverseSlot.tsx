@@ -9,8 +9,8 @@ import {
   addFixture,
   removeFixture,
 } from '../redux/dmxSlice'
-import ToggleButton from '../../../renderer/base/ToggleButton'
-import Popup from '../../../renderer/base/Popup'
+import ToggleButton from '../../ui/react/base/ToggleButton'
+import Popup from '../../ui/react/base/Popup'
 import { useState } from 'react'
 import { TextField, IconButton } from '@mui/material'
 import RemoveIcon from '@mui/icons-material/Remove'

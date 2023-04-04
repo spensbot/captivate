@@ -12,7 +12,7 @@ import MenuItem from '@mui/material/MenuItem'
 import Select from '@mui/material/Select'
 import SettingsBackupRestoreIcon from '@mui/icons-material/SettingsBackupRestore'
 import LfoPeriod from './LfoPeriod'
-import Divider from '../../../../renderer/base/Divider'
+import Divider from '../../../ui/react/base/Divider'
 
 type Props = {
   index: number

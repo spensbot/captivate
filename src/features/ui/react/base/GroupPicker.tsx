@@ -3,7 +3,7 @@ import EditIcon from '@mui/icons-material/Edit'
 import { TextField } from '@mui/material'
 import { useState } from 'react'
 import styled from 'styled-components'
-import Popup from '../base/Popup'
+import Popup from './Popup'
 import { Button } from '@mui/material'
 import wrapClick from './wrapClick'
 

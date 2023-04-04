@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 import StatusBar from '../../menu/StatusBar'
-import SplitPane from '../../base/SplitPane'
+import SplitPane from '../../../features/ui/react/base/SplitPane'
 import SceneSelection from '../../scenes/SceneSelection'
 import VisualizerSceneEditor from 'renderer/visualizer/VisualizerSceneEditor'
 import Effects from 'renderer/visualizer/Effects'

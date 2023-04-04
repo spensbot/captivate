@@ -1,7 +1,7 @@
 import { useDispatch } from 'react-redux'
 import styled from 'styled-components'
 import { DMX_MAX_VALUE } from '../shared/dmxFixtures'
-import NumberField from '../../../renderer/base/NumberField'
+import NumberField from '../../ui/react/base/NumberField'
 import {
   addColorMapColor,
   setColorMapColor,
@@ -10,12 +10,12 @@ import {
 import { IconButton } from '@mui/material'
 import Add from '@mui/icons-material/Add'
 import Remove from '@mui/icons-material/Remove'
-import HSpad, { ColorChannelProps } from 'renderer/base/HSpad'
+import HSpad, { ColorChannelProps } from 'features/ui/react/base/HSpad'
 import { ChannelColorMap } from '../shared/dmxFixtures'
 import { useState } from 'react'
-import wrapClick from 'renderer/base/wrapClick'
+import wrapClick from 'features/ui/react/base/wrapClick'
 import { lerp } from 'math/util'
-import ColorPicker from 'renderer/base/ColorPicker'
+import ColorPicker from 'features/ui/react/base/ColorPicker'
 
 interface Props {
   ch: ChannelColorMap

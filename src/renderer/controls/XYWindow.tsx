@@ -1,5 +1,5 @@
 import { useOutputParam } from '../redux/realtimeStore'
-import Window2D from '../base/Window2D'
+import Window2D from '../../features/ui/react/base/Window2D'
 
 interface Props {
   splitIndex: number

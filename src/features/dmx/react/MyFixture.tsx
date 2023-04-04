@@ -7,7 +7,7 @@ import {
   updateFixtureType,
   deleteFixtureType,
 } from '../redux/dmxSlice'
-import Input from '../../../renderer/base/Input'
+import Input from '../../ui/react/base/Input'
 import Slider from '@mui/material/Slider'
 import styled from 'styled-components'
 import FixtureChannels from 'features/dmx/react/FixtureChannels'

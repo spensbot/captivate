@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 import { useActiveVisualScene } from '../redux/store'
-import Select from '../base/Select'
+import Select from '../../features/ui/react/base/Select'
 import {
   visualizerTypeList,
   initLayerConfig,

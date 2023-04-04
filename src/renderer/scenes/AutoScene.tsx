@@ -1,4 +1,4 @@
-import Slider from '../base/Slider'
+import Slider from '../../features/ui/react/base/Slider'
 import styled from 'styled-components'
 import { useDispatch } from 'react-redux'
 import { useControlSelector } from '../redux/store'
@@ -8,7 +8,7 @@ import {
   setAutoScenePeriod,
 } from '../redux/controlSlice'
 import { SceneType } from '../../shared/Scenes'
-import DraggableNumber from '../base/DraggableNumber'
+import DraggableNumber from '../../features/ui/react/base/DraggableNumber'
 import { SliderMidiOverlay } from 'features/midi/react/MidiOverlay'
 
 export default function AutoScene({ sceneType }: { sceneType: SceneType }) {

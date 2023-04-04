@@ -1,7 +1,7 @@
 import { useDispatch } from 'react-redux'
 import { useActiveLightScene, useControlSelector } from '../../../../renderer/redux/store'
 import { setPeriod } from '../../../../renderer/redux/controlSlice'
-import DraggableNumber from '../../../../renderer/base/DraggableNumber'
+import DraggableNumber from '../../../ui/react/base/DraggableNumber'
 import { RangeMidiOverlay } from 'features/midi/react/MidiOverlay'
 
 // const Notes = {

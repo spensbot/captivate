@@ -1,6 +1,6 @@
 import { DownIcon, UpIcon } from 'features/ui/react/icons/arrows'
 import { clamp } from 'math/util'
-import useDragBasic from '../../features/ui/react/hooks/useDragBasic'
+import useDragBasic from '../hooks/useDragBasic'
 import styled from 'styled-components'
 import { double_incremented, halve_incremented } from 'shared/util'
 import React from 'react'

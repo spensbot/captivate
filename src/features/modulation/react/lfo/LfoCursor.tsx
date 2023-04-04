@@ -1,5 +1,5 @@
 import { useRealtimeSelector } from '../../../../renderer/redux/realtimeStore'
-import Cursor from '../../../../renderer/base/Cursor'
+import Cursor from '../../../ui/react/base/Cursor'
 import { GetValueFromPhase, GetPhase } from '../../shared/oscillator'
 import { useActiveLightScene } from '../../../../renderer/redux/store'
 

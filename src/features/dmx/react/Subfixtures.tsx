@@ -13,12 +13,12 @@ import {
 } from '../redux/dmxSlice'
 import { SubFixture } from '../shared/dmxFixtures'
 import RemoveIcon from '@mui/icons-material/Remove'
-import wrapClick from '../../../renderer/base/wrapClick'
+import wrapClick from '../../ui/react/base/wrapClick'
 import { hsvaForCss, separateHue } from '../../../shared/baseColors'
-import Input from '../../../renderer/base/Input'
-import Slider from 'renderer/base/Slider'
-import XyPad from 'renderer/base/XyPad'
-import GroupPicker from 'renderer/base/GroupPicker'
+import Input from '../../ui/react/base/Input'
+import Slider from 'features/ui/react/base/Slider'
+import XyPad from 'features/ui/react/base/XyPad'
+import GroupPicker from 'features/ui/react/base/GroupPicker'
 import { getSortedGroups } from 'features/dmx/shared/dmxUtil'
 
 export default function Subfixtures() {

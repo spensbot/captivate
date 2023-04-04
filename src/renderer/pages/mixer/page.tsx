@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import Slider from '../../base/Slider'
+import Slider from '../../../features/ui/react/base/Slider'
 import { useTypedSelector, useDmxSelector } from '../../redux/store'
 import { useDispatch } from 'react-redux'
 import { TextField, Button, IconButton } from '@mui/material'

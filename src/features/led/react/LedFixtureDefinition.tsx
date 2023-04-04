@@ -1,5 +1,5 @@
 import { useDispatch } from 'react-redux'
-import Input from 'renderer/base/Input'
+import Input from 'features/ui/react/base/Input'
 import {
   removeLedFixture,
   setActiveLedFixture,
@@ -8,8 +8,8 @@ import {
 import { useDmxSelector } from 'renderer/redux/store'
 import { LedFixture, MAX_LED_COUNT } from 'features/led/shared/ledFixtures'
 import styled from 'styled-components'
-import NumberField from 'renderer/base/NumberField'
-import Dropdown from 'renderer/base/Dropdown'
+import NumberField from 'features/ui/react/base/NumberField'
+import Dropdown from 'features/ui/react/base/Dropdown'
 import { IconButton } from '@mui/material'
 import RemoveIcon from '@mui/icons-material/Remove'
 

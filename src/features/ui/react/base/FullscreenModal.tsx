@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import zIndexes from '../zIndexes'
+import zIndexes from '../../../../renderer/zIndexes'
 import wrapClick from './wrapClick'
 
 export interface ModalButton {

@@ -5,7 +5,7 @@ import LoadIcon from '@mui/icons-material/FileOpen'
 import IconButton from '@mui/material/IconButton'
 import { store, applySave, useTypedSelector } from '../../redux/store'
 import { saveFile, loadFile, captivateFileFilters } from '../../autosave'
-import Popup from 'renderer/base/Popup'
+import Popup from 'features/ui/react/base/Popup'
 import { Button, Checkbox } from '@mui/material'
 import {
   SaveState,

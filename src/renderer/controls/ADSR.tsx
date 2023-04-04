@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import DraggableNumber from '../base/DraggableNumber'
+import DraggableNumber from '../../features/ui/react/base/DraggableNumber'
 import { lerp } from '../../math/util'
 import useDragMapped from '../../features/ui/react/hooks/useDragMapped'
 
