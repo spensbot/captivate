@@ -15,7 +15,7 @@ import {
 import { getParam, Params } from './params'
 import { findClosest, lerp, Normalized } from '../../utils/math/util'
 import { rLerp } from '../../utils/math/range'
-import { applyRandomization } from '../../../shared/randomizer'
+import { applyRandomization } from '../../bpm/shared/randomizer'
 import { getColorChannelLevel } from './dmxColors'
 
 export function getWindowMultiplier2D(

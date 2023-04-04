@@ -5,7 +5,7 @@ import {
   FlattenedFixture,
 } from '../shared/dmxFixtures'
 import { Params } from '../shared/params'
-import { RandomizerState } from '../../../shared/randomizer'
+import { RandomizerState } from '../../bpm/shared/randomizer'
 import { CleanReduxState } from '../../../renderer/redux/store'
 import {
   getDmxValue,

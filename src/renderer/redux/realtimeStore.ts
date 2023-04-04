@@ -8,7 +8,7 @@ import {
 import React from 'react'
 import { initTimeState, TimeState } from '../../features/bpm/shared/TimeState'
 import { defaultOutputParams, DefaultParam, Params } from '../../features/dmx/shared/params'
-import { RandomizerState } from '../../shared/randomizer'
+import { RandomizerState } from '../../features/bpm/shared/randomizer'
 
 function initDmxOut(): number[] {
   return Array(512).fill(0)

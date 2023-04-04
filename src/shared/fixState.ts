@@ -6,7 +6,7 @@ import { ColorChannel } from 'features/dmx/shared/dmxColors'
 import { DmxValue, FixtureChannel } from 'features/dmx/shared/dmxFixtures'
 import { Modulator } from '../features/modulation/shared/modulation'
 import { Modulation, Params } from '../features/dmx/shared/params'
-import { RandomizerOptions } from './randomizer'
+import { RandomizerOptions } from '../features/bpm/shared/randomizer'
 import {
   LightScenes_t,
   LightScene_t,

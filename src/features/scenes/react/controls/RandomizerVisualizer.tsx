@@ -1,7 +1,7 @@
 import styled from 'styled-components'
 import { useRealtimeSelector } from 'renderer/redux/realtimeStore'
 import { useBaseParam } from 'renderer/redux/store'
-import { applyRandomization } from 'shared/randomizer'
+import { applyRandomization } from 'features/bpm/shared/randomizer'
 
 interface Props {
   splitIndex: number
