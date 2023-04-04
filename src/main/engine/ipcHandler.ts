@@ -63,6 +63,8 @@ export function ipcSetup(config: Config) {
 
 export type IPC_Callbacks = ReturnType<typeof ipcSetup>
 
-ipcMain.handle(fileApi.load.channel, fileApi.load.resolve)
-ipcMain.handle(fileApi.save.channel, fileApi.save.resolve)
-ipcMain.handle(fileApi.getFilePaths.channel, fileApi.getFilePaths.resolve)
+const handlers = [fileApi.load, fileApi.save, fileApi.getFilePaths]
+
+handlers.forEach((handler) => {
+  ipcMain.handle(handler.channel, handler.resolve)
+})

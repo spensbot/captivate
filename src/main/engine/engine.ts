@@ -43,6 +43,8 @@ let _controlState: CleanReduxState | null = null
 let _realtimeState: RealtimeState = initRealtimeState()
 
 const _midiThrottle = new ThrottleMap((message: MidiMessage) => {
+  // TODO: maybe we could cancel the throttle on close and initialize throttle after callbacks and control state are initialized
+  // to avoid null checks
   if (_controlState !== null && _ipcCallbacks !== null) {
     handleMessage(
       message,
