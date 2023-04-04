@@ -8,7 +8,7 @@ import {
   setFixtureWindowEnabled,
   addFixture,
   removeFixture,
-} from '../../../renderer/redux/dmxSlice'
+} from '../redux/dmxSlice'
 import ToggleButton from '../../../renderer/base/ToggleButton'
 import Popup from '../../../renderer/base/Popup'
 import { useState } from 'react'

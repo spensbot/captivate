@@ -5,7 +5,7 @@ import LedFixtureDefinition from './LedFixtureDefinition'
 import AddIcon from '@mui/icons-material/Add'
 import { IconButton } from '@mui/material'
 import { useDispatch } from 'react-redux'
-import { addLedFixture } from 'renderer/redux/dmxSlice'
+import { addLedFixture } from 'features/dmx/redux/dmxSlice'
 
 interface Props {}
 

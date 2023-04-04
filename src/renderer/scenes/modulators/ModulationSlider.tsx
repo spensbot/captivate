@@ -12,7 +12,7 @@ import useDragMapped from '../../hooks/useDragMapped'
 import styled from 'styled-components'
 import Popup from 'renderer/base/Popup'
 import { indexArray } from 'shared/util'
-import { getAllParamKeys } from 'renderer/redux/dmxSlice'
+import { getAllParamKeys } from 'features/dmx/redux/dmxSlice'
 
 interface Props {
   splitIndex: number

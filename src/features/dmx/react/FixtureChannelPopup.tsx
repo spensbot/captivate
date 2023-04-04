@@ -12,7 +12,7 @@ import {
 } from '../shared/dmxFixtures'
 import NumberField from '../../../renderer/base/NumberField'
 import Input from '../../../renderer/base/Input'
-import { editFixtureChannel } from '../../../renderer/redux/dmxSlice'
+import { editFixtureChannel } from '../redux/dmxSlice'
 import Checkbox from '../../../renderer/base/LabelledCheckbox'
 import HSpad, { ColorChannelProps } from 'renderer/base/HSpad'
 import { FixtureChannelItemProps } from './FixtureChannelItem'

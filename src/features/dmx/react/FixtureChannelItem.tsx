@@ -6,7 +6,7 @@ import FixtureChannelPopup from 'features/dmx/react/FixtureChannelPopup'
 import Popup from '../../../renderer/base/Popup'
 import RemoveIcon from '@mui/icons-material/Remove'
 import { FixtureChannel } from '../shared/dmxFixtures'
-import { removeFixtureChannel } from '../../../renderer/redux/dmxSlice'
+import { removeFixtureChannel } from '../redux/dmxSlice'
 import { getCustomColorChannelName } from '../shared/dmxColors'
 import { ChannelToggle } from './Subfixtures'
 

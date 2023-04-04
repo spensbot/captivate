@@ -27,7 +27,7 @@ import TapTempoEngine from './TapTempoEngine'
 import { flatten_fixtures, getFixturesInGroups } from '../../features/dmx/shared/dmxUtil'
 import { ThrottleMap } from 'features/midi/engine/midiConnection'
 import { MidiMessage, midiInputID } from 'features/midi/shared/midi'
-import { getAllParamKeys } from '../../renderer/redux/dmxSlice'
+import { getAllParamKeys } from '../../features/dmx/redux/dmxSlice'
 import { indexArray } from '../../shared/util'
 import WledManager from './wled/wled_manager'
 

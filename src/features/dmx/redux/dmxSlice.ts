@@ -8,11 +8,11 @@ import {
   initSubFixture,
   SubFixture,
 } from 'features/dmx/shared/dmxFixtures'
-import { clampNormalized } from '../../math/util'
-import { defaultParamsList } from '../../shared/params'
-import { initLedState, LedState } from './ledState'
-import { initLedFixture, LedFixture } from '../../shared/ledFixtures'
-import { Point } from '../../math/point'
+import { clampNormalized } from '../../../math/util'
+import { defaultParamsList } from '../../../shared/params'
+import { initLedState, LedState } from '../../../renderer/redux/ledState'
+import { initLedFixture, LedFixture } from '../../../shared/ledFixtures'
+import { Point } from '../../../math/point'
 
 export interface DmxState {
   universe: Universe

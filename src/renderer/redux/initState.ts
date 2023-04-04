@@ -1,4 +1,4 @@
-import { initDmxState } from 'renderer/redux/dmxSlice'
+import { initDmxState } from 'features/dmx/redux/dmxSlice'
 import { initGuiState } from 'renderer/redux/guiSlice'
 import { initControlState } from 'renderer/redux/controlSlice'
 import { initMixerState } from 'renderer/redux/mixerSlice'

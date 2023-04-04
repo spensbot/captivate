@@ -10,7 +10,7 @@ import {
   removeSubFixture,
   replaceActiveFixtureTypeSubFixture,
   setActiveSubFixture,
-} from '../../../renderer/redux/dmxSlice'
+} from '../redux/dmxSlice'
 import { SubFixture } from '../../../shared/dmxFixtures'
 import RemoveIcon from '@mui/icons-material/Remove'
 import wrapClick from '../../../renderer/base/wrapClick'

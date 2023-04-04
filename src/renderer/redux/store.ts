@@ -5,7 +5,7 @@ import {
   PayloadAction,
 } from '@reduxjs/toolkit'
 import { useSelector, TypedUseSelectorHook } from 'react-redux'
-import dmxReducer, { DmxState } from './dmxSlice'
+import dmxReducer, { DmxState } from '../../features/dmx/redux/dmxSlice'
 import guiReducer from './guiSlice'
 import controlReducer, { ControlState } from './controlSlice'
 import { LightScene_t } from '../../shared/Scenes'

@@ -4,7 +4,7 @@ import {
   removeLedFixture,
   setActiveLedFixture,
   updateActiveLedFixture,
-} from 'renderer/redux/dmxSlice'
+} from 'features/dmx/redux/dmxSlice'
 import { useDmxSelector } from 'renderer/redux/store'
 import { LedFixture, MAX_LED_COUNT } from 'shared/ledFixtures'
 import styled from 'styled-components'

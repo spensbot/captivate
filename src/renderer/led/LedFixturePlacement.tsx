@@ -7,7 +7,7 @@ import {
   addLedFixturePoint,
   removeLedFixturePoint,
   updateLedFixturePoint,
-} from 'renderer/redux/dmxSlice'
+} from 'features/dmx/redux/dmxSlice'
 import { secondaryEnabled } from 'renderer/base/keyUtil'
 import { fMap, indexArray } from 'shared/util'
 import LedFixturePoints from './LedFixturePoints'
