@@ -12,7 +12,7 @@ import {
   clearOverwrites,
 } from '../../redux/mixerSlice'
 import { useRealtimeSelector } from '../../redux/realtimeStore'
-import StatusBar from '../../menu/StatusBar'
+import StatusBar from '../../../features/menu/react/StatusBar'
 import React from 'react'
 import useHover from 'features/ui/react/hooks/useHover'
 import { DMX_MAX_VALUE, FixtureChannel, FixtureType } from 'features/dmx/shared/dmxFixtures'

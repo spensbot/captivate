@@ -1,7 +1,7 @@
 import StartIcon from '@mui/icons-material/PlayArrow'
 import StopIcon from '@mui/icons-material/Stop'
 import styled from 'styled-components'
-import { send_user_command } from '../../ipcHandler'
+import { send_user_command } from '../../../../renderer/ipcHandler'
 import { useRealtimeSelector } from 'renderer/redux/realtimeStore'
 
 export default function StartStopButton() {

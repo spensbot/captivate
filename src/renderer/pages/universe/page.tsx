@@ -2,7 +2,7 @@ import SplitPane from '../../../features/ui/react/base/SplitPane'
 import styled from 'styled-components'
 import MyFixtures from '../../../features/dmx/react/MyFixtures'
 import MyUniverse from '../../../features/dmx/react/MyUniverse'
-import StatusBar from '../../menu/StatusBar'
+import StatusBar from '../../../features/menu/react/StatusBar'
 
 export default function Universe() {
   return (

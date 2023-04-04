@@ -1,6 +1,6 @@
 import React from 'react'
-import { useRealtimeSelector } from '../../redux/realtimeStore'
-import { send_user_command } from '../../ipcHandler'
+import { useRealtimeSelector } from '../../../../renderer/redux/realtimeStore'
+import { send_user_command } from '../../../../renderer/ipcHandler'
 
 export default function LinkButton() {
   const numPeers = useRealtimeSelector((state) => state.time.numPeers)

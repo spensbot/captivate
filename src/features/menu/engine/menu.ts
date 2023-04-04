@@ -6,12 +6,12 @@ import {
   MenuItemConstructorOptions,
   dialog,
 } from 'electron'
-import { IPC_Callbacks } from './engine/ipcHandler'
+import { IPC_Callbacks } from '../../../main/engine/ipcHandler'
 import { listPorts } from 'features/dmx/engine/dmxConnection'
 import {
   toggleLedEnabled,
   toggleVideoEnabled,
-} from '../renderer/redux/guiSlice'
+} from '../../../renderer/redux/guiSlice'
 
 interface DarwinMenuItemConstructorOptions extends MenuItemConstructorOptions {
   selector?: string

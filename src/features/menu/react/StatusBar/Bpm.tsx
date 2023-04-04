@@ -1,4 +1,4 @@
-import { send_user_command } from '../../ipcHandler'
+import { send_user_command } from '../../../../renderer/ipcHandler'
 import { useRealtimeSelector } from 'renderer/redux/realtimeStore'
 import useDragBasic from 'features/ui/react/hooks/useDragBasic'
 import { SliderMidiOverlay } from 'features/midi/react/MidiOverlay'

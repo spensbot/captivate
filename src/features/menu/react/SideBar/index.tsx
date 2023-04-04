@@ -1,15 +1,15 @@
 import React from 'react'
 import styled from 'styled-components'
-import zIndexes from '../../zIndexes'
+import zIndexes from '../../../../renderer/zIndexes'
 import UniverseIcon from '@mui/icons-material/Settings'
 import LightingIcon from '@mui/icons-material/LightBulb'
 import WbIncandescentIcon from '@mui/icons-material/WbIncandescent'
 import VisualsIcon from 'features/ui/react/images/Thick.png'
 import MixerIcon from '@mui/icons-material/BarChart'
-import { useTypedSelector } from '../../redux/store'
+import { useTypedSelector } from '../../../../renderer/redux/store'
 import { useDispatch } from 'react-redux'
-import { setActivePage, Page } from '../../redux/guiSlice'
-import MasterSlider from '../../../features/scenes/react/controls/MasterSlider'
+import { setActivePage, Page } from '../../../../renderer/redux/guiSlice'
+import MasterSlider from '../../../scenes/react/controls/MasterSlider'
 
 const selectedBorder = 0.2 //rem
 
