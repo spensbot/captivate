@@ -1,4 +1,4 @@
-import { Point } from 'math/point'
+import { Point } from 'features/utils/math/point'
 import { useEffect, useState } from 'react'
 
 // Apparently there's no way to get the position of the mouse without a mouse event...

@@ -1,4 +1,4 @@
-import { zip } from '../shared/util'
+import { zip } from '../../../shared/util'
 
 export type Normalized = number // 0 to 1
 

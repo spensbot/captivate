@@ -1,4 +1,4 @@
-import { Point } from 'math/point'
+import { Point } from 'features/utils/math/point'
 import { useDmxSelector } from 'renderer/redux/store'
 import styled from 'styled-components'
 

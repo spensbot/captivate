@@ -1,6 +1,6 @@
 import { Physics } from '../util/particlePhysics'
 import { FontType } from '../fonts/FontType'
-import { Range } from 'math/range'
+import { Range } from 'features/utils/math/range'
 
 export interface TextParticlesConfig {
   type: 'TextParticles'

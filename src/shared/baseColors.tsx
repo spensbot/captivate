@@ -1,4 +1,4 @@
-import { Normalized } from '../math/util'
+import { Normalized } from '../features/utils/math/util'
 import { Params } from './params'
 
 export type BaseColor = 'red' | 'green' | 'blue'

@@ -1,5 +1,5 @@
 import { ReorderParams } from '../../../../shared/util'
-import { clampNormalized, clamp } from '../../../../math/util'
+import { clampNormalized, clamp } from '../../../../features/utils/math/util'
 import { initModulator } from '../../../../features/modulation/shared/modulation'
 import { nanoid } from 'nanoid'
 import { RandomizerOptions } from '../../../../shared/randomizer'

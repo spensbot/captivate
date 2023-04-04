@@ -1,7 +1,7 @@
 import styled from 'styled-components'
 import useDragMapped from '../hooks/useDragMapped'
 import Cursor from './Cursor'
-import { Normalized } from 'math/util'
+import { Normalized } from 'features/utils/math/util'
 
 export interface ColorChannelProps {
   hue: Normalized

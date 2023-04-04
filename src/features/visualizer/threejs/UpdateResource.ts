@@ -2,8 +2,8 @@ import { Params } from '../../../shared/params'
 import { TimeState } from '../../../shared/TimeState'
 import { isNewPeriod, beatsIn, beatsLeft } from '../../../shared/TimeState'
 import { LightScene_t } from '../../../shared/Scenes'
-import { Size } from 'math/size'
-import { Range, rLerp } from 'math/range'
+import { Size } from 'features/utils/math/size'
+import { Range, rLerp } from 'features/utils/math/range'
 
 interface UpdateData {
   dt: number

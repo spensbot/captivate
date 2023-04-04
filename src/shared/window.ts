@@ -1,4 +1,4 @@
-import { Normalized } from '../math/util'
+import { Normalized } from '../features/utils/math/util'
 
 export type Window = {
   pos: Normalized

@@ -1,4 +1,4 @@
-import { distanceBetween, pLerp, Point } from '../../../math/point'
+import { distanceBetween, pLerp, Point } from '../../utils/math/point'
 import { BaseColors, getBaseColorsFromHsv } from '../../../shared/baseColors'
 import { getMovingWindow, getWindowMultiplier2D } from '../../dmx/shared/dmxUtil'
 import { getParam, Params } from '../../../shared/params'

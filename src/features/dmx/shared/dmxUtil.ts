@@ -13,8 +13,8 @@ import {
   FlattenedFixture,
 } from './dmxFixtures'
 import { getParam, Params } from '../../../shared/params'
-import { findClosest, lerp, Normalized } from '../../../math/util'
-import { rLerp } from '../../../math/range'
+import { findClosest, lerp, Normalized } from '../../utils/math/util'
+import { rLerp } from '../../utils/math/range'
 import { applyRandomization } from '../../../shared/randomizer'
 import { getColorChannelLevel } from './dmxColors'
 

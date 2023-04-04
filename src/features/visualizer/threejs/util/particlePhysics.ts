@@ -1,4 +1,4 @@
-import { randomRanged } from "math/util"
+import { randomRanged } from "features/utils/math/util"
 
 export interface ParticleState {
   x: number

@@ -15,7 +15,7 @@ import { useState } from 'react'
 import { TextField, IconButton } from '@mui/material'
 import RemoveIcon from '@mui/icons-material/Remove'
 import AddIcon from '@mui/icons-material/Add'
-import { clamp } from '../../../math/util'
+import { clamp } from '../../utils/math/util'
 
 function ChannelSpan({ start, count }: { start: number; count: number }) {
   const end = start + count - 1

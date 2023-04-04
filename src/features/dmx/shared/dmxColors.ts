@@ -1,4 +1,4 @@
-import { findClosest, lerp, Normalized } from 'math/util'
+import { findClosest, lerp, Normalized } from 'features/utils/math/util'
 
 export interface ColorChannel {
   hue: Normalized

@@ -2,7 +2,7 @@ import styled from 'styled-components'
 import useDragMapped, { MappedPos } from 'features/ui/react/hooks/useDragMapped'
 import { useDispatch } from 'react-redux'
 import { useDmxSelector } from 'renderer/redux/store'
-import { distanceBetween, Point } from 'math/point'
+import { distanceBetween, Point } from 'features/utils/math/point'
 import {
   addLedFixturePoint,
   removeLedFixturePoint,

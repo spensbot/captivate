@@ -3,7 +3,7 @@ import Select from 'features/ui/react/base/Select'
 import styled from 'styled-components'
 import AddIcon from '@mui/icons-material/Add'
 import { MultilineInput } from 'features/ui/react/base/Input'
-import { Range } from 'math/range'
+import { Range } from 'features/utils/math/range'
 import { secondaryEnabled } from 'features/ui/react/base/keyUtil'
 
 // NOTE: This file is littered with @ts-ignore and smelly casts.

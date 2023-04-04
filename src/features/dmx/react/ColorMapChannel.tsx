@@ -14,7 +14,7 @@ import HSpad, { ColorChannelProps } from 'features/ui/react/base/HSpad'
 import { ChannelColorMap } from '../shared/dmxFixtures'
 import { useState } from 'react'
 import wrapClick from 'features/ui/react/base/wrapClick'
-import { lerp } from 'math/util'
+import { lerp } from 'features/utils/math/util'
 import ColorPicker from 'features/ui/react/base/ColorPicker'
 
 interface Props {

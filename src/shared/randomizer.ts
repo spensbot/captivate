@@ -1,5 +1,5 @@
 import { TimeState, isNewPeriod } from './TimeState'
-import { lerp } from '../math/util'
+import { lerp } from '../features/utils/math/util'
 
 type Normalized = number
 

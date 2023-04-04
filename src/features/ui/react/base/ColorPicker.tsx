@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import { Normalized } from 'math/util'
+import { Normalized } from 'features/utils/math/util'
 import {
   approximateStandardColor,
   colorByName,
