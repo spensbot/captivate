@@ -6,7 +6,7 @@ import {
   ConnectionId,
   DmxDevice_t,
   SerialportInfo,
-} from '../../../shared/connection'
+} from '../../devices/shared/connection'
 
 const ENTTEC_PRO_DMX_STARTCODE = 0x00
 const ENTTEC_PRO_START_OF_MSG = 0x7e

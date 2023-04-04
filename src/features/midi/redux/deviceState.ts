@@ -1,7 +1,7 @@
 import { PayloadAction } from '@reduxjs/toolkit'
 import { getActionID } from './actions'
 
-import { ConnectionId } from '../../../shared/connection'
+import { ConnectionId } from '../../devices/shared/connection'
 import { MidiActions } from '../shared/actions'
 
 interface Range {

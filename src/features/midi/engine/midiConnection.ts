@@ -4,7 +4,7 @@ import {
   MidiConnections,
   ConnectionId,
   MidiDevice_t,
-} from '../../../shared/connection'
+} from '../../devices/shared/connection'
 import throttle from 'lodash.throttle'
 
 export type UpdatePayload = MidiConnections

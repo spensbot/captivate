@@ -9,7 +9,7 @@ import {
   DmxDevice_t,
   MidiDevice_t,
   ConnectionId,
-} from '../../../../shared/connection'
+} from '../../shared/connection'
 import DmxTroubleShoot from './DmxTroubleshoot'
 
 interface Props {}

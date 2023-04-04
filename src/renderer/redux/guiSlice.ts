@@ -5,7 +5,7 @@ import {
   DmxConnections,
   initDmxConnections,
   initMidiConnections,
-} from '../../shared/connection'
+} from '../../features/devices/shared/connection'
 
 export type Page =
   | 'Universe'
