@@ -19,7 +19,7 @@ import { getOutputParams } from '../../features/modulation/shared/modulation'
 import { handleMessage } from 'features/midi/engine/handleMidi'
 import openVisualizerWindow, {
   VisualizerContainer,
-} from './createVisualizerWindow'
+} from '../../features/visualizer/engine/createVisualizerWindow'
 import { calculateDmx } from 'features/dmx/engine/dmxEngine'
 import { handleAutoScene } from '../../features/scenes/engine/autoScene'
 import { setActiveScene } from '../../renderer/redux/controlSlice'

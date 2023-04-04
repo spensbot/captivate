@@ -15,7 +15,7 @@ import log from 'electron-log'
 import MenuBuilder from './menu'
 import { resolveHtmlPath } from './util'
 import * as engine from './engine/engine'
-import { VisualizerContainer } from './engine/createVisualizerWindow'
+import { VisualizerContainer } from '../features/visualizer/engine/createVisualizerWindow'
 import './prevent_sleep'
 import './electron_error_logging'
 export default class AppUpdater {

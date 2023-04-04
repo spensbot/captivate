@@ -1,6 +1,6 @@
 import path from 'path';
 import { app, BrowserWindow } from 'electron';
-import { resolveHtmlPath } from './util';
+import { resolveHtmlPath } from '../../../main/engine/util';
 
 export interface VisualizerContainer {
   visualizer: BrowserWindow | null;

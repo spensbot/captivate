@@ -10,7 +10,7 @@ import * as dmxConnection from 'features/dmx/engine/dmxConnection'
 import * as midiConnection from 'features/midi/engine/midiConnection'
 import { PayloadAction } from '@reduxjs/toolkit'
 import { VisualizerResource } from '../../features/visualizer/threejs/VisualizerManager'
-import { VisualizerContainer } from './createVisualizerWindow'
+import { VisualizerContainer } from '../../features/visualizer/engine/createVisualizerWindow'
 import * as fileApi from 'features/fileSaving/engine/api'
 interface Config {
   renderer: WebContents
