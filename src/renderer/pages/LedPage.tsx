@@ -1,8 +1,8 @@
 import styled from 'styled-components'
 import StatusBar from '../menu/StatusBar'
 import SplitPane from '../base/SplitPane'
-import LedFixtureList from 'renderer/led/LedFixtureList'
-import LedFixturePlacement from 'renderer/led/LedFixturePlacement'
+import LedFixtureList from 'features/led/react/LedFixtureList'
+import LedFixturePlacement from 'features/led/react/LedFixturePlacement'
 
 export default function LedPage() {
   const splitPaneStyle: React.CSSProperties = {
