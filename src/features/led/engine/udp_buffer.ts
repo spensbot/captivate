@@ -1,4 +1,4 @@
-import { BaseColors } from '../../../shared/baseColors'
+import { BaseColors } from '../../utils/baseColors'
 import { MAX_LED_COUNT } from '../shared/ledFixtures'
 
 const MAX_VAL = 255

@@ -1,7 +1,7 @@
 import dgram from 'node:dgram'
 import makeMdns from 'multicast-dns'
 import udpBuffer from './udp_buffer'
-import { BaseColors } from '../../../shared/baseColors'
+import { BaseColors } from '../../utils/baseColors'
 
 const mdns = makeMdns()
 const client = dgram.createSocket('udp4')

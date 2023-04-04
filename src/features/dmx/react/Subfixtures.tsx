@@ -14,7 +14,7 @@ import {
 import { SubFixture } from '../shared/dmxFixtures'
 import RemoveIcon from '@mui/icons-material/Remove'
 import wrapClick from '../../ui/react/base/wrapClick'
-import { hsvaForCss, separateHue } from '../../../shared/baseColors'
+import { hsvaForCss, separateHue } from '../../utils/baseColors'
 import Input from '../../ui/react/base/Input'
 import Slider from 'features/ui/react/base/Slider'
 import XyPad from 'features/ui/react/base/XyPad'
