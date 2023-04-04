@@ -4,11 +4,11 @@ import {
   resetState,
   getCleanReduxState,
   store,
-} from './redux/store'
-import ipcChannels from '../shared/ipc_channels'
+} from '../../../renderer/redux/store'
+import ipcChannels from '../../../shared/ipc_channels'
 import AutoSavedVal, { printTimePassed } from './AutoSavedVal'
-import fixState from '../shared/fixState'
-import defaultState from './redux/defaultState'
+import fixState from '../../../shared/fixState'
+import defaultState from '../../../renderer/redux/defaultState'
 
 let autoSavedVal: AutoSavedVal<CleanReduxState> | null = null
 

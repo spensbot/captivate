@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 import { store, resetState } from 'renderer/redux/store'
-import { getSaveSlots, startAutoSave, stopAutoSave } from 'renderer/autosave'
+import { getSaveSlots, startAutoSave, stopAutoSave } from 'features/fileSaving/react/autosave'
 import { Button, ButtonGroup } from '@mui/material'
 import { useEffect } from 'react'
 import initState from 'renderer/redux/initState'
