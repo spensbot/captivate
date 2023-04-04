@@ -114,4 +114,11 @@ export class ThrottleMap<T> {
     }
     throttled(arg)
   }
+
+  dispose() {
+    Object.entries(this.throttles).forEach(([id, throttled]) => {
+      throttled?.cancel()
+      delete this.throttles[id]
+    })
+  }
 }

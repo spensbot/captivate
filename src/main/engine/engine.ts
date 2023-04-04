@@ -35,8 +35,7 @@ import {
   _tapTempo,
 } from 'features/bpm/engine/Link'
 import { createApi, IPC_Callbacks } from './api'
-let _ipcCallbacks: IPC_Callbacks | null = null
-// let _controlState: CleanReduxState | null = null
+
 let _realtimeState: RealtimeState = initRealtimeState()
 
 // TODO: this should live in control state feature
@@ -46,6 +45,8 @@ const controlStateManager = () => {
     resolveFirstState = resolve
   })
 
+  let cancelled = false
+
   const manager = {
     set(state: CleanReduxState) {
       if (!manager.controlState) resolveFirstState()
@@ -53,107 +54,135 @@ const controlStateManager = () => {
     },
     controlState: null as CleanReduxState | null,
 
-    waitForFirstControlState: firstControlState,
+    dispose() {
+      cancelled = true
+    },
 
-
+    waitForFirstControlState: (cb: () => void) => {
+      firstControlState.then(() => {
+        if (!cancelled) cb()
+      })
+    },
   }
   return manager
 }
 
-const controlState = controlStateManager()
-
-const _midiThrottle = new ThrottleMap((message: MidiMessage) => {
-  // TODO: maybe we could cancel the throttle on close and initialize throttle after callbacks and control state are initialized
-  // to avoid null checks
-  if (controlState.controlState !== null && _ipcCallbacks !== null) {
-    handleMessage(
-      message,
-      controlState.controlState,
-      _realtimeState,
-      _nodeLink,
-      _ipcCallbacks.publishers.dispatch,
-      _tapTempo
-    )
-  }
-}, 1000 / 60)
-
-export function getIpcCallbacks() {
-  return _ipcCallbacks
+const disposer = {
+  _disposeables: [] as { dispose(): void }[],
+  push<T extends { dispose(): void }>(disposeable: T) {
+    disposer._disposeables.push(disposeable)
+    return disposeable
+  },
+  dispose() {
+    disposer._disposeables.forEach((disposeable) => {
+      disposeable.dispose()
+    })
+    disposer._disposeables = []
+  },
 }
+
+const controlState = disposer.push(controlStateManager())
 
 export function start(
   renderer: WebContents,
   visualizerContainer: VisualizerContainer
 ) {
-  _ipcCallbacks = createApi({
-    ipcMain,
-    realtimeState: _realtimeState,
-    new_control_state: (newState) => {
-      controlState.set(newState)
-    },
-    renderer,
-    visualizerContainer,
-  })
+  const ipcCallbacks = disposer.push(
+    createApi({
+      ipcMain,
+      realtimeState: _realtimeState,
+      new_control_state: (newState) => {
+        controlState.set(newState)
+      },
+      renderer,
+      visualizerContainer,
+    })
+  )
 
   // TODO: now we don't need null checks for control state
-  controlState.waitForFirstControlState.then(() => {
+  controlState.waitForFirstControlState(() => {
     // We're currently calculating the realtimeState 90x per second.
     // The renderer should have a new realtime state on each animation frame (assuming a refresh rate of 60 hz)
-    setInterval(() => {
+    const realtimeStateInterval = setInterval(() => {
       const nextTimeState = getNextTimeState()
-      if (_ipcCallbacks !== null && controlState.controlState !== null) {
-        _realtimeState = getNextRealtimeState(
-          _realtimeState,
-          nextTimeState,
-          _ipcCallbacks,
-          controlState.controlState
-        )
-        _ipcCallbacks.publishers.new_time_state(_realtimeState)
-        _ipcCallbacks.publishers.new_visualizer_state({
-          rt: _realtimeState,
-          state: controlState.controlState,
-        })
-      }
+
+      _realtimeState = getNextRealtimeState(
+        _realtimeState,
+        nextTimeState,
+        ipcCallbacks,
+        controlState.controlState!
+      )
+      ipcCallbacks.publishers.new_time_state(_realtimeState)
+      ipcCallbacks.publishers.new_visualizer_state({
+        rt: _realtimeState,
+        state: controlState.controlState!,
+      })
     }, 1000 / 90)
+
+    disposer.push({
+      dispose() {
+        clearInterval(realtimeStateInterval)
+      },
+    })
+
+    const _midiThrottle = disposer.push(
+      new ThrottleMap((message: MidiMessage) => {
+        // TODO: maybe we could cancel the throttle on close and initialize throttle after callbacks and control state are initialized
+        // to avoid null checks
+
+        handleMessage(
+          message,
+          controlState.controlState!,
+          _realtimeState,
+          _nodeLink,
+          ipcCallbacks.publishers.dispatch,
+          _tapTempo
+        )
+      }, 1000 / 60)
+    )
+
+    disposer.push(
+      DmxConnection.maintain({
+        update_ms: 1000,
+        onUpdate: (dmxStatus) => {
+          ipcCallbacks.publishers.dmx_connection_update(dmxStatus)
+        },
+        getChannels: () => _realtimeState.dmxOut,
+        getConnectable: () => {
+          return controlState.controlState!.control.device.connectable.dmx
+        },
+      })
+    )
+
+    disposer.push(
+      MidiConnection.maintain({
+        update_ms: 1000,
+        onUpdate: (activeDevices) => {
+          ipcCallbacks.publishers.midi_connection_update(activeDevices)
+        },
+        onMessage: (message) => {
+          _midiThrottle.call(midiInputID(message), message)
+        },
+        getConnectable: () => {
+          return controlState.controlState!.control.device.connectable.midi
+        },
+      })
+    )
+
+    disposer.push(
+      new WledManager(
+        () => controlState.controlState,
+        () => _realtimeState
+      )
+    )
   })
 
-  return _ipcCallbacks
+  return ipcCallbacks
 }
 
 export function stop() {
-  _ipcCallbacks?.dispose()
-  _ipcCallbacks = null
+  disposer.dispose()
 }
-
-DmxConnection.maintain({
-  update_ms: 1000,
-  onUpdate: (dmxStatus) => {
-    if (_ipcCallbacks !== null)
-      _ipcCallbacks.publishers.dmx_connection_update(dmxStatus)
-  },
-  getChannels: () => _realtimeState.dmxOut,
-  getConnectable: () => {
-    return controlState.controlState
-      ? controlState.controlState.control.device.connectable.dmx
-      : []
-  },
-})
-
-MidiConnection.maintain({
-  update_ms: 1000,
-  onUpdate: (activeDevices) => {
-    if (_ipcCallbacks !== null)
-      _ipcCallbacks.publishers.midi_connection_update(activeDevices)
-  },
-  onMessage: (message) => {
-    _midiThrottle.call(midiInputID(message), message)
-  },
-  getConnectable: () => {
-    return controlState.controlState
-      ? controlState.controlState.control.device.connectable.midi
-      : []
-  },
-})
 
 function getNextRealtimeState(
   realtimeState: RealtimeState,
@@ -230,8 +259,3 @@ function getNextRealtimeState(
     splitStates,
   }
 }
-
-new WledManager(
-  () => controlState.controlState,
-  () => _realtimeState
-)

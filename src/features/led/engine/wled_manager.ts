@@ -58,7 +58,7 @@ export default class WledManager {
     }
   }
 
-  release() {
+  dispose() {
     for (const [_mdns, device] of Object.entries(this.devices)) {
       if (device !== undefined) {
         device.release()
