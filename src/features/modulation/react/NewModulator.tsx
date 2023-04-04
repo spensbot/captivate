@@ -1,6 +1,6 @@
 import { useDispatch } from 'react-redux'
 import AddIcon from '@mui/icons-material/Add'
-import { addModulator } from '../../redux/controlSlice'
+import { addModulator } from '../../../renderer/redux/controlSlice'
 
 export default function NewModulator() {
   const dispatch = useDispatch()

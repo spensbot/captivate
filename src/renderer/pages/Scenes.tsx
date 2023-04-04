@@ -1,6 +1,6 @@
 import React from 'react'
 import StatusBar from '../menu/StatusBar'
-import Modulators from '../scenes/modulators/Modulators'
+import Modulators from '../../features/modulation/react'
 import SceneSelection from '../scenes/SceneSelection'
 import SplitPane from '../base/SplitPane'
 import styled from 'styled-components'

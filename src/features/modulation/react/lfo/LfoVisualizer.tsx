@@ -1,8 +1,8 @@
-import { GetValueFromPhase } from '../../../../features/modulation/shared/oscillator'
+import { GetValueFromPhase } from '../../shared/oscillator'
 import { useDispatch } from 'react-redux'
-import useDragBasic from '../../../hooks/useDragBasic'
-import { incrementModulator } from '../../../redux/controlSlice'
-import { useActiveLightScene } from '../../../redux/store'
+import useDragBasic from '../../../../renderer/hooks/useDragBasic'
+import { incrementModulator } from '../../../../renderer/redux/controlSlice'
+import { useActiveLightScene } from '../../../../renderer/redux/store'
 import { secondaryEnabled } from 'renderer/base/keyUtil'
 
 type Props = {

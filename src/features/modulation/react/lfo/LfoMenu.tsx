@@ -1,18 +1,18 @@
-import { LfoShape } from '../../../../features/modulation/shared/oscillator'
+import { LfoShape } from '../../shared/oscillator'
 import { useDispatch } from 'react-redux'
-import { useActiveLightScene } from '../../../redux/store'
+import { useActiveLightScene } from '../../../../renderer/redux/store'
 import {
   resetModulator,
   removeModulator,
   setModulatorShape,
-} from '../../../redux/controlSlice'
+} from '../../../../renderer/redux/controlSlice'
 import CloseIcon from '@mui/icons-material/Close'
 import IconButton from '@mui/material/IconButton'
 import MenuItem from '@mui/material/MenuItem'
 import Select from '@mui/material/Select'
 import SettingsBackupRestoreIcon from '@mui/icons-material/SettingsBackupRestore'
 import LfoPeriod from './LfoPeriod'
-import Divider from '../../../base/Divider'
+import Divider from '../../../../renderer/base/Divider'
 
 type Props = {
   index: number
