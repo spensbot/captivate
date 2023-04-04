@@ -12,7 +12,7 @@ import IntensityIcon from '@mui/icons-material/LocalFireDepartment'
 import StrobeIcon from '@mui/icons-material/LightMode'
 import RandomizeIcon from '@mui/icons-material/Shuffle'
 import PositionIcon from '@mui/icons-material/PictureInPicture'
-import axisIconSrc from '../../../assets/axis.svg'
+import axisIconSrc from '../../../../../assets/axis.svg'
 import { getCustomChannels } from 'features/dmx/redux/dmxSlice'
 
 interface Props {

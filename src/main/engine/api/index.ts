@@ -4,10 +4,17 @@ import { queries } from './queries'
 import { publishers } from './subscriptions'
 
 export const createApi = (context: Context) => {
-  return {
+  const events = {
     publishers: publishers(context),
     mutations: mutations(context),
     queries: queries(context),
+  }
+  return {
+    ...events,
+    dispose() {
+      events.mutations.dispose()
+      events.queries.dispose()
+    },
   }
 }
 

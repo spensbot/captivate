@@ -36,16 +36,39 @@ import {
 } from 'features/bpm/engine/Link'
 import { createApi, IPC_Callbacks } from './api'
 let _ipcCallbacks: IPC_Callbacks | null = null
-let _controlState: CleanReduxState | null = null
+// let _controlState: CleanReduxState | null = null
 let _realtimeState: RealtimeState = initRealtimeState()
+
+// TODO: this should live in control state feature
+const controlStateManager = () => {
+  let _controlState: CleanReduxState | null = null
+  let resolveFirstState: () => void
+  const firstControlState = new Promise<void>((resolve) => {
+    resolveFirstState = resolve
+  })
+  return {
+    set(state: CleanReduxState) {
+      if (!_controlState) resolveFirstState()
+      _controlState = state
+    },
+
+    waitForFirstControlState: firstControlState,
+
+    get() {
+      return _controlState
+    },
+  }
+}
+
+const controlState = controlStateManager()
 
 const _midiThrottle = new ThrottleMap((message: MidiMessage) => {
   // TODO: maybe we could cancel the throttle on close and initialize throttle after callbacks and control state are initialized
   // to avoid null checks
-  if (_controlState !== null && _ipcCallbacks !== null) {
+  if (controlState.get() !== null && _ipcCallbacks !== null) {
     handleMessage(
       message,
-      _controlState,
+      controlState.get(),
       _realtimeState,
       _nodeLink,
       _ipcCallbacks.publishers.dispatch,
@@ -66,34 +89,39 @@ export function start(
     ipcMain,
     realtimeState: _realtimeState,
     new_control_state: (newState) => {
-      _controlState = newState
+      controlState.set(newState)
     },
     renderer,
     visualizerContainer,
   })
 
-  // We're currently calculating the realtimeState 90x per second.
-  // The renderer should have a new realtime state on each animation frame (assuming a refresh rate of 60 hz)
-  setInterval(() => {
-    const nextTimeState = getNextTimeState()
-    if (_ipcCallbacks !== null && _controlState !== null) {
-      _realtimeState = getNextRealtimeState(
-        _realtimeState,
-        nextTimeState,
-        _ipcCallbacks,
-        _controlState
-      )
-      _ipcCallbacks.publishers.new_time_state(_realtimeState)
-      _ipcCallbacks.publishers.new_visualizer_state({
-        rt: _realtimeState,
-        state: _controlState,
-      })
-    }
-  }, 1000 / 90)
+  // TODO: now we don't need null checks for control state
+  controlState.waitForFirstControlState.then(() => {
+    // We're currently calculating the realtimeState 90x per second.
+    // The renderer should have a new realtime state on each animation frame (assuming a refresh rate of 60 hz)
+    setInterval(() => {
+      const nextTimeState = getNextTimeState()
+      if (_ipcCallbacks !== null && controlState.get() !== null) {
+        _realtimeState = getNextRealtimeState(
+          _realtimeState,
+          nextTimeState,
+          _ipcCallbacks,
+          controlState.get()
+        )
+        _ipcCallbacks.publishers.new_time_state(_realtimeState)
+        _ipcCallbacks.publishers.new_visualizer_state({
+          rt: _realtimeState,
+          state: controlState.get(),
+        })
+      }
+    }, 1000 / 90)
+  })
+
   return _ipcCallbacks
 }
 
 export function stop() {
+  _ipcCallbacks?.dispose()
   _ipcCallbacks = null
 }
 
@@ -105,7 +133,9 @@ DmxConnection.maintain({
   },
   getChannels: () => _realtimeState.dmxOut,
   getConnectable: () => {
-    return _controlState ? _controlState.control.device.connectable.dmx : []
+    return controlState.get()
+      ? controlState.get().control.device.connectable.dmx
+      : []
   },
 })
 
@@ -119,7 +149,9 @@ MidiConnection.maintain({
     _midiThrottle.call(midiInputID(message), message)
   },
   getConnectable: () => {
-    return _controlState ? _controlState.control.device.connectable.midi : []
+    return controlState.get()
+      ? controlState.get().control.device.connectable.midi
+      : []
   },
 })
 
@@ -200,6 +232,6 @@ function getNextRealtimeState(
 }
 
 new WledManager(
-  () => _controlState,
+  () => controlState.get(),
   () => _realtimeState
 )

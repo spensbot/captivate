@@ -19,6 +19,9 @@ const DMX_SEND_INTERVAL = 1000 / 40
 let _readyToWrite = true
 let _connection: null | SerialPort = null
 let _config: Config
+let maintainTimeout: NodeJS.Timer | undefined
+
+const supportedDMXDevices = ['DMX', 'ENTTEC', 'FTDI']
 
 export type UpdatePayload = DmxConnections
 
@@ -57,13 +60,27 @@ function dmxDevice(port: SerialportInfo): DmxDevice_t {
 export function maintain(config: Config) {
   _config = config
   maintainConnection()
-  setInterval(() => {
+  const interval = setInterval(() => {
     sendUniverse(_config.getChannels())
   }, DMX_SEND_INTERVAL)
+
+  return {
+    dispose() {
+      clearInterval(interval)
+      close()
+      if (maintainTimeout) clearTimeout(maintainTimeout)
+    },
+  }
 }
 
 export function listPorts(): Promise<SerialportInfo[]> {
   return SerialPort.list()
+}
+
+function close() {
+  _connection?.close()
+  _connection?.destroy()
+  _connection = null
 }
 
 async function maintainConnection() {
@@ -79,9 +96,7 @@ async function maintainConnection() {
       !connectable.find((c) => c === _connection?.path) ||
       !_connection.isOpen
     ) {
-      _connection.close()
-      _connection.destroy()
-      _connection = null
+      close()
     }
   } else {
     const portToConnect = availablePorts.find(
@@ -100,7 +115,7 @@ async function maintainConnection() {
 
   _config.onUpdate(status)
 
-  setTimeout(maintainConnection, _config.update_ms)
+  maintainTimeout = setTimeout(maintainConnection, _config.update_ms)
 }
 
 function connect(path: string) {
@@ -131,9 +146,9 @@ function start() {}
 
 function isDmxDevice_t(port: SerialportInfo) {
   if (
-    port.manufacturer?.includes('DMX') ||
-    port.manufacturer?.includes('ENTTEC') ||
-    port.manufacturer?.includes('FTDI')
+    supportedDMXDevices.some((manufacturerName) =>
+      port.manufacturer?.includes(manufacturerName)
+    )
   )
     return true
   return false

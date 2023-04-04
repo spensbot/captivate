@@ -12,8 +12,6 @@ export type Context = {
   new_control_state: (new_state: CleanReduxState) => void
 }
 
-
-
 export const createRendererPublishers = <
   _Emissions extends Partial<{
     [k in typeof ipc_channels[keyof typeof ipc_channels]]: [...any]
@@ -56,10 +54,7 @@ export const createVisualizerPublishers = <
       previous[key] = (...args) => {
         const visualizer = visualizerContainer.visualizer
         if (visualizer) {
-          visualizer.webContents.send(
-            key as string,
-            ...args
-          )
+          visualizer.webContents.send(key as string, ...args)
         }
       }
       return previous
@@ -86,8 +81,11 @@ export const createQuery = <
   ) => Promise<void> | any
 }) => {
   return {
-    channel: config.channel,
-    resolve: (_event: IpcMainInvokeEvent, context: Context, ...args: any[]) => {
+    [config.channel]: (
+      _event: IpcMainInvokeEvent,
+      context: Context,
+      ...args: any[]
+    ) => {
       return config.resolve(context, ...(args as any))
     },
   }
@@ -103,8 +101,7 @@ export const createMutation = <
   ) => Promise<void> | any
 }) => {
   return {
-    channel: config.channel,
-    resolve: (
+    [config.channel]: (
       _event: Electron.IpcMainEvent,
       context: Context,
       ...args: any[]
@@ -114,40 +111,63 @@ export const createMutation = <
   }
 }
 
-export const createMutations = (
-  handlers: {
-    channel: string
-    resolve: (
-      _event: Electron.IpcMainEvent,
-      context: Context,
-      ...args: any[]
-    ) => any
-  }[]
-) => {
+export const createMutations = (handlers: {
+  [k: string]: (
+    _event: Electron.IpcMainEvent,
+    context: Context,
+    ...args: any[]
+  ) => any
+}) => {
   return (context: Context) => {
-    handlers.forEach((handler) => {
-      context.ipcMain.on(handler.channel, (_event, ...args) => {
-        handler.resolve(_event, context, ...args)
-      })
-    })
+    const disposeableHandlers = Object.entries(handlers).map(
+      ([channel, resolve]) => {
+        const handler = (_event: Electron.IpcMainEvent, ...args: any[]) => {
+          resolve(_event, context, ...args)
+        }
+        context.ipcMain.on(channel, handler)
+        return {
+          channel,
+          handler,
+        }
+      }
+    )
+    return {
+      dispose: () => {
+        disposeableHandlers.forEach(({ channel, handler }) => {
+          context.ipcMain.removeListener(channel, handler)
+        })
+      },
+    }
   }
 }
 
-export const createQueries = (
-  handlers: {
-    channel: string
-    resolve: (
-      _event: Electron.IpcMainInvokeEvent,
-      context: Context,
-      ...args: any[]
-    ) => any
-  }[]
-) => {
+export const createQueries = (handlers: {
+  [k: string]: (
+    _event: Electron.IpcMainInvokeEvent,
+    context: Context,
+    ...args: any[]
+  ) => any
+}) => {
   return (context: Context) => {
-    handlers.forEach((handler) => {
-      context.ipcMain.handle(handler.channel, (_event, ...args) => {
-        handler.resolve(_event, context, ...args)
-      })
-    })
+    const disposeableHandlers = Object.entries(handlers).map(
+      ([channel, resolve]) => {
+        const handler = (
+          _event: Electron.IpcMainInvokeEvent,
+          ...args: any[]
+        ) => {
+          resolve(_event, context, ...args)
+        }
+
+        context.ipcMain.handle(channel, handler)
+        return { channel, handler }
+      }
+    )
+    return {
+      dispose() {
+        disposeableHandlers.forEach(({ channel }) => {
+          context.ipcMain.removeHandler(channel)
+        })
+      },
+    }
   }
 }

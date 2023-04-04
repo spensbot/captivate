@@ -22,9 +22,18 @@ const inputs: Inputs = {}
 type Inputs = { [portName: string]: Input }
 
 export function maintain(config: Config) {
-  setInterval(() => {
+  const interval = setInterval(() => {
     updateInputs(config)
   }, config.update_ms)
+  return {
+    dispose() {
+      clearInterval(interval)
+      Object.entries(inputs).forEach(([inputName, input]) => {
+        input.closePort()
+        delete inputs[inputName]
+      })
+    },
+  }
 }
 
 function updateInputs(config: Config) {
