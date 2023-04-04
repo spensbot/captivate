@@ -1,6 +1,6 @@
 import { GetValueFromPhase } from '../../shared/oscillator'
 import { useDispatch } from 'react-redux'
-import useDragBasic from '../../../../renderer/hooks/useDragBasic'
+import useDragBasic from '../../../ui/react/hooks/useDragBasic'
 import { incrementModulator } from '../../../../renderer/redux/controlSlice'
 import { useActiveLightScene } from '../../../../renderer/redux/store'
 import { secondaryEnabled } from 'renderer/base/keyUtil'

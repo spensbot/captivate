@@ -1,4 +1,4 @@
-import useDragMapped from '../hooks/useDragMapped'
+import useDragMapped from '../../features/ui/react/hooks/useDragMapped'
 
 interface Props {
   radius: number

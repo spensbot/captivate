@@ -3,7 +3,7 @@ import styled from 'styled-components'
 import IconButton from '@mui/material/IconButton'
 import CopyIcon from '@mui/icons-material/ContentCopy'
 import { useState } from 'react'
-import useSafeCallback from 'renderer/hooks/useSafeCallback'
+import useSafeCallback from 'features/ui/react/hooks/useSafeCallback'
 
 function copyToClipboard(text: string) {
   return navigator.clipboard.writeText(text)

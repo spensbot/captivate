@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import useDragMapped from '../hooks/useDragMapped'
+import useDragMapped from '../../features/ui/react/hooks/useDragMapped'
 import Cursor from './Cursor'
 import { Normalized } from 'math/util'
 

@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import useDragMapped, { MappedPos } from 'renderer/hooks/useDragMapped'
+import useDragMapped, { MappedPos } from 'features/ui/react/hooks/useDragMapped'
 import { useDispatch } from 'react-redux'
 import { useDmxSelector } from 'renderer/redux/store'
 import { distanceBetween, Point } from 'math/point'

@@ -8,7 +8,7 @@ import {
   useModParam,
 } from '../../../renderer/redux/store'
 import { setModulation } from '../../../renderer/redux/controlSlice'
-import useDragMapped from '../../../renderer/hooks/useDragMapped'
+import useDragMapped from '../../ui/react/hooks/useDragMapped'
 import styled from 'styled-components'
 import Popup from 'renderer/base/Popup'
 import { indexArray } from 'shared/util'

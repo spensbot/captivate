@@ -2,7 +2,7 @@ import styled from 'styled-components'
 import IconButton from '@mui/material/IconButton'
 import zIndexes from '../zIndexes'
 import CloseIcon from '@mui/icons-material/Close'
-import useBounds from '../hooks/useBounds'
+import useBounds from '../../features/ui/react/hooks/useBounds'
 
 interface Props {
   title: string

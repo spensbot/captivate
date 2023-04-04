@@ -1,6 +1,6 @@
 import { send_user_command } from '../../ipcHandler'
 import { useRealtimeSelector } from 'renderer/redux/realtimeStore'
-import useDragBasic from 'renderer/hooks/useDragBasic'
+import useDragBasic from 'features/ui/react/hooks/useDragBasic'
 import { SliderMidiOverlay } from 'features/midi/react/MidiOverlay'
 
 export default function BPM() {

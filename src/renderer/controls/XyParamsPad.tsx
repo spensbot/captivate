@@ -1,4 +1,4 @@
-import useDragMapped from '../hooks/useDragMapped'
+import useDragMapped from '../../features/ui/react/hooks/useDragMapped'
 import { useDispatch } from 'react-redux'
 import { setBaseParams, incrementBaseParams } from '../redux/controlSlice'
 import { XYCursorBase, XYCursorOutput } from './XYCursor'
