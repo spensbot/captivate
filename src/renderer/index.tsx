@@ -4,7 +4,7 @@ import { render } from 'react-dom'
 import { ThemeProvider } from 'styled-components'
 import GlobalStyle from './GlobalStyle'
 import App from './App'
-import * as themes from './theme'
+import * as themes from '../features/ui/react/theme'
 import { Provider } from 'react-redux'
 import { store, getCleanReduxState } from './redux/store'
 import {
