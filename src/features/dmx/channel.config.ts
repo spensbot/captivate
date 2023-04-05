@@ -56,8 +56,11 @@ const createChannelConfig = <
 }
 
 /**
- * one possible issue is that engine code and renderer code might be bundled together
+ * TODO: one possible issue is that engine code and renderer code might be bundled together
  * should eventually split the config between engine / react one all details on channels are consolidated
+ */
+/**
+ * This seems to be the conversion point between params and channel
  */
 export const channelConfig = createChannelConfig({
   master: {

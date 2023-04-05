@@ -17,7 +17,7 @@ import {
 import { createModulationTransformer } from '../../features/modulation/engine'
 import { handleMessage } from 'features/midi/engine/handleMidi'
 import { VisualizerContainer } from '../../features/visualizer/engine/createVisualizerWindow'
-import { calculateDmx } from 'features/dmx/engine/dmxEngine'
+import { calculateDmxOut, getChannels } from 'features/dmx/engine/dmxEngine'
 import { handleAutoScene } from '../../features/scenes/engine/autoScene'
 import { setActiveScene } from '../../renderer/redux/controlSlice'
 import {
@@ -258,9 +258,15 @@ function getNextRealtimeState(
     }
   )
 
+  const outChannelConfig = getChannels({ state: controlState })
+
+  if (nextTimeState.isPlaying) {
+    calculateDmxOut({ splitStates, state: controlState }, outChannelConfig)
+  }
+
   return {
     time: nextTimeState,
-    dmxOut: calculateDmx(controlState, splitStates, nextTimeState),
+    dmxOut: outChannelConfig.channels,
     splitStates,
   }
 }
