@@ -11,8 +11,10 @@ import {
 import { useActiveLightScene } from 'renderer/redux/store'
 import { useRealtimeSelector } from 'renderer/redux/realtimeStore'
 
-export function getAllParamKeys(dmx: DmxState): DefaultParam[] {
-  return defaultParamsList.concat(Array.from(getCustomChannels(dmx)))
+export function getAllParamKeys(dmx: DmxState): string[] {
+  return (defaultParamsList as string[]).concat(
+    Array.from(getCustomChannels(dmx))
+  )
 }
 
 export function useBaseParam(
@@ -33,7 +35,7 @@ export function useBaseParams(splitIndex: number): Partial<Params> {
 }
 
 export function useModParam(
-  param: DefaultParam,
+  param: DefaultParam | string,
   modIndex: number,
   splitIndex: number
 ) {

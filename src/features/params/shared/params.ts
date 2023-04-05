@@ -13,7 +13,7 @@ export type DefaultParam =
   | 'yAxis'
   | 'xMirror'
 
-export type Params = { [key in DefaultParam]: number | undefined }
+export type Params = { [key: string]: number | undefined }
 
 export function initBaseParams(): Partial<Params> {
   return {

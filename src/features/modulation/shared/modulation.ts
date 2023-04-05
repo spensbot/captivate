@@ -31,7 +31,7 @@ export function getOutputParams(
   beats: number,
   scene: LightScene_t,
   splitIndex: number,
-  allParamKeys: DefaultParam[]
+  allParamKeys: string[]
 ) {
   const outputParams = defaultOutputParams()
   const baseParams = scene.splitScenes[splitIndex].baseParams
@@ -49,7 +49,7 @@ export function getOutputParams(
 
 function getOutputParam(
   baseParam: number | undefined,
-  param: DefaultParam,
+  param: DefaultParam | string,
   snapshots: ModSnapshot[]
 ) {
   if (baseParam === undefined) return undefined

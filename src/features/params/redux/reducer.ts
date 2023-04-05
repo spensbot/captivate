@@ -20,7 +20,7 @@ type ParamAction = PayloadAction<{
 export interface SetModulationPayload {
   splitIndex: number
   modIndex: number
-  param: DefaultParam
+  param: DefaultParam | string
   value: number | undefined
 }
 

@@ -10,12 +10,16 @@ import useDragMapped from '../../ui/react/hooks/useDragMapped'
 import styled from 'styled-components'
 import Popup from 'features/ui/react/base/Popup'
 import { indexArray } from 'features/utils/util'
-import { getAllParamKeys, useBaseParams, useModParam } from 'features/params/redux'
+import {
+  getAllParamKeys,
+  useBaseParams,
+  useModParam,
+} from 'features/params/redux'
 
 interface Props {
   splitIndex: number
   modIndex: number
-  param: DefaultParam
+  param: DefaultParam | string
 }
 
 export default function ModulationSlider({
@@ -126,7 +130,7 @@ function ParamEditor({
 }: {
   splitIndex: number
   modIndex: number
-  param: DefaultParam
+  param: DefaultParam | string
 }) {
   const modVal = useModParam(param, modIndex, splitIndex)
   const dispatch = useDispatch()
