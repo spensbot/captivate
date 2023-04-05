@@ -14,7 +14,7 @@ import {
   resizeRandomizer,
   updateIndexes,
 } from '../../features/bpm/shared/randomizer'
-import { getOutputParams } from '../../features/modulation/shared/modulation'
+import { createModulationTransformer } from '../../features/modulation/engine'
 import { handleMessage } from 'features/midi/engine/handleMidi'
 import { VisualizerContainer } from '../../features/visualizer/engine/createVisualizerWindow'
 import { calculateDmx } from 'features/dmx/engine/dmxEngine'
@@ -36,6 +36,7 @@ import {
 } from 'features/bpm/engine/Link'
 import { createApi, IPC_Callbacks } from './api'
 import { getAllParamKeys } from 'features/params/redux'
+import { createOutputParams } from 'features/params/engine'
 
 let _realtimeState: RealtimeState = initRealtimeState()
 
@@ -221,12 +222,16 @@ function getNextRealtimeState(
 
   const splitStates: SplitState[] = scene.splitScenes.map(
     (splitScene, splitIndex) => {
-      const splitOutputParams = getOutputParams(
-        nextTimeState.beats,
+      const modTransformer = createModulationTransformer({
+        beats: nextTimeState.beats,
         scene,
         splitIndex,
-        allParamKeys
+      })
+      const splitOutputParams = createOutputParams(
+        { allParamKeys, scene, splitIndex },
+        (options) => modTransformer.transform(options)
       )
+
       let splitSceneFixtures = getFixturesInGroups(fixtures, splitScene.groups)
       let splitSceneFixturesWithinEpicness = splitSceneFixtures.filter(
         (fixture) => fixture.intensity <= (splitOutputParams.intensity ?? 1)

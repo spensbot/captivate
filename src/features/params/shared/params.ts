@@ -105,7 +105,3 @@ export const defaultParamsList: DefaultParam[] = [
 ]
 
 export type Modulation = Partial<Params>
-
-export function initModulation(): Modulation {
-  return {}
-}

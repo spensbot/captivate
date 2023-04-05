@@ -1,8 +1,14 @@
 import { Window2D_t } from 'features/shared/shared/window'
-import { StrictParams, getParam } from '../shared/params'
-import { Normalized } from 'features/utils/math/util'
+import {
+  DefaultParam,
+  StrictParams,
+  defaultOutputParams,
+  getParam,
+} from '../shared/params'
+import { Normalized, clampNormalized } from 'features/utils/math/util'
 import { getWindowMultiplier2D } from 'features/dmx/shared/dmxUtil'
 import { applyRandomization } from 'features/bpm/shared/randomizer'
+import { LightScene_t } from 'features/scenes/shared/Scenes'
 
 /**
  * used on engine side on led and dmx
@@ -40,4 +46,35 @@ export function getBrightness(
     randomizerLevel,
     getParam(params, 'randomize')
   )
+}
+
+export const createOutputParams = (
+  {
+    scene,
+    splitIndex,
+    allParamKeys,
+  }: {
+    scene: LightScene_t
+    splitIndex: number
+    allParamKeys: string[]
+  },
+  transform: (params: {
+    param: DefaultParam | string
+    baseParam: number
+  }) => number
+) => {
+  const _getOutputParam = (
+    baseParam: number | undefined,
+    param: DefaultParam | string
+  ) => {
+    if (baseParam === undefined) return undefined
+    return clampNormalized(transform({ param, baseParam }))
+  }
+  const outputParams = defaultOutputParams()
+  const baseParams = scene.splitScenes[splitIndex].baseParams
+  allParamKeys.forEach((param) => {
+    outputParams[param] = _getOutputParam(baseParams[param], param)
+  })
+
+  return outputParams
 }
