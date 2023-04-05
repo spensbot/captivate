@@ -81,12 +81,11 @@ const disposer = {
   },
 }
 
-const controlState = disposer.push(controlStateManager())
-
 export function start(
   renderer: WebContents,
   visualizerContainer: VisualizerContainer
 ) {
+  const controlState = disposer.push(controlStateManager())
   const api = disposer.push(
     createApi({
       ipcMain,

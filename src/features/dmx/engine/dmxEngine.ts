@@ -8,13 +8,14 @@ import { Params } from '../shared/params'
 import { RandomizerState } from '../../bpm/shared/randomizer'
 import { CleanReduxState } from '../../../renderer/redux/store'
 import {
-  getDmxValue,
+
   getFixturesInGroups,
   flatten_fixtures,
 } from '../shared/dmxUtil'
 import { indexArray, zip } from '../../utils/util'
 import { TimeState } from '../../bpm/shared/TimeState'
 import { SplitState } from 'renderer/redux/realtimeStore'
+import { getDmxValue } from './channelUtils'
 
 export function calculateDmx(
   state: CleanReduxState,

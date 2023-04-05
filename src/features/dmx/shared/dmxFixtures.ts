@@ -2,6 +2,7 @@ import { Pretty } from 'features/shared/shared/type-utils'
 import { Window2D_t } from '../../shared/shared/window'
 import { ColorChannel } from './dmxColors'
 import { nanoid } from 'nanoid'
+import { channelConfig } from '../channel.config'
 
 export const DMX_MIN_VALUE = 0
 export const DMX_MAX_VALUE = 255
@@ -56,58 +57,8 @@ export const channelTypes: ChannelType[] = [
 export function initFixtureChannel(
   type?: FixtureChannel['type']
 ): FixtureChannel {
-  if (type === 'color') {
-    return {
-      type: type,
-      color: {
-        hue: 0,
-        saturation: 1.0,
-      },
-    }
-  } else if (type === 'other') {
-    return {
-      type: type,
-      default: DMX_MIN_VALUE,
-    }
-  } else if (type === 'strobe') {
-    return {
-      type: type,
-      default_solid: DMX_MIN_VALUE,
-      default_strobe: DMX_MAX_VALUE,
-    }
-  } else if (type === 'axis') {
-    return {
-      type: type,
-      dir: 'x',
-      isFine: false,
-      min: DMX_MIN_VALUE,
-      max: DMX_MAX_VALUE,
-    }
-  } else if (type === 'colorMap') {
-    return {
-      type: type,
-      colors: [{ max: 0, hue: 0, saturation: 1.0 }],
-    }
-  } else if (type === 'reset') {
-    return {
-      type: 'reset',
-      resetVal: DMX_MAX_VALUE,
-    }
-  } else if (type === 'custom') {
-    return {
-      type: 'custom',
-      name: 'custom',
-      default: DMX_MIN_VALUE,
-      min: DMX_MIN_VALUE,
-      max: DMX_MAX_VALUE,
-    }
-  }
-  return {
-    type: 'master',
-    min: DMX_MIN_VALUE,
-    max: DMX_MAX_VALUE,
-    isOnOff: false,
-  }
+  if (!type) return channelConfig.master.default()
+  return channelConfig[type].default()
 }
 
 export type FixtureType = {
