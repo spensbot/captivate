@@ -9,7 +9,7 @@ interface Props {}
 export default function OpenVisualizerButton({}: Props) {
   return (
     <Root>
-      <IconButton onClick={api.mutations.send_open_visualizer}>
+      <IconButton onClick={api.mutations.open_visualizer}>
         <OpenInNewIcon />
       </IconButton>
     </Root>

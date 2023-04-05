@@ -9,7 +9,7 @@ export default function BPM() {
   const [dragContainer, onMouseDown] = useDragBasic((e) => {
     const dx = e.movementX / 3
     const dy = -e.movementY / 3
-    api.mutations.send_user_command({ type: 'IncrementTempo', amount: dx + dy })
+    api.mutations.user_command({ type: 'IncrementTempo', amount: dx + dy })
   })
 
   return (

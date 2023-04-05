@@ -12,7 +12,7 @@ export default function TapTempo({}: Props) {
         type: 'TapTempo',
       }}
     >
-      <Button onClick={() => api.mutations.send_user_command({ type: 'TapTempo' })}>
+      <Button onClick={() => api.mutations.user_command({ type: 'TapTempo' })}>
         TAP
       </Button>
       {/* <IconButton

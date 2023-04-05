@@ -20,7 +20,7 @@ import {
   redoAction,
 } from '../../features/scenes/react/controls/UndoRedo'
 import { getSaveConfig } from 'features/fileSaving/shared/save'
-import * as mutations from './mutations'
+import { mutations } from './mutations'
 import { autoSave } from '../../features/fileSaving/react/autosave'
 import { animationLoop } from 'features/shared/react'
 import { API } from 'features/shared/engine/emissions'
@@ -84,9 +84,9 @@ export const subcribe = ({ store }: Context) => {
     realtimeStore.dispatch(updateRealtimeStore(getUpatedRealtimeState()))
   })
 
-  mutations.send_control_state(getCleanReduxState(store.getState()))
+  mutations.new_control_state(getCleanReduxState(store.getState()))
 
   store.subscribe(() =>
-    mutations.send_control_state(getCleanReduxState(store.getState()))
+    mutations.new_control_state(getCleanReduxState(store.getState()))
   )
 }

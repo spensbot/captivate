@@ -24,7 +24,7 @@ interface Props {
 
 export default function FileList(props: Props) {
   let onAdd = () => {
-    api.queries.getLocalFilepaths('Select Media', localMediaFileFilters)
+    api.queries.get_local_filepaths('Select Media', localMediaFileFilters)
       .then(onAddSuccess)
       .catch((_err) => {})
   }

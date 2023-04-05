@@ -10,7 +10,7 @@ export default function StartStopButton() {
   return (
     <Root
       onClick={() =>
-        api.mutations.send_user_command({
+        api.mutations.user_command({
           type: 'SetIsPlaying',
           isPlaying: !time.isPlaying,
         })

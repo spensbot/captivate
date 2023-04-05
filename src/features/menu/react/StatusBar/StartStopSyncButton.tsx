@@ -17,7 +17,7 @@ export default function StartStopSyncButton({}: Props) {
   return (
     <Root
       onClick={() =>
-        api.mutations.send_user_command({
+        api.mutations.user_command({
           type: 'EnableStartStopSync',
           isEnabled: !sssEnabled,
         })

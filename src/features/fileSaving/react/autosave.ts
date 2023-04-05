@@ -5,7 +5,6 @@ import {
   getCleanReduxState,
   store,
 } from '../../../renderer/redux/store'
-import ipcChannels from '../../shared/engine/ipc_channels'
 import AutoSavedVal, { printTimePassed } from './AutoSavedVal'
 import fixState from '../../shared/redux/fixState'
 import defaultState from '../../../renderer/redux/defaultState'
@@ -63,19 +62,4 @@ const ipcRenderer = window.electron.ipcRenderer
 
 export const captivateFileFilters = {
   captivate: { name: 'Captivate', extensions: ['captivate'] },
-}
-
-export async function loadFile(
-  title: string,
-  fileFilters: Electron.FileFilter[]
-): Promise<string> {
-  return ipcRenderer.invoke(ipcChannels.load_file, title, fileFilters)
-}
-
-export async function saveFile(
-  title: string,
-  data: string,
-  fileFilters: Electron.FileFilter[]
-): Promise<NodeJS.ErrnoException> {
-  return ipcRenderer.invoke(ipcChannels.save_file, title, data, fileFilters)
 }

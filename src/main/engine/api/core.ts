@@ -77,8 +77,10 @@ export const createQuery = <
   channel: Channel
   resolve: (
     context: Context,
-    ...args: API['renderer']['queries'][Channel]
-  ) => Promise<void> | any
+    ...args: API['renderer']['queries'][Channel]['input']
+  ) =>
+    | Promise<API['renderer']['queries'][Channel]['output']>
+    | API['renderer']['queries'][Channel]['output']
 }) => {
   return {
     [config.channel]: (

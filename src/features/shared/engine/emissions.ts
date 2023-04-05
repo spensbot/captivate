@@ -24,13 +24,18 @@ export type API = {
       open_visualizer: []
     }
     queries: {
-      get_local_filepaths: [title: string, fileFilters: Electron.FileFilter[]]
-      load_file: [title: string, fileFilters: Electron.FileFilter[]]
-      save_file: [
-        title: string,
-        data: string,
-        fileFilters: Electron.FileFilter[]
-      ]
+      get_local_filepaths: {
+        input: [title: string, fileFilters: Electron.FileFilter[]]
+        output: string[]
+      }
+      load_file: {
+        input: [title: string, fileFilters: Electron.FileFilter[]]
+        output: string
+      }
+      save_file: {
+        input: [title: string, data: string, fileFilters: Electron.FileFilter[]]
+        output: void
+      }
     }
   }
 

@@ -18,7 +18,7 @@ export default function LinkButton() {
   return (
     <div
       onClick={() => {
-        api.mutations.send_user_command({ type: 'SetLinkEnabled', isEnabled: !isEnabled })
+        api.mutations.user_command({ type: 'SetLinkEnabled', isEnabled: !isEnabled })
       }}
       style={style}
     >

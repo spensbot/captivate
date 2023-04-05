@@ -1,4 +1,4 @@
-export default {
+const channels = {
   new_time_state: 'new_time_state',
   dmx_connection_update: 'dmx_connection_update',
   midi_connection_update: 'midi_connection_update',
@@ -11,6 +11,10 @@ export default {
   get_local_filepaths: 'get_local_filepaths',
   main_command: 'main_command',
 } as const
+
+export default channels
+
+export type ChannelNames = typeof channels[keyof typeof channels]
 
 export interface SetLinkEnabled {
   type: 'SetLinkEnabled'

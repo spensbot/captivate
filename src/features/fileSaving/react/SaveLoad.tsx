@@ -3,8 +3,12 @@ import styled from 'styled-components'
 import SaveIcon from '@mui/icons-material/Save'
 import LoadIcon from '@mui/icons-material/FileOpen'
 import IconButton from '@mui/material/IconButton'
-import { store, applySave, useTypedSelector } from '../../../renderer/redux/store'
-import { saveFile, loadFile, captivateFileFilters } from './autosave'
+import {
+  store,
+  applySave,
+  useTypedSelector,
+} from '../../../renderer/redux/store'
+import { captivateFileFilters } from './autosave'
 import Popup from 'features/ui/react/base/Popup'
 import { Button, Checkbox } from '@mui/material'
 import {
@@ -17,9 +21,10 @@ import {
 } from 'features/fileSaving/shared/save'
 import { useDispatch } from 'react-redux'
 import { setSaving, setLoading } from 'renderer/redux/guiSlice'
+import { queries } from 'renderer/api'
 
 export async function load() {
-  const serializedSaveState = await loadFile('Load Scenes', [
+  const serializedSaveState = await queries.load_file('Load Scenes', [
     captivateFileFilters.captivate,
   ])
   const saveState: SaveState = JSON.parse(serializedSaveState)
@@ -40,12 +45,11 @@ function save(config: SaveConfig) {
   }
 
   const serializedSaveState = JSON.stringify(saveState)
-  saveFile('Save Scenes', serializedSaveState, [captivateFileFilters.captivate])
-    .then((err) => {
-      if (err) {
-        console.error(err)
-      }
-    })
+  queries
+    .save_file('Save Scenes', serializedSaveState, [
+      captivateFileFilters.captivate,
+    ])
+    .then(() => {})
     .catch((err) => {
       console.error(err)
     })
