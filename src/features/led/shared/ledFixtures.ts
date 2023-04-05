@@ -1,7 +1,7 @@
 import { distanceBetween, pLerp, Point } from '../../utils/math/point'
 import { BaseColors, getBaseColorsFromHsv } from '../../utils/baseColors'
 import { getWindowMultiplier2D } from '../../dmx/shared/dmxUtil'
-import { getParam, Params } from '../../params/shared/params'
+import { getParam, StrictParams } from '../../params/shared/params'
 import { indexArray } from '../../utils/util'
 import { Window2D_t } from '../../shared/shared/window'
 import { getMovingWindow } from 'features/params/engine'
@@ -29,7 +29,7 @@ export function initLedFixture(): LedFixture {
 }
 
 export function getLedValues(
-  params: Partial<Params>,
+  params: Partial<StrictParams>,
   ledFixture: LedFixture,
   master: number
 ): BaseColors[] {

@@ -1,3 +1,5 @@
+import { Pretty } from 'features/shared/shared/type-utils'
+
 export type DefaultParam =
   | 'hue'
   | 'saturation'
@@ -13,9 +15,12 @@ export type DefaultParam =
   | 'yAxis'
   | 'xMirror'
 
-export type Params = { [key: string]: number | undefined }
+export type StrictParams = { [key in DefaultParam]: number | undefined }
+export type Params = Pretty<
+  StrictParams & { [key: string]: number | undefined }
+>
 
-export function initBaseParams(): Partial<Params> {
+export function initBaseParams(): Partial<StrictParams> {
   return {
     hue: 0.5,
     saturation: 0.5,
@@ -58,7 +63,10 @@ const defaultParams: { [key in DefaultParam]: number } = {
   xMirror: 0.0,
 }
 
-export function getParam(params: Partial<Params>, param: DefaultParam): number {
+export function getParam(
+  params: Partial<StrictParams>,
+  param: DefaultParam
+): number {
   return params[param] ?? defaultParams[param]
 }
 

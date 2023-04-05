@@ -1,4 +1,4 @@
-import { Params } from '../../params/shared/params'
+import { StrictParams } from '../../params/shared/params'
 import { TimeState } from '../../bpm/shared/TimeState'
 import { isNewPeriod, beatsIn, beatsLeft } from '../../bpm/shared/TimeState'
 import { LightScene_t } from '../../scenes/shared/Scenes'
@@ -8,7 +8,7 @@ import { Range, rLerp } from 'features/utils/math/range'
 interface UpdateData {
   dt: number
   time: TimeState
-  params: Partial<Params>
+  params: Partial<StrictParams>
   scene: LightScene_t
   master: number
   size: Size
@@ -17,7 +17,7 @@ interface UpdateData {
 export default class UpdateResource {
   dt: number
   time: TimeState
-  params: Partial<Params>
+  params: Partial<StrictParams>
   scene: LightScene_t
   master: number
   size: Size
@@ -48,7 +48,7 @@ export default class UpdateResource {
   }
 
   msPerPeriod(beatsPerPeriod: number) {
-    return beatsPerPeriod / this.time.bpm * 60000
+    return (beatsPerPeriod / this.time.bpm) * 60000
   }
 
   beatsIn(period: number) {

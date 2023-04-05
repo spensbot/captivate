@@ -1,7 +1,7 @@
 import { BaseColors, hsv2rgb } from 'features/utils/baseColors'
-import { Params } from './params'
+import { StrictParams } from './params'
 
-export function getBaseColors(params: Partial<Params>): BaseColors {
+export function getBaseColors(params: Partial<StrictParams>): BaseColors {
   const [r, g, b] = hsv2rgb(
     params.hue ?? 0,
     params.saturation ?? 0,
