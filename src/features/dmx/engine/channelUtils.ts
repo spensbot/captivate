@@ -1,43 +1,14 @@
 import {
-  DmxValue,
   DMX_MAX_VALUE,
-  FixtureChannel,
-  DMX_DEFAULT_VALUE,
   AxisDir,
   DMX_MIN_VALUE,
   FlattenedFixture,
   GetFixturePayload,
-  ChannelType,
 } from '../shared/dmxFixtures'
-import { Params } from '../../params/shared/params'
 import { Normalized } from '../../utils/math/util'
 import { rLerp } from '../../utils/math/range'
 
 import { applyMirror } from '../shared/dmxUtil'
-import { ChannelConfig, channelConfig } from '../channel.config'
-import { getMovingWindow } from 'features/params/engine'
-
-export function getDmxValue(
-  ch: FixtureChannel,
-  params: Partial<Params>,
-  fixture: FlattenedFixture,
-  master: number,
-  randomizerLevel: number
-): DmxValue {
-  const movingWindow = getMovingWindow(params)
-  const channelTypeConfig = channelConfig[ch.type] as ChannelConfig<ChannelType>
-  if (!channelTypeConfig || !channelTypeConfig.getValueFromDevice)
-    return DMX_DEFAULT_VALUE
-
-  return channelTypeConfig.getValueFromDevice({
-    ch,
-    fixture,
-    master,
-    movingWindow,
-    params,
-    randomizerLevel,
-  })
-}
 
 export function calculate_axis_channel(
   ch: GetFixturePayload<'axis'>,

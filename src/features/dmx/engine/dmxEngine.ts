@@ -3,6 +3,9 @@ import {
   DMX_DEFAULT_VALUE,
   DMX_NUM_CHANNELS,
   FlattenedFixture,
+  FixtureChannel,
+  DmxValue,
+  ChannelType,
 } from '../shared/dmxFixtures'
 import { Params } from '../../params/shared/params'
 import { RandomizerState } from '../../bpm/shared/randomizer'
@@ -10,7 +13,8 @@ import { CleanReduxState } from '../../../renderer/redux/store'
 import { getFixturesInGroups, flatten_fixtures } from '../shared/dmxUtil'
 import { indexArray, zip } from '../../utils/util'
 import { SplitState } from 'renderer/redux/realtimeStore'
-import { getDmxValue } from './channelUtils'
+import { ChannelConfig, channelConfig } from '../channel.config'
+import { getMovingWindow } from 'features/params/engine'
 
 export function getChannels({ state }: { state: CleanReduxState }) {
   const universe = state.dmx.universe
@@ -25,6 +29,28 @@ export function getChannels({ state }: { state: CleanReduxState }) {
 }
 
 type OutChannelConfig = ReturnType<typeof getChannels>
+
+export function getDmxValue(
+  ch: FixtureChannel,
+  params: Partial<Params>,
+  fixture: FlattenedFixture,
+  master: number,
+  randomizerLevel: number
+): DmxValue {
+  const movingWindow = getMovingWindow(params)
+  const channelTypeConfig = channelConfig[ch.type] as ChannelConfig<ChannelType>
+  if (!channelTypeConfig || !channelTypeConfig.getValueFromDevice)
+    return DMX_DEFAULT_VALUE
+
+  return channelTypeConfig.getValueFromDevice({
+    ch,
+    fixture,
+    master,
+    movingWindow,
+    params,
+    randomizerLevel,
+  })
+}
 
 export function calculateDmxOut(
   {

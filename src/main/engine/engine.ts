@@ -232,8 +232,8 @@ function getNextRealtimeState(
         (options) => modTransformer.transform(options)
       )
 
-      let splitSceneFixtures = getFixturesInGroups(fixtures, splitScene.groups)
-      let splitSceneFixturesWithinEpicness = splitSceneFixtures.filter(
+      const splitSceneFixtures = getFixturesInGroups(fixtures, splitScene.groups)
+      const splitSceneFixturesWithinEpicness = splitSceneFixtures.filter(
         (fixture) => fixture.intensity <= (splitOutputParams.intensity ?? 1)
       )
 
