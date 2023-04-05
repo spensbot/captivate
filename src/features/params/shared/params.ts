@@ -31,19 +31,8 @@ export function initBaseParams(): Partial<StrictParams> {
 // Params as they
 export function initParams(): { [key in DefaultParam]: number } {
   return {
-    hue: 0.5,
-    saturation: 0.5,
-    brightness: 0.5,
-    x: 0.5,
-    width: 1.0,
-    y: 0.5,
-    height: 1.0,
-    intensity: 1.0,
-    strobe: 0.0,
+    ...defaultParams,
     randomize: 1.0,
-    xAxis: 0.5,
-    yAxis: 0.5,
-    xMirror: 0.0,
   }
 }
 
@@ -72,9 +61,7 @@ export function getParam(
 
 export function defaultOutputParams(): Partial<Params> {
   return {
-    hue: 0.5,
-    saturation: 0.5,
-    brightness: 0.5,
+    ...initBaseParams(),
     // x: 0.5,
     // width: 1.0,
     // y: 0.5,

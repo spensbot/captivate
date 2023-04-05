@@ -5,22 +5,34 @@ import {
   FixtureChannel,
   channelTypes,
   initFixtureChannel,
-  AxisDir,
-  axisDirList,
   DMX_MAX_VALUE,
   DMX_MIN_VALUE,
+  ChannelType,
 } from '../../../../shared/dmxFixtures'
 import NumberField from '../../../../../ui/react/base/NumberField'
-import Input from '../../../../../ui/react/base/Input'
 import { editFixtureChannel } from '../../../../../fixtures/redux/fixturesSlice'
-import Checkbox from '../../../../../ui/react/base/LabelledCheckbox'
-import HSpad, { ColorChannelProps } from 'features/ui/react/base/HSpad'
 import { FixtureChannelItemProps } from '../list/FixtureChannelItem'
-import ColorMapChannel from './ColorMapChannel'
-import ColorPicker from 'features/ui/react/base/ColorPicker'
+
+import { FC, createContext, useContext } from 'react'
+import { ChannelComponents } from 'features/dmx/channel.config.react'
 
 interface Props extends FixtureChannelItemProps {
   ch: FixtureChannel
+}
+
+export const createChannelComponents = <
+  T extends {
+    [k in ChannelType]: FC<{
+      ch: Extract<FixtureChannel, { type: k }>
+      updateChannel(newChannel: FixtureChannel): void
+      fixtureID: string
+      channelIndex: number
+    }>
+  }
+>(
+  config: T
+) => {
+  return config
 }
 
 export default function FixtureChannelPopup(props: Props) {
@@ -51,6 +63,32 @@ export default function FixtureChannelPopup(props: Props) {
   )
 }
 
+const ChannelContext = createContext({
+  updateChannel(_newChannel: FixtureChannel) {},
+})
+
+export function DmxNumberField<
+  Ch extends FixtureChannel,
+  Key extends keyof Ch
+>({ ch, field, label }: { ch: Ch; field: Key; label: string }) {
+  const channelFixture = useContext(ChannelContext)
+  return (
+    <NumberField
+      // @ts-ignore  It's gross but it saves so much time here
+      val={ch[field]}
+      label={label}
+      min={DMX_MIN_VALUE}
+      max={DMX_MAX_VALUE}
+      onChange={(newVal) =>
+        channelFixture.updateChannel({
+          ...ch,
+          [field]: newVal,
+        })
+      }
+    />
+  )
+}
+
 function Fields({ ch, fixtureID, channelIndex }: Props) {
   const dispatch = useDispatch()
 
@@ -63,152 +101,23 @@ function Fields({ ch, fixtureID, channelIndex }: Props) {
       })
     )
   }
+  const Component = ChannelComponents[ch.type]
 
-  function dmxNumberField<Ch extends FixtureChannel, Key extends keyof Ch>(
-    ch: Ch,
-    field: Key,
-    label: string
-  ) {
-    return (
-      <NumberField
-        // @ts-ignore  It's gross but it saves so much time here
-        val={ch[field]}
-        label={label}
-        min={DMX_MIN_VALUE}
-        max={DMX_MAX_VALUE}
-        onChange={(newVal) =>
-          updateChannel({
-            ...ch,
-            [field]: newVal,
-          })
-        }
-      />
-    )
-  }
-
-  if (ch.type === 'color') {
-    const colorProps: ColorChannelProps = {
-      hue: ch.color.hue,
-      saturation: ch.color.saturation,
-      onChange: (newHue, newSaturation) => {
-        updateChannel({
-          type: 'color',
-          color: {
-            hue: newHue,
-            saturation: newSaturation,
-          },
-        })
-      },
-    }
-
-    return (
-      <>
-        {/* {getCustomColorChannelName(ch.color)} */}
-        <ColorPicker {...colorProps} />
-        <HSpad {...colorProps} />
-      </>
-    )
-  } else if (ch.type === 'master') {
-    return (
-      <>
-        {dmxNumberField(ch, 'min', 'Min')}
-        <Sp2 />
-        {dmxNumberField(ch, 'max', 'MAX')}
-        <Sp2 />
-        <Checkbox
-          label="On/Off"
-          checked={ch.isOnOff}
-          onChange={(isOnOff) =>
-            updateChannel({
-              ...ch,
-              isOnOff,
-            })
-          }
-        />
-      </>
-    )
-  } else if (ch.type === 'other') {
-    return dmxNumberField(ch, 'default', 'Default')
-  } else if (ch.type === 'strobe') {
-    return (
-      <>
-        {dmxNumberField(ch, 'default_solid', 'Solid')}
-        <Sp2 />
-        {dmxNumberField(ch, 'default_strobe', 'Strobe')}
-      </>
-    )
-  } else if (ch.type === 'axis') {
-    return (
-      <>
-        <Row>
-          <Info>Direction: </Info>
-          <Select
-            label="Direction:"
-            val={ch.dir}
-            items={axisDirList}
-            onChange={(newAxisDir) =>
-              updateChannel({
-                ...ch,
-                dir: newAxisDir as AxisDir,
-              })
-            }
-          />
-        </Row>
-        <Checkbox
-          label="Fine"
-          checked={ch.isFine}
-          onChange={(isFine) =>
-            updateChannel({
-              ...ch,
-              isFine,
-            })
-          }
-        />
-        {!ch.isFine && (
-          <>
-            <Sp2 />
-            {dmxNumberField(ch, 'min', 'Min')}
-            <Sp2 />
-            {dmxNumberField(ch, 'max', 'Max')}
-          </>
-        )}
-      </>
-    )
-  } else if (ch.type === 'colorMap') {
-    return (
-      <ColorMapChannel
-        ch={ch}
-        fixtureID={fixtureID}
+  if (!Component) return null
+  return (
+    <ChannelContext.Provider value={{ updateChannel }}>
+      <Component
+        // TODO: figure out type, very bad
+        ch={ch as never}
+        updateChannel={updateChannel}
         channelIndex={channelIndex}
+        fixtureID={fixtureID}
       />
-    )
-  } else if (ch.type === 'reset') {
-    return dmxNumberField(ch, 'resetVal', 'Reset Value')
-  } else if (ch.type === 'custom') {
-    return (
-      <>
-        <Input
-          value={ch.name}
-          onChange={(newName) =>
-            updateChannel({
-              ...ch,
-              name: newName,
-            })
-          }
-        />
-        {dmxNumberField(ch, 'default', 'Default')}
-        <Sp2 />
-        {dmxNumberField(ch, 'min', 'Min')}
-        <Sp2 />
-        {dmxNumberField(ch, 'max', 'Max')}
-      </>
-    )
-  } else {
-    return null
-  }
+    </ChannelContext.Provider>
+  )
 }
 
-const Row = styled.div`
+export const Row = styled.div`
   display: flex;
   align-items: center;
 `
@@ -219,11 +128,7 @@ const Content = styled.div`
   }
 `
 
-const Sp2 = styled.div`
-  width: 1rem;
-`
-
-const Info = styled.div`
+export const Info = styled.div`
   font-size: 0.9rem;
   margin-right: 0.5rem;
 `
