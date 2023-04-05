@@ -5,7 +5,9 @@ import {
   PayloadAction,
 } from '@reduxjs/toolkit'
 import { useSelector, TypedUseSelectorHook } from 'react-redux'
-import dmxReducer, { DmxState } from '../../features/fixtures/redux/fixturesSlice'
+import dmxReducer, {
+  DmxState,
+} from '../../features/fixtures/redux/fixturesSlice'
 import guiReducer from './guiSlice'
 import controlReducer, { ControlState } from './controlSlice'
 import { LightScene_t } from '../../features/scenes/shared/Scenes'
@@ -13,7 +15,6 @@ import mixerReducer from './mixerSlice'
 import undoable, { StateWithHistory } from 'redux-undo'
 import { DeviceState } from 'features/midi/redux'
 import { VisualScene_t, SceneType } from '../../features/scenes/shared/Scenes'
-import { DefaultParam, Params } from '../../features/dmx/shared/params'
 import { SaveInfo } from 'features/fileSaving/shared/save'
 import eventLogger from './eventLogger'
 import { FixtureType } from 'features/dmx/shared/dmxFixtures'
@@ -247,31 +248,4 @@ export function useActiveFixtureType<T>(
 
 export function useDeviceSelector<T>(getVal: (midi: DeviceState) => T) {
   return useTypedSelector((state) => getVal(state.control.present.device))
-}
-
-export function useBaseParam(
-  param: DefaultParam | string,
-  splitIndex: number
-): number | undefined {
-  const baseParam = useActiveLightScene((state) => {
-    return state.splitScenes[splitIndex].baseParams[param]
-  })
-  return baseParam
-}
-
-export function useBaseParams(splitIndex: number): Params {
-  const baseParams = useActiveLightScene((state) => {
-    return state.splitScenes[splitIndex].baseParams
-  })
-  return baseParams
-}
-
-export function useModParam(
-  param: DefaultParam | string,
-  modIndex: number,
-  splitIndex: number
-) {
-  return useActiveLightScene((scene) => {
-    return scene.modulators[modIndex].splitModulations[splitIndex][param]
-  })
 }

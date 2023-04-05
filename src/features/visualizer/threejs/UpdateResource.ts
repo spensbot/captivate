@@ -1,4 +1,4 @@
-import { Params } from '../../dmx/shared/params'
+import { Params } from '../../params/shared/params'
 import { TimeState } from '../../bpm/shared/TimeState'
 import { isNewPeriod, beatsIn, beatsLeft } from '../../bpm/shared/TimeState'
 import { LightScene_t } from '../../scenes/shared/Scenes'
@@ -8,7 +8,7 @@ import { Range, rLerp } from 'features/utils/math/range'
 interface UpdateData {
   dt: number
   time: TimeState
-  params: Params
+  params: Partial<Params>
   scene: LightScene_t
   master: number
   size: Size
@@ -17,7 +17,7 @@ interface UpdateData {
 export default class UpdateResource {
   dt: number
   time: TimeState
-  params: Params
+  params: Partial<Params>
   scene: LightScene_t
   master: number
   size: Size

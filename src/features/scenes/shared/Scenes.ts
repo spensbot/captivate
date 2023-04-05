@@ -1,4 +1,4 @@
-import { Params, initBaseParams } from '../../dmx/shared/params'
+import { Params, initBaseParams } from '../../params/shared/params'
 import { Modulator, initModulator } from '../../modulation/shared/modulation'
 import { RandomizerOptions, initRandomizerOptions } from '../../bpm/shared/randomizer'
 import { nanoid } from 'nanoid'
@@ -18,7 +18,7 @@ export interface SceneBase {
 }
 
 export interface SplitScene_t {
-  baseParams: Params
+  baseParams: Partial<Params>
   randomizer: RandomizerOptions
   // true = include group | false = include not group
   groups: { [key: string]: boolean | undefined }

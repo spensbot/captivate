@@ -1,9 +1,9 @@
-import { useOutputParam } from '../../../../renderer/redux/realtimeStore'
-import { DefaultParam } from '../../../dmx/shared/params'
+import { useOutputParam } from 'features/params/redux'
+import { DefaultParam } from '../../shared/params'
 import SliderCursor from '../../../ui/react/base/SliderCursor'
 
 interface Props {
-  param: DefaultParam | string
+  param: DefaultParam
   radius: number
   orientation: 'vertical' | 'horizontal'
   splitIndex: number

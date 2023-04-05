@@ -25,6 +25,7 @@ export const scenesSlice = createSlice({
   initialState: initControlState(),
   reducers: {
     ...actions,
+
     // =====================   MIDI   ===========================================
     midiListen: (state, action) => midiActions.listen(state.device, action),
     midiStopListening: (state) => midiActions.stopListening(state.device),

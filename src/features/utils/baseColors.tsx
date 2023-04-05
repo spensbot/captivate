@@ -1,5 +1,4 @@
 import { Normalized } from './math/util'
-import { Params } from '../dmx/shared/params'
 
 export type BaseColor = 'red' | 'green' | 'blue'
 
@@ -50,20 +49,6 @@ export function hsi2rgb(h: Normalized, s: Normalized, i: Normalized): RGB {
   const [r1, g1, b1] = intermediate(c, x, hp)
   const m = i * (1 - s)
   return [r1 + m, g1 + m, b1 + m]
-}
-
-export function getBaseColors(params: Params): BaseColors {
-  const [r, g, b] = hsv2rgb(
-    params.hue ?? 0,
-    params.saturation ?? 0,
-    params.brightness ?? 0
-  )
-
-  return {
-    red: r,
-    green: g,
-    blue: b,
-  }
 }
 
 export function getBaseColorsFromHsv(

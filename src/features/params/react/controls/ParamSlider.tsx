@@ -1,12 +1,12 @@
-import { DefaultParam } from '../../../dmx/shared/params'
+import { DefaultParam } from '../../shared/params'
 import SliderBase from '../../../ui/react/base/SliderBase'
 import SliderCursor from '../../../ui/react/base/SliderCursor'
-import { useBaseParam } from '../../../../renderer/redux/store'
 import { useDispatch } from 'react-redux'
 import { setBaseParams } from '../../../../renderer/redux/controlSlice'
 import ParamCursor from './ParamCursor'
 import { SliderMidiOverlay } from 'features/midi/react/MidiOverlay'
 import ParamXButton from './ParamXButton'
+import { useBaseParam } from 'features/params/redux'
 
 interface Props {
   param: DefaultParam

@@ -1,23 +1,21 @@
 import { useState } from 'react'
 import { useDispatch } from 'react-redux'
-import { DefaultParam } from '../../dmx/shared/params'
+import { DefaultParam } from '../../params/shared/params'
 import {
   useActiveLightScene,
-  useBaseParams,
   useDmxSelector,
-  useModParam,
 } from '../../../renderer/redux/store'
 import { setModulation } from '../../../renderer/redux/controlSlice'
 import useDragMapped from '../../ui/react/hooks/useDragMapped'
 import styled from 'styled-components'
 import Popup from 'features/ui/react/base/Popup'
 import { indexArray } from 'features/utils/util'
-import { getAllParamKeys } from 'features/fixtures/redux/fixturesSlice'
+import { getAllParamKeys, useBaseParams, useModParam } from 'features/params/redux'
 
 interface Props {
   splitIndex: number
   modIndex: number
-  param: DefaultParam | string
+  param: DefaultParam
 }
 
 export default function ModulationSlider({
@@ -128,7 +126,7 @@ function ParamEditor({
 }: {
   splitIndex: number
   modIndex: number
-  param: DefaultParam | string
+  param: DefaultParam
 }) {
   const modVal = useModParam(param, modIndex, splitIndex)
   const dispatch = useDispatch()

@@ -10,7 +10,7 @@ import { CleanReduxState } from '../../../renderer/redux/store'
 import { ColorChannel } from 'features/dmx/shared/dmxColors'
 import { DmxValue, FixtureChannel } from 'features/dmx/shared/dmxFixtures'
 import { Modulator } from '../../modulation/shared/modulation'
-import { Modulation, Params } from '../../dmx/shared/params'
+import { Modulation, Params } from '../../params/shared/params'
 import { RandomizerOptions } from '../../bpm/shared/randomizer'
 import {
   LightScenes_t,

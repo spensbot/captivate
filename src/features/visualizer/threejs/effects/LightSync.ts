@@ -4,10 +4,10 @@ import fragmentShader from '../shaders/LightSync.frag'
 import { Uniform } from 'three'
 import UpdateResource from '../UpdateResource'
 import { Strobe } from '../util/animations'
-import { getBaseColors } from 'features/utils/baseColors'
 import CustomPassShader from './CustomPassShader'
 import EffectBase from './EffectBase'
 import { LightSyncConfig } from './effectConfigs'
+import { getBaseColors } from 'features/params/shared/utils'
 
 type LightSyncShader = CustomPassShader<{
   tDiffuse: Uniform

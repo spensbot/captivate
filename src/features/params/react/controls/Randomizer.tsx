@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 import ADSRWrapper from './ADSRWrapper'
-import { useActiveLightScene, useBaseParam } from '../../../../renderer/redux/store'
+import { useActiveLightScene } from '../../../../renderer/redux/store'
 import RandomizerVisualizer from './RandomizerVisualizer'
 import DraggableNumber from '../../../ui/react/base/DraggableNumber'
 import { useDispatch } from 'react-redux'
@@ -8,6 +8,7 @@ import { setRandomizer } from '../../../../renderer/redux/controlSlice'
 import Slider from '../../../ui/react/base/Slider'
 import ParamXButton from './ParamXButton'
 import ParamSlider from './ParamSlider'
+import { useBaseParam } from 'features/params/redux'
 
 interface Props {
   splitIndex: number

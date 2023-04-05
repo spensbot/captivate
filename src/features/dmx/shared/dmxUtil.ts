@@ -6,7 +6,6 @@ import {
   FixtureType,
   FlattenedFixture,
 } from './dmxFixtures'
-import { Params } from './params'
 import { lerp, Normalized } from '../../utils/math/util'
 
 export function getWindowMultiplier2D(
@@ -40,28 +39,6 @@ export function applyMirror(
   const doubleNorm = value * 2 - 1
   const mirroredDoubleNorm = lerp(doubleNorm, -doubleNorm, mirrorAmount)
   return (mirroredDoubleNorm + 1) / 2
-}
-
-/**
- * used on engine side on led and dmx
- * @param params
- * @returns
- */
-export function getMovingWindow(params: Params): Window2D_t {
-  const x =
-    params.x !== undefined && params.width !== undefined
-      ? { pos: params.x, width: params.width }
-      : undefined
-
-  const y =
-    params.y !== undefined && params.height !== undefined
-      ? { pos: params.y, width: params.height }
-      : undefined
-
-  return {
-    x: x,
-    y: y,
-  }
 }
 
 export function getFixturesInGroups(

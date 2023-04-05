@@ -26,7 +26,7 @@ import {
 } from '../../features/dmx/shared/dmxUtil'
 import { ThrottleMap } from 'features/midi/engine/midiConnection'
 import { MidiMessage, midiInputID } from 'features/midi/shared/midi'
-import { getAllParamKeys } from '../../features/fixtures/redux/fixturesSlice'
+
 import { indexArray } from '../../features/utils/util'
 import WledManager from '../../features/led/engine/wled_manager'
 import {
@@ -35,6 +35,7 @@ import {
   _tapTempo,
 } from 'features/bpm/engine/Link'
 import { createApi, IPC_Callbacks } from './api'
+import { getAllParamKeys } from 'features/params/redux'
 
 let _realtimeState: RealtimeState = initRealtimeState()
 

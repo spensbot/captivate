@@ -1,4 +1,3 @@
-import { Window2D_t } from '../../shared/shared/window'
 import {
   DmxValue,
   DMX_MAX_VALUE,
@@ -10,21 +9,17 @@ import {
   GetFixturePayload,
   ChannelType,
 } from '../shared/dmxFixtures'
-import { getParam, Params } from '../shared/params'
+import { Params } from '../../params/shared/params'
 import { Normalized } from '../../utils/math/util'
 import { rLerp } from '../../utils/math/range'
-import { applyRandomization } from '../../bpm/shared/randomizer'
 
-import {
-  applyMirror,
-  getMovingWindow,
-  getWindowMultiplier2D,
-} from '../shared/dmxUtil'
+import { applyMirror } from '../shared/dmxUtil'
 import { ChannelConfig, channelConfig } from '../channel.config'
+import { getMovingWindow } from 'features/params/engine'
 
 export function getDmxValue(
   ch: FixtureChannel,
-  params: Params,
+  params: Partial<Params>,
   fixture: FlattenedFixture,
   master: number,
   randomizerLevel: number
@@ -42,22 +37,6 @@ export function getDmxValue(
     params,
     randomizerLevel,
   })
-}
-
-export function getBrightness(
-  params: Params,
-  randomizerLevel: Normalized,
-  fixtureWindow: Window2D_t,
-  movingWindow: Window2D_t
-): Normalized {
-  const unrandomizedBrightness =
-    getParam(params, 'brightness') *
-    getWindowMultiplier2D(fixtureWindow, movingWindow)
-  return applyRandomization(
-    unrandomizedBrightness,
-    randomizerLevel,
-    getParam(params, 'randomize')
-  )
 }
 
 export function calculate_axis_channel(

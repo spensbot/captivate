@@ -9,13 +9,14 @@ import { ChannelType, GetFixturePayload } from './shared/dmxFixtures'
 
 import { findClosest } from 'features/utils/math/util'
 import { getColorChannelLevel } from './shared/dmxColors'
-import { Params, getParam } from './shared/params'
-import { calculate_axis_channel, getBrightness } from './engine/channelUtils'
+import { Params, getParam } from '../params/shared/params'
+import { calculate_axis_channel } from './engine/channelUtils'
 import { Window2D_t } from 'features/shared/shared/window'
+import { getBrightness } from 'features/params/engine'
 
 type GetContext<Type extends ChannelType> = {
   ch: GetFixturePayload<Type>
-  params: Params
+  params: Partial<Params>
   fixture: FlattenedFixture
   master: number
   randomizerLevel: number
@@ -45,7 +46,7 @@ const createChannelConfig = <
       default: (...args) => {
         return {
           ...config.default(...args),
-          type: key
+          type: key,
         }
       },
     }

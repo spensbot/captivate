@@ -1,6 +1,5 @@
-import { useOutputParam } from '../../../../renderer/redux/realtimeStore'
+import { useBaseParam, useOutputParam } from 'features/params/redux'
 import Cursor from '../../../ui/react/base/Cursor'
-import { useBaseParam } from 'renderer/redux/store'
 
 interface Props {
   splitIndex: number

@@ -1,19 +1,20 @@
 import IconButton from '@mui/material/IconButton'
 import AddIcon from '@mui/icons-material/Add'
 import { useState, FunctionComponent } from 'react'
-import { useBaseParams, useDmxSelector } from 'renderer/redux/store'
+import { useDmxSelector } from 'renderer/redux/store'
 import styled from 'styled-components'
 import Popup from '../../../ui/react/base/Popup'
 import { useDispatch } from 'react-redux'
-import { DefaultParam, Params, defaultParamsList } from 'features/dmx/shared/params'
+import { DefaultParam, Params, defaultParamsList } from 'features/params/shared/params'
 import { setBaseParams } from 'renderer/redux/controlSlice'
-import { initParams } from 'features/dmx/shared/params'
+import { initParams } from 'features/params/shared/params'
 import IntensityIcon from '@mui/icons-material/LocalFireDepartment'
 import StrobeIcon from '@mui/icons-material/LightMode'
 import RandomizeIcon from '@mui/icons-material/Shuffle'
 import PositionIcon from '@mui/icons-material/PictureInPicture'
 import axisIconSrc from '../../../../../assets/axis.svg'
 import { getCustomChannels } from 'features/fixtures/redux/fixturesSlice'
+import { useBaseParams } from 'features/params/redux'
 
 interface Props {
   splitIndex: number
@@ -45,7 +46,7 @@ const initialParams = initParams()
 
 function getOptions(
   custom_channels: Set<string>,
-  baseParams: Params
+  baseParams: Partial<Params>
 ): (DefaultParam | ParamBundle | string)[] {
   const paramOptions: (DefaultParam | ParamBundle | string)[] =
     defaultParamsList.filter((param) => {
@@ -110,7 +111,7 @@ export default function ParamAddButton({ splitIndex }: Props) {
                 key={option}
                 onClick={(e) => {
                   e.preventDefault()
-                  const newParams: Params = {}
+                  const newParams: Partial<Params> = {}
                   if (option === 'axis' || option === 'position') {
                     for (const param of paramBundles[option]) {
                       newParams[param] = initialParams[param] ?? 0

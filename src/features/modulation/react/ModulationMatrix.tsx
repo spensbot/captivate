@@ -6,7 +6,7 @@ import {
 import styled from 'styled-components'
 import { indexArray } from 'features/utils/util'
 import ModulationSlider, { AddModulationButton } from './ModulationSlider'
-import { getAllParamKeys } from 'features/fixtures/redux/fixturesSlice'
+import { getAllParamKeys } from 'features/params/redux'
 
 export default function ModulationMatrix({ index }: { index: number }) {
   const numSplits = useActiveLightScene((scene) => scene.splitScenes.length)

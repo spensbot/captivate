@@ -3,7 +3,7 @@ import useDragMapped from '../../../ui/react/hooks/useDragMapped'
 import { useDispatch } from 'react-redux'
 import { setBaseParams } from '../../../../renderer/redux/controlSlice'
 import { SVCursorBase, SVCursorOutput } from './SVCursor'
-import { useOutputParam } from '../../../../renderer/redux/realtimeStore'
+import { useOutputParam } from 'features/params/redux'
 
 interface Props {
   splitIndex: number

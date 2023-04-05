@@ -1,4 +1,5 @@
-import { useOutputParam } from '../../../../renderer/redux/realtimeStore'
+
+import { useOutputParam } from 'features/params/redux'
 import Window2D from '../../../ui/react/base/Window2D'
 
 interface Props {

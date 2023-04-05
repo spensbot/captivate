@@ -1,11 +1,11 @@
 import styled from 'styled-components'
-import { DefaultParam } from 'features/dmx/shared/params'
+import { DefaultParam } from 'features/params/shared/params'
 import { useDispatch } from 'react-redux'
 import { deleteBaseParams } from 'renderer/redux/controlSlice'
 
 interface Props {
   splitIndex: number
-  params: readonly (DefaultParam | string)[]
+  params: readonly DefaultParam[]
 }
 
 export default function ParamXButton({ splitIndex, params }: Props) {

@@ -3,9 +3,9 @@ import { useDispatch } from 'react-redux'
 import { setBaseParams } from '../../../../renderer/redux/controlSlice'
 import XYAxisCursor from './XYAxisCursor'
 import styled from 'styled-components'
-import { useBaseParam } from 'renderer/redux/store'
 import ParamXButton from './ParamXButton'
 import { paramBundles } from './ParamAddButton'
+import { useBaseParam } from 'features/params/redux'
 
 interface Props {
   splitIndex: number

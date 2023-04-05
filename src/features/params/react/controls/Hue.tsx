@@ -2,7 +2,7 @@ import useDragMapped from '../../../ui/react/hooks/useDragMapped'
 import { useDispatch } from 'react-redux'
 import { setBaseParams } from '../../../../renderer/redux/controlSlice'
 import styled from 'styled-components'
-import { useBaseParam } from 'renderer/redux/store'
+import { useBaseParam } from 'features/params/redux'
 
 interface Props {
   splitIndex: number

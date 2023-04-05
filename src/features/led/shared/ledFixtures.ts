@@ -1,9 +1,10 @@
 import { distanceBetween, pLerp, Point } from '../../utils/math/point'
 import { BaseColors, getBaseColorsFromHsv } from '../../utils/baseColors'
-import { getMovingWindow, getWindowMultiplier2D } from '../../dmx/shared/dmxUtil'
-import { getParam, Params } from '../../dmx/shared/params'
+import { getWindowMultiplier2D } from '../../dmx/shared/dmxUtil'
+import { getParam, Params } from '../../params/shared/params'
 import { indexArray } from '../../utils/util'
 import { Window2D_t } from '../../shared/shared/window'
+import { getMovingWindow } from 'features/params/engine'
 
 export const MAX_LED_COUNT = 367
 
@@ -28,7 +29,7 @@ export function initLedFixture(): LedFixture {
 }
 
 export function getLedValues(
-  params: Params,
+  params: Partial<Params>,
   ledFixture: LedFixture,
   master: number
 ): BaseColors[] {

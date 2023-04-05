@@ -5,10 +5,10 @@ import { XYCursorBase, XYCursorOutput } from './XYCursor'
 import XYWindow from './XYWindow'
 import styled from 'styled-components'
 import ParamXButton from './ParamXButton'
-import { useBaseParam } from 'renderer/redux/store'
 import MidiOverlay_xy from 'features/midi/react/MidiOverlay_xy'
 import { paramBundles } from './ParamAddButton'
 import { secondaryEnabled } from 'features/ui/react/base/keyUtil'
+import { useBaseParam } from 'features/params/redux'
 
 interface Props {
   splitIndex: number

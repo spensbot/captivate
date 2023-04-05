@@ -13,9 +13,9 @@ export type DefaultParam =
   | 'yAxis'
   | 'xMirror'
 
-export type Params = { [key: string]: number | undefined }
+export type Params = { [key in DefaultParam]: number | undefined }
 
-export function initBaseParams(): Params {
+export function initBaseParams(): Partial<Params> {
   return {
     hue: 0.5,
     saturation: 0.5,
@@ -58,11 +58,11 @@ const defaultParams: { [key in DefaultParam]: number } = {
   xMirror: 0.0,
 }
 
-export function getParam(params: Params, param: DefaultParam): number {
+export function getParam(params: Partial<Params>, param: DefaultParam): number {
   return params[param] ?? defaultParams[param]
 }
 
-export function defaultOutputParams(): Params {
+export function defaultOutputParams(): Partial<Params> {
   return {
     hue: 0.5,
     saturation: 0.5,
@@ -96,7 +96,7 @@ export const defaultParamsList: DefaultParam[] = [
   'xMirror',
 ]
 
-export type Modulation = Params
+export type Modulation = Partial<Params>
 
 export function initModulation(): Modulation {
   return {}

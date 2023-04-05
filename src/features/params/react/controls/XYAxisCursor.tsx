@@ -1,4 +1,4 @@
-import { useOutputParam } from '../../../../renderer/redux/realtimeStore'
+import { useOutputParam } from 'features/params/redux'
 import Cursor from '../../../ui/react/base/Cursor'
 import { applyMirror } from 'features/dmx/shared/dmxUtil'
 

@@ -9,7 +9,6 @@ import {
   SubFixture,
 } from 'features/dmx/shared/dmxFixtures'
 import { clampNormalized } from '../../utils/math/util'
-import { defaultParamsList } from '../../dmx/shared/params'
 import { initLedState, LedState } from '../../led/redux/ledState'
 import { initLedFixture, LedFixture } from '../../led/shared/ledFixtures'
 import { Point } from '../../utils/math/point'
@@ -36,12 +35,6 @@ export function getCustomChannels(dmx: DmxState): Set<string> {
   }
 
   return result
-}
-
-export function getAllParamKeys(dmx: DmxState): string[] {
-  return (defaultParamsList as string[]).concat(
-    Array.from(getCustomChannels(dmx))
-  )
 }
 
 interface SetFixtureWindowPayload {

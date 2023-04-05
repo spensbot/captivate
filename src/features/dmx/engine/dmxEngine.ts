@@ -4,7 +4,7 @@ import {
   DMX_NUM_CHANNELS,
   FlattenedFixture,
 } from '../shared/dmxFixtures'
-import { Params } from '../shared/params'
+import { Params } from '../../params/shared/params'
 import { RandomizerState } from '../../bpm/shared/randomizer'
 import { CleanReduxState } from '../../../renderer/redux/store'
 import {
@@ -33,7 +33,7 @@ export function calculateDmx(
 
     const applyFixtures = (
       fixtures: FlattenedFixture[],
-      outputParams: Params,
+      outputParams: Partial<Params>,
       randomizerState: RandomizerState
     ) => {
       fixtures.forEach((fixture, i) => {
