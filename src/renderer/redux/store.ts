@@ -8,10 +8,10 @@ import { useSelector, TypedUseSelectorHook } from 'react-redux'
 import dmxReducer, {
   DmxState,
 } from '../../features/fixtures/redux/fixturesSlice'
-import guiReducer from './guiSlice'
+import guiReducer from '../../features/ui/redux/guiSlice'
 import controlReducer, { ControlState } from './controlSlice'
 import { LightScene_t } from '../../features/scenes/shared/Scenes'
-import mixerReducer from './mixerSlice'
+import mixerReducer from '../../features/dmx/redux/mixerSlice'
 import undoable, { StateWithHistory } from 'redux-undo'
 import { DeviceState } from 'features/midi/redux'
 import { VisualScene_t, SceneType } from '../../features/scenes/shared/Scenes'

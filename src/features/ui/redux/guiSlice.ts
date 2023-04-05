@@ -1,11 +1,11 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { SaveInfo } from '../../features/fileSaving/shared/save'
+import { SaveInfo } from '../../fileSaving/shared/save'
 import {
   MidiConnections,
   DmxConnections,
   initDmxConnections,
   initMidiConnections,
-} from '../../features/devices/shared/connection'
+} from '../../devices/shared/connection'
 
 export type Page =
   | 'Universe'

@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 import { useControlSelector, useTypedSelector } from '../../../../renderer/redux/store'
-import { setConnectionsMenu } from '../../../../renderer/redux/guiSlice'
+import { setConnectionsMenu } from '../../../ui/redux/guiSlice'
 import { useDispatch } from 'react-redux'
 import { setDmxConnectable, setMidiConnectable } from '../../../../renderer/redux/controlSlice'
 import CloseIcon from '@mui/icons-material/Close'

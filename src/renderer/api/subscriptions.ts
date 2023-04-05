@@ -13,7 +13,7 @@ import {
   setSaving,
   setLoading,
   setNewProjectDialog,
-} from '../redux/guiSlice'
+} from '../../features/ui/redux/guiSlice'
 import {
   getUndoGroup,
   undoAction,

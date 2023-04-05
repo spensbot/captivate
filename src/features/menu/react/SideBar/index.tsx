@@ -8,7 +8,7 @@ import VisualsIcon from 'features/ui/react/images/Thick.png'
 import MixerIcon from '@mui/icons-material/BarChart'
 import { useTypedSelector } from '../../../../renderer/redux/store'
 import { useDispatch } from 'react-redux'
-import { setActivePage, Page } from '../../../../renderer/redux/guiSlice'
+import { setActivePage, Page } from '../../../ui/redux/guiSlice'
 import MasterSlider from '../../../scenes/react/controls/MasterSlider'
 
 const selectedBorder = 0.2 //rem

@@ -34,6 +34,7 @@ export interface IncrementModulatorPayload {
 }
 
 export const modulationActionReducer = createTypedReducers({
+  // Update modulators
   setModulatorShape: (
     state,
     { payload }: PayloadAction<{ index: number; shape: LfoShape }>
@@ -85,6 +86,7 @@ export const modulationActionReducer = createTypedReducers({
       )
     })
   },
+  // Create and Delete modulators
   addModulator: (state, _: PayloadAction<void>) => {
     modifyActiveLightScene(state, (scene) => {
       scene.modulators.push(initModulator(scene.splitScenes.length))

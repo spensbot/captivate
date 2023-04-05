@@ -10,7 +10,7 @@ import {
   setChannelsPerPage,
   setOverwrite,
   clearOverwrites,
-} from '../../redux/mixerSlice'
+} from '../../../features/dmx/redux/mixerSlice'
 import { useRealtimeSelector } from '../../redux/realtimeStore'
 import StatusBar from '../../../features/menu/react/StatusBar'
 import React from 'react'

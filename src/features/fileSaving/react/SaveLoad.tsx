@@ -20,7 +20,7 @@ import {
   getSaveConfig,
 } from 'features/fileSaving/shared/save'
 import { useDispatch } from 'react-redux'
-import { setSaving, setLoading } from 'renderer/redux/guiSlice'
+import { setSaving, setLoading } from 'features/ui/redux/guiSlice'
 import { queries } from 'renderer/api'
 
 export async function load() {

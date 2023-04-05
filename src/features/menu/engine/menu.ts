@@ -11,7 +11,7 @@ import { listPorts } from 'features/dmx/engine/dmxConnection'
 import {
   toggleLedEnabled,
   toggleVideoEnabled,
-} from '../../../renderer/redux/guiSlice'
+} from '../../ui/redux/guiSlice'
 
 interface DarwinMenuItemConstructorOptions extends MenuItemConstructorOptions {
   selector?: string

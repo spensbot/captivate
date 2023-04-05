@@ -2,7 +2,7 @@ import React from 'react'
 import { useDispatch } from 'react-redux'
 import { useTypedSelector } from '../../../renderer/redux/store'
 import OfflineBoltIcon from '@mui/icons-material/OfflineBolt'
-import { setBlackout } from '../../../renderer/redux/guiSlice'
+import { setBlackout } from '../../ui/redux/guiSlice'
 
 export default function BlackoutButton() {
   const dispatch = useDispatch()

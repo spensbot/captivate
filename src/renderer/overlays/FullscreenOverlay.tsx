@@ -1,6 +1,6 @@
 import { useDispatch } from 'react-redux'
 import { useTypedSelector } from 'renderer/redux/store'
-import { setBlackout } from '../redux/guiSlice'
+import { setBlackout } from '../../features/ui/redux/guiSlice'
 import styled from 'styled-components'
 import zIndexes from '../zIndexes'
 import Blackout from './Blackout'

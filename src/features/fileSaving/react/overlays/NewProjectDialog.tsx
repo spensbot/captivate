@@ -4,7 +4,7 @@ import initState from '../../../../renderer/redux/initState'
 import defaultState from '../../../../renderer/redux/defaultState'
 import { resetState } from '../../../../renderer/redux/store'
 import { Button } from '@mui/material'
-import { setNewProjectDialog } from 'renderer/redux/guiSlice'
+import { setNewProjectDialog } from 'features/ui/redux/guiSlice'
 
 interface Props {}
 
