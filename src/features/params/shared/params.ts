@@ -1,3 +1,7 @@
+import {
+  DmxState,
+  getCustomChannels,
+} from 'features/fixtures/redux/fixturesSlice'
 import { Pretty } from 'features/shared/shared/type-utils'
 
 export type DefaultParam =
@@ -57,6 +61,12 @@ export function getParam(
   param: DefaultParam
 ): number {
   return params[param] ?? defaultParams[param]
+}
+
+export function getAllParamKeys(dmx: DmxState): string[] {
+  return (defaultParamsList as string[]).concat(
+    Array.from(getCustomChannels(dmx))
+  )
 }
 
 export function defaultOutputParams(): Partial<Params> {

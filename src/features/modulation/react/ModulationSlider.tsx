@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useDispatch } from 'react-redux'
-import { DefaultParam } from '../../params/shared/params'
+import { DefaultParam, getAllParamKeys } from '../../params/shared/params'
 import {
   useActiveLightScene,
   useDmxSelector,
@@ -10,11 +10,7 @@ import useDragMapped from '../../ui/react/hooks/useDragMapped'
 import styled from 'styled-components'
 import Popup from 'features/ui/react/base/Popup'
 import { indexArray } from 'features/utils/util'
-import {
-  getAllParamKeys,
-  useBaseParams,
-  useModParam,
-} from 'features/params/redux'
+import { useBaseParams, useModParam } from 'features/params/redux'
 
 interface Props {
   splitIndex: number

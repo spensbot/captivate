@@ -2,20 +2,10 @@ import {
   DefaultParam,
   Params,
   defaultOutputParams,
-  defaultParamsList,
 } from 'features/params/shared/params'
-import {
-  DmxState,
-  getCustomChannels,
-} from 'features/fixtures/redux/fixturesSlice'
+
 import { useActiveLightScene } from 'renderer/redux/store'
 import { useRealtimeSelector } from 'renderer/redux/realtimeStore'
-
-export function getAllParamKeys(dmx: DmxState): string[] {
-  return (defaultParamsList as string[]).concat(
-    Array.from(getCustomChannels(dmx))
-  )
-}
 
 export function useBaseParam(
   param: DefaultParam,

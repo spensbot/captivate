@@ -35,8 +35,8 @@ import {
   _tapTempo,
 } from 'features/bpm/engine/Link'
 import { createApi, IPC_Callbacks } from './api'
-import { getAllParamKeys } from 'features/params/redux'
 import { createOutputParams } from 'features/params/engine'
+import { getAllParamKeys } from 'features/params/shared/params'
 
 let _realtimeState: RealtimeState = initRealtimeState()
 
