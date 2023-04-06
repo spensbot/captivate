@@ -1,7 +1,7 @@
 import SVpad from './SVpad'
 import Hue from './Hue'
 import MidiOverlay_xy from 'features/midi/react/MidiOverlay_xy'
-import { SliderMidiOverlay } from 'features/midi/react/MidiOverlay'
+import { RangeMidiOverlay } from 'features/midi/react/MidiOverlay'
 import styled from 'styled-components'
 
 interface Props {
@@ -19,9 +19,9 @@ export default function HsvPad({ splitIndex }: Props) {
       >
         <SVpad splitIndex={splitIndex} />
       </MidiOverlay_xy>
-      <SliderMidiOverlay action={{ type: 'setBaseParam', paramKey: 'hue' }}>
+      <RangeMidiOverlay action={{ type: 'setBaseParam', paramKey: 'hue' }}>
         <Hue splitIndex={splitIndex} />
-      </SliderMidiOverlay>
+      </RangeMidiOverlay>
     </Root>
   ) : (
     <Root>

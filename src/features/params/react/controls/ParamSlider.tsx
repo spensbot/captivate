@@ -4,7 +4,7 @@ import SliderCursor from '../../../ui/react/base/SliderCursor'
 import { useDispatch } from 'react-redux'
 import { setBaseParams } from '../../../../renderer/redux/controlSlice'
 import ParamCursor from './ParamCursor'
-import { SliderMidiOverlay } from 'features/midi/react/MidiOverlay'
+import { RangeMidiOverlay } from 'features/midi/react/MidiOverlay'
 import ParamXButton from './ParamXButton'
 import { useBaseParam } from 'features/params/redux'
 
@@ -65,12 +65,12 @@ export default function ParamSlider({ param, splitIndex }: Props) {
   }
 
   return splitIndex === 0 ? (
-    <SliderMidiOverlay
+    <RangeMidiOverlay
       action={{ type: 'setBaseParam', paramKey: param }}
       style={wrapperStyle}
     >
       {content}
-    </SliderMidiOverlay>
+    </RangeMidiOverlay>
   ) : (
     <div style={wrapperStyle}>{content}</div>
   )

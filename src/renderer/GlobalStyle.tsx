@@ -1,4 +1,5 @@
 import { createGlobalStyle } from 'styled-components'
+import zIndexes from './zIndexes'
 
 export default createGlobalStyle`
   body {
@@ -28,5 +29,8 @@ export default createGlobalStyle`
     font-size: 0.9rem;
     line-height: 1.15; /* 1 */
     margin: 0; /* 2 */
+  }
+  [data-radix-popper-content-wrapper]{
+    z-index: ${zIndexes.popover} !important;
   }
 `

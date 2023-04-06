@@ -2,7 +2,7 @@ import styled from 'styled-components'
 
 import { getActionID } from '../redux'
 import { useDeviceSelector } from '../../../renderer/redux/store'
-import { SliderMidiOverlay } from './MidiOverlay'
+import { RangeMidiOverlay } from './MidiOverlay'
 import { MidiActions } from '../shared/actions'
 
 interface XYProps {
@@ -23,7 +23,7 @@ export default function MidiOverlay_xy({ children, actions, style }: XYProps) {
         <Overlay>
           {actions.map((action) => (
             <Container key={getActionID(action)}>
-              <SliderMidiOverlay action={action} style={overlayStyle} />
+              <RangeMidiOverlay action={action} style={overlayStyle} />
             </Container>
           ))}
           {/* <Container><SliderMidiOverlay action={actionX} style={overlayStyle}/></Container>

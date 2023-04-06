@@ -2,14 +2,14 @@ import Slider from '../../../ui/react/base/Slider'
 import { useControlSelector } from '../../../../renderer/redux/store'
 import { useDispatch } from 'react-redux'
 import { setMaster } from '../../../../renderer/redux/controlSlice'
-import { SliderMidiOverlay } from 'features/midi/react/MidiOverlay'
+import { RangeMidiOverlay } from 'features/midi/react/MidiOverlay'
 
 export default function MasterSlider() {
   const master = useControlSelector((state) => state.master)
   const dispatch = useDispatch()
 
   return (
-    <SliderMidiOverlay
+    <RangeMidiOverlay
       action={{ type: 'setMaster' }}
       style={{
         flex: '0 1 25rem',
@@ -27,6 +27,6 @@ export default function MasterSlider() {
         }}
         orientation="vertical"
       />
-    </SliderMidiOverlay>
+    </RangeMidiOverlay>
   )
 }

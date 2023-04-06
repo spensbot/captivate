@@ -9,7 +9,7 @@ import {
 } from '../../../../renderer/redux/controlSlice'
 import { SceneType } from '../../shared/Scenes'
 import DraggableNumber from '../../../ui/react/base/DraggableNumber'
-import { SliderMidiOverlay } from 'features/midi/react/MidiOverlay'
+import { RangeMidiOverlay } from 'features/midi/react/MidiOverlay'
 
 export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
   const dispatch = useDispatch()
@@ -64,7 +64,7 @@ export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
         }}
       />
       {sceneType === 'light' && (
-        <SliderMidiOverlay
+        <RangeMidiOverlay
           action={{ type: 'setAutoSceneBombacity' }}
           style={{ flex: '1 0 auto', marginLeft: '0.5rem', padding: '0.5rem' }}
         >
@@ -75,7 +75,7 @@ export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
             onChange={onBombacityChange}
             color={enabled ? '#3d5e' : undefined}
           />
-        </SliderMidiOverlay>
+        </RangeMidiOverlay>
       )}
     </Root>
   )

@@ -1,7 +1,7 @@
 import * as api from 'renderer/api'
 import { useRealtimeSelector } from 'renderer/redux/realtimeStore'
 import useDragBasic from 'features/ui/react/hooks/useDragBasic'
-import { SliderMidiOverlay } from 'features/midi/react/MidiOverlay'
+import { RangeMidiOverlay } from 'features/midi/react/MidiOverlay'
 
 export default function BPM() {
   const bpm = useRealtimeSelector((state) => state.time.bpm)
@@ -13,7 +13,7 @@ export default function BPM() {
   })
 
   return (
-    <SliderMidiOverlay action={{ type: 'SetBPM' }}>
+    <RangeMidiOverlay action={{ type: 'SetBPM' }}>
       <div
         ref={dragContainer}
         onMouseDown={onMouseDown}
@@ -24,6 +24,6 @@ export default function BPM() {
       >
         {`${Math.round(bpm)} BPM`}
       </div>
-    </SliderMidiOverlay>
+    </RangeMidiOverlay>
   )
 }
