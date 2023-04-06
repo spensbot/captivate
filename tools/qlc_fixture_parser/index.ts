@@ -10,6 +10,16 @@ let QLC_EXT = 'qxf'
 let QLC_DEFINITION_KEY = 'FixtureDefinition'
 let PATH = './tools/qlc_fixture_parser'
 
+dir.promiseFiles(PATH + '/fixtures').catch((err) => {
+  console.error(`To run this script, you must first copy the fixtures folder from 
+  https://github.com/mcallegari/qlcplus/tree/master/resources/fixtures
+  into tools/qlc_fixture_parser
+
+  More info: 
+
+  ${err}`)
+})
+
 async function main() {
   // https://github.com/NaturalIntelligence/fast-xml-parser/blob/HEAD/docs/v4/2.XMLparseOptions.md
   let parserOptions: X2jOptionsOptional = {
@@ -70,8 +80,9 @@ async function main() {
 
   fs.writeFile(
     PATH + '/captivate_fixtures.json',
-    // JSON.stringify(captivate_fixtures)
-    JSON.stringify(captivate_fixtures, null, 2)
+    JSON.stringify(captivate_fixtures)
+    // Pretty
+    // JSON.stringify(captivate_fixtures, null, 2)
   )
 }
 
