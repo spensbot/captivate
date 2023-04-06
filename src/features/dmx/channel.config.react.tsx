@@ -4,7 +4,7 @@ import {
   Info,
   Row,
   createChannelComponents,
-} from './react/fixtures/channels/editor'
+} from './react/fixtures/channels/editor/core'
 import ColorPicker from 'features/ui/react/base/ColorPicker'
 import Checkbox from 'features/ui/react/base/LabelledCheckbox'
 import Input from 'features/ui/react/base/Input'
