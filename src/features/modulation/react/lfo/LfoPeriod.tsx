@@ -1,5 +1,8 @@
 import { useDispatch } from 'react-redux'
-import { useActiveLightScene, useControlSelector } from '../../../../renderer/redux/store'
+import {
+  useActiveLightScene,
+  useControlSelector,
+} from '../../../../renderer/redux/store'
 import { setPeriod } from '../../../../renderer/redux/controlSlice'
 import DraggableNumber from '../../../ui/react/base/DraggableNumber'
 import { RangeMidiOverlay } from 'features/midi/react/MidiOverlay'
@@ -29,7 +32,11 @@ export default function LfoPeriod({ index }: Props) {
     dispatch(setPeriod({ index: index, newVal: newVal }))
   }
 
-  const wrapperStyle: React.CSSProperties = {}
+  const wrapperStyle: React.CSSProperties = {
+    flex: 1,
+    textAlign: 'right',
+    marginLeft: '0.4rem',
+  }
 
   const min = 0.25
   const max = 32

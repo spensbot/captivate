@@ -1,4 +1,4 @@
-import styled from 'styled-components'
+import styled, { css, keyframes } from 'styled-components'
 import * as Popover from '@radix-ui/react-popover'
 import { SliderAction } from '../redux'
 import {
@@ -10,8 +10,7 @@ import {
 import { useDeviceSelector } from '../../../renderer/redux/store'
 import { useDispatch } from 'react-redux'
 import DraggableNumber from '../../ui/react/base/DraggableNumber'
-import Button from '../../ui/react/base/Button'
-import './midi-overlay-styles.css'
+import Button, { StyledButton } from '../../ui/react/base/Button'
 import { useEffect, useRef } from 'react'
 import { getActionID } from '../redux'
 import { MidiActions } from '../shared/actions'
@@ -332,59 +331,71 @@ export function RangeMidiOverlay({
 
           <Popover.Portal>
             {controlledAction && (
-              <Popover.Content className="PopoverContent">
+              <PopoverContent className="PopoverContent">
                 <>
-                  <button onClick={onListen}>listen</button>
-                  {controlledAction.inputID}
-                  <Popover.Close
-                    onClick={() => dispatch(removeMidiAction(action))}
+                  <p
+                    style={{
+                      position: 'absolute',
+                      left: '0.4rem',
+                      top: '0.3rem',
+                    }}
                   >
-                    X
-                  </Popover.Close>
-                  <MinMax>
-                    <DraggableNumber
-                      type="continuous"
-                      style={minMaxStyle}
-                      value={controlledAction.options.min}
-                      min={min || 0}
-                      max={controlledAction.options.max}
-                      onChange={onChangeMin}
-                      noArrows
-                    />
-                    <DraggableNumber
-                      type="continuous"
-                      style={minMaxStyle}
-                      value={controlledAction.options.max}
-                      min={controlledAction.options.min}
-                      max={max || 1}
-                      onChange={onChangeMax}
-                      noArrows
-                    />
-                  </MinMax>
-                  {controlledAction.options.type === 'note' && (
-                    <>
+                    {controlledAction.inputID}
+                  </p>
+
+                  <PopoverContainer>
+                    {controlledAction.options.type === 'note' && (
+                      <>
+                        <Button
+                          label={controlledAction.options.mode}
+                          onClick={onClickMode}
+                        />
+                        <Button
+                          label={controlledAction.options.value}
+                          onClick={onClickValue(controlledAction.options.value)}
+                        />
+                      </>
+                    )}
+
+                    {controlledAction.options.type === 'cc' && (
                       <Button
-                        fontSize="0.8rem"
                         label={controlledAction.options.mode}
-                        onClick={onClickMode}
+                        onClick={onClickMode_cc}
                       />
-                      <Button
-                        fontSize="0.8rem"
-                        label={controlledAction.options.value}
-                        onClick={onClickValue(controlledAction.options.value)}
+                    )}
+                    <MinMax>
+                      <DraggableNumber
+                        type="continuous"
+                        style={minMaxStyle}
+                        value={controlledAction.options.min}
+                        min={min || 0}
+                        max={controlledAction.options.max}
+                        onChange={onChangeMin}
+                        noArrows
                       />
-                    </>
-                  )}
-                  {controlledAction.options.type === 'cc' && (
-                    <Button
-                      fontSize="0.8rem"
-                      label={controlledAction.options.mode}
-                      onClick={onClickMode_cc}
-                    />
-                  )}
+                      <DraggableNumber
+                        type="continuous"
+                        style={minMaxStyle}
+                        value={controlledAction.options.max}
+                        min={controlledAction.options.min}
+                        max={max || 1}
+                        onChange={onChangeMax}
+                        noArrows
+                      />
+                    </MinMax>
+
+                    <StyledButton onClick={onListen}>Midi Listen</StyledButton>
+                    <StyledButton
+                      style={{ color: '#c63737', borderColor: '#c63737' }}
+                      as={Popover.Close}
+                      onClick={() => dispatch(removeMidiAction(action))}
+                    >
+                      Remove
+                    </StyledButton>
+                  </PopoverContainer>
                 </>
-                <Popover.Arrow className="PopoverArrow" />
-              </Popover.Content>
+                <PopoverArrow className="PopoverArrow" />
+              </PopoverContent>
             )}
           </Popover.Portal>
         </Popover.Root>
@@ -393,14 +404,47 @@ export function RangeMidiOverlay({
   )
 }
 
+const PopoverContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  > * + *:not(style) {
+    margin-top: 6px;
+  }
+`
+
+const PopoverContent = styled(Popover.Content)`
+  border-radius: 4px;
+  padding: 25px 15px 15px 15px;
+  width: 90px;
+  border: 1px solid ${(props) => props.theme.colors.divider};
+  background-color: ${(props) => props.theme.colors.bg.primary};
+`
+const PopoverArrow = styled(Popover.Arrow)`
+  fill: ${(props) => props.theme.colors.bg.primary};
+`
+
 const Root = styled.div`
   position: relative;
 `
 
+const breatheAnimation = keyframes`
+ 0% { border: 2px solid rgba(255,255,255,0); }
+ 40% { border: 2px solid rgba(255,255,255,1); }
+ 100% { border: 2px solid rgba(255,255,255,0); }
+`
+
 const StateColor = {
-  listening: '2px solid white',
-  controlled: '2px solid green',
-  undefined: '0',
+  listening: css`
+    animation-name: ${breatheAnimation};
+    animation-duration: 1s;
+    animation-iteration-count: infinite;
+  `,
+  controlled: css`
+    border: 2px solid white;
+  `,
+  undefined: css`
+    border: 0;
+  `,
 } as const
 
 const TriggerOverlay = styled(Popover.Trigger)<{
@@ -413,7 +457,7 @@ const TriggerOverlay = styled(Popover.Trigger)<{
   right: 0;
   cursor: pointer;
   ${(props) => {
-    return `border: ${StateColor[props.state ? props.state : 'undefined']};`
+    return StateColor[props.state ? props.state : 'undefined']
   }}
   background: #56fd56b7;
   display: flex;

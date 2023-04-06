@@ -54,7 +54,6 @@ export default function LfoMenu({ index }: Props) {
         <MenuItem value={LfoShape.Ramp}>Ramp</MenuItem>
         <MenuItem value={LfoShape.Sin}>Sin</MenuItem>
       </Select>
-      <div style={{ flex: '1 0 0' }} />
       <LfoPeriod index={index} />
       <Divider vertical color={'#fff3'} />
       <IconButton

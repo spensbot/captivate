@@ -8,16 +8,17 @@ type Props = {
 
 export default function Button({ label, fontSize = '0.9rem', onClick }: Props) {
   return (
-    <Root onClick={onClick} style={{ fontSize: fontSize }}>
+    <StyledButton onClick={onClick} style={{ fontSize: fontSize }}>
       {label}
-    </Root>
+    </StyledButton>
   )
 }
 
-const Root = styled.div`
+export const StyledButton = styled.button`
   background-color: #222;
   color: #fff;
   border: 1px solid #888;
   border-radius: 3px;
   padding: 0.1rem 0.2rem;
+  font-size: 0.9rem;
 `

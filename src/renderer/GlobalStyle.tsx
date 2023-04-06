@@ -13,4 +13,20 @@ export default createGlobalStyle`
   *::-webkit-scrollbar {
     display: none;
   }
+
+  /* resets */
+  p {
+    margin: 0;
+  }
+  button {
+    appearance: none;
+    border-style: none;
+    padding: 0;
+    background-color: transparent;
+    color: inherit;
+    font-family: inherit; /* 1 */
+    font-size: 0.9rem;
+    line-height: 1.15; /* 1 */
+    margin: 0; /* 2 */
+  }
 `

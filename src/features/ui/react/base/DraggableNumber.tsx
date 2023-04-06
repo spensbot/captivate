@@ -141,6 +141,7 @@ const Root = styled.div`
 const DragArea = styled.div`
   padding: 0.5rem 0.3rem 0.5rem 0.7rem;
   cursor: move;
+  flex: 1;
 `
 const Col = styled.div`
   display: flex;
