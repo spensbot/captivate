@@ -1,13 +1,10 @@
 import { PayloadAction } from '@reduxjs/toolkit'
 import { LightScene_t } from 'features/scenes/shared/Scenes'
 import { clamp, clampNormalized } from 'features/utils/math/util'
-import {
-  ActionState,
-  createTypedReducers,
-  modifyActiveLightScene,
-} from 'renderer/redux/controlSlice/reducers/actions'
+
 import { LfoShape } from '../shared/oscillator'
 import { initModulator } from '../shared/modulation'
+import { ActionState, createTypedReducers, modifyActiveLightScene } from 'renderer/redux/controlSlice/reducers/core'
 
 const modifyScene = {
   light: {

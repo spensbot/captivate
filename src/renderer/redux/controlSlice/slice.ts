@@ -6,7 +6,8 @@ import {
   initLightScene,
   initVisualScene,
 } from '../../../features/scenes/shared/Scenes'
-import { ActionState, actions } from './reducers/actions'
+import { actions } from './reducers/actions'
+import { ActionState } from './reducers/core'
 
 export interface ControlState extends ActionState {
   device: DeviceState

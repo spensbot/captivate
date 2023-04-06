@@ -7,69 +7,29 @@ import { LayerConfig } from '../../../../features/visualizer/threejs/layers/Laye
 import { EffectConfig } from '../../../../features/visualizer/threejs/effects/effectConfigs'
 
 import { reorderArray } from '../../../../features/utils/util'
-import { PayloadAction, SliceCaseReducers } from '@reduxjs/toolkit'
+import { PayloadAction } from '@reduxjs/toolkit'
 import {
-  LightScene_t,
   LightScenes_t,
-  VisualScene_t,
   VisualScenes_t,
   SceneType,
   initSplitScene,
-  ScenesStateBundle,
   initLightScene,
   initVisualScene,
 } from '../../../../features/scenes/shared/Scenes'
 
 import { paramsActionReducer } from 'features/params/redux/reducer'
 import { modulationActionReducer } from 'features/modulation/redux/reducer'
-
-export interface ActionState extends ScenesStateBundle {
-  master: number
-}
-
-export function modifyActiveLightScene(
-  state: ActionState,
-  callback: (scene: LightScene_t) => void
-) {
-  const scene = state.light.byId[state.light.active]
-  if (scene) {
-    callback(scene)
-  }
-}
-
-function modifyActiveVisualScene(
-  state: ActionState,
-  callback: (scene: VisualScene_t) => void
-) {
-  const scene = state.visual.byId[state.visual.active]
-  if (scene) {
-    callback(scene)
-  }
-}
-
-function modifyActiveScene(
-  state: ActionState,
-  sceneType: SceneType,
-  callback: (scene: VisualScene_t | LightScene_t) => void
-) {
-  const scene = state[sceneType].byId[state[sceneType].active]
-  if (scene) {
-    callback(scene)
-  }
-}
+import {
+  createTypedReducers,
+  modifyActiveLightScene,
+  modifyActiveScene,
+  modifyActiveVisualScene,
+} from './core'
 
 type ScopedAction<T> = PayloadAction<{
   sceneType: SceneType
   val: T
 }>
-
-export const createTypedReducers = <
-  Reducers extends SliceCaseReducers<ActionState> = SliceCaseReducers<ActionState>
->(
-  reducers: Reducers
-) => {
-  return reducers
-}
 
 export const actions = {
   ...createTypedReducers({

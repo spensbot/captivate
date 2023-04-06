@@ -1,10 +1,11 @@
 import { PayloadAction } from '@reduxjs/toolkit'
+
+import { DefaultParam, Params } from '../shared/params'
+import { clampNormalized } from 'features/utils/math/util'
 import {
   createTypedReducers,
   modifyActiveLightScene,
-} from 'renderer/redux/controlSlice/reducers/actions'
-import { DefaultParam, Params } from '../shared/params'
-import { clampNormalized } from 'features/utils/math/util'
+} from 'renderer/redux/controlSlice/reducers/core'
 
 type ParamsAction = PayloadAction<{
   splitIndex: number
