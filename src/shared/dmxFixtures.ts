@@ -31,11 +31,6 @@ type ChannelStrobe = {
   default_solid: DmxValue
 }
 
-type ChannelOther = {
-  type: 'other'
-  default: DmxValue
-}
-
 export type ChannelAxis = {
   type: 'axis'
   dir: AxisDir
@@ -51,15 +46,12 @@ export type ChannelColorMap = {
   colors: ColorMapColor[]
 }
 
-type ChannelReset = {
-  type: 'reset'
-  resetVal: DmxValue
-}
-
 export type ChannelCustom = {
   type: 'custom'
   name: string
   default: DmxValue
+
+  isControllable: boolean
   min: DmxValue
   max: DmxValue
 }
@@ -72,8 +64,6 @@ export type FixtureChannel =
   | ChannelStrobe
   | ChannelAxis
   | ChannelColorMap
-  | ChannelOther
-  | ChannelReset
   | ChannelCustom
 
 export type ChannelType = FixtureChannel['type']
@@ -81,11 +71,9 @@ export type ChannelType = FixtureChannel['type']
 export const channelTypes: ChannelType[] = [
   'master',
   'color',
+  'colorMap',
   'strobe',
   'axis',
-  'colorMap',
-  'other',
-  'reset',
   'custom',
 ]
 
@@ -93,56 +81,74 @@ export function initFixtureChannel(
   type?: FixtureChannel['type']
 ): FixtureChannel {
   if (type === 'color') {
-    return {
-      type: type,
-      color: {
-        hue: 0,
-        saturation: 1.0,
-      },
-    }
-  } else if (type === 'other') {
-    return {
-      type: type,
-      default: DMX_MIN_VALUE,
-    }
+    initChannelColor(0, 1)
   } else if (type === 'strobe') {
-    return {
-      type: type,
-      default_solid: DMX_MIN_VALUE,
-      default_strobe: DMX_MAX_VALUE,
-    }
+    return initChannelStrobe()
   } else if (type === 'axis') {
-    return {
-      type: type,
-      dir: 'x',
-      isFine: false,
-      min: DMX_MIN_VALUE,
-      max: DMX_MAX_VALUE,
-    }
+    return initChannelAxis('x', false)
   } else if (type === 'colorMap') {
-    return {
-      type: type,
-      colors: [{ max: 0, hue: 0, saturation: 1.0 }],
-    }
-  } else if (type === 'reset') {
-    return {
-      type: 'reset',
-      resetVal: DMX_MAX_VALUE,
-    }
+    return initChannelColorMap([{ max: 0, hue: 0, saturation: 1.0 }])
   } else if (type === 'custom') {
-    return {
-      type: 'custom',
-      name: 'custom',
-      default: DMX_MIN_VALUE,
-      min: DMX_MIN_VALUE,
-      max: DMX_MAX_VALUE,
-    }
+    return initChannelCustom('Custom')
   }
+  return initChannelMaster()
+}
+
+export function initChannelColorMap(colors: ColorMapColor[]): ChannelColorMap {
+  return {
+    type: 'colorMap',
+    colors,
+  }
+}
+
+export function initChannelStrobe(): ChannelStrobe {
+  return {
+    type: 'strobe',
+    default_solid: DMX_MIN_VALUE,
+    default_strobe: DMX_MAX_VALUE,
+  }
+}
+
+export function initChannelAxis(dir: AxisDir, isFine: boolean): ChannelAxis {
+  return {
+    type: 'axis',
+    dir,
+    isFine,
+    min: DMX_MIN_VALUE,
+    max: DMX_MAX_VALUE,
+  }
+}
+
+export function initChannelColor(
+  hue: number,
+  saturation: number
+): ChannelColor {
+  return {
+    type: 'color',
+    color: {
+      hue,
+      saturation,
+    },
+  }
+}
+
+export function initChannelMaster(): ChannelMaster {
   return {
     type: 'master',
     min: DMX_MIN_VALUE,
     max: DMX_MAX_VALUE,
     isOnOff: false,
+  }
+}
+
+export function initChannelCustom(name: string): ChannelCustom {
+  return {
+    type: 'custom',
+    name,
+    default: DMX_MIN_VALUE,
+    isControllable: false,
+    min: DMX_MIN_VALUE,
+    max: DMX_MAX_VALUE,
   }
 }
 

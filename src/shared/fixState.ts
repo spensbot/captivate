@@ -3,7 +3,7 @@ import { DmxState } from 'renderer/redux/dmxSlice'
 import { initLedState } from 'renderer/redux/ledState'
 import { CleanReduxState } from '../renderer/redux/store'
 import { ColorChannel } from './dmxColors'
-import { DmxValue, FixtureChannel } from './dmxFixtures'
+import { DmxValue, FixtureChannel, initChannelCustom } from './dmxFixtures'
 import { Modulator } from './modulation'
 import { Modulation, Params } from './params'
 import { RandomizerOptions } from './randomizer'
@@ -13,6 +13,16 @@ import {
   SplitScene_t,
   VisualScenes_t,
 } from './Scenes'
+
+type Deprecated_ChannelOther = {
+  type: 'other'
+  default: DmxValue
+}
+
+type Deprecated_ChannelReset = {
+  type: 'reset'
+  resetVal: DmxValue
+}
 
 type Deprecated_ChannelMode = {
   type: 'mode'
@@ -88,15 +98,25 @@ export function fixDmxState(dmx: DmxState) {
       let channel = fixture.channels[i] as
         | FixtureChannel
         | Deprecated_ChannelMode
+        | Deprecated_ChannelOther
+        | Deprecated_ChannelReset
 
       if (channel.type === 'mode') {
         const newChannel: FixtureChannel = {
           type: 'custom',
           name: 'mode',
           default: 0,
+          isControllable: false,
           min: channel.min,
           max: channel.max,
         }
+        fixture.channels[i] = newChannel
+      } else if (channel.type === 'other') {
+        const newChannel = initChannelCustom('Other')
+        newChannel.default = channel.default
+        fixture.channels[i] = newChannel
+      } else if (channel.type === 'reset') {
+        const newChannel = initChannelCustom('Reset')
         fixture.channels[i] = newChannel
       }
     }
