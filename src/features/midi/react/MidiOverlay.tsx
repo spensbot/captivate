@@ -1,6 +1,6 @@
 import styled, { css, keyframes } from 'styled-components'
 import * as Popover from '@radix-ui/react-popover'
-import { SliderAction } from '../redux'
+import { ButtonAction, SliderAction } from '../redux'
 import {
   midiListen,
   midiStopListening,
@@ -11,7 +11,7 @@ import { useDeviceSelector } from '../../../renderer/redux/store'
 import { useDispatch } from 'react-redux'
 import DraggableNumber from '../../ui/react/base/DraggableNumber'
 import Button, { StyledButton } from '../../ui/react/base/Button'
-import { useEffect, useRef } from 'react'
+import { ReactNode, useEffect, useRef } from 'react'
 import { getActionID } from '../redux'
 import { MidiActions } from '../shared/actions'
 interface Props {
@@ -20,35 +20,13 @@ interface Props {
   style?: React.CSSProperties
 }
 
+const destructiveColor = '#c63737'
+
 export function ButtonMidiOverlay({ children, action, style }: Props) {
-  const isEditing = useDeviceSelector((state) => state.isEditing)
-  const controlledAction = useDeviceSelector((state) => {
-    return state.buttonActions[getActionID(action)] || null
-  })
-  const isListening = useDeviceSelector((state) => {
-    if (!state.listening) return false
-    return getActionID(state.listening) === getActionID(action)
-  })
-  const dispatch = useDispatch()
-
-  const onClick = () => {
-    dispatch(midiListen(action))
-  }
-
   return (
-    <Root style={style}>
+    <MidiWrapper actionType="buttonActions" action={action} style={style}>
       {children}
-      {isEditing && (
-        <Overlay selected={isListening} onClick={onClick}>
-          {controlledAction && (
-            <>
-              {controlledAction.inputID}
-              <X action={action} />
-            </>
-          )}
-        </Overlay>
-      )}
-    </Root>
+    </MidiWrapper>
   )
 }
 
@@ -64,32 +42,11 @@ export function RangeMidiOverlay({
   min,
   max,
 }: RangeProps) {
-  const isEditing = useDeviceSelector((state) => state.isEditing)
   const controlledAction = useDeviceSelector((state) => {
     return state.sliderActions[getActionID(action)] || null
   })
-  const controlledRef = useRef<SliderAction>()
 
-  const isListening = useDeviceSelector((state) => {
-    if (!state.listening) return false
-    return getActionID(state.listening) === getActionID(action)
-  })
   const dispatch = useDispatch()
-
-  const onListen = () => {
-    dispatch(midiListen(action))
-  }
-  const onStopListen = () => {
-    dispatch(midiStopListening())
-  }
-
-  const onSelect = (open: boolean) => {
-    if (open) {
-      if (!controlledAction) onListen()
-    } else {
-      onStopListen()
-    }
-  }
 
   const onChangeMin = (newVal: number) => {
     dispatch(
@@ -161,6 +118,101 @@ export function RangeMidiOverlay({
     backgroundColor: '#0009',
   }
 
+  return (
+    <MidiWrapper
+      actionType="sliderActions"
+      action={action}
+      style={style}
+      controlSlot={
+        controlledAction && (
+          <>
+            {controlledAction.options.type === 'note' && (
+              <>
+                <Button
+                  label={controlledAction.options.mode}
+                  onClick={onClickMode}
+                />
+                <Button
+                  label={controlledAction.options.value}
+                  onClick={onClickValue(controlledAction.options.value)}
+                />
+              </>
+            )}
+
+            {controlledAction.options.type === 'cc' && (
+              <Button
+                label={controlledAction.options.mode}
+                onClick={onClickMode_cc}
+              />
+            )}
+            <MinMax>
+              <DraggableNumber
+                type="continuous"
+                style={minMaxStyle}
+                value={controlledAction.options.min}
+                min={min || 0}
+                max={controlledAction.options.max}
+                onChange={onChangeMin}
+                noArrows
+              />
+              <DraggableNumber
+                type="continuous"
+                style={minMaxStyle}
+                value={controlledAction.options.max}
+                min={controlledAction.options.min}
+                max={max || 1}
+                onChange={onChangeMax}
+                noArrows
+              />
+            </MinMax>
+          </>
+        )
+      }
+    >
+      {children}
+    </MidiWrapper>
+  )
+}
+
+function MidiWrapper({
+  children,
+  action,
+  style,
+  controlSlot,
+  actionType,
+}: Props & {
+  controlSlot?: ReactNode
+  actionType: 'sliderActions' | 'buttonActions'
+}) {
+  const isEditing = useDeviceSelector((state) => state.isEditing)
+  const controlledAction = useDeviceSelector((state) => {
+    return state[actionType][getActionID(action)] || null
+  })
+  const controlledRef = useRef<SliderAction | ButtonAction>()
+
+  const isListening = useDeviceSelector((state) => {
+    if (!state.listening) return false
+    return getActionID(state.listening) === getActionID(action)
+  })
+  const dispatch = useDispatch()
+
+  const onListen = () => {
+    dispatch(midiListen(action))
+  }
+  const onStopListen = () => {
+    dispatch(midiStopListening())
+  }
+
+  const onSelect = (open: boolean) => {
+    if (open) {
+      if (!controlledAction) onListen()
+    } else {
+      onStopListen()
+    }
+  }
+
+  const onRemove = () => dispatch(removeMidiAction(action))
+
   const getState = (): keyof typeof StateColor | undefined => {
     if (isListening) return 'listening'
     if (controlledAction) return 'controlled'
@@ -178,82 +230,73 @@ export function RangeMidiOverlay({
     <Root style={style}>
       {children}
       {isEditing && (
-        <Popover.Root onOpenChange={onSelect}>
-          <TriggerOverlay
-            state={getState()}
-            className="PopoverTrigger"
-          ></TriggerOverlay>
-
-          <Popover.Portal>
+        <>
+          <Popover.Root onOpenChange={onSelect}>
+            <TriggerOverlay
+              as={Popover.Trigger}
+              state={getState()}
+              className="PopoverTrigger"
+            ></TriggerOverlay>
             {controlledAction && (
-              <PopoverContent className="PopoverContent">
-                <>
-                  <p
-                    style={{
-                      position: 'absolute',
-                      left: '0.4rem',
-                      top: '0.3rem',
-                    }}
-                  >
-                    {controlledAction.inputID}
-                  </p>
-
-                  <PopoverContainer>
-                    {controlledAction.options.type === 'note' && (
-                      <>
-                        <Button
-                          label={controlledAction.options.mode}
-                          onClick={onClickMode}
-                        />
-                        <Button
-                          label={controlledAction.options.value}
-                          onClick={onClickValue(controlledAction.options.value)}
-                        />
-                      </>
-                    )}
-
-                    {controlledAction.options.type === 'cc' && (
-                      <Button
-                        label={controlledAction.options.mode}
-                        onClick={onClickMode_cc}
-                      />
-                    )}
-                    <MinMax>
-                      <DraggableNumber
-                        type="continuous"
-                        style={minMaxStyle}
-                        value={controlledAction.options.min}
-                        min={min || 0}
-                        max={controlledAction.options.max}
-                        onChange={onChangeMin}
-                        noArrows
-                      />
-                      <DraggableNumber
-                        type="continuous"
-                        style={minMaxStyle}
-                        value={controlledAction.options.max}
-                        min={controlledAction.options.min}
-                        max={max || 1}
-                        onChange={onChangeMax}
-                        noArrows
-                      />
-                    </MinMax>
-
-                    <StyledButton onClick={onListen}>Midi Listen</StyledButton>
-                    <StyledButton
-                      style={{ color: '#c63737', borderColor: '#c63737' }}
-                      as={Popover.Close}
-                      onClick={() => dispatch(removeMidiAction(action))}
+              <button
+                onClick={onRemove}
+                style={{
+                  backgroundColor: 'white',
+                  color: destructiveColor,
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  width: '15px',
+                  height: '15px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                x
+              </button>
+            )}
+            <Popover.Portal>
+              <PopoverContent
+                className="PopoverContent"
+                style={controlledAction ? {} : { display: 'none' }}
+              >
+                {controlledAction && (
+                  <>
+                    <p
+                      style={{
+                        position: 'absolute',
+                        left: '0.4rem',
+                        top: '0.3rem',
+                      }}
                     >
-                      Remove
-                    </StyledButton>
-                  </PopoverContainer>
-                </>
+                      {controlledAction.inputID}
+                    </p>
+
+                    <PopoverContainer>
+                      {controlSlot}
+                      <StyledButton onClick={onListen}>
+                        Midi Listen
+                      </StyledButton>
+                      <StyledButton
+                        style={{
+                          color: destructiveColor,
+                          borderColor: destructiveColor,
+                        }}
+                        as={Popover.Close}
+                        onClick={onRemove}
+                      >
+                        Remove
+                      </StyledButton>
+                    </PopoverContainer>
+                  </>
+                )}
                 <PopoverArrow className="PopoverArrow" />
               </PopoverContent>
-            )}
-          </Popover.Portal>
-        </Popover.Root>
+            </Popover.Portal>
+          </Popover.Root>
+        </>
       )}
     </Root>
   )
@@ -302,7 +345,7 @@ const StateColor = {
   `,
 } as const
 
-const TriggerOverlay = styled(Popover.Trigger)<{
+const TriggerOverlay = styled.button<{
   state: keyof typeof StateColor | undefined
 }>`
   position: absolute;
@@ -323,36 +366,9 @@ const TriggerOverlay = styled(Popover.Trigger)<{
   color: black;
 `
 
-const Overlay = styled.div<{ selected: boolean }>`
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  cursor: pointer;
-  border: ${(props) => props.selected && '2px solid white'};
-  background: #56fd56b7;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  align-content: center;
-  color: black;
-`
-
 const MinMax = styled.div`
   display: flex;
   flex-wrap: wrap-reverse;
   font-size: 0.75rem;
   justify-content: center;
 `
-
-function X({ action }: { action: MidiActions }) {
-  const dispatch = useDispatch()
-  const onClick = () => dispatch(removeMidiAction(action))
-  return (
-    <div onClick={onClick} style={{ cursor: 'pointer', marginLeft: '0.5rem' }}>
-      X
-    </div>
-  )
-}
