@@ -2,7 +2,7 @@ import Slider from '../base/Slider'
 import { useControlSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import { setMaster } from '../redux/controlSlice'
-import { SliderMidiOverlay } from '../base/MidiOverlay'
+import { SliderMidiOverlay } from 'features/midi/react/MidiOverlay'
 
 export default function MasterSlider() {
   const master = useControlSelector((state) => state.master)

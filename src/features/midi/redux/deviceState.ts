@@ -1,7 +1,8 @@
 import { PayloadAction } from '@reduxjs/toolkit'
-import { DefaultParam } from '../../shared/params'
-import { SceneType } from '.../../shared/Scenes'
-import { ConnectionId } from '../../shared/connection'
+import { getActionID } from './actions'
+
+import { ConnectionId } from '../../../shared/connection'
+import { MidiActions } from '../shared/actions'
 
 interface Range {
   min: number
@@ -18,55 +19,9 @@ interface SliderControl_note extends Range {
 }
 export type SliderControlOptions = SliderControl_cc | SliderControl_note
 
-interface SetActiveSceneIndex {
-  type: 'setActiveSceneIndex'
-  sceneType: SceneType
-  index: number
-}
-
-interface SetAutoSceneBombacity {
-  type: 'setAutoSceneBombacity'
-}
-
-interface SetMaster {
-  type: 'setMaster'
-}
-interface SetBpm {
-  type: 'setBpm'
-}
-
-interface SetBaseParam {
-  type: 'setBaseParam'
-  paramKey: DefaultParam | string
-}
-
-interface TapTempo {
-  type: 'tapTempo'
-}
-
-export type MidiAction =
-  | SetActiveSceneIndex
-  | SetAutoSceneBombacity
-  | SetMaster
-  | SetBaseParam
-  | SetBpm
-  | TapTempo
-
-// must uniquely identify an action (for use in a hash table)
-// does not need to be human readable. Just unique for a given action
-export function getActionID(action: MidiAction) {
-  if (action.type === 'setActiveSceneIndex') {
-    return action.type + action.sceneType + action.index.toString()
-  }
-  if (action.type === 'setBaseParam') {
-    return action.type + action.paramKey
-  }
-  return action.type
-}
-
 export interface ButtonAction {
   inputID: string
-  action: MidiAction
+  action: MidiActions
 }
 export interface SliderAction extends ButtonAction {
   options: SliderControlOptions
@@ -75,7 +30,7 @@ export interface SliderAction extends ButtonAction {
 // ActionID = setAutoSceneBombacity, setActiveSceneIndex0, etc.
 // InputID = note70, cc50, etc.
 export interface DeviceState {
-  listening?: MidiAction
+  listening?: MidiActions
   isEditing: boolean
   connectable: {
     midi: ConnectionId[]
@@ -100,7 +55,7 @@ export function initDeviceState(): DeviceState {
 export const midiActions = {
   setButtonAction: (
     state: DeviceState,
-    { payload }: PayloadAction<{ inputID: string; action: MidiAction }>
+    { payload }: PayloadAction<{ inputID: string; action: MidiActions }>
   ) => {
     clearInputID(state, payload.inputID)
     state.buttonActions[getActionID(payload.action)] = payload
@@ -111,7 +66,7 @@ export const midiActions = {
       payload,
     }: PayloadAction<{
       inputID: string
-      action: MidiAction
+      action: MidiActions
       options: SliderControlOptions
     }>
   ) => {
@@ -120,14 +75,17 @@ export const midiActions = {
   },
   removeMidiAction: (
     state: DeviceState,
-    { payload }: PayloadAction<MidiAction>
+    { payload }: PayloadAction<MidiActions>
   ) => {
     const actionId = getActionID(payload)
     delete state.buttonActions[actionId]
     delete state.sliderActions[actionId]
   },
-  listen: (state: DeviceState, { payload }: PayloadAction<MidiAction>) => {
+  listen: (state: DeviceState, { payload }: PayloadAction<MidiActions>) => {
     state.listening = payload
+  },
+  stopListening: (state: DeviceState) => {
+    delete state.listening
   },
   setIsEditing: (state: DeviceState, { payload }: PayloadAction<boolean>) => {
     delete state.listening

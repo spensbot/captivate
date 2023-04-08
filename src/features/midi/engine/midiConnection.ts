@@ -1,10 +1,10 @@
 import { Input } from 'midi'
-import { parseMessage, MidiMessage } from '../../shared/midi'
+import { parseMessage, MidiMessage } from '../shared/midi'
 import {
   MidiConnections,
   ConnectionId,
   MidiDevice_t,
-} from '../../shared/connection'
+} from '../../../shared/connection'
 import throttle from 'lodash.throttle'
 
 export type UpdatePayload = MidiConnections

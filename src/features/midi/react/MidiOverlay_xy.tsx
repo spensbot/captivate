@@ -1,11 +1,13 @@
 import styled from 'styled-components'
-import { getActionID, MidiAction } from '../redux/deviceState'
-import { useDeviceSelector } from '../redux/store'
+
+import { getActionID } from '../redux'
+import { useDeviceSelector } from '../../../renderer/redux/store'
 import { SliderMidiOverlay } from './MidiOverlay'
+import { MidiActions } from '../shared/actions'
 
 interface XYProps {
   children: React.ReactNode
-  actions: MidiAction[]
+  actions: MidiActions[]
   style?: React.CSSProperties
 }
 

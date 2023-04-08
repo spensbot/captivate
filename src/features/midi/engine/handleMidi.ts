@@ -1,18 +1,16 @@
-import { MidiMessage, midiInputID } from '../../shared/midi'
-import { CleanReduxState } from '../../renderer/redux/store'
-import { RealtimeState } from '../../renderer/redux/realtimeStore'
-import { getActionID, SliderAction } from '../../renderer/redux/deviceState'
+import { MidiMessage, midiInputID } from '../shared/midi'
+import { CleanReduxState } from '../../../renderer/redux/store'
+import { RealtimeState } from '../../../renderer/redux/realtimeStore'
+import { SliderAction } from '../redux'
 import {
   midiSetButtonAction,
   midiSetSliderAction,
-  setActiveSceneIndex,
-  setAutoSceneBombacity,
-  setMaster,
-  setBaseParams,
-} from '../../renderer/redux/controlSlice'
+} from '../../../renderer/redux/controlSlice'
 import NodeLink from 'node-link'
 import { PayloadAction } from '@reduxjs/toolkit'
-
+import _midiConfig from './midi.config'
+import { getActionID } from '../redux'
+import { ButtonFunction, SlidersFunction } from '../shared/config'
 interface MidiInput {
   id: string
   message: MidiMessage
@@ -24,6 +22,17 @@ function getInput(msg: MidiMessage): MidiInput {
     message: msg,
   }
 }
+
+export type MidiConfig = {
+  buttons: {
+    [k: string]: ButtonFunction
+  }
+  range: {
+    [k: string]: SlidersFunction
+  }
+}
+
+const midiConfig = _midiConfig as MidiConfig
 
 export function handleMessage(
   message: MidiMessage,
@@ -37,8 +46,11 @@ export function handleMessage(
   const midiState = state.control.device
 
   if (midiState.isEditing && midiState.listening) {
+    /**
+     * When we receive first signal from midi attach to action
+     */
     const listenType = midiState.listening.type
-    if (listenType === 'setActiveSceneIndex' || listenType === 'tapTempo') {
+    if (midiConfig.buttons[listenType]) {
       dispatch(
         midiSetButtonAction({
           inputID: input.id,
@@ -87,66 +99,45 @@ export function handleMessage(
       }
     }
   } else {
+    /**
+     * Receive Midi Data
+     */
+    const context = { dispatch, nodeLink, rt_state, state, tapTempo }
     const buttonAction = Object.entries(midiState.buttonActions).find(
       ([_actionId, action]) => action.inputID === input.id
     )?.[1]
     if (buttonAction) {
       if (input.message.type !== 'Off') {
-        if (buttonAction.action.type === 'setActiveSceneIndex') {
-          dispatch(
-            setActiveSceneIndex({
-              sceneType: buttonAction.action.sceneType,
-              val: buttonAction.action.index,
-            })
-          )
-        } else if (buttonAction.action.type === 'tapTempo') {
-          tapTempo()
-        }
+        const buttonConfig: MidiConfig['buttons'][string] =
+          midiConfig.buttons[buttonAction.action.type]
+
+        const set: ButtonFunction['set'] = buttonConfig.set
+
+        set({ action: buttonAction.action }, context)
       }
     }
     const sliderAction = Object.entries(midiState.sliderActions).find(
       ([_actionId, action]) => action.inputID === input.id
     )?.[1]
+
     if (sliderAction) {
       const action = sliderAction.action
+      const sliderConfig: MidiConfig['range'][string] =
+        midiConfig.range[action.type]
+
       const getOldVal = () => {
-        if (action.type === 'setAutoSceneBombacity') {
-          return state.control.light.auto.epicness
-        } else if (action.type === 'setBpm') {
-          return rt_state.time.bpm
-        } else if (action.type === 'setBaseParam') {
-          return (
-            state.control.light.byId[state.control.light.active]?.splitScenes[0]
-              .baseParams[action.paramKey] || 0.5
-          )
-        } else if (action.type === 'setMaster') {
-          return state.control.master
-        } else return 0
+        const get: SlidersFunction['get'] = sliderConfig.get
+
+        if (get) {
+          return get({ action }, context)
+        } else {
+          return 0
+        }
       }
       const setNewVal = (newVal: number) => {
-        if (action.type === 'setAutoSceneBombacity') {
-          dispatch(
-            setAutoSceneBombacity({
-              sceneType: 'light',
-              val: newVal,
-            })
-          )
-        } else if (action.type === 'setMaster') {
-          dispatch(setMaster(newVal))
-        } else if (action.type === 'setBaseParam') {
-          dispatch(
-            setBaseParams({
-              splitIndex: 0,
-              params: {
-                [action.paramKey]: newVal,
-              },
-            })
-          )
-        } else if (action.type === 'setBpm') {
-          nodeLink.setTempo(newVal)
-        } else if (action.type === 'tapTempo') {
-          tapTempo()
-        }
+        const set: SlidersFunction['set'] = sliderConfig.set
+
+        set({ newVal, action }, context)
       }
       const op = sliderAction.options
       const range = op.max - op.min
@@ -184,3 +175,53 @@ export function handleMessage(
     }
   }
 }
+
+/**
+ * Idea for control flow configuration
+ *
+const t = {
+  button: {
+    On: () => {},
+    CC: () => {},
+  },
+  slider: {
+    cc: {
+      CC: {
+        absolute: ({ setNewVal, op, input, range }) => {
+          setNewVal(op.min + (input.message.value / 127) * range)
+        },
+        $default: ({ input, setNewVal, getOldVal }) => {
+          // relative
+          let mapped = (input.message.value - 64) / 5
+          setNewVal(getOldVal() + mapped)
+        },
+      },
+    },
+    note: {
+      On: ({ op, input, range }) => {
+        const val =
+          op.value === 'velocity'
+            ? op.min + (input.message.velocity / 127) * range
+            : op.max
+        return {
+          hold: ({ setNewVal }) => {
+            setNewVal(val)
+          },
+          toggle: ({ getOldVal, setNewVal }) => {
+            if (getOldVal() > op.min) {
+              setNewVal(op.min)
+            } else {
+              setNewVal(val)
+            }
+          },
+        }
+      },
+      Off: {
+        hold: () => {
+          setNewVal(op.min)
+        },
+      },
+    },
+  },
+}
+ */

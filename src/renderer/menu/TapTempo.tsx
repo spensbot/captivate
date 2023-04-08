@@ -1,5 +1,5 @@
 import { send_user_command } from '../ipcHandler'
-import { ButtonMidiOverlay } from 'renderer/base/MidiOverlay'
+import { ButtonMidiOverlay } from 'features/midi/react/MidiOverlay'
 import styled from 'styled-components'
 
 interface Props {}
@@ -8,7 +8,7 @@ export default function TapTempo({}: Props) {
   return (
     <ButtonMidiOverlay
       action={{
-        type: 'tapTempo',
+        type: 'TapTempo',
       }}
     >
       <Button onClick={() => send_user_command({ type: 'TapTempo' })}>

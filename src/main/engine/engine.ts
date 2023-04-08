@@ -1,6 +1,6 @@
 import { WebContents } from 'electron'
 import * as DmxConnection from './dmxConnection'
-import * as MidiConnection from './midiConnection'
+import * as MidiConnection from '../../features/midi/engine/midiConnection'
 import NodeLink from 'node-link'
 import { ipcSetup, IPC_Callbacks } from './ipcHandler'
 import { CleanReduxState } from '../../renderer/redux/store'
@@ -16,7 +16,7 @@ import {
   updateIndexes,
 } from '../../shared/randomizer'
 import { getOutputParams } from '../../shared/modulation'
-import { handleMessage } from './handleMidi'
+import { handleMessage } from '../../features/midi/engine/handleMidi'
 import openVisualizerWindow, {
   VisualizerContainer,
 } from './createVisualizerWindow'
@@ -25,8 +25,8 @@ import { handleAutoScene } from '../../shared/autoScene'
 import { setActiveScene } from '../../renderer/redux/controlSlice'
 import TapTempoEngine from './TapTempoEngine'
 import { flatten_fixtures, getFixturesInGroups } from '../../shared/dmxUtil'
-import { ThrottleMap } from './midiConnection'
-import { MidiMessage, midiInputID } from '../../shared/midi'
+import { ThrottleMap } from '../../features/midi/engine/midiConnection'
+import { MidiMessage, midiInputID } from '../../features/midi/shared/midi'
 import { getAllParamKeys } from '../../renderer/redux/dmxSlice'
 import { indexArray } from '../../shared/util'
 import WledManager from './wled/wled_manager'

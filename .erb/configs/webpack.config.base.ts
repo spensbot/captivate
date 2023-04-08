@@ -2,10 +2,11 @@
  * Base webpack config used across other specific configs
  */
 
-import webpack from 'webpack';
-import webpackPaths from './webpack.paths';
-import { dependencies as externals } from '../../release/app/package.json';
-
+import webpack from 'webpack'
+import webpackPaths from './webpack.paths'
+import { dependencies as externals } from '../../release/app/package.json'
+import path from 'path'
+import { TsconfigPathsPlugin } from 'tsconfig-paths-webpack-plugin'
 const configuration: webpack.Configuration = {
   externals: [...Object.keys(externals || {})],
 
@@ -47,7 +48,10 @@ const configuration: webpack.Configuration = {
     new webpack.EnvironmentPlugin({
       NODE_ENV: 'production',
     }),
+    new TsconfigPathsPlugin({
+      baseUrl: path.join(__dirname, '../..'), // path to tsconfig.json directory
+    }) as any,
   ],
-};
+}
 
-export default configuration;
+export default configuration

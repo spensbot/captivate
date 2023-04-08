@@ -1,7 +1,7 @@
 import styled from 'styled-components'
-import LfoMenu from './LfoMenu'
-import LfoVisualizer from './LfoVisualizer'
-import LfoCursor from './LfoCursor'
+import LfoMenu from './lfo/LfoMenu'
+import LfoVisualizer from './lfo/LfoVisualizer'
+import LfoCursor from './lfo/LfoCursor'
 import ModulationMatrix from './ModulationMatrix'
 
 type Props = {
