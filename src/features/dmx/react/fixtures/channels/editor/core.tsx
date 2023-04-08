@@ -53,8 +53,6 @@ export const createChannelComponents = <
       channelIndex: number
     }>
   }
->(
-  config: T
-) => {
+>(config: { [k in keyof T]: k extends ChannelType ? T[k] : never }) => {
   return config
 }

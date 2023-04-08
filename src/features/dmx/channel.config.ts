@@ -34,7 +34,7 @@ export type ChannelConfig<Type extends ChannelType> = {
    */
   getValueFromDevice?: (ctx: GetContext<Type>) => number
 }
-
+// TODO: improve this typing
 const createChannelConfig = () => {
   return <
     T extends {

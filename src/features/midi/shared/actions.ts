@@ -34,7 +34,7 @@ export type Reductions = RemoveAutoProps<{
   setPeriod: { newVal: true }
 }>
 
-type AllTrue<T> = T extends { [k in infer Key]: unknown }
+type AllTrue<T> = T extends { [k in infer Key]?: unknown }
   ? Partial<{ [k in Key]: true }>
   : never
 
@@ -65,8 +65,6 @@ type GetReduxPayload<T> = T extends CaseReducer<
     ? Payload2
     : {}
   : never
-
-
 
 export type GetMidiAction<T extends AllowedMidiActions> =
   T extends UserCommand['type']
