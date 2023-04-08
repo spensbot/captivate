@@ -73,17 +73,20 @@ export type GetMidiAction<T extends AllowedMidiActions> =
     ? Pretty<{ type: T } & GetReduxPayload<typeof actions[T]>>
     : never
 
+type ApplyTransformations<k extends AllowedMidiActions> = RemoveProps<
+  GetMidiAction<k>,
+  k extends keyof Reductions ? Reductions[k] : {}
+>
+
 export type MidiActions = {
-  [k in AllowedMidiActions]: Pretty<
-    RemoveProps<GetMidiAction<k>, Reductions[k]>
-  >
+  [k in AllowedMidiActions]: Pretty<ApplyTransformations<k>>
 }[AllowedMidiActions]
 
 export type Config<Keys extends AllowedMidiActions = AllowedMidiActions> = {
   buttons: Partial<{
-    [k in Keys]: ButtonFunction<RemoveProps<GetMidiAction<k>, Reductions[k]>>
+    [k in Keys]: ButtonFunction<ApplyTransformations<k>>
   }>
   range: Partial<{
-    [k in Keys]: SlidersFunction<RemoveProps<GetMidiAction<k>, Reductions[k]>>
+    [k in Keys]: SlidersFunction<ApplyTransformations<k>>
   }>
 }
