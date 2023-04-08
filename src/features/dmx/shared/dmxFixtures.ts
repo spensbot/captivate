@@ -18,9 +18,13 @@ export const axisDirList = ['x', 'y']
 export type ColorMapColor = { max: number; hue: number; saturation: number }
 
 export type FixtureApi = {
-  custom: { name: string; default: DmxValue; min: DmxValue; max: DmxValue }
-  reset: { resetVal: DmxValue }
-  other: { default: DmxValue }
+  custom: {
+    name: string
+    default: DmxValue
+    isControllable: boolean
+    min: DmxValue
+    max: DmxValue
+  }
   colorMap: { colors: ColorMapColor[] }
   axis: { dir: AxisDir; isFine: boolean; min: DmxValue; max: DmxValue }
   strobe: { default_strobe: DmxValue; default_solid: DmxValue }
@@ -49,8 +53,6 @@ export const channelTypes: ChannelType[] = [
   'strobe',
   'axis',
   'colorMap',
-  'other',
-  'reset',
   'custom',
 ]
 
@@ -113,4 +115,61 @@ export type FlattenedFixture = {
   channels: [number, FixtureChannel][]
   window: Window2D_t
   groups: string[]
+}
+
+export function initChannelColorMap(
+  colors: ColorMapColor[]
+): FixtureApi['colorMap'] {
+  return {
+    colors,
+  }
+}
+
+export function initChannelStrobe(): FixtureApi['strobe'] {
+  return {
+    default_solid: DMX_MIN_VALUE,
+    default_strobe: DMX_MAX_VALUE,
+  }
+}
+
+export function initChannelAxis(
+  dir: AxisDir,
+  isFine: boolean
+): FixtureApi['axis'] {
+  return {
+    dir,
+    isFine,
+    min: DMX_MIN_VALUE,
+    max: DMX_MAX_VALUE,
+  }
+}
+
+export function initChannelColor(
+  hue: number,
+  saturation: number
+): FixtureApi['color'] {
+  return {
+    color: {
+      hue,
+      saturation,
+    },
+  }
+}
+
+export function initChannelMaster(): FixtureApi['master'] {
+  return {
+    min: DMX_MIN_VALUE,
+    max: DMX_MAX_VALUE,
+    isOnOff: false,
+  }
+}
+
+export function initChannelCustom(name: string): FixtureApi['custom'] {
+  return {
+    name,
+    default: DMX_MIN_VALUE,
+    isControllable: false,
+    min: DMX_MIN_VALUE,
+    max: DMX_MAX_VALUE,
+  }
 }

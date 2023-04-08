@@ -21,7 +21,7 @@
     "allowJs": true,
     "outDir": "release/app/dist",
     "paths": {
-      "features/*": ["features/*"]
+      "features/*": ["features/*", "main/*", "renderer/*", "visualizer/*"]
     }
   },
   "exclude": ["test", "release/build", "release/app/dist", ".erb/dll"]

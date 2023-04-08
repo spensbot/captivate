@@ -61,9 +61,6 @@ export const ChannelComponents = createChannelComponents({
       </>
     )
   },
-  other: ({ ch }) => {
-    return <DmxNumberField ch={ch} field="default" label="Default" />
-  },
   strobe: ({ ch }) => {
     return (
       <>
@@ -120,9 +117,6 @@ export const ChannelComponents = createChannelComponents({
       />
     )
   },
-  reset: ({ ch }) => {
-    return <DmxNumberField ch={ch} field="resetVal" label="Reset Value" />
-  },
   custom: ({ ch, updateChannel }) => {
     return (
       <>
@@ -135,11 +129,24 @@ export const ChannelComponents = createChannelComponents({
             })
           }
         />
-        <DmxNumberField ch={ch} field="default" label="Default" />
-        <Sp2 />
-        <DmxNumberField ch={ch} field="min" label="Min" />
-        <Sp2 />
-        <DmxNumberField ch={ch} field="max" label="Max" />
+        <Checkbox
+          label="Controllable"
+          checked={ch.isControllable}
+          onChange={(isControllable) =>
+            updateChannel({
+              ...ch,
+              isControllable,
+            })
+          }
+        />
+        {ch.isControllable && (
+          <>
+            <Sp2 />
+            <DmxNumberField ch={ch} field="min" label="Min" />
+            <Sp2 />
+            <DmxNumberField ch={ch} field="max" label="Max" />
+          </>
+        )}
       </>
     )
   },

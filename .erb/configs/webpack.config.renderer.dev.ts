@@ -1,28 +1,28 @@
-import 'webpack-dev-server';
-import path from 'path';
-import fs from 'fs';
-import webpack from 'webpack';
-import HtmlWebpackPlugin from 'html-webpack-plugin';
-import chalk from 'chalk';
-import { merge } from 'webpack-merge';
-import { execSync, spawn } from 'child_process';
-import ReactRefreshWebpackPlugin from '@pmmmwh/react-refresh-webpack-plugin';
-import baseConfig from './webpack.config.base';
-import webpackPaths from './webpack.paths';
-import checkNodeEnv from '../scripts/check-node-env';
+import 'webpack-dev-server'
+import path from 'path'
+import fs from 'fs'
+import webpack from 'webpack'
+import HtmlWebpackPlugin from 'html-webpack-plugin'
+import chalk from 'chalk'
+import { merge } from 'webpack-merge'
+import { execSync, spawn } from 'child_process'
+import ReactRefreshWebpackPlugin from '@pmmmwh/react-refresh-webpack-plugin'
+import baseConfig from './webpack.config.base'
+import webpackPaths from './webpack.paths'
+import checkNodeEnv from '../scripts/check-node-env'
 
 // When an ESLint server is running, we can't set the NODE_ENV so we'll check if it's
 // at the dev webpack config is not accidentally run in a production environment
 if (process.env.NODE_ENV === 'production') {
-  checkNodeEnv('development');
+  checkNodeEnv('development')
 }
 
-const port = process.env.PORT || 1212;
-const manifest = path.resolve(webpackPaths.dllPath, 'renderer.json');
+const port = process.env.PORT || 1212
+const manifest = path.resolve(webpackPaths.dllPath, 'renderer.json')
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 const requiredByDLLConfig = module.parent!.filename.includes(
   'webpack.config.renderer.dev.dll'
-);
+)
 
 /**
  * Warn if the DLL is not built
@@ -35,8 +35,8 @@ if (
     chalk.black.bgYellow.bold(
       'The DLL files are missing. Sit back while we build them for you with "npm run build-dll"'
     )
-  );
-  execSync('npm run postinstall');
+  )
+  execSync('npm run postinstall')
 }
 
 const configuration: webpack.Configuration = {
@@ -95,7 +95,7 @@ const configuration: webpack.Configuration = {
         type: 'asset/resource',
       },
       {
-        test: /\.(frag|vert)$/i,
+        test: /\.(frag|vert|db|txt)$/i,
         use: 'raw-loader',
       },
     ],
@@ -167,15 +167,15 @@ const configuration: webpack.Configuration = {
       verbose: true,
     },
     setupMiddlewares(middlewares) {
-      console.log('Starting preload.js builder...');
+      console.log('Starting preload.js builder...')
       const preloadProcess = spawn('npm', ['run', 'start:preload'], {
         shell: true,
         stdio: 'inherit',
       })
         .on('close', (code: number) => process.exit(code!))
-        .on('error', (spawnError) => console.error(spawnError));
+        .on('error', (spawnError) => console.error(spawnError))
 
-      console.log('Starting Visualzier Process...');
+      console.log('Starting Visualzier Process...')
       const visualizer_dev_server_process = spawn(
         'npm',
         ['run', 'start:visualizer'],
@@ -184,19 +184,19 @@ const configuration: webpack.Configuration = {
           env: process.env,
           stdio: 'inherit',
         }
-      );
-      console.log('Starting Main Process...');
+      )
+      console.log('Starting Main Process...')
       spawn('npm', ['run', 'start:main'], {
         shell: true,
         stdio: 'inherit',
       })
         .on('close', (code: number) => {
-          preloadProcess.kill();
-          visualizer_dev_server_process.kill('SIGINT');
-          process.exit(code!);
+          preloadProcess.kill()
+          visualizer_dev_server_process.kill('SIGINT')
+          process.exit(code!)
         })
-        .on('error', (spawnError) => console.error(spawnError));
-      return middlewares;
+        .on('error', (spawnError) => console.error(spawnError))
+      return middlewares
     },
   },
 
@@ -205,6 +205,6 @@ const configuration: webpack.Configuration = {
       path: require.resolve('path-browserify'),
     },
   },
-};
+}
 
-export default merge(baseConfig, configuration);
+export default merge(baseConfig, configuration)

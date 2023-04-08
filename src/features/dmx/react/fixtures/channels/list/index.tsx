@@ -36,7 +36,7 @@ export default function FixtureChannels({ fixtureID, isInUse }: Props) {
         dispatch(
           addFixtureChannel({
             fixtureID: fixtureID,
-            newChannel: initFixtureChannel('other'),
+            newChannel: initFixtureChannel('custom'),
           })
         )
       }

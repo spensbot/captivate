@@ -12,12 +12,23 @@ import { DmxValue, FixtureChannel } from 'features/dmx/shared/dmxFixtures'
 import { Modulator } from '../../modulation/shared/modulation'
 import { Modulation, Params } from '../../params/shared/params'
 import { RandomizerOptions } from '../../bpm/shared/randomizer'
+import { initChannelCustom } from 'shared/dmxFixtures'
 import {
   LightScenes_t,
   LightScene_t,
   SplitScene_t,
   VisualScenes_t,
 } from '../../scenes/shared/Scenes'
+
+type Deprecated_ChannelOther = {
+  type: 'other'
+  default: DmxValue
+}
+
+type Deprecated_ChannelReset = {
+  type: 'reset'
+  resetVal: DmxValue
+}
 
 type Deprecated_ChannelMode = {
   type: 'mode'
@@ -93,15 +104,25 @@ export function fixDmxState(dmx: DmxState) {
       let channel = fixture.channels[i] as
         | FixtureChannel
         | Deprecated_ChannelMode
+        | Deprecated_ChannelOther
+        | Deprecated_ChannelReset
 
       if (channel.type === 'mode') {
         const newChannel: FixtureChannel = {
           type: 'custom',
           name: 'mode',
           default: 0,
+          isControllable: false,
           min: channel.min,
           max: channel.max,
         }
+        fixture.channels[i] = newChannel
+      } else if (channel.type === 'other') {
+        const newChannel = initChannelCustom('Other')
+        newChannel.default = channel.default
+        fixture.channels[i] = newChannel
+      } else if (channel.type === 'reset') {
+        const newChannel = initChannelCustom('Reset')
         fixture.channels[i] = newChannel
       }
     }

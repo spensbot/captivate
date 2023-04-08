@@ -7,6 +7,15 @@ import {
   FlattenedFixture,
 } from './dmxFixtures'
 import { lerp, Normalized } from '../../utils/math/util'
+import { Params } from 'features/params/shared/params'
+import { DmxValue } from './dmxFixtures'
+import { rLerp } from 'features/utils/math/range'
+import { getColorChannelLevel } from './dmxColors'
+import { getParam } from 'features/params/shared/params'
+import { calculate_axis_channel } from '../engine/channelUtils'
+import { DMX_MAX_VALUE, DMX_DEFAULT_VALUE } from './dmxFixtures'
+import { findClosest } from '../../utils/math/util'
+import { applyRandomization } from 'features/bpm/shared/randomizer'
 
 export function getWindowMultiplier2D(
   fixtureWindow: Window2D_t,
@@ -39,6 +48,123 @@ export function applyMirror(
   const doubleNorm = value * 2 - 1
   const mirroredDoubleNorm = lerp(doubleNorm, -doubleNorm, mirrorAmount)
   return (mirroredDoubleNorm + 1) / 2
+}
+
+export function getDmxValue(
+  ch: FixtureChannel,
+  params: Params,
+  fixture: FlattenedFixture,
+  master: number,
+  randomizerLevel: number
+): DmxValue {
+  const movingWindow = getMovingWindow(params)
+
+  switch (ch.type) {
+    case 'master':
+      const level =
+        getBrightness(params, randomizerLevel, fixture.window, movingWindow) *
+        master
+      if (ch.isOnOff) {
+        return level > 0.5 ? ch.max : ch.min
+      } else {
+        return rLerp(ch, level)
+      }
+    case 'color':
+      const brightness = getBrightness(
+        params,
+        randomizerLevel,
+        fixture.window,
+        movingWindow
+      )
+      return (
+        getColorChannelLevel(
+          getParam(params, 'hue'),
+          getParam(params, 'saturation'),
+          brightness,
+          ch.color
+        ) * DMX_MAX_VALUE
+      )
+    case 'strobe':
+      return params.strobe !== undefined && params.strobe > 0.5
+        ? ch.default_strobe
+        : ch.default_solid
+    case 'axis':
+      if (ch.dir === 'x') {
+        return calculate_axis_channel(
+          ch,
+          params.xAxis,
+          fixture.window?.x?.pos,
+          params.xMirror,
+          fixture
+        )
+      } else {
+        return calculate_axis_channel(
+          ch,
+          params.yAxis,
+          fixture.window?.y?.pos,
+          undefined, // No y-mirroring yet
+          fixture
+        )
+      }
+    case 'colorMap':
+      const _colors = ch.colors
+      const hue = params.hue
+      const saturation = params.saturation
+      if (hue !== undefined && saturation !== undefined) {
+        let closestColor = findClosest(
+          _colors.map((color) => {
+            return [color, color.hue, color.saturation * 2]
+          }),
+          hue,
+          saturation * 2
+        )
+        return closestColor?.max ?? DMX_DEFAULT_VALUE
+      } else {
+        return DMX_DEFAULT_VALUE
+      }
+    case 'custom':
+      const customParam = params[ch.name]
+      if (customParam === undefined) {
+        return ch.default
+      } else {
+        return rLerp(ch, customParam)
+      }
+    default:
+      return DMX_DEFAULT_VALUE
+  }
+}
+
+export function getBrightness(
+  params: Params,
+  randomizerLevel: Normalized,
+  fixtureWindow: Window2D_t,
+  movingWindow: Window2D_t
+): Normalized {
+  const unrandomizedBrightness =
+    getParam(params, 'brightness') *
+    getWindowMultiplier2D(fixtureWindow, movingWindow)
+  return applyRandomization(
+    unrandomizedBrightness,
+    randomizerLevel,
+    getParam(params, 'randomize')
+  )
+}
+
+export function getMovingWindow(params: Params): Window2D_t {
+  const x =
+    params.x !== undefined && params.width !== undefined
+      ? { pos: params.x, width: params.width }
+      : undefined
+
+  const y =
+    params.y !== undefined && params.height !== undefined
+      ? { pos: params.y, width: params.height }
+      : undefined
+
+  return {
+    x: x,
+    y: y,
+  }
 }
 
 export function getFixturesInGroups(
