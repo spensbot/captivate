@@ -70,8 +70,6 @@ export function getDmxValue(
       } else {
         return rLerp(ch, level)
       }
-    case 'other':
-      return ch.default
     case 'color':
       const brightness = getBrightness(
         params,

@@ -127,8 +127,6 @@ function Fields({ ch, fixtureID, channelIndex }: Props) {
         />
       </>
     )
-  } else if (ch.type === 'other') {
-    return dmxNumberField(ch, 'default', 'Default')
   } else if (ch.type === 'strobe') {
     return (
       <>
@@ -182,8 +180,6 @@ function Fields({ ch, fixtureID, channelIndex }: Props) {
         channelIndex={channelIndex}
       />
     )
-  } else if (ch.type === 'reset') {
-    return dmxNumberField(ch, 'resetVal', 'Reset Value')
   } else if (ch.type === 'custom') {
     return (
       <>
@@ -198,9 +194,24 @@ function Fields({ ch, fixtureID, channelIndex }: Props) {
         />
         {dmxNumberField(ch, 'default', 'Default')}
         <Sp2 />
-        {dmxNumberField(ch, 'min', 'Min')}
-        <Sp2 />
-        {dmxNumberField(ch, 'max', 'Max')}
+        <Checkbox
+          label="Controllable"
+          checked={ch.isControllable}
+          onChange={(isControllable) =>
+            updateChannel({
+              ...ch,
+              isControllable,
+            })
+          }
+        />
+        {ch.isControllable && (
+          <>
+            <Sp2 />
+            {dmxNumberField(ch, 'min', 'Min')}
+            <Sp2 />
+            {dmxNumberField(ch, 'max', 'Max')}
+          </>
+        )}
       </>
     )
   } else {

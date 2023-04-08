@@ -121,14 +121,10 @@ function getInfo(ch: FixtureChannel): string {
       return `Color Map`
     case 'master':
       return `Master`
-    case 'other':
-      return `Other`
     case 'strobe':
       return `Strobe`
-    case 'reset':
-      return `Reset`
     case 'custom':
-      return `${ch.name}`
+      return ch.isControllable ? ch.name : ''
   }
 }
 
@@ -138,14 +134,12 @@ function getSubInfo(ch: FixtureChannel): string | null {
       return ch.isFine ? 'fine' : `${ch.min} - ${ch.max}`
     case 'colorMap':
       return `${ch.colors.length} colors`
-    case 'other':
-      return `Default: ${ch.default}`
     case 'strobe':
       return `Solid: ${ch.default_solid} | Strobe: ${ch.default_strobe}`
     case 'master':
       return `${ch.min} - ${ch.max}`
-    case 'reset':
-      return `val: ${ch.resetVal}`
+    case 'custom':
+      return ch.isControllable ? '' : ch.name
     default:
       return null
   }

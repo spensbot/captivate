@@ -1,4 +1,6 @@
 import {
+  DMX_MAX_VALUE,
+  DMX_MIN_VALUE,
   FixtureChannel,
   initChannelAxis,
   initChannelColor,
@@ -16,6 +18,7 @@ export interface QlcChannel {
   Capability?: null
 }
 
+// This is the heavy-hitter that converts the QlcChannel into a Captivate FixtureChannel
 export function convert_qlc_channel(ch: QlcChannel): FixtureChannel {
   let preset = ch['@_Preset'] ?? ''
   let name = ch['@_Name']
@@ -48,7 +51,13 @@ export function convert_qlc_channel(ch: QlcChannel): FixtureChannel {
     return initChannelAxis(dir, isFine)
   }
   if (ch['@_Preset'] === 'ShutterStrobeSlowFast') return initChannelStrobe()
-  if (ch['@_Preset'] === 'ShutterStrobeFastSlow') return initChannelStrobe()
+  if (ch['@_Preset'] === 'ShutterStrobeFastSlow') {
+    return {
+      type: 'strobe',
+      default_solid: DMX_MAX_VALUE,
+      default_strobe: DMX_MIN_VALUE,
+    }
+  }
   if (ch['@_Preset'] === 'ColorMacro') {
     // TODO: Actually read color map colors
     return initChannelColorMap([{ max: 0, hue: 0, saturation: 1.0 }])
