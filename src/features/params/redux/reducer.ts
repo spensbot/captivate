@@ -14,7 +14,7 @@ type ParamsAction = PayloadAction<{
 
 type ParamAction = PayloadAction<{
   splitIndex: number
-  paramKey: DefaultParam
+  paramKey: DefaultParam | string
   value: number | undefined
 }>
 
@@ -49,7 +49,7 @@ export const paramsActionReducer = createTypedReducers({
       payload: { params, splitIndex },
     }: PayloadAction<{
       splitIndex: number
-      params: readonly DefaultParam[]
+      params: readonly (DefaultParam | string)[]
     }>
   ) => {
     for (const param of params) {

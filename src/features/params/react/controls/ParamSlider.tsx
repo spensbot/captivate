@@ -8,12 +8,15 @@ import { RangeMidiOverlay } from 'features/midi/react/MidiOverlay'
 import ParamXButton from './ParamXButton'
 import { useBaseParam } from 'features/params/redux'
 
-interface Props {
-  param: DefaultParam
+interface Props<Param extends string = DefaultParam> {
+  param: Param
   splitIndex: number
 }
 
-export default function ParamSlider({ param, splitIndex }: Props) {
+export default function ParamSlider<Param extends string = DefaultParam>({
+  param,
+  splitIndex,
+}: Props<Param>) {
   const radius = 0.4
 
   const value = useBaseParam(param, splitIndex)

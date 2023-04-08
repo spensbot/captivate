@@ -7,8 +7,8 @@ import {
 import { useActiveLightScene } from 'renderer/redux/store'
 import { useRealtimeSelector } from 'renderer/redux/realtimeStore'
 
-export function useBaseParam(
-  param: DefaultParam,
+export function useBaseParam<Param extends string = DefaultParam>(
+  param: Param,
   splitIndex: number
 ): number | undefined {
   const baseParam = useActiveLightScene((state) => {
@@ -34,8 +34,8 @@ export function useModParam(
   })
 }
 
-export function useOutputParam(
-  param: DefaultParam,
+export function useOutputParam<Param extends string = DefaultParam>(
+  param: Param,
   splitIndex: number
 ): number {
   const outputParam = useRealtimeSelector((state) => {

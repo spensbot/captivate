@@ -3,12 +3,15 @@ import { DefaultParam } from 'features/params/shared/params'
 import { useDispatch } from 'react-redux'
 import { deleteBaseParams } from 'renderer/redux/controlSlice'
 
-interface Props {
+interface Props<Param extends string = DefaultParam> {
   splitIndex: number
-  params: readonly DefaultParam[]
+  params: readonly Param[]
 }
 
-export default function ParamXButton({ splitIndex, params }: Props) {
+export default function ParamXButton<Param extends string = DefaultParam>({
+  splitIndex,
+  params,
+}: Props<Param>) {
   const dispatch = useDispatch()
 
   const onClick = () => {
