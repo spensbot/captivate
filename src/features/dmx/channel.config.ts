@@ -1,5 +1,6 @@
 import { rLerp } from 'features/utils/math/range'
 import {
+  AxisDir,
   DMX_DEFAULT_VALUE,
   DMX_MAX_VALUE,
   FlattenedFixture,
@@ -27,32 +28,37 @@ export type ChannelConfig<Type extends ChannelType> = {
   /**
    * This happens on react side
    */
-  default: () => Omit<GetFixturePayload<Type>, 'type'>
+  default: (options: any) => Omit<GetFixturePayload<Type>, 'type'>
   /**
    * this happens on engine side
    */
   getValueFromDevice?: (ctx: GetContext<Type>) => number
 }
 
-const createChannelConfig = <
-  T extends { [k in ChannelType]: ChannelConfig<k> }
->(
-  config: T
-) => {
-  return Object.entries(config).reduce((prev, [key, config]) => {
-    // @ts-ignore figure out proper typing
-    prev[key as keyof T] = {
-      ...config,
-      default: (...args) => {
-        return {
-          ...config.default(...args),
-          type: key,
-        }
-      },
+const createChannelConfig = () => {
+  return <
+    T extends {
+      [k in ChannelType]: ChannelConfig<k>
     }
-    return prev
-    // @ts-ignore figure out proper typing
-  }, {} as { [k in keyof T]: Omit<T[k], 'default'> & { default: () => GetFixturePayload<k> } })
+  >(config: {
+    [k in keyof T]: k extends ChannelType ? T[k] : never
+  }) => {
+    return Object.entries(config).reduce((prev, [key, config]) => {
+      // @ts-ignore figure out proper typing
+      prev[key as ChannelType] = {
+        ...config,
+
+        default: (...args) => {
+          return {
+            ...config.default(...args),
+            type: key,
+          }
+        },
+      }
+      return prev
+      // @ts-ignore figure out proper typing
+    }, {} as { [k in keyof T]: Omit<T[k], 'default'> & { default: (options?: Parameters<T[k]['default']>[0]) => GetFixturePayload<k> } })
+  }
 }
 
 /**
@@ -62,7 +68,8 @@ const createChannelConfig = <
 /**
  * This seems to be the conversion point between params and channel
  */
-export const channelConfig = createChannelConfig({
+
+export const channelConfig = createChannelConfig()({
   master: {
     default: () => ({
       min: DMX_MIN_VALUE,
@@ -88,9 +95,10 @@ export const channelConfig = createChannelConfig({
     },
   },
   custom: {
-    default: () => ({
-      name: 'custom',
+    default: ({ name = 'custom' }: { name?: string } = {}) => ({
+      name,
       default: DMX_MIN_VALUE,
+      isControllable: false,
       min: DMX_MIN_VALUE,
       max: DMX_MAX_VALUE,
     }),
@@ -103,9 +111,7 @@ export const channelConfig = createChannelConfig({
       }
     },
   },
-  reset: {
-    default: () => ({ resetVal: DMX_MAX_VALUE }),
-  },
+
   colorMap: {
     default: () => ({
       colors: [{ max: 0, hue: 0, saturation: 1.0 }],
@@ -129,9 +135,12 @@ export const channelConfig = createChannelConfig({
     },
   },
   axis: {
-    default: () => ({
-      dir: 'x',
-      isFine: false,
+    default: ({
+      dir = 'x',
+      isFine = false,
+    }: { dir?: AxisDir; isFine?: boolean } = {}) => ({
+      dir,
+      isFine,
       min: DMX_MIN_VALUE,
       max: DMX_MAX_VALUE,
     }),
@@ -156,29 +165,31 @@ export const channelConfig = createChannelConfig({
     },
   },
   strobe: {
-    default: () => ({
-      default_solid: DMX_MIN_VALUE,
-      default_strobe: DMX_MAX_VALUE,
-    }),
+    default: ({ invert = false }: { invert?: boolean } = {}) =>
+      invert
+        ? {
+            default_solid: DMX_MAX_VALUE,
+            default_strobe: DMX_MIN_VALUE,
+          }
+        : {
+            default_solid: DMX_MIN_VALUE,
+            default_strobe: DMX_MAX_VALUE,
+          },
     getValueFromDevice({ ch, params }) {
       return params.strobe !== undefined && params.strobe > 0.5
         ? ch.default_strobe
         : ch.default_solid
     },
   },
-  other: {
-    default: () => ({
-      default: DMX_MIN_VALUE,
-    }),
-    getValueFromDevice({ ch }) {
-      return ch.default
-    },
-  },
+
   color: {
-    default: () => ({
+    default: ({
+      hue = 0,
+      saturation = 1.0,
+    }: { hue?: number; saturation?: number } = {}) => ({
       color: {
-        hue: 0,
-        saturation: 1.0,
+        hue,
+        saturation,
       },
     }),
     getValueFromDevice({ ch, fixture, randomizerLevel, params, movingWindow }) {

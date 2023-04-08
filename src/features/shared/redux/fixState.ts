@@ -12,13 +12,14 @@ import { DmxValue, FixtureChannel } from 'features/dmx/shared/dmxFixtures'
 import { Modulator } from '../../modulation/shared/modulation'
 import { Modulation, Params } from '../../params/shared/params'
 import { RandomizerOptions } from '../../bpm/shared/randomizer'
-import { initChannelCustom } from 'shared/dmxFixtures'
+
 import {
   LightScenes_t,
   LightScene_t,
   SplitScene_t,
   VisualScenes_t,
 } from '../../scenes/shared/Scenes'
+import { channelConfig } from 'features/dmx/channel.config'
 
 type Deprecated_ChannelOther = {
   type: 'other'
@@ -118,11 +119,12 @@ export function fixDmxState(dmx: DmxState) {
         }
         fixture.channels[i] = newChannel
       } else if (channel.type === 'other') {
-        const newChannel = initChannelCustom('Other')
+        const newChannel = channelConfig.custom.default({ name: 'Other' })
+
         newChannel.default = channel.default
         fixture.channels[i] = newChannel
       } else if (channel.type === 'reset') {
-        const newChannel = initChannelCustom('Reset')
+        const newChannel = channelConfig.custom.default({ name: 'Reset' })
         fixture.channels[i] = newChannel
       }
     }

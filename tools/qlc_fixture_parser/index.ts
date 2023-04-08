@@ -3,8 +3,9 @@ import dir from 'node-dir'
 import fs from 'fs/promises'
 import { QlcFixtureDef } from './qlc_fixture_def'
 import { QlcChannel, convert_qlc_channel } from './qlc_channel'
-import { FixtureType } from 'shared/dmxFixtures'
+
 import { nanoid } from '@reduxjs/toolkit'
+import { FixtureType } from 'features/dmx/shared/dmxFixtures'
 
 const QLC_EXT = 'qxf'
 const QLC_DEFINITION_KEY = 'FixtureDefinition'
@@ -13,7 +14,7 @@ const OUTPUT_PATH = './assets/captivate_fixtures.db'
 const PRETTY = false
 
 main().catch((err) => {
-  console.error(`To run this script, you must first copy the fixtures folder from 
+  console.error(`To run this script, you must first copy the fixtures folder from
   https://github.com/mcallegari/qlcplus/tree/master/resources/fixtures
   into tools/qlc_fixture_parser
 

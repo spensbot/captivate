@@ -1,14 +1,6 @@
-import {
-  DMX_MAX_VALUE,
-  DMX_MIN_VALUE,
-  FixtureChannel,
-  initChannelAxis,
-  initChannelColor,
-  initChannelColorMap,
-  initChannelCustom,
-  initChannelMaster,
-  initChannelStrobe,
-} from '../../src/shared/dmxFixtures'
+import { channelConfig } from 'features/dmx/channel.config'
+import { FixtureChannel } from 'features/dmx/shared/dmxFixtures'
+
 
 export interface QlcChannel {
   // Name and Preset are XML attributes, so they need to be prefixed with something
@@ -28,42 +20,39 @@ export function convert_qlc_channel(ch: QlcChannel): FixtureChannel {
   }
 
   if (preset === 'Custom') {
-    return initChannelCustom('Custom')
+    return channelConfig.custom.default()
   }
   if (preset.includes('Intensity')) {
     if (preset.includes('Fine')) {
-      return initChannelCustom(name)
+      return channelConfig.custom.default({ name })
     } else if (preset.includes('Dimmer')) {
-      return initChannelMaster()
+      return channelConfig.master.default()
     } else {
       const tail = preset.slice(9)
-      if (tail === 'White') return initChannelColor(0, 0)
+      if (tail === 'White')
+        return channelConfig.color.default({ hue: 0, saturation: 0 })
       const hue = get_hue(tail)
       if (hue !== null) {
-        return initChannelColor(hue, 1)
+        return channelConfig.color.default({ hue, saturation: 1 })
       }
-      initChannelCustom(name)
     }
   }
   if (preset.includes('Position')) {
     const dir = preset.includes('Pan') || preset.includes('XAxis') ? 'x' : 'y'
     const isFine = preset.includes('Fine')
-    return initChannelAxis(dir, isFine)
+    return channelConfig.axis.default({ dir, isFine })
   }
-  if (ch['@_Preset'] === 'ShutterStrobeSlowFast') return initChannelStrobe()
+  if (ch['@_Preset'] === 'ShutterStrobeSlowFast')
+    return channelConfig.strobe.default()
   if (ch['@_Preset'] === 'ShutterStrobeFastSlow') {
-    return {
-      type: 'strobe',
-      default_solid: DMX_MAX_VALUE,
-      default_strobe: DMX_MIN_VALUE,
-    }
+    return channelConfig.strobe.default({ invert: true })
   }
   if (ch['@_Preset'] === 'ColorMacro') {
     // TODO: Actually read color map colors
-    return initChannelColorMap([{ max: 0, hue: 0, saturation: 1.0 }])
+    return channelConfig.colorMap.default()
   }
 
-  return initChannelCustom(name)
+  return channelConfig.custom.default({ name })
 }
 
 export function get_hue(color: string): number | null {
