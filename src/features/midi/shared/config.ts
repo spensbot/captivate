@@ -11,8 +11,7 @@ type MidiContext = {
   state: CleanReduxState
 }
 
-
-export type SlidersFunction<Action = unknown> = {
+export type SlidersFunction<Action = any> = {
   set: (
     input: {
       action: Action
@@ -25,7 +24,7 @@ export type SlidersFunction<Action = unknown> = {
   key?: (action: Action) => string
 }
 
-export type ButtonFunction<Action = unknown> = {
+export type ButtonFunction<Action = any> = {
   set: (
     input: {
       action: Action

@@ -8,8 +8,6 @@ import {
 import { AllowedMidiActions, Config } from '../shared/actions'
 import { createMidiConfig } from '../shared/config'
 
-
-
 export default createMidiConfig<AllowedMidiActions, Config<AllowedMidiActions>>(
   {
     buttons: {
