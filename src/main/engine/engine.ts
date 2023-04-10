@@ -60,9 +60,9 @@ const controlStateManager = () => {
       cancelled = true
     },
 
-    waitForFirstControlState: (cb: () => void) => {
-      firstControlState.then(() => {
-        if (!cancelled) cb()
+    waitForFirstControlState: (cb: () => void | Promise<void>) => {
+      return firstControlState.then(async () => {
+        if (!cancelled) await cb()
       })
     },
   }
@@ -83,7 +83,7 @@ const disposer = {
   },
 }
 
-export function start(
+export async function start(
   renderer: WebContents,
   visualizerContainer: VisualizerContainer
 ) {
@@ -101,7 +101,7 @@ export function start(
   )
 
   // TODO: now we don't need null checks for control state
-  controlState.waitForFirstControlState(() => {
+  await controlState.waitForFirstControlState(() => {
     // We're currently calculating the realtimeState 90x per second.
     // The renderer should have a new realtime state on each animation frame (assuming a refresh rate of 60 hz)
     const realtimeStateInterval = setInterval(() => {

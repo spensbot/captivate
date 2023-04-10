@@ -131,7 +131,7 @@ const createWindow = async () => {
     shell.openExternal(url)
   })
 
-  const ipcCallbacks = engine.start(mainWindow.webContents, visualizerContainer)
+  const ipcCallbacks = await engine.start(mainWindow.webContents, visualizerContainer)
 
   const menuBuilder = new MenuBuilder(mainWindow, { ipcCallbacks })
   menuBuilder.buildMenu()
