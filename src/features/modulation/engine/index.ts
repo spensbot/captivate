@@ -1,6 +1,6 @@
 import { Modulation } from '../../params/shared/params'
 import { GetValue } from '../shared/oscillator'
-import { LightScene_t } from '../../scenes/shared/Scenes'
+import { Modulator } from '../shared/modulation'
 
 interface ModSnapshot {
   modulation: Modulation
@@ -8,21 +8,21 @@ interface ModSnapshot {
 }
 
 export const createModulationTransformer = ({
-  scene,
-  splitIndex,
+  modulators,
+  trackIndex,
   beats,
 }: {
-  scene: LightScene_t
-  splitIndex: number
+  modulators: Modulator[]
+  trackIndex: number
   beats: number
 }) => {
-  const snapshots: ModSnapshot[] = scene.modulators.map((modulator) => ({
-    modulation: modulator.splitModulations[splitIndex],
+  const snapshots: ModSnapshot[] = modulators.map((modulator) => ({
+    modulation: modulator.splitModulations[trackIndex],
     lfoVal: GetValue(modulator.lfo, beats),
   }))
 
   return {
-    transform({ baseParam, param }: { baseParam: number; param: string }) {
+    apply({ baseParam, param }: { baseParam: number; param: string }) {
       return snapshots.reduce((sum, { modulation, lfoVal }) => {
         const modAmount = modulation[param]
         if (modAmount === undefined) {

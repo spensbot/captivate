@@ -1,6 +1,6 @@
 import ipcChannels from '../../../features/shared/engine/ipc_channels'
 
-import { onLinkUserCommand } from 'features/bpm/engine/Link'
+import { onLinkUserCommand } from 'features/bpm/engine'
 import { UserCommand } from 'features/shared/engine/ipc_channels'
 import { CleanReduxState } from 'renderer/redux/store'
 import openVisualizerWindow from '../../../features/visualizer/engine/createVisualizerWindow'
@@ -16,7 +16,7 @@ export const mutations = createMutations({
   ...createMutation({
     channel: ipcChannels.user_command,
     resolve: (context, command: UserCommand) => {
-      onLinkUserCommand(command, context.realtimeState)
+      onLinkUserCommand(command, context.realtimeManager)
     },
   }),
   ...createMutation({

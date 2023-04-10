@@ -1,5 +1,5 @@
 import { Input } from 'midi'
-import { parseMessage, MidiMessage } from '../shared/midi'
+import { parseMessage, MidiMessage, midiInputID } from '../shared/midi'
 import {
   MidiConnections,
   ConnectionId,
@@ -15,6 +15,7 @@ interface Config {
   onUpdate: (activeDevices: UpdatePayload) => void
   onMessage: (message: MessagePayload) => void
   getConnectable: () => ConnectionId[]
+  throttledWaitMS: number
 }
 
 const refInput = new Input()
@@ -22,9 +23,22 @@ const inputs: Inputs = {}
 type Inputs = { [portName: string]: Input }
 
 export function maintain(config: Config) {
+  const throttleMap = new ThrottleMap(
+    config.onMessage,
+    config.throttledWaitMS
+  )
+
+  const alteredConfig: Config = {
+    ...config,
+    onMessage: (message) => {
+      throttleMap.call(midiInputID(message), message)
+    },
+  }
+
   const interval = setInterval(() => {
-    updateInputs(config)
+    updateInputs(alteredConfig)
   }, config.update_ms)
+
   return {
     dispose() {
       clearInterval(interval)
@@ -32,6 +46,7 @@ export function maintain(config: Config) {
         input.closePort()
         delete inputs[inputName]
       })
+      throttleMap.dispose()
     },
   }
 }

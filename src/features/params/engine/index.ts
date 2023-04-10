@@ -1,6 +1,7 @@
 import { Window2D_t } from 'features/shared/shared/window'
 import {
   DefaultParam,
+  Params,
   StrictParams,
   defaultOutputParams,
   getParam,
@@ -50,12 +51,11 @@ export function getBrightness(
 
 export const createOutputParams = (
   {
-    scene,
-    splitIndex,
+    baseParams,
     allParamKeys,
   }: {
-    scene: LightScene_t
-    splitIndex: number
+    baseParams: Partial<Params>
+
     allParamKeys: string[]
   },
   transform: (params: {
@@ -71,7 +71,7 @@ export const createOutputParams = (
     return clampNormalized(transform({ param, baseParam }))
   }
   const outputParams = defaultOutputParams()
-  const baseParams = scene.splitScenes[splitIndex].baseParams
+
   allParamKeys.forEach((param) => {
     outputParams[param] = _getOutputParam(baseParams[param], param)
   })

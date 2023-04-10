@@ -85,7 +85,7 @@ const createWindow = async () => {
     },
   })
 
-  mainWindow.loadURL(resolveHtmlPath('index.html'))
+  mainWindow.loadURL(resolveHtmlPath('renderer', 'index.html'))
 
   mainWindow.on('ready-to-show', () => {
     if (!mainWindow) {
@@ -131,7 +131,10 @@ const createWindow = async () => {
     shell.openExternal(url)
   })
 
-  const ipcCallbacks = await engine.start(mainWindow.webContents, visualizerContainer)
+  const ipcCallbacks = await engine.start(
+    mainWindow.webContents,
+    visualizerContainer
+  )
 
   const menuBuilder = new MenuBuilder(mainWindow, { ipcCallbacks })
   menuBuilder.buildMenu()

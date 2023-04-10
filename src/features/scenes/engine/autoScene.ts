@@ -23,14 +23,22 @@ const _lastUserModified = {
   visual: initUserModified(),
 }
 
-export function handleAutoScene(
-  lastRtState: RealtimeState,
-  nextTimeState: TimeState,
-  controlState: CleanReduxState,
-  onNewLightScene: OnNewScene,
-  onNewVisualScene: OnNewScene
-) {
-  const { light, visual } = controlState.control
+export function handleAutoScene({
+  onNew,
+  states,
+}: {
+  states: {
+    // previous realtimeState
+    realtimeState: RealtimeState
+    timeState: TimeState
+    controlState: CleanReduxState
+  }
+  onNew: {
+    lightScene: OnNewScene
+    visualScene: OnNewScene
+  }
+}) {
+  const { light, visual } = states.controlState.control
 
   let possibleLightIds = light.ids.filter((id) => {
     const lightScene = light.byId[id]
@@ -45,15 +53,15 @@ export function handleAutoScene(
   if (
     isNewScene(
       light.active,
-      lastRtState.time.beats,
-      nextTimeState,
+      states.realtimeState.time.beats,
+      states.timeState,
       light.auto,
       _lastUserModified.light
     )
   ) {
     const newScene = randomElementExcludeCurrent(possibleLightIds, light.active)
     _lastUserModified.light.scene = newScene
-    onNewLightScene(newScene)
+    onNew.lightScene(newScene)
   }
 
   let possibleVisualIds = visual.ids.filter((id) => {
@@ -66,8 +74,8 @@ export function handleAutoScene(
   if (
     isNewScene(
       visual.active,
-      lastRtState.time.beats,
-      nextTimeState,
+      states.realtimeState.time.beats,
+      states.timeState,
       visual.auto,
       _lastUserModified.visual
     )
@@ -77,7 +85,7 @@ export function handleAutoScene(
       visual.active
     )
     _lastUserModified.visual.scene = newScene
-    onNewVisualScene(newScene)
+    onNew.visualScene(newScene)
   }
 }
 

@@ -34,16 +34,15 @@ export type MidiConfig = {
 
 const midiConfig = _midiConfig as MidiConfig
 
-export function handleMessage(
+export function onMidiMessageInput(
   message: MidiMessage,
-  state: CleanReduxState,
-  rt_state: RealtimeState,
+  states: { state: CleanReduxState; realtime: RealtimeState },
   nodeLink: NodeLink,
   dispatch: (action: PayloadAction<any>) => void,
   tapTempo: () => void
 ) {
   const input = getInput(message)
-  const midiState = state.control.device
+  const midiState = states.state.control.device
 
   if (midiState.isEditing && midiState.listening) {
     /**
@@ -102,7 +101,13 @@ export function handleMessage(
     /**
      * Receive Midi Data
      */
-    const context = { dispatch, nodeLink, rt_state, state, tapTempo }
+    const context = {
+      dispatch,
+      nodeLink,
+      rt_state: states.realtime,
+      state: states.state,
+      tapTempo,
+    }
     const buttonAction = Object.entries(midiState.buttonActions).find(
       ([_actionId, action]) => action.inputID === input.id
     )?.[1]

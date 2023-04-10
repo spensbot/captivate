@@ -1,13 +1,12 @@
 import { IpcMain, WebContents } from 'electron'
 import { VisualizerContainer } from 'features/visualizer/engine/createVisualizerWindow'
-import { RealtimeState } from 'renderer/redux/realtimeStore'
 import ipc_channels from '../../../features/shared/engine/ipc_channels'
 import visualizerChannels from '../../../features/visualizer/shared/ipcChannels'
 
 export type Context = {
   renderer: WebContents
   visualizerContainer: VisualizerContainer
-  realtimeState: RealtimeState
+  realtimeManager: RealtimeManager
   ipcMain: IpcMain
   new_control_state: (new_state: CleanReduxState) => void
 }
@@ -70,6 +69,7 @@ export const createVisualizerPublishers = <
 import { IpcMainInvokeEvent } from 'electron'
 import { API } from 'features/shared/engine/emissions'
 import { CleanReduxState } from 'renderer/redux/store'
+import { RealtimeManager } from 'features/bpm/engine'
 
 export const createQuery = <
   Channel extends keyof API['renderer']['queries']

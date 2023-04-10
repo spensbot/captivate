@@ -1,5 +1,6 @@
 import { TimeState, isNewPeriod } from './TimeState'
 import { lerp } from '../../utils/math/util'
+import { indexArray } from 'features/utils/util'
 
 type Normalized = number
 
@@ -122,4 +123,33 @@ export function updateIndexes(
   }
 
   return nextState
+}
+
+export const getNewRandomizerState = ({
+  previousRandomizerState,
+  size,
+  beatsLast,
+  options,
+  timeState,
+}: {
+  previousRandomizerState: RandomizerState
+  size: number
+  beatsLast: number
+  options: RandomizerOptions
+  timeState: TimeState
+}) => {
+  let newRandomizerState = resizeRandomizer(
+    previousRandomizerState ?? initRandomizerState(),
+    size
+  )
+
+  newRandomizerState = updateIndexes(
+    beatsLast,
+    newRandomizerState,
+    timeState,
+    indexArray(size),
+    options
+  )
+
+  return newRandomizerState
 }
