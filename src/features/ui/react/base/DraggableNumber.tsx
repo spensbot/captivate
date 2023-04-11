@@ -3,14 +3,13 @@ import { clamp } from 'features/utils/math/util'
 import useDragBasic from '../hooks/useDragBasic'
 import styled from 'styled-components'
 import { double_incremented, halve_incremented } from 'features/utils/util'
-import React from 'react'
+import React, { MutableRefObject } from 'react'
 import { secondaryEnabled } from './keyUtil'
 
 type Type = 'continuous' | 'snap'
 
 interface Props {
-  type?: Type
-  secondaryBehavior?: Type
+  adjustments?: { primary?: Type; secondary?: Type }
   value: number
   min: number
   max: number
@@ -22,12 +21,90 @@ interface Props {
 
 // This is really bad react behavior... But IDK what else to do
 // This only works if you can't drag more than 1 thing at a time
-let globalMovement = 0
-let globalValue = 0
+let globalMovementRef = { current: 0 }
+let globalValueRef = { current: 0 }
+
+const useDraggableNumber = ({
+  onChange,
+  min,
+  value,
+  valueRef,
+  movementRef,
+  max,
+  adjustments: adjustmentsConfig,
+}: Pick<Props, 'onChange' | 'min' | 'max' | 'value'> & {
+  valueRef: MutableRefObject<number>
+  movementRef: MutableRefObject<number>
+  adjustments: { primary: Type; secondary: Type }
+}) => {
+  const speedAdjust = 500 / (max - min)
+  const [dragContainer, onMouseDown] = useDragBasic((e) => {
+    const dx = e.movementX
+    const dy = -e.movementY
+    const d = (dx + dy) / speedAdjust
+
+    const adjustments = {
+      continuous: () => {
+        valueRef.current += d / 2
+      },
+      snap: () => {
+        if (Number.isInteger(valueRef.current)) {
+          movementRef.current += d
+          if (movementRef.current > 1) {
+            valueRef.current += 1
+            movementRef.current = 0
+          } else if (movementRef.current < -1) {
+            valueRef.current -= 1
+            movementRef.current = 0
+          }
+        } else {
+          // We are somewhere between integers.
+          //   "Snap" to the next integer
+          const floor = Math.floor(valueRef.current)
+          const ceil = Math.ceil(valueRef.current)
+          valueRef.current += d
+          if (valueRef.current > ceil) {
+            valueRef.current = ceil
+          } else if (valueRef.current < floor) {
+            valueRef.current = floor
+          }
+        }
+      },
+    } as const
+
+    // use when control key pressed
+    if (secondaryEnabled(e)) {
+      adjustments[adjustmentsConfig.secondary]()
+    } else {
+      adjustments[adjustmentsConfig.primary]()
+    }
+
+    valueRef.current = clamp(valueRef.current, min, max)
+
+    onChange(valueRef.current)
+  })
+
+  function onMouseDownWrapper(e: React.MouseEvent<HTMLDivElement>) {
+    movementRef.current = 0
+    valueRef.current = value
+    onMouseDown(e)
+  }
+
+  return {
+    dragContainer,
+    onMouseDownWrapper,
+  }
+}
+
+// type AdjustmentsConfig = {
+//   ToString: Partial<{
+//     [k in Type]: (v: number) => string
+//   }>
+// }
 
 export default function DraggableNumber({
-  type = 'snap',
-  secondaryBehavior = 'continuous',
+  adjustments: adjustmentsConfig = { primary: 'snap', secondary: 'continuous' },
+
   value,
   min,
   max,
@@ -36,71 +113,40 @@ export default function DraggableNumber({
   suffix,
   noArrows,
 }: Props) {
-  const speedAdjust = 500 / (max - min)
-
-  const [dragContainer, onMouseDown] = useDragBasic((e) => {
-    const dx = e.movementX
-    const dy = -e.movementY
-    const d = (dx + dy) / speedAdjust
-
-    const adjust_continuous = () => {
-      globalValue += d / 2
-    }
-    const adjust_snap = () => {
-      if (Number.isInteger(globalValue)) {
-        globalMovement += d
-        if (globalMovement > 1) {
-          globalValue += 1
-          globalMovement = 0
-        } else if (globalMovement < -1) {
-          globalValue -= 1
-          globalMovement = 0
-        }
-      } else {
-        // We are somewhere between integers.
-        //   "Snap" to the next integer
-        const floor = Math.floor(globalValue)
-        const ceil = Math.ceil(globalValue)
-        globalValue += d
-        if (globalValue > ceil) {
-          globalValue = ceil
-        } else if (globalValue < floor) {
-          globalValue = floor
-        }
-      }
-    }
-
-    if (secondaryEnabled(e)) {
-      if (secondaryBehavior === 'snap') {
-        adjust_snap()
-      } else {
-        adjust_continuous()
-      }
-    } else {
-      if (type === 'snap') {
-        adjust_snap()
-      } else {
-        adjust_continuous()
-      }
-    }
-
-    globalValue = clamp(globalValue, min, max)
-
-    onChange(globalValue)
+  const adjustments = Object.assign(
+    { primary: 'snap', secondary: 'continuous' },
+    adjustmentsConfig
+  )
+  const { dragContainer, onMouseDownWrapper } = useDraggableNumber({
+    max,
+    min,
+    movementRef: globalMovementRef,
+    onChange,
+    value,
+    valueRef: globalValueRef,
+    adjustments,
   })
 
-  function onMouseDownWrapper(e: React.MouseEvent<HTMLDivElement>) {
-    globalMovement = 0
-    globalValue = value
-    onMouseDown(e)
+  const adjustmentsToString: Partial<{
+    [k in Type]: (v: number) => string
+  }> = {
+    snap(v: number) {
+      if (Number.isInteger(v)) return v.toString()
+      return v.toFixed(2)
+    },
+  } as const
+
+  const valueToString = (v: number) => {
+    const toString = adjustmentsToString[adjustments.primary]
+
+    let valueString = toString ? toString(v) : v.toFixed(2)
+
+    if (suffix) valueString += suffix
+
+    return valueString
   }
 
-  let valueString =
-    type === 'snap' && Number.isInteger(value)
-      ? value.toString()
-      : value.toFixed(2)
-
-  if (suffix) valueString += suffix
+  const valueString = valueToString(value)
 
   const onUp = () => {
     const doubled = double_incremented(value)

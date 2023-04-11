@@ -9,7 +9,6 @@ import {
 import { Normalized, clampNormalized } from 'features/utils/math/util'
 import { getWindowMultiplier2D } from 'features/dmx/shared/dmxUtil'
 import { applyRandomization } from 'features/bpm/shared/randomizer'
-import { LightScene_t } from 'features/scenes/shared/Scenes'
 
 /**
  * used on engine side on led and dmx

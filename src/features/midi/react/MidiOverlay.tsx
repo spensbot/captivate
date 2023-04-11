@@ -147,7 +147,7 @@ export function RangeMidiOverlay({
             )}
             <MinMax>
               <DraggableNumber
-                type="continuous"
+                adjustments={{ primary: 'continuous' }}
                 style={minMaxStyle}
                 value={controlledAction.options.min}
                 min={min || 0}
@@ -156,7 +156,7 @@ export function RangeMidiOverlay({
                 noArrows
               />
               <DraggableNumber
-                type="continuous"
+                adjustments={{ primary: 'continuous' }}
                 style={minMaxStyle}
                 value={controlledAction.options.max}
                 min={controlledAction.options.min}
