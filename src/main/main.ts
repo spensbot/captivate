@@ -12,12 +12,12 @@ import path from 'path'
 import { app, BrowserWindow, shell, dialog } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import log from 'electron-log'
-import MenuBuilder from './menu'
+import MenuBuilder from '../features/menu/engine/menu'
 import { resolveHtmlPath } from './util'
 import * as engine from './engine/engine'
-import { VisualizerContainer } from './engine/createVisualizerWindow'
+import { VisualizerContainer } from '../features/visualizer/engine/createVisualizerWindow'
 import './prevent_sleep'
-import './electron_error_logging'
+import '../features/logging/engine/electron_error_logging'
 export default class AppUpdater {
   constructor() {
     log.transports.file.level = 'info'
@@ -85,7 +85,7 @@ const createWindow = async () => {
     },
   })
 
-  mainWindow.loadURL(resolveHtmlPath('index.html'))
+  mainWindow.loadURL(resolveHtmlPath('renderer', 'index.html'))
 
   mainWindow.on('ready-to-show', () => {
     if (!mainWindow) {
@@ -131,7 +131,10 @@ const createWindow = async () => {
     shell.openExternal(url)
   })
 
-  const ipcCallbacks = engine.start(mainWindow.webContents, visualizerContainer)
+  const ipcCallbacks = await engine.start(
+    mainWindow.webContents,
+    visualizerContainer
+  )
 
   const menuBuilder = new MenuBuilder(mainWindow, { ipcCallbacks })
   menuBuilder.buildMenu()

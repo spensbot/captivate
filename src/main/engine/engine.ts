@@ -1,240 +1,274 @@
-import { WebContents } from 'electron'
-import * as DmxConnection from './dmxConnection'
-import * as MidiConnection from './midiConnection'
-import NodeLink from 'node-link'
-import { ipcSetup, IPC_Callbacks } from './ipcHandler'
+import { WebContents, ipcMain } from 'electron'
+import * as DmxConnection from 'features/dmx/engine/dmxConnection'
+import * as MidiConnection from 'features/midi/engine/midiConnection'
+
 import { CleanReduxState } from '../../renderer/redux/store'
-import {
-  RealtimeState,
-  initRealtimeState,
-  SplitState,
-} from '../../renderer/redux/realtimeStore'
-import { TimeState } from '../../shared/TimeState'
-import {
-  initRandomizerState,
-  resizeRandomizer,
-  updateIndexes,
-} from '../../shared/randomizer'
-import { getOutputParams } from '../../shared/modulation'
-import { handleMessage } from './handleMidi'
-import openVisualizerWindow, {
-  VisualizerContainer,
-} from './createVisualizerWindow'
-import { calculateDmx } from './dmxEngine'
-import { handleAutoScene } from '../../shared/autoScene'
+import { RealtimeState, SplitState } from '../../renderer/redux/realtimeStore'
+import { TimeState } from '../../features/bpm/shared/TimeState'
+import { getNewRandomizerState } from '../../features/bpm/shared/randomizer'
+import { createModulationTransformer } from '../../features/modulation/engine'
+import { onMidiMessageInput } from 'features/midi/engine/handleMidi'
+import { VisualizerContainer } from '../../features/visualizer/engine/createVisualizerWindow'
+import { calculateDmxOut, getChannels } from 'features/dmx/engine/dmxEngine'
+import { handleAutoScene } from '../../features/scenes/engine/autoScene'
 import { setActiveScene } from '../../renderer/redux/controlSlice'
-import TapTempoEngine from './TapTempoEngine'
-import { flatten_fixtures, getFixturesInGroups } from '../../shared/dmxUtil'
-import { ThrottleMap } from './midiConnection'
-import { MidiMessage, midiInputID } from '../../shared/midi'
-import { getAllParamKeys } from '../../renderer/redux/dmxSlice'
-import { indexArray } from '../../shared/util'
-import WledManager from './wled/wled_manager'
+import {
+  flatten_fixtures,
+  getFixturesInGroups,
+} from '../../features/dmx/shared/dmxUtil'
+import WledManager from '../../features/led/engine/wled_manager'
 
-let _nodeLink = new NodeLink()
-_nodeLink.setIsPlaying(true)
-_nodeLink.enableStartStopSync(true)
-_nodeLink.enable(true)
-let _ipcCallbacks: IPC_Callbacks | null = null
-let _controlState: CleanReduxState | null = null
-let _realtimeState: RealtimeState = initRealtimeState()
-let _lastFrameTime = 0
-const _tapTempoEngine = new TapTempoEngine()
-function _tapTempo() {
-  _tapTempoEngine.tap((newBpm) => {
-    _nodeLink.setTempo(newBpm)
+import { createApi, IPC_Callbacks } from './api'
+import { createOutputParams } from 'features/params/engine'
+import { getAllParamKeys } from 'features/params/shared/params'
+import { FlattenedFixture } from 'features/dmx/shared/dmxFixtures'
+import { Modulator } from 'features/modulation/shared/modulation'
+import { SplitScene_t } from 'features/scenes/shared/Scenes'
+import { createRealtimeManager } from 'features/bpm/engine'
+import { createDisposer } from 'features/shared/engine'
+import { AppConfig } from 'app.config'
+
+// TODO: this should live in control state feature
+const createControlStateManager = () => {
+  let resolveFirstState: () => void
+  const firstControlState = new Promise<void>((resolve) => {
+    resolveFirstState = resolve
   })
-}
 
-const _midiThrottle = new ThrottleMap((message: MidiMessage) => {
-  if (_controlState !== null && _ipcCallbacks !== null) {
-    handleMessage(
-      message,
-      _controlState,
-      _realtimeState,
-      _nodeLink,
-      _ipcCallbacks.send_dispatch,
-      _tapTempo
-    )
+  let cancelled = false
+
+  const controlStateRef = {
+    current: null as CleanReduxState | null,
   }
-}, 1000 / 60)
 
-export function getIpcCallbacks() {
-  return _ipcCallbacks
+  return {
+    set(state: CleanReduxState) {
+      if (!controlStateRef.current) resolveFirstState()
+      controlStateRef.current = state
+    },
+    stateRef: controlStateRef,
+
+    dispose() {
+      cancelled = true
+    },
+
+    waitForFirstControlState: (cb: () => void | Promise<void>) => {
+      return firstControlState.then(async () => {
+        if (!cancelled) await cb()
+      })
+    },
+  }
 }
 
-export function start(
+const disposer = createDisposer()
+
+export async function start(
   renderer: WebContents,
   visualizerContainer: VisualizerContainer
 ) {
-  _ipcCallbacks = ipcSetup({
-    renderer: renderer,
-    visualizerContainer: visualizerContainer,
-    on_new_control_state: (newState) => {
-      _controlState = newState
+  const realtimeManager = createRealtimeManager({
+    next(previousStates, newStates) {
+      const nextRealtimeState = getNextRealtimeState(
+        {
+          controlState: controlStateManager.stateRef.current!,
+          realtimeState: previousStates.realtime,
+          timeState: newStates.time,
+        },
+        api
+      )
+      return nextRealtimeState
     },
-    on_user_command: (command) => {
-      if (command.type === 'IncrementTempo') {
-        _nodeLink.setTempo(_realtimeState.time.bpm + command.amount)
-      } else if (command.type === 'SetLinkEnabled') {
-        _nodeLink.enable(command.isEnabled)
-      } else if (command.type === 'EnableStartStopSync') {
-        _nodeLink.enableStartStopSync(command.isEnabled)
-      } else if (command.type === 'SetIsPlaying') {
-        _nodeLink.setIsPlaying(command.isPlaying)
-      } else if (command.type === 'SetBPM') {
-        _nodeLink.setTempo(command.bpm)
-      } else if (command.type === 'TapTempo') {
-        _tapTempo()
-      }
-    },
-    on_open_visualizer: () => {
-      openVisualizerWindow(visualizerContainer)
+    onUpdate(newStates) {
+      api.publishers.new_time_state(newStates.realtime)
+      api.publishers.new_visualizer_state({
+        rt: newStates.realtime,
+        state: controlStateManager.stateRef.current!,
+      })
     },
   })
 
-  // We're currently calculating the realtimeState 90x per second.
-  // The renderer should have a new realtime state on each animation frame (assuming a refresh rate of 60 hz)
-  setInterval(() => {
-    const nextTimeState = getNextTimeState()
-    if (_ipcCallbacks !== null && _controlState !== null) {
-      _realtimeState = getNextRealtimeState(
-        _realtimeState,
-        nextTimeState,
-        _ipcCallbacks,
-        _controlState
-      )
-      _ipcCallbacks.send_time_state(_realtimeState)
-      _ipcCallbacks.send_visualizer_state({
-        rt: _realtimeState,
-        state: _controlState,
+  const controlStateManager = disposer.push(createControlStateManager())
+
+  const api = disposer.push(
+    createApi({
+      ipcMain,
+      realtimeManager,
+      new_control_state: (newState) => {
+        controlStateManager.set(newState)
+      },
+      renderer,
+      visualizerContainer,
+    })
+  )
+
+  await controlStateManager.waitForFirstControlState(() => {
+    // We're currently calculating the realtimeState 90x per second.
+    // The renderer should have a new realtime state on each animation frame (assuming a refresh rate of 60 hz)
+    disposer.push(realtimeManager.start())
+
+    disposer.push(
+      DmxConnection.maintain({
+        update_ms: AppConfig.dmx.updateIntervalMS,
+        onUpdate: (dmxStatus) => {
+          api.publishers.dmx_connection_update(dmxStatus)
+        },
+        getChannels: () => realtimeManager.realtimeStateRef.current.dmxOut,
+        getConnectable: () => {
+          return controlStateManager.stateRef.current!.control.device
+            .connectable.dmx
+        },
       })
-    }
-  }, 1000 / 90)
-  return _ipcCallbacks
+    )
+
+    disposer.push(
+      MidiConnection.maintain({
+        throttledWaitMS: AppConfig.midi.throttledWaitMS,
+        update_ms: AppConfig.midi.updateIntervalMS,
+        onUpdate: (activeDevices) => {
+          api.publishers.midi_connection_update(activeDevices)
+        },
+        onMessage: (message) => {
+          onMidiMessageInput(
+            message,
+            {
+              state: controlStateManager.stateRef.current!,
+              realtime: realtimeManager.realtimeStateRef.current,
+            },
+            realtimeManager.bpmController.nodeLink,
+            api.publishers.dispatch,
+            realtimeManager.bpmController.tapTempo
+          )
+        },
+        getConnectable: () => {
+          return controlStateManager.stateRef.current!.control.device
+            .connectable.midi
+        },
+      })
+    )
+
+    disposer.push(
+      new WledManager(
+        () => controlStateManager.stateRef.current,
+        () => realtimeManager.realtimeStateRef.current
+      )
+    )
+  })
+
+  return api
 }
 
 export function stop() {
-  _ipcCallbacks = null
+  disposer.dispose()
 }
 
-DmxConnection.maintain({
-  update_ms: 1000,
-  onUpdate: (dmxStatus) => {
-    if (_ipcCallbacks !== null)
-      _ipcCallbacks.send_dmx_connection_update(dmxStatus)
+const createTrackOutputs = (
+  states: {
+    realtimeState: RealtimeState
+    timeState: TimeState
   },
-  getChannels: () => _realtimeState.dmxOut,
-  getConnectable: () => {
-    return _controlState ? _controlState.control.device.connectable.dmx : []
-  },
-})
+  {
+    allParamKeys,
+    fixtures,
+    modulators,
+  }: {
+    fixtures: FlattenedFixture[]
+    allParamKeys: string[]
+    modulators: Modulator[]
+  }
+) => {
+  const { realtimeState, timeState } = states
+  return (sceneTrack: SplitScene_t, trackIndex: number): SplitState => {
+    const previousRandomizer = realtimeState.splitStates[trackIndex]?.randomizer
+    const modulations = createModulationTransformer({
+      beats: timeState.beats,
+      modulators,
+      trackIndex,
+    })
+    const outputParams = createOutputParams(
+      { allParamKeys, baseParams: sceneTrack.baseParams },
+      (options) => modulations.apply(options)
+    )
 
-MidiConnection.maintain({
-  update_ms: 1000,
-  onUpdate: (activeDevices) => {
-    if (_ipcCallbacks !== null)
-      _ipcCallbacks.send_midi_connection_update(activeDevices)
-  },
-  onMessage: (message) => {
-    _midiThrottle.call(midiInputID(message), message)
-  },
-  getConnectable: () => {
-    return _controlState ? _controlState.control.device.connectable.midi : []
-  },
-})
+    const splitSceneFixtures = getFixturesInGroups(fixtures, sceneTrack.groups)
 
-// Todo: Desimate dt in this context
-function getNextTimeState(): TimeState {
-  let currentTime = Date.now()
-  const dt = currentTime - _lastFrameTime
+    const splitSceneFixturesWithinEpicness = splitSceneFixtures.filter(
+      (fixture) => fixture.intensity <= (outputParams.intensity ?? 1)
+    )
 
-  _lastFrameTime = currentTime
+    const newRandomizerState = getNewRandomizerState({
+      previousRandomizerState: previousRandomizer,
+      beatsLast: realtimeState.time.beats,
+      options: sceneTrack.randomizer,
+      size: splitSceneFixturesWithinEpicness.length,
+      timeState,
+    })
 
-  return {
-    ..._nodeLink.getSessionInfoCurrent(),
-    dt: dt,
-    quantum: 4.0,
+    return {
+      outputParams,
+      randomizer: newRandomizerState,
+    }
   }
 }
 
 function getNextRealtimeState(
-  realtimeState: RealtimeState,
-  nextTimeState: TimeState,
-  ipcCallbacks: IPC_Callbacks,
-  controlState: CleanReduxState
+  states: {
+    realtimeState: RealtimeState
+    timeState: TimeState
+    controlState: CleanReduxState
+  },
+  api: IPC_Callbacks
 ): RealtimeState {
   const scene =
-    controlState.control.light.byId[controlState.control.light.active]
-  const dmx = controlState.dmx
+    states.controlState.control.light.byId[
+      states.controlState.control.light.active
+    ]
+  const dmx = states.controlState.dmx
   const allParamKeys = getAllParamKeys(dmx)
 
-  handleAutoScene(
-    realtimeState,
-    nextTimeState,
-    controlState,
-    (newLightScene) => {
-      ipcCallbacks.send_dispatch(
-        setActiveScene({
-          sceneType: 'light',
-          val: newLightScene,
-        })
-      )
+  handleAutoScene({
+    states,
+    onNew: {
+      lightScene: (lightScene) =>
+        api.publishers.dispatch(
+          setActiveScene({
+            sceneType: 'light',
+            val: lightScene,
+          })
+        ),
+      visualScene: (visualScene) =>
+        api.publishers.dispatch(
+          setActiveScene({
+            sceneType: 'visual',
+            val: visualScene,
+          })
+        ),
     },
-    (newVisualScene) => {
-      ipcCallbacks.send_dispatch(
-        setActiveScene({
-          sceneType: 'visual',
-          val: newVisualScene,
-        })
-      )
-    }
-  )
+  })
 
   const fixtures = flatten_fixtures(dmx.universe, dmx.fixtureTypesByID)
 
-  const splitStates: SplitState[] = scene.splitScenes.map(
-    (splitScene, splitIndex) => {
-      const splitOutputParams = getOutputParams(
-        nextTimeState.beats,
-        scene,
-        splitIndex,
-        allParamKeys
-      )
-      let splitSceneFixtures = getFixturesInGroups(fixtures, splitScene.groups)
-      let splitSceneFixturesWithinEpicness = splitSceneFixtures.filter(
-        (fixture) => fixture.intensity <= (splitOutputParams.intensity ?? 1)
-      )
-
-      let newRandomizerState = resizeRandomizer(
-        realtimeState.splitStates[splitIndex]?.randomizer ??
-          initRandomizerState(),
-        splitSceneFixturesWithinEpicness.length
-      )
-
-      newRandomizerState = updateIndexes(
-        realtimeState.time.beats,
-        newRandomizerState,
-        nextTimeState,
-        indexArray(splitSceneFixturesWithinEpicness.length),
-        splitScene.randomizer
-      )
-
-      return {
-        outputParams: splitOutputParams,
-        randomizer: newRandomizerState,
-      }
-    }
+  // create scene tracks outputs
+  const trackOutputs: SplitState[] = scene.splitScenes.map(
+    createTrackOutputs(states, {
+      allParamKeys,
+      fixtures,
+      modulators: scene.modulators,
+    })
   )
 
+  const outChannelConfig = getChannels({ state: states.controlState })
+
+  if (states.timeState.isPlaying) {
+    // send data to output devices
+    calculateDmxOut(
+      { splitStates: trackOutputs, state: states.controlState },
+      outChannelConfig
+    )
+  }
+
   return {
-    time: nextTimeState,
-    dmxOut: calculateDmx(controlState, splitStates, nextTimeState),
-    splitStates,
+    time: states.timeState,
+    dmxOut: outChannelConfig.channels,
+    splitStates: trackOutputs,
   }
 }
-
-new WledManager(
-  () => _controlState,
-  () => _realtimeState
-)

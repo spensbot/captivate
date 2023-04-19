@@ -22,12 +22,12 @@ export interface QlcFixtureDef {
   Manufacturer: string
   Model: string
   Type: QlcFixtureType
-  // All of its QLCChannel entries in a non-ordered pool
+  // All of a fixture's QLCChannel entries in a non-ordered pool
   Channel: QlcChannel[] | QlcChannel
   // Each QLCFixtureMode picks their channels from this channel pool and arranges
   // them in such an order that represents each mode
   Mode: QlcFixtureMode[] | QlcFixtureMode
-  Physical: QlcPhysical
+  // Physical: QlcPhysical
 }
 
 export interface QlcFixtureMode {
@@ -39,20 +39,20 @@ export interface QlcFixtureModeChannel {
   '#text': string // @_Name of QlcChannel
 }
 
-export interface QlcPhysical {
-  bulbType: string
-  bulbLumens: number
-  bulbColourTemperature: number
-  weight: number
-  width: number
-  height: number
-  depth: number
-  lensName: string
-  lensDegreesMin: number
-  lensDegreesMax: number
-  focusType: string
-  focusPanMax: number
-  focusTiltMax: number
-  powerConsumption: number
-  dmxConnector: string
-}
+// export interface QlcPhysical {
+//   bulbType: string
+//   bulbLumens: number
+//   bulbColourTemperature: number
+//   weight: number
+//   width: number
+//   height: number
+//   depth: number
+//   lensName: string
+//   lensDegreesMin: number
+//   lensDegreesMax: number
+//   focusType: string
+//   focusPanMax: number
+//   focusTiltMax: number
+//   powerConsumption: number
+//   dmxConnector: string
+// }

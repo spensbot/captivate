@@ -6,16 +6,16 @@ import {
   ReactReduxContextValue,
 } from 'react-redux'
 import React from 'react'
-import { initTimeState, TimeState } from '../../shared/TimeState'
-import { defaultOutputParams, DefaultParam, Params } from '../../shared/params'
-import { RandomizerState } from '../../shared/randomizer'
+import { initTimeState, TimeState } from '../../features/bpm/shared/TimeState'
+import { Params } from '../../features/params/shared/params'
+import { RandomizerState } from '../../features/bpm/shared/randomizer'
 
 function initDmxOut(): number[] {
   return Array(512).fill(0)
 }
 
 export interface SplitState {
-  outputParams: Params
+  outputParams: Partial<Params>
   randomizer: RandomizerState
 }
 
@@ -69,30 +69,3 @@ export type RealtimeDispatch = typeof realtimeStore.dispatch
 export const useRealtimeSelector: TypedUseSelectorHook<RealtimeState> =
   createSelectorHook(realtimeContext)
 export const useRealtimeDispatch = createDispatchHook(realtimeContext)
-
-export function useOutputParam(
-  param: DefaultParam | string,
-  splitIndex: number
-): number {
-  const outputParam = useRealtimeSelector((state) => {
-    return state.splitStates[splitIndex]?.outputParams?.[param]
-  })
-  if (outputParam === undefined) {
-    console.error(
-      `useOutputParam called on undefined output param ${param}. That's probably not what you wanted.`
-    )
-    return 0
-  } else {
-    return outputParam
-  }
-}
-
-export function useOutputParams(splitIndex: number): Params {
-  const params = useRealtimeSelector((state) => {
-    return state.splitStates[splitIndex]?.outputParams
-  })
-  if (params === undefined) {
-    return defaultOutputParams()
-  }
-  return params
-}
