@@ -81,7 +81,7 @@ export function initFixtureChannel(
   type?: FixtureChannel['type']
 ): FixtureChannel {
   if (type === 'color') {
-    initChannelColor(0, 1)
+    return initChannelColor(0, 1)
   } else if (type === 'strobe') {
     return initChannelStrobe()
   } else if (type === 'axis') {
