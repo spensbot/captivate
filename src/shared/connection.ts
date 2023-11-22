@@ -1,6 +1,7 @@
 export type ConnectionId = string
 
-export interface DmxDevice_t {
+export interface DmxDeviceUsb_t {
+  type: 'DmxUsbPro' | 'OpenDmxUsb'
   connectionId: ConnectionId
   path: string
   manufacturer?: string
@@ -10,6 +11,8 @@ export interface DmxDevice_t {
   vendorId?: string
   name: string
 }
+
+export type DmxDevice_t = DmxDeviceUsb_t
 
 export interface SerialportInfo {
   path: string
@@ -26,7 +29,7 @@ export interface MidiDevice_t {
   name: string
 }
 
-export interface DmxConnections {
+export interface DmxConnectionInfo {
   connected: ConnectionId[]
   available: DmxDevice_t[]
   serialports: SerialportInfo[]
@@ -44,7 +47,7 @@ export function initMidiConnections(): MidiConnections {
   }
 }
 
-export function initDmxConnections(): DmxConnections {
+export function initDmxConnections(): DmxConnectionInfo {
   return {
     connected: [],
     available: [],

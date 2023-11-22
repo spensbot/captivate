@@ -1,5 +1,5 @@
 import { WebContents } from 'electron'
-import * as DmxConnection from './dmxConnection'
+import { ConnectionManager } from './connections/ConnectionManager'
 import * as MidiConnection from './midiConnection'
 import NodeLink from 'node-link'
 import { ipcSetup, IPC_Callbacks } from './ipcHandler'
@@ -46,6 +46,7 @@ function _tapTempo() {
     _nodeLink.setTempo(newBpm)
   })
 }
+let _connectionManager = new ConnectionManager()
 let _artNetManager = new ArtNetManager(() => _realtimeState)
 
 const _midiThrottle = new ThrottleMap((message: MidiMessage) => {
@@ -106,6 +107,7 @@ export function start(
         _ipcCallbacks,
         _controlState
       )
+      _connectionManager.updateDmx(_realtimeState.dmxOut)
       _ipcCallbacks.send_time_state(_realtimeState)
       _ipcCallbacks.send_visualizer_state({
         rt: _realtimeState,
@@ -120,17 +122,14 @@ export function stop() {
   _ipcCallbacks = null
 }
 
-DmxConnection.maintain({
-  update_ms: 1000,
-  onUpdate: (dmxStatus) => {
-    if (_ipcCallbacks !== null)
-      _ipcCallbacks.send_dmx_connection_update(dmxStatus)
-  },
-  getChannels: () => _realtimeState.dmxOut,
-  getConnectable: () => {
-    return _controlState ? _controlState.control.device.connectable.dmx : []
-  },
-})
+setInterval(async () => {
+  if (_controlState) {
+    const connectionStatus = await _connectionManager.updateConnections(
+      _controlState.control.device.connectable.dmx
+    )
+    _ipcCallbacks?.send_dmx_connection_update(connectionStatus)
+  }
+}, 1000)
 
 MidiConnection.maintain({
   update_ms: 1000,

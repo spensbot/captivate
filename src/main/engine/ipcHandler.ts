@@ -6,12 +6,12 @@ import ipcChannels, {
 import ipcChannelsVisualizer from '../../visualizer/ipcChannels'
 import { CleanReduxState } from '../../renderer/redux/store'
 import { RealtimeState } from '../../renderer/redux/realtimeStore'
-import * as dmxConnection from './dmxConnection'
 import * as midiConnection from './midiConnection'
 import { PayloadAction } from '@reduxjs/toolkit'
 import { promises } from 'fs'
 import { VisualizerResource } from '../../visualizer/threejs/VisualizerManager'
 import { VisualizerContainer } from './createVisualizerWindow'
+import { DmxConnectionInfo } from 'shared/connection'
 
 interface Config {
   renderer: WebContents
@@ -39,7 +39,7 @@ export function ipcSetup(config: Config) {
   })
 
   return {
-    send_dmx_connection_update: (payload: dmxConnection.UpdatePayload) =>
+    send_dmx_connection_update: (payload: DmxConnectionInfo) =>
       _config.renderer.send(ipcChannels.dmx_connection_update, payload),
     send_midi_connection_update: (payload: midiConnection.UpdatePayload) =>
       _config.renderer.send(ipcChannels.midi_connection_update, payload),

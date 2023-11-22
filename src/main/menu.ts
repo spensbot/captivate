@@ -7,7 +7,7 @@ import {
   dialog,
 } from 'electron'
 import { IPC_Callbacks } from './engine/ipcHandler'
-import { listPorts } from './engine/dmxConnection'
+import { SerialPort } from 'serialport'
 import {
   toggleLedEnabled,
   toggleVideoEnabled,
@@ -248,7 +248,7 @@ export default class MenuBuilder {
         {
           label: 'USB Troubleshooting',
           click: () => {
-            listPorts().then((ports) =>
+            SerialPort.list().then((ports) =>
               dialog.showMessageBox(this.mainWindow, {
                 title: 'USB Troubleshooting',
                 message:
