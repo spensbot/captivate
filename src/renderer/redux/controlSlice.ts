@@ -449,6 +449,8 @@ export const scenesSlice = createSlice({
       midiActions.setMidiConnectable(state.device, action),
     removeMidiAction: (state, action) =>
       midiActions.removeMidiAction(state.device, action),
+    setArtNetConnectable: (state, action) =>
+      midiActions.setArtNetConnectable(state.device, action),
   },
 })
 
@@ -506,6 +508,7 @@ export const {
   setDmxConnectable,
   setMidiConnectable,
   removeMidiAction,
+  setArtNetConnectable,
 } = scenesSlice.actions
 
 export default scenesSlice.reducer

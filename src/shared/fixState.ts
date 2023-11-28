@@ -181,7 +181,12 @@ export function fixDmxState(dmx: DmxState) {
   }
 }
 
-export function fixDeviceState(_deviceState: DeviceState) {}
+export function fixDeviceState(deviceState: DeviceState) {
+  // Add ArtNet
+  if (deviceState.connectable.artNet === undefined) {
+    deviceState.connectable.artNet = []
+  }
+}
 
 function fixtureTypes(dmx: DmxState) {
   return dmx.fixtureTypes.map((id) => dmx.fixtureTypesByID[id])

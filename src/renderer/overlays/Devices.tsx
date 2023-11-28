@@ -2,7 +2,11 @@ import styled from 'styled-components'
 import { useControlSelector, useTypedSelector } from '../redux/store'
 import { setConnectionsMenu } from '../redux/guiSlice'
 import { useDispatch } from 'react-redux'
-import { setDmxConnectable, setMidiConnectable } from '../redux/controlSlice'
+import {
+  setDmxConnectable,
+  setMidiConnectable,
+  setArtNetConnectable,
+} from '../redux/controlSlice'
 import CloseIcon from '@mui/icons-material/Close'
 import IconButton from '@mui/material/IconButton'
 import {
@@ -11,6 +15,7 @@ import {
   ConnectionId,
 } from '../../shared/connection'
 import DmxTroubleShoot from './DmxTroubleshoot'
+import Input from 'renderer/base/Input'
 
 interface Props {}
 
@@ -42,6 +47,11 @@ export default function Devices({}: Props) {
               />
             ))}
             {dmx.available.length === 0 && <NoneFound />}
+            <SubSubTitle>Art-Net</SubSubTitle>
+            <Input
+              value={connectable.artNet[0] ?? ''}
+              onChange={(newVal) => dispatch(setArtNetConnectable([newVal]))}
+            />
           </Pane>
           <Divider />
           <Pane>
@@ -103,6 +113,13 @@ const SubTitle = styled.div`
   font-size: 1.1rem;
   margin-bottom: 1rem;
 `
+
+const SubSubTitle = styled.div`
+  font-size: 0.9;
+  margin-bottom: 0.5rem;
+  margin-top: 1rem;
+`
+
 interface Props2<T> {
   device: T
   connected: ConnectionId[]

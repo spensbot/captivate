@@ -29,10 +29,13 @@ export interface MidiDevice_t {
   name: string
 }
 
+export interface ArtNetConnectionInfo {}
+
 export interface DmxConnectionInfo {
   connected: ConnectionId[]
   available: DmxDevice_t[]
   serialports: SerialportInfo[]
+  artNet: ArtNetConnectionInfo
 }
 
 export interface MidiConnections {
@@ -52,5 +55,8 @@ export function initDmxConnections(): DmxConnectionInfo {
     connected: [],
     available: [],
     serialports: [],
+    artNet: {
+      ipOut: null,
+    },
   }
 }

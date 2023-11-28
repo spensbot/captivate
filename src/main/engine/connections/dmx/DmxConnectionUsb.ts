@@ -1,42 +1,51 @@
-import { DmxDeviceUsb_t } from 'shared/connection'
+import { DmxDeviceUsb_t, DmxDevice_t } from 'shared/connection'
 import { SerialConnection } from '../SerialConnection'
-import * as DmxUsbPro from './DmxUsbPro'
-import * as OpenDmxUsb from './OpenDmxUsb'
+import DmxUsbPro from './DmxUsbPro'
+import OpenDmxUsb from './OpenDmxUsb'
+import { RealtimeState } from 'renderer/redux/realtimeStore'
 
-const DMX_SEND_INTERVAL = 1000 / 30
-// const DMX_SEND_INTERVAL = 46
-
-const sendByDeviceType: {
-  [key in DmxDeviceUsb_t['type']]: (
+export interface DmxUsbDeviceConfig {
+  sendUniverse: (
     universe: number[],
     connection: SerialConnection
   ) => Promise<void>
-} = {
-  DmxUsbPro: DmxUsbPro.sendUniverse,
-  OpenDmxUsb: OpenDmxUsb.sendUniverse,
+  refreshHz: number
 }
+
+const configByDeviceType: { [key in DmxDevice_t['type']]: DmxUsbDeviceConfig } =
+  {
+    DmxUsbPro,
+    OpenDmxUsb,
+  }
 
 export class DmxConnectionUsb {
   type = 'DmxConnectionUsb'
   device: DmxDeviceUsb_t
-  universe: number[] = []
   private serialConnection: SerialConnection
   private intervalHandle: NodeJS.Timer
+  private config: DmxUsbDeviceConfig
+  private getRealtimeState: () => RealtimeState
 
   private constructor(
     device: DmxDeviceUsb_t,
-    serialConnection: SerialConnection
+    serialConnection: SerialConnection,
+    getRealtimeState: () => RealtimeState
   ) {
     this.device = device
     this.serialConnection = serialConnection
+    this.config = configByDeviceType[this.device.type]
     this.intervalHandle = setInterval(() => {
       this.sendDmx()
-    }, DMX_SEND_INTERVAL)
+    }, 1000 / this.config.refreshHz)
+    this.getRealtimeState = getRealtimeState
   }
 
-  static async create(device: DmxDeviceUsb_t): Promise<DmxConnectionUsb> {
+  static async create(
+    device: DmxDeviceUsb_t,
+    getRealtimeState: () => RealtimeState
+  ): Promise<DmxConnectionUsb> {
     let serialConnection = await SerialConnection.connect(device.path)
-    return new DmxConnectionUsb(device, serialConnection)
+    return new DmxConnectionUsb(device, serialConnection, getRealtimeState)
   }
 
   isOpen(): boolean {
@@ -49,7 +58,9 @@ export class DmxConnectionUsb {
   }
 
   private sendDmx() {
-    const send = sendByDeviceType[this.device.type]
-    send(this.universe, this.serialConnection)
+    this.config.sendUniverse(
+      this.getRealtimeState().dmxOut,
+      this.serialConnection
+    )
   }
 }

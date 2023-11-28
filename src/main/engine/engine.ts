@@ -30,7 +30,6 @@ import { MidiMessage, midiInputID } from '../../shared/midi'
 import { getAllParamKeys } from '../../renderer/redux/dmxSlice'
 import { indexArray } from '../../shared/util'
 import WledManager from './wled/wled_manager'
-import { ArtNetManager } from './connections/art-net/artNetManager'
 
 let _nodeLink = new NodeLink()
 _nodeLink.setIsPlaying(true)
@@ -46,8 +45,10 @@ function _tapTempo() {
     _nodeLink.setTempo(newBpm)
   })
 }
-let _connectionManager = new ConnectionManager()
-let _artNetManager = new ArtNetManager(() => _realtimeState)
+let _connectionManager = new ConnectionManager(
+  () => _controlState,
+  () => _realtimeState
+)
 
 const _midiThrottle = new ThrottleMap((message: MidiMessage) => {
   if (_controlState !== null && _ipcCallbacks !== null) {
@@ -107,7 +108,6 @@ export function start(
         _ipcCallbacks,
         _controlState
       )
-      _connectionManager.updateDmx(_realtimeState.dmxOut)
       _ipcCallbacks.send_time_state(_realtimeState)
       _ipcCallbacks.send_visualizer_state({
         rt: _realtimeState,

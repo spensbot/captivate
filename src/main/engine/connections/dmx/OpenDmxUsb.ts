@@ -1,16 +1,18 @@
-import { SerialConnection } from '../SerialConnection'
+import { DmxUsbDeviceConfig } from './DmxConnectionUsb'
 
-export async function sendUniverse(
-  universe: number[],
-  connection: SerialConnection
-) {
-  const universeBuffer = Buffer.alloc(513, 0)
+const cfg: DmxUsbDeviceConfig = {
+  refreshHz: 30,
+  sendUniverse: async (universe, connection) => {
+    const universeBuffer = Buffer.alloc(513, 0)
 
-  universe.forEach((value, index) => (universeBuffer[index + 1] = value))
+    universe.forEach((value, index) => (universeBuffer[index + 1] = value))
 
-  let buffer = universeBuffer
+    let buffer = universeBuffer
 
-  await connection.set({ brk: true, rts: false }, 1)
-  await connection.set({ brk: false, rts: false }, 1)
-  connection.write(buffer)
+    await connection.set({ brk: true, rts: false }, 1)
+    await connection.set({ brk: false, rts: false }, 1)
+    connection.write(buffer)
+  },
 }
+
+export default cfg

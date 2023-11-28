@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { SaveInfo } from '../../shared/save'
 import {
   MidiConnections,
-  DmxConnections,
+  DmxConnectionInfo,
   initDmxConnections,
   initMidiConnections,
 } from '../../shared/connection'
@@ -20,7 +20,7 @@ export interface GuiState {
   blackout: boolean
   connectionMenu: boolean
   midi: MidiConnections
-  dmx: DmxConnections
+  dmx: DmxConnectionInfo
   saving: boolean
   loading: SaveInfo | null
   newProjectDialog: boolean
@@ -59,7 +59,7 @@ export const guiSlice = createSlice({
     setMidi: (state, { payload }: PayloadAction<MidiConnections>) => {
       state.midi = payload
     },
-    setDmx: (state, { payload }: PayloadAction<DmxConnections>) => {
+    setDmx: (state, { payload }: PayloadAction<DmxConnectionInfo>) => {
       state.dmx = payload
     },
     setSaving: (state, { payload }: PayloadAction<boolean>) => {

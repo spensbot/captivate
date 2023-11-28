@@ -7,14 +7,23 @@ import {
 } from 'shared/connection'
 import { DmxConnection, createDmxConnection } from './dmx/DmxConnection'
 import { getDmxDevice } from './dmx/DmxDevice_t'
+import { ArtNetManager } from './art-net/ArtNetManager'
+import { CleanReduxState } from 'renderer/redux/store'
+import { RealtimeState } from 'renderer/redux/realtimeStore'
 
 export class ConnectionManager {
+  private getControlState: () => CleanReduxState | null
+  private getRealtimeState: () => RealtimeState
   private dmxConnections: { [key: ConnectionId]: DmxConnection } = {}
+  private artNet: ArtNetManager
 
-  updateDmx(universe: number[]) {
-    for (const [_id, connection] of Object.entries(this.dmxConnections)) {
-      connection.universe = universe
-    }
+  constructor(
+    getControlState: () => CleanReduxState | null,
+    getRealtimeState: () => RealtimeState
+  ) {
+    this.getControlState = getControlState
+    this.getRealtimeState = getRealtimeState
+    this.artNet = new ArtNetManager(this.getRealtimeState, this.getControlState)
   }
 
   async updateConnections(
@@ -32,6 +41,7 @@ export class ConnectionManager {
       connected: Object.keys(this.dmxConnections),
       available: availableDevices,
       serialports,
+      artNet: this.artNet.updateConnections(),
     }
 
     return status
@@ -64,7 +74,7 @@ export class ConnectionManager {
     const newConnections = await Promise.all(
       availableDevices
         .filter((device) => shouldConnect(device))
-        .map((device) => createDmxConnection(device))
+        .map((device) => createDmxConnection(device, this.getRealtimeState))
     )
 
     for (const connection of newConnections) {
