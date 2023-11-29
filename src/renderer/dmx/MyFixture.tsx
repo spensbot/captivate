@@ -8,7 +8,6 @@ import {
   deleteFixtureType,
 } from '../redux/dmxSlice'
 import Input from '../base/Input'
-import Slider from '@mui/material/Slider'
 import styled from 'styled-components'
 import FixtureChannels from './FixtureChannels'
 import { Button } from '@mui/material'
@@ -208,7 +207,7 @@ const Row = styled.div`
   align-items: center;
 `
 
-const Intensity = styled.div`
-  font-size: 0.9rem;
-  margin-right: 0.7rem;
-`
+// const Intensity = styled.div`
+//   font-size: 0.9rem;
+//   margin-right: 0.7rem;
+// `
