@@ -23,6 +23,9 @@ jobs:
           node-version: 16
           cache: npm
 
+      - name: Install Pythons deps # https://github.com/nodejs/node-gyp/issues/2869
+        run: python3 -m pip install packaging
+
       - name: npm install
         run: |
           npm install
