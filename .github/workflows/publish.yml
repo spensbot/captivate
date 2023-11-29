@@ -26,6 +26,10 @@ jobs:
           node-version: 16
           cache: npm
 
+      - uses: actions/setup-python@v4 # https://github.com/nodejs/node-gyp/issues/2869
+        with:
+          python-version: '3.11'
+
       - name: Install dependencies
         run: |
           npm install
