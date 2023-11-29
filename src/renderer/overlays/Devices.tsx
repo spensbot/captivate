@@ -51,6 +51,7 @@ export default function Devices({}: Props) {
             <Input
               value={connectable.artNet[0] ?? ''}
               onChange={(newVal) => dispatch(setArtNetConnectable([newVal]))}
+              placeholder="Enter Art-Net IP"
             />
           </Pane>
           <Divider />

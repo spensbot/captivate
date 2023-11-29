@@ -122,7 +122,11 @@ export function Scene({ sceneType, index, id }: Props) {
               {isActive ? (
                 <Column>
                   <Row>
-                    <Input value={name} onChange={onNameChange} />
+                    <Input
+                      value={name}
+                      onChange={onNameChange}
+                      placeholder="Scene Name"
+                    />
                     {/* <Switch
                       size="small"
                       checked={autoEnabled}

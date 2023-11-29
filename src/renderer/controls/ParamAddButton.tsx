@@ -53,7 +53,7 @@ function getOptions(
       const isInBundle = paramBundleList.find((pb) =>
         paramBundles[pb].find((p) => p === param)
       )
-      return !isActive && !isInBundle
+      return !isActive && !isInBundle && !(param === 'intensity')
     })
   const paramBundleOptions = paramBundleList.filter((pb) => {
     const isActive = paramBundles[pb].reduce(

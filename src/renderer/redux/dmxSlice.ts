@@ -29,7 +29,7 @@ export function getCustomChannels(dmx: DmxState): Set<string> {
 
   for (const ftId of dmx.fixtureTypes) {
     for (const ch of dmx.fixtureTypesByID[ftId].channels) {
-      if (ch.type === 'custom') {
+      if (ch.type === 'custom' && ch.isControllable) {
         result.add(ch.name)
       }
     }

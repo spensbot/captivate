@@ -136,6 +136,7 @@ function ActiveFixtureType() {
                 })
               )
             }
+            placeholder="Fixture Name"
           />
           <Sp2 />
           <Input
@@ -148,11 +149,12 @@ function ActiveFixtureType() {
                 })
               )
             }
+            placeholder="Manufacturer"
           />
         </div>
       </Row>
       <Sp2 />
-      <Row>
+      {/* <Row>
         <Intensity>Intensity:</Intensity>
         <Slider
           id="intensity"
@@ -170,7 +172,7 @@ function ActiveFixtureType() {
             )
           }
         />
-      </Row>
+      </Row> */}
 
       <FixtureChannels fixtureID={ft.id} isInUse={isInUse} />
       <Sp />
