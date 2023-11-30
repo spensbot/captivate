@@ -165,13 +165,6 @@ export default class MenuBuilder {
           },
         },
         {
-          label: 'Toggle Developer Tools',
-          accelerator: 'Alt+Command+I',
-          click: () => {
-            this.mainWindow.webContents.toggleDevTools()
-          },
-        },
-        {
           label: 'Toggle Visuals (Alpha)',
           click: () => {
             this.res.ipcCallbacks.send_dispatch(toggleVideoEnabled())
@@ -181,6 +174,14 @@ export default class MenuBuilder {
           label: 'Toggle Led (Alpha)',
           click: () => {
             this.res.ipcCallbacks.send_dispatch(toggleLedEnabled())
+          },
+        },
+        { type: 'separator' },
+        {
+          label: 'Toggle Developer Tools',
+          accelerator: 'Alt+Command+I',
+          click: () => {
+            this.mainWindow.webContents.toggleDevTools()
           },
         },
       ],
@@ -205,6 +206,14 @@ export default class MenuBuilder {
           label: 'Toggle Led (Alpha)',
           click: () => {
             this.res.ipcCallbacks.send_dispatch(toggleLedEnabled())
+          },
+        },
+        { type: 'separator' },
+        {
+          label: 'Toggle Developer Tools',
+          accelerator: 'Alt+Command+I',
+          click: () => {
+            this.mainWindow.webContents.toggleDevTools()
           },
         },
       ],
@@ -327,13 +336,6 @@ export default class MenuBuilder {
                   },
                 },
                 {
-                  label: 'Toggle &Developer Tools',
-                  accelerator: 'Alt+Ctrl+I',
-                  click: () => {
-                    this.mainWindow.webContents.toggleDevTools()
-                  },
-                },
-                {
                   label: 'Toggle Visuals (Alpha)',
                   click: () => {
                     this.res.ipcCallbacks.send_dispatch(toggleVideoEnabled())
@@ -343,6 +345,13 @@ export default class MenuBuilder {
                   label: 'Toggle Led (Alpha)',
                   click: () => {
                     this.res.ipcCallbacks.send_dispatch(toggleLedEnabled())
+                  },
+                },
+                {
+                  label: 'Toggle &Developer Tools',
+                  accelerator: 'Alt+Ctrl+I',
+                  click: () => {
+                    this.mainWindow.webContents.toggleDevTools()
                   },
                 },
               ]
@@ -366,6 +375,13 @@ export default class MenuBuilder {
                   label: 'Toggle Led (Alpha)',
                   click: () => {
                     this.res.ipcCallbacks.send_dispatch(toggleLedEnabled())
+                  },
+                },
+                {
+                  label: 'Toggle &Developer Tools',
+                  accelerator: 'Alt+Ctrl+I',
+                  click: () => {
+                    this.mainWindow.webContents.toggleDevTools()
                   },
                 },
               ],
