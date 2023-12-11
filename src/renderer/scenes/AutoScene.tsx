@@ -9,7 +9,7 @@ import {
 } from '../redux/controlSlice'
 import { SceneType } from '../../shared/Scenes'
 import DraggableNumber from '../base/DraggableNumber'
-import { SliderMidiOverlay } from 'renderer/base/MidiOverlay'
+import { ButtonMidiOverlay, SliderMidiOverlay } from 'renderer/base/MidiOverlay'
 
 export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
   const dispatch = useDispatch()
@@ -37,22 +37,29 @@ export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
 
   return (
     <Root>
-      <Button
-        style={{
-          backgroundColor: enabled ? '#3d5a' : '#fff3',
-          color: enabled ? '#eee' : '#fff9',
+      <ButtonMidiOverlay
+        action={{
+          type: 'toggleAutoScene',
+          sceneType: sceneType,
         }}
-        onClick={() =>
-          dispatch(
-            setAutoSceneEnabled({
-              sceneType: sceneType,
-              val: !enabled,
-            })
-          )
-        }
       >
-        auto
-      </Button>
+        <Button
+          style={{
+            backgroundColor: enabled ? '#3d5a' : '#fff3',
+            color: enabled ? '#eee' : '#fff9',
+          }}
+          onClick={() =>
+            dispatch(
+              setAutoSceneEnabled({
+                sceneType: sceneType,
+                val: !enabled,
+              })
+            )
+          }
+        >
+          auto
+        </Button>
+      </ButtonMidiOverlay>
       <DraggableNumber
         value={period}
         min={1}

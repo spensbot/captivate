@@ -44,9 +44,20 @@ interface TapTempo {
   type: 'tapTempo'
 }
 
+interface ToggleAutoScene {
+  type: 'toggleAutoScene'
+  sceneType: SceneType
+}
+
 interface ConnectionSettings {
   openDmxRefreshRateHz: number
 }
+
+export const buttonMidiActionTypes: Set<MidiAction['type']> = new Set([
+  'setActiveSceneIndex',
+  'tapTempo',
+  'toggleAutoScene',
+])
 
 export type MidiAction =
   | SetActiveSceneIndex
@@ -55,6 +66,7 @@ export type MidiAction =
   | SetBaseParam
   | SetBpm
   | TapTempo
+  | ToggleAutoScene
 
 // must uniquely identify an action (for use in a hash table)
 // does not need to be human readable. Just unique for a given action
@@ -64,6 +76,9 @@ export function getActionID(action: MidiAction) {
   }
   if (action.type === 'setBaseParam') {
     return action.type + action.paramKey
+  }
+  if (action.type === 'toggleAutoScene') {
+    return action.type + action.sceneType
   }
   return action.type
 }

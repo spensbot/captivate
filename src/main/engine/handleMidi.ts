@@ -1,7 +1,11 @@
 import { MidiMessage, midiInputID } from '../../shared/midi'
 import { CleanReduxState } from '../../renderer/redux/store'
 import { RealtimeState } from '../../renderer/redux/realtimeStore'
-import { getActionID, SliderAction } from '../../renderer/redux/deviceState'
+import {
+  buttonMidiActionTypes,
+  getActionID,
+  SliderAction,
+} from '../../renderer/redux/deviceState'
 import {
   midiSetButtonAction,
   midiSetSliderAction,
@@ -9,6 +13,7 @@ import {
   setAutoSceneBombacity,
   setMaster,
   setBaseParams,
+  setAutoSceneEnabled,
 } from '../../renderer/redux/controlSlice'
 import NodeLink from 'node-link'
 import { PayloadAction } from '@reduxjs/toolkit'
@@ -38,7 +43,7 @@ export function handleMessage(
 
   if (midiState.isEditing && midiState.listening) {
     const listenType = midiState.listening.type
-    if (listenType === 'setActiveSceneIndex' || listenType === 'tapTempo') {
+    if (buttonMidiActionTypes.has(listenType)) {
       dispatch(
         midiSetButtonAction({
           inputID: input.id,
@@ -101,6 +106,13 @@ export function handleMessage(
           )
         } else if (buttonAction.action.type === 'tapTempo') {
           tapTempo()
+        } else if (buttonAction.action.type === 'toggleAutoScene') {
+          dispatch(
+            setAutoSceneEnabled({
+              sceneType: buttonAction.action.sceneType,
+              val: !state.control.light.auto.enabled,
+            })
+          )
         }
       }
     }
