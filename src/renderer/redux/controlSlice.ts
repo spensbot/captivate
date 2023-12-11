@@ -451,6 +451,8 @@ export const scenesSlice = createSlice({
       midiActions.removeMidiAction(state.device, action),
     setArtNetConnectable: (state, action) =>
       midiActions.setArtNetConnectable(state.device, action),
+    setOpenDmxRefreshRateHz: (state, action) =>
+      midiActions.setOpenDmxRefreshRateHz(state.device, action),
   },
 })
 
@@ -509,6 +511,7 @@ export const {
   setMidiConnectable,
   removeMidiAction,
   setArtNetConnectable,
+  setOpenDmxRefreshRateHz,
 } = scenesSlice.actions
 
 export default scenesSlice.reducer

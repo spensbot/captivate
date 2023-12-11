@@ -1,21 +1,15 @@
-import { RealtimeState } from '../../../renderer/redux/realtimeStore'
-import { CleanReduxState } from '../../../renderer/redux/store'
 import { getLedValues } from '../../../shared/ledFixtures'
+import { EngineContext } from '../engineContext'
 import WledDevice from './wled_device'
 
 export default class WledManager {
   private devices: { [mdns: string]: WledDevice | undefined } = {}
   private pokeInterval
   private broadcastInterval
-  private getState
-  private getRtState
+  private c
 
-  constructor(
-    getState: () => CleanReduxState | null,
-    getRtState: () => RealtimeState
-  ) {
-    this.getState = getState
-    this.getRtState = getRtState
+  constructor(c: EngineContext) {
+    this.c = c
 
     this.updateDevices()
 
@@ -24,10 +18,10 @@ export default class WledManager {
     }, 1000)
 
     this.broadcastInterval = setInterval(() => {
-      const state = this.getState()
+      const state = this.c.controlState()
       if (state === null) return
 
-      const rtState = this.getRtState()
+      const rtState = this.c.realtimeState()
 
       for (const fixture of state.dmx.led.ledFixtures) {
         const device = this.devices[fixture.mdns]
@@ -45,7 +39,7 @@ export default class WledManager {
   }
 
   private updateDevices() {
-    const state = this.getState()
+    const state = this.c.controlState()
     if (state === null) return
 
     for (const fixture of state.dmx.led.ledFixtures) {

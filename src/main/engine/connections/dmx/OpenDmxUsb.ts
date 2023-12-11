@@ -1,7 +1,13 @@
+import { EngineContext } from 'main/engine/engineContext'
 import { DmxUsbDeviceConfig } from './DmxConnectionUsb'
 
 const cfg: DmxUsbDeviceConfig = {
-  refreshHz: 30,
+  refreshHz: (c: EngineContext) => {
+    return (
+      c.controlState()?.control.device.connectionSettings
+        .openDmxRefreshRateHz ?? 30
+    )
+  },
   sendUniverse: async (universe, connection) => {
     const universeBuffer = Buffer.alloc(513, 0)
 
@@ -13,6 +19,7 @@ const cfg: DmxUsbDeviceConfig = {
     await connection.set({ brk: false, rts: false }, 1)
     connection.write(buffer)
   },
+  name: 'Open Dmx Usb',
 }
 
 export default cfg

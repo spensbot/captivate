@@ -6,6 +6,7 @@ import {
   setDmxConnectable,
   setMidiConnectable,
   setArtNetConnectable,
+  setOpenDmxRefreshRateHz,
 } from '../redux/controlSlice'
 import CloseIcon from '@mui/icons-material/Close'
 import IconButton from '@mui/material/IconButton'
@@ -16,15 +17,22 @@ import {
 } from '../../shared/connection'
 import DmxTroubleShoot from './DmxTroubleshoot'
 import Input from 'renderer/base/Input'
+import DraggableNumber from 'renderer/base/DraggableNumber'
 
 interface Props {}
 
 export default function Devices({}: Props) {
   const dispatch = useDispatch()
 
-  const connectable = useControlSelector((state) => state.device.connectable)
+  const deviceSetup = useControlSelector((state) => state.device)
+  const connectable = deviceSetup.connectable
   const dmx = useTypedSelector((state) => state.gui.dmx)
   const midi = useTypedSelector((state) => state.gui.midi)
+
+  console.log(dmx.available)
+
+  const hasOpenDmx =
+    dmx.available.find((device) => device.type === 'OpenDmxUsb') !== undefined
 
   return (
     <Root>
@@ -40,13 +48,37 @@ export default function Devices({}: Props) {
             <SubTitle>Dmx</SubTitle>
             {dmx.available.map((device) => (
               <DmxDevice
-                key={device.name}
+                key={device.connectionId}
                 device={device}
                 connected={dmx.connected}
                 connectable={connectable.dmx}
               />
             ))}
             {dmx.available.length === 0 && <NoneFound />}
+            {hasOpenDmx && (
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <p
+                  style={{
+                    color: '#aaa',
+                    fontSize: '0.7rem',
+                    marginRight: '0.3rem',
+                  }}
+                >
+                  Open Dmx Refresh Rate
+                </p>
+                {
+                  <DraggableNumber
+                    value={deviceSetup.connectionSettings.openDmxRefreshRateHz}
+                    min={10}
+                    max={40}
+                    onChange={(newVal) =>
+                      dispatch(setOpenDmxRefreshRateHz(newVal))
+                    }
+                    suffix="hz"
+                  />
+                }
+              </div>
+            )}
             <SubSubTitle>Art-Net</SubSubTitle>
             <Input
               value={connectable.artNet[0] ?? ''}
@@ -127,8 +159,12 @@ interface Props2<T> {
   connectable: ConnectionId[]
 }
 
-function hasDmxDevice(paths: string[], device: DmxDevice_t) {
-  return paths.find((path) => device.path === path) !== undefined
+function hasDmxDevice(connectionIds: string[], device: DmxDevice_t) {
+  return (
+    connectionIds.find(
+      (connectionId) => device.connectionId === connectionId
+    ) !== undefined
+  )
 }
 
 function hasMidiDevice(

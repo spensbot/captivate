@@ -1,12 +1,12 @@
 import { DmxDevice_t } from 'shared/connection'
 import { DmxConnectionUsb } from './DmxConnectionUsb'
-import { RealtimeState } from 'renderer/redux/realtimeStore'
+import { EngineContext } from 'main/engine/engineContext'
 
 export type DmxConnection = DmxConnectionUsb
 
 export async function createDmxConnection(
   device: DmxDevice_t,
-  getRealtimeState: () => RealtimeState
+  c: EngineContext
 ): Promise<DmxConnection> {
-  return DmxConnectionUsb.create(device, getRealtimeState)
+  return DmxConnectionUsb.create(device, c)
 }

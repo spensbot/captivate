@@ -45,10 +45,10 @@ function _tapTempo() {
     _nodeLink.setTempo(newBpm)
   })
 }
-let _connectionManager = new ConnectionManager(
-  () => _controlState,
-  () => _realtimeState
-)
+let _connectionManager = new ConnectionManager({
+  controlState: () => _controlState,
+  realtimeState: () => _realtimeState,
+})
 
 const _midiThrottle = new ThrottleMap((message: MidiMessage) => {
   if (_controlState !== null && _ipcCallbacks !== null) {
@@ -235,7 +235,7 @@ function getNextRealtimeState(
   }
 }
 
-new WledManager(
-  () => _controlState,
-  () => _realtimeState
-)
+new WledManager({
+  controlState: () => _controlState,
+  realtimeState: () => _realtimeState,
+})

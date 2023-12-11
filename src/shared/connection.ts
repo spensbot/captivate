@@ -1,7 +1,9 @@
 export type ConnectionId = string
 
+export type DmxUsbDeviceType = 'DmxUsbPro' | 'OpenDmxUsb'
+
 export interface DmxDeviceUsb_t {
-  type: 'DmxUsbPro' | 'OpenDmxUsb'
+  type: DmxUsbDeviceType | null
   connectionId: ConnectionId
   path: string
   manufacturer?: string

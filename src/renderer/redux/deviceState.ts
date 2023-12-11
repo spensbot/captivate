@@ -44,6 +44,10 @@ interface TapTempo {
   type: 'tapTempo'
 }
 
+interface ConnectionSettings {
+  openDmxRefreshRateHz: number
+}
+
 export type MidiAction =
   | SetActiveSceneIndex
   | SetAutoSceneBombacity
@@ -82,6 +86,7 @@ export interface DeviceState {
     dmx: ConnectionId[]
     artNet: ConnectionId[]
   }
+  connectionSettings: ConnectionSettings
   buttonActions: { [actionID: string]: ButtonAction }
   sliderActions: { [actionID: string]: SliderAction }
 }
@@ -95,6 +100,9 @@ export function initDeviceState(): DeviceState {
       midi: [],
       dmx: [],
       artNet: [],
+    },
+    connectionSettings: {
+      openDmxRefreshRateHz: 30,
     },
   }
 }
@@ -152,6 +160,12 @@ export const midiActions = {
     { payload }: PayloadAction<ConnectionId[]>
   ) => {
     state.connectable.artNet = payload
+  },
+  setOpenDmxRefreshRateHz: (
+    state: DeviceState,
+    { payload }: PayloadAction<number>
+  ) => {
+    state.connectionSettings.openDmxRefreshRateHz = payload
   },
 }
 

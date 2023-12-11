@@ -11,9 +11,18 @@ export interface SetOptions {
 export class SerialConnection {
   private readyToWrite = true
   private connection: SerialPort
+  private onData: (data: Buffer) => void = () => {}
 
   private constructor(connection: SerialPort) {
     this.connection = connection
+    this.connection.on('data', (data) => this.onData(data))
+    // These don't really need to be used if we check if it's open
+    connection.on('disconnect', (_d) => {
+      console.log('Serial Disconnect')
+    })
+    connection.on('error', (e) => {
+      console.error('Error', e)
+    })
   }
 
   static async connect(path: string): Promise<SerialConnection> {
@@ -34,14 +43,6 @@ export class SerialConnection {
           }
         }
       )
-
-      // These don't really need to be used if we check if it's open
-      connection.on('disconnect', (_d) => {
-        console.log('Serial Disconnect')
-      })
-      connection.on('error', (e) => {
-        console.error('Error', e)
-      })
     })
   }
 
@@ -75,5 +76,15 @@ export class SerialConnection {
         this.readyToWrite = true
       })
     }
+  }
+
+  writeAndAwaitReply(buffer: Buffer, timeoutMs = 500): Promise<Buffer | null> {
+    return new Promise((resolve, _reject) => {
+      this.onData = resolve
+      this.write(buffer)
+      setTimeout(() => {
+        resolve(null)
+      }, timeoutMs)
+    })
   }
 }

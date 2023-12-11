@@ -1,22 +1,22 @@
-import { DmxDeviceUsb_t, DmxDevice_t } from 'shared/connection'
+import { DmxDeviceUsb_t, DmxUsbDeviceType } from 'shared/connection'
 import { SerialConnection } from '../SerialConnection'
-import DmxUsbPro from './DmxUsbPro'
+import DmxUsbPro, { isDmxUsbPro } from './DmxUsbPro'
 import OpenDmxUsb from './OpenDmxUsb'
-import { RealtimeState } from 'renderer/redux/realtimeStore'
+import { EngineContext } from 'main/engine/engineContext'
 
 export interface DmxUsbDeviceConfig {
   sendUniverse: (
     universe: number[],
     connection: SerialConnection
   ) => Promise<void>
-  refreshHz: number
+  refreshHz: (c: EngineContext) => number
+  name: string
 }
 
-const configByDeviceType: { [key in DmxDevice_t['type']]: DmxUsbDeviceConfig } =
-  {
-    DmxUsbPro,
-    OpenDmxUsb,
-  }
+const configByDeviceType: { [key in DmxUsbDeviceType]: DmxUsbDeviceConfig } = {
+  DmxUsbPro,
+  OpenDmxUsb,
+}
 
 export class DmxConnectionUsb {
   type = 'DmxConnectionUsb'
@@ -24,28 +24,48 @@ export class DmxConnectionUsb {
   private serialConnection: SerialConnection
   private intervalHandle: NodeJS.Timer
   private config: DmxUsbDeviceConfig
-  private getRealtimeState: () => RealtimeState
+  private c: EngineContext
+  private lastHz: number = 0
 
   private constructor(
     device: DmxDeviceUsb_t,
     serialConnection: SerialConnection,
-    getRealtimeState: () => RealtimeState
+    c: EngineContext
   ) {
+    this.c = c
     this.device = device
     this.serialConnection = serialConnection
-    this.config = configByDeviceType[this.device.type]
+    this.config = configByDeviceType[device.type as DmxUsbDeviceType]
+    this.lastHz = this.config.refreshHz(this.c)
+    this.device.name = this.config.name
     this.intervalHandle = setInterval(() => {
       this.sendDmx()
-    }, 1000 / this.config.refreshHz)
-    this.getRealtimeState = getRealtimeState
+    }, 1000 / this.config.refreshHz(c))
   }
 
   static async create(
     device: DmxDeviceUsb_t,
-    getRealtimeState: () => RealtimeState
+    c: EngineContext
   ): Promise<DmxConnectionUsb> {
     let serialConnection = await SerialConnection.connect(device.path)
-    return new DmxConnectionUsb(device, serialConnection, getRealtimeState)
+
+    let isPro = await isDmxUsbPro(serialConnection)
+
+    device.type = isPro ? 'DmxUsbPro' : 'OpenDmxUsb'
+
+    return new DmxConnectionUsb(device, serialConnection, c)
+  }
+
+  beginInterval() {
+    this.intervalHandle = setInterval(() => {
+      this.sendDmx()
+      const hz = this.config.refreshHz(this.c)
+      if (this.lastHz !== hz) {
+        this.lastHz = hz
+        clearInterval(this.intervalHandle)
+        this.beginInterval()
+      }
+    }, 1000 / this.config.refreshHz(this.c))
   }
 
   isOpen(): boolean {
@@ -59,7 +79,7 @@ export class DmxConnectionUsb {
 
   private sendDmx() {
     this.config.sendUniverse(
-      this.getRealtimeState().dmxOut,
+      this.c.realtimeState().dmxOut,
       this.serialConnection
     )
   }

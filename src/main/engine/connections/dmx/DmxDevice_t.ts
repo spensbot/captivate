@@ -1,29 +1,18 @@
 import { SerialportInfo, DmxDevice_t, ConnectionId } from 'shared/connection'
 
-const dmxDeviceNames: { [key in DmxDevice_t['type']]: string } = {
-  DmxUsbPro: 'Dmx Usb Pro',
-  OpenDmxUsb: 'Open Dmx Usb',
-}
-
 function getConnectionId(port: SerialportInfo): ConnectionId {
-  return port.path
+  return port.serialNumber ?? port.path
 }
 
-function getDmxDeviceType(port: SerialportInfo): DmxDevice_t['type'] | null {
-  const mfg = port.manufacturer
-
-  if (mfg?.includes('DMX') || mfg?.includes('ENTTEC')) return 'DmxUsbPro'
-  else if (mfg?.includes('FTDI')) return 'OpenDmxUsb'
-
-  return null
+function isDmxDevice(port: SerialportInfo): boolean {
+  return port.productId === '6001'
 }
 
 export function getDmxDevice(port: SerialportInfo): DmxDevice_t | null {
-  let type = getDmxDeviceType(port)
-  if (type === null) return null
+  if (!isDmxDevice(port)) return null
 
   return {
-    type,
+    type: null,
     connectionId: getConnectionId(port),
     path: port.path,
     manufacturer: port.manufacturer,
@@ -31,6 +20,6 @@ export function getDmxDevice(port: SerialportInfo): DmxDevice_t | null {
     productId: port.productId,
     serialNumber: port.serialNumber,
     vendorId: port.vendorId,
-    name: dmxDeviceNames[type],
+    name: 'Dmx Usb Device',
   }
 }

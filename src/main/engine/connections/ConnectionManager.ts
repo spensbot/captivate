@@ -8,22 +8,17 @@ import {
 import { DmxConnection, createDmxConnection } from './dmx/DmxConnection'
 import { getDmxDevice } from './dmx/DmxDevice_t'
 import { ArtNetManager } from './art-net/ArtNetManager'
-import { CleanReduxState } from 'renderer/redux/store'
-import { RealtimeState } from 'renderer/redux/realtimeStore'
+import { DmxConnectionUsb } from './dmx/DmxConnectionUsb'
+import { EngineContext } from '../engineContext'
 
 export class ConnectionManager {
-  private getControlState: () => CleanReduxState | null
-  private getRealtimeState: () => RealtimeState
+  private c: EngineContext
   private dmxConnections: { [key: ConnectionId]: DmxConnection } = {}
   private artNet: ArtNetManager
 
-  constructor(
-    getControlState: () => CleanReduxState | null,
-    getRealtimeState: () => RealtimeState
-  ) {
-    this.getControlState = getControlState
-    this.getRealtimeState = getRealtimeState
-    this.artNet = new ArtNetManager(this.getRealtimeState, this.getControlState)
+  constructor(c: EngineContext) {
+    this.c = c
+    this.artNet = new ArtNetManager(this.c)
   }
 
   async updateConnections(
@@ -37,9 +32,22 @@ export class ConnectionManager {
 
     this.pruneConnections(connectTo)
 
+    // The connection may learn additional info about the device (such as the type) once established.
+    const availableDevicesWithConnectionInfo = availableDevices.map(
+      (device) => {
+        const connection: DmxConnectionUsb | undefined =
+          this.dmxConnections[device.connectionId]
+        if (connection && connection.device.path === device.path) {
+          return connection.device
+        } else {
+          return device
+        }
+      }
+    )
+
     let status: DmxConnectionInfo = {
       connected: Object.keys(this.dmxConnections),
-      available: availableDevices,
+      available: availableDevicesWithConnectionInfo,
       serialports,
       artNet: this.artNet.updateConnections(),
     }
@@ -74,7 +82,7 @@ export class ConnectionManager {
     const newConnections = await Promise.all(
       availableDevices
         .filter((device) => shouldConnect(device))
-        .map((device) => createDmxConnection(device, this.getRealtimeState))
+        .map((device) => createDmxConnection(device, this.c))
     )
 
     for (const connection of newConnections) {

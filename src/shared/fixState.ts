@@ -186,6 +186,13 @@ export function fixDeviceState(deviceState: DeviceState) {
   if (deviceState.connectable.artNet === undefined) {
     deviceState.connectable.artNet = []
   }
+
+  // Add ConnectionSettings
+  if (deviceState.connectionSettings === undefined) {
+    deviceState.connectionSettings = {
+      openDmxRefreshRateHz: 30,
+    }
+  }
 }
 
 function fixtureTypes(dmx: DmxState) {
