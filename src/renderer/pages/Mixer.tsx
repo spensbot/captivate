@@ -18,6 +18,7 @@ import useHover from 'renderer/hooks/useHover'
 import { DMX_MAX_VALUE, FixtureChannel, FixtureType } from 'shared/dmxFixtures'
 import zIndexes from 'renderer/zIndexes'
 import useMousePosition from 'renderer/hooks/useMousePosition'
+import { getCustomColorChannelName } from 'shared/dmxColors'
 
 export default function Mixer() {
   const _s = useTypedSelector((state) => state.mixer)
@@ -271,11 +272,23 @@ function InfoCursor({ index }: { index: number }) {
     return [null, null]
   })
 
+  const fixtureName = fixtureType?.name
+  let fixtureChannelName: string = fixtureChannel?.type ?? 'N/A'
+  if (fixtureChannel?.type === 'custom') {
+    fixtureChannelName = fixtureChannel.name
+  }
+  if (fixtureChannel?.type === 'axis') {
+    fixtureChannelName = fixtureChannel.dir + ' axis'
+  }
+  if (fixtureChannel?.type === 'color') {
+    fixtureChannelName = getCustomColorChannelName(fixtureChannel.color)
+  }
+
   return (
     <Info style={{ left: `${pos.x}px`, top: `${pos.y}px` }}>
       <Val>{Math.floor(output)}</Val>
-      <FixtureName>{fixtureType?.name}</FixtureName>
-      <FixtureChannelName>{fixtureChannel?.type}</FixtureChannelName>
+      <FixtureName>{fixtureName}</FixtureName>
+      <FixtureChannelName>{fixtureChannelName}</FixtureChannelName>
     </Info>
   )
 }
