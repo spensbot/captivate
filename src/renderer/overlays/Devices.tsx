@@ -69,7 +69,7 @@ export default function Devices({}: Props) {
                 {
                   <DraggableNumber
                     value={deviceSetup.connectionSettings.openDmxRefreshRateHz}
-                    min={10}
+                    min={5}
                     max={40}
                     onChange={(newVal) =>
                       dispatch(setOpenDmxRefreshRateHz(newVal))

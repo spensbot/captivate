@@ -38,9 +38,7 @@ export class DmxConnectionUsb {
     this.config = configByDeviceType[device.type as DmxUsbDeviceType]
     this.lastHz = this.config.refreshHz(this.c)
     this.device.name = this.config.name
-    this.intervalHandle = setInterval(() => {
-      this.sendDmx()
-    }, 1000 / this.config.refreshHz(c))
+    this.intervalHandle = this.beginInterval()
   }
 
   static async create(
@@ -56,14 +54,14 @@ export class DmxConnectionUsb {
     return new DmxConnectionUsb(device, serialConnection, c)
   }
 
-  beginInterval() {
-    this.intervalHandle = setInterval(() => {
+  beginInterval(): NodeJS.Timer {
+    return setInterval(() => {
       this.sendDmx()
       const hz = this.config.refreshHz(this.c)
       if (this.lastHz !== hz) {
         this.lastHz = hz
         clearInterval(this.intervalHandle)
-        this.beginInterval()
+        this.intervalHandle = this.beginInterval()
       }
     }, 1000 / this.config.refreshHz(this.c))
   }
