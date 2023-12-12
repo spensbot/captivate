@@ -73,11 +73,19 @@ async function main() {
     }
   }
 
+  try {
+    var existing_fixtures_json = await fs.readFile(OUTPUT_PATH, {
+      encoding: 'utf-8',
+    })
+    var existing_fixtures = JSON.parse(existing_fixtures_json) as FixtureType[]
+    console.log(`Existing fixture count: ${existing_fixtures.length}`)
+  } catch {}
+
   console.log(
     `Writing ${fixture_count} fixtures and ${captivate_fixtures.length} modes`
   )
 
-  fs.writeFile(
+  await fs.writeFile(
     OUTPUT_PATH,
     PRETTY
       ? JSON.stringify(captivate_fixtures, null, 2)
