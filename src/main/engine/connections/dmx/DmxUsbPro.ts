@@ -35,17 +35,21 @@ export async function isDmxUsbPro(
     0x00, // MSB config size
   ])
 
-  for (const _i of indexArray(3)) {
+  for (const _i of indexArray(1)) {
+    const start = Date.now()
     let reply = await connection.writeAndAwaitReply(
       getMessageBuffer('getWidgetParametersRequest', dataBuffer),
-      150
+      300
     )
+    const end = Date.now()
+
     if (
       reply &&
       reply.length > 1 &&
       reply[0] === ENTTEC_PRO_START_OF_MSG &&
       reply[reply.length - 1] === ENTTEC_PRO_END_OF_MSG
     ) {
+      console.log(`Dmx USB Pro detection time: ${end - start}ms`)
       return true
     }
   }
