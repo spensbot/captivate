@@ -1,4 +1,4 @@
-import { HalftonePass } from 'three/examples/jsm/postprocessing/HalfTonePass'
+import { HalftonePass } from 'three/examples/jsm/postprocessing/HalftonePass'
 import EffectBase from './EffectBase'
 import { HalfToneConfig } from './effectConfigs'
 
