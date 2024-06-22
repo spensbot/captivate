@@ -64,6 +64,10 @@ Since all dmx channels boil down to the same parameters, captivate scenes can pl
 
 [![Captivate Introduction Video](https://img.youtube.com/vi/6ZwQ97sySq0/0.jpg)](https://www.youtube.com/watch?v=6ZwQ97sySq0)
 
+## Community
+
+Join us on [Discord](https://discord.gg/96DVPcMUUv) or on the [Github Discussion Board](https://github.com/spensbot/captivate/discussions)!
+
 ## Developers
 
 **Prereqs:** Node, NPM, Python, and XCode Command Line Tools (for Mac) or Visual Studio C++ Build Environment (for Windows).
@@ -71,6 +75,8 @@ Since all dmx channels boil down to the same parameters, captivate scenes can pl
 `git clone https://github.com/spensbot/captivate.git` <-- download the repo locally
 
 `git submodule update --init --recursive` <-- download submodules
+
+`git lfs pull` <-- Download large files
 
 `npm install` <-- install node dependencies
 
