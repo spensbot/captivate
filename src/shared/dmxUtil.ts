@@ -51,6 +51,29 @@ export function applyMirror(
   return (mirroredDoubleNorm + 1) / 2
 }
 
+export function forEachChannel(fixtures: FlattenedFixture[], cb: (fixtureIdx: number, fixture: FlattenedFixture, channelIdx: number, channel: FixtureChannel) => void) {
+  fixtures.forEach((fixture, fixtureIdx) => {
+    fixture.channels.forEach(([channelNumber, channel]) => {
+      cb(fixtureIdx, fixture, channelNumber - 1, channel)
+    })
+  })
+}
+
+export function getDefaultDmxValue(
+  ch: FixtureChannel,
+): DmxValue {
+  switch (ch.type) {
+    case 'master':
+      return ch.min
+    case 'axis':
+      return lerp(ch.min, ch.max, 0.5)
+    case 'custom':
+      return ch.default
+    default: // 'color' | 'strobe' | 'colorMap'
+      return DMX_DEFAULT_VALUE
+  }
+}
+
 export function getDmxValue(
   ch: FixtureChannel,
   params: Params,

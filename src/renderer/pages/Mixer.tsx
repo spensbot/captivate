@@ -16,7 +16,6 @@ import StatusBar from '../menu/StatusBar'
 import React from 'react'
 import useHover from 'renderer/hooks/useHover'
 import {
-  DMX_MAX_VALUE,
   DMX_NUM_CHANNELS,
   FixtureChannel,
   FixtureType,
@@ -68,7 +67,8 @@ function Header() {
     (state) => state.mixer.overwrites.length > 0
   )
   const canGoBack = _s.pageIndex > 0
-  const canGoForward = (_s.pageIndex + 1) * _s.channelsPerPage < DMX_MAX_VALUE
+  const canGoForward =
+    (_s.pageIndex + 1) * _s.channelsPerPage < DMX_NUM_CHANNELS
 
   return (
     <HeaderRoot>
