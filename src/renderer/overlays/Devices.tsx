@@ -79,12 +79,7 @@ export default function Devices({}: Props) {
                 }
               </div>
             )}
-            <SubSubTitle>Art-Net</SubSubTitle>
-            <Input
-              value={connectable.artNet[0] ?? ''}
-              onChange={(newVal) => dispatch(setArtNetConnectable([newVal]))}
-              placeholder="Enter Art-Net IP"
-            />
+            <ArtNetDevices />
           </Pane>
           <Divider />
           <Pane>
@@ -152,6 +147,22 @@ const SubSubTitle = styled.div`
   margin-bottom: 0.5rem;
   margin-top: 1rem;
 `
+
+function ArtNetDevices() {
+  const connectable = useControlSelector((state) => state.device.connectable)
+  const dispatch = useDispatch()
+
+  return (
+    <>
+      <SubSubTitle>Art-Net</SubSubTitle>
+      <Input
+        value={connectable.artNet[0] ?? ''}
+        onChange={(newVal) => dispatch(setArtNetConnectable([newVal]))}
+        placeholder="Enter Art-Net IP"
+      />
+    </>
+  )
+}
 
 interface Props2<T> {
   device: T
