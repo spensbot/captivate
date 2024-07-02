@@ -1,4 +1,4 @@
-import { AfterimagePass } from 'three/examples/jsm/postprocessing/AfterImagePass'
+import { AfterimagePass } from 'three/examples/jsm/postprocessing/AfterimagePass'
 import EffectBase from './EffectBase'
 import { AfterImageConfig } from './effectConfigs'
 import { mapFn } from '../../../shared/util'

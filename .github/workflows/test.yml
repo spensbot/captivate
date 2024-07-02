@@ -8,7 +8,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [macos-latest, windows-latest]
+        os: [macos-latest, windows-latest, ubuntu-latest]
 
     steps:
       - name: Check out Git repository
@@ -16,6 +16,10 @@ jobs:
 
       - name: Checkout submodules
         run: git submodule update --init --recursive
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update -y && sudo apt-get install -y libasound2-dev
 
       - name: Install Node.js and NPM
         uses: actions/setup-node@v2
