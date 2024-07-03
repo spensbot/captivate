@@ -116,36 +116,30 @@ export function getDmxValue(
       if (ch.dir === 'x') {
         return calculate_axis_channel(
           ch,
-          params.xAxis,
+          getParam(params, 'xAxis'),
           fixture.window?.x?.pos,
-          params.xMirror,
+          getParam(params, 'xMirror'),
           fixture
         )
       } else {
         return calculate_axis_channel(
           ch,
-          params.yAxis,
+          getParam(params, 'xAxis'),
           fixture.window?.y?.pos,
-          undefined, // No y-mirroring yet
+          0.0, // No y-mirroring yet
           fixture
         )
       }
     case 'colorMap':
       const _colors = ch.colors
-      const hue = params.hue
-      const saturation = params.saturation
-      if (hue !== undefined && saturation !== undefined) {
-        let closestColor = findClosest(
-          _colors.map((color) => {
-            return [color, color.hue, color.saturation * 2]
-          }),
-          hue,
-          saturation * 2
-        )
-        return closestColor?.max ?? DMX_DEFAULT_VALUE
-      } else {
-        return DMX_DEFAULT_VALUE
-      }
+      let closestColor = findClosest(
+        _colors.map((color) => {
+          return [color, color.hue, color.saturation * 2]
+        }),
+        getParam(params, 'hue'),
+        getParam(params, 'saturation')
+      )
+      return closestColor?.max ?? DMX_DEFAULT_VALUE
     case 'custom':
       const customParam = params[ch.name]
       if (customParam === undefined) {
@@ -175,19 +169,15 @@ export function getBrightness(
 }
 
 export function getMovingWindow(params: Params): Window2D_t {
-  const x =
-    params.x !== undefined && params.width !== undefined
-      ? { pos: params.x, width: params.width }
-      : undefined
-
-  const y =
-    params.y !== undefined && params.height !== undefined
-      ? { pos: params.y, width: params.height }
-      : undefined
-
   return {
-    x: x,
-    y: y,
+    x: {
+      pos: getParam(params, 'x'),
+      width: getParam(params, 'width')
+    },
+    y: {
+      pos: getParam(params, 'y'),
+      width: getParam(params, 'height')
+    },
   }
 }
 
@@ -260,13 +250,11 @@ export function getSortedGroups(
 
 function calculate_axis_channel(
   ch: ChannelAxis,
-  axis_param: Normalized | undefined,
+  axis_param: Normalized,
   fixture_position: Normalized | undefined,
-  mirror_param: Normalized | undefined,
+  mirror_param: Normalized,
   fixture: FlattenedFixture
 ) {
-  if (axis_param === undefined) return 0
-
   let mirrored_param =
     fixture_position && fixture_position > 0.5
       ? applyMirror(axis_param, mirror_param)
