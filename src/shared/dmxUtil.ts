@@ -124,7 +124,7 @@ export function getDmxValue(
       } else {
         return calculate_axis_channel(
           ch,
-          getParam(params, 'xAxis'),
+          getParam(params, 'yAxis'),
           fixture.window?.y?.pos,
           0.0, // No y-mirroring yet
           fixture
