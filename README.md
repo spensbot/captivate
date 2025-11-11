@@ -1,3 +1,9 @@
+## ⚠️⚠️⚠️ WARNING ⚠️⚠️⚠️: Not Actively Maintained
+
+I'm sad to admit, but I am no longer actively maintaining this repo. Working on Captivate has been a blast. Thanks to everyone who used the software and contributed to the community ❤️ I may still contribute from time to time, but I can't make any promises. More details below.
+
+Please use the software, code, or ideas however you like :)
+
 # Captivate
 
 <img src="https://github.com/spensbot/captivate/blob/main/design/readme/Thick.png" alt="Captivate Icon" width="150"/>
@@ -85,3 +91,16 @@ Join us on [Discord](https://discord.gg/96DVPcMUUv) or on the [Github Discussion
 Thanks to [electron-react-boilerplate](https://github.com/electron-react-boilerplate/electron-react-boilerplate) for the app boilerplate
 
 [MIT License](https://github.com/spensbot/Captivate2/blob/master/LICENSE)
+
+## More on the Unmaintained Status
+
+This is the most time I've ever put into a personal project. And I got this far because it was fun! The journey was a self-sustaining flywheel of motivation. I would implement a feature, which made we want to use Captivate more, which made me want to implement more features. But lately my interest in stage lighting is diminishing, as is my interest in contributing. The waves of motivation are smaller and further between.
+
+### Future Ideas
+
+There were a number of features I was excited to implement next:
+
+- Configurable macro inputs (to allow Captivate to be played live like an instrument, on any scene)
+- Captivate web app
+  - With virtual 3D demo stages to control
+- Add an Ableton-like Arrangement view for recording scene transitions and then perfecting automation
