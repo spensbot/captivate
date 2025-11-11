@@ -45,7 +45,10 @@ export function calculateDmx(
       // Set each channel based on active scene fixtures
       forEachChannel(splitSceneFixtures, (fixtureIdx, fixture, channelIdx, channel) => {
         const randomizerLevel = randomizer[fixtureIdx]?.level ?? 1
-        channels[channelIdx] = getDmxValue(channel, outputParams, fixture, state.control.master, randomizerLevel)
+        channels[channelIdx] = Math.max(
+          channels[channelIdx],
+          getDmxValue(channel, outputParams, fixture, state.control.master, randomizerLevel)
+        )
       })
     }
 
