@@ -1,4 +1,4 @@
-import { Window, Window2D_t } from '../shared/window'
+import { Window, Window2D_t, window2DToParentCoords } from '../shared/window'
 import {
   DmxValue,
   DMX_MAX_VALUE,
@@ -291,7 +291,7 @@ export function flatten_fixture(
   let flattened: FlattenedFixture[] = fixture_type.subFixtures.map((sub) => {
     return {
       intensity: sub.intensity ?? fixture_type.intensity,
-      window: sub.relative_window ?? fixture.window,
+      window: sub.relative_window ? window2DToParentCoords(sub.relative_window, fixture.window) : fixture.window,
       channels: sub.channels.map((ch_index) => {
         subfixture_ch_indexes.add(ch_index)
         return [base_channel + ch_index, fixture_type.channels[ch_index]]
