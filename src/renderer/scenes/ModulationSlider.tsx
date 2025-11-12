@@ -40,7 +40,7 @@ export default function ModulationSlider({
 
   return (
     <Root ref={dragContainer} onMouseDown={onMouseDown}>
-      {`Split ${splitIndex} ${param}`}
+      {`Split ${splitIndex + 1} ${param}`}
       <Amount
         style={{
           left: `${left * 100}%`,
