@@ -1,6 +1,9 @@
 name: Test
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   test:
@@ -16,6 +19,9 @@ jobs:
 
       - name: Checkout submodules
         run: git submodule update --init --recursive
+
+      - name: Pull Git LFS
+        run: git lfs pull
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
@@ -44,3 +50,12 @@ jobs:
         run: |
           npm run package
           npm exec tsc
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Captivate-${{ runner.os }}
+          path: |
+            release/build/*.AppImage
+            release/build/*.dmg
+            release/build/*.exe
