@@ -29,8 +29,6 @@ export default function Devices({}: Props) {
   const dmx = useTypedSelector((state) => state.gui.dmx)
   const midi = useTypedSelector((state) => state.gui.midi)
 
-  console.log(dmx.available)
-
   const hasOpenDmx =
     dmx.available.find((device) => device.type === 'OpenDmxUsb') !== undefined
 
@@ -123,7 +121,7 @@ const Row = styled.div`
 `
 
 const Pane = styled.div`
-  flex: '1 0 0';
+  flex: 1 0 0;
   height: 100%;
 `
 
@@ -143,7 +141,7 @@ const SubTitle = styled.div`
 `
 
 const SubSubTitle = styled.div`
-  font-size: 0.9;
+  font-size: 0.9rem;
   margin-bottom: 0.5rem;
   margin-top: 1rem;
 `

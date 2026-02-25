@@ -10,20 +10,11 @@
  */
 import path from 'path'
 import { app, BrowserWindow, shell, dialog } from 'electron'
-import { autoUpdater } from 'electron-updater'
-import log from 'electron-log'
 import MenuBuilder from './menu'
 import { resolveHtmlPath } from './util'
 import * as engine from './engine/engine'
 import { VisualizerContainer } from './engine/createVisualizerWindow'
 import './prevent_sleep'
-export default class AppUpdater {
-  constructor() {
-    log.transports.file.level = 'info'
-    autoUpdater.logger = log
-    autoUpdater.checkForUpdatesAndNotify()
-  }
-}
 
 // Monkey-patch showErrorBox to avoid error modals at runtime
 // See https://stackoverflow.com/questions/35620764/how-to-disable-alert-dialogs-when-errors-occur-in-atom-electron

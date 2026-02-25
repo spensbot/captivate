@@ -1,15 +1,21 @@
-import * as ip from 'ip'
+import { isIPv4 } from 'net'
 import * as addr from 'address'
 
 export let thisIpString: string | null = addr.ip() ?? null
-export let thisIpBuffer: Buffer | null = null
+export let thisIpBuffer: Buffer | null = toIpBuffer(thisIpString ?? '')
 
 export function toIpBuffer(ipString: string): Buffer | null {
-  try {
-    return ip.toBuffer(ipString)
-  } catch {
+  if (!isIPv4(ipString)) return null
+
+  const octets = ipString.split('.').map((part) => Number.parseInt(part, 10))
+  if (
+    octets.length !== 4 ||
+    octets.some((n) => !Number.isInteger(n) || n < 0 || n > 255)
+  ) {
     return null
   }
+
+  return Buffer.from(octets)
 }
 
 export let thisMacString: string | null = null

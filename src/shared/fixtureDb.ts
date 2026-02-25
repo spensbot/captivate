@@ -2,7 +2,6 @@ import fixturesIn from '../../assets/captivate_fixtures.db'
 import { FixtureType } from './dmxFixtures'
 import uFuzzy from '@leeoniya/ufuzzy'
 
-console.log(fixturesIn.slice(0, 100))
 
 const fixtures = JSON.parse(fixturesIn) as FixtureType[]
 

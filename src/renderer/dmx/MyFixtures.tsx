@@ -11,7 +11,6 @@ import { useState } from 'react'
 import Popup from 'renderer/base/Popup'
 import {
   fixtureForId,
-  closestMatches,
   getFixtureSearchIds,
   fuzzySearch,
 } from '../../shared/fixtureDb'
@@ -24,11 +23,6 @@ export default function MyFixtures() {
   })
   const [isPopup, setIsPopup] = useState(false)
   const [search, setSearch] = useState('')
-
-  let options = closestMatches(search)
-
-  console.log('Its doing stuff')
-  console.log(options.length)
 
   return (
     <Root>

@@ -47,15 +47,10 @@ export default function LedFixturePlacement({}: Props) {
         }
       } else if (status === 'End') {
         draggedPointIndex = null
-      } else {
-        if (draggedPointIndex !== null) {
-          console.log('!== null')
-          dispatch(
-            updateLedFixturePoint({ index: draggedPointIndex, newPoint: point })
-          )
-        } else {
-          console.log('null')
-        }
+      } else if (draggedPointIndex !== null) {
+        dispatch(
+          updateLedFixturePoint({ index: draggedPointIndex, newPoint: point })
+        )
       }
     }
   })
@@ -78,6 +73,7 @@ export default function LedFixturePlacement({}: Props) {
 
             return (
               <Cursor
+                key={index}
                 x={point.x}
                 y={point.y}
                 radius={radius}
@@ -129,9 +125,7 @@ function isOnPoint(mappedPos: MappedPos, points: Point[]): number | null {
 
   if (sortedByDistance.length === 0) {
     return null
-  } else {
-    console.log(sortedByDistance[0])
-
-    return sortedByDistance[0][0]
   }
+
+  return sortedByDistance[0][0]
 }
