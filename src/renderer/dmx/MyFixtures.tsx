@@ -29,7 +29,7 @@ export default function MyFixtures() {
       <Header>
         <Title>Fixtures</Title>
       </Header>
-      <Items style={{ overflow: 'scroll', height: 'auto' }}>
+      <Items>
         {elements}
         <IconButton
           style={{ color: '#fff' }}
@@ -103,8 +103,26 @@ const Header = styled.div`
 `
 
 const Items = styled.div`
-  overflow: scroll;
-  height: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #7a7a7a33 #0000;
+
+  &::-webkit-scrollbar {
+    display: block !important;
+    width: 10px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #0000;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #7a7a7a99;
+    border-radius: 999px;
+  }
 `
 
 const Title = styled.div`
@@ -135,3 +153,4 @@ const Text = styled.div`
   margin: 0 10px;
   font-size: 1rem;
 `
+

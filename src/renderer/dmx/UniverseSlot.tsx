@@ -134,6 +134,22 @@ const RCRoot = styled.div`
   }
 `
 
+function hashString(input: string) {
+  let hash = 0
+  for (let i = 0; i < input.length; i++) {
+    hash = (hash * 31 + input.charCodeAt(i)) | 0
+  }
+  return Math.abs(hash)
+}
+
+function fixtureBackgroundColor(fixtureId: string, fixtureIndex: number) {
+  const seed = hashString(`${fixtureId}-${fixtureIndex}`)
+  const hue = seed % 360
+  const saturation = 38 + (seed % 18)
+  const lightness = 46 + (seed % 14)
+  return `hsla(${hue}, ${saturation}%, ${lightness}%, 0.55)`
+}
+
 function FixtureSlot({ fixture, index }: { fixture: Fixture; index: number }) {
   const fixtureType = useDmxSelector(
     (state) => state.fixtureTypesByID[fixture.type]
@@ -143,6 +159,7 @@ function FixtureSlot({ fixture, index }: { fixture: Fixture; index: number }) {
   const count = fixtureType.channels.length
   const start = fixture.ch
   const isSelected = activeFixture === index
+
   function setWindowEnabled(dimension: 'x' | 'y', isEnabled: boolean) {
     return (_e: React.MouseEvent) => {
       dispatch(
@@ -154,11 +171,13 @@ function FixtureSlot({ fixture, index }: { fixture: Fixture; index: number }) {
       )
     }
   }
-  const style = isSelected
-    ? {
-        border: '2px solid white',
-      }
-    : undefined
+
+  const backgroundColor = fixtureBackgroundColor(fixtureType.id, index)
+  const style = {
+    backgroundColor,
+    ...(isSelected ? { border: '2px solid white' } : {}),
+  }
+
   return (
     <Slot
       onClick={(e) => {
@@ -204,7 +223,7 @@ function FixtureSlot({ fixture, index }: { fixture: Fixture; index: number }) {
           </IconButton>
         </div>
       ) : (
-        <div style={{ fontSize: '0.8rem', color: 'fff7' }}>
+        <div style={{ fontSize: '0.8rem', color: '#fff7' }}>
           {fixtureType.manufacturer}
         </div>
       )}
@@ -231,10 +250,10 @@ const Slot = styled.div`
   margin-right: 0.3rem;
   margin-bottom: 0.3rem;
   color: #fff8;
-  background-color: '#000';
-  display: 'flex';
-  justify-content: 'center';
-  align-items: 'center';
+  background-color: #2f2f2f;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   border: 1px solid #fff8;
   :hover {
     border: 1px solid #fffc;

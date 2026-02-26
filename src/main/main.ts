@@ -14,15 +14,17 @@ import MenuBuilder from './menu'
 import { resolveHtmlPath } from './util'
 import * as engine from './engine/engine'
 import { VisualizerContainer } from './engine/createVisualizerWindow'
+import { Page } from '../shared/pages'
 import './prevent_sleep'
 
 // Monkey-patch showErrorBox to avoid error modals at runtime
 // See https://stackoverflow.com/questions/35620764/how-to-disable-alert-dialogs-when-errors-occur-in-atom-electron
 dialog.showErrorBox = (title: string, content: string) => {
-  console.error(`Top-level error: ${title}\n${content}`);
-};
+  console.error(`Top-level error: ${title}\n${content}`)
+}
 
 let mainWindow: BrowserWindow | null = null
+const detachedWindows = new Set<BrowserWindow>()
 let isClosing = false
 let visualizerContainer: VisualizerContainer = {
   visualizer: null,
@@ -54,11 +56,13 @@ const installExtensions = async () => {
     .catch(console.log)
 }
 
-const createWindow = async () => {
-  if (isDevelopment) {
-    await installExtensions()
-  }
-
+function createAppWindow({
+  isMain,
+  defaultPage,
+}: {
+  isMain: boolean
+  defaultPage?: Page
+}) {
   const RESOURCES_PATH = app.isPackaged
     ? path.join(process.resourcesPath, 'assets')
     : path.join(__dirname, '../../assets')
@@ -67,7 +71,7 @@ const createWindow = async () => {
     return path.join(RESOURCES_PATH, ...paths)
   }
 
-  mainWindow = new BrowserWindow({
+  const window = new BrowserWindow({
     show: false,
     width: 1300,
     height: 900,
@@ -81,53 +85,79 @@ const createWindow = async () => {
     },
   })
 
-  mainWindow.loadURL(resolveHtmlPath('index.html'))
+  const baseUrl = resolveHtmlPath('index.html')
+  const pageQuery = defaultPage
+    ? `${baseUrl.includes('?') ? '&' : '?'}page=${encodeURIComponent(defaultPage)}`
+    : ''
+  window.loadURL(`${baseUrl}${pageQuery}`)
 
-  mainWindow.on('ready-to-show', () => {
-    if (!mainWindow) {
-      throw new Error('"mainWindow" is not defined')
-    }
+  window.on('ready-to-show', () => {
     if (process.env.START_MINIMIZED) {
-      mainWindow.minimize()
+      window.minimize()
     } else {
-      mainWindow.show()
+      window.show()
     }
   })
 
-  mainWindow.on('close', (e) => {
-    if (!isClosing) {
-      e.preventDefault()
-      if (mainWindow === null) return
-
-      dialog
-        .showMessageBox(mainWindow, {
-          message: 'Stop the show?',
-          buttons: ['Nevermind', 'Quit'],
-          cancelId: 0,
-          defaultId: 1,
-        })
-        .then(({ response }) => {
-          if (response === 1) {
-            isClosing = true
-            mainWindow?.close()
-            engine.stop()
-            mainWindow = null
-            app.quit()
-          }
-        })
-        .catch((err) => {
-          console.error(`showMessageBox err: `, err)
-        })
-    }
-  })
-
-  // Open urls in the user's browser
-  mainWindow.webContents.on('new-window', (event, url) => {
+  window.webContents.on('new-window', (event, url) => {
     event.preventDefault()
     shell.openExternal(url)
   })
 
-  const ipcCallbacks = engine.start(mainWindow.webContents, visualizerContainer)
+  if (!isMain) {
+    detachedWindows.add(window)
+    window.on('closed', () => {
+      detachedWindows.delete(window)
+    })
+  }
+
+  engine.getIpcCallbacks()?.register_renderer(window.webContents)
+
+  if (isMain) {
+    window.on('close', (e) => {
+      if (!isClosing) {
+        e.preventDefault()
+
+        dialog
+          .showMessageBox(window, {
+            message: 'Stop the show?',
+            buttons: ['Nevermind', 'Quit'],
+            cancelId: 0,
+            defaultId: 1,
+          })
+          .then(({ response }) => {
+            if (response === 1) {
+              isClosing = true
+              window.close()
+              engine.stop()
+              mainWindow = null
+              app.quit()
+            }
+          })
+          .catch((err) => {
+            console.error(`showMessageBox err: `, err)
+          })
+      }
+    })
+  }
+
+  return window
+}
+
+const createWindow = async () => {
+  if (isDevelopment) {
+    await installExtensions()
+  }
+
+  mainWindow = createAppWindow({ isMain: true })
+
+  const ipcCallbacks = engine.start(
+    mainWindow.webContents,
+    visualizerContainer,
+    (page) => {
+      createAppWindow({ isMain: false, defaultPage: page })
+    }
+  )
 
   const menuBuilder = new MenuBuilder(mainWindow, { ipcCallbacks })
   menuBuilder.buildMenu()
@@ -162,3 +192,4 @@ app
     })
   })
   .catch(console.log)
+

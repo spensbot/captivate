@@ -1,3 +1,5 @@
+import { Page } from './pages'
+
 export default {
   new_time_state: 'new_time_state',
   dmx_connection_update: 'dmx_connection_update',
@@ -8,6 +10,7 @@ export default {
   load_file: 'load_file',
   save_file: 'save_file',
   open_visualizer: 'open_visualizer',
+  open_page_window: 'open_page_window',
   get_local_filepaths: 'get_local_filepaths',
   main_command: 'main_command',
 } as const
@@ -48,6 +51,11 @@ export type UserCommand =
   | SetIsPlaying
   | SetBPM
   | TapTempo
+
+export interface OpenPageWindow {
+  type: 'open-page-window'
+  page: Page
+}
 
 interface Undo {
   type: 'undo'

@@ -1,3 +1,4 @@
+import { Page } from '../../shared/pages'
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { SaveInfo } from '../../shared/save'
 import {
@@ -7,13 +8,7 @@ import {
   initMidiConnections,
 } from '../../shared/connection'
 
-export type Page =
-  | 'Universe'
-  | 'Modulation'
-  | 'Video'
-  | 'Share'
-  | 'Mixer'
-  | 'Led'
+export type { Page }
 
 export interface GuiState {
   activePage: Page

@@ -56,8 +56,25 @@ const Root = styled.div`
 const LabelledSliderWrapper = styled.div`
   display: flex;
   flex-wrap: wrap;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   margin: 0 1rem;
+  scrollbar-width: thin;
+  scrollbar-color: #7a7a7a33 #0000;
+
+  &::-webkit-scrollbar {
+    display: block !important;
+    width: 10px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #0000;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #7a7a7a99;
+    border-radius: 999px;
+  }
 `
 
 function Header() {
@@ -317,3 +334,4 @@ const Val = styled.div`
 const FixtureName = styled.div``
 
 const FixtureChannelName = styled.div``
+
