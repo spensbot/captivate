@@ -273,6 +273,7 @@ export const dmxSlice = createSlice({
           max: lastColorMax ?? 0,
           hue: 0,
           saturation: 1.0,
+          kind: 'color',
         })
       } else {
         console.error(

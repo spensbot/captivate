@@ -2,7 +2,7 @@ import { DeviceState } from 'renderer/redux/deviceState'
 import { DmxState } from 'renderer/redux/dmxSlice'
 import { initLedState } from 'renderer/redux/ledState'
 import { CleanReduxState } from '../renderer/redux/store'
-import { ColorChannel } from './dmxColors'
+import { ColorChannel, inferColorKind } from './dmxColors'
 import { DmxValue, FixtureChannel, initChannelCustom } from './dmxFixtures'
 import { Modulator } from './modulation'
 import { Modulation, Params } from './params'
@@ -149,27 +149,36 @@ export function fixDmxState(dmx: DmxState) {
         channel.color = {
           hue: 0.0,
           saturation: 1.0,
+          kind: 'color',
         }
       } else if (c === 'green') {
         channel.color = {
           hue: 0.333,
           saturation: 1.0,
+          kind: 'color',
         }
       } else if (c === 'blue') {
         channel.color = {
           hue: 0.666,
           saturation: 1.0,
+          kind: 'color',
         }
       } else if (c === 'white') {
         channel.color = {
           hue: 0.0,
           saturation: 0.0,
+          kind: 'white',
         }
+      } else if (c.kind === undefined) {
+        channel.color.kind = inferColorKind(c)
       }
     } else if (channel.type === 'colorMap') {
       for (const color of channel.colors) {
         if (color.saturation === undefined) {
           color.saturation = 1.0
+        }
+        if (color.kind === undefined) {
+          color.kind = inferColorKind(color)
         }
       }
     }

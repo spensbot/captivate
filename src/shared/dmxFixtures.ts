@@ -1,5 +1,5 @@
 import { Window2D_t } from '../shared/window'
-import { ColorChannel } from './dmxColors'
+import { ColorChannel, ColorKind } from './dmxColors'
 import { nanoid } from 'nanoid'
 
 export const DMX_MIN_VALUE = 0
@@ -39,7 +39,12 @@ export type ChannelAxis = {
   max: DmxValue
 }
 
-export type ColorMapColor = { max: number; hue: number; saturation: number }
+export type ColorMapColor = {
+  max: number
+  hue: number
+  saturation: number
+  kind?: ColorKind
+}
 
 export type ChannelColorMap = {
   type: 'colorMap'
@@ -87,7 +92,7 @@ export function initFixtureChannel(
   } else if (type === 'axis') {
     return initChannelAxis('x', false)
   } else if (type === 'colorMap') {
-    return initChannelColorMap([{ max: 0, hue: 0, saturation: 1.0 }])
+    return initChannelColorMap([{ max: 0, hue: 0, saturation: 1.0, kind: 'color' }])
   } else if (type === 'custom') {
     return initChannelCustom('Custom')
   }
@@ -128,6 +133,7 @@ export function initChannelColor(
     color: {
       hue,
       saturation,
+      kind: saturation < 0.02 ? 'white' : 'color',
     },
   }
 }

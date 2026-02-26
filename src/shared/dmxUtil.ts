@@ -13,10 +13,10 @@ import {
   FlattenedFixture,
 } from './dmxFixtures'
 import { getParam, Params } from './params'
-import { findClosest, lerp, Normalized } from '../math/util'
+import { lerp, Normalized } from '../math/util'
 import { rLerp } from '../math/range'
 import { applyRandomization } from './randomizer'
-import { getColorChannelLevel } from './dmxColors'
+import { getColorChannelDistance, getColorChannelLevel } from './dmxColors'
 
 export function getWindowMultiplier2D(
   fixtureWindow: Window2D_t,
@@ -130,16 +130,22 @@ export function getDmxValue(
           fixture
         )
       }
-    case 'colorMap':
-      const _colors = ch.colors
-      let closestColor = findClosest(
-        _colors.map((color) => {
-          return [color, color.hue, color.saturation * 2]
-        }),
-        getParam(params, 'hue'),
-        getParam(params, 'saturation')
-      )
+    case 'colorMap': {
+      const hue = getParam(params, 'hue')
+      const saturation = getParam(params, 'saturation')
+
+      let closestColor = null as null | { max: DmxValue }
+      let minDistance = Number.MAX_VALUE
+      for (const color of ch.colors) {
+        const distance = getColorChannelDistance(hue, saturation, color)
+        if (distance < minDistance) {
+          minDistance = distance
+          closestColor = color
+        }
+      }
+
       return closestColor?.max ?? DMX_DEFAULT_VALUE
+    }
     case 'custom':
       const customParam = params[ch.name]
       if (customParam === undefined) {
