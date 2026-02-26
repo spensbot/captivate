@@ -1,4 +1,4 @@
-import { DefaultParam } from '../../shared/params'
+import { DefaultParam, paramDisplayName } from '../../shared/params'
 import SliderBase from '../base/SliderBase'
 import SliderCursor from '../base/SliderCursor'
 import { useBaseParam } from '../redux/store'
@@ -51,7 +51,7 @@ export default function ParamSlider({ param, splitIndex }: Props) {
         </SliderBase>
       </div>
       <ParamXButton splitIndex={splitIndex} params={[param]} />
-      <div style={{ marginTop: '1rem' }}>{param}</div>
+      <div style={{ marginTop: '1rem' }}>{paramDisplayName(param)}</div>
     </>
   )
 

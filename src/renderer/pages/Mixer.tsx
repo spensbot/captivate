@@ -1,15 +1,19 @@
 import styled from 'styled-components'
 import Slider from '../base/Slider'
-import { useTypedSelector, useDmxSelector } from '../redux/store'
+import {
+  useTypedSelector,
+  useDmxSelector,
+  useControlSelector,
+} from '../redux/store'
 import { useDispatch } from 'react-redux'
-import { TextField, Button, IconButton } from '@mui/material'
+import { Button, IconButton, Tooltip } from '@mui/material'
 import ForwardIcon from '@mui/icons-material/ArrowForward'
 import BackIcon from '@mui/icons-material/ArrowBack'
 import {
-  setPageIndex,
-  setChannelsPerPage,
+  setActiveMixerUniverse,
   setOverwrite,
   clearOverwrites,
+  getUniverseOverwrites,
 } from '../redux/mixerSlice'
 import { useRealtimeSelector } from '../redux/realtimeStore'
 import StatusBar from '../menu/StatusBar'
@@ -19,20 +23,14 @@ import {
   DMX_NUM_CHANNELS,
   FixtureChannel,
   FixtureType,
+  axisDirName,
 } from 'shared/dmxFixtures'
 import zIndexes from 'renderer/zIndexes'
 import useMousePosition from 'renderer/hooks/useMousePosition'
 import { getCustomColorChannelName } from 'shared/dmxColors'
 
 export default function Mixer() {
-  const _s = useTypedSelector((state) => state.mixer)
-
-  const minIndex = _s.pageIndex * _s.channelsPerPage
-  const maxIndex = Math.min(minIndex + _s.channelsPerPage, DMX_NUM_CHANNELS)
-  const dmxIndexes: number[] = []
-  for (let i = minIndex; i < maxIndex; i++) {
-    dmxIndexes.push(i)
-  }
+  const dmxIndexes = Array.from({ length: DMX_NUM_CHANNELS }, (_, i) => i)
 
   return (
     <Root>
@@ -56,60 +54,95 @@ const Root = styled.div`
 const LabelledSliderWrapper = styled.div`
   display: flex;
   flex-wrap: wrap;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   margin: 0 1rem;
+  scrollbar-width: thin;
+  scrollbar-color: #7a7a7a33 #0000;
+
+  &::-webkit-scrollbar {
+    display: block !important;
+    width: 10px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #0000;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #7a7a7a99;
+    border-radius: 999px;
+  }
 `
 
 function Header() {
   const dispatch = useDispatch()
   const _s = useTypedSelector((state) => state.mixer)
-  const hasOverwrites = useTypedSelector(
-    (state) => state.mixer.overwrites.length > 0
+  const universeCount = useControlSelector(
+    (state) => state.device.connectionSettings.universeCount
   )
-  const canGoBack = _s.pageIndex > 0
-  const canGoForward =
-    (_s.pageIndex + 1) * _s.channelsPerPage < DMX_NUM_CHANNELS
+  const hasOverwrites = useTypedSelector((state) =>
+    getUniverseOverwrites(state.mixer, state.mixer.activeUniverse).some(
+      (overwrite) => overwrite !== undefined
+    )
+  )
+  const canGoBack = _s.activeUniverse > 1
+  const canGoForward = _s.activeUniverse < universeCount
 
   return (
     <HeaderRoot>
       <HeaderTitle>DMX Out</HeaderTitle>
       <S />
-      <IconButton
-        disabled={!canGoBack}
-        onClick={() => dispatch(setPageIndex(_s.pageIndex - 1))}
-      >
-        <BackIcon />
-      </IconButton>
+      <UniverseLabel>Universe</UniverseLabel>
+      <SSmall />
+      <Tooltip title="Show previous universe">
+        <span>
+          <IconButton
+            disabled={!canGoBack}
+            onClick={() => dispatch(setActiveMixerUniverse(_s.activeUniverse - 1))}
+          >
+            <BackIcon />
+          </IconButton>
+        </span>
+      </Tooltip>
+      <SSmall />
+      <Tooltip title="Active universe displayed in DMX output">
+        <Page>{_s.activeUniverse}</Page>
+      </Tooltip>
+      <SSmall />
+      <Tooltip title="Show next universe">
+        <span>
+          <IconButton
+            disabled={!canGoForward}
+            onClick={() => dispatch(setActiveMixerUniverse(_s.activeUniverse + 1))}
+          >
+            <ForwardIcon />
+          </IconButton>
+        </span>
+      </Tooltip>
       <S />
-      <Page>{_s.pageIndex + 1}</Page>
-      <S />
-      <IconButton
-        disabled={!canGoForward}
-        onClick={() => dispatch(setPageIndex(_s.pageIndex + 1))}
-      >
-        <ForwardIcon />
-      </IconButton>
-      <S />
-      <TextField
-        value={_s.channelsPerPage.toString()}
-        size="small"
-        onChange={(e) => dispatch(setChannelsPerPage(parseInt(e.target.value)))}
-        type="number"
-      />
-      <S />
-      <Button
-        disabled={!hasOverwrites}
-        variant="contained"
-        onClick={() => dispatch(clearOverwrites())}
-      >
-        Reset Overwrites
-      </Button>
+      <Tooltip title="Clear manual slider overwrites for this universe">
+        <span>
+          <Button
+            disabled={!hasOverwrites}
+            variant="contained"
+            onClick={() => dispatch(clearOverwrites(_s.activeUniverse))}
+          >
+            Reset Overwrites
+          </Button>
+        </span>
+      </Tooltip>
     </HeaderRoot>
   )
 }
 
 const HeaderTitle = styled.div`
   font-size: 1.3rem;
+`
+
+const UniverseLabel = styled.div`
+  font-size: 0.9rem;
+  color: ${(props) => props.theme.colors.text.secondary};
 `
 
 const HeaderRoot = styled.div`
@@ -122,10 +155,16 @@ const HeaderRoot = styled.div`
 
 const Page = styled.span`
   font-size: 1.1rem;
+  min-width: 1.8rem;
+  text-align: center;
 `
 
 const S = styled.div`
   width: 1rem;
+`
+
+const SSmall = styled.div`
+  width: 0.35rem;
 `
 
 function getColor(index: number | null) {
@@ -140,13 +179,18 @@ type Status_t = 'single' | 'begin' | 'mid' | 'end' | 'none'
 
 function LabelledSlider({ index }: { index: number }) {
   const ch = index + 1
+  const activeUniverse = useTypedSelector((state) => state.mixer.activeUniverse)
   const overwrite: number | undefined = useTypedSelector(
-    (state) => state.mixer.overwrites[index]
+    (state) => getUniverseOverwrites(state.mixer, state.mixer.activeUniverse)[index]
   )
   const [status, fixtureIndex]: [Status_t, number | null] = useDmxSelector(
     (state) => {
       let i = 0
       for (const f of state.universe) {
+        if ((f.universe ?? 1) !== activeUniverse) {
+          continue
+        }
+
         const ft = state.fixtureTypesByID[f.type]
         const endChannel = f.ch + ft.channels.length - 1
         if (ch == f.ch) {
@@ -163,12 +207,14 @@ function LabelledSlider({ index }: { index: number }) {
       return ['none', null]
     }
   )
-  const output: number = useRealtimeSelector((state) => state.dmxOut[index])
+  const output: number = useRealtimeSelector(
+    (state) => state.dmxOutByUniverse[activeUniverse - 1]?.[index] ?? 0
+  )
   const dispatch = useDispatch()
   const { hoverDiv, isHover } = useHover()
 
   const onChange = (newVal: number) => {
-    dispatch(setOverwrite({ index: index, value: newVal }))
+    dispatch(setOverwrite({ index: index, value: newVal, universe: activeUniverse }))
   }
 
   return (
@@ -240,7 +286,6 @@ const statusStyles: { [key in Status_t]: React.CSSProperties } = {
   begin: {
     borderTopLeftRadius: '1rem',
     borderBottomLeftRadius: '1rem',
-    // left: '1rem',
     left: '0.2rem',
     borderRight: 'none',
   },
@@ -251,7 +296,6 @@ const statusStyles: { [key in Status_t]: React.CSSProperties } = {
   end: {
     borderTopRightRadius: '1rem',
     borderBottomRightRadius: '1rem',
-    // right: '1rem',
     right: '0.2rem',
     borderLeft: 'none',
   },
@@ -262,13 +306,20 @@ const statusStyles: { [key in Status_t]: React.CSSProperties } = {
 
 function InfoCursor({ index }: { index: number }) {
   const ch = index + 1
-  const output: number = useRealtimeSelector((state) => state.dmxOut[index])
+  const activeUniverse = useTypedSelector((state) => state.mixer.activeUniverse)
+  const output: number = useRealtimeSelector(
+    (state) => state.dmxOutByUniverse[activeUniverse - 1]?.[index] ?? 0
+  )
   const pos = useMousePosition()
   const [fixtureType, fixtureChannel]: [
     FixtureType | null,
     FixtureChannel | null
   ] = useDmxSelector((state) => {
     for (const f of state.universe) {
+      if ((f.universe ?? 1) !== activeUniverse) {
+        continue
+      }
+
       const ft = state.fixtureTypesByID[f.type]
       const fc = ft.channels[ch - f.ch]
       const endChannel = f.ch + ft.channels.length - 1
@@ -283,7 +334,7 @@ function InfoCursor({ index }: { index: number }) {
     fixtureChannelName = fixtureChannel.name
   }
   if (fixtureChannel?.type === 'axis') {
-    fixtureChannelName = fixtureChannel.dir + ' axis'
+    fixtureChannelName = axisDirName(fixtureChannel.dir)
   }
   if (fixtureChannel?.type === 'color') {
     fixtureChannelName = getCustomColorChannelName(fixtureChannel.color)

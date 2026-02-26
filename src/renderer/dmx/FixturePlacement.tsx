@@ -7,7 +7,12 @@ import { setFixtureWindow, incrementFixtureWindow } from '../redux/dmxSlice'
 import { secondaryEnabled } from 'renderer/base/keyUtil'
 
 export default function FixturePlacement() {
-  const universe = useDmxSelector((state) => state.universe)
+  const fixtureIndexes = useDmxSelector((state) =>
+    state.universe
+      .map((fixture, index) => ({ fixture, index }))
+      .filter(({ fixture }) => (fixture.universe ?? 1) === state.activeUniverse)
+      .map(({ index }) => index)
+  )
   const activeFixture = useDmxSelector((state) => state.activeFixture)
   const dispatch = useDispatch()
 
@@ -33,9 +38,7 @@ export default function FixturePlacement() {
     }
   })
 
-  const indexes = Array.from(Array(universe.length).keys())
-
-  const cursors = indexes.map((index) => {
+  const cursors = fixtureIndexes.map((index) => {
     return <FixtureCursor key={index} index={index} />
   })
 

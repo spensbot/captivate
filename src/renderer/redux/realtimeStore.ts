@@ -22,13 +22,16 @@ export interface SplitState {
 export interface RealtimeState {
   time: TimeState
   dmxOut: number[]
+  dmxOutByUniverse: number[][]
   splitStates: SplitState[]
 }
 
 export function initRealtimeState(): RealtimeState {
+  const dmxOut = initDmxOut()
   return {
     time: initTimeState(),
-    dmxOut: initDmxOut(),
+    dmxOut,
+    dmxOutByUniverse: [dmxOut],
     splitStates: [],
   }
 }

@@ -1,9 +1,9 @@
 import fixturesIn from '../../assets/captivate_fixtures.db'
 import { FixtureType } from './dmxFixtures'
+import { parseFixtureLibrary } from './fixtureLibrary'
 import uFuzzy from '@leeoniya/ufuzzy'
 
-
-const fixtures = JSON.parse(fixturesIn) as FixtureType[]
+const fixtures = parseFixtureLibrary(fixturesIn)
 
 const fixtureDb: { [searchId: string]: FixtureType | undefined } = {}
 const fixtureSearchIds = fixtures.map((f) => searchId(f))

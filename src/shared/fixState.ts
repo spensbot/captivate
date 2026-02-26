@@ -1,10 +1,22 @@
-import { DeviceState } from 'renderer/redux/deviceState'
+import {
+  DeviceState,
+  MidiAction,
+  SliderControlOptions,
+  normalizeSliderOptionsForAction,
+} from 'renderer/redux/deviceState'
 import { DmxState } from 'renderer/redux/dmxSlice'
 import { initLedState } from 'renderer/redux/ledState'
 import { CleanReduxState } from '../renderer/redux/store'
-import { ColorChannel } from './dmxColors'
-import { DmxValue, FixtureChannel, initChannelCustom } from './dmxFixtures'
+import { MixerState } from 'renderer/redux/mixerSlice'
+import { ColorChannel, inferColorKind } from './dmxColors'
+import {
+  DmxValue,
+  FixtureChannel,
+  initChannelCustom,
+  DMX_MAX_UNIVERSES,
+} from './dmxFixtures'
 import { Modulator } from './modulation'
+import { normalizeLfoShape } from './oscillator'
 import { Modulation, Params } from './params'
 import { RandomizerOptions } from './randomizer'
 import {
@@ -41,12 +53,18 @@ interface Deprecated_Modulator extends Modulator {
 
 type Deprecated_Color = 'red' | 'green' | 'blue' | 'white' | ColorChannel
 
+function clampUniverse(value: number, maxUniverse: number = DMX_MAX_UNIVERSES) {
+  if (!Number.isFinite(value)) return 1
+  return Math.min(Math.max(1, Math.round(value)), maxUniverse)
+}
+
 // Modify this function to fix any breaking state changes between upgrades
 export default function fixState(state: CleanReduxState): CleanReduxState {
   fixLightScenes(state.control.light)
   fixVisualScenes(state.control.visual)
   fixDmxState(state.dmx)
   fixDeviceState(state.control.device)
+  fixMixerState(state.mixer)
 
   return state
 }
@@ -76,6 +94,42 @@ export function fixLightScenes(light: LightScenes_t) {
       modulator.splitModulations.unshift(_modulator.modulation)
       delete _modulator.modulation
     }
+
+    const lfo = modulator.lfo as {
+      shape?: unknown
+      skew?: number
+      symmetricSkew?: number
+      phaseShift?: number
+      flip?: number
+      period?: number
+    }
+
+    modulator.lfo.shape = normalizeLfoShape(lfo.shape)
+
+    if (!Number.isFinite(lfo.skew)) {
+      modulator.lfo.skew = 0.5
+    }
+    if (!Number.isFinite(lfo.symmetricSkew)) {
+      modulator.lfo.symmetricSkew = 0.5
+    }
+    if (!Number.isFinite(lfo.phaseShift)) {
+      modulator.lfo.phaseShift = 0.0
+    }
+    if (!Number.isFinite(lfo.flip)) {
+      modulator.lfo.flip = 0.0
+    }
+
+    modulator.lfo.skew = Math.min(1, Math.max(0, modulator.lfo.skew))
+    modulator.lfo.symmetricSkew = Math.min(
+      1,
+      Math.max(0, modulator.lfo.symmetricSkew)
+    )
+    modulator.lfo.phaseShift = Math.min(1, Math.max(0, modulator.lfo.phaseShift))
+    modulator.lfo.flip = Math.min(1, Math.max(0, modulator.lfo.flip))
+
+    if (!Number.isFinite(lfo.period) || (lfo.period ?? 0) <= 0) {
+      modulator.lfo.period = 4
+    }
   }
 
   for (const split of splits(light)) {
@@ -84,6 +138,65 @@ export function fixLightScenes(light: LightScenes_t) {
       split.groups = {}
       for (const group of groups) {
         split.groups[group] = true
+      }
+    }
+  }
+
+  for (const split of splits(light)) {
+    const sat = split.baseParams.saturation ?? 1
+
+    if (split.baseParams.white === undefined) {
+      split.baseParams.white = Math.min(1, Math.max(0, 1 - sat))
+    }
+    if (split.baseParams.warmWhite === undefined) {
+      split.baseParams.warmWhite = 0
+    }
+    if (split.baseParams.amber === undefined) {
+      split.baseParams.amber = 0
+    }
+    if (split.baseParams.uv === undefined) {
+      split.baseParams.uv = 0
+    }
+
+    if (split.baseParams.strobeRgb === undefined) {
+      split.baseParams.strobeRgb = 1
+    }
+    if (split.baseParams.strobeWhite === undefined) {
+      split.baseParams.strobeWhite = 1
+    }
+    if (split.baseParams.strobeWarmWhite === undefined) {
+      split.baseParams.strobeWarmWhite = 1
+    }
+    if (split.baseParams.strobeAmber === undefined) {
+      split.baseParams.strobeAmber = 1
+    }
+    if (split.baseParams.strobeUv === undefined) {
+      split.baseParams.strobeUv = 1
+    }
+  }
+  // Keep modulator split-mapping aligned with the number of split scenes.
+  for (const lightScene of lightScenes(light)) {
+    const splitCount = lightScene.splitScenes.length
+
+    for (const modulator of lightScene.modulators) {
+      while (modulator.splitModulations.length < splitCount) {
+        modulator.splitModulations.push({})
+      }
+
+      if (modulator.splitModulations.length > splitCount) {
+        modulator.splitModulations = modulator.splitModulations.slice(
+          0,
+          splitCount
+        )
+      }
+
+      for (let i = 0; i < splitCount; i++) {
+        if (
+          modulator.splitModulations[i] === undefined ||
+          modulator.splitModulations[i] === null
+        ) {
+          modulator.splitModulations[i] = {}
+        }
       }
     }
   }
@@ -135,10 +248,38 @@ export function fixDmxState(dmx: DmxState) {
       fixtureType.groups = []
     }
   }
-  for (const fixture of dmx.universe) {
+  for (const fixture of dmx.universe as (typeof dmx.universe[number] & {
+    universe?: number
+  })[]) {
     if (!Array.isArray(fixture.groups)) {
       fixture.groups = []
     }
+    if (fixture.universe === undefined) {
+      fixture.universe = 1
+    }
+    fixture.universe = clampUniverse(fixture.universe)
+  }
+
+  if ((dmx as DmxState & { activeUniverse?: number }).activeUniverse === undefined) {
+    ;(dmx as DmxState & { activeUniverse?: number }).activeUniverse = 1
+  }
+
+  dmx.activeUniverse = clampUniverse(
+    (dmx as DmxState & { activeUniverse?: number }).activeUniverse ?? 1
+  )
+
+  dmx.universe.sort((left, right) => {
+    if (left.universe === right.universe) {
+      return left.ch - right.ch
+    }
+    return left.universe - right.universe
+  })
+
+  if (
+    dmx.activeFixture !== null &&
+    dmx.universe[dmx.activeFixture]?.universe !== dmx.activeUniverse
+  ) {
+    dmx.activeFixture = null
   }
 
   // Change to new ColorChannels
@@ -149,27 +290,36 @@ export function fixDmxState(dmx: DmxState) {
         channel.color = {
           hue: 0.0,
           saturation: 1.0,
+          kind: 'color',
         }
       } else if (c === 'green') {
         channel.color = {
           hue: 0.333,
           saturation: 1.0,
+          kind: 'color',
         }
       } else if (c === 'blue') {
         channel.color = {
           hue: 0.666,
           saturation: 1.0,
+          kind: 'color',
         }
       } else if (c === 'white') {
         channel.color = {
           hue: 0.0,
           saturation: 0.0,
+          kind: 'white',
         }
+      } else if (c.kind === undefined) {
+        channel.color.kind = inferColorKind(c)
       }
     } else if (channel.type === 'colorMap') {
       for (const color of channel.colors) {
         if (color.saturation === undefined) {
           color.saturation = 1.0
+        }
+        if (color.kind === undefined) {
+          color.kind = inferColorKind(color)
         }
       }
     }
@@ -191,7 +341,163 @@ export function fixDeviceState(deviceState: DeviceState) {
   if (deviceState.connectionSettings === undefined) {
     deviceState.connectionSettings = {
       openDmxRefreshRateHz: 30,
+      universeCount: 1,
+      dmxUniverseByDevice: {},
+      artNetIpByUniverse: {},
     }
+  }
+
+  if (deviceState.connectionSettings.universeCount === undefined) {
+    deviceState.connectionSettings.universeCount = 1
+  }
+
+  deviceState.connectionSettings.universeCount = clampUniverse(
+    deviceState.connectionSettings.universeCount
+  )
+
+  if (deviceState.connectionSettings.dmxUniverseByDevice === undefined) {
+    deviceState.connectionSettings.dmxUniverseByDevice = {}
+  }
+
+  if (deviceState.connectionSettings.artNetIpByUniverse === undefined) {
+    deviceState.connectionSettings.artNetIpByUniverse = {}
+  }
+
+  for (const [connectionId, universe] of Object.entries(
+    deviceState.connectionSettings.dmxUniverseByDevice
+  )) {
+    deviceState.connectionSettings.dmxUniverseByDevice[connectionId] =
+      clampUniverse(universe, deviceState.connectionSettings.universeCount)
+  }
+
+  const normalizedArtNetRoutes: { [universe: number]: string } = {}
+  for (const [universeKey, ip] of Object.entries(
+    deviceState.connectionSettings.artNetIpByUniverse
+  )) {
+    const parsedUniverse = Number(universeKey)
+    if (!Number.isFinite(parsedUniverse)) continue
+
+    const universe = clampUniverse(
+      parsedUniverse,
+      deviceState.connectionSettings.universeCount
+    )
+    const normalizedIp = ip.trim()
+    if (normalizedIp.length > 0) {
+      normalizedArtNetRoutes[universe] = normalizedIp
+    }
+  }
+
+  deviceState.connectionSettings.artNetIpByUniverse = normalizedArtNetRoutes
+
+  const legacyArtNetIp = deviceState.connectable.artNet[0]?.trim()
+  if (
+    legacyArtNetIp &&
+    Object.keys(deviceState.connectionSettings.artNetIpByUniverse).length === 0
+  ) {
+    for (
+      let universe = 1;
+      universe <= deviceState.connectionSettings.universeCount;
+      universe++
+    ) {
+      deviceState.connectionSettings.artNetIpByUniverse[universe] =
+        legacyArtNetIp
+    }
+  }
+
+  for (const connectionId of deviceState.connectable.dmx) {
+    if (
+      deviceState.connectionSettings.dmxUniverseByDevice[connectionId] ===
+      undefined
+    ) {
+      deviceState.connectionSettings.dmxUniverseByDevice[connectionId] = 1
+    }
+  }
+
+  normalizeDeviceMidiMappings(deviceState)
+}
+
+function normalizeSliderOptions(
+  action: MidiAction,
+  options: any
+): SliderControlOptions | null {
+  if (options === null || typeof options !== 'object') return null
+
+  const min = Number.isFinite(options.min) ? Number(options.min) : 0
+  const max = Number.isFinite(options.max) ? Number(options.max) : 1
+  const normalizedMin = Math.min(min, max)
+  const normalizedMax = Math.max(min, max)
+
+  const rawOptions: SliderControlOptions | null =
+    options.type === 'cc'
+      ? {
+          type: 'cc',
+          min: normalizedMin,
+          max: normalizedMax,
+          mode: options.mode === 'relative' ? 'relative' : 'absolute',
+        }
+      : options.type === 'note'
+      ? {
+          type: 'note',
+          min: normalizedMin,
+          max: normalizedMax,
+          mode: options.mode === 'toggle' ? 'toggle' : 'hold',
+          value: options.value === 'max' ? 'max' : 'velocity',
+        }
+      : null
+
+  if (rawOptions === null) return null
+
+  return normalizeSliderOptionsForAction(action, rawOptions)
+}
+
+function normalizeDeviceMidiMappings(deviceState: DeviceState) {
+  if (deviceState.buttonActions === undefined) {
+    ;(deviceState as DeviceState & { buttonActions?: DeviceState['buttonActions'] }).buttonActions = {}
+  }
+
+  if (deviceState.sliderActions === undefined) {
+    ;(deviceState as DeviceState & { sliderActions?: DeviceState['sliderActions'] }).sliderActions = {}
+  }
+
+  for (const [actionId, sliderAction] of Object.entries(deviceState.sliderActions)) {
+    const action = (sliderAction as any).action as MidiAction | undefined
+    const normalizedOptions =
+      action && typeof action.type === 'string'
+        ? normalizeSliderOptions(action, (sliderAction as any).options)
+        : null
+
+    if (normalizedOptions === null || action === undefined) {
+      delete deviceState.sliderActions[actionId]
+      continue
+    }
+
+    ;(sliderAction as any).options = normalizedOptions
+  }
+}
+
+type DeprecatedMixerState = MixerState & {
+  overwrites?: number[]
+  activeUniverse?: number
+  overwritesByUniverse?: { [universe: number]: number[] }
+}
+
+export function fixMixerState(mixerState: MixerState) {
+  const mixer = mixerState as DeprecatedMixerState
+
+  if (mixer.activeUniverse === undefined) {
+    mixer.activeUniverse = 1
+  }
+  mixer.activeUniverse = clampUniverse(mixer.activeUniverse)
+
+  if (mixer.overwritesByUniverse === undefined) {
+    mixer.overwritesByUniverse = {}
+  }
+
+  if (
+    mixer.overwritesByUniverse[1] === undefined &&
+    Array.isArray(mixer.overwrites)
+  ) {
+    mixer.overwritesByUniverse[1] = mixer.overwrites
   }
 }
 

@@ -12,22 +12,55 @@ import { promises } from 'fs'
 import { VisualizerResource } from '../../visualizer/threejs/VisualizerManager'
 import { VisualizerContainer } from './createVisualizerWindow'
 import { DmxConnectionInfo } from 'shared/connection'
+import type { Page } from '../../shared/pages'
 
 interface Config {
-  renderer: WebContents
+  renderers: Set<WebContents>
   visualizerContainer: VisualizerContainer
-  on_new_control_state: (new_state: CleanReduxState) => void
+  on_new_control_state: (
+    new_state: CleanReduxState,
+    sender: WebContents
+  ) => void
   on_user_command: (command: UserCommand) => void
   on_open_visualizer: () => void
+  on_open_page_window: (page: Page) => void
 }
 
 let _config: Config
 
+function addRenderer(sender: WebContents) {
+  _config.renderers.add(sender)
+  sender.once('destroyed', () => {
+    _config.renderers.delete(sender)
+  })
+}
+
+function broadcast(channel: string, payload: any) {
+  _config.renderers.forEach((renderer) => {
+    if (!renderer.isDestroyed()) {
+      renderer.send(channel, payload)
+    }
+  })
+}
+
+function broadcastExcept(channel: string, payload: any, sender: WebContents) {
+  _config.renderers.forEach((renderer) => {
+    if (!renderer.isDestroyed() && renderer.id !== sender.id) {
+      renderer.send(channel, payload)
+    }
+  })
+}
+
 export function ipcSetup(config: Config) {
   _config = config
 
-  ipcMain.on(ipcChannels.new_control_state, (_e, new_state: CleanReduxState) =>
-    _config.on_new_control_state(new_state)
+  ipcMain.on(
+    ipcChannels.new_control_state,
+    (e, new_state: CleanReduxState) => {
+      addRenderer(e.sender)
+      _config.on_new_control_state(new_state, e.sender)
+      broadcastExcept(ipcChannels.new_control_state, new_state, e.sender)
+    }
   )
 
   ipcMain.on(ipcChannels.user_command, (_e, command: UserCommand) => {
@@ -38,15 +71,22 @@ export function ipcSetup(config: Config) {
     _config.on_open_visualizer()
   })
 
+  ipcMain.on(ipcChannels.open_page_window, (_e, page: Page) => {
+    _config.on_open_page_window(page)
+  })
+
   return {
+    register_renderer: (renderer: WebContents) => {
+      addRenderer(renderer)
+    },
     send_dmx_connection_update: (payload: DmxConnectionInfo) =>
-      _config.renderer.send(ipcChannels.dmx_connection_update, payload),
+      broadcast(ipcChannels.dmx_connection_update, payload),
     send_midi_connection_update: (payload: midiConnection.UpdatePayload) =>
-      _config.renderer.send(ipcChannels.midi_connection_update, payload),
+      broadcast(ipcChannels.midi_connection_update, payload),
     send_time_state: (time_state: RealtimeState) =>
-      _config.renderer.send(ipcChannels.new_time_state, time_state),
+      broadcast(ipcChannels.new_time_state, time_state),
     send_dispatch: (action: PayloadAction<any>) =>
-      _config.renderer.send(ipcChannels.dispatch, action),
+      broadcast(ipcChannels.dispatch, action),
     send_visualizer_state: (payload: VisualizerResource) => {
       const visualizer = _config.visualizerContainer.visualizer
       if (visualizer) {
@@ -57,7 +97,7 @@ export function ipcSetup(config: Config) {
       }
     },
     send_main_command: (command: MainCommand) => {
-      _config.renderer.send(ipcChannels.main_command, command)
+      broadcast(ipcChannels.main_command, command)
     },
   }
 }
@@ -116,3 +156,5 @@ ipcMain.handle(
     }
   }
 )
+
+

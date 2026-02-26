@@ -4,14 +4,16 @@ import GlobalStyle from './GlobalStyle'
 import App from './App'
 import * as themes from './theme'
 import { Provider } from 'react-redux'
-import { store, getCleanReduxState } from './redux/store'
+import { store, getCleanReduxState, resetState } from './redux/store'
 import {
   setDmx,
   setMidi,
   setSaving,
   setLoading,
   setNewProjectDialog,
+  setActivePage,
 } from './redux/guiSlice'
+import type { Page } from '../shared/pages'
 import {
   realtimeStore,
   realtimeContext,
@@ -31,10 +33,35 @@ const muiTheme = createTheme({
   palette: {
     mode: 'dark',
   },
+  zIndex: {
+    tooltip: 20001,
+  },
 })
 let _frequentlyUpdatedRealtimeState = initRealtimeState()
+let _isApplyingRemoteState = false
+
+function parsePageFromLocation(): Page | null {
+  const page = new URLSearchParams(window.location.search).get('page')
+  const validPages: Page[] = [
+    'Universe',
+    'Modulation',
+    'Video',
+    'Share',
+    'Mixer',
+    'Led',
+  ]
+  if (page && validPages.includes(page as Page)) {
+    return page as Page
+  }
+  return null
+}
 
 autoSave(store)
+
+const pageFromLocation = parsePageFromLocation()
+if (pageFromLocation) {
+  store.dispatch(setActivePage(pageFromLocation))
+}
 
 ipc_setup({
   on_dmx_connection_update: (payload) => {
@@ -77,6 +104,20 @@ ipc_setup({
       store.dispatch(setNewProjectDialog(true))
     }
   },
+  on_control_state: (newState) => {
+    const localPage = store.getState().gui.activePage
+    _isApplyingRemoteState = true
+    store.dispatch(
+      resetState({
+        ...newState,
+        gui: {
+          ...newState.gui,
+          activePage: localPage,
+        },
+      })
+    )
+    _isApplyingRemoteState = false
+  },
 })
 
 function animateRealtimeState() {
@@ -88,7 +129,10 @@ animateRealtimeState()
 
 send_control_state(getCleanReduxState(store.getState()))
 
-store.subscribe(() => send_control_state(getCleanReduxState(store.getState())))
+store.subscribe(() => {
+  if (_isApplyingRemoteState) return
+  send_control_state(getCleanReduxState(store.getState()))
+})
 
 render(
   <Provider store={store}>
@@ -103,3 +147,6 @@ render(
   </Provider>,
   document.getElementById('root')
 )
+
+
+

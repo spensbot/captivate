@@ -5,7 +5,7 @@ import { IconButton } from '@mui/material'
 import FixtureChannelPopup from './FixtureChannelPopup'
 import Popup from '../base/Popup'
 import RemoveIcon from '@mui/icons-material/Remove'
-import { FixtureChannel } from '../../shared/dmxFixtures'
+import { FixtureChannel, axisDirName } from '../../shared/dmxFixtures'
 import { removeFixtureChannel } from '..//redux/dmxSlice'
 import { getCustomColorChannelName } from '../../shared/dmxColors'
 import { ChannelToggle } from './Subfixtures'
@@ -114,7 +114,7 @@ const Sp = styled.div`
 function getInfo(ch: FixtureChannel): string {
   switch (ch.type) {
     case 'axis':
-      return `${ch.dir} Axis`
+      return axisDirName(ch.dir)
     case 'color':
       return getCustomColorChannelName(ch.color)
     case 'colorMap':

@@ -2,10 +2,12 @@ import { useActiveFixtureType, useDmxSelector } from '../redux/store'
 import styled from 'styled-components'
 import { IconButton } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
+import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import { useDispatch } from 'react-redux'
 import {
   addSubFixture,
   assignChannelToSubFixture,
+  duplicateSubFixture,
   removeChannelFromSubFixtures,
   removeSubFixture,
   replaceActiveFixtureTypeSubFixture,
@@ -29,18 +31,46 @@ export default function Subfixtures() {
       return []
     }
   })
+  const activeSubFixtureIndex = useDmxSelector((dmx) => dmx.activeSubFixture)
 
   const dispatch = useDispatch()
 
-  const addChannelButton = (
-    <IconButton onClick={() => dispatch(addSubFixture())}>
+  const addSubFixtureButton = (
+    <IconButton
+      onClick={() => dispatch(addSubFixture())}
+      title="Add subfixture"
+    >
       <AddIcon />
+    </IconButton>
+  )
+
+  const duplicateSubFixtureButton = (
+    <IconButton
+      disabled={subFixtures.length === 0}
+      onClick={() => dispatch(duplicateSubFixture(undefined))}
+      title="Duplicate last subfixture"
+    >
+      <ContentCopyIcon />
     </IconButton>
   )
 
   return (
     <Root>
-      SubFixtures {addChannelButton}
+      <Header>
+        <span>SubFixtures</span>
+        <SpFill />
+        {duplicateSubFixtureButton}
+        {addSubFixtureButton}
+      </Header>
+      {subFixtures.length > 0 && (
+        <HelperText>
+          {activeSubFixtureIndex === null
+            ? 'Select a subfixture (a, b, c...) and click the channel marker on the left to assign channels.'
+            : `Editing subfixture ${subFixtureId(
+                activeSubFixtureIndex
+              )}. Click channel markers on the left to add or remove channels.`}
+        </HelperText>
+      )}
       {subFixtures.map((sf, sfIndex) => (
         <SubFixture key={sfIndex} subFixture={sf} subFixtureIndex={sfIndex} />
       ))}
@@ -97,6 +127,16 @@ function SubFixture({
         <IconButton
           size="small"
           style={{ margin: '-0.9rem 0' }}
+          onClick={wrapClick(() =>
+            dispatch(duplicateSubFixture(subFixtureIndex))
+          )}
+          title="Duplicate this subfixture"
+        >
+          <ContentCopyIcon fontSize="inherit" />
+        </IconButton>
+        <IconButton
+          size="small"
+          style={{ margin: '-0.9rem 0' }}
           onClick={wrapClick(() => dispatch(removeSubFixture(subFixtureIndex)))}
         >
           <RemoveIcon />
@@ -142,6 +182,22 @@ function SubFixture({
 }
 
 const Root = styled.div``
+
+const Header = styled.div`
+  display: flex;
+  align-items: center;
+`
+
+const SpFill = styled.div`
+  flex: 1 0 0;
+`
+
+const HelperText = styled.div`
+  font-size: 0.8rem;
+  color: ${(props) => props.theme.colors.text.secondary};
+  margin-top: -0.1rem;
+  margin-bottom: 0.5rem;
+`
 
 const SubFixtureDiv = styled.div<{ isActive: boolean }>`
   padding: 0.5rem;
@@ -190,6 +246,11 @@ export function SubFixtureToggle({
           ? dispatch(setActiveSubFixture(null))
           : dispatch(setActiveSubFixture(subFixtureIndex))
       )}
+      title={
+        isActive
+          ? 'Subfixture selected for channel assignment'
+          : 'Select this subfixture for channel assignment'
+      }
     >
       {subFixtureId(subFixtureIndex)}
     </Toggle>
@@ -222,6 +283,17 @@ export function ChannelToggle({ channelIndex }: { channelIndex: number }) {
   const borderA = activeSubFixtureIndex === null ? 0.5 : 1.0
   const color = isPartOfActiveSubfixture ? 'black' : 'white'
 
+  const actionDescription =
+    activeSubFixtureIndex === null
+      ? subFixtureIndex === null
+        ? 'Select a subfixture above, then click to assign this channel'
+        : `Assigned to subfixture ${subFixtureId(
+            subFixtureIndex
+          )}. Click to select it`
+      : isPartOfActiveSubfixture
+      ? `Click to remove from subfixture ${subFixtureId(activeSubFixtureIndex)}`
+      : `Click to assign to subfixture ${subFixtureId(activeSubFixtureIndex)}`
+
   if (subfixtureCount === 0) return null
 
   return (
@@ -231,20 +303,32 @@ export function ChannelToggle({ channelIndex }: { channelIndex: number }) {
         backgroundColor: hsvaForCss(hue, 1, 1, bgA),
         color: color,
       }}
-      onClick={wrapClick(() => {
+      title={actionDescription}
+      onClick={(e) => {
+        if (e.defaultPrevented) return
+
         if (isPartOfActiveSubfixture) {
+          e.preventDefault()
           dispatch(removeChannelFromSubFixtures({ channelIndex }))
         } else if (activeSubFixtureIndex !== null) {
+          e.preventDefault()
           dispatch(
             assignChannelToSubFixture({
               channelIndex,
               subFixtureIndex: activeSubFixtureIndex,
             })
           )
+        } else if (subFixtureIndex !== null) {
+          e.preventDefault()
+          dispatch(setActiveSubFixture(subFixtureIndex))
         }
-      })}
+      }}
     >
-      {subFixtureIndex !== null && subFixtureId(subFixtureIndex)}
+      {subFixtureIndex !== null
+        ? subFixtureId(subFixtureIndex)
+        : activeSubFixtureIndex !== null
+        ? '+'
+        : ''}
     </Toggle>
   )
 }

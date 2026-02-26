@@ -4,6 +4,7 @@ import { RealtimeState } from './redux/realtimeStore'
 import * as midiConnection from '../main/engine/midiConnection'
 import { PayloadAction } from '@reduxjs/toolkit'
 import { DmxConnectionInfo } from 'shared/connection'
+import type { Page } from '../shared/pages'
 
 interface Config {
   on_dmx_connection_update: (payload: DmxConnectionInfo) => void
@@ -11,6 +12,7 @@ interface Config {
   on_time_state: (time_state: RealtimeState) => void
   on_dispatch: (action: PayloadAction) => void
   on_main_command: (command: MainCommand) => void
+  on_control_state: (state: CleanReduxState) => void
 }
 
 let _config: Config
@@ -43,6 +45,10 @@ export function ipc_setup(config: Config) {
   ipcRenderer.on(ipc_channels.main_command, (command: MainCommand) =>
     _config.on_main_command(command)
   )
+
+  ipcRenderer.on(ipc_channels.new_control_state, (state: CleanReduxState) =>
+    _config.on_control_state(state)
+  )
 }
 
 export function send_control_state(cleanState: CleanReduxState) {
@@ -54,6 +60,9 @@ export function send_user_command(command: UserCommand) {
 export function send_open_visualizer() {
   ipcRenderer.send(ipc_channels.open_visualizer)
 }
+export function send_open_page_window(page: Page) {
+  ipcRenderer.send(ipc_channels.open_page_window, page)
+}
 export async function getLocalFilepaths(
   title: string,
   fileFilters: Electron.FileFilter[]
@@ -64,3 +73,5 @@ export async function getLocalFilepaths(
     fileFilters
   )
 }
+
+

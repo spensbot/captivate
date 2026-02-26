@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { LfoShape } from '../../shared/oscillator'
+import { LfoShape, normalizeLfoShape } from '../../shared/oscillator'
 import { DefaultParam, Params } from '../../shared/params'
 import { ReorderParams } from '../../shared/util'
 import { clampNormalized, clamp } from '../../math/util'
@@ -220,7 +220,7 @@ export const scenesSlice = createSlice({
       { payload }: PayloadAction<{ index: number; shape: LfoShape }>
     ) => {
       modifyActiveLightScene(state, (scene) => {
-        scene.modulators[payload.index].lfo.shape = payload.shape
+        scene.modulators[payload.index].lfo.shape = normalizeLfoShape(payload.shape)
       })
     },
     setPeriod: (
@@ -280,7 +280,22 @@ export const scenesSlice = createSlice({
     ) => {
       const { splitIndex, modIndex, param, value } = payload
       modifyActiveLightScene(state, (scene) => {
-        scene.modulators[modIndex].splitModulations[splitIndex][param] = value
+        const modulator = scene.modulators[modIndex]
+        if (modulator === undefined) return
+
+        while (modulator.splitModulations.length <= splitIndex) {
+          modulator.splitModulations.push({})
+        }
+
+        const splitModulation =
+          modulator.splitModulations[splitIndex] ??
+          (modulator.splitModulations[splitIndex] = {})
+
+        if (value === undefined) {
+          delete splitModulation[param]
+        } else {
+          splitModulation[param] = value
+        }
       })
     },
     setBaseParams: (
@@ -453,6 +468,12 @@ export const scenesSlice = createSlice({
       midiActions.setArtNetConnectable(state.device, action),
     setOpenDmxRefreshRateHz: (state, action) =>
       midiActions.setOpenDmxRefreshRateHz(state.device, action),
+    setUniverseCount: (state, action) =>
+      midiActions.setUniverseCount(state.device, action),
+    setDmxDeviceUniverse: (state, action) =>
+      midiActions.setDmxDeviceUniverse(state.device, action),
+    setArtNetUniverseRoute: (state, action) =>
+      midiActions.setArtNetUniverseRoute(state.device, action),
   },
 })
 
@@ -512,6 +533,11 @@ export const {
   removeMidiAction,
   setArtNetConnectable,
   setOpenDmxRefreshRateHz,
+  setUniverseCount,
+  setDmxDeviceUniverse,
+  setArtNetUniverseRoute,
 } = scenesSlice.actions
 
 export default scenesSlice.reducer
+
+

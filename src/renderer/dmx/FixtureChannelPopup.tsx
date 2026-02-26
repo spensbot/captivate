@@ -7,6 +7,7 @@ import {
   initFixtureChannel,
   AxisDir,
   axisDirList,
+  axisDirName,
   DMX_MAX_VALUE,
   DMX_MIN_VALUE,
 } from '../../shared/dmxFixtures'
@@ -18,6 +19,7 @@ import HSpad, { ColorChannelProps } from 'renderer/base/HSpad'
 import { FixtureChannelItemProps } from './FixtureChannelItem'
 import ColorMapChannel from './ColorMapChannel'
 import ColorPicker from 'renderer/base/ColorPicker'
+import { inferColorKind } from '../../shared/dmxColors'
 
 interface Props extends FixtureChannelItemProps {
   ch: FixtureChannel
@@ -96,6 +98,7 @@ function Fields({ ch, fixtureID, channelIndex }: Props) {
           color: {
             hue: newHue,
             saturation: newSaturation,
+            kind: inferColorKind({ hue: newHue, saturation: newSaturation }),
           },
         })
       },
@@ -103,8 +106,15 @@ function Fields({ ch, fixtureID, channelIndex }: Props) {
 
     return (
       <>
-        {/* {getCustomColorChannelName(ch.color)} */}
-        <ColorPicker {...colorProps} />
+        <ColorPicker
+          color={ch.color}
+          onChange={(newColor) =>
+            updateChannel({
+              type: 'color',
+              color: newColor,
+            })
+          }
+        />
         <HSpad {...colorProps} />
       </>
     )
@@ -144,6 +154,7 @@ function Fields({ ch, fixtureID, channelIndex }: Props) {
             label="Direction:"
             val={ch.dir}
             items={axisDirList}
+            labelForItem={axisDirName}
             onChange={(newAxisDir) =>
               updateChannel({
                 ...ch,

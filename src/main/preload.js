@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('electron', {
         'new_control_state',
         'user_command',
         'open_visualizer',
+        'open_page_window',
       ]
       if (validChannels.includes(channel)) {
         ipcRenderer.send(channel, ...args)

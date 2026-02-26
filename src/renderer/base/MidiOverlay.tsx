@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import { getActionID, MidiAction } from '../redux/deviceState'
+import { getActionID, getMidiSliderBounds, MidiAction } from '../redux/deviceState'
 import {
   midiListen,
   midiSetSliderAction,
@@ -126,12 +126,15 @@ export function SliderMidiOverlay({ children, action, style }: Props) {
     )
   }
 
+  
   const minMaxStyle: React.CSSProperties = {
     padding: '0.1rem 0.2rem',
     margin: '0.2rem',
     color: 'white',
     backgroundColor: '#0009',
   }
+
+  const sliderBounds = getMidiSliderBounds(action)
 
   return (
     <Root style={style}>
@@ -148,7 +151,7 @@ export function SliderMidiOverlay({ children, action, style }: Props) {
                     type="continuous"
                     style={minMaxStyle}
                     value={controlledAction.options.min}
-                    min={0}
+                    min={sliderBounds.min}
                     max={controlledAction.options.max}
                     onChange={onChangeMin}
                     noArrows
@@ -158,7 +161,7 @@ export function SliderMidiOverlay({ children, action, style }: Props) {
                     style={minMaxStyle}
                     value={controlledAction.options.max}
                     min={controlledAction.options.min}
-                    max={1}
+                    max={sliderBounds.max}
                     onChange={onChangeMax}
                     noArrows
                   />

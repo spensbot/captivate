@@ -6,10 +6,13 @@ import LightingIcon from '@mui/icons-material/Lightbulb'
 import WbIncandescentIcon from '@mui/icons-material/WbIncandescent'
 import VisualsIcon from '../images/Thick.png'
 import MixerIcon from '@mui/icons-material/BarChart'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
+import IconButton from '@mui/material/IconButton'
 import { useTypedSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import { setActivePage, Page } from '../redux/guiSlice'
 import MasterSlider from '../controls/MasterSlider'
+import { send_open_page_window } from '../ipcHandler'
 
 const selectedBorder = 0.2 //rem
 
@@ -75,6 +78,12 @@ export default function MenuBar() {
       <MenuItem page="Mixer" tooltipText="DMX Mixer">
         <MixerIcon fontSize="inherit" />
       </MenuItem>
+      <DetachedWindowButton
+        title={`Open ${activePage} in new window`}
+        onClick={() => send_open_page_window(activePage)}
+      >
+        <OpenInNewIcon fontSize="small" />
+      </DetachedWindowButton>
       <Spacer />
       <MasterSlider />
       <div style={{ height: '0.5rem' }} />
@@ -99,6 +108,10 @@ const Item = styled.div<{ selected: boolean }>`
     filter: grayscale(0%);
     opacity: 1;
   }
+`
+
+const DetachedWindowButton = styled(IconButton)`
+  margin-top: 0.5rem !important;
 `
 
 const Spacer = styled.div`

@@ -1,20 +1,19 @@
 import styled from 'styled-components'
-import { Normalized } from 'math/util'
 import {
   approximateStandardColor,
   colorByName,
+  ColorChannel,
   standardColorNames,
 } from '../../shared/dmxColors'
 import wrapClick from './wrapClick'
 
 interface Props {
-  hue: Normalized
-  saturation: Normalized
-  onChange: (newHue: Normalized, newSaturation: Normalized) => void
+  color: ColorChannel
+  onChange: (newColor: ColorChannel) => void
 }
 
 export default function ColorPicker(props: Props) {
-  const approximate = approximateStandardColor(props)
+  const approximate = approximateStandardColor(props.color)
 
   return (
     <Root>
@@ -24,8 +23,7 @@ export default function ColorPicker(props: Props) {
           <Color
             isActive={isActive}
             onClick={wrapClick(() => {
-              const channel = colorByName(color)
-              props.onChange(channel.hue, channel.saturation)
+              props.onChange(colorByName(color))
             })}
           >
             {color}

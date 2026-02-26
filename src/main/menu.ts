@@ -70,7 +70,7 @@ export default class MenuBuilder {
       label: 'Electron',
       submenu: [
         {
-          label: 'About Captivate',
+          label: 'About Captivate 2',
           selector: 'orderFrontStandardAboutPanel:',
         },
         { type: 'separator' },

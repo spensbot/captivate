@@ -16,6 +16,7 @@ export default function NewModulator() {
         alignItems: 'center',
         cursor: 'pointer',
         minHeight: '10rem',
+        flex: '0 0 auto',
       }}
       onClick={() => dispatch(addModulator())}
     >
@@ -23,3 +24,4 @@ export default function NewModulator() {
     </div>
   )
 }
+

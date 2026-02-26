@@ -7,6 +7,7 @@ import {
   ColorMapColor,
   initSubFixture,
   SubFixture,
+  DMX_MAX_UNIVERSES,
 } from '../../shared/dmxFixtures'
 import { clampNormalized } from '../../math/util'
 import { defaultParamsList } from '../../shared/params'
@@ -20,6 +21,7 @@ export interface DmxState {
   fixtureTypesByID: { [id: string]: FixtureType }
   activeFixtureType: null | string
   activeFixture: null | number
+  activeUniverse: number
   activeSubFixture: null | number
   led: LedState
 }
@@ -69,6 +71,7 @@ export function initDmxState(): DmxState {
     fixtureTypesByID: {},
     activeFixtureType: null,
     activeFixture: null,
+    activeUniverse: 1,
     activeSubFixture: null,
     led: initLedState(),
   }
@@ -114,19 +117,71 @@ function remove_noDuplicates<T>(t: T, ts: T[]): T[] {
   return Array.from(set)
 }
 
+function clampUniverse(value: number): number {
+  if (!Number.isFinite(value)) return 1
+  return Math.min(DMX_MAX_UNIVERSES, Math.max(1, Math.round(value)))
+}
+
+function incrementNumberSuffix(name: string): string {
+  const trimmed = name.trim()
+  if (trimmed.length === 0) return '2'
+
+  const match = trimmed.match(/^(.*?)(?:\s+(\d+))$/)
+  if (match) {
+    const prefix = match[1].trim()
+    const value = Number(match[2])
+    const next = Number.isFinite(value) ? value + 1 : 2
+    return prefix.length > 0 ? `${prefix} ${next}` : `${next}`
+  }
+
+  return `${trimmed} 2`
+}
+
+function duplicateFixtureChannel(channel: FixtureChannel): FixtureChannel {
+  const duplicated = JSON.parse(JSON.stringify(channel)) as FixtureChannel
+  if (duplicated.type === 'custom') {
+    duplicated.name = incrementNumberSuffix(duplicated.name)
+  }
+  return duplicated
+}
+
 export const dmxSlice = createSlice({
   name: 'dmx',
   initialState: initDmxState(),
   reducers: {
     setSelectedFixture: (state, { payload }: PayloadAction<number>) => {
       state.activeFixture = payload
+      const fixture = state.universe[payload]
+      if (fixture) {
+        state.activeUniverse = clampUniverse(fixture.universe)
+      }
     },
     addFixture: (state, { payload }: PayloadAction<Fixture>) => {
-      state.universe.push(payload)
-      state.universe.sort((a, b) => a.ch - b.ch)
+      const fixture = {
+        ...payload,
+        universe: clampUniverse(payload.universe ?? state.activeUniverse),
+      }
+      state.universe.push(fixture)
+      state.universe.sort((a, b) => {
+        if (a.universe === b.universe) return a.ch - b.ch
+        return a.universe - b.universe
+      })
+      state.activeUniverse = fixture.universe
       state.activeFixture = state.universe.findIndex(
-        (fixture) => fixture.ch == payload.ch
+        (other) =>
+          other.universe === fixture.universe &&
+          other.ch === fixture.ch &&
+          other.type === fixture.type
       )
+    },
+    setActiveUniverse: (state, { payload }: PayloadAction<number>) => {
+      state.activeUniverse = clampUniverse(payload)
+      if (
+        state.activeFixture !== null &&
+        state.universe[state.activeFixture]?.universe !== state.activeUniverse
+      ) {
+        state.activeFixture = null
+      }
     },
     removeFixture: (state, { payload }: PayloadAction<number>) => {
       state.activeFixture = null
@@ -273,6 +328,7 @@ export const dmxSlice = createSlice({
           max: lastColorMax ?? 0,
           hue: 0,
           saturation: 1.0,
+          kind: 'color',
         })
       } else {
         console.error(
@@ -318,9 +374,89 @@ export const dmxSlice = createSlice({
       }
     },
     addSubFixture: (state, _: PayloadAction<undefined>) => {
-      modifyActiveFixtureType(state, (ft) =>
+      modifyActiveFixtureType(state, (ft) => {
         ft.subFixtures.push(initSubFixture())
-      )
+        state.activeSubFixture = ft.subFixtures.length - 1
+      })
+    },
+    duplicateSubFixture: (
+      state,
+      { payload }: PayloadAction<number | undefined>
+    ) => {
+      modifyActiveFixtureType(state, (ft) => {
+        if (ft.subFixtures.length === 0) return
+
+        const sourceIndex = payload ?? ft.subFixtures.length - 1
+        const sourceSubFixture = ft.subFixtures[sourceIndex]
+        if (sourceSubFixture === undefined) return
+
+        const sourceChannels = [...sourceSubFixture.channels]
+        const channelOffset = sourceChannels.length
+        const shiftedChannels = sourceChannels
+          .map((channelIndex) => channelIndex + channelOffset)
+          .filter(
+            (channelIndex) =>
+              channelIndex >= 0 && channelIndex < ft.channels.length
+          )
+
+        const channelsAssignedToOthers = new Set<number>()
+        ft.subFixtures.forEach((subFixture, subFixtureIndex) => {
+          if (subFixtureIndex !== sourceIndex) {
+            for (const channelIndex of subFixture.channels) {
+              channelsAssignedToOthers.add(channelIndex)
+            }
+          }
+        })
+
+        const canUseShiftedChannels =
+          sourceChannels.length > 0 &&
+          shiftedChannels.length === sourceChannels.length &&
+          shiftedChannels.every(
+            (channelIndex) => !channelsAssignedToOthers.has(channelIndex)
+          )
+
+        let duplicatedChannels: number[] = []
+        if (canUseShiftedChannels) {
+          duplicatedChannels = shiftedChannels
+        } else {
+          for (const sourceChannelIndex of sourceChannels) {
+            const sourceChannel = ft.channels[sourceChannelIndex]
+            if (sourceChannel === undefined) continue
+            ft.channels.push(duplicateFixtureChannel(sourceChannel))
+            duplicatedChannels.push(ft.channels.length - 1)
+          }
+        }
+
+        const duplicatedChannelSet = new Set(duplicatedChannels)
+        // Channel assignments are exclusive between subfixtures.
+        if (duplicatedChannelSet.size > 0) {
+          for (const subFixture of ft.subFixtures) {
+            subFixture.channels = subFixture.channels.filter(
+              (channelIndex) => !duplicatedChannelSet.has(channelIndex)
+            )
+          }
+        }
+
+        const duplicatedSubFixture: SubFixture = {
+          ...sourceSubFixture,
+          name: incrementNumberSuffix(sourceSubFixture.name),
+          channels: duplicatedChannels,
+          groups: [...sourceSubFixture.groups],
+          relative_window: sourceSubFixture.relative_window
+            ? {
+                x: sourceSubFixture.relative_window.x
+                  ? { ...sourceSubFixture.relative_window.x }
+                  : undefined,
+                y: sourceSubFixture.relative_window.y
+                  ? { ...sourceSubFixture.relative_window.y }
+                  : undefined,
+              }
+            : undefined,
+        }
+
+        ft.subFixtures.push(duplicatedSubFixture)
+        state.activeSubFixture = ft.subFixtures.length - 1
+      })
     },
     removeSubFixture: (state, { payload }: PayloadAction<number>) => {
       modifyActiveFixtureType(state, (ft) => ft.subFixtures.splice(payload, 1))
@@ -411,6 +547,7 @@ export const dmxSlice = createSlice({
 
 export const {
   setSelectedFixture,
+  setActiveUniverse,
   setEditedFixture,
   setFixtureWindow,
   setFixtureWindowEnabled,
@@ -430,6 +567,7 @@ export const {
   removeColorMapColor,
   setColorMapColor,
   addSubFixture,
+  duplicateSubFixture,
   removeSubFixture,
   setActiveSubFixture,
   assignChannelToSubFixture,
@@ -445,3 +583,4 @@ export const {
 } = dmxSlice.actions
 
 export default dmxSlice.reducer
+

@@ -7,6 +7,7 @@ interface Props<T extends string> {
   items: T[]
   onChange: (newVal: T) => void
   style?: React.CSSProperties
+  labelForItem?: (item: T) => string
 }
 
 export default function Select<T extends string>({
@@ -15,6 +16,7 @@ export default function Select<T extends string>({
   items,
   onChange,
   style,
+  labelForItem,
 }: Props<T>) {
   return (
     <MuiSelect
@@ -28,7 +30,7 @@ export default function Select<T extends string>({
     >
       {items.map((item) => (
         <MenuItem key={item} value={item}>
-          {item}
+          {labelForItem ? labelForItem(item) : item}
         </MenuItem>
       ))}
     </MuiSelect>

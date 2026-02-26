@@ -50,7 +50,7 @@ export function artPollReplyBuffer(): Buffer | null {
   const thisIpBuffer = ipUtil.thisIpBuffer
   const thisMacBuffer = ipUtil.thisMacBuffer
   const portName = nullTerminatedStringPadded('Port', 18)
-  const nodeName = nullTerminatedStringPadded('Captivate', 64)
+  const nodeName = nullTerminatedStringPadded('Captivate 2', 64)
   const nodeReport = nullTerminatedStringPadded('#[1]Ok', 64)
 
   if (!thisIpBuffer || !thisMacBuffer || !portName || !nodeName || !nodeReport)

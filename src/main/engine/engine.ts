@@ -30,6 +30,7 @@ import { MidiMessage, midiInputID } from '../../shared/midi'
 import { getAllParamKeys } from '../../renderer/redux/dmxSlice'
 import { indexArray } from '../../shared/util'
 import WledManager from './wled/wled_manager'
+import type { Page } from '../../shared/pages'
 
 let _nodeLink = new NodeLink()
 _nodeLink.setIsPlaying(true)
@@ -44,12 +45,12 @@ function _tapTempo() {
   _tapTempoEngine.tap((newBpm) => {
     _nodeLink.setTempo(newBpm)
   }, (newPhase, { force }) => {
-    const info = _nodeLink.getSessionInfoCurrent();
-    const newBeat = info.beats - info.phase + newPhase;
+    const info = _nodeLink.getSessionInfoCurrent()
+    const newBeat = info.beats - info.phase + newPhase
     if (force) {
-      _nodeLink.forceBeat(newBeat);
+      _nodeLink.forceBeat(newBeat)
     } else {
-      _nodeLink.requestBeat(newBeat);
+      _nodeLink.requestBeat(newBeat)
     }
   })
 }
@@ -77,10 +78,11 @@ export function getIpcCallbacks() {
 
 export function start(
   renderer: WebContents,
-  visualizerContainer: VisualizerContainer
+  visualizerContainer: VisualizerContainer,
+  openPageWindow: (page: Page) => void
 ) {
   _ipcCallbacks = ipcSetup({
-    renderer: renderer,
+    renderers: new Set([renderer]),
     visualizerContainer: visualizerContainer,
     on_new_control_state: (newState) => {
       _controlState = newState
@@ -102,6 +104,9 @@ export function start(
     },
     on_open_visualizer: () => {
       openVisualizerWindow(visualizerContainer)
+    },
+    on_open_page_window: (page) => {
+      openPageWindow(page)
     },
   })
 
@@ -236,9 +241,12 @@ function getNextRealtimeState(
     }
   )
 
+  const dmxOutByUniverse = calculateDmx(controlState, splitStates, nextTimeState)
+
   return {
     time: nextTimeState,
-    dmxOut: calculateDmx(controlState, splitStates, nextTimeState),
+    dmxOutByUniverse,
+    dmxOut: dmxOutByUniverse[0] ?? Array(512).fill(0),
     splitStates,
   }
 }
@@ -247,3 +255,6 @@ new WledManager({
   controlState: () => _controlState,
   realtimeState: () => _realtimeState,
 })
+
+
+

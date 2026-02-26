@@ -12,10 +12,11 @@ import {
 import ToggleButton from '../base/ToggleButton'
 import Popup from '../base/Popup'
 import { useState } from 'react'
-import { TextField, IconButton } from '@mui/material'
+import { TextField, IconButton, Tooltip } from '@mui/material'
 import RemoveIcon from '@mui/icons-material/Remove'
 import AddIcon from '@mui/icons-material/Add'
 import { clamp } from '../../math/util'
+import { fixtureUniverseColor } from './fixtureColors'
 
 function ChannelSpan({ start, count }: { start: number; count: number }) {
   const end = start + count - 1
@@ -32,6 +33,7 @@ function GapSlot({ ch, count }: { ch: number; count: number }) {
   const [popupOpen, setPopupOpen] = useState(false)
   const [inputCh, setInputCh] = useState(ch)
   const dispatch = useDispatch()
+  const activeUniverse = useDmxSelector((state) => state.activeUniverse)
   const dmxState = useDmxSelector((state) => state)
   const applicableFixtures = dmxState.fixtureTypes
     .map((id) => dmxState.fixtureTypesByID[id])
@@ -40,6 +42,7 @@ function GapSlot({ ch, count }: { ch: number; count: number }) {
   return (
     <Slot
       style={{ backgroundColor: '#000a' }}
+      title="Empty DMX address range. Click to add a fixture here."
       onClick={(e) => {
         if (!e.defaultPrevented) {
           setPopupOpen(true)
@@ -52,9 +55,13 @@ function GapSlot({ ch, count }: { ch: number; count: number }) {
             label="Channel"
             value={inputCh.toString()}
             size="small"
-            onChange={(e) =>
-              setInputCh(clamp(parseInt(e.target.value), ch, ch + count - 1))
-            }
+            title="Start channel for the new fixture"
+            onChange={(e) => {
+              const value = parseInt(e.target.value, 10)
+              if (!Number.isNaN(value)) {
+                setInputCh(clamp(value, ch, ch + count - 1))
+              }
+            }}
             type="number"
           />
           {applicableFixtures.map((ft) => (
@@ -66,8 +73,9 @@ function GapSlot({ ch, count }: { ch: number; count: number }) {
                 dispatch(
                   addFixture({
                     ch: inputCh,
+                    universe: activeUniverse,
                     type: ft.id,
-                    window: { x: { pos: 0.5, width: 0 } },
+                    window: { x: { pos: 0.5, width: 0 }, y: { pos: 0.5, width: 0 } },
                     groups: [],
                   })
                 )
@@ -117,7 +125,10 @@ function FixtureChoice({
   onClick: () => void
 }) {
   return (
-    <RCRoot onClick={onClick}>
+    <RCRoot
+      onClick={onClick}
+      title="Add this fixture type at the selected channel"
+    >
       {fixtureType.name} ({fixtureType.manufacturer})
     </RCRoot>
   )
@@ -134,7 +145,15 @@ const RCRoot = styled.div`
   }
 `
 
-function FixtureSlot({ fixture, index }: { fixture: Fixture; index: number }) {
+function FixtureSlot({
+  fixture,
+  globalIndex,
+  localIndex,
+}: {
+  fixture: Fixture
+  globalIndex: number
+  localIndex: number
+}) {
   const fixtureType = useDmxSelector(
     (state) => state.fixtureTypesByID[fixture.type]
   )
@@ -142,31 +161,39 @@ function FixtureSlot({ fixture, index }: { fixture: Fixture; index: number }) {
   const dispatch = useDispatch()
   const count = fixtureType.channels.length
   const start = fixture.ch
-  const isSelected = activeFixture === index
+  const isSelected = activeFixture === globalIndex
+
   function setWindowEnabled(dimension: 'x' | 'y', isEnabled: boolean) {
     return (_e: React.MouseEvent) => {
       dispatch(
         setFixtureWindowEnabled({
           dimension: dimension,
-          index: index,
+          index: globalIndex,
           isEnabled: isEnabled,
         })
       )
     }
   }
-  const style = isSelected
-    ? {
-        border: '2px solid white',
-      }
-    : undefined
+
+  const backgroundColor = fixtureUniverseColor(localIndex)
+  const style = {
+    backgroundColor,
+    ...(isSelected ? { border: '2px solid white' } : {}),
+  }
+
   return (
     <Slot
       onClick={(e) => {
         if (!e.defaultPrevented) {
           e.preventDefault()
-          dispatch(setSelectedFixture(index))
+          dispatch(setSelectedFixture(globalIndex))
         }
       }}
+      title={
+        isSelected
+          ? 'Selected fixture. Use controls to edit patch window or remove fixture.'
+          : 'Click to select this fixture.'
+      }
       style={style}
     >
       <ChannelSpan start={start} count={count} />
@@ -182,29 +209,41 @@ function FixtureSlot({ fixture, index }: { fixture: Fixture; index: number }) {
             zIndex: 1,
           }}
         >
-          <ToggleButton
-            isEnabled={!!fixture.window.x}
-            onClick={setWindowEnabled('x', !fixture.window.x)}
-          >
-            X
-          </ToggleButton>
-          <ToggleButton
-            isEnabled={!!fixture.window.y}
-            onClick={setWindowEnabled('y', !fixture.window.y)}
-          >
-            Y
-          </ToggleButton>
-          <IconButton
-            onClick={(e) => {
-              e.preventDefault()
-              dispatch(removeFixture(index))
-            }}
-          >
-            <RemoveIcon />
-          </IconButton>
+          <Tooltip title="Enable or disable Pan (X) window control">
+            <span>
+              <ToggleButton
+                isEnabled={!!fixture.window.x}
+                onClick={setWindowEnabled('x', !fixture.window.x)}
+              >
+                X
+              </ToggleButton>
+            </span>
+          </Tooltip>
+          <Tooltip title="Enable or disable Tilt (Y) window control">
+            <span>
+              <ToggleButton
+                isEnabled={!!fixture.window.y}
+                onClick={setWindowEnabled('y', !fixture.window.y)}
+              >
+                Y
+              </ToggleButton>
+            </span>
+          </Tooltip>
+          <Tooltip title="Remove this fixture from the universe">
+            <span>
+              <IconButton
+                onClick={(e) => {
+                  e.preventDefault()
+                  dispatch(removeFixture(globalIndex))
+                }}
+              >
+                <RemoveIcon />
+              </IconButton>
+            </span>
+          </Tooltip>
         </div>
       ) : (
-        <div style={{ fontSize: '0.8rem', color: 'fff7' }}>
+        <div style={{ fontSize: '0.8rem', color: '#fff7' }}>
           {fixtureType.manufacturer}
         </div>
       )}
@@ -217,7 +256,13 @@ export default function UniverseSlot({ slot }: { slot: Slot_t }) {
     case 'gap':
       return <GapSlot ch={slot.ch} count={slot.count} />
     case 'fixture':
-      return <FixtureSlot fixture={slot.fixture} index={slot.index} />
+      return (
+        <FixtureSlot
+          fixture={slot.fixture}
+          globalIndex={slot.globalIndex}
+          localIndex={slot.localIndex}
+        />
+      )
   }
 }
 
@@ -231,10 +276,10 @@ const Slot = styled.div`
   margin-right: 0.3rem;
   margin-bottom: 0.3rem;
   color: #fff8;
-  background-color: '#000';
-  display: 'flex';
-  justify-content: 'center';
-  align-items: 'center';
+  background-color: #2f2f2f;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   border: 1px solid #fff8;
   :hover {
     border: 1px solid #fffc;
@@ -244,3 +289,4 @@ const Slot = styled.div`
   box-sizing: border-box;
   position: relative;
 `
+

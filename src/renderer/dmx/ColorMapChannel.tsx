@@ -14,8 +14,8 @@ import HSpad, { ColorChannelProps } from 'renderer/base/HSpad'
 import { ChannelColorMap } from '../../shared/dmxFixtures'
 import { useState } from 'react'
 import wrapClick from 'renderer/base/wrapClick'
-import { lerp } from 'math/util'
 import ColorPicker from 'renderer/base/ColorPicker'
+import { getColorPreview, inferColorKind } from '../../shared/dmxColors'
 
 interface Props {
   ch: ChannelColorMap
@@ -46,6 +46,7 @@ export default function ColorMapChannel({
             max: activeColor.max,
             hue: newHue,
             saturation: newSaturation,
+            kind: inferColorKind({ hue: newHue, saturation: newSaturation }),
           },
         })
       )
@@ -54,7 +55,24 @@ export default function ColorMapChannel({
 
   return (
     <div>
-      <ColorPicker {...colorProps} />
+      <ColorPicker
+        color={activeColor}
+        onChange={(newColor) =>
+          dispatch(
+            setColorMapColor({
+              fixtureTypeId: fixtureID,
+              channelIndex,
+              colorIndex: activeColorIndex,
+              newColor: {
+                max: activeColor.max,
+                hue: newColor.hue,
+                saturation: newColor.saturation,
+                kind: newColor.kind,
+              },
+            })
+          )
+        }
+      />
       <div style={{ height: '0.5rem' }} />
       <HSpad {...colorProps} />
       <Sp />
@@ -69,9 +87,7 @@ export default function ColorMapChannel({
             <ColorMapVisualizer
               onClick={wrapClick(() => setActiveColorIndex(i))}
               style={{
-                backgroundColor: `hsl(${color.hue * 360}, ${
-                  color.saturation * 100
-                }%, ${lerp(100, 50, color.saturation)}%)`,
+                backgroundColor: getColorPreview(color),
               }}
               isActive={isActive}
             />
@@ -89,7 +105,8 @@ export default function ColorMapChannel({
                     newColor: {
                       max: newMax,
                       hue: color.hue,
-                      saturation: 1.0,
+                      saturation: color.saturation,
+                      kind: color.kind,
                     },
                   })
                 )
