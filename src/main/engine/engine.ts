@@ -30,7 +30,7 @@ import { MidiMessage, midiInputID } from '../../shared/midi'
 import { getAllParamKeys } from '../../renderer/redux/dmxSlice'
 import { indexArray } from '../../shared/util'
 import WledManager from './wled/wled_manager'
-import { Page } from '../../shared/pages'
+import type { Page } from '../../shared/pages'
 
 let _nodeLink = new NodeLink()
 _nodeLink.setIsPlaying(true)
@@ -252,4 +252,5 @@ new WledManager({
   controlState: () => _controlState,
   realtimeState: () => _realtimeState,
 })
+
 

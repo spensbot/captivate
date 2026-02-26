@@ -4,7 +4,7 @@ import { RealtimeState } from './redux/realtimeStore'
 import * as midiConnection from '../main/engine/midiConnection'
 import { PayloadAction } from '@reduxjs/toolkit'
 import { DmxConnectionInfo } from 'shared/connection'
-import { Page } from '../shared/pages'
+import type { Page } from '../shared/pages'
 
 interface Config {
   on_dmx_connection_update: (payload: DmxConnectionInfo) => void
@@ -73,4 +73,5 @@ export async function getLocalFilepaths(
     fileFilters
   )
 }
+
 

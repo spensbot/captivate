@@ -12,7 +12,7 @@ import { promises } from 'fs'
 import { VisualizerResource } from '../../visualizer/threejs/VisualizerManager'
 import { VisualizerContainer } from './createVisualizerWindow'
 import { DmxConnectionInfo } from 'shared/connection'
-import { Page } from '../../shared/pages'
+import type { Page } from '../../shared/pages'
 
 interface Config {
   renderers: Set<WebContents>
@@ -156,4 +156,5 @@ ipcMain.handle(
     }
   }
 )
+
 

@@ -14,7 +14,7 @@ import MenuBuilder from './menu'
 import { resolveHtmlPath } from './util'
 import * as engine from './engine/engine'
 import { VisualizerContainer } from './engine/createVisualizerWindow'
-import { Page } from '../shared/pages'
+import type { Page } from '../shared/pages'
 import './prevent_sleep'
 
 // Monkey-patch showErrorBox to avoid error modals at runtime
@@ -192,4 +192,3 @@ app
     })
   })
   .catch(console.log)
-

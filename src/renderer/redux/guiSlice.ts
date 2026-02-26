@@ -1,4 +1,4 @@
-import { Page } from '../../shared/pages'
+import type { Page } from '../../shared/pages'
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { SaveInfo } from '../../shared/save'
 import {
@@ -89,3 +89,4 @@ export const {
 } = guiSlice.actions
 
 export default guiSlice.reducer
+
