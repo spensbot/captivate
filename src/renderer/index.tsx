@@ -13,7 +13,7 @@ import {
   setNewProjectDialog,
   setActivePage,
 } from './redux/guiSlice'
-import { Page } from 'shared/pages'
+import { Page } from '../shared/pages'
 import {
   realtimeStore,
   realtimeContext,
@@ -144,3 +144,4 @@ render(
   </Provider>,
   document.getElementById('root')
 )
+
