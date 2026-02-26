@@ -1,4 +1,4 @@
-# Captivate
+# Captivate 2
 
 <img src="https://github.com/spensbot/captivate/blob/main/design/readme/Thick.png" alt="Captivate Icon" width="150"/>
 
@@ -6,7 +6,8 @@
 
 [CaptivateSynth.com](https://CaptivateSynth.com)
 
-Captivate generates live visuals and dmx lighting. All synchronized to music.
+Captivate 2 generates live visuals and dmx lighting. All synchronized to music.
+Based on the wonderful work of Spencer @spencbot with Captivate as well as @fwcd and his fork of Captivate. Due to the discontinued nature of Captivate I am working to build upon the original code base with many new features and UI enhancements
 
 ## Ready to Impress?
 
@@ -15,6 +16,8 @@ Captivate is groundbreaking software that revolutionizes stage lighting and visu
 Concert quality visuals and lighting that is easy, fun, and dynamic. Captivate is designed to run autonomously, or you can take as much control as you'd like.
 
 Captivate's design was inspired by synthesisers, so you'll find familiar tools like LFO's, midi integration, pads, and randomizers.
+
+Captivate 2 builds upon this premise and brings new features and enhancements like a full feature fixture library database and the ability to share and import DMX fixtures, multi-window interface for multi screen control, multi-universe USB and Artnet, UI tooltips to help first time users learn the interface, Other UI tweaks and enhancements, and more!
 
 ## Add Dimension To Your DMX Universe
 
@@ -28,9 +31,9 @@ Add fixtures seamlessly, without the need to update scenes.
 
 ## Breathtaking Lighting
 
-With captivate, hundreds of DMX channels boil down to a handful of intuitive parameters
+With captivate 2, hundreds or even thousands of DMX channels boil down to a handful of intuitive parameters
 
-Take control of these parameters live, or automate them with Captivate's familiar, synth-like modulation tools.
+Take control of these parameters live with MIDI mapping or your keyboard and mouse, or automate them with Captivate's familiar, synth-like modulation tools.
 
 Light groups allow you to add complexity as needed
 
@@ -48,13 +51,15 @@ Visualizers and effects listen to the parameters from the active light scene so 
 
 ## Streamlined Complexity
 
-With Captivate, you'll forget there are 512 DMX channels running behind then scenes
+With Captivate 2, you'll forget there are 512 DMX channels and up to 16 universes running behind the scenes
 
 ![Captivate DMX Configurator](https://github.com/spensbot/captivate/blob/main/design/readme/screenshot_4_dmx_console.jpg)
 
 ## Always Synchronized
 
 With integrated [Ableton Link](https://www.ableton.com/en/link/) technology, captivate can synchronize bpm and phase with [hundreds of music apps](https://www.ableton.com/en/link/products/) across devices.
+
+Intuitive MIDI mapping allows bi-directional synchronization with industry standard MIDI devices of different types, allows endless possabilities for control and syncronization.
 
 ## Create once, Perform anywhere
 
@@ -66,13 +71,13 @@ Since all dmx channels boil down to the same parameters, captivate scenes can pl
 
 ## Community
 
-Join us on [Discord](https://discord.gg/96DVPcMUUv) or on the [Github Discussion Board](https://github.com/spensbot/captivate/discussions)!
+Join us on [Discord](https://discord.gg/96DVPcMUUv) or on the [Github Discussion Board](https://github.com/NicholasTracy/captivate/discussions)!
 
 ## Developers
 
 **Prereqs:** Node, NPM, Python, and XCode Command Line Tools (for Mac) or Visual Studio C++ Build Environment (for Windows).
 
-`git clone https://github.com/spensbot/captivate.git` <-- download the repo locally
+`git clone https://github.com/NicholasTracy/captivate.git` <-- download the repo locally
 
 `git submodule update --init --recursive` <-- download submodules
 
