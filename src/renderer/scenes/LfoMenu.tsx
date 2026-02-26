@@ -1,4 +1,4 @@
-import { LfoShape } from '../../shared/oscillator'
+import { LfoShape, normalizeLfoShape } from '../../shared/oscillator'
 import { useDispatch } from 'react-redux'
 import { useActiveLightScene } from '../redux/store'
 import {
@@ -42,17 +42,20 @@ export default function LfoMenu({ index }: Props) {
         value={lfo.shape}
         size="small"
         variant="standard"
-        onChange={(e) =>
+        onChange={(e) => {
           dispatch(
             setModulatorShape({
-              index: index,
-              shape: e.target.value as LfoShape,
+              index,
+              shape: normalizeLfoShape(e.target.value),
             })
           )
-        }
+        }}
       >
         <MenuItem value={LfoShape.Ramp}>Ramp</MenuItem>
         <MenuItem value={LfoShape.Sin}>Sin</MenuItem>
+        <MenuItem value={LfoShape.Square}>Square</MenuItem>
+        <MenuItem value={LfoShape.Saw}>Saw</MenuItem>
+        <MenuItem value={LfoShape.Noise}>Noise</MenuItem>
       </Select>
       <div style={{ flex: '1 0 0' }} />
       <LfoPeriod index={index} />

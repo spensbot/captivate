@@ -3,6 +3,7 @@ import { useDispatch } from 'react-redux'
 import { setBaseParams } from '../redux/controlSlice'
 import styled from 'styled-components'
 import { useBaseParam } from 'renderer/redux/store'
+import { useOutputParam } from '../redux/realtimeStore'
 
 interface Props {
   splitIndex: number
@@ -20,11 +21,13 @@ export default function Hue({ splitIndex }: Props) {
     )
   })
 
-  const hue = useBaseParam('hue', splitIndex) ?? 0
+  const baseHue = useBaseParam('hue', splitIndex) ?? 0
+  const outputHue = useOutputParam('hue', splitIndex)
 
   return (
     <Root ref={dragContainer} onMouseDown={onMouseDown}>
-      <Cursor style={{ left: `${hue * 100}%` }} />
+      <OutputCursor style={{ left: `${outputHue * 100}%` }} />
+      <BaseCursor style={{ left: `${baseHue * 100}%` }} />
     </Root>
   )
 }
@@ -45,7 +48,7 @@ const Root = styled.div`
   );
 `
 
-const Cursor = styled.div`
+const BaseCursor = styled.div`
   width: 0.5rem;
   border: 1.5px solid white;
   border-radius: 4px;
@@ -55,3 +58,15 @@ const Cursor = styled.div`
   transform: translate(-0.25rem, 0);
   box-sizing: border-box;
 `
+
+const OutputCursor = styled.div`
+  width: 0.5rem;
+  border: 1.5px solid #777;
+  border-radius: 4px;
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  transform: translate(-0.25rem, 0);
+  box-sizing: border-box;
+`
+

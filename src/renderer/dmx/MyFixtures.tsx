@@ -1,33 +1,89 @@
-import { ReactNode } from 'react'
+import { ReactNode, useState } from 'react'
 import { useDmxSelector } from '../redux/store'
 import MyFixture from './MyFixture'
 import AddIcon from '@mui/icons-material/Add'
 import { Autocomplete, IconButton, TextField, Button } from '@mui/material'
 import { addFixtureType } from '../redux/dmxSlice'
 import { useDispatch } from 'react-redux'
-import { initFixtureType } from '../../shared/dmxFixtures'
+import { FixtureType, initFixtureType } from '../../shared/dmxFixtures'
 import styled from 'styled-components'
-import { useState } from 'react'
 import Popup from 'renderer/base/Popup'
 import {
   fixtureForId,
   getFixtureSearchIds,
   fuzzySearch,
 } from '../../shared/fixtureDb'
+import { captivateFileFilters, loadFile, saveFile } from '../autosave'
+import {
+  cloneFixtureType,
+  parseFixtureLibrary,
+  serializeFixtureLibrary,
+} from '../../shared/fixtureLibrary'
 
 export default function MyFixtures() {
-  const fixtureTypes = useDmxSelector((state) => state.fixtureTypes)
+  const fixtureTypeIds = useDmxSelector((state) => state.fixtureTypes)
+  const fixtureTypesByID = useDmxSelector((state) => state.fixtureTypesByID)
+  const fixtureTypes = fixtureTypeIds
+    .map((fixtureTypeID) => fixtureTypesByID[fixtureTypeID])
+    .filter((fixture): fixture is FixtureType => fixture !== undefined)
+
   const dispatch = useDispatch()
-  const elements = fixtureTypes.map((fixtureTypeID) => {
-    return <MyFixture key={fixtureTypeID} id={fixtureTypeID} />
+  const elements = fixtureTypes.map((fixtureType) => {
+    return <MyFixture key={fixtureType.id} id={fixtureType.id} />
   })
   const [isPopup, setIsPopup] = useState(false)
   const [search, setSearch] = useState('')
+
+  async function importFixtures() {
+    try {
+      const serialized = await loadFile('Import Fixtures', [
+        captivateFileFilters.captivateFixtures,
+      ])
+      const importedFixtures = parseFixtureLibrary(serialized)
+      for (const importedFixture of importedFixtures) {
+        dispatch(addFixtureType(cloneFixtureType(importedFixture)))
+      }
+    } catch (err) {
+      console.warn(err)
+    }
+  }
+
+  async function exportFixtures() {
+    if (fixtureTypes.length === 0) return
+
+    try {
+      const serialized = serializeFixtureLibrary(fixtureTypes)
+      await saveFile('Export Fixtures', serialized, [
+        captivateFileFilters.captivateFixtures,
+      ])
+    } catch (err) {
+      console.warn(err)
+    }
+  }
 
   return (
     <Root>
       <Header>
         <Title>Fixtures</Title>
+        <HeaderButtons>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => void importFixtures()}
+            title="Import fixtures from a fixture library file"
+          >
+            Import
+          </Button>
+          <Button
+            size="small"
+            variant="outlined"
+            disabled={fixtureTypes.length === 0}
+            onClick={() => void exportFixtures()}
+            title="Export fixtures in this show to a fixture library file"
+          >
+            Export
+          </Button>
+        </HeaderButtons>
       </Header>
       <Items>
         {elements}
@@ -36,6 +92,7 @@ export default function MyFixtures() {
           onClick={() => {
             setIsPopup(true)
           }}
+          title="Add fixture"
         >
           <AddIcon />
         </IconButton>
@@ -46,11 +103,10 @@ export default function MyFixtures() {
             onChange={(_, search) => {
               const fixture = fixtureForId(search ?? '')
               if (fixture !== undefined) {
-                dispatch(addFixtureType(fixture))
+                dispatch(addFixtureType(cloneFixtureType(fixture)))
               }
               setIsPopup(false)
             }}
-            // options={options}
             options={getFixtureSearchIds()}
             filterOptions={(options, state) => {
               return fuzzySearch(state.inputValue, options, 100)
@@ -62,7 +118,6 @@ export default function MyFixtures() {
                 onChange={(e) => {
                   setSearch(e.target.value)
                 }}
-                // label="Search Fixtures"
                 variant="standard"
               />
             )}
@@ -75,6 +130,7 @@ export default function MyFixtures() {
               setIsPopup(false)
             }}
             variant="contained"
+            title="Create a new custom fixture"
           >
             Create New
           </Button>
@@ -100,6 +156,13 @@ const Header = styled.div`
   align-items: center;
   margin-top: -0.3rem;
   min-height: 2.5rem;
+  gap: 0.5rem;
+`
+
+const HeaderButtons = styled.div`
+  display: flex;
+  gap: 0.35rem;
+  margin-left: auto;
 `
 
 const Items = styled.div`
@@ -153,4 +216,3 @@ const Text = styled.div`
   margin: 0 10px;
   font-size: 1rem;
 `
-

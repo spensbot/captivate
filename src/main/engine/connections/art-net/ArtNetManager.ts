@@ -13,26 +13,39 @@ export class ArtNetManager {
     this.client = dgram.createSocket('udp4')
 
     this.intervalHandle = setInterval(() => {
-      const universe = c.realtimeState().dmxOut
-      const buffer = artDmxBuffer(universe, 0)
       const controlState = c.controlState()
-      const artNetIpOut: string | undefined = controlState
-        ? controlState.control.device.connectable.artNet[0]
-        : undefined
-      if (artNetIpOut && toIpBuffer(artNetIpOut)) {
-        this.client.send(
-          buffer,
-          constants.ARTNET_PORT,
-          artNetIpOut,
-          (err, _bytes) => {
-            if (err) {
-              console.error(`ArtNet UDP Error: ${err}`)
-              this.client.close()
-              this.client = dgram.createSocket('udp4')
-            }
-          }
-        )
+      if (!controlState) {
+        return
       }
+
+      const routingTable =
+        controlState.control.device.connectionSettings.artNetIpByUniverse ?? {}
+      const fallbackIp = controlState.control.device.connectable.artNet[0]?.trim()
+
+      const dmxOutByUniverse = c.realtimeState().dmxOutByUniverse
+      const universes =
+        dmxOutByUniverse.length > 0
+          ? dmxOutByUniverse
+          : [c.realtimeState().dmxOut]
+
+      universes.forEach((universe, universeIndex) => {
+        const universeNumber = universeIndex + 1
+        const routeIp = routingTable[universeNumber]
+        const targetIp = (routeIp ?? fallbackIp ?? '').trim()
+        if (targetIp.length === 0 || !toIpBuffer(targetIp)) {
+          return
+        }
+
+        const buffer = artDmxBuffer(universe, universeIndex)
+
+        this.client.send(buffer, constants.ARTNET_PORT, targetIp, (err, _bytes) => {
+          if (err) {
+            console.error(`ArtNet UDP Error: ${err}`)
+            this.client.close()
+            this.client = dgram.createSocket('udp4')
+          }
+        })
+      })
     }, constants.DMX_PERIOD_MS)
   }
 

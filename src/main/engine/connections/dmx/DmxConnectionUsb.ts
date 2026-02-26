@@ -75,10 +75,29 @@ export class DmxConnectionUsb {
     this.serialConnection.disconnect()
   }
 
+  private getAssignedUniverse(): number {
+    const controlState = this.c.controlState()
+    if (controlState === null) {
+      return 1
+    }
+
+    const universeCount =
+      controlState.control.device.connectionSettings.universeCount ?? 1
+    const assignedUniverse =
+      controlState.control.device.connectionSettings.dmxUniverseByDevice?.[
+        this.device.connectionId
+      ] ?? 1
+
+    if (!Number.isFinite(assignedUniverse)) return 1
+    return Math.min(Math.max(1, Math.round(assignedUniverse)), universeCount)
+  }
+
   private sendDmx() {
-    this.config.sendUniverse(
-      this.c.realtimeState().dmxOut,
-      this.serialConnection
-    )
+    const realtimeState = this.c.realtimeState()
+    const universeIndex = this.getAssignedUniverse() - 1
+    const universe =
+      realtimeState.dmxOutByUniverse[universeIndex] ?? realtimeState.dmxOut
+
+    this.config.sendUniverse(universe, this.serialConnection)
   }
 }

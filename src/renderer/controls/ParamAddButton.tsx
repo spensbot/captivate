@@ -5,7 +5,12 @@ import { useBaseParams, useDmxSelector } from 'renderer/redux/store'
 import styled from 'styled-components'
 import Popup from '../base/Popup'
 import { useDispatch } from 'react-redux'
-import { DefaultParam, Params, defaultParamsList } from 'shared/params'
+import {
+  DefaultParam,
+  Params,
+  defaultParamsList,
+  paramDisplayName,
+} from 'shared/params'
 import { setBaseParams } from 'renderer/redux/controlSlice'
 import { initParams } from 'shared/params'
 import IntensityIcon from '@mui/icons-material/LocalFireDepartment'
@@ -43,6 +48,13 @@ const icons: {
 
 const initialParams = initParams()
 
+function optionDisplayName(
+  option: DefaultParam | ParamBundle | string
+): string {
+  if (option === 'axis') return 'Pan/Tilt'
+  if (option === 'position') return 'Position'
+  return paramDisplayName(option)
+}
 function getOptions(
   custom_channels: Set<string>,
   baseParams: Params
@@ -128,7 +140,7 @@ export default function ParamAddButton({ splitIndex }: Props) {
                 }}
               >
                 {icon ? icon({}) : null}
-                {option}
+                {optionDisplayName(option)}
               </Option>
             )
           })}

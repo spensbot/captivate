@@ -24,4 +24,5 @@ export default function ModulatorControl({ index }: Props) {
 const Root = styled.div`
   border: 1px solid ${(props) => props.theme.colors.divider};
   margin-right: 1rem;
+  flex: 0 0 auto;
 `

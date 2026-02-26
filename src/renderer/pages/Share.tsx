@@ -4,7 +4,7 @@ export default function Share() {
   return (
     <Root>
       <h1>Share</h1>
-      <p>Share scenes and fixtures with other Captivate users</p>
+      <p>Share scenes and fixtures with other Captivate 2 users</p>
       <h4>Coming Soon!</h4>
     </Root>
   )

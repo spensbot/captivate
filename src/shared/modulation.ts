@@ -29,15 +29,22 @@ export function getOutputParams(
   splitIndex: number,
   allParamKeys: string[]
 ) {
-  const outputParams = defaultOutputParams()
   const baseParams = scene.splitScenes[splitIndex].baseParams
+  const outputParams: Modulation = {
+    ...defaultOutputParams(),
+    ...baseParams,
+  }
+
   const snapshots: ModSnapshot[] = scene.modulators.map((modulator) => ({
     modulation: modulator.splitModulations[splitIndex],
     lfoVal: GetValue(modulator.lfo, beats),
   }))
 
   allParamKeys.forEach((param) => {
-    outputParams[param] = getOutputParam(baseParams[param], param, snapshots)
+    const outputParam = getOutputParam(baseParams[param], param, snapshots)
+    if (outputParam !== undefined) {
+      outputParams[param] = outputParam
+    }
   })
 
   return outputParams

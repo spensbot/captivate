@@ -241,9 +241,12 @@ function getNextRealtimeState(
     }
   )
 
+  const dmxOutByUniverse = calculateDmx(controlState, splitStates, nextTimeState)
+
   return {
     time: nextTimeState,
-    dmxOut: calculateDmx(controlState, splitStates, nextTimeState),
+    dmxOutByUniverse,
+    dmxOut: dmxOutByUniverse[0] ?? Array(512).fill(0),
     splitStates,
   }
 }
@@ -252,5 +255,6 @@ new WledManager({
   controlState: () => _controlState,
   realtimeState: () => _realtimeState,
 })
+
 
 

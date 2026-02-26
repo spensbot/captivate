@@ -14,6 +14,8 @@ import { Button } from '@mui/material'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import EditGroups from './EditGroups'
 import Subfixtures from './Subfixtures'
+import { captivateFileFilters, saveFile } from '../autosave'
+import { serializeFixtureLibrary } from '../../shared/fixtureLibrary'
 
 type Props = {
   id: string
@@ -42,10 +44,6 @@ export default function MyFixture({ id }: Props) {
     },
   }
 
-  // if (isEditing) {
-  //   return <MyFixtureEditing id={id} />
-  // }
-
   return (
     <Root
       style={
@@ -69,9 +67,6 @@ export default function MyFixture({ id }: Props) {
           <div style={styles.spacer} />
           <span style={styles.channelCount}>{ft.channels.length}</span>
           <span style={styles.manufacturer}>ch</span>
-          {/* <IconButton onClick={() => dispatch(setEditedFixture(id))}>
-          <EditIcon />
-        </IconButton> */}
         </Header>
       ) : (
         <ActiveFixtureType />
@@ -85,7 +80,6 @@ const Root = styled.div`
   border-radius: 5px;
   border: 1px solid #0000;
   :hover {
-    /* background-color: #7775; */
     border: 1px solid ${(props) => props.theme.colors.divider};
   }
 `
@@ -112,6 +106,20 @@ function ActiveFixtureType() {
       state.universe.find((fixture) => fixture.type === ft.id) !== undefined
   )
   const dispatch = useDispatch()
+
+  async function exportFixture() {
+    if (ft === null) return
+
+    try {
+      await saveFile(
+        `Export Fixture: ${ft.name}`,
+        serializeFixtureLibrary([ft]),
+        [captivateFileFilters.captivateFixtures]
+      )
+    } catch (err) {
+      console.warn(err)
+    }
+  }
 
   return (
     <>
@@ -153,25 +161,6 @@ function ActiveFixtureType() {
         </div>
       </Row>
       <Sp2 />
-      {/* <Row>
-        <Intensity>Intensity:</Intensity>
-        <Slider
-          id="intensity"
-          value={ft.intensity}
-          step={0.01}
-          min={0}
-          max={1}
-          valueLabelDisplay="off"
-          onChange={(_e, newVal) =>
-            dispatch(
-              updateFixtureType({
-                ...ft,
-                intensity: Array.isArray(newVal) ? newVal[0] : newVal,
-              })
-            )
-          }
-        />
-      </Row> */}
 
       <FixtureChannels fixtureID={ft.id} isInUse={isInUse} />
       <Sp />
@@ -180,9 +169,19 @@ function ActiveFixtureType() {
       <Row>
         <Button
           size="small"
+          variant="outlined"
+          onClick={() => void exportFixture()}
+          title="Export this fixture definition to a fixture library file"
+        >
+          Export Fixture
+        </Button>
+        <Sp3 />
+        <Button
+          size="small"
           disabled={isInUse}
           variant="contained"
           onClick={() => dispatch(deleteFixtureType(ft.id))}
+          title="Delete this fixture type from the project"
         >
           Delete Fixture
         </Button>
@@ -202,12 +201,12 @@ const Sp2 = styled.div`
   height: 0.5rem;
 `
 
+const Sp3 = styled.div`
+  width: 0.5rem;
+`
+
 const Row = styled.div`
   display: flex;
   align-items: center;
 `
 
-// const Intensity = styled.div`
-//   font-size: 0.9rem;
-//   margin-right: 0.7rem;
-// `

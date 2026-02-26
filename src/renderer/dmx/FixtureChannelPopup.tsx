@@ -7,6 +7,7 @@ import {
   initFixtureChannel,
   AxisDir,
   axisDirList,
+  axisDirName,
   DMX_MAX_VALUE,
   DMX_MIN_VALUE,
 } from '../../shared/dmxFixtures'
@@ -153,6 +154,7 @@ function Fields({ ch, fixtureID, channelIndex }: Props) {
             label="Direction:"
             val={ch.dir}
             items={axisDirList}
+            labelForItem={axisDirName}
             onChange={(newAxisDir) =>
               updateChannel({
                 ...ch,

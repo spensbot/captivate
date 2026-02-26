@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useDispatch } from 'react-redux'
-import { DefaultParam } from '../../shared/params'
+import { DefaultParam, paramDisplayName } from '../../shared/params'
 import {
   useActiveLightScene,
   useBaseParams,
@@ -40,7 +40,7 @@ export default function ModulationSlider({
 
   return (
     <Root ref={dragContainer} onMouseDown={onMouseDown}>
-      {`Split ${splitIndex + 1} ${param}`}
+      {`Split ${splitIndex + 1} ${paramDisplayName(param)}`}
       <Amount
         style={{
           left: `${left * 100}%`,
@@ -142,12 +142,12 @@ function ParamEditor({
               splitIndex,
               modIndex,
               param,
-              value: modVal === undefined ? 0.5 : undefined,
+              value: modVal === undefined ? 1 : undefined,
             })
           )
       }}
     >
-      {param}
+      {paramDisplayName(param)}
     </Item>
   )
 }
@@ -190,3 +190,5 @@ const Group = styled.div<{ isDefault: boolean }>`
   border-top: ${(props) =>
     props.isDefault && `1px solid ${props.theme.colors.divider}`};
 `
+
+

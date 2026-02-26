@@ -125,8 +125,8 @@
     "webpack-merge": "^5.8.0"
   },
   "build": {
-    "productName": "Captivate",
-    "appId": "com.sailingtomars.Captivate",
+    "productName": "Captivate 2",
+    "appId": "com.sailingtomars.captivate2",
     "asar": true,
     "asarUnpack": "**\\*.{node,dll}",
     "files": [

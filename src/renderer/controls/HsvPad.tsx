@@ -32,7 +32,8 @@ export default function HsvPad({ splitIndex }: Props) {
 }
 
 const Root = styled.div`
-  width: 200;
+  width: 200px;
   border: 1px solid ${(props) => props.theme.colors.divider};
   margin-right: 1rem;
 `
+

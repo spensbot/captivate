@@ -271,6 +271,8 @@ export function useModParam(
   splitIndex: number
 ) {
   return useActiveLightScene((scene) => {
-    return scene.modulators[modIndex].splitModulations[splitIndex][param]
+    return scene.modulators[modIndex]?.splitModulations?.[splitIndex]?.[param]
   })
 }
+
+

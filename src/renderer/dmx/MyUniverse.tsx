@@ -1,8 +1,16 @@
-import { Universe, Fixture } from '../../shared/dmxFixtures'
-import { useDmxSelector } from '../redux/store'
+import { Fixture } from '../../shared/dmxFixtures'
+import { useDmxSelector, useControlSelector } from '../redux/store'
 import FixturePlacement from './FixturePlacement'
 import UniverseSlot from './UniverseSlot'
 import styled from 'styled-components'
+import { TextField, Tooltip } from '@mui/material'
+import { useDispatch } from 'react-redux'
+import { setActiveUniverse } from '../redux/dmxSlice'
+
+interface FixtureWithIndex {
+  fixture: Fixture
+  globalIndex: number
+}
 
 interface GapSlot_t {
   kind: 'gap'
@@ -12,37 +20,48 @@ interface GapSlot_t {
 
 interface FixtureSlot_t {
   kind: 'fixture'
-  index: number
+  localIndex: number
+  globalIndex: number
   fixture: Fixture
 }
 
 export type Slot_t = GapSlot_t | FixtureSlot_t
 
 export default function MyUniverse() {
-  const universe = useDmxSelector((state) => state.universe)
+  const dispatch = useDispatch()
+  const activeUniverse = useDmxSelector((state) => state.activeUniverse)
+  const universeCount = useControlSelector(
+    (state) => state.device.connectionSettings.universeCount
+  )
+  const fixtures = useDmxSelector((state) =>
+    state.universe
+      .map((fixture, globalIndex) => ({ fixture, globalIndex }))
+      .filter(({ fixture }) => (fixture.universe ?? 1) === state.activeUniverse)
+  )
   const fixtureTypesByID = useDmxSelector((state) => state.fixtureTypesByID)
 
-  function getSlots(universe: Universe): Slot_t[] {
+  function getSlots(universe: FixtureWithIndex[]): Slot_t[] {
     const slots: Slot_t[] = []
 
     if (universe.length > 0) {
-      if (universe[0].ch > 1) {
+      if (universe[0].fixture.ch > 1) {
         slots.push({
           kind: 'gap',
           ch: 1,
-          count: universe[0].ch - 1,
+          count: universe[0].fixture.ch - 1,
         })
       }
 
       for (let i = 0; i < universe.length - 1; i++) {
-        const f0 = universe[i]
-        const f1 = universe[i + 1]
+        const f0 = universe[i].fixture
+        const f1 = universe[i + 1].fixture
         const f0_endCh = f0.ch + fixtureTypesByID[f0.type].channels.length - 1
 
         slots.push({
           kind: 'fixture',
           fixture: f0,
-          index: i,
+          globalIndex: universe[i].globalIndex,
+          localIndex: i,
         })
 
         if (f1.ch - (f0_endCh + 0) > 1) {
@@ -56,11 +75,12 @@ export default function MyUniverse() {
 
       slots.push({
         kind: 'fixture',
-        fixture: universe[universe.length - 1],
-        index: universe.length - 1,
+        fixture: universe[universe.length - 1].fixture,
+        globalIndex: universe[universe.length - 1].globalIndex,
+        localIndex: universe.length - 1,
       })
 
-      const last = universe[universe.length - 1]
+      const last = universe[universe.length - 1].fixture
       const lastCount = fixtureTypesByID[last.type].channels.length
       const lastChannel = last.ch + lastCount - 1
       if (lastChannel < 512) {
@@ -81,22 +101,45 @@ export default function MyUniverse() {
     return slots
   }
 
-  const elements = getSlots(universe).map((slot, index) => {
+  const elements = getSlots(fixtures).map((slot, index) => {
     return <UniverseSlot key={index} slot={slot} />
   })
 
   return (
     <Root>
-      <Header>Universe</Header>
+      <HeaderRow>
+        <Header>Universe</Header>
+        <Tooltip title="Universe shown in fixture patch and XY placement map">
+          <TextField
+            value={activeUniverse.toString()}
+            size="small"
+            label="Universe"
+            onChange={(e) => {
+              const value = parseInt(e.target.value, 10)
+              if (!Number.isNaN(value)) {
+                dispatch(setActiveUniverse(value))
+              }
+            }}
+            type="number"
+            inputProps={{ min: 1, max: universeCount }}
+          />
+        </Tooltip>
+      </HeaderRow>
       <Slots>{elements}</Slots>
       <FixturePlacement />
     </Root>
   )
 }
 
+const HeaderRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0 0 0.5rem;
+`
+
 const Header = styled.div`
   font-size: ${(props) => props.theme.font.size.h1};
-  margin: 0 0 0.5rem;
 `
 
 const Root = styled.div`
@@ -133,4 +176,3 @@ const Slots = styled.div`
     border-radius: 999px;
   }
 `
-

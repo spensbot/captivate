@@ -5,13 +5,18 @@ import { nanoid } from 'nanoid'
 export const DMX_MIN_VALUE = 0
 export const DMX_MAX_VALUE = 255
 export const DMX_NUM_CHANNELS = 512
+export const DMX_MAX_UNIVERSES = 16
 export const DMX_DEFAULT_VALUE = 0
 
 export type DmxChannel = number // 1 - 512
 export type DmxValue = number // 0 - 255
 
 export type AxisDir = 'x' | 'y'
-export const axisDirList = ['x', 'y']
+export const axisDirList: AxisDir[] = ['x', 'y']
+
+export function axisDirName(dir: AxisDir): string {
+  return dir === 'x' ? 'Pan' : 'Tilt'
+}
 
 type ChannelMaster = {
   type: 'master'
@@ -92,7 +97,9 @@ export function initFixtureChannel(
   } else if (type === 'axis') {
     return initChannelAxis('x', false)
   } else if (type === 'colorMap') {
-    return initChannelColorMap([{ max: 0, hue: 0, saturation: 1.0, kind: 'color' }])
+    return initChannelColorMap([
+      { max: 0, hue: 0, saturation: 1.0, kind: 'color' },
+    ])
   } else if (type === 'custom') {
     return initChannelCustom('Custom')
   }
@@ -182,6 +189,7 @@ export function initFixtureType(): FixtureType {
 
 export interface Fixture {
   ch: number
+  universe: number
   type: string // FixtureType id
   window: Window2D_t
   groups: string[]
@@ -209,5 +217,6 @@ export type FlattenedFixture = {
   intensity: number
   channels: [number, FixtureChannel][]
   window: Window2D_t
+  hasMasterChannelInFixtureType?: boolean
   groups: string[]
 }

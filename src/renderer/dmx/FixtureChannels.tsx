@@ -18,6 +18,10 @@ export default function FixtureChannels({ fixtureID, isInUse }: Props) {
   const channelCount = useDmxSelector(
     (state) => state.fixtureTypesByID[fixtureID].channels.length
   )
+  const subfixtureCount = useDmxSelector(
+    (state) => state.fixtureTypesByID[fixtureID].subFixtures.length
+  )
+  const activeSubFixture = useDmxSelector((state) => state.activeSubFixture)
   const hasMaster = useDmxSelector((state) =>
     state.fixtureTypesByID[fixtureID].channels.find(
       (ch) => ch.type === 'master'
@@ -51,6 +55,15 @@ export default function FixtureChannels({ fixtureID, isInUse }: Props) {
         <Title>Channels</Title>
         {addChannelButton}
       </Header>
+      {subfixtureCount > 0 && (
+        <Hint>
+          {activeSubFixture === null
+            ? 'Subfixture assignment: select a subfixture above, then click the colored circle on the left of each channel.'
+            : `Subfixture ${subFixtureId(
+                activeSubFixture
+              )} selected. Click the colored circle on the left to add or remove channels.`}
+        </Hint>
+      )}
       <Channels>
         {indexes.map((channelIndex) => (
           <FixtureChannelItem
@@ -81,7 +94,17 @@ const Title = styled.span`
   margin: 0.5rem 0;
 `
 
+const Hint = styled.div`
+  margin-bottom: 0.4rem;
+  color: ${(props) => props.theme.colors.text.secondary};
+  font-size: 0.8rem;
+`
+
 const Channels = styled.div`
   background-color: ${(props) => props.theme.colors.bg.darker};
   padding: 0.5rem;
 `
+
+function subFixtureId(subFixtureIndex: number): string {
+  return String.fromCharCode(subFixtureIndex + 97)
+}

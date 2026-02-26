@@ -33,6 +33,9 @@ const muiTheme = createTheme({
   palette: {
     mode: 'dark',
   },
+  zIndex: {
+    tooltip: 20001,
+  },
 })
 let _frequentlyUpdatedRealtimeState = initRealtimeState()
 let _isApplyingRemoteState = false
@@ -144,5 +147,6 @@ render(
   </Provider>,
   document.getElementById('root')
 )
+
 
 
