@@ -23,6 +23,16 @@ interface ModSnapshot {
   lfoVal: number
 }
 
+function clampOutputParamValue(param: DefaultParam | string, value: number): number {
+  if (param === 'moverMode') {
+    // Mover mode is discrete 0..2 (Follow/Tandem/Mirror), not normalized 0..1.
+    if (!Number.isFinite(value)) return 0
+    return Math.max(0, Math.min(2, value))
+  }
+
+  return clampNormalized(value)
+}
+
 export function getOutputParams(
   beats: number,
   scene: LightScene_t,
@@ -56,7 +66,8 @@ function getOutputParam(
   snapshots: ModSnapshot[]
 ) {
   if (baseParam === undefined) return undefined
-  return clampNormalized(
+  return clampOutputParamValue(
+    param,
     snapshots.reduce((sum, { modulation, lfoVal }) => {
       const modAmount = modulation[param]
       if (modAmount === undefined) {

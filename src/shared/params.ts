@@ -10,6 +10,8 @@ export type DefaultParam =
   | 'width'
   | 'y'
   | 'height'
+  | 'z'
+  | 'depth'
   | 'intensity'
   | 'strobe'
   | 'strobeRgb'
@@ -21,6 +23,10 @@ export type DefaultParam =
   | 'xAxis'
   | 'yAxis'
   | 'xMirror'
+  | 'moverSpread'
+  | 'moverMirrorX'
+  | 'moverMirrorY'
+  | 'moverMode'
 
 export type Params = { [key: string]: number | undefined }
 
@@ -55,6 +61,8 @@ export function initParams(): { [key in DefaultParam]: number } {
     width: 1.0,
     y: 0.5,
     height: 1.0,
+    z: 1.0,
+    depth: 1.0,
     intensity: 1.0,
     strobe: 0.0,
     strobeRgb: 1.0,
@@ -66,6 +74,10 @@ export function initParams(): { [key in DefaultParam]: number } {
     xAxis: 0.5,
     yAxis: 0.5,
     xMirror: 0.0,
+    moverSpread: 0.0,
+    moverMirrorX: 0.0,
+    moverMirrorY: 0.0,
+    moverMode: 0.0,
   }
 }
 
@@ -81,6 +93,8 @@ const defaultParams: { [key in DefaultParam]: number } = {
   width: 1.0,
   y: 0.5,
   height: 1.0,
+  z: 1.0,
+  depth: 1.0,
   intensity: 1.0,
   strobe: 0.0,
   strobeRgb: 1.0,
@@ -92,6 +106,10 @@ const defaultParams: { [key in DefaultParam]: number } = {
   xAxis: 0.5,
   yAxis: 0.5,
   xMirror: 0.0,
+  moverSpread: 0.0,
+  moverMirrorX: 0.0,
+  moverMirrorY: 0.0,
+  moverMode: 0.0,
 }
 
 export function getParam(params: Params, param: DefaultParam): number {
@@ -137,22 +155,35 @@ export const defaultParamsList: DefaultParam[] = [
   'width',
   'y',
   'height',
+  'z',
+  'depth',
   'intensity',
   'strobe',
   'randomize',
   'xAxis',
   'yAxis',
   'xMirror',
+  'moverSpread',
+  'moverMirrorX',
+  'moverMirrorY',
+  'moverMode',
 ]
 
 const paramDisplayNames: { [key: string]: string } = {
+  gobo: 'Gobo',
   white: 'White',
   warmWhite: 'Warm White',
   amber: 'Amber',
   uv: 'UV',
+  z: 'Z',
+  depth: 'Depth',
   xAxis: 'Pan',
   yAxis: 'Tilt',
   xMirror: 'Pan Mirror',
+  moverSpread: 'Tandem Spread',
+  moverMirrorX: 'Mirror Left/Right',
+  moverMirrorY: 'Mirror Top/Bottom',
+  moverMode: 'Mover Mode',
 }
 
 export function paramDisplayName(param: DefaultParam | string): string {

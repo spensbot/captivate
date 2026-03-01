@@ -4,16 +4,35 @@ import {
   FixtureType,
   Universe,
   FixtureChannel,
+  FixtureRotation,
   ColorMapColor,
+  initFixtureRotation,
+  initMoverCalibration,
+  initMoverBounds,
   initSubFixture,
+  isMoverFixtureType,
+  normalizeFixtureModelConfig,
   SubFixture,
+  MoverBounds,
+  MoverMountOrientation,
+  DMX_MIN_VALUE,
+  DMX_MAX_VALUE,
   DMX_MAX_UNIVERSES,
+  MOVER_MIN_TURNS,
+  MOVER_MAX_TURNS,
 } from '../../shared/dmxFixtures'
 import { clampNormalized } from '../../math/util'
 import { defaultParamsList } from '../../shared/params'
 import { initLedState, LedState } from './ledState'
 import { initLedFixture, LedFixture } from '../../shared/ledFixtures'
 import { Point } from '../../math/point'
+import { nanoid } from 'nanoid'
+import {
+  StageDimensions,
+  StageUnit,
+  initStageDimensions,
+  normalizeStageDimensions,
+} from '../../shared/stage'
 
 export interface DmxState {
   universe: Universe
@@ -23,6 +42,9 @@ export interface DmxState {
   activeFixture: null | number
   activeUniverse: number
   activeSubFixture: null | number
+  moverGroupByFixtureId: { [fixtureId: string]: string }
+  stage: StageDimensions
+  lighting3d: Lighting3DSettings
   led: LedState
 }
 
@@ -40,28 +62,131 @@ export function getCustomChannels(dmx: DmxState): Set<string> {
   return result
 }
 
+function hasGoboMapChannels(dmx: DmxState): boolean {
+  for (const ftId of dmx.fixtureTypes) {
+    for (const ch of dmx.fixtureTypesByID[ftId].channels) {
+      if (ch.type === 'goboMap') {
+        return true
+      }
+    }
+  }
+
+  return false
+}
 export function getAllParamKeys(dmx: DmxState): string[] {
-  return (defaultParamsList as string[]).concat(
+  const keys = (defaultParamsList as string[]).concat(
     Array.from(getCustomChannels(dmx))
   )
+
+  if (hasGoboMapChannels(dmx)) {
+    keys.push('gobo')
+  }
+
+  return Array.from(new Set(keys))
 }
 
 interface SetFixtureWindowPayload {
-  x: number
-  y: number
   index: number
+  x?: number
+  y?: number
+  z?: number
 }
 
 interface IncrementFixtureWindowPayload {
-  dWidth: number
-  dHeight: number
   index: number
+  dWidth?: number
+  dHeight?: number
+  dDepth?: number
+}
+
+interface SetFixtureRotationPayload {
+  index: number
+  x?: number
+  y?: number
+  z?: number
 }
 
 interface SetFixtureWindowEnabledPayload {
-  dimension: 'x' | 'y'
+  dimension: 'x' | 'y' | 'z'
   index: number
   isEnabled: boolean
+}
+
+interface SetStageDimensionsPayload {
+  widthFt?: number
+  heightFt?: number
+  depthFt?: number
+}
+
+export interface Lighting3DSettings {
+  showCurtain: boolean
+  showBoundsOverlay: boolean
+  environmentFog: number
+  roomEnabled: boolean
+  roomWidthFt: number
+  roomDepthFt: number
+  roomHeightFt: number
+}
+
+interface SetLighting3DSettingsPayload {
+  showCurtain?: boolean
+  showBoundsOverlay?: boolean
+  environmentFog?: number
+  roomEnabled?: boolean
+  roomWidthFt?: number
+  roomDepthFt?: number
+  roomHeightFt?: number
+}
+
+function clampNumber(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) return min
+  return Math.min(max, Math.max(min, value))
+}
+
+function toNumber(value: unknown, fallback: number): number {
+  const numeric = Number(value)
+  return Number.isFinite(numeric) ? numeric : fallback
+}
+
+function toBoolean(value: unknown, fallback: boolean): boolean {
+  if (typeof value === 'boolean') return value
+  return fallback
+}
+
+export function initLighting3DSettings(): Lighting3DSettings {
+  return {
+    showCurtain: true,
+    showBoundsOverlay: true,
+    environmentFog: 0.65,
+    roomEnabled: false,
+    roomWidthFt: 36,
+    roomDepthFt: 28,
+    roomHeightFt: 12,
+  }
+}
+
+export function normalizeLighting3DSettings(raw: unknown): Lighting3DSettings {
+  const defaults = initLighting3DSettings()
+  const source = (raw !== null && typeof raw === 'object'
+    ? raw
+    : {}) as Partial<Lighting3DSettings>
+
+  return {
+    showCurtain: toBoolean(source.showCurtain, defaults.showCurtain),
+    showBoundsOverlay: toBoolean(
+      source.showBoundsOverlay,
+      defaults.showBoundsOverlay
+    ),
+    environmentFog: clampNumber(
+      toNumber(source.environmentFog, defaults.environmentFog),
+      0,
+      1
+    ),
+    roomEnabled: toBoolean(source.roomEnabled, defaults.roomEnabled),
+    roomWidthFt: clampNumber(toNumber(source.roomWidthFt, defaults.roomWidthFt), 5, 400),
+    roomDepthFt: clampNumber(toNumber(source.roomDepthFt, defaults.roomDepthFt), 5, 400),
+    roomHeightFt: clampNumber(toNumber(source.roomHeightFt, defaults.roomHeightFt), 5, 120),
+  }
 }
 
 export function initDmxState(): DmxState {
@@ -73,6 +198,9 @@ export function initDmxState(): DmxState {
     activeFixture: null,
     activeUniverse: 1,
     activeSubFixture: null,
+    moverGroupByFixtureId: {},
+    stage: initStageDimensions(),
+    lighting3d: initLighting3DSettings(),
     led: initLedState(),
   }
 }
@@ -122,6 +250,265 @@ function clampUniverse(value: number): number {
   return Math.min(DMX_MAX_UNIVERSES, Math.max(1, Math.round(value)))
 }
 
+function defaultFixtureAxisPos(axis: 'x' | 'y' | 'z'): number {
+  return axis === 'z' ? 1 : 0.5
+}
+
+function normalizeFixtureRotationAxis(value: unknown): number {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) {
+    return 0
+  }
+
+  const wrapped = ((numeric + 180) % 360 + 360) % 360 - 180
+  return wrapped === -180 ? 180 : wrapped
+}
+
+function normalizeFixtureRotation(rotation: unknown): FixtureRotation {
+  const source = (rotation !== null && typeof rotation === 'object'
+    ? rotation
+    : {}) as {
+    x?: unknown
+    y?: unknown
+    z?: unknown
+  }
+
+  const defaults = initFixtureRotation()
+  return {
+    x: normalizeFixtureRotationAxis(source.x ?? defaults.x),
+    y: normalizeFixtureRotationAxis(source.y ?? defaults.y),
+    z: normalizeFixtureRotationAxis(source.z ?? defaults.z),
+  }
+}
+
+function ensureFixtureRotation(fixture: Fixture) {
+  fixture.rotation = normalizeFixtureRotation(fixture.rotation)
+}
+
+function ensureFixtureId(fixture: Fixture): string {
+  if (typeof fixture.id === 'string' && fixture.id.trim().length > 0) {
+    return fixture.id
+  }
+  fixture.id = nanoid()
+  return fixture.id
+}
+
+function getDefaultMoverGroupName(
+  fixture: Fixture,
+  fixtureType: FixtureType | undefined
+): string {
+  const firstFixtureGroup = fixture.groups.find((group) => group.trim().length > 0)
+  if (firstFixtureGroup !== undefined) {
+    return firstFixtureGroup
+  }
+
+  const firstTypeGroup = fixtureType?.groups.find((group) => group.trim().length > 0)
+  if (firstTypeGroup !== undefined) {
+    return firstTypeGroup
+  }
+
+  return fixtureType?.name?.trim() || 'Mover Group'
+}
+
+function clampDmxValue(value: number, fallback: number): number {
+  if (!Number.isFinite(value)) return fallback
+  return Math.min(DMX_MAX_VALUE, Math.max(DMX_MIN_VALUE, Math.round(value)))
+}
+
+function normalizeMoverCalibration(calibration: unknown) {
+  const defaults = initMoverCalibration()
+  const source = (calibration !== null && typeof calibration === 'object'
+    ? calibration
+    : {}) as {
+    pan?: {
+      min?: unknown
+      max?: unknown
+      front?: unknown
+      back?: unknown
+      home?: unknown
+      turns?: unknown
+      invert?: unknown
+    }
+    tilt?: {
+      min?: unknown
+      max?: unknown
+      down?: unknown
+      forward?: unknown
+      up?: unknown
+      home?: unknown
+      invert?: unknown
+    }
+  }
+
+  const rawValues = [
+    Number(source.pan?.min),
+    Number(source.pan?.max),
+    Number(source.pan?.front),
+    Number(source.pan?.back),
+    Number(source.pan?.home),
+    Number(source.tilt?.min),
+    Number(source.tilt?.max),
+    Number(source.tilt?.down),
+    Number(source.tilt?.forward),
+    Number(source.tilt?.up),
+    Number(source.tilt?.home),
+  ].filter((value) => Number.isFinite(value))
+
+  const isLegacyNormalized =
+    rawValues.length > 0 && rawValues.every((value) => value >= 0 && value <= 1)
+
+  const toDmx = (value: unknown, fallback: number) => {
+    const numeric = Number(value)
+    if (!Number.isFinite(numeric)) return fallback
+    return clampDmxValue(
+      isLegacyNormalized ? numeric * DMX_MAX_VALUE : numeric,
+      fallback
+    )
+  }
+
+  const turnsRaw = Number(source.pan?.turns)
+  const turns = Number.isFinite(turnsRaw)
+    ? Math.max(MOVER_MIN_TURNS, Math.min(MOVER_MAX_TURNS, turnsRaw))
+    : defaults.pan.turns
+
+  return {
+    pan: {
+      min: toDmx(source.pan?.min, defaults.pan.min),
+      max: toDmx(source.pan?.max, defaults.pan.max),
+      front: toDmx(source.pan?.front, defaults.pan.front),
+      back: toDmx(source.pan?.back, defaults.pan.back),
+      home: toDmx(source.pan?.home, defaults.pan.home),
+      turns,
+      invert: source.pan?.invert === true,
+    },
+    tilt: {
+      min: toDmx(source.tilt?.min, defaults.tilt.min),
+      max: toDmx(source.tilt?.max, defaults.tilt.max),
+      down: toDmx(source.tilt?.down, defaults.tilt.down),
+      forward: toDmx(source.tilt?.forward, defaults.tilt.forward),
+      up: toDmx(source.tilt?.up, defaults.tilt.up),
+      home: toDmx(source.tilt?.home, defaults.tilt.home),
+      invert: source.tilt?.invert === true,
+    },
+  }
+}
+
+function normalizeMoverBounds(bounds: unknown): MoverBounds {
+  const defaults = initMoverBounds()
+  const source = (bounds !== null && typeof bounds === 'object'
+    ? bounds
+    : {}) as {
+    topLeft?: { pan?: unknown; tilt?: unknown }
+    topRight?: { pan?: unknown; tilt?: unknown }
+    bottomLeft?: { pan?: unknown; tilt?: unknown }
+    bottomRight?: { pan?: unknown; tilt?: unknown }
+  }
+
+  const rawValues = [
+    Number(source.topLeft?.pan),
+    Number(source.topLeft?.tilt),
+    Number(source.topRight?.pan),
+    Number(source.topRight?.tilt),
+    Number(source.bottomLeft?.pan),
+    Number(source.bottomLeft?.tilt),
+    Number(source.bottomRight?.pan),
+    Number(source.bottomRight?.tilt),
+  ].filter((value) => Number.isFinite(value))
+
+  const isLegacyNormalized =
+    rawValues.length > 0 && rawValues.every((value) => value >= 0 && value <= 1)
+
+  const toDmx = (value: unknown, fallback: number) => {
+    const numeric = Number(value)
+    if (!Number.isFinite(numeric)) return fallback
+    return clampDmxValue(
+      isLegacyNormalized ? numeric * DMX_MAX_VALUE : numeric,
+      fallback
+    )
+  }
+
+  return {
+    topLeft: {
+      pan: toDmx(source.topLeft?.pan, defaults.topLeft.pan),
+      tilt: toDmx(source.topLeft?.tilt, defaults.topLeft.tilt),
+    },
+    topRight: {
+      pan: toDmx(source.topRight?.pan, defaults.topRight.pan),
+      tilt: toDmx(source.topRight?.tilt, defaults.topRight.tilt),
+    },
+    bottomLeft: {
+      pan: toDmx(source.bottomLeft?.pan, defaults.bottomLeft.pan),
+      tilt: toDmx(source.bottomLeft?.tilt, defaults.bottomLeft.tilt),
+    },
+    bottomRight: {
+      pan: toDmx(source.bottomRight?.pan, defaults.bottomRight.pan),
+      tilt: toDmx(source.bottomRight?.tilt, defaults.bottomRight.tilt),
+    },
+  }
+}
+
+function normalizeMoverMountOrientation(
+  orientation: unknown
+): MoverMountOrientation {
+  return orientation === 'inverted' ? 'inverted' : 'upright'
+}
+function ensureMoverCalibration(fixtureType: FixtureType) {
+  fixtureType.model = normalizeFixtureModelConfig(fixtureType.model, fixtureType)
+
+  if (isMoverFixtureType(fixtureType)) {
+    fixtureType.moverCalibration = normalizeMoverCalibration(
+      fixtureType.moverCalibration
+    )
+  }
+}
+
+function ensureMoverGroupForFixture(state: DmxState, fixture: Fixture) {
+  const fixtureType = state.fixtureTypesByID[fixture.type]
+  if (fixtureType === undefined || !isMoverFixtureType(fixtureType)) {
+    return
+  }
+
+  const fixtureId = ensureFixtureId(fixture)
+  if (state.moverGroupByFixtureId[fixtureId] === undefined) {
+    state.moverGroupByFixtureId[fixtureId] = getDefaultMoverGroupName(
+      fixture,
+      fixtureType
+    )
+  }
+}
+
+function syncMoverState(state: DmxState) {
+  const validFixtureIds = new Set<string>()
+
+  for (const fixtureTypeId of state.fixtureTypes) {
+    const fixtureType = state.fixtureTypesByID[fixtureTypeId]
+    if (fixtureType !== undefined) {
+      ensureMoverCalibration(fixtureType)
+    }
+  }
+
+  for (const fixture of state.universe) {
+    const fixtureId = ensureFixtureId(fixture)
+    validFixtureIds.add(fixtureId)
+    ensureFixtureRotation(fixture)
+
+    if (fixture.moverBounds !== undefined) {
+      fixture.moverBounds = normalizeMoverBounds(fixture.moverBounds)
+    }
+    fixture.moverMountOrientation = normalizeMoverMountOrientation(
+      fixture.moverMountOrientation
+    )
+
+    ensureMoverGroupForFixture(state, fixture)
+  }
+
+  for (const fixtureId of Object.keys(state.moverGroupByFixtureId)) {
+    if (!validFixtureIds.has(fixtureId)) {
+      delete state.moverGroupByFixtureId[fixtureId]
+    }
+  }
+}
+
 function incrementNumberSuffix(name: string): string {
   const trimmed = name.trim()
   if (trimmed.length === 0) return '2'
@@ -161,6 +548,14 @@ export const dmxSlice = createSlice({
         ...payload,
         universe: clampUniverse(payload.universe ?? state.activeUniverse),
       }
+      if (fixture.moverBounds !== undefined) {
+        fixture.moverBounds = normalizeMoverBounds(fixture.moverBounds)
+      }
+      fixture.moverMountOrientation = normalizeMoverMountOrientation(
+        fixture.moverMountOrientation
+      )
+      ensureFixtureRotation(fixture)
+      ensureFixtureId(fixture)
       state.universe.push(fixture)
       state.universe.sort((a, b) => {
         if (a.universe === b.universe) return a.ch - b.ch
@@ -169,10 +564,12 @@ export const dmxSlice = createSlice({
       state.activeUniverse = fixture.universe
       state.activeFixture = state.universe.findIndex(
         (other) =>
-          other.universe === fixture.universe &&
-          other.ch === fixture.ch &&
-          other.type === fixture.type
+          other.id === fixture.id ||
+          (other.universe === fixture.universe &&
+            other.ch === fixture.ch &&
+            other.type === fixture.type)
       )
+      syncMoverState(state)
     },
     setActiveUniverse: (state, { payload }: PayloadAction<number>) => {
       state.activeUniverse = clampUniverse(payload)
@@ -185,18 +582,26 @@ export const dmxSlice = createSlice({
     },
     removeFixture: (state, { payload }: PayloadAction<number>) => {
       state.activeFixture = null
+      const fixture = state.universe[payload]
       state.universe.splice(payload, 1)
+      if (fixture?.id) {
+        delete state.moverGroupByFixtureId[fixture.id]
+      }
+      syncMoverState(state)
     },
     setFixtureWindow: (
       state,
       { payload }: PayloadAction<SetFixtureWindowPayload>
     ) => {
       const window = state.universe[payload.index].window
-      if (window.x) {
-        window.x.pos = payload.x
+      if (window.x && payload.x !== undefined) {
+        window.x.pos = clampNormalized(payload.x)
       }
-      if (window.y) {
-        window.y.pos = payload.y
+      if (window.y && payload.y !== undefined) {
+        window.y.pos = clampNormalized(payload.y)
+      }
+      if (window.z && payload.z !== undefined) {
+        window.z.pos = clampNormalized(payload.z)
       }
     },
     setFixtureWindowEnabled: (
@@ -206,7 +611,7 @@ export const dmxSlice = createSlice({
       const window = state.universe[payload.index].window
       if (payload.isEnabled) {
         window[payload.dimension] = {
-          pos: 0.5,
+          pos: defaultFixtureAxisPos(payload.dimension),
           width: 0,
         }
       } else {
@@ -218,18 +623,71 @@ export const dmxSlice = createSlice({
       { payload }: PayloadAction<IncrementFixtureWindowPayload>
     ) => {
       const window = state.universe[payload.index].window
-      if (window.x) {
+      if (window.x && payload.dWidth !== undefined) {
         window.x.width = clampNormalized(window.x.width + payload.dWidth)
       }
-      if (window.y) {
+      if (window.y && payload.dHeight !== undefined) {
         window.y.width = clampNormalized(window.y.width + payload.dHeight)
       }
+      if (window.z && payload.dDepth !== undefined) {
+        window.z.width = clampNormalized(window.z.width + payload.dDepth)
+      }
+    },
+    setFixtureRotation: (
+      state,
+      { payload }: PayloadAction<SetFixtureRotationPayload>
+    ) => {
+      const fixture = state.universe[payload.index]
+      if (fixture === undefined) {
+        return
+      }
+
+      const current = normalizeFixtureRotation(fixture.rotation)
+      fixture.rotation = {
+        x:
+          payload.x === undefined
+            ? current.x
+            : normalizeFixtureRotationAxis(payload.x),
+        y:
+          payload.y === undefined
+            ? current.y
+            : normalizeFixtureRotationAxis(payload.y),
+        z:
+          payload.z === undefined
+            ? current.z
+            : normalizeFixtureRotationAxis(payload.z),
+      }
+    },
+    setStageUnits: (state, { payload }: PayloadAction<StageUnit>) => {
+      state.stage = normalizeStageDimensions({
+        ...state.stage,
+        unit: payload,
+      })
+    },
+    setStageDimensions: (
+      state,
+      { payload }: PayloadAction<SetStageDimensionsPayload>
+    ) => {
+      state.stage = normalizeStageDimensions({
+        ...state.stage,
+        ...payload,
+      })
+    },
+    setLighting3DSettings: (
+      state,
+      { payload }: PayloadAction<SetLighting3DSettingsPayload>
+    ) => {
+      state.lighting3d = normalizeLighting3DSettings({
+        ...state.lighting3d,
+        ...payload,
+      })
     },
     addActiveFixtureTypeGroup: (state, { payload }: PayloadAction<string>) => {
       modifyActiveFixtureType(
         state,
         (ft) => (ft.groups = add_noDuplicates(payload, ft.groups))
       )
+      syncMoverState(state)
     },
     removeActiveFixtureTypeGroup: (
       state,
@@ -239,18 +697,23 @@ export const dmxSlice = createSlice({
         state,
         (ft) => (ft.groups = remove_noDuplicates(payload, ft.groups))
       )
+      syncMoverState(state)
     },
     setEditedFixture: (state, { payload }: PayloadAction<null | string>) => {
       state.activeFixtureType = payload
       state.activeSubFixture = null
     },
     addFixtureType: (state, { payload }: PayloadAction<FixtureType>) => {
+      ensureMoverCalibration(payload)
       state.fixtureTypes.push(payload.id)
       state.fixtureTypesByID[payload.id] = payload
       state.activeFixtureType = payload.id
+      syncMoverState(state)
     },
     updateFixtureType: (state, { payload }: PayloadAction<FixtureType>) => {
+      ensureMoverCalibration(payload)
       state.fixtureTypesByID[payload.id] = payload
+      syncMoverState(state)
     },
     addFixtureChannel: (
       state,
@@ -264,6 +727,7 @@ export const dmxSlice = createSlice({
       state.fixtureTypesByID[payload.fixtureID].channels.push(
         payload.newChannel
       )
+      syncMoverState(state)
     },
     editFixtureChannel: (
       state,
@@ -277,6 +741,7 @@ export const dmxSlice = createSlice({
     ) => {
       state.fixtureTypesByID[payload.fixtureID].channels[payload.channelIndex] =
         payload.newChannel
+      syncMoverState(state)
     },
     removeFixtureChannel: (
       state,
@@ -291,6 +756,7 @@ export const dmxSlice = createSlice({
         payload.channelIndex,
         1
       )
+      syncMoverState(state)
     },
     reorderFixtureChannel: (
       state,
@@ -303,16 +769,18 @@ export const dmxSlice = createSlice({
       }>
     ) => {
       const fixture = state.fixtureTypesByID[payload.fixtureID]
-      let element = fixture.channels.splice(payload.fromIndex, 1)[0]
+      const element = fixture.channels.splice(payload.fromIndex, 1)[0]
       fixture.channels.splice(payload.toIndex, 0, element)
+      syncMoverState(state)
     },
     deleteFixtureType: (state, { payload }: PayloadAction<string>) => {
-      let index = state.fixtureTypes.indexOf(payload)
+      const index = state.fixtureTypes.indexOf(payload)
       if (index !== -1) {
         state.fixtureTypes.splice(index, 1)
       }
       delete state.fixtureTypesByID[payload]
       state.activeFixtureType = null
+      syncMoverState(state)
     },
     addColorMapColor: (
       state,
@@ -450,6 +918,9 @@ export const dmxSlice = createSlice({
                 y: sourceSubFixture.relative_window.y
                   ? { ...sourceSubFixture.relative_window.y }
                   : undefined,
+                z: sourceSubFixture.relative_window.z
+                  ? { ...sourceSubFixture.relative_window.z }
+                  : undefined,
               }
             : undefined,
         }
@@ -464,6 +935,54 @@ export const dmxSlice = createSlice({
     },
     setActiveSubFixture: (state, { payload }: PayloadAction<number | null>) => {
       state.activeSubFixture = payload
+    },
+    setMoverGroupForFixture: (
+      state,
+      {
+        payload,
+      }: PayloadAction<{ fixtureId: string; groupName: string }>
+    ) => {
+      const trimmedGroupName = payload.groupName.trim()
+      if (trimmedGroupName.length > 0) {
+        state.moverGroupByFixtureId[payload.fixtureId] = trimmedGroupName
+      } else {
+        delete state.moverGroupByFixtureId[payload.fixtureId]
+        const fixture = state.universe.find((candidate) => candidate.id === payload.fixtureId)
+        if (fixture !== undefined) {
+          ensureMoverGroupForFixture(state, fixture)
+        }
+      }
+    },
+    setFixtureMoverBounds: (
+      state,
+      {
+        payload,
+      }: PayloadAction<{ fixtureId: string; moverBounds: MoverBounds }>
+    ) => {
+      const fixture = state.universe.find((candidate) => candidate.id === payload.fixtureId)
+      if (fixture === undefined) {
+        return
+      }
+
+      fixture.moverBounds = normalizeMoverBounds(payload.moverBounds)
+    },
+    setFixtureMoverMountOrientation: (
+      state,
+      {
+        payload,
+      }: PayloadAction<{
+        fixtureId: string
+        orientation: MoverMountOrientation
+      }>
+    ) => {
+      const fixture = state.universe.find((candidate) => candidate.id === payload.fixtureId)
+      if (fixture === undefined) {
+        return
+      }
+
+      fixture.moverMountOrientation = normalizeMoverMountOrientation(
+        payload.orientation
+      )
     },
     assignChannelToSubFixture: (
       state,
@@ -552,6 +1071,10 @@ export const {
   setFixtureWindow,
   setFixtureWindowEnabled,
   incrementFixtureWindow,
+  setFixtureRotation,
+  setStageUnits,
+  setStageDimensions,
+  setLighting3DSettings,
   addFixture,
   removeFixture,
   addFixtureType,
@@ -570,6 +1093,9 @@ export const {
   duplicateSubFixture,
   removeSubFixture,
   setActiveSubFixture,
+  setMoverGroupForFixture,
+  setFixtureMoverBounds,
+  setFixtureMoverMountOrientation,
   assignChannelToSubFixture,
   removeChannelFromSubFixtures,
   replaceActiveFixtureTypeSubFixture,
@@ -583,4 +1109,19 @@ export const {
 } = dmxSlice.actions
 
 export default dmxSlice.reducer
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

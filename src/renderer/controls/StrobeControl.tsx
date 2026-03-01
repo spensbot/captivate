@@ -48,6 +48,8 @@ export default function StrobeControl({ splitIndex }: { splitIndex: number }) {
   const dispatch = useDispatch()
   const baseParams = useBaseParams(splitIndex)
 
+  if (baseParams.strobe === undefined) return null
+
   const setMask = (param: StrobeMaskParam, value: number) => {
     dispatch(
       setBaseParams({

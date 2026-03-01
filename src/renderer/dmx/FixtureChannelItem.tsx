@@ -119,6 +119,8 @@ function getInfo(ch: FixtureChannel): string {
       return getCustomColorChannelName(ch.color)
     case 'colorMap':
       return `Color Map`
+    case 'goboMap':
+      return `Gobo Map`
     case 'master':
       return `Master`
     case 'strobe':
@@ -134,6 +136,8 @@ function getSubInfo(ch: FixtureChannel): string | null {
       return ch.isFine ? 'fine' : `${ch.min} - ${ch.max}`
     case 'colorMap':
       return `${ch.colors.length} colors`
+    case 'goboMap':
+      return `${ch.gobos.length} gobos`
     case 'strobe':
       return `Solid: ${ch.default_solid} | Strobe: ${ch.default_strobe}`
     case 'master':

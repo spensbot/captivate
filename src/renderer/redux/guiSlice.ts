@@ -10,6 +10,18 @@ import {
 
 export type { Page }
 
+export interface MoverCalibrationOverride {
+  fixtureId: string
+  panDmx: number
+  tiltDmx: number
+}
+
+export interface ColorMapCalibrationOverride {
+  fixtureTypeId: string
+  channelIndex: number
+  dmxValue: number
+}
+
 export interface GuiState {
   activePage: Page
   blackout: boolean
@@ -21,6 +33,8 @@ export interface GuiState {
   newProjectDialog: boolean
   ledEnabled: boolean
   videoEnabled: boolean
+  moverCalibrationOverride: MoverCalibrationOverride | null
+  colorMapCalibrationOverride: ColorMapCalibrationOverride | null
 }
 
 export function initGuiState(): GuiState {
@@ -35,6 +49,8 @@ export function initGuiState(): GuiState {
     newProjectDialog: false,
     ledEnabled: false,
     videoEnabled: false,
+    moverCalibrationOverride: null,
+    colorMapCalibrationOverride: null,
   }
 }
 
@@ -72,6 +88,24 @@ export const guiSlice = createSlice({
     toggleVideoEnabled: (state, _: PayloadAction<undefined>) => {
       state.videoEnabled = !state.videoEnabled
     },
+    setMoverCalibrationOverride: (
+      state,
+      { payload }: PayloadAction<MoverCalibrationOverride>
+    ) => {
+      state.moverCalibrationOverride = payload
+    },
+    clearMoverCalibrationOverride: (state, _: PayloadAction<undefined>) => {
+      state.moverCalibrationOverride = null
+    },
+    setColorMapCalibrationOverride: (
+      state,
+      { payload }: PayloadAction<ColorMapCalibrationOverride>
+    ) => {
+      state.colorMapCalibrationOverride = payload
+    },
+    clearColorMapCalibrationOverride: (state, _: PayloadAction<undefined>) => {
+      state.colorMapCalibrationOverride = null
+    },
   },
 })
 
@@ -86,7 +120,12 @@ export const {
   setNewProjectDialog,
   toggleLedEnabled,
   toggleVideoEnabled,
+  setMoverCalibrationOverride,
+  clearMoverCalibrationOverride,
+  setColorMapCalibrationOverride,
+  clearColorMapCalibrationOverride,
 } = guiSlice.actions
 
 export default guiSlice.reducer
+
 

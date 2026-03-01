@@ -18,18 +18,19 @@ import StrobeIcon from '@mui/icons-material/LightMode'
 import RandomizeIcon from '@mui/icons-material/Shuffle'
 import PositionIcon from '@mui/icons-material/PictureInPicture'
 import axisIconSrc from '../../../assets/axis.svg'
-import { getCustomChannels } from 'renderer/redux/dmxSlice'
+import { getAllParamKeys, getCustomChannels } from 'renderer/redux/dmxSlice'
 
 interface Props {
   splitIndex: number
 }
 
-type ParamBundle = 'axis' | 'position'
-const paramBundleList: ParamBundle[] = ['position', 'axis']
+type ParamBundle = 'axis' | 'position' | 'depth'
+const paramBundleList: ParamBundle[] = ['position', 'depth', 'axis']
 
 export const paramBundles: { [key in ParamBundle]: DefaultParam[] } = {
-  axis: ['xAxis', 'yAxis', 'xMirror'],
+  axis: ['xAxis', 'yAxis', 'xMirror', 'moverSpread', 'moverMirrorX', 'moverMirrorY', 'moverMode'],
   position: ['x', 'y', 'width', 'height'],
+  depth: ['z', 'depth'],
 }
 
 function Axis() {
@@ -42,6 +43,7 @@ const icons: {
   strobe: () => <StrobeIcon />,
   randomize: () => <RandomizeIcon />,
   position: () => <PositionIcon />,
+  depth: () => <PositionIcon />,
   intensity: () => <IntensityIcon />,
   axis: Axis,
 }
@@ -53,12 +55,17 @@ function optionDisplayName(
 ): string {
   if (option === 'axis') return 'Pan/Tilt'
   if (option === 'position') return 'Position'
+  if (option === 'depth') return 'Z Depth'
   return paramDisplayName(option)
 }
+
 function getOptions(
-  custom_channels: Set<string>,
-  baseParams: Params
+  customChannels: Set<string>,
+  baseParams: Params,
+  allParamKeys: string[]
 ): (DefaultParam | ParamBundle | string)[] {
+  const defaultParamSet = new Set(defaultParamsList as string[])
+
   const paramOptions: (DefaultParam | ParamBundle | string)[] =
     defaultParamsList.filter((param) => {
       const isActive = baseParams[param] !== undefined
@@ -67,6 +74,7 @@ function getOptions(
       )
       return !isActive && !isInBundle && !(param === 'intensity')
     })
+
   const paramBundleOptions = paramBundleList.filter((pb) => {
     const isActive = paramBundles[pb].reduce(
       (accum, param) => accum && baseParams[param] !== undefined,
@@ -74,11 +82,22 @@ function getOptions(
     )
     return !isActive
   })
-  const customParamOptions = Array.from(custom_channels).filter(
-    (cpo) => baseParams[cpo] === undefined
+
+  const customParamOptions = Array.from(customChannels).filter(
+    (option) => baseParams[option] === undefined
   )
 
-  return paramOptions.concat(paramBundleOptions).concat(customParamOptions)
+  const dynamicParamOptions = allParamKeys.filter(
+    (option) =>
+      !defaultParamSet.has(option) &&
+      !customChannels.has(option) &&
+      baseParams[option] === undefined
+  )
+
+  return paramOptions
+    .concat(paramBundleOptions)
+    .concat(customParamOptions)
+    .concat(dynamicParamOptions)
 }
 
 export default function ParamAddButton({ splitIndex }: Props) {
@@ -88,18 +107,20 @@ export default function ParamAddButton({ splitIndex }: Props) {
   const hasAxis = useDmxSelector(
     (dmx) =>
       dmx.fixtureTypes.find(
-        (ftID) =>
-          dmx.fixtureTypesByID[ftID].channels.find(
-            (ch) => ch.type === 'axis'
+        (fixtureTypeId) =>
+          dmx.fixtureTypesByID[fixtureTypeId].channels.find(
+            (channel) => channel.type === 'axis'
           ) !== undefined
       ) !== undefined
   )
   const customChannels = useDmxSelector((dmx) => getCustomChannels(dmx))
+  const allParamKeys = useDmxSelector((dmx) => getAllParamKeys(dmx))
 
-  const unuseableOptions: Set<DefaultParam | ParamBundle | string> = new Set()
-  if (!hasAxis) unuseableOptions.add('axis')
-  const options = getOptions(customChannels, baseParams).filter(
-    (option) => !unuseableOptions.has(option)
+  const unusableOptions: Set<DefaultParam | ParamBundle | string> = new Set()
+  if (!hasAxis) unusableOptions.add('axis')
+
+  const options = getOptions(customChannels, baseParams, allParamKeys).filter(
+    (option) => !unusableOptions.has(option)
   )
 
   return (
@@ -123,13 +144,17 @@ export default function ParamAddButton({ splitIndex }: Props) {
                 onClick={(e) => {
                   e.preventDefault()
                   const newParams: Params = {}
-                  if (option === 'axis' || option === 'position') {
+                  if (
+                    option === 'axis' ||
+                    option === 'position' ||
+                    option === 'depth'
+                  ) {
                     for (const param of paramBundles[option]) {
                       newParams[param] = initialParams[param] ?? 0
                     }
                   } else {
-                    let _initialParams = initialParams as Params
-                    newParams[option] = _initialParams[option] ?? 0
+                    const initialParamDefaults = initialParams as Params
+                    newParams[option] = initialParamDefaults[option] ?? 0
                   }
                   dispatch(
                     setBaseParams({
@@ -137,6 +162,7 @@ export default function ParamAddButton({ splitIndex }: Props) {
                       params: newParams,
                     })
                   )
+                  setIsOpen(false)
                 }}
               >
                 {icon ? icon({}) : null}

@@ -1,20 +1,27 @@
-import { Window2D_t } from '../../shared/window'
+import { Window2D_t, WindowAxis } from '../../shared/window'
 
 interface Props {
   window2D: Window2D_t
   onClick?: (e: React.MouseEvent) => void
+  horizontalAxis?: WindowAxis
+  verticalAxis?: WindowAxis
 }
 
 const thickness = 1
 const radius = 0.5
 const color = '#fff'
 
-export default function Window2D2({ window2D, onClick }: Props) {
-  const x = window2D.x?.pos ?? 0.5
-  let width = window2D.x?.width ?? 0
+export default function Window2D2({
+  window2D,
+  onClick,
+  horizontalAxis = 'x',
+  verticalAxis = 'y',
+}: Props) {
+  const x = window2D[horizontalAxis]?.pos ?? (horizontalAxis === 'z' ? 1 : 0.5)
+  let width = window2D[horizontalAxis]?.width ?? 0
   width += 0.05
-  const y = window2D.y?.pos ?? 0.5
-  let height = window2D.y?.width ?? 0
+  const y = window2D[verticalAxis]?.pos ?? (verticalAxis === 'z' ? 1 : 0.5)
+  let height = window2D[verticalAxis]?.width ?? 0
   height += 0.05
 
   const styles: { [key: string]: React.CSSProperties } = {
@@ -98,8 +105,8 @@ export default function Window2D2({ window2D, onClick }: Props) {
   return (
     <>
       <div onClick={onClick} style={styles.root}></div>
-      {window2D.x ? X() : null}
-      {window2D.y ? Y() : null}
+      {window2D[horizontalAxis] ? X() : null}
+      {window2D[verticalAxis] ? Y() : null}
     </>
   )
 }

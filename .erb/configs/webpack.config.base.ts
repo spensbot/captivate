@@ -2,6 +2,7 @@
  * Base webpack config used across other specific configs
  */
 
+import path from 'path'
 import webpack from 'webpack'
 import webpackPaths from './webpack.paths'
 import { dependencies as externals } from '../../release/app/package.json'
@@ -41,6 +42,13 @@ const configuration: webpack.Configuration = {
   resolve: {
     extensions: ['.js', '.jsx', '.json', '.ts', '.tsx'],
     modules: [webpackPaths.srcPath, 'node_modules'],
+    // Force all imports to share one Three.js module instance.
+    alias: {
+      three$: path.resolve(
+        webpackPaths.rootPath,
+        'node_modules/three/build/three.module.js'
+      ),
+    },
   },
 
   plugins: [

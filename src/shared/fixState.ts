@@ -4,7 +4,7 @@ import {
   SliderControlOptions,
   normalizeSliderOptionsForAction,
 } from 'renderer/redux/deviceState'
-import { DmxState } from 'renderer/redux/dmxSlice'
+import { DmxState, normalizeLighting3DSettings } from 'renderer/redux/dmxSlice'
 import { initLedState } from 'renderer/redux/ledState'
 import { CleanReduxState } from '../renderer/redux/store'
 import { MixerState } from 'renderer/redux/mixerSlice'
@@ -12,20 +12,32 @@ import { ColorChannel, inferColorKind } from './dmxColors'
 import {
   DmxValue,
   FixtureChannel,
+  FixtureRotation,
   initChannelCustom,
+  initFixtureRotation,
+  initMoverCalibration,
+  initMoverBounds,
+  isMoverFixtureType,
+  normalizeFixtureModelConfig,
+  DMX_MIN_VALUE,
+  DMX_MAX_VALUE,
   DMX_MAX_UNIVERSES,
+  MOVER_MIN_TURNS,
+  MOVER_MAX_TURNS,
+  MoverMountOrientation,
 } from './dmxFixtures'
+import { normalizeStageDimensions } from './stage'
 import { Modulator } from './modulation'
 import { normalizeLfoShape } from './oscillator'
 import { Modulation, Params } from './params'
 import { RandomizerOptions } from './randomizer'
+import { nanoid } from 'nanoid'
 import {
   LightScenes_t,
   LightScene_t,
   SplitScene_t,
   VisualScenes_t,
 } from './Scenes'
-
 type Deprecated_ChannelOther = {
   type: 'other'
   default: DmxValue
@@ -58,13 +70,288 @@ function clampUniverse(value: number, maxUniverse: number = DMX_MAX_UNIVERSES) {
   return Math.min(Math.max(1, Math.round(value)), maxUniverse)
 }
 
+function ensureFixtureId(fixture: DmxState['universe'][number]): string {
+  if (typeof fixture.id === 'string' && fixture.id.trim().length > 0) {
+    return fixture.id
+  }
+  fixture.id = nanoid()
+  return fixture.id
+}
+
+function defaultMoverGroupName(
+  fixture: DmxState['universe'][number],
+  fixtureTypeName: string,
+  fixtureTypeGroups: string[]
+): string {
+  const fixtureGroup = fixture.groups.find((group) => group.trim().length > 0)
+  if (fixtureGroup !== undefined) {
+    return fixtureGroup
+  }
+
+  const fixtureTypeGroup = fixtureTypeGroups.find(
+    (group) => group.trim().length > 0
+  )
+  if (fixtureTypeGroup !== undefined) {
+    return fixtureTypeGroup
+  }
+
+  return fixtureTypeName.trim().length > 0 ? fixtureTypeName : 'Mover Group'
+}
+
+
+function normalizeMoverMountOrientation(
+  orientation: unknown
+): MoverMountOrientation {
+  return orientation === 'inverted' ? 'inverted' : 'upright'
+}
+
+function normalizeFixtureRotationAxis(value: unknown): number {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) {
+    return 0
+  }
+
+  const wrapped = ((numeric + 180) % 360 + 360) % 360 - 180
+  return wrapped === -180 ? 180 : wrapped
+}
+
+function normalizeFixtureRotation(rotation: unknown): FixtureRotation {
+  const source = (rotation !== null && typeof rotation === 'object'
+    ? rotation
+    : {}) as {
+    x?: unknown
+    y?: unknown
+    z?: unknown
+  }
+  const defaults = initFixtureRotation()
+
+  return {
+    x: normalizeFixtureRotationAxis(source.x ?? defaults.x),
+    y: normalizeFixtureRotationAxis(source.y ?? defaults.y),
+    z: normalizeFixtureRotationAxis(source.z ?? defaults.z),
+  }
+}
+function clampDmxValue(value: number, fallback: number): number {
+  if (!Number.isFinite(value)) return fallback
+  return Math.min(DMX_MAX_VALUE, Math.max(DMX_MIN_VALUE, Math.round(value)))
+}
+
+function normalizeMoverCalibrationValues(calibration: unknown) {
+  const defaults = initMoverCalibration()
+  const source = (calibration !== null && typeof calibration === 'object'
+    ? calibration
+    : {}) as {
+    pan?: {
+      min?: unknown
+      max?: unknown
+      front?: unknown
+      back?: unknown
+      home?: unknown
+      turns?: unknown
+      invert?: unknown
+    }
+    tilt?: {
+      min?: unknown
+      max?: unknown
+      down?: unknown
+      forward?: unknown
+      up?: unknown
+      home?: unknown
+      invert?: unknown
+    }
+    notes?: unknown
+  }
+
+  const rawValues = [
+    Number(source.pan?.min),
+    Number(source.pan?.max),
+    Number(source.pan?.front),
+    Number(source.pan?.back),
+    Number(source.pan?.home),
+    Number(source.tilt?.min),
+    Number(source.tilt?.max),
+    Number(source.tilt?.down),
+    Number(source.tilt?.forward),
+    Number(source.tilt?.up),
+    Number(source.tilt?.home),
+  ].filter((value) => Number.isFinite(value))
+
+  const isLegacyNormalized =
+    rawValues.length > 0 && rawValues.every((value) => value >= 0 && value <= 1)
+
+  const toDmx = (value: unknown, fallback: number) => {
+    const numeric = Number(value)
+    if (!Number.isFinite(numeric)) return fallback
+    return clampDmxValue(
+      isLegacyNormalized ? numeric * DMX_MAX_VALUE : numeric,
+      fallback
+    )
+  }
+
+  const turnsRaw = Number(source.pan?.turns)
+  const turns = Number.isFinite(turnsRaw)
+    ? Math.max(MOVER_MIN_TURNS, Math.min(MOVER_MAX_TURNS, turnsRaw))
+    : defaults.pan.turns
+
+  return {
+    pan: {
+      min: toDmx(source.pan?.min, defaults.pan.min),
+      max: toDmx(source.pan?.max, defaults.pan.max),
+      front: toDmx(source.pan?.front, defaults.pan.front),
+      back: toDmx(source.pan?.back, defaults.pan.back),
+      home: toDmx(source.pan?.home, defaults.pan.home),
+      turns,
+      invert: source.pan?.invert === true,
+    },
+    tilt: {
+      min: toDmx(source.tilt?.min, defaults.tilt.min),
+      max: toDmx(source.tilt?.max, defaults.tilt.max),
+      down: toDmx(source.tilt?.down, defaults.tilt.down),
+      forward: toDmx(source.tilt?.forward, defaults.tilt.forward),
+      up: toDmx(source.tilt?.up, defaults.tilt.up),
+      home: toDmx(source.tilt?.home, defaults.tilt.home),
+      invert: source.tilt?.invert === true,
+    },
+  }
+}
+
+function normalizeMoverBoundsValues(bounds: unknown) {
+  const defaults = initMoverBounds()
+  const source = (bounds !== null && typeof bounds === 'object'
+    ? bounds
+    : {}) as {
+    topLeft?: { pan?: unknown; tilt?: unknown }
+    topRight?: { pan?: unknown; tilt?: unknown }
+    bottomLeft?: { pan?: unknown; tilt?: unknown }
+    bottomRight?: { pan?: unknown; tilt?: unknown }
+  }
+
+  const rawValues = [
+    Number(source.topLeft?.pan),
+    Number(source.topLeft?.tilt),
+    Number(source.topRight?.pan),
+    Number(source.topRight?.tilt),
+    Number(source.bottomLeft?.pan),
+    Number(source.bottomLeft?.tilt),
+    Number(source.bottomRight?.pan),
+    Number(source.bottomRight?.tilt),
+  ].filter((value) => Number.isFinite(value))
+
+  const isLegacyNormalized =
+    rawValues.length > 0 && rawValues.every((value) => value >= 0 && value <= 1)
+
+  const toDmx = (value: unknown, fallback: number) => {
+    const numeric = Number(value)
+    if (!Number.isFinite(numeric)) return fallback
+    return clampDmxValue(
+      isLegacyNormalized ? numeric * DMX_MAX_VALUE : numeric,
+      fallback
+    )
+  }
+
+  return {
+    topLeft: {
+      pan: toDmx(source.topLeft?.pan, defaults.topLeft.pan),
+      tilt: toDmx(source.topLeft?.tilt, defaults.topLeft.tilt),
+    },
+    topRight: {
+      pan: toDmx(source.topRight?.pan, defaults.topRight.pan),
+      tilt: toDmx(source.topRight?.tilt, defaults.topRight.tilt),
+    },
+    bottomLeft: {
+      pan: toDmx(source.bottomLeft?.pan, defaults.bottomLeft.pan),
+      tilt: toDmx(source.bottomLeft?.tilt, defaults.bottomLeft.tilt),
+    },
+    bottomRight: {
+      pan: toDmx(source.bottomRight?.pan, defaults.bottomRight.pan),
+      tilt: toDmx(source.bottomRight?.tilt, defaults.bottomRight.tilt),
+    },
+  }
+}
+
 // Modify this function to fix any breaking state changes between upgrades
+function fixGuiState(gui: CleanReduxState['gui']) {
+  const _gui = gui as CleanReduxState['gui'] & {
+    moverCalibrationOverride?: unknown
+    colorMapCalibrationOverride?: unknown
+  }
+
+  const moverOverride = _gui.moverCalibrationOverride as
+    | {
+        fixtureId?: unknown
+        panDmx?: unknown
+        tiltDmx?: unknown
+      }
+    | null
+    | undefined
+
+  if (
+    moverOverride !== null &&
+    moverOverride !== undefined &&
+    typeof moverOverride.fixtureId === 'string' &&
+    Number.isFinite(Number(moverOverride.panDmx)) &&
+    Number.isFinite(Number(moverOverride.tiltDmx))
+  ) {
+    _gui.moverCalibrationOverride = {
+      fixtureId: moverOverride.fixtureId,
+      panDmx: clampDmxValue(Number(moverOverride.panDmx), DMX_MIN_VALUE),
+      tiltDmx: clampDmxValue(Number(moverOverride.tiltDmx), DMX_MIN_VALUE),
+    }
+  } else {
+    _gui.moverCalibrationOverride = null
+  }
+
+  const colorMapOverride = _gui.colorMapCalibrationOverride as
+    | {
+        fixtureTypeId?: unknown
+        channelIndex?: unknown
+        dmxValue?: unknown
+      }
+    | null
+    | undefined
+
+  if (
+    colorMapOverride !== null &&
+    colorMapOverride !== undefined &&
+    typeof colorMapOverride.fixtureTypeId === 'string' &&
+    Number.isFinite(Number(colorMapOverride.channelIndex)) &&
+    Number.isFinite(Number(colorMapOverride.dmxValue))
+  ) {
+    _gui.colorMapCalibrationOverride = {
+      fixtureTypeId: colorMapOverride.fixtureTypeId,
+      channelIndex: Math.max(0, Math.round(Number(colorMapOverride.channelIndex))),
+      dmxValue: clampDmxValue(Number(colorMapOverride.dmxValue), DMX_MIN_VALUE),
+    }
+  } else {
+    _gui.colorMapCalibrationOverride = null
+  }
+}
+
 export default function fixState(state: CleanReduxState): CleanReduxState {
+  fixGuiState(state.gui)
   fixLightScenes(state.control.light)
   fixVisualScenes(state.control.visual)
   fixDmxState(state.dmx)
   fixDeviceState(state.control.device)
   fixMixerState(state.mixer)
+
+  const selectedFixtureIndex = state.dmx.activeFixture
+  const selectedFixture =
+    selectedFixtureIndex !== null ? state.dmx.universe[selectedFixtureIndex] : undefined
+
+  if (
+    state.gui.moverCalibrationOverride !== null &&
+    selectedFixture?.id !== state.gui.moverCalibrationOverride.fixtureId
+  ) {
+    state.gui.moverCalibrationOverride = null
+  }
+
+  if (state.gui.colorMapCalibrationOverride !== null) {
+    const fixtureTypeId = state.gui.colorMapCalibrationOverride.fixtureTypeId
+    if (state.dmx.fixtureTypesByID[fixtureTypeId] === undefined) {
+      state.gui.colorMapCalibrationOverride = null
+    }
+  }
 
   return state
 }
@@ -132,6 +419,13 @@ export function fixLightScenes(light: LightScenes_t) {
     }
   }
 
+  for (const lightScene of lightScenes(light)) {
+    const maybeLegacyMover = lightScene as LightScene_t & { mover?: unknown }
+    if (Object.prototype.hasOwnProperty.call(maybeLegacyMover, 'mover')) {
+      delete maybeLegacyMover.mover
+    }
+  }
+
   for (const split of splits(light)) {
     if (Array.isArray(split.groups)) {
       const groups = split.groups as string[]
@@ -176,6 +470,7 @@ export function fixLightScenes(light: LightScenes_t) {
   }
   // Keep modulator split-mapping aligned with the number of split scenes.
   for (const lightScene of lightScenes(light)) {
+
     const splitCount = lightScene.splitScenes.length
 
     for (const modulator of lightScene.modulators) {
@@ -205,6 +500,13 @@ export function fixLightScenes(light: LightScenes_t) {
 export function fixVisualScenes(_visualScenes: VisualScenes_t) {}
 
 export function fixDmxState(dmx: DmxState) {
+  const maybeStageState = dmx as DmxState & { stage?: unknown }
+  maybeStageState.stage = normalizeStageDimensions(maybeStageState.stage)
+  const maybeLighting3DState = dmx as DmxState & { lighting3d?: unknown }
+  maybeLighting3DState.lighting3d = normalizeLighting3DSettings(
+    maybeLighting3DState.lighting3d
+  )
+
   // Swtich old mode channels to new custom channel
   for (const fixture of fixtureTypes(dmx)) {
     for (let i = 0; i < fixture.channels.length; i++) {
@@ -242,15 +544,28 @@ export function fixDmxState(dmx: DmxState) {
     }
   }
 
-  // Add groups
+  // Add groups + mover calibration defaults
   for (const fixtureType of fixtureTypes(dmx)) {
     if (!Array.isArray(fixtureType.groups)) {
       fixtureType.groups = []
+    }
+
+    fixtureType.model = normalizeFixtureModelConfig(
+      fixtureType.model,
+      fixtureType
+    )
+
+    if (isMoverFixtureType(fixtureType)) {
+      fixtureType.moverCalibration = normalizeMoverCalibrationValues(
+        fixtureType.moverCalibration
+      )
     }
   }
   for (const fixture of dmx.universe as (typeof dmx.universe[number] & {
     universe?: number
   })[]) {
+    ensureFixtureId(fixture)
+
     if (!Array.isArray(fixture.groups)) {
       fixture.groups = []
     }
@@ -258,6 +573,14 @@ export function fixDmxState(dmx: DmxState) {
       fixture.universe = 1
     }
     fixture.universe = clampUniverse(fixture.universe)
+
+    if (fixture.moverBounds !== undefined) {
+      fixture.moverBounds = normalizeMoverBoundsValues(fixture.moverBounds)
+    }
+    fixture.moverMountOrientation = normalizeMoverMountOrientation(
+      fixture.moverMountOrientation
+    )
+    fixture.rotation = normalizeFixtureRotation(fixture.rotation)
   }
 
   if ((dmx as DmxState & { activeUniverse?: number }).activeUniverse === undefined) {
@@ -274,6 +597,49 @@ export function fixDmxState(dmx: DmxState) {
     }
     return left.universe - right.universe
   })
+
+  if (
+    (dmx as DmxState & { moverGroupByFixtureId?: { [fixtureId: string]: string } })
+      .moverGroupByFixtureId === undefined
+  ) {
+    ;(
+      dmx as DmxState & {
+        moverGroupByFixtureId?: { [fixtureId: string]: string }
+      }
+    ).moverGroupByFixtureId = {}
+  }
+
+  const moverGroupByFixtureId =
+    (
+      dmx as DmxState & {
+        moverGroupByFixtureId?: { [fixtureId: string]: string }
+      }
+    ).moverGroupByFixtureId ?? {}
+
+  const validFixtureIds = new Set<string>()
+  for (const fixture of dmx.universe) {
+    const fixtureId = ensureFixtureId(fixture)
+    validFixtureIds.add(fixtureId)
+
+    const fixtureType = dmx.fixtureTypesByID[fixture.type]
+    if (fixtureType === undefined || !isMoverFixtureType(fixtureType)) continue
+
+    if (moverGroupByFixtureId[fixtureId] === undefined) {
+      moverGroupByFixtureId[fixtureId] = defaultMoverGroupName(
+        fixture,
+        fixtureType.name,
+        fixtureType.groups
+      )
+    }
+  }
+
+  for (const fixtureId of Object.keys(moverGroupByFixtureId)) {
+    if (!validFixtureIds.has(fixtureId)) {
+      delete moverGroupByFixtureId[fixtureId]
+    }
+  }
+
+  dmx.moverGroupByFixtureId = moverGroupByFixtureId
 
   if (
     dmx.activeFixture !== null &&
@@ -322,6 +688,28 @@ export function fixDmxState(dmx: DmxState) {
           color.kind = inferColorKind(color)
         }
       }
+    } else if (channel.type === 'goboMap') {
+      if (!Array.isArray(channel.gobos) || channel.gobos.length === 0) {
+        channel.gobos = [{ name: 'Open', max: 0 }]
+      }
+
+      for (let i = 0; i < channel.gobos.length; i++) {
+        const gobo = channel.gobos[i]
+        if (typeof gobo.name !== 'string' || gobo.name.trim().length === 0) {
+          gobo.name = `Gobo ${i + 1}`
+        }
+        if (!Number.isFinite(gobo.max)) {
+          gobo.max = 0
+        }
+      }
+
+      if (!Number.isFinite(channel.defaultIndex)) {
+        channel.defaultIndex = 0
+      }
+      channel.defaultIndex = Math.max(
+        0,
+        Math.min(channel.defaultIndex, channel.gobos.length - 1)
+      )
     }
   }
 
@@ -529,3 +917,4 @@ function splits(light: LightScenes_t) {
     .map((scene) => scene.splitScenes)
     .flat()
 }
+

@@ -5,9 +5,13 @@ export type Window = {
   width: Normalized
 }
 
+export type WindowAxis = 'x' | 'y' | 'z'
+export const windowAxes: WindowAxis[] = ['x', 'y', 'z']
+
 export type Window2D_t = {
   x?: Window
   y?: Window
+  z?: Window
 }
 
 function normalizedWindow(window?: Window): Window {
@@ -34,12 +38,14 @@ export function window2DToParentCoords(
   relative: Window2D_t,
   parent: Window2D_t
 ): Window2D_t {
-  return {
-    x: relative.x
-      ? windowToParentCoords(relative.x, normalizedWindow(parent.x))
-      : undefined,
-    y: relative.y
-      ? windowToParentCoords(relative.y, normalizedWindow(parent.y))
-      : undefined,
+  const result: Window2D_t = {}
+
+  for (const axis of windowAxes) {
+    const relativeAxis = relative[axis]
+    if (relativeAxis !== undefined) {
+      result[axis] = windowToParentCoords(relativeAxis, normalizedWindow(parent[axis]))
+    }
   }
+
+  return result
 }

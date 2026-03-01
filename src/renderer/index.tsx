@@ -24,9 +24,15 @@ import { ipc_setup, send_control_state } from './ipcHandler'
 import { ThemeProvider as MuiThemeProvider } from '@emotion/react'
 import { createTheme } from '@mui/material/styles'
 import { autoSave } from './autosave'
+import { loadFixtureLibraryFromDefaultPath } from './autosave'
 import { getUndoGroup, undoAction, redoAction } from './controls/UndoRedo'
 import { load } from './menu/SaveLoad'
 import { getSaveConfig } from 'shared/save'
+import { addFixtureType, updateFixtureType } from './redux/dmxSlice'
+import {
+  cloneFixtureType,
+  parseFixtureLibrary,
+} from '../shared/fixtureLibrary'
 
 const theme = themes.dark()
 const muiTheme = createTheme({
@@ -44,6 +50,8 @@ function parsePageFromLocation(): Page | null {
   const page = new URLSearchParams(window.location.search).get('page')
   const validPages: Page[] = [
     'Universe',
+    'Movers',
+    'Lighting3D',
     'Modulation',
     'Video',
     'Share',
@@ -62,6 +70,41 @@ const pageFromLocation = parsePageFromLocation()
 if (pageFromLocation) {
   store.dispatch(setActivePage(pageFromLocation))
 }
+
+async function autoLoadFixtureLibrary() {
+  // Only the primary window should perform startup fixture-library sync.
+  if (pageFromLocation !== null) {
+    return
+  }
+
+  try {
+    const serialized = await loadFixtureLibraryFromDefaultPath()
+    if (serialized === null || serialized.trim().length === 0) {
+      return
+    }
+
+    const fixtures = parseFixtureLibrary(serialized)
+    for (const fixture of fixtures) {
+      const existing =
+        store.getState().dmx.present.fixtureTypesByID[fixture.id]
+
+      if (existing === undefined) {
+        store.dispatch(addFixtureType(cloneFixtureType(fixture, { keepId: true })))
+        continue
+      }
+
+      if (JSON.stringify(existing) !== JSON.stringify(fixture)) {
+        store.dispatch(
+          updateFixtureType(cloneFixtureType(fixture, { keepId: true }))
+        )
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to auto-load fixture library:', err)
+  }
+}
+
+void autoLoadFixtureLibrary()
 
 ipc_setup({
   on_dmx_connection_update: (payload) => {
@@ -147,6 +190,7 @@ render(
   </Provider>,
   document.getElementById('root')
 )
+
 
 
 

@@ -6,6 +6,8 @@ export const DMX_MIN_VALUE = 0
 export const DMX_MAX_VALUE = 255
 export const DMX_NUM_CHANNELS = 512
 export const DMX_MAX_UNIVERSES = 16
+export const MOVER_MIN_TURNS = 0.25
+export const MOVER_MAX_TURNS = 4
 export const DMX_DEFAULT_VALUE = 0
 
 export type DmxChannel = number // 1 - 512
@@ -56,6 +58,17 @@ export type ChannelColorMap = {
   colors: ColorMapColor[]
 }
 
+export type GoboMapItem = {
+  name: string
+  max: DmxValue
+}
+
+export type ChannelGoboMap = {
+  type: 'goboMap'
+  gobos: GoboMapItem[]
+  defaultIndex: number
+}
+
 export type ChannelCustom = {
   type: 'custom'
   name: string
@@ -71,9 +84,10 @@ export const defaultCustomChannels = ['speed']
 export type FixtureChannel =
   | ChannelMaster
   | ChannelColor
+  | ChannelColorMap
+  | ChannelGoboMap
   | ChannelStrobe
   | ChannelAxis
-  | ChannelColorMap
   | ChannelCustom
 
 export type ChannelType = FixtureChannel['type']
@@ -82,6 +96,7 @@ export const channelTypes: ChannelType[] = [
   'master',
   'color',
   'colorMap',
+  'goboMap',
   'strobe',
   'axis',
   'custom',
@@ -100,6 +115,8 @@ export function initFixtureChannel(
     return initChannelColorMap([
       { max: 0, hue: 0, saturation: 1.0, kind: 'color' },
     ])
+  } else if (type === 'goboMap') {
+    return initChannelGoboMap([{ name: 'Open', max: DMX_MIN_VALUE }])
   } else if (type === 'custom') {
     return initChannelCustom('Custom')
   }
@@ -110,6 +127,14 @@ export function initChannelColorMap(colors: ColorMapColor[]): ChannelColorMap {
   return {
     type: 'colorMap',
     colors,
+  }
+}
+
+export function initChannelGoboMap(gobos: GoboMapItem[]): ChannelGoboMap {
+  return {
+    type: 'goboMap',
+    gobos,
+    defaultIndex: 0,
   }
 }
 
@@ -165,6 +190,206 @@ export function initChannelCustom(name: string): ChannelCustom {
   }
 }
 
+export type MoverPanCalibration = {
+  min: number
+  max: number
+  front: number
+  back: number
+  home: number
+  turns: number
+  invert: boolean
+}
+
+export type MoverTiltCalibration = {
+  min: number
+  max: number
+  down: number
+  forward: number
+  up: number
+  home: number
+  invert: boolean
+}
+
+export type MoverCalibration = {
+  pan: MoverPanCalibration
+  tilt: MoverTiltCalibration
+  notes?: string
+}
+
+export function initMoverCalibration(): MoverCalibration {
+  return {
+    pan: {
+      min: DMX_MIN_VALUE,
+      max: DMX_MAX_VALUE,
+      front: 128,
+      back: DMX_MIN_VALUE,
+      home: 128,
+      turns: 1,
+      invert: false,
+    },
+    tilt: {
+      min: DMX_MIN_VALUE,
+      max: DMX_MAX_VALUE,
+      down: DMX_MIN_VALUE,
+      forward: 128,
+      up: DMX_MAX_VALUE,
+      home: 128,
+      invert: false,
+    },
+  }
+}
+
+export type MoverBoundCorner = {
+  pan: number
+  tilt: number
+}
+
+export type MoverBounds = {
+  topLeft: MoverBoundCorner
+  topRight: MoverBoundCorner
+  bottomLeft: MoverBoundCorner
+  bottomRight: MoverBoundCorner
+}
+
+export function initMoverBounds(): MoverBounds {
+  return {
+    topLeft: {
+      pan: DMX_MIN_VALUE,
+      tilt: DMX_MAX_VALUE,
+    },
+    topRight: {
+      pan: DMX_MAX_VALUE,
+      tilt: DMX_MAX_VALUE,
+    },
+    bottomLeft: {
+      pan: DMX_MIN_VALUE,
+      tilt: DMX_MIN_VALUE,
+    },
+    bottomRight: {
+      pan: DMX_MAX_VALUE,
+      tilt: DMX_MIN_VALUE,
+    },
+  }
+}
+
+export type MoverMountOrientation = 'upright' | 'inverted'
+
+export type FixtureModelKind =
+  | 'auto'
+  | 'parCan'
+  | 'washBar'
+  | 'uplight'
+  | 'moverSpot'
+  | 'moverWash'
+
+export const fixtureModelKinds: FixtureModelKind[] = [
+  'auto',
+  'parCan',
+  'washBar',
+  'uplight',
+  'moverSpot',
+  'moverWash',
+]
+
+export function fixtureModelKindName(kind: FixtureModelKind): string {
+  if (kind === 'auto') return 'Auto'
+  if (kind === 'parCan') return 'PAR Can'
+  if (kind === 'washBar') return 'Wash Bar'
+  if (kind === 'uplight') return 'Uplight'
+  if (kind === 'moverSpot') return 'Mover Spot/Beam'
+  return 'Mover Wash'
+}
+
+export type FixtureModelConfig = {
+  kind: FixtureModelKind
+  emittersPerSubFixture: number
+  width: number
+  moverBeamAngleDeg: number
+}
+
+export type FixtureRotation = {
+  x: number
+  y: number
+  z: number
+}
+
+export function initFixtureRotation(): FixtureRotation {
+  return {
+    x: 0,
+    y: 0,
+    z: 0,
+  }
+}
+
+export const FIXTURE_MODEL_MIN_EMITTERS = 1
+export const FIXTURE_MODEL_MAX_EMITTERS = 64
+export const FIXTURE_MODEL_MIN_WIDTH = 0.2
+export const FIXTURE_MODEL_MAX_WIDTH = 8
+export const FIXTURE_MODEL_MIN_MOVER_BEAM_ANGLE = 2.5
+export const FIXTURE_MODEL_MAX_MOVER_BEAM_ANGLE = 25
+export const FIXTURE_MODEL_DEFAULT_MOVER_SPOT_BEAM_ANGLE = 9.5
+export const FIXTURE_MODEL_DEFAULT_MOVER_WASH_BEAM_ANGLE = 20.9
+
+function clampModelEmitters(value: number): number {
+  if (!Number.isFinite(value)) {
+    return FIXTURE_MODEL_MIN_EMITTERS
+  }
+
+  return Math.max(
+    FIXTURE_MODEL_MIN_EMITTERS,
+    Math.min(FIXTURE_MODEL_MAX_EMITTERS, Math.round(value))
+  )
+}
+
+function clampModelWidth(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 1
+  }
+
+  return Math.max(
+    FIXTURE_MODEL_MIN_WIDTH,
+    Math.min(FIXTURE_MODEL_MAX_WIDTH, value)
+  )
+}
+
+function clampMoverBeamAngle(value: number): number {
+  if (!Number.isFinite(value)) {
+    return FIXTURE_MODEL_DEFAULT_MOVER_SPOT_BEAM_ANGLE
+  }
+
+  return Math.max(
+    FIXTURE_MODEL_MIN_MOVER_BEAM_ANGLE,
+    Math.min(FIXTURE_MODEL_MAX_MOVER_BEAM_ANGLE, value)
+  )
+}
+
+export function fixedEmitterCountForModelKind(
+  kind: FixtureModelKind
+): number | null {
+  if (kind === 'moverSpot') return 1
+  if (kind === 'moverWash') return 7
+  return null
+}
+
+export function defaultMoverBeamAngleForModelKind(
+  kind: FixtureModelKind
+): number {
+  if (kind === 'moverWash') {
+    return FIXTURE_MODEL_DEFAULT_MOVER_WASH_BEAM_ANGLE
+  }
+
+  return FIXTURE_MODEL_DEFAULT_MOVER_SPOT_BEAM_ANGLE
+}
+
+export function initFixtureModelConfig(): FixtureModelConfig {
+  return {
+    kind: 'auto',
+    emittersPerSubFixture: 1,
+    width: 1,
+    moverBeamAngleDeg: FIXTURE_MODEL_DEFAULT_MOVER_SPOT_BEAM_ANGLE,
+  }
+}
+
 export type FixtureType = {
   id: string
   name: string
@@ -173,6 +398,8 @@ export type FixtureType = {
   channels: FixtureChannel[]
   subFixtures: SubFixture[]
   groups: string[]
+  moverCalibration?: MoverCalibration
+  model?: FixtureModelConfig
 }
 
 export function initFixtureType(): FixtureType {
@@ -184,15 +411,110 @@ export function initFixtureType(): FixtureType {
     channels: [initFixtureChannel()],
     subFixtures: [],
     groups: [],
+    moverCalibration: undefined,
+    model: initFixtureModelConfig(),
+  }
+}
+
+export function isMoverFixtureType(fixtureType: FixtureType): boolean {
+  const hasPan = fixtureType.channels.some(
+    (channel) => channel.type === 'axis' && channel.dir === 'x' && !channel.isFine
+  )
+  const hasTilt = fixtureType.channels.some(
+    (channel) => channel.type === 'axis' && channel.dir === 'y' && !channel.isFine
+  )
+  return hasPan && hasTilt
+}
+
+export function fixtureTypeHasFocusChannel(fixtureType: FixtureType): boolean {
+  return fixtureType.channels.some(
+    (channel) =>
+      channel.type === 'custom' &&
+      channel.name.trim().toLowerCase().includes('focus')
+  )
+}
+
+export function inferFixtureModelKind(fixtureType: FixtureType): FixtureModelKind {
+  if (isMoverFixtureType(fixtureType)) {
+    return 'moverSpot'
+  }
+
+  const lowerName = fixtureType.name.toLowerCase()
+  if (lowerName.includes('uplight') || lowerName.includes('up light')) {
+    return 'uplight'
+  }
+
+  if (fixtureType.subFixtures.length >= 3) {
+    return 'washBar'
+  }
+
+  return 'parCan'
+}
+
+export function normalizeFixtureModelConfig(
+  config: unknown,
+  fixtureType: FixtureType
+): FixtureModelConfig {
+  const defaults = initFixtureModelConfig()
+  const source =
+    config !== null && typeof config === 'object'
+      ? (config as {
+          kind?: unknown
+          emittersPerSubFixture?: unknown
+          width?: unknown
+          moverBeamAngleDeg?: unknown
+        })
+      : {}
+
+  const kind =
+    typeof source.kind === 'string' &&
+    fixtureModelKinds.includes(source.kind as FixtureModelKind)
+      ? (source.kind as FixtureModelKind)
+      : defaults.kind
+
+  const normalizedKind = kind === 'auto' ? inferFixtureModelKind(fixtureType) : kind
+
+  const defaultEmitters =
+    normalizedKind === 'washBar'
+      ? 4
+      : normalizedKind === 'moverWash'
+      ? 7
+      : 1
+
+  const defaultWidth =
+    normalizedKind === 'washBar'
+      ? 2.2
+      : normalizedKind === 'parCan' || normalizedKind === 'uplight'
+      ? 0.45
+      : 0.6
+  const defaultMoverBeamAngleDeg =
+    defaultMoverBeamAngleForModelKind(normalizedKind)
+
+  const fixedEmitterCount = fixedEmitterCountForModelKind(normalizedKind)
+  const requestedEmitters = clampModelEmitters(
+    Number(source.emittersPerSubFixture ?? defaultEmitters)
+  )
+
+  return {
+    kind,
+    emittersPerSubFixture: fixedEmitterCount ?? requestedEmitters,
+    width: clampModelWidth(Number(source.width ?? defaultWidth)),
+    moverBeamAngleDeg: clampMoverBeamAngle(
+      Number(source.moverBeamAngleDeg ?? defaultMoverBeamAngleDeg)
+    ),
   }
 }
 
 export interface Fixture {
+  id?: string
   ch: number
   universe: number
   type: string // FixtureType id
   window: Window2D_t
+  rotation?: FixtureRotation
   groups: string[]
+  moverBounds?: MoverBounds
+  moverMountOrientation?: MoverMountOrientation
 }
 
 export type Universe = Fixture[]
@@ -219,4 +541,14 @@ export type FlattenedFixture = {
   window: Window2D_t
   hasMasterChannelInFixtureType?: boolean
   groups: string[]
+  fixtureId?: string
+  fixtureTypeId?: string
+  moverGroup?: string
+  moverCalibration?: MoverCalibration
+  moverBounds?: MoverBounds
+  moverMountOrientation?: MoverMountOrientation
 }
+
+
+
+

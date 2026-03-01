@@ -1,5 +1,4 @@
 import styled from 'styled-components'
-import ADSRWrapper from './ADSRWrapper'
 import { useActiveLightScene, useBaseParam } from '../redux/store'
 import RandomizerVisualizer from './RandomizerVisualizer'
 import DraggableNumber from '../base/DraggableNumber'
@@ -8,13 +7,19 @@ import { setRandomizer } from '../redux/controlSlice'
 import Slider from '../base/Slider'
 import ParamXButton from './ParamXButton'
 import ParamSlider from './ParamSlider'
+import ADSR, { Control } from './ADSR'
 
 interface Props {
   splitIndex: number
 }
 
 export default function Randomizer({ splitIndex }: Props) {
-  const { triggerPeriod, triggerDensity } = useActiveLightScene((scene) => {
+  const {
+    triggerPeriod,
+    triggerDensity,
+    envelopeRatio,
+    envelopeDuration,
+  } = useActiveLightScene((scene) => {
     return scene.splitScenes[splitIndex].randomizer
   })
   const dispatch = useDispatch()
@@ -24,10 +29,40 @@ export default function Randomizer({ splitIndex }: Props) {
     return null
   }
 
+  const ratio: Control = {
+    val: envelopeRatio,
+    min: 0,
+    max: 1,
+    onChange: (newVal) => {
+      dispatch(
+        setRandomizer({
+          key: 'envelopeRatio',
+          value: newVal,
+          splitIndex,
+        })
+      )
+    },
+  }
+
+  const duration: Control = {
+    val: envelopeDuration,
+    min: 0.1,
+    max: 16,
+    onChange: (newVal) => {
+      dispatch(
+        setRandomizer({
+          key: 'envelopeDuration',
+          value: newVal,
+          splitIndex,
+        })
+      )
+    },
+  }
+
   return (
     <>
       <Root>
-        <ADSRWrapper splitIndex={splitIndex} />
+        <ADSR width={200} height={100} ratio={ratio} duration={duration} />
         <RandomizerVisualizer splitIndex={splitIndex} />
         <Row>
           <div

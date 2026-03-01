@@ -10,8 +10,6 @@ import UndoIcon from '@mui/icons-material/Undo'
 import RedoIcon from '@mui/icons-material/Redo'
 import IconButton from '@mui/material/IconButton'
 
-interface Props {}
-
 export function undoAction(group: UndoGroup) {
   return {
     type: undoActionTypes[group].undo,
@@ -25,12 +23,13 @@ export function redoAction(group: UndoGroup) {
 }
 
 export function getUndoGroup(state: ReduxState): UndoGroup | null {
-  if (state.gui.activePage === 'Universe') return 'dmx'
-  else if (state.gui.activePage === 'Modulation' || 'Video') return 'control'
+  if (state.gui.activePage === 'Universe' || state.gui.activePage === 'Movers') return 'dmx'
+  else if (state.gui.activePage === 'Modulation' || state.gui.activePage === 'Video')
+    return 'control'
   return null
 }
 
-export default function UndoRedo({}: Props) {
+export default function UndoRedo() {
   const group = useTypedSelector(getUndoGroup)
   const canUndo = useTypedSelector((state) =>
     group ? state[group].past.length > 0 : false
@@ -65,3 +64,4 @@ export default function UndoRedo({}: Props) {
 const Root = styled.div`
   margin: -0.5rem 0 -0.5rem 1rem;
 `
+

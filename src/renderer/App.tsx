@@ -2,6 +2,8 @@ import styled from 'styled-components'
 import Video from './pages/VisualizerPage'
 import Modulation from './pages/Scenes'
 import Universe from './pages/Universe'
+import Movers from './pages/Movers'
+import Lighting3DPage from './pages/Lighting3D'
 import Share from './pages/Share'
 import Mixer from './pages/Mixer'
 import MenuBar from './menu/MenuBar'
@@ -18,6 +20,8 @@ export default function App() {
   function getActivePage() {
     if (activePage == 'Modulation') return <Modulation />
     if (activePage == 'Universe') return <Universe />
+    if (activePage == 'Movers') return <Movers />
+    if (activePage == 'Lighting3D') return <Lighting3DPage />
     if (activePage == 'Video') return <Video />
     if (activePage == 'Share') return <Share />
     if (activePage == 'Mixer') return <Mixer />

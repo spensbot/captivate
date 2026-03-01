@@ -76,6 +76,10 @@ export function getIpcCallbacks() {
   return _ipcCallbacks
 }
 
+export function getControlStateSnapshot(): CleanReduxState | null {
+  return _controlState
+}
+
 export function start(
   renderer: WebContents,
   visualizerContainer: VisualizerContainer,
@@ -255,6 +259,5 @@ new WledManager({
   controlState: () => _controlState,
   realtimeState: () => _realtimeState,
 })
-
 
 

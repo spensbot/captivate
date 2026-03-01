@@ -67,6 +67,10 @@ export const captivateFileFilters = {
     name: 'Captivate 2 Fixture Library',
     extensions: ['captivate-fixtures', 'json', 'db'],
   },
+  qlcFixtures: {
+    name: 'QLC+ Fixture Definition',
+    extensions: ['qxf'],
+  },
 }
 
 export async function loadFile(
@@ -82,4 +86,21 @@ export async function saveFile(
   fileFilters: Electron.FileFilter[]
 ): Promise<NodeJS.ErrnoException> {
   return ipcRenderer.invoke(ipcChannels.save_file, title, data, fileFilters)
+}
+
+export async function loadFixtureLibraryFromDefaultPath(): Promise<string | null> {
+  return ipcRenderer.invoke(ipcChannels.load_fixture_library_default)
+}
+
+export async function saveFixtureLibraryToDefaultPath(
+  serializedFixtureLibrary: string
+): Promise<string> {
+  return ipcRenderer.invoke(
+    ipcChannels.save_fixture_library_default,
+    serializedFixtureLibrary
+  )
+}
+
+export async function getDefaultFixtureLibraryPath(): Promise<string> {
+  return ipcRenderer.invoke(ipcChannels.get_fixture_library_default_path)
 }

@@ -19,7 +19,6 @@ import wrapClick from '../base/wrapClick'
 import { hsvaForCss, separateHue } from '../../shared/baseColors'
 import Input from '../base/Input'
 import Slider from 'renderer/base/Slider'
-import XyPad from 'renderer/base/XyPad'
 import GroupPicker from 'renderer/base/GroupPicker'
 import { getSortedGroups } from 'shared/dmxUtil'
 
@@ -69,6 +68,11 @@ export default function Subfixtures() {
             : `Editing subfixture ${subFixtureId(
                 activeSubFixtureIndex
               )}. Click channel markers on the left to add or remove channels.`}
+        </HelperText>
+      )}
+      {subFixtures.length > 0 && (
+        <HelperText>
+          Wash-bar emitter placement is auto-distributed across fixture width.
         </HelperText>
       )}
       {subFixtures.map((sf, sfIndex) => (
@@ -151,16 +155,6 @@ function SubFixture({
             onChange={setSubFixtureField('intensity')}
           />
           <Sp />
-          <XyPad
-            x={subFixture.relative_window?.x?.pos ?? 0.5}
-            y={subFixture.relative_window?.y?.pos ?? 0.5}
-            onChange={(newX, newY) =>
-              setSubFixtureField('relative_window')({
-                x: { pos: newX, width: 0 },
-                y: { pos: newY, width: 0 },
-              })
-            }
-          />
           <GroupPicker
             groups={subFixture.groups}
             availableGroups={allGroups}

@@ -14,6 +14,7 @@ import { Button } from '@mui/material'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import EditGroups from './EditGroups'
 import Subfixtures from './Subfixtures'
+import FixtureModelEditor from './FixtureModelEditor'
 import { captivateFileFilters, saveFile } from '../autosave'
 import { serializeFixtureLibrary } from '../../shared/fixtureLibrary'
 
@@ -164,6 +165,8 @@ function ActiveFixtureType() {
 
       <FixtureChannels fixtureID={ft.id} isInUse={isInUse} />
       <Sp />
+      <FixtureModelEditor fixtureType={ft} />
+      <Sp />
       <Subfixtures />
       <Sp />
       <Row>
@@ -209,4 +212,3 @@ const Row = styled.div`
   display: flex;
   align-items: center;
 `
-

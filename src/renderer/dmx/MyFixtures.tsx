@@ -1,24 +1,25 @@
-import { ReactNode, useState } from 'react'
+import { useState } from 'react'
 import { useDmxSelector } from '../redux/store'
 import MyFixture from './MyFixture'
 import AddIcon from '@mui/icons-material/Add'
-import { Autocomplete, IconButton, TextField, Button } from '@mui/material'
+import { IconButton, Button } from '@mui/material'
 import { addFixtureType } from '../redux/dmxSlice'
 import { useDispatch } from 'react-redux'
 import { FixtureType, initFixtureType } from '../../shared/dmxFixtures'
 import styled from 'styled-components'
 import Popup from 'renderer/base/Popup'
 import {
-  fixtureForId,
-  getFixtureSearchIds,
-  fuzzySearch,
-} from '../../shared/fixtureDb'
-import { captivateFileFilters, loadFile, saveFile } from '../autosave'
+  captivateFileFilters,
+  getDefaultFixtureLibraryPath,
+  loadFile,
+  saveFixtureLibraryToDefaultPath,
+} from '../autosave'
 import {
   cloneFixtureType,
   parseFixtureLibrary,
   serializeFixtureLibrary,
 } from '../../shared/fixtureLibrary'
+import QlcFixtureBrowserModal from './QlcFixtureBrowserModal'
 
 export default function MyFixtures() {
   const fixtureTypeIds = useDmxSelector((state) => state.fixtureTypes)
@@ -32,32 +33,45 @@ export default function MyFixtures() {
     return <MyFixture key={fixtureType.id} id={fixtureType.id} />
   })
   const [isPopup, setIsPopup] = useState(false)
-  const [search, setSearch] = useState('')
+  const [isQlcModalOpen, setIsQlcModalOpen] = useState(false)
+
+  function addImportedFixtures(importedFixtures: FixtureType[]) {
+    for (const importedFixture of importedFixtures) {
+      dispatch(addFixtureType(cloneFixtureType(importedFixture)))
+    }
+  }
 
   async function importFixtures() {
     try {
       const serialized = await loadFile('Import Fixtures', [
         captivateFileFilters.captivateFixtures,
+        captivateFileFilters.qlcFixtures,
       ])
       const importedFixtures = parseFixtureLibrary(serialized)
-      for (const importedFixture of importedFixtures) {
-        dispatch(addFixtureType(cloneFixtureType(importedFixture)))
-      }
+      addImportedFixtures(importedFixtures)
     } catch (err) {
       console.warn(err)
+      const message =
+        err instanceof Error ? err.message : 'Unknown fixture import error.'
+      window.alert(`Fixture import failed: ${message}`)
     }
   }
 
   async function exportFixtures() {
-    if (fixtureTypes.length === 0) return
-
     try {
       const serialized = serializeFixtureLibrary(fixtureTypes)
-      await saveFile('Export Fixtures', serialized, [
-        captivateFileFilters.captivateFixtures,
-      ])
+      const savedPath = await saveFixtureLibraryToDefaultPath(serialized)
+      window.alert(`Fixture database saved to:\n${savedPath}`)
     } catch (err) {
       console.warn(err)
+      const fallbackPath = await getDefaultFixtureLibraryPath().catch(
+        () => 'default fixture library path'
+      )
+      window.alert(
+        `Failed to save fixture database to:\n${fallbackPath}\n\n${
+          err instanceof Error ? err.message : 'Unknown save error.'
+        }`
+      )
     }
   }
 
@@ -69,19 +83,10 @@ export default function MyFixtures() {
           <Button
             size="small"
             variant="outlined"
-            onClick={() => void importFixtures()}
-            title="Import fixtures from a fixture library file"
-          >
-            Import
-          </Button>
-          <Button
-            size="small"
-            variant="outlined"
-            disabled={fixtureTypes.length === 0}
             onClick={() => void exportFixtures()}
-            title="Export fixtures in this show to a fixture library file"
+            title="Save all fixtures in this project to the default fixture database file"
           >
-            Export
+            Save Fixture Database
           </Button>
         </HeaderButtons>
       </Header>
@@ -98,44 +103,46 @@ export default function MyFixtures() {
         </IconButton>
       </Items>
       {isPopup && (
-        <Popup title="Search Fixtures" onClose={() => setIsPopup(false)}>
-          <Autocomplete
-            onChange={(_, search) => {
-              const fixture = fixtureForId(search ?? '')
-              if (fixture !== undefined) {
-                dispatch(addFixtureType(cloneFixtureType(fixture)))
-              }
-              setIsPopup(false)
-            }}
-            options={getFixtureSearchIds()}
-            filterOptions={(options, state) => {
-              return fuzzySearch(state.inputValue, options, 100)
-            }}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value)
-                }}
-                variant="standard"
-              />
-            )}
-            style={{ width: '20rem' }}
-          />
-          <HorizontalLine>Or</HorizontalLine>
-          <Button
-            onClick={() => {
-              dispatch(addFixtureType(initFixtureType()))
-              setIsPopup(false)
-            }}
-            variant="contained"
-            title="Create a new custom fixture"
-          >
-            Create New
-          </Button>
+        <Popup title="Add Fixture" onClose={() => setIsPopup(false)}>
+          <PopupActions>
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setIsPopup(false)
+                void importFixtures()
+              }}
+              title="Import fixture definitions from file"
+            >
+              Import From File
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => {
+                dispatch(addFixtureType(initFixtureType()))
+                setIsPopup(false)
+              }}
+              title="Create a new custom fixture"
+            >
+              Create New
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setIsPopup(false)
+                setIsQlcModalOpen(true)
+              }}
+              title="Search online fixture repositories and import fixture definitions"
+            >
+              Search For Fixture Online
+            </Button>
+          </PopupActions>
         </Popup>
       )}
+      <QlcFixtureBrowserModal
+        open={isQlcModalOpen}
+        onClose={() => setIsQlcModalOpen(false)}
+        onImportFixtures={addImportedFixtures}
+      />
     </Root>
   )
 }
@@ -192,27 +199,9 @@ const Title = styled.div`
   font-size: ${(props) => props.theme.font.size.h1};
 `
 
-const HorizontalLine = ({ children }: { children: ReactNode }) => (
-  <Container>
-    <Line />
-    <Text>{children}</Text>
-    <Line />
-  </Container>
-)
-
-const Line = styled.div`
-  height: 1px;
-  flex: 1;
-  background-color: ${(props) => props.theme.colors.divider};
+const PopupActions = styled.div`
+  width: 20rem;
+  display: grid;
+  gap: 0.65rem;
 `
 
-const Container = styled.div`
-  display: flex;
-  align-items: center;
-  margin: 1rem 0 0.5rem 0;
-`
-
-const Text = styled.div`
-  margin: 0 10px;
-  font-size: 1rem;
-`

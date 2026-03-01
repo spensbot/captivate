@@ -2,13 +2,14 @@ import useDragMapped from '../hooks/useDragMapped'
 import { useDispatch } from 'react-redux'
 import { setBaseParams, incrementBaseParams } from '../redux/controlSlice'
 import { XYCursorBase, XYCursorOutput } from './XYCursor'
-import XYWindow from './XYWindow'
 import styled from 'styled-components'
 import ParamXButton from './ParamXButton'
 import { useBaseParam } from 'renderer/redux/store'
 import MidiOverlay_xy from '../base/MidiOverlay_xy'
 import { paramBundles } from './ParamAddButton'
 import { secondaryEnabled } from 'renderer/base/keyUtil'
+import { useOutputParam } from '../redux/realtimeStore'
+import Window2D from '../base/Window2D'
 
 interface Props {
   splitIndex: number
@@ -45,6 +46,10 @@ export default function XyParamsPad({ splitIndex }: Props) {
   const y = useBaseParam('y', splitIndex)
   const width = useBaseParam('width', splitIndex)
   const height = useBaseParam('height', splitIndex)
+  const xOut = useOutputParam('x', splitIndex)
+  const yOut = useOutputParam('y', splitIndex)
+  const widthOut = useOutputParam('width', splitIndex)
+  const heightOut = useOutputParam('height', splitIndex)
 
   if (
     x === undefined ||
@@ -59,7 +64,18 @@ export default function XyParamsPad({ splitIndex }: Props) {
     <Root ref={dragContainer} onMouseDown={onMouseDown}>
       <XYCursorOutput splitIndex={splitIndex} />
       <XYCursorBase splitIndex={splitIndex} />
-      <XYWindow splitIndex={splitIndex} />
+      <Window2D
+        window2D={{
+          x: {
+            pos: xOut,
+            width: widthOut,
+          },
+          y: {
+            pos: yOut,
+            width: heightOut,
+          },
+        }}
+      />
       <ParamXButton splitIndex={splitIndex} params={paramBundles.position} />
     </Root>
   )

@@ -75,7 +75,11 @@ function GapSlot({ ch, count }: { ch: number; count: number }) {
                     ch: inputCh,
                     universe: activeUniverse,
                     type: ft.id,
-                    window: { x: { pos: 0.5, width: 0 }, y: { pos: 0.5, width: 0 } },
+                    window: {
+                      x: { pos: 0.5, width: 0 },
+                      y: { pos: 0.5, width: 0 },
+                      z: { pos: 1, width: 0 },
+                    },
                     groups: [],
                   })
                 )
@@ -163,7 +167,7 @@ function FixtureSlot({
   const start = fixture.ch
   const isSelected = activeFixture === globalIndex
 
-  function setWindowEnabled(dimension: 'x' | 'y', isEnabled: boolean) {
+  function setWindowEnabled(dimension: 'x' | 'y' | 'z', isEnabled: boolean) {
     return (_e: React.MouseEvent) => {
       dispatch(
         setFixtureWindowEnabled({
@@ -229,6 +233,16 @@ function FixtureSlot({
               </ToggleButton>
             </span>
           </Tooltip>
+          <Tooltip title="Enable or disable Depth (Z) window control">
+            <span>
+              <ToggleButton
+                isEnabled={!!fixture.window.z}
+                onClick={setWindowEnabled('z', !fixture.window.z)}
+              >
+                Z
+              </ToggleButton>
+            </span>
+          </Tooltip>
           <Tooltip title="Remove this fixture from the universe">
             <span>
               <IconButton
@@ -289,4 +303,3 @@ const Slot = styled.div`
   box-sizing: border-box;
   position: relative;
 `
-

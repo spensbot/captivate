@@ -5,7 +5,7 @@ import { CleanReduxState } from './store'
 import fixState from '../../shared/fixState'
 
 export default function defaultState(): CleanReduxState {
-  const save = defaultSave as SaveState
+  const save = defaultSave as unknown as SaveState
   const state = initState()
   if (save.device) state.control.device = save.device
   if (save.dmx) state.dmx = save.dmx
@@ -13,3 +13,4 @@ export default function defaultState(): CleanReduxState {
   if (save.visual) state.control.visual = save.visual
   return fixState(state)
 }
+

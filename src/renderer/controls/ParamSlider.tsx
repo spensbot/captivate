@@ -7,13 +7,23 @@ import { setBaseParams } from '../redux/controlSlice'
 import ParamCursor from './ParamCursor'
 import { SliderMidiOverlay } from '../base/MidiOverlay'
 import ParamXButton from './ParamXButton'
+import type { CSSProperties } from 'react'
 
 interface Props {
   param: DefaultParam | string
   splitIndex: number
+  hideRemoveButton?: boolean
+  label?: string
+  wrapperStyle?: CSSProperties
 }
 
-export default function ParamSlider({ param, splitIndex }: Props) {
+export default function ParamSlider({
+  param,
+  splitIndex,
+  hideRemoveButton = false,
+  label,
+  wrapperStyle,
+}: Props) {
   const radius = 0.4
 
   const value = useBaseParam(param, splitIndex)
@@ -50,12 +60,12 @@ export default function ParamSlider({ param, splitIndex }: Props) {
           />
         </SliderBase>
       </div>
-      <ParamXButton splitIndex={splitIndex} params={[param]} />
-      <div style={{ marginTop: '1rem' }}>{paramDisplayName(param)}</div>
+      {!hideRemoveButton && <ParamXButton splitIndex={splitIndex} params={[param]} />}
+      <div style={{ marginTop: '1rem' }}>{label ?? paramDisplayName(param)}</div>
     </>
   )
 
-  const wrapperStyle: React.CSSProperties = {
+  const defaultWrapperStyle: CSSProperties = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
@@ -64,14 +74,20 @@ export default function ParamSlider({ param, splitIndex }: Props) {
     position: 'relative',
   }
 
+  const mergedWrapperStyle: CSSProperties = {
+    ...defaultWrapperStyle,
+    ...wrapperStyle,
+  }
+
   return splitIndex === 0 ? (
     <SliderMidiOverlay
       action={{ type: 'setBaseParam', paramKey: param }}
-      style={wrapperStyle}
+      style={mergedWrapperStyle}
     >
       {content}
     </SliderMidiOverlay>
   ) : (
-    <div style={wrapperStyle}>{content}</div>
+    <div style={mergedWrapperStyle}>{content}</div>
   )
 }
+

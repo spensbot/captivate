@@ -18,6 +18,7 @@ import Checkbox from '../base/LabelledCheckbox'
 import HSpad, { ColorChannelProps } from 'renderer/base/HSpad'
 import { FixtureChannelItemProps } from './FixtureChannelItem'
 import ColorMapChannel from './ColorMapChannel'
+import GoboMapChannel from './GoboMapChannel'
 import ColorPicker from 'renderer/base/ColorPicker'
 import { inferColorKind } from '../../shared/dmxColors'
 
@@ -191,6 +192,13 @@ function Fields({ ch, fixtureID, channelIndex }: Props) {
         channelIndex={channelIndex}
       />
     )
+  } else if (ch.type === 'goboMap') {
+    return (
+      <GoboMapChannel
+        ch={ch}
+        onChange={(newChannel) => updateChannel(newChannel)}
+      />
+    )
   } else if (ch.type === 'custom') {
     return (
       <>
@@ -249,3 +257,4 @@ const Info = styled.div`
   font-size: 0.9rem;
   margin-right: 0.5rem;
 `
+

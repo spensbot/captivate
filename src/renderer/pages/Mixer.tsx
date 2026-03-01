@@ -339,6 +339,9 @@ function InfoCursor({ index }: { index: number }) {
   if (fixtureChannel?.type === 'color') {
     fixtureChannelName = getCustomColorChannelName(fixtureChannel.color)
   }
+  if (fixtureChannel?.type === 'goboMap') {
+    fixtureChannelName = 'Gobo Map'
+  }
 
   return (
     <Info style={{ left: `${pos.x}px`, top: `${pos.y}px` }}>
@@ -368,3 +371,4 @@ const Val = styled.div`
 const FixtureName = styled.div``
 
 const FixtureChannelName = styled.div``
+

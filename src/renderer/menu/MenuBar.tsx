@@ -2,11 +2,13 @@ import React from 'react'
 import styled from 'styled-components'
 import zIndexes from '../zIndexes'
 import UniverseIcon from '@mui/icons-material/Settings'
+import MoversIcon from '@mui/icons-material/ControlCamera'
 import LightingIcon from '@mui/icons-material/Lightbulb'
 import WbIncandescentIcon from '@mui/icons-material/WbIncandescent'
 import VisualsIcon from '../images/Thick.png'
 import MixerIcon from '@mui/icons-material/BarChart'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
+import ViewInArIcon from '@mui/icons-material/ViewInAr'
 import IconButton from '@mui/material/IconButton'
 import { useTypedSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
@@ -30,6 +32,7 @@ export default function MenuBar() {
 
   function MenuItem({
     page,
+    tooltipText,
     paddingRem = 0.8,
     children,
   }: {
@@ -48,6 +51,7 @@ export default function MenuBar() {
         selected={activePage === page}
         style={{ padding: padding, fontSize: '1.7rem', margin: '0' }}
         onClick={setPage(page)}
+        title={tooltipText}
       >
         {children}
       </Item>
@@ -58,6 +62,12 @@ export default function MenuBar() {
     <Root>
       <MenuItem page="Universe" tooltipText="DMX Setup">
         <UniverseIcon fontSize="inherit" />
+      </MenuItem>
+      <MenuItem page="Movers" tooltipText="Mover Calibration">
+        <MoversIcon fontSize="inherit" />
+      </MenuItem>
+      <MenuItem page="Lighting3D" tooltipText="Lighting 3D Preview">
+        <ViewInArIcon fontSize="inherit" />
       </MenuItem>
       {ledEnabled && (
         <MenuItem page="Led" tooltipText="Led Editor">

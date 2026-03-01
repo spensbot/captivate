@@ -20,7 +20,7 @@ import {
   VisualScene_t,
   VisualScenes_t,
   SceneType,
-  initSplitScene,
+  initSplitScene
 } from '../../shared/Scenes'
 import { reorderArray } from '../../shared/util'
 
@@ -60,6 +60,19 @@ function modifyActiveLightScene(
   if (scene) {
     callback(scene)
   }
+}
+
+function getSplitSceneSafe(
+  scene: LightScene_t,
+  splitIndex: number
+): LightScene_t['splitScenes'][number] | undefined {
+  if (!Number.isInteger(splitIndex)) {
+    return undefined
+  }
+  if (splitIndex < 0 || splitIndex >= scene.splitScenes.length) {
+    return undefined
+  }
+  return scene.splitScenes[splitIndex]
 }
 
 function modifyActiveVisualScene(
@@ -152,7 +165,8 @@ export const scenesSlice = createSlice({
     ) => {
       const scenes = state[sceneType]
       if (val > -1 && scenes.ids.length > val) {
-        scenes.active = scenes.ids[val]
+        const nextSceneId = scenes.ids[val]
+        scenes.active = nextSceneId
       } else {
         console.error('Tried to set the scene to an out-of-bounds index')
       }
@@ -304,7 +318,11 @@ export const scenesSlice = createSlice({
     ) => {
       for (let [key, value] of Object.entries(params)) {
         modifyActiveLightScene(state, (scene) => {
-          const baseParams = scene.splitScenes[splitIndex].baseParams
+          const splitScene = getSplitSceneSafe(scene, splitIndex)
+          if (splitScene === undefined) {
+            return
+          }
+          const baseParams = splitScene.baseParams
           baseParams[key] = value
         })
       }
@@ -320,13 +338,19 @@ export const scenesSlice = createSlice({
     ) => {
       for (const param of params) {
         modifyActiveLightScene(state, (scene) => {
-          const baseParams = scene.splitScenes[splitIndex].baseParams
+          const splitScene = getSplitSceneSafe(scene, splitIndex)
+          if (splitScene === undefined) {
+            return
+          }
+          const baseParams = splitScene.baseParams
           delete baseParams[param]
 
           // Now remove the params from any modulators
           scene.modulators.forEach((modulator) => {
             const modulation = modulator.splitModulations[splitIndex]
-            delete modulation[param]
+            if (modulation !== undefined) {
+              delete modulation[param]
+            }
           })
         })
       }
@@ -338,7 +362,11 @@ export const scenesSlice = createSlice({
       for (let [key, amount] of Object.entries(params)) {
         modifyActiveLightScene(state, (scene) => {
           if (amount !== undefined) {
-            const baseParams = scene.splitScenes[splitIndex].baseParams
+            const splitScene = getSplitSceneSafe(scene, splitIndex)
+            if (splitScene === undefined) {
+              return
+            }
+            const baseParams = splitScene.baseParams
             const currentVal = baseParams[key as DefaultParam]
             if (currentVal !== undefined) {
               baseParams[key as DefaultParam] = clampNormalized(
@@ -360,7 +388,11 @@ export const scenesSlice = createSlice({
       }>
     ) => {
       modifyActiveLightScene(state, (scene) => {
-        scene.splitScenes[splitIndex].randomizer[key] = value
+        const splitScene = getSplitSceneSafe(scene, splitIndex)
+        if (splitScene === undefined) {
+          return
+        }
+        splitScene.randomizer[key] = value
       })
     },
     addSplitScene: (state, {}: PayloadAction<undefined>) => {
@@ -512,6 +544,7 @@ export const {
   setRandomizer,
   addSplitScene,
   removeSplitSceneByIndex,
+
   setSceneGroup,
 
   // VISUAL SCENES
@@ -539,5 +572,4 @@ export const {
 } = scenesSlice.actions
 
 export default scenesSlice.reducer
-
 

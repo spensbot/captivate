@@ -13,6 +13,11 @@ import { VisualizerResource } from '../../visualizer/threejs/VisualizerManager'
 import { VisualizerContainer } from './createVisualizerWindow'
 import { DmxConnectionInfo } from 'shared/connection'
 import type { Page } from '../../shared/pages'
+import {
+  getDefaultFixtureLibraryPath,
+  readDefaultFixtureLibrary,
+  saveDefaultFixtureLibrary,
+} from '../fixtureLibraryStorage'
 
 interface Config {
   renderers: Set<WebContents>
@@ -157,4 +162,18 @@ ipcMain.handle(
   }
 )
 
+ipcMain.handle(
+  ipcChannels.load_fixture_library_default,
+  async () => readDefaultFixtureLibrary()
+)
 
+ipcMain.handle(
+  ipcChannels.save_fixture_library_default,
+  async (_event, serializedFixtureLibrary: string) => {
+    return saveDefaultFixtureLibrary(serializedFixtureLibrary)
+  }
+)
+
+ipcMain.handle(ipcChannels.get_fixture_library_default_path, async () => {
+  return getDefaultFixtureLibraryPath()
+})

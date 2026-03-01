@@ -12,15 +12,56 @@ import Add from '@mui/icons-material/Add'
 import Remove from '@mui/icons-material/Remove'
 import HSpad, { ColorChannelProps } from 'renderer/base/HSpad'
 import { ChannelColorMap } from '../../shared/dmxFixtures'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import wrapClick from 'renderer/base/wrapClick'
 import ColorPicker from 'renderer/base/ColorPicker'
 import { getColorPreview, inferColorKind } from '../../shared/dmxColors'
+import { useDmxSelector, useTypedSelector } from '../redux/store'
+import {
+  clearColorMapCalibrationOverride,
+  setColorMapCalibrationOverride,
+} from '../redux/guiSlice'
 
 interface Props {
   ch: ChannelColorMap
   fixtureID: string
   channelIndex: number
+}
+
+function clampDmxValue(value: number, fallback: number = 0): number {
+  if (!Number.isFinite(value)) return fallback
+  return Math.min(DMX_MAX_VALUE, Math.max(0, Math.round(value)))
+}
+
+function getColorMapPreviewDmxValue(
+  colors: ChannelColorMap['colors'],
+  activeColorIndex: number
+): number {
+  if (colors.length === 0) return 0
+
+  const sorted = colors
+    .map((color, index) => ({
+      index,
+      max: clampDmxValue(color.max),
+    }))
+    .sort((left, right) => left.max - right.max)
+
+  const sortedIndex = sorted.findIndex((entry) => entry.index === activeColorIndex)
+  if (sortedIndex === -1) {
+    return sorted[0]?.max ?? 0
+  }
+
+  const entry = sorted[sortedIndex]
+  const previousMax = sortedIndex > 0 ? sorted[sortedIndex - 1].max : -1
+  const rangeMin = Math.min(DMX_MAX_VALUE, Math.max(0, previousMax + 1))
+  const rangeMax = Math.min(DMX_MAX_VALUE, Math.max(rangeMin, entry.max))
+
+  if (rangeMin >= rangeMax) {
+    return rangeMax
+  }
+
+  // Keep preview values inside each slot to avoid edge flicker.
+  return Math.round((rangeMin + rangeMax) / 2)
 }
 
 export default function ColorMapChannel({
@@ -31,7 +72,70 @@ export default function ColorMapChannel({
   const dispatch = useDispatch()
   const [activeColorIndex, setActiveColorIndex] = useState(0)
 
-  let activeColor = ch.colors[activeColorIndex]
+  const hasAssignedFixture = useDmxSelector((dmx) =>
+    dmx.universe.some((fixture) => fixture.type === fixtureID)
+  )
+  const currentOverride = useTypedSelector(
+    (state) => state.gui.colorMapCalibrationOverride
+  )
+
+  useEffect(() => {
+    if (activeColorIndex < ch.colors.length) return
+    setActiveColorIndex(Math.max(0, ch.colors.length - 1))
+  }, [activeColorIndex, ch.colors.length])
+
+  useEffect(() => {
+    if (!hasAssignedFixture || ch.colors.length === 0) {
+      if (currentOverride !== null) {
+        dispatch(clearColorMapCalibrationOverride())
+      }
+      return
+    }
+
+    const clampedColorIndex = Math.max(
+      0,
+      Math.min(activeColorIndex, ch.colors.length - 1)
+    )
+    const dmxValue = getColorMapPreviewDmxValue(ch.colors, clampedColorIndex)
+
+    if (
+      currentOverride?.fixtureTypeId === fixtureID &&
+      currentOverride.channelIndex === channelIndex &&
+      currentOverride.dmxValue === dmxValue
+    ) {
+      return
+    }
+
+    dispatch(
+      setColorMapCalibrationOverride({
+        fixtureTypeId: fixtureID,
+        channelIndex,
+        dmxValue,
+      })
+    )
+  }, [
+    dispatch,
+    hasAssignedFixture,
+    ch.colors,
+    activeColorIndex,
+    fixtureID,
+    channelIndex,
+    currentOverride,
+  ])
+
+  useEffect(() => {
+    return () => {
+      dispatch(clearColorMapCalibrationOverride())
+    }
+  }, [dispatch])
+
+  const safeColorIndex = Math.max(0, Math.min(activeColorIndex, ch.colors.length - 1))
+  const activeColor = ch.colors[safeColorIndex] ?? {
+    max: 0,
+    hue: 0,
+    saturation: 1,
+    kind: 'color' as const,
+  }
 
   const colorProps: ColorChannelProps = {
     hue: activeColor.hue,
@@ -41,7 +145,7 @@ export default function ColorMapChannel({
         setColorMapColor({
           fixtureTypeId: fixtureID,
           channelIndex,
-          colorIndex: activeColorIndex,
+          colorIndex: safeColorIndex,
           newColor: {
             max: activeColor.max,
             hue: newHue,
@@ -62,7 +166,7 @@ export default function ColorMapChannel({
             setColorMapColor({
               fixtureTypeId: fixtureID,
               channelIndex,
-              colorIndex: activeColorIndex,
+              colorIndex: safeColorIndex,
               newColor: {
                 max: activeColor.max,
                 hue: newColor.hue,
@@ -81,7 +185,7 @@ export default function ColorMapChannel({
         <Info style={{ flex: '1 0 0' }}>DMX Value</Info>
       </ColorMapColor>
       {ch.colors.map((color, i) => {
-        const isActive = activeColorIndex === i
+        const isActive = safeColorIndex === i
         return (
           <ColorMapColor key={fixtureID + channelIndex + i}>
             <ColorMapVisualizer
@@ -130,8 +234,8 @@ export default function ColorMapChannel({
       {ch.colors.length > 1 && (
         <IconButton
           onClick={() => {
-            if (activeColorIndex === ch.colors.length - 1) {
-              setActiveColorIndex(activeColorIndex - 1)
+            if (safeColorIndex === ch.colors.length - 1) {
+              setActiveColorIndex(safeColorIndex - 1)
             }
             dispatch(
               removeColorMapColor({
@@ -170,3 +274,4 @@ const Sp = styled.div`
   width: 1rem;
   height: 1rem;
 `
+

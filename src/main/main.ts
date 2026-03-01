@@ -15,6 +15,12 @@ import { resolveHtmlPath } from './util'
 import * as engine from './engine/engine'
 import { VisualizerContainer } from './engine/createVisualizerWindow'
 import type { Page } from '../shared/pages'
+import type { FixtureType } from '../shared/dmxFixtures'
+import { serializeFixtureLibrary } from '../shared/fixtureLibrary'
+import {
+  readDefaultFixtureLibrary,
+  saveDefaultFixtureLibrary,
+} from './fixtureLibraryStorage'
 import './prevent_sleep'
 
 // Monkey-patch showErrorBox to avoid error modals at runtime
@@ -125,8 +131,14 @@ function createAppWindow({
             cancelId: 0,
             defaultId: 1,
           })
-          .then(({ response }) => {
+          .then(async ({ response }) => {
             if (response === 1) {
+              try {
+                await saveFixtureLibraryIfDirty()
+              } catch (err) {
+                console.error('Failed to save fixture library on quit:', err)
+              }
+
               isClosing = true
               window.close()
               engine.stop()
@@ -142,6 +154,28 @@ function createAppWindow({
   }
 
   return window
+}
+
+function getCurrentFixtureTypes(): FixtureType[] {
+  const controlState = engine.getControlStateSnapshot()
+  if (controlState === null) {
+    return []
+  }
+
+  const dmx = controlState.dmx
+  return dmx.fixtureTypes
+    .map((fixtureTypeId) => dmx.fixtureTypesByID[fixtureTypeId])
+    .filter((fixtureType): fixtureType is FixtureType => fixtureType !== undefined)
+}
+
+async function saveFixtureLibraryIfDirty(): Promise<void> {
+  const serialized = serializeFixtureLibrary(getCurrentFixtureTypes())
+  const existing = await readDefaultFixtureLibrary()
+  if (existing === serialized) {
+    return
+  }
+
+  await saveDefaultFixtureLibrary(serialized)
 }
 
 const createWindow = async () => {
