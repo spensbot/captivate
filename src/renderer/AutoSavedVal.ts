@@ -25,7 +25,7 @@ export function printTimePassed(datedSave: DatedSave<any>) {
 
 export default class AutoSavedVal<T> {
   readonly id: string
-  private interval: NodeJS.Timer
+  private interval: NodeJS.Timeout
   private getCurrent: () => T
 
   constructor(id: string, getCurrent: () => T) {

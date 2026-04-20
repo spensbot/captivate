@@ -1,6 +1,5 @@
-import { zip } from '../shared/util'
-
 export type Normalized = number // 0 to 1
+let _randomSource = Math.random
 
 export function clampNormalized(val: number) {
   if (val < 0.0) return 0.0
@@ -41,16 +40,24 @@ export function unlerp(start: number, end: number, val: number) {
 
 // random number between 0 and max
 export function random(max: number) {
-  return Math.random() * max
+  return _randomSource() * max
 }
 
 export function randomRanged(min: number, max: number) {
   let range = max - min
-  return min + Math.random() * range
+  return min + _randomSource() * range
 }
 
 export function randomBool() {
-  return Math.random() > 0.5
+  return _randomSource() > 0.5
+}
+
+export function setRandomSource(source: () => number) {
+  _randomSource = source
+}
+
+export function resetRandomSource() {
+  _randomSource = Math.random
 }
 
 export function magnitude(point: number[]) {
@@ -58,7 +65,12 @@ export function magnitude(point: number[]) {
 }
 
 export function point_delta(start: number[], end: number[]): number[] {
-  return zip(start, end).map(([s, e]) => e - s)
+  const length = Math.min(start.length, end.length)
+  const output = new Array<number>(length)
+  for (let index = 0; index < length; index++) {
+    output[index] = end[index] - start[index]
+  }
+  return output
 }
 
 export function findClosest<T>(

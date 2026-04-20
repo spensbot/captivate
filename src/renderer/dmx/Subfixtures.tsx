@@ -121,12 +121,16 @@ function SubFixture({
       <Row>
         <SubFixtureToggle subFixtureIndex={subFixtureIndex} />
         {isActive ? (
-          <Input
-            value={subFixture.name}
-            onChange={setSubFixtureField('name')}
-          />
+          <SubfixtureNameGrow>
+            <Input
+              value={subFixture.name}
+              onChange={setSubFixtureField('name')}
+            />
+          </SubfixtureNameGrow>
         ) : (
-          subFixture.name
+          <SubfixtureNameText title={subFixture.name}>
+            {subFixture.name}
+          </SubfixtureNameText>
         )}
         <IconButton
           size="small"
@@ -175,7 +179,10 @@ function SubFixture({
   )
 }
 
-const Root = styled.div``
+const Root = styled.div`
+  min-width: 0;
+  max-width: 100%;
+`
 
 const Header = styled.div`
   display: flex;
@@ -211,6 +218,23 @@ const Sp = styled.div`
 const Row = styled.div`
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  min-width: 0;
+`
+
+const SubfixtureNameGrow = styled.div`
+  flex: 1 1 8rem;
+  min-width: 0;
+  max-width: 100%;
+`
+
+const SubfixtureNameText = styled.span`
+  flex: 1 1 8rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `
 
 export function SubFixtureToggle({

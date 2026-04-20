@@ -2,7 +2,11 @@ import IconButton from '@mui/material/IconButton'
 import EditIcon from '@mui/icons-material/Edit'
 import RemoveIcon from '@mui/icons-material/Remove'
 import { useState } from 'react'
-import { useActiveLightScene, useDmxSelector } from 'renderer/redux/store'
+import {
+  useActiveLightScene,
+  useDmxSelector,
+  useTypedSelector,
+} from 'renderer/redux/store'
 import styled from 'styled-components'
 import Popup from '../base/Popup'
 import { useDispatch } from 'react-redux'
@@ -10,7 +14,9 @@ import {
   removeSplitSceneByIndex,
   setSceneGroup,
 } from 'renderer/redux/controlSlice'
+import { hasMoverFixtureInUniverse } from 'shared/dmxFixtures'
 import { getSortedGroups } from 'shared/dmxUtil'
+import { showVisGroupUi } from './splitUiVisibility'
 
 interface Props {
   splitIndex: number
@@ -19,22 +25,51 @@ interface Props {
 export default function GroupSelection({ splitIndex }: Props) {
   const dispatch = useDispatch()
   const [isOpen, setIsOpen] = useState(false)
+  const videoEnabled = useTypedSelector((state) => state.gui.videoEnabled)
+  const showVisualizerGroup = showVisGroupUi(videoEnabled)
   const dmx = useDmxSelector((dmx) => dmx)
+  const hasMoverFixtures = hasMoverFixtureInUniverse(
+    dmx.universe,
+    dmx.fixtureTypesByID
+  )
   let availableGroups = getSortedGroups(
     dmx.universe,
     dmx.fixtureTypes,
     dmx.fixtureTypesByID
   )
+  const ledGroups = dmx.led.ledFixtures
+    .flatMap((fixture) => fixture.groups)
+    .map((group) => group.trim())
+    .filter((group) => group.length > 0)
   const activeGroups = useActiveLightScene(
-    (scene) => scene.splitScenes[splitIndex].groups
+    (scene) => scene.splitScenes[splitIndex]?.groups ?? {}
   )
   const entries = Object.entries(activeGroups)
 
   let allAvailableGroups = new Set(availableGroups)
-  for (const [group, _] of entries) {
+  for (const group of ledGroups) {
     allAvailableGroups.add(group)
   }
-  availableGroups = Array.from(allAvailableGroups)
+  if (showVisualizerGroup) {
+    allAvailableGroups.add('Visualizer')
+  }
+  if (hasMoverFixtures) {
+    allAvailableGroups.add('Movers')
+  }
+  allAvailableGroups.add('Atmosphere')
+  for (const [group, _] of entries) {
+    if (!showVisualizerGroup && group === 'Visualizer') {
+      continue
+    }
+    allAvailableGroups.add(group)
+  }
+  availableGroups = Array.from(allAvailableGroups).filter(
+    (group) =>
+      (showVisualizerGroup || group !== 'Visualizer') &&
+      (hasMoverFixtures ||
+        group !== 'Movers' ||
+        activeGroups.Movers !== undefined)
+  )
 
   const activeGroupsString = entries
     .map(([group, inclusive]) => `${inclusive ? '' : 'not'} ${group}`)

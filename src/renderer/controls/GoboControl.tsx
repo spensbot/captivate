@@ -6,6 +6,7 @@ import { useRealtimeSelector } from '../redux/realtimeStore'
 import { setBaseParams } from '../redux/controlSlice'
 import SliderBase from '../base/SliderBase'
 import SliderCursor from '../base/SliderCursor'
+import ManualSliderCursor from './ManualSliderCursor'
 import { SliderMidiOverlay } from '../base/MidiOverlay'
 import { indexArray } from '../../shared/util'
 import ParamXButton from './ParamXButton'
@@ -93,12 +94,14 @@ export default function GoboControl({ splitIndex }: Props) {
     height: '10rem',
     marginRight: '1rem',
     position: 'relative',
+    paddingTop: '1.05rem',
+    boxSizing: 'border-box',
   }
 
   const content = (
     <>
       <ParamXButton splitIndex={splitIndex} params={['gobo']} />
-      <div style={{ flex: '1 0 10rem' }}>
+      <div style={{ flex: '1 1 auto', minHeight: 0, alignSelf: 'stretch', width: '100%' }}>
         <SliderBase orientation="vertical" radius={sliderRadius} onChange={onChange}>
           <Detents slotCount={slotCount} />
           <SliderCursor
@@ -107,8 +110,10 @@ export default function GoboControl({ splitIndex }: Props) {
             radius={sliderRadius}
             color="#7befff99"
           />
-          <SliderCursor
+          <ManualSliderCursor
             orientation="vertical"
+            param="gobo"
+            splitIndex={splitIndex}
             value={snappedBase}
             radius={sliderRadius}
             color="#fff"

@@ -1,39 +1,249 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+﻿/**
+ * Lighting 3D page (layout + viewport shell). DMX→preview targets, fixture mesh construction,
+ * and WebGL renderer defaults live in `../lighting3d/previewCore.ts` so the preview can evolve
+ * on a clean module boundary while this file keeps UI, gizmo, compass, and scene orchestration.
+ */
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import styled from 'styled-components'
 import StatusBar from '../menu/StatusBar'
-import { useControlSelector, useDmxSelector } from '../redux/store'
+import { useDmxSelector, useTypedSelector, store } from '../redux/store'
 import { fromFeet, toFeet, METERS_PER_FOOT, StageDimensions } from '../../shared/stage'
-import { setLighting3DSettings } from '../redux/dmxSlice'
+import {
+  setActiveLedFixture,
+  setFixtureMoverMountOrientation,
+  setLedFixturePosition,
+  setLedFixtureRotation,
+  setFixtureRotation,
+  setFixtureWindow,
+  setLighting3DSettings,
+  setSelectedFixture,
+} from '../redux/dmxSlice'
+import { pushStatusMessage } from '../redux/guiSlice'
+import {
+  sendDiagnosticsEvent,
+  sendTelemetryMark,
+  send_open_page_window,
+} from '../ipcHandler'
+import { currentRendererTelemetrySource } from '../telemetry/RendererTelemetry'
+import BusyModal from '../overlays/BusyModal'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { useRealtimeSelector } from '../redux/realtimeStore'
-import { Params, getParam } from '../../shared/params'
-import { hsv2rgb } from '../../shared/baseColors'
-import { inferColorKind, type ColorChannel } from '../../shared/dmxColors'
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
+import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib'
+import { realtimeStore } from '../redux/realtimeStore'
+import { type Params } from '../../shared/params'
+import { type LightScene_t } from '../../shared/Scenes'
 import {
   defaultMoverBeamAngleForModelKind,
-  type FixtureModelConfig,
-  type FixtureModelKind,
-  type FixtureRotation,
-  type MoverBounds,
-  type MoverCalibration,
   type MoverMountOrientation,
 } from '../../shared/dmxFixtures'
+import { mapRowsToPreviewFixtures } from './lightingPreviewFixtures'
+import { selectLedPreviewFixtures, selectLightingPreviewRows } from './lightingPreviewSelectors'
+import type { MoverPreviewFixture } from './lightingPreviewTypes'
+import type {
+  FixtureVisual,
+  PreviewTarget,
+  PersistedCameraState,
+  SurfaceHit,
+  SurfaceSpec,
+  VolumetricFogLightSample,
+} from '../lighting3d/previewCore'
 import {
-  buildLightingPreviewRows,
-  mapRowsToPreviewFixtures,
-} from './lightingPreviewFixtures'
+  buildTargets,
+  clamp,
+  clamp01,
+  computeFloorSpecFromStage,
+  createFixtureVisual,
+  createLightingRenderer,
+  createPleatedCurtainGeometry,
+  createVolumetricFogMaterial,
+  DEFAULT_CAMERA_POSITION,
+  DEFAULT_CAMERA_TARGET,
+  directionFromYawPitch,
+  disposeVisual,
+  DANCE_FLOOR_Y,
+  FALLBACK_WORLD_FLOOR_SIZE,
+  feetToWorld,
+  fixtureUniversePositionFromWorld,
+  fixtureVisualSignature,
+  focusWidthScale,
+  goboTextureForIndex,
+  isCloudModelKind,
+  isFiniteColor,
+  isFiniteVector3,
+  LED_AGGREGATE_FOG_GAIN,
+  LED_AGGREGATE_LIGHT_GAIN,
+  LED_EMISSIVE_GAIN,
+  lerp,
+  LIGHTING3D_PERF_HUD_STORAGE_KEY,
+  LIGHTING3D_WARMUP_MIN_MS,
+  LIGHTING3D_WARMUP_SETTLE_MS,
+  LOCAL_AXIS_NEG_Z,
+  LOCAL_AXIS_Y,
+  LOCAL_AXIS_Z,
+  MAX_VISUAL_CREATIONS_PER_SYNC,
+  nearestSurfaceHit,
+  nonMoverEmitterBaseY,
+  normalizeOrFallback,
+  normalizeRotationDeg,
+  PREVIEW_SYNC_MIN_INTERVAL_MS,
+  readPersistedCameraState,
+  releaseLighting3DGlobalTextureCaches,
+  ROOM_HEIGHT,
+  roundToStep,
+  setGoboLabelText,
+  smoothToward,
+  stageHeightFromStage,
+  VOLUMETRIC_FOG_MAX_LIGHTS,
+  writePersistedCameraState,
+} from '../lighting3d/previewCore'
 
-export default function Lighting3DPage() {
-  const fixtureRows = useDmxSelector(buildLightingPreviewRows)
+interface Lighting3DPageProps {
+  standalonePreview?: boolean
+  externalViewport?: boolean
+}
+
+export default function Lighting3DPage({
+  standalonePreview = false,
+  externalViewport = false,
+}: Lighting3DPageProps) {
+  const openedExternalViewport = useRef(false)
+  const fixtureRows = useTypedSelector(selectLightingPreviewRows)
+  const ledPreviewFixtures = useTypedSelector(selectLedPreviewFixtures)
+  const ledFixtures = useDmxSelector((state) => state.led.ledFixtures)
+  const activeLedFixture = useDmxSelector((state) => state.led.activeFixture)
+  const activeFixture = useDmxSelector((state) => state.activeFixture)
   const stage = useDmxSelector((state) => state.stage)
   const lighting3d = useDmxSelector((state) => state.lighting3d)
+  const fixturePlacementDepthEnabled = useTypedSelector(
+    (state) => state.gui.fixturePlacementDepthEnabled
+  )
   const dispatch = useDispatch()
 
   const previewFixtures = useMemo(() => {
-    return mapRowsToPreviewFixtures(fixtureRows)
-  }, [fixtureRows])
+    return [
+      ...mapRowsToPreviewFixtures(fixtureRows, {
+        fixturePlacementDepthEnabled,
+      }),
+      ...ledPreviewFixtures,
+    ]
+  }, [fixtureRows, ledPreviewFixtures, fixturePlacementDepthEnabled])
+  const activeFixtureId = useMemo(() => {
+    if (activeFixture === null) {
+      if (activeLedFixture === null) {
+        return null
+      }
+      const ledFixture = ledFixtures[activeLedFixture]
+      return ledFixture ? `led:${ledFixture.id}` : null
+    }
+    return (
+      fixtureRows.find((row) => row.fixtureIndex === activeFixture)?.fixtureId ??
+      null
+    )
+  }, [fixtureRows, ledFixtures, activeFixture, activeLedFixture])
+
+  const selectFixture = useCallback(
+    (fixtureIndex: number) => {
+      dispatch(setSelectedFixture(fixtureIndex))
+    },
+    [dispatch]
+  )
+
+  const selectLedFixture = useCallback(
+    (ledFixtureIndex: number) => {
+      dispatch(setActiveLedFixture(ledFixtureIndex))
+    },
+    [dispatch]
+  )
+
+  const updateFixtureWindow = useCallback(
+    (
+      fixtureIndex: number,
+      payload: {
+        x?: number
+        y?: number
+        z?: number
+      }
+    ) => {
+      dispatch(
+        setFixtureWindow({
+          index: fixtureIndex,
+          ...payload,
+        })
+      )
+    },
+    [dispatch]
+  )
+
+  const updateFixtureRotation = useCallback(
+    (
+      fixtureIndex: number,
+      payload: {
+        x?: number
+        y?: number
+        z?: number
+      }
+    ) => {
+      dispatch(
+        setFixtureRotation({
+          index: fixtureIndex,
+          ...payload,
+        })
+      )
+    },
+    [dispatch]
+  )
+
+  const updateLedFixturePosition = useCallback(
+    (
+      ledFixtureIndex: number,
+      payload: {
+        x?: number
+        y?: number
+        z?: number
+      }
+    ) => {
+      dispatch(
+        setLedFixturePosition({
+          index: ledFixtureIndex,
+          ...payload,
+        })
+      )
+    },
+    [dispatch]
+  )
+
+  const updateLedFixtureRotation = useCallback(
+    (
+      ledFixtureIndex: number,
+      payload: {
+        x?: number
+        y?: number
+        z?: number
+      }
+    ) => {
+      dispatch(
+        setLedFixtureRotation({
+          index: ledFixtureIndex,
+          ...payload,
+        })
+      )
+    },
+    [dispatch]
+  )
+
+  const setFixtureMountOrientation = useCallback(
+    (fixtureId: string, orientation: MoverMountOrientation) => {
+      dispatch(
+        setFixtureMoverMountOrientation({
+          fixtureId,
+          orientation,
+        })
+      )
+    },
+    [dispatch]
+  )
 
   const roomConfig = useMemo(
     () => ({
@@ -120,139 +330,179 @@ export default function Lighting3DPage() {
     lighting3d.roomHeightFt,
   ])
 
+  useEffect(() => {
+    if (standalonePreview || !externalViewport) {
+      return
+    }
+    if (openedExternalViewport.current) {
+      return
+    }
+    openedExternalViewport.current = true
+    send_open_page_window('Lighting3D')
+  }, [standalonePreview, externalViewport])
+
+  const viewportContent =
+    externalViewport ? (
+      <ExternalViewportCard>
+        <ExternalViewportTitle>Lighting 3D Viewport Runs In A Detached Window</ExternalViewportTitle>
+        <ExternalViewportBody>
+          This page keeps all Lighting 3D controls. The live viewport runs in a dedicated
+          renderer window for smoother performance.
+        </ExternalViewportBody>
+        <ExternalViewportButton
+          type="button"
+          onClick={() => send_open_page_window('Lighting3D')}
+        >
+          Open / Focus Lighting 3D Viewport
+        </ExternalViewportButton>
+      </ExternalViewportCard>
+    ) : previewFixtures.length > 0 ? (
+      <Lighting3DViewport
+        fixtures={previewFixtures}
+        stage={stage}
+        activeFixtureId={activeFixtureId}
+        onSelectFixture={selectFixture}
+        onSelectLedFixture={selectLedFixture}
+        onUpdateFixtureWindow={updateFixtureWindow}
+        onUpdateFixtureRotation={updateFixtureRotation}
+        onUpdateLedFixturePosition={updateLedFixturePosition}
+        onUpdateLedFixtureRotation={updateLedFixtureRotation}
+        onSetFixtureMountOrientation={setFixtureMountOrientation}
+        showCurtain={lighting3d.showCurtain}
+        showBoundsOverlay={lighting3d.showBoundsOverlay}
+        hazeAmount={lighting3d.environmentFog}
+        room={roomConfig}
+      />
+    ) : (
+      <EmptyState>
+        No fixtures found. Add fixtures in DMX Setup to populate the 3D preview.
+      </EmptyState>
+    )
+
+  const pageContent = (
+    <Content>
+      <PanelTitle>Lighting 3D Preview</PanelTitle>
+      <PanelHint>
+        Live 3D preview for all DMX fixtures using current scene output. Use this
+        window to program lighting without a connected rig.
+      </PanelHint>
+      <Controls>
+        <ControlItem>
+          <ControlLabel>
+            <input
+              type="checkbox"
+              checked={lighting3d.showCurtain}
+              onChange={(event) =>
+                dispatch(
+                  setLighting3DSettings({
+                    showCurtain: event.target.checked,
+                  })
+                )
+              }
+            />
+            Curtain
+          </ControlLabel>
+        </ControlItem>
+        <ControlItem>
+          <ControlLabel>
+            <input
+              type="checkbox"
+              checked={lighting3d.showBoundsOverlay}
+              onChange={(event) =>
+                dispatch(
+                  setLighting3DSettings({
+                    showBoundsOverlay: event.target.checked,
+                  })
+                )
+              }
+            />
+            Bounds Overlay
+          </ControlLabel>
+        </ControlItem>
+        <ControlItem>
+          <ControlLabel>
+            <input
+              type="checkbox"
+              checked={lighting3d.roomEnabled}
+              onChange={(event) =>
+                dispatch(
+                  setLighting3DSettings({
+                    roomEnabled: event.target.checked,
+                  })
+                )
+              }
+            />
+            Room
+          </ControlLabel>
+        </ControlItem>
+        <ControlItem>
+          <ControlLabel>
+            Haze {Math.round(lighting3d.environmentFog * 100)}%
+          </ControlLabel>
+          <FogSlider
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={lighting3d.environmentFog}
+            onChange={(event) =>
+              dispatch(
+                setLighting3DSettings({
+                  environmentFog: Number(event.target.value),
+                })
+              )
+            }
+          />
+        </ControlItem>
+        <ControlItem>
+          <ControlLabel>Room Width ({unitLabel})</ControlLabel>
+          <DimensionInput
+            type="number"
+            step={dimensionStep}
+            min={minRoomDimensionDisplay}
+            value={roomWidthInput}
+            onChange={(event) => setRoomWidthInput(event.target.value)}
+            onBlur={() => commitDimensionInput('roomWidthFt', roomWidthInput)}
+            disabled={!lighting3d.roomEnabled}
+          />
+        </ControlItem>
+        <ControlItem>
+          <ControlLabel>Room Depth ({unitLabel})</ControlLabel>
+          <DimensionInput
+            type="number"
+            step={dimensionStep}
+            min={minRoomDimensionDisplay}
+            value={roomDepthInput}
+            onChange={(event) => setRoomDepthInput(event.target.value)}
+            onBlur={() => commitDimensionInput('roomDepthFt', roomDepthInput)}
+            disabled={!lighting3d.roomEnabled}
+          />
+        </ControlItem>
+        <ControlItem>
+          <ControlLabel>Room Height ({unitLabel})</ControlLabel>
+          <DimensionInput
+            type="number"
+            step={dimensionStep}
+            min={minRoomDimensionDisplay}
+            value={roomHeightInput}
+            onChange={(event) => setRoomHeightInput(event.target.value)}
+            onBlur={() => commitDimensionInput('roomHeightFt', roomHeightInput)}
+            disabled={!lighting3d.roomEnabled}
+          />
+        </ControlItem>
+      </Controls>
+      {viewportContent}
+    </Content>
+  )
+
+  if (standalonePreview) {
+    return <StandalonePreviewRoot>{pageContent}</StandalonePreviewRoot>
+  }
+
   return (
     <LightingPageRoot>
       <StatusBar />
-      <Content>
-        <PanelTitle>Lighting 3D Preview</PanelTitle>
-        <PanelHint>
-          Live 3D preview for all DMX fixtures using current scene output. Use this
-          window to program lighting without a connected rig.
-        </PanelHint>
-        <Controls>
-          <ControlItem>
-            <ControlLabel>
-              <input
-                type="checkbox"
-                checked={lighting3d.showCurtain}
-                onChange={(event) =>
-                  dispatch(
-                    setLighting3DSettings({
-                      showCurtain: event.target.checked,
-                    })
-                  )
-                }
-              />
-              Curtain
-            </ControlLabel>
-          </ControlItem>
-          <ControlItem>
-            <ControlLabel>
-              <input
-                type="checkbox"
-                checked={lighting3d.showBoundsOverlay}
-                onChange={(event) =>
-                  dispatch(
-                    setLighting3DSettings({
-                      showBoundsOverlay: event.target.checked,
-                    })
-                  )
-                }
-              />
-              Bounds Overlay
-            </ControlLabel>
-          </ControlItem>
-          <ControlItem>
-            <ControlLabel>
-              <input
-                type="checkbox"
-                checked={lighting3d.roomEnabled}
-                onChange={(event) =>
-                  dispatch(
-                    setLighting3DSettings({
-                      roomEnabled: event.target.checked,
-                    })
-                  )
-                }
-              />
-              Room
-            </ControlLabel>
-          </ControlItem>
-          <ControlItem>
-            <ControlLabel>Fog</ControlLabel>
-            <FogRow>
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.01}
-                value={lighting3d.environmentFog}
-                onChange={(event) =>
-                  dispatch(
-                    setLighting3DSettings({
-                      environmentFog: Math.min(
-                        1,
-                        Math.max(0, Number(event.target.value) || 0)
-                      ),
-                    })
-                  )
-                }
-              />
-              <FogValue>{Math.round(lighting3d.environmentFog * 100)}%</FogValue>
-            </FogRow>
-          </ControlItem>
-          <ControlItem>
-            <ControlLabel>Room Width ({unitLabel})</ControlLabel>
-            <DimensionInput
-              type="number"
-              step={dimensionStep}
-              min={minRoomDimensionDisplay}
-              value={roomWidthInput}
-              onChange={(event) => setRoomWidthInput(event.target.value)}
-              onBlur={() => commitDimensionInput('roomWidthFt', roomWidthInput)}
-              disabled={!lighting3d.roomEnabled}
-            />
-          </ControlItem>
-          <ControlItem>
-            <ControlLabel>Room Depth ({unitLabel})</ControlLabel>
-            <DimensionInput
-              type="number"
-              step={dimensionStep}
-              min={minRoomDimensionDisplay}
-              value={roomDepthInput}
-              onChange={(event) => setRoomDepthInput(event.target.value)}
-              onBlur={() => commitDimensionInput('roomDepthFt', roomDepthInput)}
-              disabled={!lighting3d.roomEnabled}
-            />
-          </ControlItem>
-          <ControlItem>
-            <ControlLabel>Room Height ({unitLabel})</ControlLabel>
-            <DimensionInput
-              type="number"
-              step={dimensionStep}
-              min={minRoomDimensionDisplay}
-              value={roomHeightInput}
-              onChange={(event) => setRoomHeightInput(event.target.value)}
-              onBlur={() => commitDimensionInput('roomHeightFt', roomHeightInput)}
-              disabled={!lighting3d.roomEnabled}
-            />
-          </ControlItem>
-        </Controls>
-        {previewFixtures.length > 0 ? (
-          <Lighting3DViewport
-            fixtures={previewFixtures}
-            stage={stage}
-            showCurtain={lighting3d.showCurtain}
-            showBoundsOverlay={lighting3d.showBoundsOverlay}
-            environmentFog={lighting3d.environmentFog}
-            room={roomConfig}
-          />
-        ) : (
-          <EmptyState>
-            No fixtures found. Add fixtures in DMX Setup to populate the 3D preview.
-          </EmptyState>
-        )}
-      </Content>
+      {pageContent}
     </LightingPageRoot>
   )
 }
@@ -262,6 +512,16 @@ const LightingPageRoot = styled.div`
   height: 100%;
   display: flex;
   flex-direction: column;
+`
+
+const StandalonePreviewRoot = styled.div`
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
 `
 
 const Content = styled.div`
@@ -307,23 +567,6 @@ const ControlLabel = styled.label`
   color: ${(props) => props.theme.colors.text.secondary};
 `
 
-const FogRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-
-  input[type='range'] {
-    width: 100%;
-  }
-`
-
-const FogValue = styled.span`
-  font-size: 0.74rem;
-  color: ${(props) => props.theme.colors.text.secondary};
-  min-width: 2.4rem;
-  text-align: right;
-`
-
 const DimensionInput = styled.input`
   width: 100%;
   font-size: 0.78rem;
@@ -332,6 +575,10 @@ const DimensionInput = styled.input`
   color: ${(props) => props.theme.colors.text.primary};
   border-radius: 0.28rem;
   padding: 0.24rem 0.35rem;
+`
+
+const FogSlider = styled.input`
+  width: 100%;
 `
 
 const EmptyState = styled.div`
@@ -348,86 +595,51 @@ const EmptyState = styled.div`
   padding: 0.8rem;
 `
 
-export interface MoverPreviewColorChannel {
-  channelIndex: number
-  color: ColorChannel
-}
-
-export interface MoverPreviewColorMapChannel {
-  channelIndex: number
-  colors: Array<
-    ColorChannel & {
-      max: number
-    }
-  >
-}
-
-export interface MoverPreviewMasterChannel {
-  channelIndex: number
-  min: number
-  max: number
-  isOnOff: boolean
-}
-
-export interface MoverPreviewFocusChannel {
-  channelIndex: number
-  min: number
-  max: number
-}
-
-export interface MoverPreviewGoboMapChannel {
-  channelIndex: number
-  gobos: Array<{
-    name: string
-    max: number
-  }>
-}
-
-export interface MoverPreviewEmitterGroup {
-  emitterCount: number
-  relativeX: number
-  relativeY: number
-  relativeZ: number
-  colorChannels: MoverPreviewColorChannel[]
-  colorMapChannels: MoverPreviewColorMapChannel[]
-  masterChannels: MoverPreviewMasterChannel[]
-  goboMapChannels: MoverPreviewGoboMapChannel[]
-}
-
-export interface MoverPreviewFixture {
-  fixtureId: string
-  groupName: string
-  xPos: number
-  yPos: number
-  zPos: number
-  rotation: FixtureRotation
-  universe: number
-  panCoarseChannel?: number
-  panFineChannel?: number
-  tiltCoarseChannel?: number
-  tiltFineChannel?: number
-  panMin?: number
-  panMax?: number
-  tiltMin?: number
-  tiltMax?: number
-  moverCalibration?: MoverCalibration
-  moverBounds?: MoverBounds
-  moverMountOrientation?: MoverMountOrientation
-  colorChannels: MoverPreviewColorChannel[]
-  colorMapChannels: MoverPreviewColorMapChannel[]
-  masterChannels: MoverPreviewMasterChannel[]
-  focusChannels: MoverPreviewFocusChannel[]
-  goboMapChannels: MoverPreviewGoboMapChannel[]
-  model: FixtureModelConfig
-  emitterGroups: MoverPreviewEmitterGroup[]
-}
-
 interface Lighting3DViewportProps {
   fixtures: MoverPreviewFixture[]
   stage: StageDimensions
+  activeFixtureId: string | null
+  onSelectFixture: (fixtureIndex: number) => void
+  onSelectLedFixture: (ledFixtureIndex: number) => void
+  onUpdateFixtureWindow: (
+    fixtureIndex: number,
+    payload: {
+      x?: number
+      y?: number
+      z?: number
+    }
+  ) => void
+  onUpdateLedFixturePosition: (
+    ledFixtureIndex: number,
+    payload: {
+      x?: number
+      y?: number
+      z?: number
+    }
+  ) => void
+  onUpdateFixtureRotation: (
+    fixtureIndex: number,
+    payload: {
+      x?: number
+      y?: number
+      z?: number
+    }
+  ) => void
+  onUpdateLedFixtureRotation: (
+    ledFixtureIndex: number,
+    payload: {
+      x?: number
+      y?: number
+      z?: number
+    }
+  ) => void
+  onSetFixtureMountOrientation: (
+    fixtureId: string,
+    orientation: MoverMountOrientation
+  ) => void
   showCurtain?: boolean
   showBoundsOverlay?: boolean
-  environmentFog?: number
+  hazeAmount?: number
   room?: {
     enabled: boolean
     widthFt: number
@@ -436,2121 +648,20 @@ interface Lighting3DViewportProps {
   }
 }
 
-interface FixtureVisual {
-  signature: string
-  modelKind: FixtureModelKind
-  root: THREE.Group
-  emitters: THREE.Mesh[]
-  emitterVolumes: THREE.Object3D[]
-  emitterSurfaceSplats: THREE.Mesh[][]
-  goboLabel?: THREE.Mesh
-  panPivot?: THREE.Group
-  headPivot?: THREE.Group
-  beamStartLocal?: THREE.Vector3
-}
-
-interface PreviewEmitterTarget {
-  localX: number
-  localY: number
-  localZ: number
-  color: THREE.Color
-  intensity: number
-}
-
-interface PreviewTarget {
-  fixtureId: string
-  modelKind: FixtureModelKind
-  modelWidth: number
-  moverBeamAngleDeg: number
-  isMoverModel: boolean
-  rotation: FixtureRotation
-  fixtureX: number
-  fixtureY: number
-  fixtureZ: number
-  targetX: number
-  targetY: number
-  targetZ: number
-  aimYawDeg?: number
-  aimPitchDeg?: number
-  focusNorm?: number
-  hasFocusChannel: boolean
-  goboIndex?: number
-  mountInverted: boolean
-  emitters: PreviewEmitterTarget[]
-}
-
-interface SurfaceSpec {
-  floorY: number
-  floorMinX: number
-  floorMaxX: number
-  floorMinZ: number
-  floorMaxZ: number
-  includeCurtain: boolean
-  curtainZ: number
-  curtainMinX: number
-  curtainMaxX: number
-  curtainMinY: number
-  curtainMaxY: number
-  includeRoom: boolean
-  roomMinX: number
-  roomMaxX: number
-  roomMinY: number
-  roomMaxY: number
-  roomMinZ: number
-  roomMaxZ: number
-}
-
-interface SurfaceHit {
-  point: THREE.Vector3
-  normal: THREE.Vector3
-  distance: number
-  surface: 'floor' | 'curtain'
-}
-
-interface BeamBoundarySample {
-  hit: SurfaceHit | undefined
-  point: THREE.Vector3
-  distance: number
-}
-
-interface SurfaceSplatProjection {
-  hit: SurfaceHit
-  center: THREE.Vector3
-  normal: THREE.Vector3
-  tangent: THREE.Vector3
-  majorRadius: number
-  minorRadius: number
-}
-
-interface LiveAxisValues {
-  panRaw: number
-  tiltRaw: number
-  panNorm: number
-  tiltNorm: number
-}
-
-interface FloorSpec {
-  width: number
-  depth: number
-  centerX: number
-  centerZ: number
-}
-
-const ROOM_HEIGHT = 5
-const DANCE_FLOOR_Y = 0.001
-const FLOOR_MIN_SIZE = 2
-const FLOOR_MAX_SIZE = 28
-const FALLBACK_TARGET_LENGTH = 10
-const FALLBACK_WORLD_FLOOR_SIZE = 220
-const DEFAULT_CAMERA_POSITION: [number, number, number] = [0, 6.9, 10.1]
-const DEFAULT_CAMERA_TARGET: [number, number, number] = [0, 1.8, 0.8]
-const CAMERA_STORAGE_KEY = 'captivate.lighting3d.camera.v1'
-const FALLBACK_BEAM_REACH_FT = 120
-const EMITTER_DISK_RADIUS = 0.0225
-const BOUNDARY_RAY_BIAS = 0.01
-const SHARP_CONE_SEGMENTS = 24
-const MAX_SURFACE_SPLATS_PER_EMITTER = 4
-const SHARP_CONE_SAMPLE_ANGLES = Array.from(
-  { length: SHARP_CONE_SEGMENTS },
-  (_, segment) => (segment / SHARP_CONE_SEGMENTS) * Math.PI * 2
-)
-
-interface PersistedCameraState {
-  position: [number, number, number]
-  target: [number, number, number]
-}
-
-function readPersistedCameraState():
-  | PersistedCameraState
-  | undefined {
-  try {
-    const raw = window.localStorage.getItem(CAMERA_STORAGE_KEY)
-    if (raw === null) {
-      return undefined
-    }
-    const parsed = JSON.parse(raw) as {
-      position?: number[]
-      target?: number[]
-    }
-    const position = parsed.position
-    const target = parsed.target
-    if (
-      !Array.isArray(position) ||
-      !Array.isArray(target) ||
-      position.length !== 3 ||
-      target.length !== 3
-    ) {
-      return undefined
-    }
-    const pos = [
-      Number(position[0]),
-      Number(position[1]),
-      Number(position[2]),
-    ] as [number, number, number]
-    const tar = [Number(target[0]), Number(target[1]), Number(target[2])] as [
-      number,
-      number,
-      number,
-    ]
-    if (!pos.every(Number.isFinite) || !tar.every(Number.isFinite)) {
-      return undefined
-    }
-    return {
-      position: pos,
-      target: tar,
-    }
-  } catch {
-    return undefined
-  }
-}
-
-function writePersistedCameraState(state: PersistedCameraState) {
-  try {
-    window.localStorage.setItem(CAMERA_STORAGE_KEY, JSON.stringify(state))
-  } catch {
-    // Ignore storage errors.
-  }
-}
-
-function clamp01(value: number): number {
-  return Math.min(1, Math.max(0, value))
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value))
-}
-
-function lerp(a: number, b: number, t: number): number {
-  return a + (b - a) * t
-}
-
-function feetToWorld(feet: number): number {
-  return feet * METERS_PER_FOOT
-}
-
-function computeFloorSpecFromStage(stage: StageDimensions): FloorSpec {
-  const width = clamp(feetToWorld(stage.widthFt), FLOOR_MIN_SIZE, FLOOR_MAX_SIZE)
-  const depth = clamp(feetToWorld(stage.depthFt), FLOOR_MIN_SIZE, FLOOR_MAX_SIZE)
-  return {
-    width,
-    depth,
-    centerX: 0,
-    centerZ: depth * 0.5,
-  }
-}
-
-function stageHeightFromStage(stage: StageDimensions): number {
-  return clamp(feetToWorld(stage.heightFt), 1.2, ROOM_HEIGHT)
-}
-
-function parseMoverMode(params: Params): number {
-  const raw = Number(params.moverMode ?? 0)
-  if (!Number.isFinite(raw)) return 0
-  return Math.max(0, Math.min(2, Math.round(raw)))
-}
-
-function colorForGroup(groupName: string): THREE.Color {
-  let hash = 0
-  for (let i = 0; i < groupName.length; i++) {
-    hash = (hash * 31 + groupName.charCodeAt(i)) | 0
-  }
-
-  const hue = ((hash % 360) + 360) % 360
-  return new THREE.Color(`hsl(${hue}, 85%, 58%)`)
-}
-
-function resolveModelKind(fixture: MoverPreviewFixture): FixtureModelKind {
-  if (fixture.model.kind !== 'auto') {
-    return fixture.model.kind
-  }
-
-  if (
-    fixture.panCoarseChannel !== undefined &&
-    fixture.tiltCoarseChannel !== undefined
-  ) {
-    return 'moverSpot'
-  }
-
-  if (fixture.emitterGroups.length >= 3) {
-    return 'washBar'
-  }
-
-  return 'parCan'
-}
-
-function isMoverModelKind(kind: FixtureModelKind): boolean {
-  return kind === 'moverSpot' || kind === 'moverWash'
-}
-
-function isCloudModelKind(kind: FixtureModelKind): boolean {
-  return kind === 'washBar' || kind === 'uplight' || kind === 'moverWash'
-}
-
-function stageTopEdgeZFromFloorSpec(floorSpec: FloorSpec): number {
-  return floorSpec.centerZ - floorSpec.depth * 0.5
-}
-
-function fixtureWorldFromUniversePosition(
-  x: number,
-  y: number,
-  z: number,
-  floorSpec: FloorSpec,
-  stageHeight: number
-): { worldX: number; worldY: number; worldZ: number } {
-  const safeX = clamp01(x)
-  const safeY = clamp01(y)
-  const safeZ = clamp01(z)
-  const stageTopEdgeZ = stageTopEdgeZFromFloorSpec(floorSpec)
-
-  return {
-    worldX: floorSpec.centerX + (safeX - 0.5) * floorSpec.width,
-    worldY: lerp(0.25, stageHeight, safeY),
-    worldZ: stageTopEdgeZ + (1 - safeZ) * floorSpec.depth,
-  }
-}
-
-function danceFloorWorldFromNormalized(
-  x: number,
-  y: number,
-  floorSpec: FloorSpec
-): { worldX: number; worldY: number; worldZ: number } {
-  const safeX = clamp01(x)
-  const safeY = clamp01(y)
-
-  return {
-    worldX: floorSpec.centerX + (safeX - 0.5) * floorSpec.width,
-    worldY: DANCE_FLOOR_Y,
-    worldZ: floorSpec.centerZ + (0.5 - safeY) * floorSpec.depth,
-  }
-}
-
-function normalizeAxisValue(value: number, min: number, max: number): number {
-  const minValue = Number.isFinite(min) ? min : 0
-  const maxValue = Number.isFinite(max) ? max : 255
-
-  if (Math.abs(maxValue - minValue) < 0.0001) {
-    return clamp01(value / 255)
-  }
-
-  if (maxValue > minValue) {
-    return clamp01((value - minValue) / (maxValue - minValue))
-  }
-
-  return clamp01((minValue - value) / (minValue - maxValue))
-}
-
-function readLiveAxisValues(
-  fixture: MoverPreviewFixture,
-  dmxOutByUniverse: number[][]
-): LiveAxisValues | undefined {
-  if (
-    fixture.panCoarseChannel === undefined ||
-    fixture.tiltCoarseChannel === undefined
-  ) {
-    return undefined
-  }
-
-  const universe = Math.max(1, Math.round(fixture.universe || 1))
-  const universeData = dmxOutByUniverse[universe - 1]
-  if (universeData === undefined) {
-    return undefined
-  }
-
-  const panCoarse = universeData[fixture.panCoarseChannel]
-  const tiltCoarse = universeData[fixture.tiltCoarseChannel]
-  if (!Number.isFinite(panCoarse) || !Number.isFinite(tiltCoarse)) {
-    return undefined
-  }
-
-  const panFine =
-    fixture.panFineChannel !== undefined
-      ? universeData[fixture.panFineChannel] ?? 0
-      : 0
-  const tiltFine =
-    fixture.tiltFineChannel !== undefined
-      ? universeData[fixture.tiltFineChannel] ?? 0
-      : 0
-
-  const panRaw = panCoarse + panFine / 256
-  const tiltRaw = tiltCoarse + tiltFine / 256
-
-  return {
-    panRaw,
-    tiltRaw,
-    panNorm: normalizeAxisValue(panRaw, fixture.panMin ?? 0, fixture.panMax ?? 255),
-    tiltNorm: normalizeAxisValue(tiltRaw, fixture.tiltMin ?? 0, fixture.tiltMax ?? 255),
-  }
-}
-
-interface LiveBeamValues {
-  color: THREE.Color
-  intensity: number
-}
-
-interface BeamChannelSet {
-  colorChannels: MoverPreviewColorChannel[]
-  colorMapChannels: MoverPreviewColorMapChannel[]
-  masterChannels: MoverPreviewMasterChannel[]
-}
-
-function normalizeDmxRange(value: number, min: number, max: number): number {
-  if (Math.abs(max - min) < 0.0001) {
-    return clamp01(value / 255)
-  }
-
-  if (max > min) {
-    return clamp01((value - min) / (max - min))
-  }
-
-  return clamp01((min - value) / (min - max))
-}
-
-function colorFromChannelDefinition(channel: ColorChannel): THREE.Color {
-  const kind = inferColorKind(channel)
-
-  if (kind === 'white') {
-    return new THREE.Color(1, 1, 1)
-  }
-
-  if (kind === 'warmWhite') {
-    return new THREE.Color(1, 0.84, 0.66)
-  }
-
-  if (kind === 'amber') {
-    return new THREE.Color(1, 0.62, 0.1)
-  }
-
-  if (kind === 'uv') {
-    return new THREE.Color(0.55, 0.28, 1)
-  }
-
-  const [r, g, b] = hsv2rgb(clamp01(channel.hue), clamp01(channel.saturation), 1)
-  return new THREE.Color(r, g, b)
-}
-
-function estimateColorMapIntensity(value: number, mappedMax: number): number {
-  if (mappedMax <= 0.0001) {
-    return clamp01(value / 255)
-  }
-  return clamp01(value / mappedMax)
-}
-
-function readLiveBeamValuesForChannels(
-  channelSet: BeamChannelSet,
-  universeData: number[] | undefined,
-  params: Params,
-  fallbackColor: THREE.Color
-): LiveBeamValues {
-  const [hsvR, hsvG, hsvB] = hsv2rgb(
-    clamp01(getParam(params, 'hue')),
-    clamp01(getParam(params, 'saturation')),
-    1
-  )
-  const hsvFallbackColor = new THREE.Color(hsvR, hsvG, hsvB)
-
-  if (universeData === undefined) {
-    return {
-      color: hsvFallbackColor,
-      intensity: clamp01(getParam(params, 'brightness')),
-    }
-  }
-
-  let masterLevel = 1
-  if (channelSet.masterChannels.length > 0) {
-    masterLevel = 0
-    for (const masterChannel of channelSet.masterChannels) {
-      const rawValue = universeData[masterChannel.channelIndex]
-      if (!Number.isFinite(rawValue)) {
-        continue
-      }
-
-      const normalized = masterChannel.isOnOff
-        ? rawValue > (masterChannel.min + masterChannel.max) * 0.5
-          ? 1
-          : 0
-        : normalizeDmxRange(rawValue, masterChannel.min, masterChannel.max)
-
-      masterLevel = Math.max(masterLevel, normalized)
-    }
-  }
-
-  const combinedColor = new THREE.Color(0, 0, 0)
-  let colorControlLevel = 0
-
-  for (const colorChannel of channelSet.colorChannels) {
-    const rawValue = universeData[colorChannel.channelIndex]
-    if (!Number.isFinite(rawValue)) {
-      continue
-    }
-
-    const level = clamp01(rawValue / 255)
-    const baseColor = colorFromChannelDefinition(colorChannel.color)
-    combinedColor.r += baseColor.r * level
-    combinedColor.g += baseColor.g * level
-    combinedColor.b += baseColor.b * level
-    colorControlLevel = Math.max(colorControlLevel, level)
-  }
-
-  for (const colorMapChannel of channelSet.colorMapChannels) {
-    const rawValue = universeData[colorMapChannel.channelIndex]
-    if (!Number.isFinite(rawValue) || colorMapChannel.colors.length === 0) {
-      continue
-    }
-
-    let selected = colorMapChannel.colors[0]
-    let minDiff = Math.abs(rawValue - selected.max)
-
-    for (const candidate of colorMapChannel.colors) {
-      const diff = Math.abs(rawValue - candidate.max)
-      if (diff < minDiff) {
-        minDiff = diff
-        selected = candidate
-      }
-    }
-
-    const baseColor = colorFromChannelDefinition(selected)
-    combinedColor.r += baseColor.r
-    combinedColor.g += baseColor.g
-    combinedColor.b += baseColor.b
-    colorControlLevel = Math.max(
-      colorControlLevel,
-      estimateColorMapIntensity(rawValue, selected.max)
-    )
-  }
-
-  const hasColorDefinitions =
-    channelSet.colorChannels.length > 0 || channelSet.colorMapChannels.length > 0
-  const hasCombinedColor =
-    combinedColor.r + combinedColor.g + combinedColor.b > 0.001
-
-  const previewColor = hasCombinedColor
-    ? new THREE.Color(
-        clamp01(combinedColor.r),
-        clamp01(combinedColor.g),
-        clamp01(combinedColor.b)
-      )
-    : hasColorDefinitions
-      ? hsvFallbackColor
-      : fallbackColor.clone()
-
-  const fallbackLevel = hasColorDefinitions
-    ? colorControlLevel
-    : clamp01(getParam(params, 'brightness'))
-
-  return {
-    color: previewColor,
-    intensity: clamp01(fallbackLevel * masterLevel),
-  }
-}
-
-function readLiveGoboIndex(
-  goboMapChannels: MoverPreviewGoboMapChannel[],
-  universeData: number[] | undefined
-): number | undefined {
-  if (universeData === undefined || goboMapChannels.length === 0) {
-    return undefined
-  }
-
-  for (const goboMap of goboMapChannels) {
-    const rawValue = universeData[goboMap.channelIndex]
-    if (!Number.isFinite(rawValue) || goboMap.gobos.length === 0) {
-      continue
-    }
-
-    let selectedIndex = 0
-    let minDiff = Math.abs(rawValue - goboMap.gobos[0].max)
-    for (let index = 1; index < goboMap.gobos.length; index++) {
-      const diff = Math.abs(rawValue - goboMap.gobos[index].max)
-      if (diff < minDiff) {
-        minDiff = diff
-        selectedIndex = index
-      }
-    }
-
-    return selectedIndex + 1
-  }
-
-  return undefined
-}
-
-function readLiveFocusNormalized(
-  focusChannels: MoverPreviewFocusChannel[],
-  universeData: number[] | undefined
-): number | undefined {
-  if (universeData === undefined || focusChannels.length === 0) {
-    return undefined
-  }
-
-  for (const focusChannel of focusChannels) {
-    const rawValue = universeData[focusChannel.channelIndex]
-    if (!Number.isFinite(rawValue)) {
-      continue
-    }
-    return normalizeDmxRange(rawValue, focusChannel.min, focusChannel.max)
-  }
-
-  return undefined
-}
-
-function focusWidthScale(focusNorm: number | undefined): number {
-  if (focusNorm === undefined || !Number.isFinite(focusNorm)) {
-    return 1
-  }
-  return lerp(0.55, 1.65, clamp01(focusNorm))
-}
-
-function nearestSurfaceHit(
-  origin: THREE.Vector3,
-  direction: THREE.Vector3,
-  spec: SurfaceSpec
-): SurfaceHit | undefined {
-  const EPS = 0.0001
-  let best: SurfaceHit | undefined
-  const consider = (hit: SurfaceHit | undefined) => {
-    if (hit === undefined) return
-    if (best === undefined || hit.distance < best.distance) {
-      best = hit
-    }
-  }
-
-  if (direction.y < -EPS) {
-    const t = (spec.floorY - origin.y) / direction.y
-    if (t > EPS) {
-      const point = origin.clone().addScaledVector(direction, t)
-      if (
-        point.x >= spec.floorMinX - EPS &&
-        point.x <= spec.floorMaxX + EPS &&
-        point.z >= spec.floorMinZ - EPS &&
-        point.z <= spec.floorMaxZ + EPS
-      ) {
-        consider({
-          point,
-          normal: new THREE.Vector3(0, 1, 0),
-          distance: t,
-          surface: 'floor',
-        })
-      }
-    }
-  }
-
-  if (spec.includeCurtain && Math.abs(direction.z) > EPS) {
-    const t = (spec.curtainZ - origin.z) / direction.z
-    if (t > EPS) {
-      const point = origin.clone().addScaledVector(direction, t)
-      if (
-        point.x >= spec.curtainMinX - EPS &&
-        point.x <= spec.curtainMaxX + EPS &&
-        point.y >= spec.curtainMinY - EPS &&
-        point.y <= spec.curtainMaxY + EPS
-      ) {
-        consider({
-          point,
-          normal: new THREE.Vector3(0, 0, direction.z > 0 ? -1 : 1),
-          distance: t,
-          surface: 'curtain',
-        })
-      }
-    }
-  }
-
-  if (spec.includeRoom) {
-    if (Math.abs(direction.x) > EPS) {
-      const txLeft = (spec.roomMinX - origin.x) / direction.x
-      if (txLeft > EPS) {
-        const point = origin.clone().addScaledVector(direction, txLeft)
-        if (
-          point.y >= spec.roomMinY - EPS &&
-          point.y <= spec.roomMaxY + EPS &&
-          point.z >= spec.roomMinZ - EPS &&
-          point.z <= spec.roomMaxZ + EPS
-        ) {
-          consider({
-            point,
-            normal: new THREE.Vector3(1, 0, 0),
-            distance: txLeft,
-            surface: 'curtain',
-          })
-        }
-      }
-
-      const txRight = (spec.roomMaxX - origin.x) / direction.x
-      if (txRight > EPS) {
-        const point = origin.clone().addScaledVector(direction, txRight)
-        if (
-          point.y >= spec.roomMinY - EPS &&
-          point.y <= spec.roomMaxY + EPS &&
-          point.z >= spec.roomMinZ - EPS &&
-          point.z <= spec.roomMaxZ + EPS
-        ) {
-          consider({
-            point,
-            normal: new THREE.Vector3(-1, 0, 0),
-            distance: txRight,
-            surface: 'curtain',
-          })
-        }
-      }
-    }
-
-    if (Math.abs(direction.z) > EPS) {
-      const tzBack = (spec.roomMinZ - origin.z) / direction.z
-      if (tzBack > EPS) {
-        const point = origin.clone().addScaledVector(direction, tzBack)
-        if (
-          point.x >= spec.roomMinX - EPS &&
-          point.x <= spec.roomMaxX + EPS &&
-          point.y >= spec.roomMinY - EPS &&
-          point.y <= spec.roomMaxY + EPS
-        ) {
-          consider({
-            point,
-            normal: new THREE.Vector3(0, 0, 1),
-            distance: tzBack,
-            surface: 'curtain',
-          })
-        }
-      }
-
-      const tzFront = (spec.roomMaxZ - origin.z) / direction.z
-      if (tzFront > EPS) {
-        const point = origin.clone().addScaledVector(direction, tzFront)
-        if (
-          point.x >= spec.roomMinX - EPS &&
-          point.x <= spec.roomMaxX + EPS &&
-          point.y >= spec.roomMinY - EPS &&
-          point.y <= spec.roomMaxY + EPS
-        ) {
-          consider({
-            point,
-            normal: new THREE.Vector3(0, 0, -1),
-            distance: tzFront,
-            surface: 'curtain',
-          })
-        }
-      }
-    }
-
-    if (direction.y > EPS) {
-      const tyTop = (spec.roomMaxY - origin.y) / direction.y
-      if (tyTop > EPS) {
-        const point = origin.clone().addScaledVector(direction, tyTop)
-        if (
-          point.x >= spec.roomMinX - EPS &&
-          point.x <= spec.roomMaxX + EPS &&
-          point.z >= spec.roomMinZ - EPS &&
-          point.z <= spec.roomMaxZ + EPS
-        ) {
-          consider({
-            point,
-            normal: new THREE.Vector3(0, -1, 0),
-            distance: tyTop,
-            surface: 'curtain',
-          })
-        }
-      }
-    }
-  }
-
-  return best
-}
-
-function orientDmxValue(
-  value: number,
-  min: number,
-  max: number,
-  invert: boolean
-): number {
-  const safeMin = Number.isFinite(min) ? min : 0
-  const safeMax = Number.isFinite(max) ? max : 255
-  if (!invert) return value
-  return safeMin + safeMax - value
-}
-
-function wrapDegrees(value: number): number {
-  let wrapped = ((value + 180) % 360 + 360) % 360 - 180
-  if (wrapped === -180) wrapped = 180
-  return wrapped
-}
-
-function derivePanSlopeDegPerDmx(calibration: MoverCalibration): number {
-  const pan = calibration.pan
-  const min = Number.isFinite(pan.min) ? pan.min : 0
-  const max = Number.isFinite(pan.max) ? pan.max : 255
-  const turns = Number.isFinite(pan.turns) ? Math.max(0.25, pan.turns) : 1
-  const span = Math.max(1, Math.abs(max - min))
-  const baseSlopeMagnitude = (turns * 360) / span
-
-  const front = orientDmxValue(pan.front, min, max, pan.invert)
-  const back = orientDmxValue(pan.back, min, max, pan.invert)
-  const delta = back - front
-
-  const signFallback = delta >= 0 ? 1 : -1
-  let bestSlope = signFallback * baseSlopeMagnitude
-
-  if (Math.abs(delta) < 0.0001) {
-    return bestSlope
-  }
-
-  let bestScore = Number.POSITIVE_INFINITY
-  const maxK = Math.max(3, Math.ceil(turns) + 2)
-
-  for (let k = -maxK; k <= maxK; k++) {
-    const targetBackAngle = 180 + 360 * k
-    const candidateSlope = targetBackAngle / delta
-
-    if (!Number.isFinite(candidateSlope)) {
-      continue
-    }
-
-    const spanAngle = Math.abs(candidateSlope * (max - min))
-    const targetSpanAngle = turns * 360
-    const score =
-      Math.abs(Math.abs(candidateSlope) - baseSlopeMagnitude) * 4 +
-      Math.abs(spanAngle - targetSpanAngle) * 0.04
-
-    if (score < bestScore) {
-      bestScore = score
-      bestSlope = candidateSlope
-    }
-  }
-
-  return bestSlope
-}
-
-function mapPanDmxToYawDeg(
-  value: number,
-  calibration: MoverCalibration | undefined,
-  fallbackNorm: number
-): number {
-  if (calibration === undefined) {
-    return (fallbackNorm - 0.5) * 180
-  }
-
-  const pan = calibration.pan
-  const min = Number.isFinite(pan.min) ? pan.min : 0
-  const max = Number.isFinite(pan.max) ? pan.max : 255
-  const orientedValue = orientDmxValue(value, min, max, pan.invert)
-  const orientedFront = orientDmxValue(pan.front, min, max, pan.invert)
-  const slope = derivePanSlopeDegPerDmx(calibration)
-  const yawRaw = (orientedValue - orientedFront) * slope
-
-  return wrapDegrees(yawRaw)
-}
-
-function mapTiltDmxToPitchDeg(
-  value: number,
-  calibration: MoverCalibration | undefined,
-  fallbackNorm: number,
-  mountInverted: boolean
-): number {
-  if (calibration === undefined) {
-    return lerp(-90, 90, fallbackNorm)
-  }
-
-  const tilt = calibration.tilt
-  const min = Number.isFinite(tilt.min) ? tilt.min : 0
-  const max = Number.isFinite(tilt.max) ? tilt.max : 255
-
-  const orientedMin = orientDmxValue(tilt.min, min, max, tilt.invert)
-  const orientedMax = orientDmxValue(tilt.max, min, max, tilt.invert)
-  const orientedForward = orientDmxValue(tilt.forward, min, max, tilt.invert)
-  const orientedSecondary = orientDmxValue(
-    mountInverted ? tilt.down : tilt.up,
-    min,
-    max,
-    tilt.invert
-  )
-  const orientedValue = orientDmxValue(value, min, max, tilt.invert)
-
-  const secondaryPitch = mountInverted ? -90 : 90
-  const anchorSpan = orientedSecondary - orientedForward
-  const fallbackSpan = orientedMax - orientedMin
-  const span = Math.abs(anchorSpan) > 0.0001 ? anchorSpan : fallbackSpan
-
-  if (Math.abs(span) <= 0.0001) {
-    return lerp(-90, 90, fallbackNorm)
-  }
-
-  const slope = secondaryPitch / span
-  let pitch = (orientedValue - orientedForward) * slope
-
-  const minPitch = (orientedMin - orientedForward) * slope
-  const maxPitch = (orientedMax - orientedForward) * slope
-  pitch = clamp(pitch, Math.min(minPitch, maxPitch), Math.max(minPitch, maxPitch))
-
-  return clamp(pitch, -180, 180)
-}
-
-function directionFromYawPitch(yawDeg: number, pitchDeg: number): THREE.Vector3 {
-  const yaw = THREE.MathUtils.degToRad(yawDeg)
-  const pitch = THREE.MathUtils.degToRad(pitchDeg)
-  const cosPitch = Math.cos(pitch)
-
-  return new THREE.Vector3(
-    Math.sin(yaw) * cosPitch,
-    Math.sin(pitch),
-    Math.cos(yaw) * cosPitch
-  ).normalize()
-}
-
-function projectAimToFloor(
-  fixtureWorld: { worldX: number; worldY: number; worldZ: number },
-  yawDeg: number,
-  pitchDeg: number
-): { x: number; z: number } | undefined {
-  const direction = directionFromYawPitch(yawDeg, pitchDeg)
-  if (direction.y >= -0.0001) {
-    return undefined
-  }
-
-  const t = (DANCE_FLOOR_Y - fixtureWorld.worldY) / direction.y
-  if (!Number.isFinite(t) || t <= 0) {
-    return undefined
-  }
-
-  return {
-    x: fixtureWorld.worldX + direction.x * t,
-    z: fixtureWorld.worldZ + direction.z * t,
-  }
-}
-
-function targetFromLiveAxis(
-  fixture: MoverPreviewFixture,
-  liveAxis: LiveAxisValues,
-  fixtureWorld: { worldX: number; worldY: number; worldZ: number }
-): { worldX: number; worldY: number; worldZ: number } {
-  const yawDeg = mapPanDmxToYawDeg(
-    liveAxis.panRaw,
-    fixture.moverCalibration,
-    liveAxis.panNorm
-  )
-  const pitchDeg = mapTiltDmxToPitchDeg(
-    liveAxis.tiltRaw,
-    fixture.moverCalibration,
-    liveAxis.tiltNorm,
-    fixture.moverMountOrientation === 'inverted'
-  )
-
-  const floorHit = projectAimToFloor(fixtureWorld, yawDeg, pitchDeg)
-  if (floorHit !== undefined) {
-    return {
-      worldX: floorHit.x,
-      worldY: DANCE_FLOOR_Y,
-      worldZ: floorHit.z,
-    }
-  }
-
-  const direction = directionFromYawPitch(yawDeg, pitchDeg)
-  return {
-    worldX: fixtureWorld.worldX + direction.x * FALLBACK_TARGET_LENGTH,
-    worldY: fixtureWorld.worldY + direction.y * FALLBACK_TARGET_LENGTH,
-    worldZ: fixtureWorld.worldZ + direction.z * FALLBACK_TARGET_LENGTH,
-  }
-}
-
-function findClosestReferenceIndex<T>(
-  items: T[],
-  isReference: (item: T, index: number) => boolean,
-  targetIndex: number,
-  primaryDistance: (left: T, right: T) => number,
-  secondaryDistance: (left: T, right: T) => number
-): number | undefined {
-  const target = items[targetIndex]
-  if (target === undefined) {
-    return undefined
-  }
-
-  let bestIndex: number | undefined
-  let bestPrimary = Number.POSITIVE_INFINITY
-  let bestSecondary = Number.POSITIVE_INFINITY
-
-  items.forEach((candidate, candidateIndex) => {
-    if (!isReference(candidate, candidateIndex)) {
-      return
-    }
-
-    const primary = primaryDistance(target, candidate)
-    const secondary = secondaryDistance(target, candidate)
-    const candidateId = candidateIndex
-    const bestId = bestIndex ?? Number.POSITIVE_INFINITY
-    const isBetter =
-      primary < bestPrimary - 0.000001 ||
-      (Math.abs(primary - bestPrimary) <= 0.000001 &&
-        (secondary < bestSecondary - 0.000001 ||
-          (Math.abs(secondary - bestSecondary) <= 0.000001 && candidateId < bestId)))
-
-    if (isBetter) {
-      bestIndex = candidateIndex
-      bestPrimary = primary
-      bestSecondary = secondary
-    }
-  })
-
-  return bestIndex
-}
-
-function buildTargets(
-  fixtures: MoverPreviewFixture[],
-  params: Params,
-  dmxOutByUniverse: number[][],
-  floorSpec: FloorSpec,
-  stageHeight: number
-): PreviewTarget[] {
-  const baseX = clamp01(getParam(params, 'xAxis'))
-  const baseY = clamp01(getParam(params, 'yAxis'))
-  const spread = clamp01(getParam(params, 'moverSpread'))
-  const mirrorLeftRight = getParam(params, 'moverMirrorX') > 0.5
-  const mirrorTopBottom = getParam(params, 'moverMirrorY') > 0.5
-  const moverMode = parseMoverMode(params)
-
-  const grouped: Record<string, MoverPreviewFixture[]> = {}
-  for (const fixture of fixtures) {
-    const groupName =
-      fixture.groupName.trim().length > 0
-        ? fixture.groupName.trim()
-        : 'Mover Group'
-    const items = grouped[groupName] ?? []
-    items.push(fixture)
-    grouped[groupName] = items
-  }
-
-  const targets: PreviewTarget[] = []
-
-  for (const [groupName, rawGroupFixtures] of Object.entries(grouped)) {
-    const groupFixtures = [...rawGroupFixtures].sort((left, right) => {
-      if (left.xPos !== right.xPos) return left.xPos - right.xPos
-      if (left.yPos !== right.yPos) return left.yPos - right.yPos
-      return left.fixtureId.localeCompare(right.fixtureId)
-    })
-
-    let minX = 1
-    let maxX = 0
-    let minY = 1
-    let maxY = 0
-
-    for (const fixture of groupFixtures) {
-      minX = Math.min(minX, fixture.xPos)
-      maxX = Math.max(maxX, fixture.xPos)
-      minY = Math.min(minY, fixture.yPos)
-      maxY = Math.max(maxY, fixture.yPos)
-    }
-
-    const spanX = maxX - minX
-    const spanY = maxY - minY
-    const hasHorizontalSpread = spanX > 0.0001
-    const hasVerticalSpread = spanY > 0.0001
-    const centerX = (minX + maxX) * 0.5
-    const centerY = (minY + maxY) * 0.5
-    const sideEpsilon = 0.0001
-    const isRightFlags = groupFixtures.map((fixture, fixtureIndex) =>
-      hasHorizontalSpread
-        ? fixture.xPos > centerX + sideEpsilon
-        : fixtureIndex >= Math.ceil(groupFixtures.length / 2)
-    )
-    // `yPos` uses top=1, bottom=0 in this view model.
-    const isBottomFlags = groupFixtures.map((fixture) =>
-      hasVerticalSpread ? fixture.yPos < centerY - sideEpsilon : false
-    )
-
-    const groupColor = colorForGroup(groupName)
-
-    groupFixtures.forEach((fixture, fixtureIndex) => {
-      const relX = hasHorizontalSpread
-        ? clamp01((fixture.xPos - minX) / spanX)
-        : groupFixtures.length <= 1
-          ? 0.5
-          : fixtureIndex / (groupFixtures.length - 1)
-      const relY = hasVerticalSpread
-        ? clamp01((fixture.yPos - minY) / spanY)
-        : 0.5
-
-      let targetNormX = baseX
-      let targetNormY = baseY
-
-      if (moverMode === 1) {
-        targetNormX = baseX + (relX - 0.5) * spread
-        targetNormY = baseY + (relY - 0.5) * spread
-      } else if (moverMode === 2) {
-        const isRight = isRightFlags[fixtureIndex] === true
-        const isBottom = isBottomFlags[fixtureIndex] === true
-
-        if (mirrorLeftRight && isRight) {
-          const refIndex = findClosestReferenceIndex(
-            groupFixtures,
-            (_candidate, candidateIndex) => isRightFlags[candidateIndex] !== true,
-            fixtureIndex,
-            (left, right) => Math.abs(left.yPos - right.yPos),
-            (left, right) => Math.abs(left.xPos - right.xPos)
-          )
-          if (refIndex !== undefined) {
-            const ref = groupFixtures[refIndex]
-            // Keep forward alignment while mirroring left/right turn direction.
-            targetNormX = fixture.xPos + ref.xPos - targetNormX
-          } else {
-            targetNormX = centerX * 2 - baseX
-          }
-        }
-        if (mirrorTopBottom && isBottom) {
-          const refIndex = findClosestReferenceIndex(
-            groupFixtures,
-            (_candidate, candidateIndex) => isBottomFlags[candidateIndex] !== true,
-            fixtureIndex,
-            (left, right) => Math.abs(left.xPos - right.xPos),
-            (left, right) => Math.abs(left.yPos - right.yPos)
-          )
-          if (refIndex !== undefined) {
-            const ref = groupFixtures[refIndex]
-            // Keep forward alignment while mirroring up/down tilt direction.
-            targetNormY = fixture.yPos + ref.yPos - targetNormY
-          } else {
-            targetNormY = centerY * 2 - baseY
-          }
-        }
-      }
-
-      const fixtureWorld = fixtureWorldFromUniversePosition(
-        fixture.xPos,
-        fixture.yPos,
-        fixture.zPos,
-        floorSpec,
-        stageHeight
-      )
-      let targetWorld = danceFloorWorldFromNormalized(
-        targetNormX,
-        targetNormY,
-        floorSpec
-      )
-
-      const modelKind = resolveModelKind(fixture)
-      const isMoverModel = isMoverModelKind(modelKind)
-      const modelWidth = clamp(fixture.model.width, 0.2, 8)
-      const moverModelScale = clamp(modelWidth, 0.4, 1.6)
-      const moverSpotEmitterFaceZ = moverModelScale * 0.17
-      const moverWashEmitterFaceZ = moverModelScale * 0.18
-      let aimYawDeg: number | undefined = undefined
-      let aimPitchDeg: number | undefined = undefined
-
-      const liveAxis =
-        isMoverModel ? readLiveAxisValues(fixture, dmxOutByUniverse) : undefined
-      if (isMoverModel && liveAxis !== undefined) {
-        aimYawDeg = mapPanDmxToYawDeg(
-          liveAxis.panRaw,
-          fixture.moverCalibration,
-          liveAxis.panNorm
-        )
-        aimPitchDeg = mapTiltDmxToPitchDeg(
-          liveAxis.tiltRaw,
-          fixture.moverCalibration,
-          liveAxis.tiltNorm,
-          fixture.moverMountOrientation === 'inverted'
-        )
-        // Primary mode: use real DMX output and mover calibration directly.
-        targetWorld = targetFromLiveAxis(fixture, liveAxis, fixtureWorld)
-      }
-
-      const universe = Math.max(1, Math.round(fixture.universe || 1))
-      const universeData = dmxOutByUniverse[universe - 1]
-      const focusNorm = readLiveFocusNormalized(fixture.focusChannels, universeData)
-      const hasFocusChannel = fixture.focusChannels.length > 0
-
-      const emitterGroups =
-        fixture.emitterGroups.length > 0
-          ? fixture.emitterGroups
-          : [
-              {
-                emitterCount: 1,
-                relativeX: 0.5,
-                relativeY: 0.5,
-                relativeZ: 0.5,
-                colorChannels: fixture.colorChannels,
-                colorMapChannels: fixture.colorMapChannels,
-                masterChannels: fixture.masterChannels,
-                goboMapChannels: fixture.goboMapChannels,
-              },
-            ]
-
-      const goboIndex = readLiveGoboIndex(fixture.goboMapChannels, universeData)
-
-      const washBarGroupCount = emitterGroups.length
-      const washBarUsableWidth = modelWidth * 0.88
-      const washBarSectionWidth =
-        washBarGroupCount > 0
-          ? washBarUsableWidth / washBarGroupCount
-          : washBarUsableWidth
-      const washBarClusterWidth = Math.max(
-        0.01,
-        Math.min(
-          washBarSectionWidth * 0.72,
-          Math.min(modelWidth * 0.22, washBarSectionWidth * 0.92)
-        )
-      )
-
-      const emitters: PreviewEmitterTarget[] = []
-      for (const [groupIndex, emitterGroup] of emitterGroups.entries()) {
-        const beamValues = readLiveBeamValuesForChannels(
-          {
-            colorChannels: emitterGroup.colorChannels,
-            colorMapChannels: emitterGroup.colorMapChannels,
-            masterChannels: emitterGroup.masterChannels,
-          },
-          universeData,
-          params,
-          groupColor
-        )
-
-        const count = Math.max(1, Math.min(64, Math.round(emitterGroup.emitterCount)))
-        if (modelKind === 'washBar') {
-          const centerX =
-            -washBarUsableWidth / 2 + washBarSectionWidth * (groupIndex + 0.5)
-          const centerY = 0
-          const centerZ = 0
-
-          for (let emitterIndex = 0; emitterIndex < count; emitterIndex++) {
-            const slot =
-              count <= 1 ? 0 : emitterIndex / Math.max(1, count - 1) - 0.5
-            emitters.push({
-              localX: centerX + slot * washBarClusterWidth,
-              localY: centerY,
-              localZ: 0.029 + centerZ,
-              color: beamValues.color.clone(),
-              intensity: beamValues.intensity,
-            })
-          }
-        } else if (modelKind === 'moverWash') {
-          const centerX = (clamp01(emitterGroup.relativeX) - 0.5) * modelWidth * 0.18
-          const centerY = (0.5 - clamp01(emitterGroup.relativeY)) * 0.08
-          const centerZ = (clamp01(emitterGroup.relativeZ) - 0.5) * 0.04
-          const radius = clamp(modelWidth * 0.11, 0.03, 0.18)
-          for (let emitterIndex = 0; emitterIndex < count; emitterIndex++) {
-            if (emitterIndex === 0 || count === 1) {
-              emitters.push({
-                localX: centerX,
-                localY: centerY,
-                localZ: moverWashEmitterFaceZ + centerZ * 0.2,
-                color: beamValues.color.clone(),
-                intensity: beamValues.intensity,
-              })
-              continue
-            }
-
-            const ringIndex = emitterIndex - 1
-            const ringCount = Math.max(1, count - 1)
-            const angle = (ringIndex / ringCount) * Math.PI * 2
-            emitters.push({
-              localX: centerX + Math.cos(angle) * radius,
-              localY: centerY + Math.sin(angle) * radius,
-              localZ: moverWashEmitterFaceZ + centerZ * 0.2,
-              color: beamValues.color.clone(),
-              intensity: beamValues.intensity,
-            })
-          }
-        } else {
-          const centerX =
-            (clamp01(emitterGroup.relativeX) - 0.5) *
-            modelWidth *
-            (isMoverModel ? 0.18 : 0.85)
-          const centerY =
-            (0.5 - clamp01(emitterGroup.relativeY)) * (isMoverModel ? 0.08 : 0.2)
-          const centerZ =
-            (clamp01(emitterGroup.relativeZ) - 0.5) * (isMoverModel ? 0.04 : 0.12)
-          const spread =
-            modelKind === 'uplight'
-              ? modelWidth * 0.16
-              : modelKind === 'moverSpot'
-              ? 0.04
-              : 0.14
-          const baseZ =
-            modelKind === 'uplight'
-              ? 0.02 + centerZ
-              : modelKind === 'moverSpot'
-              ? moverSpotEmitterFaceZ + centerZ * 0.2
-              : 0.17 + centerZ
-
-          for (let emitterIndex = 0; emitterIndex < count; emitterIndex++) {
-            const slot =
-              count <= 1 ? 0 : emitterIndex / Math.max(1, count - 1) - 0.5
-            emitters.push({
-              localX:
-                modelKind === 'uplight'
-                  ? centerX + slot * spread * 0.45
-                  : centerX + slot * spread,
-              localY: modelKind === 'uplight' ? centerY + 0.04 : centerY,
-              localZ: baseZ,
-              color: beamValues.color.clone(),
-              intensity: beamValues.intensity,
-            })
-          }
-        }
-      }
-
-      targets.push({
-        fixtureId: fixture.fixtureId,
-        modelKind,
-        modelWidth,
-        moverBeamAngleDeg: fixture.model.moverBeamAngleDeg,
-        isMoverModel,
-        rotation: fixture.rotation,
-        fixtureX: fixtureWorld.worldX,
-        fixtureY: fixtureWorld.worldY,
-        fixtureZ: fixtureWorld.worldZ,
-        targetX: targetWorld.worldX,
-        targetY: targetWorld.worldY,
-        targetZ: targetWorld.worldZ,
-        aimYawDeg,
-        aimPitchDeg,
-        focusNorm,
-        hasFocusChannel,
-        goboIndex,
-        mountInverted: fixture.moverMountOrientation === 'inverted',
-        emitters,
-      })
-    })
-  }
-
-  return targets
-}
-
-function fixtureVisualSignature(target: PreviewTarget): string {
-  return `${target.modelKind}:${target.modelWidth.toFixed(3)}:${target.emitters.length}`
-}
-
-function createPleatedCurtainGeometry(): THREE.PlaneGeometry {
-  const widthSegments = 96
-  const heightSegments = 18
-  const geometry = new THREE.PlaneGeometry(1, 1, widthSegments, heightSegments)
-  const positions = geometry.getAttribute('position') as THREE.BufferAttribute
-
-  for (let index = 0; index < positions.count; index++) {
-    const x = positions.getX(index)
-    const y = positions.getY(index)
-    const pleatPhase = (x + 0.5) * Math.PI * 30
-    const pleatOffset = Math.sin(pleatPhase) * 0.038
-    const verticalWeight = 0.72 + (0.5 - y) * 0.28
-    positions.setZ(index, pleatOffset * verticalWeight)
-  }
-
-  positions.needsUpdate = true
-  geometry.computeVertexNormals()
-  return geometry
-}
-
-function nonMoverEmitterBaseY(modelKind: FixtureModelKind): number {
-  if (modelKind === 'washBar') return 0.12
-  if (modelKind === 'parCan') return 0.2
-  if (modelKind === 'uplight') return 0.26
-  return 0.23
-}
-
-function createEmitterMesh(color: THREE.Color): THREE.Mesh {
-  const geometry = new THREE.CylinderGeometry(0.0225, 0.0225, 0.005, 24)
-
-  return new THREE.Mesh(
-    geometry,
-    new THREE.MeshStandardMaterial({
-      color,
-      emissive: color,
-      emissiveIntensity: 2.1,
-      metalness: 0.05,
-      roughness: 0.2,
-      toneMapped: false,
-    })
-  )
-}
-
-function createEmitterSurfaceSplatMesh(
-  color: THREE.Color,
-  segments: number
-): THREE.Mesh {
-  const splat = new THREE.Mesh(
-    new THREE.CircleGeometry(1, segments),
-    new THREE.MeshBasicMaterial({
-      color,
-      transparent: true,
-      opacity: 0.2,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-      blending: THREE.AdditiveBlending,
-      toneMapped: false,
-    })
-  )
-  splat.visible = false
-  return splat
-}
-
-function createEmitterVolumeMesh(
-  modelKind: FixtureModelKind,
-  color: THREE.Color
-): THREE.Object3D {
-  const isCloud = isCloudModelKind(modelKind)
-  if (isCloud) {
-    const group = new THREE.Group()
-    const layers = [
-      { radiusScale: 1, opacity: 0.36 },
-      { radiusScale: 1.24, opacity: 0.23 },
-      { radiusScale: 1.52, opacity: 0.14 },
-      { radiusScale: 1.9, opacity: 0.08 },
-    ]
-    for (const layer of layers) {
-      const geometry = createSharpConeGeometry(SHARP_CONE_SEGMENTS)
-      const shell = new THREE.Mesh(
-        geometry,
-        new THREE.MeshBasicMaterial({
-          color,
-          transparent: true,
-          opacity: layer.opacity,
-          depthWrite: false,
-          side: THREE.DoubleSide,
-          blending: THREE.AdditiveBlending,
-          toneMapped: false,
-        })
-      )
-      shell.userData.baseOpacity = layer.opacity
-      shell.userData.radiusScale = layer.radiusScale
-      group.add(shell)
-    }
-    group.userData.volumeKind = 'softCone'
-    return group
-  }
-
-  const geometry = createSharpConeGeometry(SHARP_CONE_SEGMENTS)
-  const mesh = new THREE.Mesh(
-    geometry,
-    new THREE.MeshBasicMaterial({
-      color,
-      transparent: true,
-      opacity: 0.62,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-      blending: THREE.AdditiveBlending,
-      toneMapped: false,
-    })
-  )
-  mesh.userData.volumeKind = 'sharpCone'
-  return mesh
-}
-
-function createSharpConeGeometry(radialSegments: number): THREE.BufferGeometry {
-  const segments = Math.max(3, Math.round(radialSegments))
-  const geometry = new THREE.BufferGeometry()
-  const vertexCount = (segments + 1) * 2
-  const positions = new Float32Array(vertexCount * 3)
-  const indices: number[] = []
-
-  for (let segment = 0; segment <= segments; segment++) {
-    const angle = (segment / segments) * Math.PI * 2
-    const cos = Math.cos(angle)
-    const sin = Math.sin(angle)
-    const nearIndex = segment * 2
-    const farIndex = nearIndex + 1
-
-    positions[nearIndex * 3 + 0] = cos * EMITTER_DISK_RADIUS
-    positions[nearIndex * 3 + 1] = sin * EMITTER_DISK_RADIUS
-    positions[nearIndex * 3 + 2] = 0
-
-    positions[farIndex * 3 + 0] = cos * EMITTER_DISK_RADIUS
-    positions[farIndex * 3 + 1] = sin * EMITTER_DISK_RADIUS
-    positions[farIndex * 3 + 2] = 1
-
-    if (segment < segments) {
-      const nextNearIndex = nearIndex + 2
-      const nextFarIndex = farIndex + 2
-      indices.push(nearIndex, farIndex, nextFarIndex)
-      indices.push(nearIndex, nextFarIndex, nextNearIndex)
-    }
-  }
-
-  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-  geometry.setIndex(indices)
-  geometry.computeVertexNormals()
-  geometry.userData.radialSegments = segments
-  return geometry
-}
-
-function setSharpConeGeometryFromPoints(
-  geometry: THREE.BufferGeometry,
-  nearRadius: number,
-  farRingLocal: THREE.Vector3[]
-) {
-  if (farRingLocal.length === 0) {
-    return
-  }
-
-  const position = geometry.getAttribute('position')
-  if (!(position instanceof THREE.BufferAttribute)) {
-    return
-  }
-
-  const segments = Math.max(
-    3,
-    Math.round(Number(geometry.userData.radialSegments ?? SHARP_CONE_SEGMENTS))
-  )
-
-  for (let segment = 0; segment <= segments; segment++) {
-    const angle = (segment / segments) * Math.PI * 2
-    const cos = Math.cos(angle)
-    const sin = Math.sin(angle)
-    const nearIndex = segment * 2
-    const farIndex = nearIndex + 1
-    const farPoint =
-      segment === segments
-        ? farRingLocal[0]
-        : farRingLocal[Math.min(segment, farRingLocal.length - 1)]
-    const farZ = Math.max(0.02, farPoint.z)
-
-    position.setXYZ(nearIndex, cos * nearRadius, sin * nearRadius, 0)
-    position.setXYZ(farIndex, farPoint.x, farPoint.y, farZ)
-  }
-
-  position.needsUpdate = true
-  geometry.computeVertexNormals()
-}
-
-function buildBeamBasis(beamDirection: THREE.Vector3): {
-  tangent: THREE.Vector3
-  bitangent: THREE.Vector3
-} {
-  const fallbackAxis =
-    Math.abs(beamDirection.y) < 0.98
-      ? new THREE.Vector3(0, 1, 0)
-      : new THREE.Vector3(1, 0, 0)
-  const tangent = new THREE.Vector3()
-    .crossVectors(fallbackAxis, beamDirection)
-    .normalize()
-  const bitangent = new THREE.Vector3()
-    .crossVectors(beamDirection, tangent)
-    .normalize()
-
-  return {
-    tangent,
-    bitangent,
-  }
-}
-
-function sampleBeamBoundary(
-  origin: THREE.Vector3,
-  beamDirection: THREE.Vector3,
-  halfAngleRad: number,
-  sampleAngles: number[],
-  surfaceSpec: SurfaceSpec,
-  axisDistance: number,
-  nearRadius: number
-): BeamBoundarySample[] {
-  const radialGrowth = Math.tan(halfAngleRad) * Math.max(0.02, axisDistance)
-  const farRadius = nearRadius + radialGrowth
-  const safeAxisDistance = Math.max(0.02, axisDistance)
-  const { tangent, bitangent } = buildBeamBasis(beamDirection)
-  const centerPoint = origin
-    .clone()
-    .addScaledVector(beamDirection, safeAxisDistance)
-
-  return sampleAngles.map((angle) => {
-    const radialCos = Math.cos(angle)
-    const radialSin = Math.sin(angle)
-    const nearPoint = origin
-      .clone()
-      .add(tangent.clone().multiplyScalar(radialCos * nearRadius))
-      .add(bitangent.clone().multiplyScalar(radialSin * nearRadius))
-    const farGuide = centerPoint
-      .clone()
-      .add(tangent.clone().multiplyScalar(radialCos * farRadius))
-      .add(bitangent.clone().multiplyScalar(radialSin * farRadius))
-    const direction = farGuide
-      .clone()
-      .sub(nearPoint)
-      .normalize()
-    const rayOrigin = nearPoint.clone().addScaledVector(direction, BOUNDARY_RAY_BIAS)
-    const hit = nearestSurfaceHit(rayOrigin, direction, surfaceSpec)
-    const distance =
-      hit !== undefined
-        ? Math.max(0.02, hit.distance + BOUNDARY_RAY_BIAS)
-        : feetToWorld(FALLBACK_BEAM_REACH_FT)
-
-    return {
-      hit,
-      point: nearPoint.clone().addScaledVector(direction, distance),
-      distance,
-    }
-  })
-}
-
-function isSameSurface(first: SurfaceHit, second: SurfaceHit): boolean {
-  if (first.surface !== second.surface) {
-    return false
-  }
-  return first.normal.dot(second.normal) > 0.92
-}
-
-function surfaceHitKey(hit: SurfaceHit, spec: SurfaceSpec): string {
-  const normal = hit.normal
-  if (Math.abs(normal.y) > 0.9) {
-    return normal.y > 0 ? 'floor' : 'room:ceiling'
-  }
-
-  if (
-    spec.includeCurtain &&
-    Math.abs(normal.z) > 0.9 &&
-    Math.abs(hit.point.z - spec.curtainZ) < 0.05
-  ) {
-    return 'curtain'
-  }
-
-  if (Math.abs(normal.x) > 0.9) {
-    return normal.x > 0 ? 'room:left' : 'room:right'
-  }
-  if (Math.abs(normal.z) > 0.9) {
-    return normal.z > 0 ? 'room:back' : 'room:front'
-  }
-
-  return `surface:${normal.x.toFixed(3)}:${normal.y.toFixed(3)}:${normal.z.toFixed(3)}`
-}
-
-function surfaceRectBounds(
-  hit: SurfaceHit,
-  spec: SurfaceSpec
-):
-  | {
-      axisA: 'x' | 'y' | 'z'
-      minA: number
-      maxA: number
-      axisB: 'x' | 'y' | 'z'
-      minB: number
-      maxB: number
-    }
-  | undefined {
-  const normal = hit.normal
-
-  if (Math.abs(normal.y) > 0.9) {
-    if (normal.y > 0) {
-      return {
-        axisA: 'x',
-        minA: spec.floorMinX,
-        maxA: spec.floorMaxX,
-        axisB: 'z',
-        minB: spec.floorMinZ,
-        maxB: spec.floorMaxZ,
-      }
-    }
-
-    if (!spec.includeRoom) {
-      return undefined
-    }
-    return {
-      axisA: 'x',
-      minA: spec.roomMinX,
-      maxA: spec.roomMaxX,
-      axisB: 'z',
-      minB: spec.roomMinZ,
-      maxB: spec.roomMaxZ,
-    }
-  }
-
-  if (Math.abs(normal.x) > 0.9) {
-    if (!spec.includeRoom) {
-      return undefined
-    }
-    return {
-      axisA: 'z',
-      minA: spec.roomMinZ,
-      maxA: spec.roomMaxZ,
-      axisB: 'y',
-      minB: spec.roomMinY,
-      maxB: spec.roomMaxY,
-    }
-  }
-
-  const isCurtainPlane =
-    spec.includeCurtain && Math.abs(hit.point.z - spec.curtainZ) < 0.02
-  if (isCurtainPlane) {
-    return {
-      axisA: 'x',
-      minA: spec.curtainMinX,
-      maxA: spec.curtainMaxX,
-      axisB: 'y',
-      minB: spec.curtainMinY,
-      maxB: spec.curtainMaxY,
-    }
-  }
-
-  if (!spec.includeRoom) {
-    return undefined
-  }
-  return {
-    axisA: 'x',
-    minA: spec.roomMinX,
-    maxA: spec.roomMaxX,
-    axisB: 'y',
-    minB: spec.roomMinY,
-    maxB: spec.roomMaxY,
-  }
-}
-
-function axisPlane(axis: 'x' | 'y' | 'z', normalSign: 1 | -1, offset: number): THREE.Plane {
-  if (axis === 'x') {
-    return new THREE.Plane(new THREE.Vector3(normalSign, 0, 0), -normalSign * offset)
-  }
-  if (axis === 'y') {
-    return new THREE.Plane(new THREE.Vector3(0, normalSign, 0), -normalSign * offset)
-  }
-  return new THREE.Plane(new THREE.Vector3(0, 0, normalSign), -normalSign * offset)
-}
-
-function clippingPlanesForSurface(hit: SurfaceHit, spec: SurfaceSpec): THREE.Plane[] {
-  const bounds = surfaceRectBounds(hit, spec)
-  if (bounds === undefined) {
-    return []
-  }
-
-  return [
-    axisPlane(bounds.axisA, 1, bounds.minA),
-    axisPlane(bounds.axisA, -1, bounds.maxA),
-    axisPlane(bounds.axisB, 1, bounds.minB),
-    axisPlane(bounds.axisB, -1, bounds.maxB),
-  ]
-}
-
-function clippingPlanesForCone(spec: SurfaceSpec): THREE.Plane[] {
-  const planes: THREE.Plane[] = [
-    axisPlane('y', 1, spec.floorY),
-  ]
-
-  if (spec.includeRoom) {
-    planes.push(axisPlane('x', 1, spec.roomMinX))
-    planes.push(axisPlane('x', -1, spec.roomMaxX))
-    planes.push(axisPlane('z', 1, spec.roomMinZ))
-    planes.push(axisPlane('z', -1, spec.roomMaxZ))
-    planes.push(axisPlane('y', -1, spec.roomMaxY))
-  }
-
-  return planes
-}
-
-function buildSurfaceSplatProjections(
-  origin: THREE.Vector3,
-  centerHit: SurfaceHit | undefined,
-  boundarySamples: BeamBoundarySample[] | undefined,
-  beamDirection: THREE.Vector3,
-  halfAngleRad: number,
-  nearRadius: number,
-  allowMultiSurface: boolean,
-  surfaceSpec: SurfaceSpec
-): SurfaceSplatProjection[] {
-  const groupedHits = new Map<
-    string,
-    {
-      hit: SurfaceHit
-      points: THREE.Vector3[]
-      distances: number[]
-      includesCenter: boolean
-    }
-  >()
-
-  const pushHitPoint = (
-    hit: SurfaceHit | undefined,
-    point: THREE.Vector3,
-    distance: number,
-    includeCenter: boolean
-  ) => {
-    if (hit === undefined) {
-      return
-    }
-    const key = surfaceHitKey(hit, surfaceSpec)
-    const existing = groupedHits.get(key)
-    if (existing === undefined) {
-      groupedHits.set(key, {
-        hit,
-        points: [point.clone()],
-        distances: [distance],
-        includesCenter: includeCenter,
-      })
-      return
-    }
-    existing.points.push(point.clone())
-    existing.distances.push(distance)
-    existing.includesCenter = existing.includesCenter || includeCenter
-  }
-
-  if (centerHit !== undefined) {
-    pushHitPoint(centerHit, centerHit.point, centerHit.distance, true)
-  }
-  boundarySamples?.forEach((sample) => {
-    if (sample.hit !== undefined) {
-      pushHitPoint(sample.hit, sample.hit.point, sample.distance, false)
-    }
-  })
-
-  const projections: SurfaceSplatProjection[] = []
-
-  for (const [, group] of groupedHits) {
-    if (group.points.length === 0) {
-      continue
-    }
-    if (!allowMultiSurface && !group.includesCenter) {
-      continue
-    }
-
-    const normal = group.hit.normal.clone().normalize()
-    let tangent = beamDirection
-      .clone()
-      .sub(normal.clone().multiplyScalar(beamDirection.dot(normal)))
-
-    if (tangent.lengthSq() <= 0.000001) {
-      const fallbackAxis =
-        Math.abs(normal.y) < 0.95
-          ? new THREE.Vector3(0, 1, 0)
-          : new THREE.Vector3(1, 0, 0)
-      tangent = new THREE.Vector3().crossVectors(fallbackAxis, normal)
-    }
-    tangent.normalize()
-    const bitangent = new THREE.Vector3().crossVectors(normal, tangent).normalize()
-
-    const centroid = group.points
-      .reduce((sum, point) => sum.add(point), new THREE.Vector3())
-      .multiplyScalar(1 / group.points.length)
-
-    const denominator = beamDirection.dot(normal)
-    let center = centroid
-    let axisDistance = 0
-    if (Math.abs(denominator) > 0.000001) {
-      // Always project the beam axis onto the hit plane so splats preserve
-      // world size near edges and rely on clipping planes for edge masking.
-      const t = normal.dot(group.hit.point.clone().sub(origin)) / denominator
-      if (Number.isFinite(t) && t > 0) {
-        center = origin.clone().addScaledVector(beamDirection, t)
-        axisDistance = t
-      }
-    }
-
-    if (axisDistance <= 0 && group.distances.length > 0) {
-      axisDistance =
-        group.distances.reduce((sum, value) => sum + value, 0) / group.distances.length
-    }
-    if (axisDistance <= 0) {
-      axisDistance = Math.max(0.02, beamDirection.dot(centroid.clone().sub(origin)))
-    }
-    axisDistance = Math.max(0.02, axisDistance)
-
-    const minorRadius = clamp(
-      nearRadius + Math.tan(halfAngleRad) * axisDistance,
-      nearRadius,
-      feetToWorld(24)
-    )
-    const incidence = Math.abs(beamDirection.dot(normal))
-    const majorRadius = clamp(
-      minorRadius / Math.pow(Math.max(0.28, incidence), 0.72),
-      minorRadius,
-      minorRadius * 3
-    )
-
-    let projectionTangent = tangent
-    if (majorRadius < minorRadius) {
-      projectionTangent = bitangent
-    }
-
-    projections.push({
-      hit: group.hit,
-      center,
-      normal,
-      tangent: projectionTangent.clone().normalize(),
-      majorRadius,
-      minorRadius,
-    })
-  }
-
-  return projections.sort((left, right) => {
-    const leftArea = left.majorRadius * left.minorRadius
-    const rightArea = right.majorRadius * right.minorRadius
-    return rightArea - leftArea
-  })
-}
-
-function createFixtureVisual(target: PreviewTarget): FixtureVisual {
-  const signature = fixtureVisualSignature(target)
-  const root = new THREE.Group()
-  const emitters: THREE.Mesh[] = []
-  const emitterVolumes: THREE.Object3D[] = []
-  const emitterSurfaceSplats: THREE.Mesh[][] = []
-
-  const bodyMaterial = new THREE.MeshStandardMaterial({
-    color: '#111318',
-    metalness: 0.22,
-    roughness: 0.8,
-  })
-  const lensMaterial = new THREE.MeshStandardMaterial({
-    color: '#222834',
-    emissive: '#10141d',
-    emissiveIntensity: 0.1,
-    metalness: 0.18,
-    roughness: 0.62,
-  })
-
-  if (target.isMoverModel) {
-    const moverScale = clamp(target.modelWidth, 0.4, 1.6)
-    const isWashMover = target.modelKind === 'moverWash'
-    const mountGroup = new THREE.Group()
-    if (target.mountInverted) {
-      mountGroup.rotation.z = Math.PI
-    }
-    root.add(mountGroup)
-
-    const baseRadius = 0.34 * moverScale
-    const baseHeight = 0.28 * moverScale
-    const base = new THREE.Mesh(
-      new THREE.CylinderGeometry(baseRadius * 0.68, baseRadius, baseHeight, 24),
-      bodyMaterial
-    )
-    base.position.y = baseHeight * 0.5
-    mountGroup.add(base)
-
-    const panPivot = new THREE.Group()
-    panPivot.position.y = baseHeight
-    mountGroup.add(panPivot)
-    const yokeGroup = new THREE.Group()
-    panPivot.add(yokeGroup)
-
-    const yokeInnerWidth = 0.32 * moverScale
-    const yokeArmThickness = 0.056 * moverScale
-    const yokeArmHeight = 0.32 * moverScale
-    const yokeDepth = 0.12 * moverScale
-    const yokeOuterWidth = yokeInnerWidth + yokeArmThickness * 2
-
-    const leftArm = new THREE.Mesh(
-      new THREE.BoxGeometry(yokeArmThickness, yokeArmHeight, yokeDepth),
-      bodyMaterial
-    )
-    leftArm.position.set(
-      -yokeInnerWidth * 0.5 - yokeArmThickness * 0.5,
-      yokeArmHeight * 0.5,
-      0
-    )
-    yokeGroup.add(leftArm)
-
-    const rightArm = leftArm.clone()
-    rightArm.position.x = yokeInnerWidth * 0.5 + yokeArmThickness * 0.5
-    yokeGroup.add(rightArm)
-
-    const bottomBridge = new THREE.Mesh(
-      new THREE.BoxGeometry(yokeOuterWidth, yokeArmThickness, yokeDepth),
-      bodyMaterial
-    )
-    bottomBridge.position.y = yokeArmThickness * 0.5
-    yokeGroup.add(bottomBridge)
-
-    const headPivot = new THREE.Group()
-    headPivot.position.set(0, yokeArmHeight * 0.56, 0)
-    yokeGroup.add(headPivot)
-
-    const headWidth = yokeInnerWidth * 0.9
-    const headHeight = 0.18 * moverScale
-    const headDepth = 0.24 * moverScale
-    const head = new THREE.Mesh(
-      new THREE.BoxGeometry(headWidth, headHeight, headDepth),
-      bodyMaterial
-    )
-    head.position.z = headDepth * 0.18
-    headPivot.add(head)
-
-    let emitterFaceZ = head.position.z + headDepth * 0.5 + 0.008 * moverScale
-    if (isWashMover) {
-      const capRadius = clamp(Math.min(headWidth, headHeight) * 0.44, 0.03, 0.14)
-      const capDepth = 0.03 * moverScale
-      const frontCap = new THREE.Mesh(
-        new THREE.CylinderGeometry(capRadius, capRadius, capDepth, 20),
-        lensMaterial
-      )
-      frontCap.rotation.x = Math.PI / 2
-      frontCap.position.z = head.position.z + headDepth * 0.5 + capDepth * 0.52
-      headPivot.add(frontCap)
-      emitterFaceZ = frontCap.position.z + capDepth * 0.52
-    }
-
-    const beamStartProbe = new THREE.Object3D()
-    beamStartProbe.position.set(0, 0, emitterFaceZ)
-    headPivot.add(beamStartProbe)
-    root.updateMatrixWorld(true)
-    const beamStartLocal = root.worldToLocal(
-      beamStartProbe.getWorldPosition(new THREE.Vector3())
-    )
-    headPivot.remove(beamStartProbe)
-
-    for (const emitter of target.emitters) {
-      const emitterMesh = createEmitterMesh(emitter.color)
-      const emitterVolume = createEmitterVolumeMesh(target.modelKind, emitter.color)
-      const splats = Array.from({ length: MAX_SURFACE_SPLATS_PER_EMITTER }, () =>
-        createEmitterSurfaceSplatMesh(emitter.color, 28)
-      )
-      emitterMesh.position.set(emitter.localX, emitter.localY, emitter.localZ)
-      emitterVolume.position.copy(emitterMesh.position)
-      headPivot.add(emitterVolume)
-      headPivot.add(emitterMesh)
-      splats.forEach((splat) => root.add(splat))
-      emitters.push(emitterMesh)
-      emitterVolumes.push(emitterVolume)
-      emitterSurfaceSplats.push(splats)
-    }
-
-    const goboLabel = createGoboLabelMesh()
-    root.add(goboLabel)
-
-    return {
-      signature,
-      modelKind: target.modelKind,
-      root,
-      emitters,
-      emitterVolumes,
-      emitterSurfaceSplats,
-      goboLabel,
-      panPivot,
-      headPivot,
-      beamStartLocal,
-    }
-  }
-
-  if (target.modelKind === 'washBar') {
-    const width = clamp(target.modelWidth, 0.45, 8)
-    const body = new THREE.Mesh(
-      new THREE.BoxGeometry(width, 0.074, 0.061),
-      bodyMaterial
-    )
-    body.position.y = 0.12
-    root.add(body)
-  } else if (target.modelKind === 'uplight') {
-    const size = clamp(target.modelWidth, 0.2, 1.2)
-    const body = new THREE.Mesh(
-      new THREE.BoxGeometry(size * 0.55, 0.22, 0.3),
-      bodyMaterial
-    )
-    body.position.y = 0.11
-    root.add(body)
-
-    const top = new THREE.Mesh(
-      new THREE.BoxGeometry(size * 0.4, 0.08, 0.24),
-      bodyMaterial
-    )
-    top.position.y = 0.26
-    root.add(top)
-  } else {
-    const size = clamp(target.modelWidth, 0.2, 1.4)
-    const body = new THREE.Mesh(
-      new THREE.CylinderGeometry(size * 0.22, size * 0.24, 0.34, 20),
-      bodyMaterial
-    )
-    body.position.y = 0.2
-    body.rotation.x = Math.PI / 2
-    root.add(body)
-  }
-
-  for (const emitter of target.emitters) {
-    const emitterMesh = createEmitterMesh(emitter.color)
-    const emitterVolume = createEmitterVolumeMesh(target.modelKind, emitter.color)
-    const splats = Array.from({ length: MAX_SURFACE_SPLATS_PER_EMITTER }, () =>
-      createEmitterSurfaceSplatMesh(emitter.color, 24)
-    )
-    emitterMesh.position.set(
-      emitter.localX,
-      nonMoverEmitterBaseY(target.modelKind) + emitter.localY,
-      emitter.localZ
-    )
-    root.add(emitterMesh)
-    root.add(emitterVolume)
-    splats.forEach((splat) => root.add(splat))
-    emitters.push(emitterMesh)
-    emitterVolumes.push(emitterVolume)
-    emitterSurfaceSplats.push(splats)
-  }
-
-  return {
-    signature,
-    modelKind: target.modelKind,
-    root,
-    emitters,
-    emitterVolumes,
-    emitterSurfaceSplats,
-  }
-}
-
-function disposeVisual(visual: FixtureVisual) {
-  visual.root.traverse((object) => {
-    if (object instanceof THREE.Mesh) {
-      object.geometry.dispose()
-      if (Array.isArray(object.material)) {
-        object.material.forEach((material) => {
-          const maybeWithMap = material as THREE.Material & {
-            map?: THREE.Texture | null
-          }
-          maybeWithMap.map?.dispose()
-          material.dispose()
-        })
-      } else {
-        const maybeWithMap = object.material as THREE.Material & {
-          map?: THREE.Texture | null
-        }
-        maybeWithMap.map?.dispose()
-        object.material.dispose()
-      }
-    }
-    if (object instanceof THREE.Points) {
-      object.geometry.dispose()
-      if (Array.isArray(object.material)) {
-        object.material.forEach((material) => material.dispose())
-      } else {
-        object.material.dispose()
-      }
-    }
-  })
-}
-
-function createGoboLabelMesh(): THREE.Mesh {
-  const canvas = document.createElement('canvas')
-  canvas.width = 192
-  canvas.height = 192
-  const texture = new THREE.CanvasTexture(canvas)
-  texture.needsUpdate = true
-  const material = new THREE.MeshBasicMaterial({
-    map: texture,
-    transparent: true,
-    side: THREE.DoubleSide,
-    depthTest: true,
-    depthWrite: false,
-    toneMapped: false,
-    blending: THREE.AdditiveBlending,
-  })
-  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), material)
-  mesh.scale.set(0.3, 0.3, 1)
-  mesh.visible = false
-  return mesh
-}
-
-function setGoboLabelText(mesh: THREE.Mesh, text: string, color: string) {
-  const material = mesh.material as THREE.MeshBasicMaterial
-  const texture = material.map as THREE.CanvasTexture | null
-  if (texture === null || texture === undefined) {
-    return
-  }
-  const canvas = texture.image as HTMLCanvasElement
-  const context = canvas.getContext('2d')
-  if (context === null) {
-    return
-  }
-
-  context.clearRect(0, 0, canvas.width, canvas.height)
-  context.fillStyle = 'rgba(0,0,0,0.42)'
-  context.beginPath()
-  context.arc(canvas.width / 2, canvas.height / 2, 56, 0, Math.PI * 2)
-  context.fill()
-  context.fillStyle = color
-  context.font = 'bold 96px Arial'
-  context.textAlign = 'center'
-  context.textBaseline = 'middle'
-  context.fillText(text, canvas.width / 2, canvas.height / 2)
-  texture.needsUpdate = true
-}
-
 function Lighting3DViewport({
   fixtures,
   stage,
+  activeFixtureId,
+  onSelectFixture,
+  onSelectLedFixture,
+  onUpdateFixtureWindow,
+  onUpdateLedFixturePosition,
+  onUpdateFixtureRotation,
+  onUpdateLedFixtureRotation,
+  onSetFixtureMountOrientation,
   showCurtain = true,
   showBoundsOverlay = true,
-  environmentFog = 0.65,
+  hazeAmount = 0,
   room = {
     enabled: false,
     widthFt: 36,
@@ -2558,12 +669,60 @@ function Lighting3DViewport({
     heightFt: 12,
   },
 }: Lighting3DViewportProps) {
+  const telemetrySource = currentRendererTelemetrySource()
+  const dispatch = useDispatch()
+  const fixturePlacementDepthEnabled = useTypedSelector(
+    (state) => state.gui.fixturePlacementDepthEnabled
+  )
+  const fixturesRef = useRef(fixtures)
+  fixturesRef.current = fixtures
+  const splitStatesRef = useRef(realtimeStore.getState().splitStates)
+  const dmxOutByUniverseRef = useRef(realtimeStore.getState().dmxOutByUniverse)
+  useEffect(() => {
+    const pushRealtime = () => {
+      const next = realtimeStore.getState()
+      splitStatesRef.current = next.splitStates
+      dmxOutByUniverseRef.current = next.dmxOutByUniverse
+    }
+    pushRealtime()
+    return realtimeStore.subscribe(pushRealtime)
+  }, [])
   const mountRef = useRef<HTMLDivElement | null>(null)
   const sceneRef = useRef<THREE.Scene | null>(null)
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null)
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null)
   const controlsRef = useRef<OrbitControls | null>(null)
+  const transformControlsRef = useRef<TransformControls | null>(null)
+  const transformControlsHelperRef = useRef<THREE.Object3D | null>(null)
   const fixtureVisualsRef = useRef<Map<string, FixtureVisual>>(new Map())
+  const raycasterRef = useRef(new THREE.Raycaster())
+  const pointerNdcRef = useRef(new THREE.Vector2())
+  const lastPointerDownRef = useRef<{
+    x: number
+    y: number
+    button: number
+  } | null>(null)
+  const transformDraggingRef = useRef(false)
+  const fixtureByIdRef = useRef<Map<string, MoverPreviewFixture>>(new Map())
+  const heavySceneRef = useRef(fixtures.length > 45)
+  const onSelectFixtureRef = useRef(onSelectFixture)
+  const onSelectLedFixtureRef = useRef(onSelectLedFixture)
+  const transformModeRef = useRef<'translate' | 'rotate'>('translate')
+  const applyTransformRef = useRef<() => void>(() => {})
+  const gizmoFixtureIdRef = useRef<string | null>(null)
+  const [gizmoFixtureId, setGizmoFixtureId] = useState<string | null>(null)
+  const [transformMode, setTransformMode] = useState<'translate' | 'rotate'>(
+    'translate'
+  )
+  const [hoverInfo, setHoverInfo] = useState<{
+    clientX: number
+    clientY: number
+    fixtureLabel: string
+    fixtureName: string
+  } | null>(null)
+  const [startupBusyVisible, setStartupBusyVisible] = useState(false)
+  const [startupBusyProgress, setStartupBusyProgress] = useState(0)
+  const [startupBusyPhase, setStartupBusyPhase] = useState<'loading' | 'settling'>('loading')
   const worldFloorRef = useRef<THREE.Mesh | null>(null)
   const danceFloorRef = useRef<THREE.Mesh | null>(null)
   const danceGridRef = useRef<THREE.GridHelper | null>(null)
@@ -2574,6 +733,67 @@ function Lighting3DViewport({
   const roomBackWallRef = useRef<THREE.Mesh | null>(null)
   const roomFrontWallRef = useRef<THREE.Mesh | null>(null)
   const roomCeilingRef = useRef<THREE.Mesh | null>(null)
+  const roomFogVolumeRef = useRef<THREE.Mesh | null>(null)
+  const volumetricFogMaterialRef = useRef<THREE.ShaderMaterial | null>(null)
+  const volumetricFogEnabledRef = useRef(false)
+  const volumetricFogMaxLightsRef = useRef(VOLUMETRIC_FOG_MAX_LIGHTS)
+  const lastFrameAtRef = useRef(performance.now())
+  const frameCountRef = useRef(0)
+  const freezeReportedRef = useRef(false)
+  const lastTelemetryAtRef = useRef(0)
+  const renderSampleMsRef = useRef(0)
+  const renderSampleCountRef = useRef(0)
+  const [perfHudOpen, setPerfHudOpen] = useState(() => {
+    try {
+      return (
+        typeof localStorage !== 'undefined' &&
+        localStorage.getItem(LIGHTING3D_PERF_HUD_STORAGE_KEY) === '1'
+      )
+    } catch {
+      return false
+    }
+  })
+  const perfHudOpenRef = useRef(perfHudOpen)
+  useEffect(() => {
+    perfHudOpenRef.current = perfHudOpen
+  }, [perfHudOpen])
+  const perfHudTextRef = useRef<HTMLPreElement>(null)
+  /** Frames rendered in the current 1s telemetry window (viewport visible). */
+  const renderFramesInSecRef = useRef(0)
+  const renderMaxFrameMsInSecRef = useRef(0)
+  const hudLastFrameMsRef = useRef(0)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.altKey && e.shiftKey && (e.key === 'h' || e.key === 'H')) {
+        e.preventDefault()
+        setPerfHudOpen((prev) => {
+          const next = !prev
+          try {
+            if (next) {
+              localStorage.setItem(LIGHTING3D_PERF_HUD_STORAGE_KEY, '1')
+            } else {
+              localStorage.removeItem(LIGHTING3D_PERF_HUD_STORAGE_KEY)
+            }
+          } catch {
+            // ignore private mode / quota
+          }
+          return next
+        })
+      }
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [])
+  useEffect(() => {
+    if (perfHudOpen && perfHudTextRef.current !== null) {
+      perfHudTextRef.current.textContent =
+        'Collecting metrics (updates every 1s while the viewport runs)…'
+    }
+  }, [perfHudOpen])
+  const startupReadyRef = useRef(false)
+  const startupProgressRef = useRef(0)
+  const startupReadyAtRef = useRef<number | null>(null)
+  const startupMinVisibleUntilRef = useRef(0)
   const roomBoundsRef = useRef<{
     minX: number
     maxX: number
@@ -2597,6 +817,7 @@ function Lighting3DViewport({
     shift: false,
   })
   const roomEnabledRef = useRef(room.enabled)
+  const hazeAmountRef = useRef(clamp01(hazeAmount))
   const centerMarkerRef = useRef<THREE.Mesh | null>(null)
   const cameraPersistElapsedRef = useRef(0)
   const cameraPersistCacheRef = useRef<string>('')
@@ -2627,33 +848,366 @@ function Lighting3DViewport({
     roomMaxZ: 1,
   })
 
-  const activeLightScene = useControlSelector(
-    (control) => control.light.byId[control.light.active]
-  )
-  const splitOutputParams = useRealtimeSelector(
-    (state) => state.splitStates[0]?.outputParams
-  )
-  const dmxOutByUniverse = useRealtimeSelector((state) => state.dmxOutByUniverse)
-
-  const previewParams =
-    splitOutputParams ?? activeLightScene?.splitScenes[0]?.baseParams ?? ({} as Params)
-
   const floorSpec = useMemo(() => computeFloorSpecFromStage(stage), [stage])
   const stageHeight = useMemo(() => stageHeightFromStage(stage), [stage])
 
-  const previewTargets = useMemo(() => {
-    return buildTargets(
-      fixtures,
-      previewParams,
-      dmxOutByUniverse,
-      floorSpec,
-      stageHeight
-    )
-  }, [fixtures, previewParams, dmxOutByUniverse, floorSpec, stageHeight])
+  const activeLightSceneRef = useRef<LightScene_t | null>(null)
+  const masterRef = useRef(0)
+  useLayoutEffect(() => {
+    const syncControlRefs = () => {
+      const state = store.getState()
+      const light = state.control.present.light
+      activeLightSceneRef.current = light.byId[light.active] ?? null
+      masterRef.current = state.control.present.master
+    }
+    syncControlRefs()
+    return store.subscribe(syncControlRefs)
+  }, [])
+  const floorSpecRef = useRef(floorSpec)
+  floorSpecRef.current = floorSpec
+  const stageHeightRef = useRef(stageHeight)
+  stageHeightRef.current = stageHeight
+  const fixturePlacementDepthEnabledRef = useRef(fixturePlacementDepthEnabled)
+  fixturePlacementDepthEnabledRef.current = fixturePlacementDepthEnabled
+
+  const previewTargetsRef = useRef<PreviewTarget[]>([])
+  /** Preview sync runs from the rAF loop (not a separate timer) to avoid main-thread pileups. */
+  const previewSyncPassRef = useRef<() => void>(() => {})
+  const lastPreviewSyncAtRef = useRef(0)
+  const fixtureById = useMemo(() => {
+    const map = new Map<string, MoverPreviewFixture>()
+    for (const fixture of fixtures) {
+      map.set(fixture.fixtureId, fixture)
+    }
+    return map
+  }, [fixtures])
+  const gizmoFixture = useMemo(() => {
+    if (gizmoFixtureId === null) {
+      return null
+    }
+    return fixtureById.get(gizmoFixtureId) ?? null
+  }, [gizmoFixtureId, fixtureById])
+
+  useEffect(() => {
+    if (fixtures.length <= 0) {
+      startupReadyRef.current = true
+      startupReadyAtRef.current = performance.now()
+      startupMinVisibleUntilRef.current = performance.now()
+      startupProgressRef.current = 1
+      setStartupBusyProgress(1)
+      setStartupBusyPhase('loading')
+      setStartupBusyVisible(false)
+      return
+    }
+
+    startupReadyRef.current = false
+    startupReadyAtRef.current = null
+    startupMinVisibleUntilRef.current =
+      performance.now() + LIGHTING3D_WARMUP_MIN_MS
+    startupProgressRef.current = 0
+    setStartupBusyProgress(0)
+    setStartupBusyPhase('loading')
+    setStartupBusyVisible(true)
+  }, [fixtures.length])
+
+  useEffect(() => {
+    if (!startupBusyVisible) {
+      return
+    }
+    const interval = window.setInterval(() => {
+      if (!startupReadyRef.current) {
+        return
+      }
+      const now = performance.now()
+      const readyAt = startupReadyAtRef.current ?? now
+      const hideAt = Math.max(
+        startupMinVisibleUntilRef.current,
+        readyAt + LIGHTING3D_WARMUP_SETTLE_MS
+      )
+      if (now >= hideAt) {
+        setStartupBusyVisible(false)
+      }
+    }, 60)
+    return () => {
+      window.clearInterval(interval)
+    }
+  }, [startupBusyVisible])
 
   useEffect(() => {
     roomEnabledRef.current = room.enabled
   }, [room.enabled])
+
+  useEffect(() => {
+    hazeAmountRef.current = clamp01(hazeAmount)
+  }, [hazeAmount])
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      const now = performance.now()
+      const deltaMs = now - lastFrameAtRef.current
+      if (deltaMs > 2500 && !freezeReportedRef.current) {
+        freezeReportedRef.current = true
+        dispatch(
+          pushStatusMessage({
+            level: 'error',
+            source: 'Lighting3D',
+            message: `Render stall detected (${Math.round(deltaMs)} ms).`,
+          })
+        )
+        sendTelemetryMark({
+          source: telemetrySource,
+          subsystem: 'lighting3d',
+          metric: 'frame_stall_detected',
+          type: 'counter',
+          by: 1,
+        })
+        sendTelemetryMark({
+          source: telemetrySource,
+          subsystem: 'lighting3d',
+          metric: 'frame_stall_ms',
+          type: 'gauge',
+          value: Math.round(deltaMs),
+          unit: 'ms',
+        })
+        sendTelemetryMark({
+          source: telemetrySource,
+          subsystem: 'lighting3d',
+          metric: 'health',
+          type: 'health',
+          status: 'error',
+          message: 'Lighting 3D frame stall detected',
+        })
+        sendDiagnosticsEvent({
+          source: telemetrySource,
+          area: 'lighting3d',
+          event: 'frame-stall-detected',
+          level: 'error',
+          message: 'Lighting 3D render frame stalled',
+          data: {
+            deltaMs: Math.round(deltaMs),
+            frameCount: frameCountRef.current,
+            volumetricFogEnabled: volumetricFogEnabledRef.current,
+            roomEnabled: roomEnabledRef.current,
+          },
+        })
+      } else if (deltaMs <= 1200 && freezeReportedRef.current) {
+        freezeReportedRef.current = false
+        dispatch(
+          pushStatusMessage({
+            level: 'info',
+            source: 'Lighting3D',
+            message: 'Render stall recovered.',
+          })
+        )
+        sendTelemetryMark({
+          source: telemetrySource,
+          subsystem: 'lighting3d',
+          metric: 'frame_stall_recovered',
+          type: 'counter',
+          by: 1,
+        })
+        sendTelemetryMark({
+          source: telemetrySource,
+          subsystem: 'lighting3d',
+          metric: 'health',
+          type: 'health',
+          status: 'ok',
+          message: 'Lighting 3D frame stall recovered',
+        })
+        sendDiagnosticsEvent({
+          source: telemetrySource,
+          area: 'lighting3d',
+          event: 'frame-stall-recovered',
+          level: 'info',
+          data: {
+            deltaMs: Math.round(deltaMs),
+            frameCount: frameCountRef.current,
+          },
+        })
+      }
+    }, 1000)
+
+    return () => {
+      window.clearInterval(interval)
+    }
+  }, [dispatch])
+
+  useEffect(() => {
+    if (activeFixtureId === null) {
+      setGizmoFixtureId(null)
+    }
+  }, [activeFixtureId])
+
+  useEffect(() => {
+    gizmoFixtureIdRef.current = gizmoFixtureId
+  }, [gizmoFixtureId])
+
+  useEffect(() => {
+    fixtureByIdRef.current = fixtureById
+  }, [fixtureById])
+
+  useEffect(() => {
+    onSelectFixtureRef.current = onSelectFixture
+  }, [onSelectFixture])
+
+  useEffect(() => {
+    onSelectLedFixtureRef.current = onSelectLedFixture
+  }, [onSelectLedFixture])
+
+  useEffect(() => {
+    transformModeRef.current = transformMode
+  }, [transformMode])
+
+  const fixtureIdFromObject = useCallback((object: THREE.Object3D | null): string | null => {
+    let current: THREE.Object3D | null = object
+    while (current !== null) {
+      const fixtureId = (current.userData as { fixtureId?: unknown }).fixtureId
+      if (typeof fixtureId === 'string' && fixtureId.length > 0) {
+        return fixtureId
+      }
+      current = current.parent
+    }
+    return null
+  }, [])
+
+  const pickFixtureIdFromClientPoint = useCallback(
+    (clientX: number, clientY: number): string | null => {
+      const renderer = rendererRef.current
+      const camera = cameraRef.current
+      const scene = sceneRef.current
+      if (renderer === null || camera === null || scene === null) {
+        return null
+      }
+
+      const bounds = renderer.domElement.getBoundingClientRect()
+      if (bounds.width <= 0 || bounds.height <= 0) {
+        return null
+      }
+
+      pointerNdcRef.current.set(
+        ((clientX - bounds.left) / bounds.width) * 2 - 1,
+        -((clientY - bounds.top) / bounds.height) * 2 + 1
+      )
+      raycasterRef.current.setFromCamera(pointerNdcRef.current, camera)
+      const hits = raycasterRef.current.intersectObjects(scene.children, true)
+      for (const hit of hits) {
+        const fixtureId = fixtureIdFromObject(hit.object)
+        if (fixtureId !== null) {
+          return fixtureId
+        }
+      }
+      return null
+    },
+    [fixtureIdFromObject]
+  )
+
+  const applySelectedTransformToStore = useCallback(() => {
+    const fixtureId = gizmoFixtureIdRef.current
+    if (fixtureId === null) {
+      return
+    }
+    const fixture = fixtureById.get(fixtureId)
+    const visual = fixtureVisualsRef.current.get(fixtureId)
+    if (fixture === undefined || visual === undefined) {
+      return
+    }
+
+    const world = visual.root.position
+    const normalized = fixtureUniversePositionFromWorld(
+      world.x,
+      world.y,
+      world.z,
+      floorSpec,
+      stageHeight
+    )
+
+    const snapDisplayStep = stage.unit === 'm' ? 0.5 : 0.5
+    const snapLengthInFeet =
+      stage.unit === 'm' ? snapDisplayStep / METERS_PER_FOOT : snapDisplayStep
+
+    const snapNormalized = (value: number, axisLengthFt: number) => {
+      const normalizedStep = Math.min(
+        1,
+        Math.max(0.00001, snapLengthInFeet / Math.max(0.0001, axisLengthFt))
+      )
+      return clamp01(roundToStep(value, normalizedStep))
+    }
+
+    const nextX = snapNormalized(normalized.x, stage.widthFt)
+    const nextY = snapNormalized(normalized.y, stage.heightFt)
+    const nextZ = fixturePlacementDepthEnabled
+      ? snapNormalized(normalized.z, stage.depthFt)
+      : fixture.zPos
+
+    const nextRotX = normalizeRotationDeg(
+      THREE.MathUtils.radToDeg(visual.root.rotation.x)
+    )
+    const nextRotY = normalizeRotationDeg(
+      THREE.MathUtils.radToDeg(visual.root.rotation.y)
+    )
+    const nextRotZ = normalizeRotationDeg(
+      THREE.MathUtils.radToDeg(visual.root.rotation.z)
+    )
+
+    if (
+      Math.abs(nextX - fixture.xPos) > 0.0001 ||
+      Math.abs(nextY - fixture.yPos) > 0.0001 ||
+      Math.abs(nextZ - fixture.zPos) > 0.0001
+    ) {
+      if (fixture.isLedFixture && fixture.ledFixtureIndex !== undefined) {
+        onUpdateLedFixturePosition(fixture.ledFixtureIndex, {
+          x: nextX,
+          y: nextY,
+          z: nextZ,
+        })
+      } else {
+        onUpdateFixtureWindow(fixture.fixtureIndex, {
+          x: nextX,
+          y: nextY,
+          z: nextZ,
+        })
+      }
+    }
+
+    if (!fixture.isMover) {
+      const hasRotationChange =
+        Math.abs(nextRotX - fixture.rotation.x) > 0.0001 ||
+        Math.abs(nextRotY - fixture.rotation.y) > 0.0001 ||
+        Math.abs(nextRotZ - fixture.rotation.z) > 0.0001
+      if (hasRotationChange) {
+        if (fixture.isLedFixture && fixture.ledFixtureIndex !== undefined) {
+          onUpdateLedFixtureRotation(fixture.ledFixtureIndex, {
+            x: nextRotX,
+            y: nextRotY,
+            z: nextRotZ,
+          })
+        } else {
+          onUpdateFixtureRotation(fixture.fixtureIndex, {
+            x: nextRotX,
+            y: nextRotY,
+            z: nextRotZ,
+          })
+        }
+      }
+    }
+  }, [
+    fixtureById,
+    floorSpec,
+    onUpdateLedFixturePosition,
+    onUpdateLedFixtureRotation,
+    onUpdateFixtureRotation,
+    onUpdateFixtureWindow,
+    stage.depthFt,
+    stage.heightFt,
+    stage.unit,
+    stage.widthFt,
+    stageHeight,
+    fixturePlacementDepthEnabled,
+  ])
+
+  useEffect(() => {
+    applyTransformRef.current = applySelectedTransformToStore
+  }, [applySelectedTransformToStore])
 
   const persistCamera = useCallback(
     (camera: THREE.PerspectiveCamera, controls: OrbitControls) => {
@@ -2747,6 +1301,8 @@ function Lighting3DViewport({
     const mount = mountRef.current
     if (mount === null) return
 
+    RectAreaLightUniformsLib.init()
+
     const persistedCamera = readPersistedCameraState()
     const initialCameraPosition = persistedCamera?.position ?? DEFAULT_CAMERA_POSITION
     const initialCameraTarget = persistedCamera?.target ?? DEFAULT_CAMERA_TARGET
@@ -2768,9 +1324,31 @@ function Lighting3DViewport({
     )
     cameraRef.current = camera
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true })
-    renderer.setPixelRatio(window.devicePixelRatio)
-    renderer.localClippingEnabled = true
+    const heavyScene = heavySceneRef.current
+    let renderer: THREE.WebGLRenderer
+    try {
+      renderer = createLightingRenderer(heavyScene)
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Lighting 3D renderer failed to initialize.'
+      dispatch(
+        pushStatusMessage({
+          level: 'error',
+          source: 'Lighting3D',
+          message,
+        })
+      )
+      sendDiagnosticsEvent({
+        source: telemetrySource,
+        area: 'lighting3d',
+        event: 'renderer-init-failed',
+        level: 'error',
+        message,
+      })
+      return
+    }
     rendererRef.current = renderer
     mount.appendChild(renderer.domElement)
 
@@ -2793,10 +1371,151 @@ function Lighting3DViewport({
     controls.update()
     controlsRef.current = controls
 
+    const transformControls = new TransformControls(camera, renderer.domElement)
+    transformControls.size = 0.9
+    transformControls.setSpace('world')
+    const transformControlsHelper = transformControls.getHelper()
+    transformControlsHelper.visible = false
+    scene.add(transformControlsHelper)
+    transformControlsRef.current = transformControls
+    transformControlsHelperRef.current = transformControlsHelper
+    transformControls.addEventListener('dragging-changed', (event) => {
+      const isDragging = Boolean((event as { value?: unknown }).value)
+      transformDraggingRef.current = isDragging
+      controls.enabled = !isDragging
+      if (!isDragging) {
+        applyTransformRef.current()
+      }
+    })
+    transformControls.addEventListener('objectChange', () => {
+      applyTransformRef.current()
+    })
+
     const blockContextMenu = (event: MouseEvent) => {
       event.preventDefault()
     }
     renderer.domElement.addEventListener('contextmenu', blockContextMenu)
+    const handleContextLost = (event: Event) => {
+      event.preventDefault()
+      sendDiagnosticsEvent({
+        source: telemetrySource,
+        area: 'lighting3d',
+        event: 'webgl-context-lost',
+        level: 'error',
+        message: 'WebGL context lost in Lighting 3D',
+      })
+    }
+    const handleContextRestored = () => {
+      sendDiagnosticsEvent({
+        source: telemetrySource,
+        area: 'lighting3d',
+        event: 'webgl-context-restored',
+        level: 'warn',
+        message: 'WebGL context restored in Lighting 3D',
+      })
+    }
+    renderer.domElement.addEventListener('webglcontextlost', handleContextLost as EventListener)
+    renderer.domElement.addEventListener(
+      'webglcontextrestored',
+      handleContextRestored as EventListener
+    )
+
+    const pointerDown = (event: PointerEvent) => {
+      lastPointerDownRef.current = {
+        x: event.clientX,
+        y: event.clientY,
+        button: event.button,
+      }
+    }
+
+    const pointerMove = (event: PointerEvent) => {
+      if (transformDraggingRef.current) {
+        setHoverInfo(null)
+        return
+      }
+
+      const fixtureId = pickFixtureIdFromClientPoint(event.clientX, event.clientY)
+      if (fixtureId === null) {
+        setHoverInfo(null)
+        return
+      }
+
+      const fixture = fixtureByIdRef.current.get(fixtureId)
+      if (fixture === undefined) {
+        setHoverInfo(null)
+        return
+      }
+
+      setHoverInfo({
+        clientX: event.clientX,
+        clientY: event.clientY,
+        fixtureLabel: fixture.fixtureLabel,
+        fixtureName: fixture.fixtureName,
+      })
+    }
+
+    const pointerUp = (event: PointerEvent) => {
+      const start = lastPointerDownRef.current
+      lastPointerDownRef.current = null
+      if (start === null) {
+        return
+      }
+      const clickButton = start.button
+
+      const dx = event.clientX - start.x
+      const dy = event.clientY - start.y
+      const moved = Math.hypot(dx, dy) > 5
+      if (moved) {
+        return
+      }
+
+      const fixtureId = pickFixtureIdFromClientPoint(event.clientX, event.clientY)
+      if (fixtureId === null) {
+        if (clickButton === 0 || clickButton === 2) {
+          setGizmoFixtureId(null)
+        }
+        return
+      }
+
+      const fixture = fixtureByIdRef.current.get(fixtureId)
+      if (fixture === undefined) {
+        if (clickButton === 0 || clickButton === 2) {
+          setGizmoFixtureId(null)
+        }
+        return
+      }
+
+      if (fixture.isLedFixture && fixture.ledFixtureIndex !== undefined) {
+        onSelectLedFixtureRef.current(fixture.ledFixtureIndex)
+      } else {
+        onSelectFixtureRef.current(fixture.fixtureIndex)
+      }
+
+      if (clickButton === 2) {
+        setGizmoFixtureId(fixtureId)
+        if (fixture.isMover) {
+          setTransformMode('translate')
+          transformControls.setMode('translate')
+          return
+        }
+        const nextMode =
+          gizmoFixtureIdRef.current === fixtureId &&
+          transformModeRef.current === 'translate'
+            ? 'rotate'
+            : 'translate'
+        setTransformMode(nextMode)
+        transformControls.setMode(nextMode)
+        return
+      }
+
+      if (clickButton === 0) {
+        setGizmoFixtureId(null)
+      }
+    }
+
+    renderer.domElement.addEventListener('pointerdown', pointerDown)
+    renderer.domElement.addEventListener('pointermove', pointerMove)
+    renderer.domElement.addEventListener('pointerup', pointerUp)
 
     const keyDown = (event: KeyboardEvent) => {
       if (
@@ -2807,6 +1526,14 @@ function Lighting3DViewport({
         return
       }
       const key = event.key.toLowerCase()
+      if (key === 'q') {
+        setTransformMode('translate')
+        return
+      }
+      if (key === 'e') {
+        setTransformMode('rotate')
+        return
+      }
       if (key === 'w') keyStateRef.current.w = true
       if (key === 'a') keyStateRef.current.a = true
       if (key === 's') keyStateRef.current.s = true
@@ -2824,40 +1551,51 @@ function Lighting3DViewport({
     window.addEventListener('keydown', keyDown)
     window.addEventListener('keyup', keyUp)
 
-    const ambient = new THREE.AmbientLight('#ffffff', 0.55)
+    const ambient = new THREE.AmbientLight('#eef1f8', 0.32)
     scene.add(ambient)
 
-    const keyLight = new THREE.DirectionalLight('#d7e2ff', 0.9)
+    const hemi = new THREE.HemisphereLight('#c8d4f5', '#1e222c', 0.45)
+    hemi.position.set(0, 12, 0)
+    scene.add(hemi)
+
+    const keyLight = new THREE.DirectionalLight('#ffffff', 0.48)
     keyLight.position.set(6, 10, 4)
     scene.add(keyLight)
 
-    const fillLight = new THREE.DirectionalLight('#95b5ff', 0.35)
+    const fillLight = new THREE.DirectionalLight('#e2e9f7', 0.32)
     fillLight.position.set(-6, 5, -7)
     scene.add(fillLight)
 
     const worldFloor = new THREE.Mesh(
       new THREE.PlaneGeometry(1, 1),
       new THREE.MeshStandardMaterial({
-        color: '#7a7f86',
-        roughness: 0.93,
-        metalness: 0.01,
+        color: '#e8ecf5',
+        emissive: '#2a3140',
+        emissiveIntensity: 0.08,
+        metalness: 0.02,
+        roughness: 0.9,
         side: THREE.DoubleSide,
       })
     )
     worldFloor.rotation.x = -Math.PI / 2
     worldFloor.position.y = DANCE_FLOOR_Y
+    worldFloor.receiveShadow = true
     scene.add(worldFloor)
     worldFloorRef.current = worldFloor
 
     const danceFloor = new THREE.Mesh(
       new THREE.PlaneGeometry(1, 1),
       new THREE.MeshStandardMaterial({
-        color: '#1f2634',
-        roughness: 0.85,
-        metalness: 0.07,
+        color: '#e8ecf5',
+        emissive: '#2a3140',
+        emissiveIntensity: 0.08,
+        metalness: 0.02,
+        roughness: 0.9,
+        side: THREE.DoubleSide,
       })
     )
     danceFloor.rotation.x = -Math.PI / 2
+    danceFloor.receiveShadow = true
     scene.add(danceFloor)
     danceFloorRef.current = danceFloor
 
@@ -2882,24 +1620,28 @@ function Lighting3DViewport({
       createPleatedCurtainGeometry(),
       new THREE.MeshStandardMaterial({
         color: '#6f2032',
-        roughness: 0.96,
-        metalness: 0.01,
+        emissive: '#1a080c',
+        emissiveIntensity: 0.08,
+        metalness: 0.02,
+        roughness: 0.82,
         side: THREE.DoubleSide,
       })
     )
     scene.add(stageWall)
+    stageWall.receiveShadow = true
     stageWallRef.current = stageWall
 
     const roomWallMaterial = new THREE.MeshStandardMaterial({
-      color: '#7a7f86',
-      roughness: 0.94,
-      metalness: 0.02,
+      color: '#e6eaf2',
+      emissive: '#253044',
+      emissiveIntensity: 0.08,
+      metalness: 0.03,
+      roughness: 0.86,
       side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0.38,
     })
     const roomCeilingMaterial = roomWallMaterial.clone()
-    roomCeilingMaterial.opacity = 0.32
+    roomCeilingMaterial.side = THREE.DoubleSide
+    roomCeilingMaterial.opacity = 1
 
     const roomLeftWall = new THREE.Mesh(
       new THREE.PlaneGeometry(1, 1),
@@ -2921,16 +1663,36 @@ function Lighting3DViewport({
       new THREE.PlaneGeometry(1, 1),
       roomCeilingMaterial
     )
+    const safeFogLightCount = clamp(VOLUMETRIC_FOG_MAX_LIGHTS, 2, 12)
+    volumetricFogEnabledRef.current = true
+    volumetricFogMaxLightsRef.current = safeFogLightCount
+    const roomFogMaterial = createVolumetricFogMaterial(
+      Math.max(2, safeFogLightCount)
+    )
+    const roomFogVolume = new THREE.Mesh(
+      new THREE.BoxGeometry(1, 1, 1),
+      roomFogMaterial
+    )
+    roomFogVolume.renderOrder = 6
     scene.add(roomLeftWall)
     scene.add(roomRightWall)
     scene.add(roomBackWall)
     scene.add(roomFrontWall)
     scene.add(roomCeiling)
+    scene.add(roomFogVolume)
     roomLeftWallRef.current = roomLeftWall
     roomRightWallRef.current = roomRightWall
     roomBackWallRef.current = roomBackWall
     roomFrontWallRef.current = roomFrontWall
     roomCeilingRef.current = roomCeiling
+    roomFogVolumeRef.current = roomFogVolume
+    volumetricFogMaterialRef.current = roomFogMaterial as THREE.ShaderMaterial
+    roomFogVolume.visible = false
+    roomLeftWall.receiveShadow = true
+    roomRightWall.receiveShadow = true
+    roomBackWall.receiveShadow = true
+    roomFrontWall.receiveShadow = true
+    roomCeiling.receiveShadow = true
 
     const centerMarker = new THREE.Mesh(
       new THREE.RingGeometry(0.18, 0.24, 24),
@@ -2956,90 +1718,284 @@ function Lighting3DViewport({
 
     const clock = new THREE.Clock()
     let cancelled = false
+    let frameErrorCount = 0
+    let frameHandle: number | null = null
+    const queueNextFrame = () => {
+      if (cancelled || frameHandle !== null) {
+        return
+      }
+      frameHandle = requestAnimationFrame(frame)
+    }
     const frame = () => {
+      frameHandle = null
+      const frameStartedAt = performance.now()
       if (cancelled) return
-      const delta = Math.min(0.05, clock.getDelta())
-
-      const cameraToTarget = new THREE.Vector3().subVectors(
-        controls.target,
-        camera.position
-      )
-      cameraToTarget.y = 0
-      if (cameraToTarget.lengthSq() < 0.000001) {
-        cameraToTarget.set(0, 0, -1)
-      } else {
-        cameraToTarget.normalize()
+      if (document.visibilityState !== 'visible') {
+        // Keep timers stable while hidden/minimized without burning render CPU.
+        clock.getDelta()
+        queueNextFrame()
+        return
       }
-      const right = new THREE.Vector3()
-        .crossVectors(cameraToTarget, new THREE.Vector3(0, 1, 0))
-        .normalize()
+      try {
+        const delta = Math.min(0.05, clock.getDelta())
+        const nowMs = performance.now()
+        const syncNow = performance.now()
+        if (
+          syncNow - lastPreviewSyncAtRef.current >=
+          PREVIEW_SYNC_MIN_INTERVAL_MS
+        ) {
+          lastPreviewSyncAtRef.current = syncNow
+          previewSyncPassRef.current()
+        }
 
-      const keys = keyStateRef.current
-      const moveSpeed = (keys.shift ? 5.6 : 3.2) * delta
-      const forwardFactor = (keys.w ? 1 : 0) - (keys.s ? 1 : 0)
-      const strafeFactor = (keys.d ? 1 : 0) - (keys.a ? 1 : 0)
-      if (forwardFactor !== 0 || strafeFactor !== 0) {
-        const move = new THREE.Vector3()
-          .addScaledVector(cameraToTarget, forwardFactor * moveSpeed)
-          .addScaledVector(right, strafeFactor * moveSpeed)
-        camera.position.add(move)
-        controls.target.add(move)
-      }
-
-      const leftWall = roomLeftWallRef.current
-      const rightWall = roomRightWallRef.current
-      const backWall = roomBackWallRef.current
-      const frontWall = roomFrontWallRef.current
-      const ceiling = roomCeilingRef.current
-      if (leftWall && rightWall && backWall && frontWall && ceiling) {
-        if (!roomEnabledRef.current) {
-          leftWall.visible = false
-          rightWall.visible = false
-          backWall.visible = false
-          frontWall.visible = false
-          ceiling.visible = false
+        const cameraToTarget = new THREE.Vector3().subVectors(
+          controls.target,
+          camera.position
+        )
+        cameraToTarget.y = 0
+        if (cameraToTarget.lengthSq() < 0.000001) {
+          cameraToTarget.set(0, 0, -1)
         } else {
-          const bounds = roomBoundsRef.current
-          const cameraPosition = camera.position
-          const eps = 0.03
-          const outsideLeft = cameraPosition.x < bounds.minX - eps
-          const outsideRight = cameraPosition.x > bounds.maxX + eps
-          const outsideBack = cameraPosition.z < bounds.minZ - eps
-          const outsideFront = cameraPosition.z > bounds.maxZ + eps
-          const outsideAbove = cameraPosition.y > bounds.maxY + eps
-          const outside =
-            outsideLeft || outsideRight || outsideBack || outsideFront || outsideAbove
+          cameraToTarget.normalize()
+        }
+        const right = new THREE.Vector3()
+          .crossVectors(cameraToTarget, new THREE.Vector3(0, 1, 0))
+          .normalize()
 
-          leftWall.visible = !outsideLeft
-          rightWall.visible = !outsideRight
-          backWall.visible = !outsideBack
-          frontWall.visible = !outsideFront
-          ceiling.visible = !outsideAbove
+        const keys = keyStateRef.current
+        const moveSpeed = (keys.shift ? 5.6 : 3.2) * delta
+        const forwardFactor = (keys.w ? 1 : 0) - (keys.s ? 1 : 0)
+        const strafeFactor = (keys.d ? 1 : 0) - (keys.a ? 1 : 0)
+        if (forwardFactor !== 0 || strafeFactor !== 0) {
+          const move = new THREE.Vector3()
+            .addScaledVector(cameraToTarget, forwardFactor * moveSpeed)
+            .addScaledVector(right, strafeFactor * moveSpeed)
+          camera.position.add(move)
+          controls.target.add(move)
+        }
 
-          if (!outside) {
-            leftWall.visible = true
-            rightWall.visible = true
-            backWall.visible = true
-            frontWall.visible = true
+        const leftWall = roomLeftWallRef.current
+        const rightWall = roomRightWallRef.current
+        const backWall = roomBackWallRef.current
+        const frontWall = roomFrontWallRef.current
+        const ceiling = roomCeilingRef.current
+        if (leftWall && rightWall && backWall && frontWall && ceiling) {
+          if (!roomEnabledRef.current) {
+            leftWall.visible = false
+            rightWall.visible = false
+            backWall.visible = false
+            frontWall.visible = false
+            ceiling.visible = false
+          } else {
+            const bounds = roomBoundsRef.current
+            const cameraPosition = camera.position
+            const eps = 0.03
+            const outsideLeft = cameraPosition.x < bounds.minX - eps
+            const outsideRight = cameraPosition.x > bounds.maxX + eps
+            const outsideBack = cameraPosition.z < bounds.minZ - eps
+            const outsideFront = cameraPosition.z > bounds.maxZ + eps
+            const outsideAbove = cameraPosition.y > bounds.maxY + eps
+            const outside =
+              outsideLeft || outsideRight || outsideBack || outsideFront || outsideAbove
+
+            leftWall.visible = !outsideLeft
+            rightWall.visible = !outsideRight
+            backWall.visible = !outsideBack
+            frontWall.visible = !outsideFront
+            // Keep ceiling visible so projected light remains readable from all camera angles.
             ceiling.visible = true
+
+            if (!outside) {
+              leftWall.visible = true
+              rightWall.visible = true
+              backWall.visible = true
+              frontWall.visible = true
+              ceiling.visible = true
+            }
           }
         }
-      }
 
-      controls.update()
-      updateCompassHud(camera)
-      cameraPersistElapsedRef.current += delta
-      if (cameraPersistElapsedRef.current >= 0.35) {
-        cameraPersistElapsedRef.current = 0
-        persistCamera(camera, controls)
+        controls.update()
+        updateCompassHud(camera)
+        cameraPersistElapsedRef.current += delta
+        if (cameraPersistElapsedRef.current >= 0.35) {
+          cameraPersistElapsedRef.current = 0
+          persistCamera(camera, controls)
+        }
+        renderer.render(scene, camera)
+        frameCountRef.current += 1
+        lastFrameAtRef.current = performance.now()
+        const frameMs = performance.now() - frameStartedAt
+        hudLastFrameMsRef.current = frameMs
+        renderFramesInSecRef.current += 1
+        renderMaxFrameMsInSecRef.current = Math.max(
+          renderMaxFrameMsInSecRef.current,
+          frameMs
+        )
+        renderSampleMsRef.current += frameMs
+        renderSampleCountRef.current += 1
+        if (nowMs - lastTelemetryAtRef.current >= 1000) {
+          lastTelemetryAtRef.current = nowMs
+          const avgFrameMs =
+            renderSampleCountRef.current > 0
+              ? renderSampleMsRef.current / renderSampleCountRef.current
+              : 0
+          renderSampleMsRef.current = 0
+          renderSampleCountRef.current = 0
+          const fps1s = renderFramesInSecRef.current
+          const maxFrameMs1s = renderMaxFrameMsInSecRef.current
+          renderFramesInSecRef.current = 0
+          renderMaxFrameMsInSecRef.current = 0
+          if (perfHudOpenRef.current) {
+            const pre = perfHudTextRef.current
+            const rendererHud = rendererRef.current
+            if (pre !== null && rendererHud !== null) {
+              const maxMs = maxFrameMs1s
+              const mem = (performance as unknown as {
+                memory?: { usedJSHeapSize: number; totalJSHeapSize: number }
+              }).memory
+              const heapLine =
+                mem !== undefined
+                  ? `JS heap MB: ${(mem.usedJSHeapSize / (1024 * 1024)).toFixed(0)} / ${(mem.totalJSHeapSize / (1024 * 1024)).toFixed(0)}`
+                  : 'JS heap MB: (n/a)'
+              const info = rendererHud.info
+              pre.textContent = [
+                'Lighting 3D live (Alt+Shift+H to hide)',
+                `Telemetry source: ${telemetrySource}`,
+                `FPS (1s): ${fps1s}`,
+                `Frame ms  avg: ${avgFrameMs.toFixed(2)}  max: ${maxMs.toFixed(1)}  last: ${hudLastFrameMsRef.current.toFixed(1)}`,
+                `Fixtures (preview targets): ${previewTargetsRef.current.length}  visuals map: ${fixtureVisualsRef.current.size}`,
+                `Draw calls: ${info.render.calls}  triangles: ${info.render.triangles}`,
+                `Geometries: ${info.memory.geometries}  textures: ${info.memory.textures}`,
+                heapLine,
+                `Canvas: ${rendererHud.domElement.width}x${rendererHud.domElement.height}  DPR: ${rendererHud.getPixelRatio()}`,
+                `Stall flag: ${freezeReportedRef.current ? 'yes' : 'no'}  volumetric fog: ${volumetricFogEnabledRef.current ? 'on' : 'off'}`,
+              ].join('\n')
+            }
+          }
+          sendTelemetryMark({
+            source: telemetrySource,
+            subsystem: 'lighting3d.render',
+            metric: 'frame_ms_avg',
+            type: 'gauge',
+            value: avgFrameMs,
+            unit: 'ms',
+          })
+          sendTelemetryMark({
+            source: telemetrySource,
+            subsystem: 'lighting3d.render',
+            metric: 'fps',
+            type: 'gauge',
+            value: Math.max(1, Math.round(1 / Math.max(1e-3, delta))),
+            unit: 'fps',
+          })
+          sendTelemetryMark({
+            source: telemetrySource,
+            subsystem: 'lighting3d.render',
+            metric: 'fps_1s',
+            type: 'gauge',
+            value: fps1s,
+            unit: 'fps',
+          })
+          sendTelemetryMark({
+            source: telemetrySource,
+            subsystem: 'lighting3d.render',
+            metric: 'frame_ms_max_1s',
+            type: 'gauge',
+            value: maxFrameMs1s,
+            unit: 'ms',
+          })
+          sendTelemetryMark({
+            source: telemetrySource,
+            subsystem: 'lighting3d.render',
+            metric: 'active_fixture_count',
+            type: 'gauge',
+            value: previewTargetsRef.current.length,
+          })
+          sendTelemetryMark({
+            source: telemetrySource,
+            subsystem: 'lighting3d',
+            metric: 'health',
+            type: 'health',
+            status: freezeReportedRef.current ? 'warn' : 'ok',
+            message: freezeReportedRef.current
+              ? 'Lighting3D recovering from stall'
+              : 'Lighting3D render healthy',
+          })
+        }
+      } catch (error) {
+        frameErrorCount += 1
+        if (frameErrorCount <= 3 || frameErrorCount % 120 === 0) {
+          const errorMessage =
+            error instanceof Error
+              ? `${error.name}: ${error.message}`
+              : String(error)
+          sendDiagnosticsEvent({
+            source: telemetrySource,
+            area: 'lighting3d',
+            event: 'frame-render-error',
+            level: 'error',
+            message: errorMessage,
+            data: {
+              frameErrorCount,
+              stack: error instanceof Error ? error.stack : undefined,
+            },
+          })
+          sendTelemetryMark({
+            source: telemetrySource,
+            subsystem: 'lighting3d.render',
+            metric: 'frame_render_errors',
+            type: 'counter',
+            by: 1,
+          })
+          sendTelemetryMark({
+            source: telemetrySource,
+            subsystem: 'lighting3d',
+            metric: 'health',
+            type: 'health',
+            status: 'error',
+            message: errorMessage,
+          })
+          dispatch(
+            pushStatusMessage({
+              level: 'error',
+              source: 'Lighting3D',
+              message: `Render error: ${errorMessage}`,
+            })
+          )
+          // eslint-disable-next-line no-console
+          console.error('Lighting3D frame render error', error)
+        }
+      } finally {
+        if (!cancelled) {
+          queueNextFrame()
+        }
       }
-      renderer.render(scene, camera)
-      requestAnimationFrame(frame)
     }
-    frame()
+
+    const handleVisibilityChange = () => {
+      if (cancelled) {
+        return
+      }
+      if (document.visibilityState === 'visible') {
+        clock.getDelta()
+        queueNextFrame()
+      } else if (frameHandle !== null) {
+        cancelAnimationFrame(frameHandle)
+        frameHandle = null
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    handleVisibilityChange()
 
     return () => {
       cancelled = true
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      if (frameHandle !== null) {
+        cancelAnimationFrame(frameHandle)
+        frameHandle = null
+      }
       resizeObserver.disconnect()
 
       fixtureVisualsRef.current.forEach((visual) => {
@@ -3049,10 +2005,32 @@ function Lighting3DViewport({
       fixtureVisualsRef.current.clear()
 
       renderer.domElement.removeEventListener('contextmenu', blockContextMenu)
+      renderer.domElement.removeEventListener(
+        'webglcontextlost',
+        handleContextLost as EventListener
+      )
+      renderer.domElement.removeEventListener(
+        'webglcontextrestored',
+        handleContextRestored as EventListener
+      )
+      renderer.domElement.removeEventListener('pointerdown', pointerDown)
+      renderer.domElement.removeEventListener('pointermove', pointerMove)
+      renderer.domElement.removeEventListener('pointerup', pointerUp)
       window.removeEventListener('keydown', keyDown)
       window.removeEventListener('keyup', keyUp)
       controls.dispose()
+      transformControls.dispose()
+      if (transformControlsHelperRef.current !== null) {
+        scene.remove(transformControlsHelperRef.current)
+      }
 
+      // Free GPU-side renderer caches and force WebGL context teardown on close.
+      renderer.renderLists.dispose()
+      try {
+        renderer.forceContextLoss()
+      } catch (_error) {
+        // no-op: context loss extension may be unavailable on some drivers
+      }
       renderer.dispose()
       if (renderer.domElement.parentElement === mount) {
         mount.removeChild(renderer.domElement)
@@ -3063,6 +2041,8 @@ function Lighting3DViewport({
       cameraRef.current = null
       rendererRef.current = null
       controlsRef.current = null
+      transformControlsRef.current = null
+      transformControlsHelperRef.current = null
       worldFloorRef.current = null
       danceFloorRef.current = null
       danceGridRef.current = null
@@ -3073,9 +2053,79 @@ function Lighting3DViewport({
       roomBackWallRef.current = null
       roomFrontWallRef.current = null
       roomCeilingRef.current = null
+      const fogMaterial = volumetricFogMaterialRef.current
+      if (roomFogVolume.geometry instanceof THREE.BufferGeometry) {
+        roomFogVolume.geometry.dispose()
+      }
+      fogMaterial?.dispose()
+      if (roomFogVolume.material instanceof THREE.Material) {
+        roomFogVolume.material.dispose()
+      }
+      roomFogVolumeRef.current = null
+      volumetricFogMaterialRef.current = null
       centerMarkerRef.current = null
+      releaseLighting3DGlobalTextureCaches()
     }
-  }, [persistCamera, updateCompassHud])
+  }, [dispatch, persistCamera, updateCompassHud])
+
+  useEffect(() => {
+    const transformControls = transformControlsRef.current
+    if (transformControls === null) {
+      return
+    }
+
+    transformControls.setMode(transformMode)
+  }, [transformMode])
+
+  useEffect(() => {
+    if (gizmoFixture?.isMover !== true) {
+      return
+    }
+
+    if (transformMode !== 'translate') {
+      setTransformMode('translate')
+    }
+  }, [gizmoFixture, transformMode])
+
+  useEffect(() => {
+    const transformControls = transformControlsRef.current
+    if (transformControls === null) {
+      return
+    }
+
+    if (gizmoFixtureId === null) {
+      transformControls.detach()
+      if (transformControlsHelperRef.current !== null) {
+        transformControlsHelperRef.current.visible = false
+      }
+      return
+    }
+
+    const visual = fixtureVisualsRef.current.get(gizmoFixtureId)
+    if (visual === undefined) {
+      transformControls.detach()
+      if (transformControlsHelperRef.current !== null) {
+        transformControlsHelperRef.current.visible = false
+      }
+      return
+    }
+
+    transformControls.attach(visual.root)
+    if (transformControlsHelperRef.current !== null) {
+      transformControlsHelperRef.current.visible = true
+    }
+  }, [gizmoFixtureId])
+
+  useEffect(() => {
+    const transformControls = transformControlsRef.current
+    if (transformControls === null) {
+      return
+    }
+
+    const snapWorld = stage.unit === 'm' ? 0.5 : 0.5 * METERS_PER_FOOT
+    transformControls.setTranslationSnap(snapWorld)
+    transformControls.setRotationSnap(THREE.MathUtils.degToRad(1))
+  }, [stage.unit])
 
   useEffect(() => {
     const worldFloor = worldFloorRef.current
@@ -3088,6 +2138,7 @@ function Lighting3DViewport({
     const roomBackWall = roomBackWallRef.current
     const roomFrontWall = roomFrontWallRef.current
     const roomCeiling = roomCeilingRef.current
+    const roomFogVolume = roomFogVolumeRef.current
     const centerMarker = centerMarkerRef.current
 
     if (
@@ -3101,6 +2152,7 @@ function Lighting3DViewport({
       roomBackWall === null ||
       roomFrontWall === null ||
       roomCeiling === null ||
+      roomFogVolume === null ||
       centerMarker === null
     ) {
       return
@@ -3135,6 +2187,13 @@ function Lighting3DViewport({
     const surfaceFloorMaxX = floorSpec.centerX + surfaceFloorWidth * 0.5
     const surfaceFloorMinZ = floorSpec.centerZ - surfaceFloorDepth * 0.5
     const surfaceFloorMaxZ = floorSpec.centerZ + surfaceFloorDepth * 0.5
+    const volumeWidth = room.enabled ? roomWidth : surfaceFloorWidth
+    const volumeDepth = room.enabled ? roomDepth : surfaceFloorDepth
+    const volumeHeight = room.enabled
+      ? roomHeight
+      : Math.max(feetToWorld(28), stageHeight * 1.9)
+    const volumeMinY = DANCE_FLOOR_Y
+    const volumeMaxY = volumeMinY + volumeHeight
 
     worldFloor.scale.set(surfaceFloorWidth, surfaceFloorDepth, 1)
     worldFloor.position.set(floorSpec.centerX, DANCE_FLOOR_Y, floorSpec.centerZ)
@@ -3176,6 +2235,36 @@ function Lighting3DViewport({
     roomCeiling.scale.set(roomWidth, roomDepth, 1)
     roomCeiling.position.set(roomCenterX, roomMaxY, roomCenterZ)
     roomCeiling.rotation.set(Math.PI / 2, 0, 0)
+    roomFogVolume.scale.set(
+      volumeWidth * 0.985,
+      volumeHeight * 0.985,
+      volumeDepth * 0.985
+    )
+    roomFogVolume.position.set(roomCenterX, volumeMinY + volumeHeight * 0.5, roomCenterZ)
+    roomFogVolume.rotation.set(0, 0, 0)
+    const fogMaterial = volumetricFogMaterialRef.current
+    if (fogMaterial !== null) {
+      const roomMinUniform = fogMaterial.uniforms.uRoomMin as
+        | { value: THREE.Vector3 }
+        | undefined
+      const roomMaxUniform = fogMaterial.uniforms.uRoomMax as
+        | { value: THREE.Vector3 }
+        | undefined
+      if (roomMinUniform !== undefined) {
+        roomMinUniform.value.set(
+          roomCenterX - volumeWidth * 0.5,
+          volumeMinY,
+          roomCenterZ - volumeDepth * 0.5
+        )
+      }
+      if (roomMaxUniform !== undefined) {
+        roomMaxUniform.value.set(
+          roomCenterX + volumeWidth * 0.5,
+          volumeMaxY,
+          roomCenterZ + volumeDepth * 0.5
+        )
+      }
+    }
 
     roomBoundsRef.current = {
       minX: roomMinX,
@@ -3185,7 +2274,6 @@ function Lighting3DViewport({
       minZ: roomMinZ,
       maxZ: roomMaxZ,
     }
-
     centerMarker.position.set(floorSpec.centerX, 0.003, floorSpec.centerZ)
 
     surfaceSpecRef.current = {
@@ -3211,12 +2299,83 @@ function Lighting3DViewport({
   }, [floorSpec, stageHeight, showCurtain, showBoundsOverlay, room])
 
   useEffect(() => {
-    const scene = sceneRef.current
-    if (scene === null) return
+    const roomFogVolume = roomFogVolumeRef.current
+    const fogMaterial = volumetricFogMaterialRef.current
+    if (roomFogVolume === null || fogMaterial === null) {
+      return
+    }
 
-    const visuals = fixtureVisualsRef.current
-    const fogFactor = clamp01(environmentFog)
+    const haze = clamp01(hazeAmount)
+    const densityUniform = fogMaterial.uniforms.uDensity as
+      | { value: number }
+      | undefined
+    if (densityUniform !== undefined) {
+      // Calibrated for in-volume ray marching: visible shafts without over-filling the room.
+      densityUniform.value = haze <= 0.0005 ? 0 : 0.045 + 0.56 * Math.pow(haze, 1.1)
+    }
+    roomFogVolume.visible = haze > 0.0005
+  }, [hazeAmount, room.enabled])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const runFixturePreviewSyncPass = () => {
+      if (cancelled) {
+        return
+      }
+      const scene = sceneRef.current
+      if (scene === null) return
+      const previewParams =
+        splitStatesRef.current[0]?.outputParams ??
+        activeLightSceneRef.current?.splitScenes[0]?.baseParams ??
+        ({} as Params)
+      const splitScenes = activeLightSceneRef.current?.splitScenes ?? []
+      previewTargetsRef.current = buildTargets(
+        fixturesRef.current,
+        previewParams,
+        splitStatesRef.current,
+        splitScenes,
+        dmxOutByUniverseRef.current,
+        floorSpecRef.current,
+        stageHeightRef.current,
+        masterRef.current,
+        fixturePlacementDepthEnabledRef.current
+      )
+      const previewTargets = previewTargetsRef.current
+
+      const visuals = fixtureVisualsRef.current
     const targetIds = new Set(previewTargets.map((target) => target.fixtureId))
+    const collectFogLights =
+      volumetricFogEnabledRef.current &&
+      hazeAmountRef.current > 0.0005 &&
+      startupReadyRef.current
+    const fogLightSamples: VolumetricFogLightSample[] = []
+    const pushFogLightSample = (sample: VolumetricFogLightSample, fallbackDir: THREE.Vector3) => {
+      if (!Number.isFinite(sample.intensity) || !Number.isFinite(sample.range)) {
+        return
+      }
+      if (sample.intensity <= 0.0001 || sample.range <= 0.001) {
+        return
+      }
+      if (!Number.isFinite(sample.coneCos)) {
+        return
+      }
+      if (!isFiniteVector3(sample.position)) {
+        return
+      }
+      if (!isFiniteColor(sample.color)) {
+        return
+      }
+      const safeDirection = normalizeOrFallback(sample.direction, fallbackDir)
+      fogLightSamples.push({
+        ...sample,
+        direction: safeDirection,
+        intensity: clamp(sample.intensity, 0, 22),
+        range: clamp(sample.range, feetToWorld(3), feetToWorld(520)),
+        coneCos: clamp(sample.coneCos, -1, 1),
+      })
+    }
+    let createdVisualsThisPass = 0
 
     for (const [fixtureId, visual] of visuals.entries()) {
       if (!targetIds.has(fixtureId)) {
@@ -3226,7 +2385,19 @@ function Lighting3DViewport({
       }
     }
 
-    for (const target of previewTargets) {
+    const fogOrdinalStride = 1 << 20
+    const fogOrdinalBase = (fixtureOrderIndex: number) =>
+      fixtureOrderIndex * fogOrdinalStride
+    const fogOrdinalEmitterChannel = (
+      fixtureOrderIndex: number,
+      emitterIndex: number,
+      channel: 0 | 1 | 2
+    ) => fogOrdinalBase(fixtureOrderIndex) + emitterIndex * 8 + channel
+    const fogOrdinalLedAggregate = (fixtureOrderIndex: number) =>
+      fogOrdinalBase(fixtureOrderIndex) + fogOrdinalStride - 1
+
+    for (let fixtureOrderIndex = 0; fixtureOrderIndex < previewTargets.length; fixtureOrderIndex++) {
+      const target = previewTargets[fixtureOrderIndex]!
       let visual = visuals.get(target.fixtureId)
       const needsRecreate =
         visual === undefined || visual.signature !== fixtureVisualSignature(target)
@@ -3239,7 +2410,18 @@ function Lighting3DViewport({
       }
 
       if (visual === undefined) {
+        if (createdVisualsThisPass >= MAX_VISUAL_CREATIONS_PER_SYNC) {
+          continue
+        }
+        createdVisualsThisPass += 1
         visual = createFixtureVisual(target)
+        const emitterMeshes = new Set(visual.emitters)
+        visual.root.traverse((object) => {
+          if (object instanceof THREE.Mesh) {
+            object.castShadow = !emitterMeshes.has(object)
+            object.receiveShadow = false
+          }
+        })
         visuals.set(target.fixtureId, visual)
         scene.add(visual.root)
       }
@@ -3254,6 +2436,9 @@ function Lighting3DViewport({
         THREE.MathUtils.degToRad(target.rotation.y),
         THREE.MathUtils.degToRad(target.rotation.z)
       )
+      if (fixtureVisual.mountGroup) {
+        fixtureVisual.mountGroup.rotation.z = target.mountInverted ? Math.PI : 0
+      }
 
       if (
         fixtureVisual.panPivot &&
@@ -3315,20 +2500,116 @@ function Lighting3DViewport({
         intensity: 0,
         radius: 0,
       }
+      let ledWeightSum = 0
+      let ledColorR = 0
+      let ledColorG = 0
+      let ledColorB = 0
+      let ledPosX = 0
+      let ledPosY = 0
+      let ledPosZ = 0
       fixtureVisual.root.updateWorldMatrix(true, true)
 
       target.emitters.forEach((emitterTarget, emitterIndex) => {
         const emitterMesh = fixtureVisual.emitters[emitterIndex]
-        const emitterVolume = fixtureVisual.emitterVolumes[emitterIndex]
-        const emitterSplats = fixtureVisual.emitterSurfaceSplats[emitterIndex] ?? []
-        if (emitterMesh === undefined || emitterVolume === undefined) {
+        if (emitterMesh === undefined) {
           return
         }
-        emitterSplats.forEach((splat) => {
-          splat.visible = false
-          const splatMaterial = splat.material as THREE.MeshBasicMaterial
-          splatMaterial.clippingPlanes = []
-        })
+        const beamMesh = fixtureVisual.beamMeshes[emitterIndex]
+        const surfaceSplat = fixtureVisual.surfaceSplats[emitterIndex]
+
+        const material = emitterMesh.material as THREE.MeshStandardMaterial
+        const emitterIntensity = clamp01(emitterTarget.intensity)
+        const emitterEffectIntensity = clamp01(emitterTarget.effectIntensity)
+        const visualIntensity = target.isLedFixture
+          ? Math.pow(emitterIntensity, 0.62)
+          : Math.pow(emitterIntensity, 0.86)
+        material.color.copy(emitterTarget.color)
+        const colorFloor = target.isLedFixture ? 0.1 : 0
+        material.color.multiplyScalar(
+          colorFloor + visualIntensity * (1 - colorFloor)
+        )
+        material.emissive.copy(emitterTarget.color)
+        const hazeBoost = 1 + hazeAmountRef.current * 0.9
+        material.emissiveIntensity = target.isLedFixture
+          ? visualIntensity * LED_EMISSIVE_GAIN
+          : visualIntensity * 9.2 * hazeBoost
+        if (target.modelKind === 'atmosphericFx') {
+          emitterMesh.visible = emitterIntensity > 0.0005
+        } else {
+          emitterMesh.visible = true
+        }
+
+        if (target.isLedFixture) {
+          if (beamMesh !== undefined) {
+            beamMesh.visible = false
+          }
+          if (surfaceSplat !== undefined) {
+            surfaceSplat.visible = false
+          }
+          emitterMesh.position.set(
+            emitterTarget.localX,
+            emitterTarget.localY,
+            emitterTarget.localZ
+          )
+          emitterMesh.rotation.set(0, 0, 0)
+          const glowShell = emitterMesh.children.find(
+            (child) =>
+              child instanceof THREE.Mesh &&
+              (child.userData as { ledGlow?: boolean }).ledGlow === true
+          ) as THREE.Mesh | undefined
+          if (
+            glowShell !== undefined &&
+            glowShell.material instanceof THREE.MeshBasicMaterial
+          ) {
+            glowShell.material.color.copy(emitterTarget.color)
+            glowShell.material.opacity = clamp(
+              Math.pow(visualIntensity, 0.68) * (0.22 + hazeAmountRef.current * 0.18),
+              0,
+              0.75
+            )
+          }
+          const ledWeight = emitterIntensity
+          if (ledWeight > 0.0001) {
+            ledWeightSum += ledWeight
+            ledColorR += emitterTarget.color.r * ledWeight
+            ledColorG += emitterTarget.color.g * ledWeight
+            ledColorB += emitterTarget.color.b * ledWeight
+            ledPosX += emitterTarget.localX * ledWeight
+            ledPosY += emitterTarget.localY * ledWeight
+            ledPosZ += emitterTarget.localZ * ledWeight
+          }
+          const light = fixtureVisual.emitterLights[emitterIndex]
+          if (light instanceof THREE.RectAreaLight) {
+            light.position.copy(emitterMesh.position)
+            light.rotation.x = -Math.PI / 2
+            light.color.copy(emitterTarget.color)
+            light.intensity = clamp(emitterIntensity * 10, 0, 18)
+            light.width = 0.06 + emitterIntensity * 0.28
+            light.height = 0.06 + emitterIntensity * 0.28
+            light.visible = emitterIntensity > 0.0005
+            if (collectFogLights && light.visible) {
+              const worldPos = light.getWorldPosition(new THREE.Vector3())
+              const worldDir = new THREE.Vector3(0, 0, 1).applyQuaternion(
+                light.getWorldQuaternion(new THREE.Quaternion())
+              )
+              pushFogLightSample({
+                stableOrdinal: fogOrdinalEmitterChannel(
+                  fixtureOrderIndex,
+                  emitterIndex,
+                  0
+                ),
+                position: worldPos,
+                direction: worldDir,
+                color: light.color.clone(),
+                intensity: clamp(light.intensity * 0.22, 0, 5.6),
+                range: feetToWorld(26),
+                coneCos: -1,
+                kind: 1,
+              }, new THREE.Vector3(0, 0, 1))
+            }
+          }
+          return
+        }
 
         const isMoverEmitter = target.isMoverModel
         const emitterX = emitterTarget.localX
@@ -3341,270 +2622,439 @@ function Lighting3DViewport({
             ? emitterTarget.localZ
             : emitterTarget.localZ + emitterAttachOffset
 
+        const atmosphericUp =
+          target.modelKind === 'atmosphericFx' &&
+          target.atmosphereNozzleDirection === 'up'
         emitterMesh.position.set(
           emitterX,
           target.modelKind === 'uplight' ? emitterY + emitterAttachOffset : emitterY,
           emitterZ
         )
-
-        const material = emitterMesh.material as THREE.MeshStandardMaterial
-        material.color.copy(emitterTarget.color)
-        material.emissive.copy(emitterTarget.color)
-        const emitterIntensity = clamp01(emitterTarget.intensity)
-        material.emissiveIntensity = 1.3 + emitterIntensity * 6.4
-
-        emitterVolume.position.copy(emitterMesh.position)
-        emitterVolume.rotation.set(target.modelKind === 'uplight' ? -Math.PI / 2 : 0, 0, 0)
-
-        const emitterVolumeQuat = emitterVolume.getWorldQuaternion(new THREE.Quaternion())
-        const defaultBeamDirection = new THREE.Vector3(0, 0, 1)
-          .applyQuaternion(emitterVolumeQuat)
-          .normalize()
-        // Use the emitter's resolved world orientation so beam output matches
-        // the rendered mover model for both upright and inverted mounts.
-        const beamDirection = defaultBeamDirection.clone()
-
-        const emitterParent = emitterVolume.parent
-        if (emitterParent !== null && beamDirection.lengthSq() > 0.000001) {
+        const localBeamDirection =
+          target.modelKind === 'uplight' || atmosphericUp
+            ? new THREE.Vector3(0, 1, 0)
+            : new THREE.Vector3(0, 0, 1)
+        emitterMesh.quaternion.setFromUnitVectors(
+          LOCAL_AXIS_Y,
+          localBeamDirection
+        )
+        const emitterParent = emitterMesh.parent
+        let beamDirection = localBeamDirection.clone()
+        if (emitterParent !== null) {
           const parentWorldQuat = emitterParent.getWorldQuaternion(new THREE.Quaternion())
-          const localBeamDirection = beamDirection
+          beamDirection = localBeamDirection
             .clone()
-            .applyQuaternion(parentWorldQuat.clone().invert())
+            .applyQuaternion(parentWorldQuat)
             .normalize()
-
-          emitterVolume.quaternion.setFromUnitVectors(
-            new THREE.Vector3(0, 0, 1),
-            localBeamDirection
-          )
-          emitterMesh.quaternion.setFromUnitVectors(
-            new THREE.Vector3(0, 1, 0),
-            localBeamDirection
-          )
-        } else {
-          emitterMesh.rotation.set(target.modelKind === 'uplight' ? 0 : Math.PI / 2, 0, 0)
         }
-
         const emitterWorld = emitterMesh.getWorldPosition(new THREE.Vector3())
-        const hit = nearestSurfaceHit(emitterWorld, beamDirection, surfaceSpecRef.current)
+        const emitterLight = fixtureVisual.emitterLights[emitterIndex]
+        const emitterLightTarget = fixtureVisual.emitterLightTargets[emitterIndex]
+        const emitterFillRect = fixtureVisual.emitterFillRects[emitterIndex]
+        const atmosphereJet = fixtureVisual.atmosphereJets[emitterIndex]
         const focusScale = focusWidthScale(target.focusNorm)
-        const hitDistance =
-          hit !== undefined
-            ? Math.max(0.02, hit.distance)
-            : feetToWorld(FALLBACK_BEAM_REACH_FT)
-        // Keep volumetric cones extended and rely on clipping planes to mask
-        // anything outside room/wall bounds. This keeps cone/splat alignment
-        // stable when crossing edges.
-        const coneLength = Math.max(hitDistance, feetToWorld(FALLBACK_BEAM_REACH_FT))
         const moverSpotBaseAngle = target.hasFocusChannel
           ? defaultMoverBeamAngleForModelKind('moverSpot')
           : target.moverBeamAngleDeg
         const moverWashBaseAngle = target.hasFocusChannel
           ? defaultMoverBeamAngleForModelKind('moverWash')
           : target.moverBeamAngleDeg
+        const staticBeamAngle = Number.isFinite(target.moverBeamAngleDeg)
+          ? target.moverBeamAngleDeg
+          : 26
         let halfAngleDeg =
           target.modelKind === 'moverSpot'
             ? clamp(moverSpotBaseAngle * focusScale, 2.5, 20)
             : target.modelKind === 'parCan'
             ? clamp(10 * focusScale, 2.5, 20)
             : target.modelKind === 'moverWash'
-            ? moverWashBaseAngle * focusScale
+            ? clamp((moverWashBaseAngle * focusScale) * 0.5, 4, 35)
             : target.modelKind === 'washBar'
-            ? 26
+            ? clamp((staticBeamAngle * focusScale) * 0.5, 6, 50)
             : target.modelKind === 'uplight'
-            ? 24
+            ? clamp((staticBeamAngle * focusScale) * 0.5, 10, 65)
+            : target.modelKind === 'atmosphericFx'
+            ? clamp((target.atmosphereNozzleDirection === 'up' ? 18 : 14) * focusScale, 4, 35)
             : 16
         if (isCloudModelKind(target.modelKind)) {
           halfAngleDeg = Math.min(25, halfAngleDeg)
         }
         const halfAngleRad = THREE.MathUtils.degToRad(halfAngleDeg)
-        const divergence = Math.tan(halfAngleRad)
-        const projectedRadius = clamp(
-          EMITTER_DISK_RADIUS + divergence * coneLength,
-          EMITTER_DISK_RADIUS,
-          feetToWorld(24)
+        const defaultReach = feetToWorld(
+          target.modelKind === 'washBar' || target.modelKind === 'moverWash'
+            ? 160
+            : target.modelKind === 'atmosphericFx'
+            ? 40
+            : 120
         )
-
-        let boundarySamples: BeamBoundarySample[] | undefined
-
-        if (
-          emitterVolume instanceof THREE.Group &&
-          emitterVolume.userData.volumeKind === 'softCone'
-        ) {
-          emitterVolume.updateWorldMatrix(true, false)
-          boundarySamples = sampleBeamBoundary(
-            emitterWorld,
-            beamDirection,
-            halfAngleRad,
-            SHARP_CONE_SAMPLE_ANGLES,
-            surfaceSpecRef.current,
-            coneLength,
-            EMITTER_DISK_RADIUS
-          )
-          const farRingLocalBase = SHARP_CONE_SAMPLE_ANGLES.map((angle) => {
-            return new THREE.Vector3(
-              Math.cos(angle) * projectedRadius,
-              Math.sin(angle) * projectedRadius,
-              coneLength
-            )
-          })
-          const washAlpha = clamp(Math.pow(emitterIntensity, 2.35), 0, 1) * fogFactor
-          emitterVolume.children.forEach((child) => {
-            if (!(child instanceof THREE.Mesh)) {
-              return
-            }
-            const childMaterial = child.material as THREE.MeshBasicMaterial
-            childMaterial.color.copy(emitterTarget.color)
-            const baseOpacity = Number(child.userData.baseOpacity ?? 0.1)
-            childMaterial.opacity = baseOpacity * washAlpha
-            childMaterial.clippingPlanes = clippingPlanesForCone(surfaceSpecRef.current)
-            const radiusScale = Number(child.userData.radiusScale ?? 1)
-            const scaledFarRing = farRingLocalBase.map((point) => {
-              return new THREE.Vector3(
-                point.x * radiusScale,
-                point.y * radiusScale,
-                point.z
+        const surfaceHit =
+          emitterIntensity > 0.0005
+            ? nearestSurfaceHit(
+                emitterWorld.clone().addScaledVector(beamDirection, 0.01),
+                beamDirection,
+                surfaceSpecRef.current
               )
-            })
-            setSharpConeGeometryFromPoints(
-              child.geometry,
-              EMITTER_DISK_RADIUS * radiusScale,
-              scaledFarRing
-            )
-          })
-          emitterVolume.scale.set(1, 1, 1)
-        } else if (
-          emitterVolume instanceof THREE.Mesh &&
-          emitterVolume.userData.volumeKind === 'sharpCone'
-        ) {
-          const coneMaterial = emitterVolume.material as THREE.MeshBasicMaterial
-          coneMaterial.color.copy(emitterTarget.color)
-          coneMaterial.opacity =
-            clamp(Math.pow(emitterIntensity, 1.7), 0, 0.92) * fogFactor
-          coneMaterial.clippingPlanes = clippingPlanesForCone(surfaceSpecRef.current)
+            : undefined
+        // Clip beam visuals/light reach to scene surfaces (floor, curtain, room bounds),
+        // never to other fixture meshes.
+        const coneLength = clamp(
+          surfaceHit !== undefined
+            ? surfaceHit.distance - 0.01
+            : defaultReach,
+          0.08,
+          defaultReach
+        )
 
-          boundarySamples = sampleBeamBoundary(
-            emitterWorld,
-            beamDirection,
+        if (beamMesh !== undefined) {
+          const beamMaterial = beamMesh.material as THREE.MeshBasicMaterial
+          const haze = hazeAmountRef.current
+          const beamRadius = Math.max(0.02, Math.tan(halfAngleRad) * coneLength)
+          beamMesh.position.copy(emitterMesh.position)
+          beamMesh.quaternion.setFromUnitVectors(
+            LOCAL_AXIS_Z,
+            localBeamDirection
+          )
+          beamMesh.scale.set(beamRadius, beamRadius, coneLength)
+          beamMaterial.color.copy(emitterTarget.color)
+          if (haze <= 0.0005 || emitterIntensity <= 0.0005) {
+            beamMaterial.opacity = 0
+            beamMesh.visible = false
+          } else {
+            const beamStrength =
+              Math.pow(emitterIntensity, target.modelKind === 'moverSpot' ? 1.2 : 1.05) *
+              Math.pow(haze, 1.08)
+            beamMaterial.opacity = clamp(
+              beamStrength *
+                (target.modelKind === 'moverSpot' ? 1.05 : 0.84),
+              0,
+              0.9
+            )
+            beamMesh.visible = beamMaterial.opacity > 0.0025
+          }
+        }
+        if (surfaceSplat !== undefined) {
+          const splatMaterial = surfaceSplat.material as THREE.MeshBasicMaterial
+          if (surfaceHit === undefined || emitterIntensity <= 0.0005) {
+            splatMaterial.opacity = 0
+            surfaceSplat.visible = false
+          } else {
+            const localPoint = fixtureVisual.root.worldToLocal(
+              surfaceHit.point
+                .clone()
+                .addScaledVector(surfaceHit.normal, 0.0055)
+            )
+            const localNormal = surfaceHit.normal
+              .clone()
+              .applyQuaternion(rootInverseQuat)
+              .normalize()
+            surfaceSplat.position.copy(localPoint)
+            surfaceSplat.quaternion.setFromUnitVectors(LOCAL_AXIS_Z, localNormal)
+            const radius = clamp(
+              Math.tan(halfAngleRad) * Math.max(0.08, surfaceHit.distance) * 1.05,
+              0.07,
+              feetToWorld(20)
+            )
+            surfaceSplat.scale.set(radius * 2, radius * 2, 1)
+            splatMaterial.color.copy(emitterTarget.color)
+            splatMaterial.opacity = clamp(
+              Math.pow(emitterIntensity, 1.08) * 0.76,
+              0,
+              0.86
+            )
+            surfaceSplat.visible = splatMaterial.opacity > 0.003
+          }
+        }
+
+        if (emitterLight instanceof THREE.SpotLight) {
+          const horizontalSurfaceBoost = 1
+          emitterLight.position.copy(emitterMesh.position)
+          emitterLight.color.copy(emitterTarget.color)
+          const baseSpotIntensity =
+            target.modelKind === 'moverSpot'
+              ? 98
+              : target.modelKind === 'parCan'
+              ? 82
+              : target.modelKind === 'moverWash'
+              ? 92
+              : target.modelKind === 'washBar'
+              ? 102
+              : target.modelKind === 'uplight'
+              ? 64
+              : target.modelKind === 'atmosphericFx'
+              ? 42
+              : 78
+          const targetSpotIntensity = clamp(
+            Math.pow(emitterIntensity, target.modelKind === 'moverSpot' ? 1.16 : 1.0) *
+              baseSpotIntensity *
+              horizontalSurfaceBoost,
+            0,
+            130
+          )
+          const smoothedSpotIntensity = smoothToward(
+            (emitterLight.userData as { smoothIntensity?: number }).smoothIntensity,
+            targetSpotIntensity,
+            0.28
+          )
+          ;(emitterLight.userData as { smoothIntensity?: number }).smoothIntensity =
+            smoothedSpotIntensity
+          emitterLight.intensity = smoothedSpotIntensity
+          const throwDistance = Math.max(defaultReach * 1.25, coneLength * 1.15)
+          const targetDistance = clamp(throwDistance, feetToWorld(6), feetToWorld(520))
+          const smoothedDistance = smoothToward(
+            (emitterLight.userData as { smoothDistance?: number }).smoothDistance,
+            targetDistance,
+            0.24
+          )
+          ;(emitterLight.userData as { smoothDistance?: number }).smoothDistance =
+            smoothedDistance
+          emitterLight.distance = smoothedDistance
+          const targetAngle = clamp(
             halfAngleRad,
-            SHARP_CONE_SAMPLE_ANGLES,
-            surfaceSpecRef.current,
-            coneLength,
-            EMITTER_DISK_RADIUS
+            THREE.MathUtils.degToRad(2),
+            THREE.MathUtils.degToRad(70)
           )
-          const farRingLocal = SHARP_CONE_SAMPLE_ANGLES.map((angle) => {
-            return new THREE.Vector3(
-              Math.cos(angle) * projectedRadius,
-              Math.sin(angle) * projectedRadius,
-              coneLength
-            )
-          })
-          setSharpConeGeometryFromPoints(
-            emitterVolume.geometry,
-            EMITTER_DISK_RADIUS,
-            farRingLocal
+          const smoothedAngle = smoothToward(
+            (emitterLight.userData as { smoothAngle?: number }).smoothAngle,
+            targetAngle,
+            0.25
           )
-          emitterVolume.scale.set(1, 1, 1)
-        } else if (emitterVolume instanceof THREE.Mesh) {
-          const coneMaterial = emitterVolume.material as THREE.MeshBasicMaterial
-          coneMaterial.color.copy(emitterTarget.color)
-          coneMaterial.opacity =
-            clamp(Math.pow(emitterIntensity, 1.7), 0, 0.92) * fogFactor
-          const coneScale = projectedRadius / 0.16
-          emitterVolume.scale.set(coneScale, coneScale, coneLength)
-        }
+          ;(emitterLight.userData as { smoothAngle?: number }).smoothAngle =
+            smoothedAngle
+          emitterLight.angle = smoothedAngle
+          emitterLight.penumbra =
+            target.modelKind === 'moverSpot' || target.modelKind === 'parCan'
+              ? 0.18
+              : 0.74
+          emitterLight.decay = 0.9
+          emitterLight.visible = emitterIntensity > 0.0005
 
-        const splatProjections = buildSurfaceSplatProjections(
-          emitterWorld,
-          hit,
-          boundarySamples,
-          beamDirection,
-          halfAngleRad,
-          EMITTER_DISK_RADIUS,
-          !isCloudModelKind(target.modelKind),
-          surfaceSpecRef.current
-        )
-
-        if (
-          target.modelKind === 'moverSpot' &&
-          emitterIndex === 0 &&
-          splatProjections.length > 0 &&
-          emitterIntensity > primaryMoverSpot.intensity
-        ) {
-          const centerSurfaceProjection =
-            hit !== undefined
-              ? splatProjections.find((projection) => isSameSurface(hit, projection.hit))
-              : undefined
-          const primaryProjection = centerSurfaceProjection ?? splatProjections[0]
-          primaryMoverSpot.intensity = emitterIntensity
-          primaryMoverSpot.hit = primaryProjection.hit
-          primaryMoverSpot.radius = Math.max(
-            primaryProjection.majorRadius,
-            primaryProjection.minorRadius
-          )
-        }
-
-        if (emitterSplats.length === 0 || emitterIntensity <= 0.001) {
-          return
-        }
-
-        const visibleProjectionCount = Math.min(
-          emitterSplats.length,
-          splatProjections.length
-        )
-        if (visibleProjectionCount <= 0) {
-          return
-        }
-
-        for (
-          let projectionIndex = 0;
-          projectionIndex < visibleProjectionCount;
-          projectionIndex++
-        ) {
-          const emitterSplat = emitterSplats[projectionIndex]
-          const projection = splatProjections[projectionIndex]
-          if (emitterSplat === undefined || projection === undefined) {
-            continue
+          if (emitterLightTarget !== undefined) {
+            const localTarget = emitterMesh.position
+              .clone()
+              .addScaledVector(localBeamDirection, coneLength)
+            emitterLightTarget.position.copy(localTarget)
           }
 
-          const splatMaterial = emitterSplat.material as THREE.MeshBasicMaterial
-          splatMaterial.color.copy(emitterTarget.color)
-          splatMaterial.clippingPlanes = clippingPlanesForSurface(
-            projection.hit,
-            surfaceSpecRef.current
-          )
-          const localCenter = fixtureVisual.root.worldToLocal(
-            projection.center.clone().addScaledVector(projection.normal, 0.006)
-          )
-          emitterSplat.position.copy(localCenter)
-          const localNormal = projection.normal
-            .clone()
-            .applyQuaternion(rootInverseQuat)
-            .normalize()
-          const localTangent = projection.tangent
-            .clone()
-            .applyQuaternion(rootInverseQuat)
-            .normalize()
-          const localBitangent = new THREE.Vector3()
-            .crossVectors(localNormal, localTangent)
-            .normalize()
-          const correctedLocalTangent = new THREE.Vector3()
-            .crossVectors(localBitangent, localNormal)
-            .normalize()
-          const splatBasis = new THREE.Matrix4().makeBasis(
-            correctedLocalTangent,
-            localBitangent,
-            localNormal
-          )
-          emitterSplat.quaternion.setFromRotationMatrix(splatBasis)
-          emitterSplat.scale.set(projection.majorRadius, projection.minorRadius, 1)
-          splatMaterial.opacity =
-            target.modelKind === 'moverSpot'
-              ? 0.2 + emitterIntensity * 0.35
-              : 0.08 + emitterIntensity * 0.2
-          emitterSplat.visible = true
+          const spotWithMap = emitterLight as THREE.SpotLight & {
+            map?: THREE.Texture | null
+          }
+          if (
+            (target.modelKind === 'moverSpot' || target.modelKind === 'parCan') &&
+            target.goboIndex !== undefined
+          ) {
+            spotWithMap.map =
+              goboTextureForIndex(target.goboIndex)
+          } else {
+            spotWithMap.map = null
+          }
+          if (collectFogLights && emitterLight.visible) {
+            pushFogLightSample({
+              stableOrdinal: fogOrdinalEmitterChannel(
+                fixtureOrderIndex,
+                emitterIndex,
+                1
+              ),
+              position: emitterWorld.clone(),
+              direction: beamDirection.clone(),
+              color: emitterLight.color.clone(),
+              intensity: clamp(emitterLight.intensity * 0.7, 0, 28),
+              range: Math.max(feetToWorld(24), emitterLight.distance * 1.2),
+              coneCos: Math.cos(emitterLight.angle),
+              kind: 0,
+            }, beamDirection)
+          }
         }
 
+        if (atmosphereJet instanceof THREE.Points) {
+          const pointsMaterial = atmosphereJet.material as THREE.PointsMaterial
+          const geometry = atmosphereJet.geometry
+          const positions = geometry.getAttribute('position') as THREE.BufferAttribute
+          const seeds = geometry.getAttribute('seed') as THREE.BufferAttribute | undefined
+          const effect = target.atmosphereEffect
+          const particleCount = positions.count
+          const now = performance.now() * 0.001
+          const jetLength =
+            effect === 'co2' ? 2.4 : effect === 'flame' ? 1.6 : effect === 'haze' ? 1.4 : 1.9
+          const spread =
+            effect === 'confetti'
+              ? 0.32
+              : effect === 'bubble'
+              ? 0.24
+              : effect === 'flame'
+              ? 0.12
+              : 0.18
+          for (let particleIndex = 0; particleIndex < particleCount; particleIndex++) {
+            const seed = seeds ? seeds.getX(particleIndex) : 0.5
+            const phase = (now * (0.8 + seed * 1.6) + particleIndex * 0.13) % 1
+            const distance = phase * jetLength
+            const angle = seed * Math.PI * 2 + now * (effect === 'confetti' ? 2.2 : 0.45)
+            const radial = spread * (0.1 + seed * 0.9) * (effect === 'haze' ? 0.55 : 1)
+            const localX = Math.cos(angle) * radial * phase
+            const localY =
+              localBeamDirection.y > 0.5
+                ? distance
+                : Math.sin(angle * 1.5) * radial * 0.3
+            const localZ =
+              localBeamDirection.z > 0.5
+                ? distance
+                : Math.sin(angle) * radial
+            positions.setXYZ(particleIndex, localX, localY, localZ)
+          }
+          positions.needsUpdate = true
+          atmosphereJet.position.copy(emitterMesh.position)
+          atmosphereJet.quaternion.setFromUnitVectors(LOCAL_AXIS_Y, localBeamDirection)
+          pointsMaterial.color.copy(emitterTarget.color)
+          pointsMaterial.opacity = clamp(
+            Math.pow(emitterEffectIntensity, 0.9) * (effect === 'haze' ? 0.28 : 0.58),
+            0,
+            0.85
+          )
+          if (effect === 'flame') {
+            pointsMaterial.color.lerp(new THREE.Color('#ff7a1a'), 0.55)
+          } else if (effect === 'bubble') {
+            pointsMaterial.color.lerp(new THREE.Color('#d5efff'), 0.7)
+          } else if (effect === 'confetti') {
+            const hueShift = (emitterIndex * 0.13 + now * 0.2) % 1
+            pointsMaterial.color.offsetHSL(hueShift * 0.2, 0.05, 0.05)
+          }
+          atmosphereJet.visible =
+            emitterEffectIntensity > 0.0005 && pointsMaterial.opacity > 0.003
+        }
+
+        if (emitterFillRect instanceof THREE.RectAreaLight) {
+          const horizontalSurfaceBoost = 1
+          emitterFillRect.position.copy(emitterMesh.position)
+          emitterFillRect.quaternion.setFromUnitVectors(
+            // RectAreaLight emits along its local -Z axis. Map that axis to beam
+            // direction so radiant fill is emitted forward from the fixture face.
+            LOCAL_AXIS_NEG_Z,
+            localBeamDirection
+          )
+          emitterFillRect.color.copy(emitterTarget.color)
+          const targetFillIntensity = clamp(
+            emitterIntensity *
+              (target.modelKind === 'washBar'
+                ? 64
+                : target.modelKind === 'moverWash'
+                ? 56
+                : 46) *
+              horizontalSurfaceBoost,
+            0,
+            52
+          )
+          const smoothedFillIntensity = smoothToward(
+            (emitterFillRect.userData as { smoothIntensity?: number }).smoothIntensity,
+            targetFillIntensity,
+            0.22
+          )
+          ;(emitterFillRect.userData as { smoothIntensity?: number }).smoothIntensity =
+            smoothedFillIntensity
+          emitterFillRect.intensity = smoothedFillIntensity
+          emitterFillRect.width = target.modelKind === 'washBar' ? 0.38 : 0.24
+          emitterFillRect.height = target.modelKind === 'washBar' ? 0.24 : 0.16
+          emitterFillRect.visible = emitterIntensity > 0.0005
+          if (collectFogLights && emitterFillRect.visible) {
+            const fillWorldPos = emitterFillRect.getWorldPosition(new THREE.Vector3())
+            const fillWorldDir = LOCAL_AXIS_NEG_Z.clone().applyQuaternion(
+              emitterFillRect.getWorldQuaternion(new THREE.Quaternion())
+            ).normalize()
+            pushFogLightSample({
+              stableOrdinal: fogOrdinalEmitterChannel(
+                fixtureOrderIndex,
+                emitterIndex,
+                2
+              ),
+              position: fillWorldPos,
+              direction: fillWorldDir,
+              color: emitterFillRect.color.clone(),
+              intensity: clamp(emitterFillRect.intensity * 0.34, 0, 8),
+              range: feetToWorld(target.modelKind === 'moverWash' ? 130 : 110),
+              coneCos: -1,
+              kind: 1,
+            }, fillWorldDir)
+          }
+        }
+        if (target.modelKind === 'moverSpot' && emitterIndex === 0) {
+          primaryMoverSpot.intensity = emitterIntensity
+          primaryMoverSpot.radius = Math.tan(halfAngleRad) * coneLength
+          primaryMoverSpot.hit = surfaceHit
+        }
+        return
       })
+
+      if (target.isLedFixture && fixtureVisual.ledAggregateLight !== undefined) {
+        const aggregateLight = fixtureVisual.ledAggregateLight
+        const aggregateTarget = fixtureVisual.ledAggregateTarget
+        if (ledWeightSum > 0.0001) {
+          const centroid = new THREE.Vector3(
+            ledPosX / ledWeightSum,
+            ledPosY / ledWeightSum,
+            ledPosZ / ledWeightSum
+          )
+          aggregateLight.position.set(
+            centroid.x,
+            centroid.y,
+            centroid.z
+          )
+          aggregateLight.color.setRGB(
+            ledColorR / ledWeightSum,
+            ledColorG / ledWeightSum,
+            ledColorB / ledWeightSum
+          )
+          const normalizedEnergy = clamp(
+            ledWeightSum / Math.max(1, target.emitters.length),
+            0,
+            1
+          )
+          const targetAggregateIntensity = clamp(
+            Math.pow(normalizedEnergy, 0.9) * LED_AGGREGATE_LIGHT_GAIN,
+            0,
+            12.5
+          )
+          const smoothedAggregateIntensity = smoothToward(
+            (aggregateLight.userData as { smoothIntensity?: number }).smoothIntensity,
+            targetAggregateIntensity,
+            0.2
+          )
+          ;(aggregateLight.userData as { smoothIntensity?: number }).smoothIntensity =
+            smoothedAggregateIntensity
+          aggregateLight.intensity = smoothedAggregateIntensity
+          aggregateLight.distance = feetToWorld(16)
+          aggregateLight.angle = THREE.MathUtils.degToRad(28)
+          aggregateLight.penumbra = 0.56
+          if (aggregateTarget !== undefined) {
+            aggregateTarget.position.set(
+              centroid.x,
+              centroid.y,
+              centroid.z + Math.max(0.4, target.modelWidth * 1.1)
+            )
+          }
+          aggregateLight.visible = aggregateLight.intensity > 0.0005
+          if (collectFogLights && aggregateLight.visible) {
+            const aggregateDirection =
+              aggregateTarget !== undefined
+                ? aggregateTarget
+                    .getWorldPosition(new THREE.Vector3())
+                    .sub(aggregateLight.getWorldPosition(new THREE.Vector3()))
+                    .normalize()
+                : new THREE.Vector3(0, 0, 1).applyQuaternion(
+                    fixtureVisual.root.getWorldQuaternion(new THREE.Quaternion())
+                  )
+            pushFogLightSample({
+              stableOrdinal: fogOrdinalLedAggregate(fixtureOrderIndex),
+              position: aggregateLight.getWorldPosition(new THREE.Vector3()),
+              direction: aggregateDirection,
+              color: aggregateLight.color.clone(),
+              intensity: clamp(aggregateLight.intensity * LED_AGGREGATE_FOG_GAIN, 0, 16),
+              range: aggregateLight.distance,
+              coneCos: Math.cos(aggregateLight.angle),
+              kind: 0,
+            }, new THREE.Vector3(0, 0, 1))
+          }
+        } else {
+          aggregateLight.visible = false
+        }
+      }
 
       if (fixtureVisual.goboLabel) {
           if (
@@ -3640,15 +3090,158 @@ function Lighting3DViewport({
         }
       }
     }
-  }, [previewTargets, environmentFog])
+    const totalVisualTargets = previewTargets.length
+    const warmupProgress =
+      totalVisualTargets <= 0
+        ? 1
+        : clamp(visuals.size / totalVisualTargets, 0, 1)
+    if (
+      Math.abs(warmupProgress - startupProgressRef.current) >= 0.02 ||
+      warmupProgress <= 0.001 ||
+      warmupProgress >= 0.999
+    ) {
+      startupProgressRef.current = warmupProgress
+      setStartupBusyProgress(warmupProgress)
+    }
+    if (warmupProgress >= 0.999) {
+      startupReadyRef.current = true
+      if (startupReadyAtRef.current === null) {
+        startupReadyAtRef.current = performance.now()
+      }
+      setStartupBusyPhase('settling')
+    }
+
+    const fogMaterial = volumetricFogMaterialRef.current
+    if (fogMaterial !== null) {
+      const lightCountUniform = fogMaterial.uniforms.uLightCount as
+        | { value: number }
+        | undefined
+      const posUniform = fogMaterial.uniforms.uLightPos as
+        | { value: THREE.Vector3[] }
+        | undefined
+      const dirUniform = fogMaterial.uniforms.uLightDir as
+        | { value: THREE.Vector3[] }
+        | undefined
+      const colorUniform = fogMaterial.uniforms.uLightColor as
+        | { value: THREE.Vector3[] }
+        | undefined
+      const paramsUniform = fogMaterial.uniforms.uLightParams as
+        | { value: THREE.Vector4[] }
+        | undefined
+
+      if (
+        lightCountUniform !== undefined &&
+        posUniform !== undefined &&
+        dirUniform !== undefined &&
+        colorUniform !== undefined &&
+        paramsUniform !== undefined
+      ) {
+        const sorted = fogLightSamples
+          .filter((sample) => sample.intensity > 0.0001 && sample.range > 0.001)
+          .sort((left, right) => left.stableOrdinal - right.stableOrdinal)
+        const maxLights = Math.min(
+          volumetricFogMaxLightsRef.current,
+          posUniform.value.length,
+          dirUniform.value.length,
+          colorUniform.value.length,
+          paramsUniform.value.length
+        )
+        const count = Math.min(sorted.length, maxLights)
+        for (let index = 0; index < count; index++) {
+          const sample = sorted[index]
+          const prevPos = posUniform.value[index]
+          const prevDir = dirUniform.value[index]
+          const prevColor = colorUniform.value[index]
+          const prevParams = paramsUniform.value[index]
+          prevPos.lerp(sample.position, 0.34)
+
+          const blendedDir = prevDir.clone().lerp(sample.direction, 0.42)
+          prevDir.copy(normalizeOrFallback(blendedDir, sample.direction))
+          prevColor.lerp(
+            new THREE.Vector3(sample.color.r, sample.color.g, sample.color.b),
+            0.42
+          )
+          prevParams.set(
+            lerp(prevParams.x, sample.intensity, 0.3),
+            lerp(prevParams.y, sample.range, 0.3),
+            lerp(prevParams.z, sample.coneCos, 0.4),
+            sample.kind
+          )
+        }
+        for (let index = count; index < maxLights; index++) {
+          const prevPos = posUniform.value[index]
+          const prevDir = dirUniform.value[index]
+          const prevColor = colorUniform.value[index]
+          const prevParams = paramsUniform.value[index]
+          prevPos.multiplyScalar(0.98)
+          prevDir.copy(normalizeOrFallback(prevDir, new THREE.Vector3(0, -1, 0)))
+          prevColor.multiplyScalar(0.9)
+          prevParams.set(
+            lerp(prevParams.x, 0, 0.2),
+            lerp(prevParams.y, feetToWorld(3), 0.2),
+            lerp(prevParams.z, -1, 0.2),
+            0
+          )
+        }
+        lightCountUniform.value = count
+      }
+    }
+
+      const gizmoId = gizmoFixtureIdRef.current
+      const transformControls = transformControlsRef.current
+      if (gizmoId !== null && transformControls !== null) {
+        const visual = fixtureVisualsRef.current.get(gizmoId)
+        if (visual !== undefined && transformControls.object !== visual.root) {
+          transformControls.attach(visual.root)
+        }
+      }
+    }
+
+    previewSyncPassRef.current = runFixturePreviewSyncPass
+    runFixturePreviewSyncPass()
+    lastPreviewSyncAtRef.current = performance.now()
+    return () => {
+      cancelled = true
+      previewSyncPassRef.current = () => {}
+    }
+  }, [])
 
   return (
     <Root>
       <Hint>
-        Mouse: left pan, right orbit, wheel zoom. Keyboard: `W/A/S/D` to walk and
-        hold `Shift` for faster movement.
+        Left click selects fixtures. Right click a fixture to show and toggle
+        Move/Rotate gizmo mode (movers are move-only). Left or right click away
+        from fixtures hides the gizmo. Keyboard: `W/A/S/D` walk, `Shift` speed,
+        `Q` move gizmo, `E` rotate gizmo. Alt+Shift+H toggles a live performance HUD
+        (FPS, frame ms, draw calls, heap).
       </Hint>
       <CanvasShell>
+        <ModeBadge>
+          Gizmo:{' '}
+          {gizmoFixture === null
+            ? 'Hidden'
+            : gizmoFixture.isMover
+            ? 'Move (Mover Rotation Locked)'
+            : transformMode === 'translate'
+            ? 'Move'
+            : 'Rotate'}
+        </ModeBadge>
+        {gizmoFixture?.isMover && gizmoFixtureId !== null && (
+          <MountToggleButton
+            type="button"
+            onClick={() =>
+              onSetFixtureMountOrientation(
+                gizmoFixtureId,
+                gizmoFixture.moverMountOrientation === 'inverted'
+                  ? 'upright'
+                  : 'inverted'
+              )
+            }
+            title="Toggle mover mount orientation"
+          >
+            Mount: {gizmoFixture.moverMountOrientation === 'inverted' ? 'Hung' : 'Upright'}
+          </MountToggleButton>
+        )}
         <HomeButton
           type="button"
           title="Reset camera to default view"
@@ -3656,6 +3249,9 @@ function Lighting3DViewport({
         >
           Home
         </HomeButton>
+        {perfHudOpen ? (
+          <PerfHud ref={perfHudTextRef} aria-live="polite" />
+        ) : null}
         <CompassHud aria-hidden>
           <svg viewBox="0 0 72 72">
             <line
@@ -3717,8 +3313,29 @@ function Lighting3DViewport({
             </text>
           </svg>
         </CompassHud>
+        {hoverInfo && (
+          <FixtureTooltip
+            style={{
+              left: `${hoverInfo.clientX + 12}px`,
+              top: `${hoverInfo.clientY + 12}px`,
+            }}
+          >
+            <div>{hoverInfo.fixtureName}</div>
+            <TooltipSub>{hoverInfo.fixtureLabel}</TooltipSub>
+          </FixtureTooltip>
+      )}
         <CanvasHost ref={mountRef} />
       </CanvasShell>
+      <BusyModal
+        open={startupBusyVisible}
+        title="Preparing Lighting 3D Preview"
+        message={
+          startupBusyPhase === 'settling'
+            ? 'Finalizing renderer and stabilizing lighting...'
+            : 'Building fixture visuals and lighting...'
+        }
+        progress={startupBusyProgress}
+      />
     </Root>
   )
 }
@@ -3728,6 +3345,40 @@ const Root = styled.div`
   flex-direction: column;
   min-height: 0;
   height: 100%;
+`
+
+const ExternalViewportCard = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  flex: 1 1 auto;
+  min-height: 12rem;
+  border: 1px solid ${(props) => props.theme.colors.divider};
+  border-radius: 0.35rem;
+  background: ${(props) => props.theme.colors.bg.primary};
+  color: ${(props) => props.theme.colors.text.primary};
+  padding: 0.85rem;
+  box-sizing: border-box;
+`
+
+const ExternalViewportTitle = styled.div`
+  font-size: 0.88rem;
+  font-weight: 700;
+`
+
+const ExternalViewportBody = styled.div`
+  font-size: 0.78rem;
+  color: ${(props) => props.theme.colors.text.secondary};
+`
+
+const ExternalViewportButton = styled.button`
+  width: fit-content;
+  border: 1px solid ${(props) => props.theme.colors.divider};
+  background: ${(props) => props.theme.colors.bg.darker};
+  color: ${(props) => props.theme.colors.text.primary};
+  border-radius: 0.3rem;
+  padding: 0.35rem 0.55rem;
+  cursor: pointer;
 `
 
 const Hint = styled.div`
@@ -3750,10 +3401,59 @@ const CanvasHost = styled.div`
   overflow: hidden;
 `
 
+const PerfHud = styled.pre`
+  position: absolute;
+  left: 0.35rem;
+  top: 2.35rem;
+  z-index: 5;
+  margin: 0;
+  padding: 0.35rem 0.45rem;
+  font-size: 0.58rem;
+  line-height: 1.38;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    monospace;
+  color: #e8f0ff;
+  background: #0a1020d8;
+  border: 1px solid #ffffff55;
+  border-radius: 0.25rem;
+  max-width: min(24rem, 94vw);
+  pointer-events: none;
+  white-space: pre;
+  text-align: left;
+`
+
 const HomeButton = styled.button`
   position: absolute;
   top: 0.45rem;
   right: 0.45rem;
+  z-index: 2;
+  border: 1px solid #ffffff66;
+  background: #101521d0;
+  color: #dfe9ff;
+  border-radius: 0.3rem;
+  font-size: 0.66rem;
+  cursor: pointer;
+  padding: 0.18rem 0.42rem;
+`
+
+const ModeBadge = styled.div`
+  position: absolute;
+  top: 0.45rem;
+  left: 0.55rem;
+  z-index: 2;
+  border: 1px solid #ffffff4d;
+  background: #101521d0;
+  color: #dfe9ff;
+  border-radius: 0.3rem;
+  font-size: 0.66rem;
+  padding: 0.18rem 0.42rem;
+  pointer-events: none;
+`
+
+const MountToggleButton = styled.button`
+  position: absolute;
+  top: 2.05rem;
+  left: 0.55rem;
   z-index: 2;
   border: 1px solid #ffffff66;
   background: #101521d0;
@@ -3782,6 +3482,24 @@ const CompassHud = styled.div`
     height: 100%;
     display: block;
   }
+`
+
+const FixtureTooltip = styled.div`
+  position: fixed;
+  z-index: 4;
+  pointer-events: none;
+  border: 1px solid #ffffff40;
+  background: #111826eb;
+  color: #e9f1ff;
+  border-radius: 0.3rem;
+  padding: 0.26rem 0.36rem;
+  font-size: 0.7rem;
+  max-width: 18rem;
+`
+
+const TooltipSub = styled.div`
+  color: #b7c4df;
+  font-size: 0.65rem;
 `
 
 

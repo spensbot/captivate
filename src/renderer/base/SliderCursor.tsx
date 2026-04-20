@@ -1,9 +1,17 @@
+import type { MouseEventHandler } from 'react'
+
 interface Props {
   value: number
   orientation: 'vertical' | 'horizontal'
   radius: number
   color?: string
   border?: boolean
+  /**
+   * Live / reference cursors should not capture pointer events so the track
+   * and manual ring (pointer-events auto) receive drags and context menu.
+   */
+  pointerEvents?: 'auto' | 'none'
+  onContextMenu?: MouseEventHandler<HTMLDivElement>
 }
 
 export default function SliderCursor({
@@ -12,6 +20,8 @@ export default function SliderCursor({
   radius,
   color = '#fffa',
   border,
+  pointerEvents = 'none',
+  onContextMenu,
 }: Props) {
   const percent = value * 100
   const v = orientation === 'vertical'
@@ -20,6 +30,7 @@ export default function SliderCursor({
 
   return (
     <div
+      onContextMenu={onContextMenu}
       style={{
         position: 'absolute',
         width: d,
@@ -31,6 +42,7 @@ export default function SliderCursor({
         backgroundColor: border ? undefined : color,
         transform: `translate(${v ? 0 : -radius}rem, ${v ? radius : 0}rem)`,
         boxSizing: 'border-box',
+        pointerEvents,
       }}
     />
   )

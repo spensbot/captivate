@@ -1,8 +1,8 @@
 import styled from 'styled-components'
 import { useControlSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
+import { useEffect } from 'react'
 import {
-  setActiveScene,
   newScene,
   removeScene,
   setActiveSceneBombacity,
@@ -17,10 +17,14 @@ import DisableIcon from '@mui/icons-material/DoNotDisturb'
 import Slider from '../base/Slider'
 import { ButtonMidiOverlay } from '../base/MidiOverlay'
 import Input from '../base/Input'
-import { Draggable } from 'react-beautiful-dnd'
+import { Draggable } from '@hello-pangea/dnd'
 import DragHandleIcon from '@mui/icons-material/DragHandle'
 import CopyIcon from '@mui/icons-material/FileCopy'
 import { SceneType } from '../../shared/Scenes'
+import {
+  cancelQuantizedActiveScene,
+  scheduleQuantizedSetActiveScene,
+} from './sceneBeatActivation'
 
 function getColor(epicness: number) {
   const hueStart = 250
@@ -40,6 +44,12 @@ export function Scene({ sceneType, index, id }: Props) {
     (control) => control[sceneType].active === id
   )
   const dispatch = useDispatch()
+
+  useEffect(() => {
+    return () => {
+      cancelQuantizedActiveScene(sceneType, id)
+    }
+  }, [sceneType, id])
   const epicness = useControlSelector(
     (control) => control[sceneType].byId[id].epicness
   )
@@ -110,12 +120,10 @@ export function Scene({ sceneType, index, id }: Props) {
             <Root
               style={style}
               onClick={() => {
-                dispatch(
-                  setActiveScene({
-                    sceneType: sceneType,
-                    val: id,
-                  })
-                )
+                if (isActive) {
+                  return
+                }
+                scheduleQuantizedSetActiveScene(dispatch, sceneType, id)
               }}
             >
               <Number>{index + 1}</Number>

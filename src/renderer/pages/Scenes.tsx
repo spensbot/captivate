@@ -8,8 +8,10 @@ import SplitScenes from 'renderer/scenes/SplitScenes'
 
 export default function Scenes() {
   const splitPaneStyle: React.CSSProperties = {
-    flex: '1 1 auto',
-    overflow: 'auto',
+    flex: '1 1 0',
+    minWidth: 0,
+    minHeight: 0,
+    overflow: 'hidden',
   }
 
   return (
@@ -39,9 +41,13 @@ export default function Scenes() {
 }
 
 const Root = styled.div`
+  width: 100%;
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 `
 
 const Pane = styled.div`
@@ -52,6 +58,7 @@ const Column = styled.div`
   display: flex;
   flex-direction: column;
   padding: 1rem;
+  min-width: 0;
 `
 
 const Sp = styled.div`

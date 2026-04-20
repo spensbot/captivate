@@ -1,7 +1,7 @@
 import { indexArray } from '../../../../shared/util'
 import { SerialConnection } from '../SerialConnection'
 import { getUniverseBuffer } from '../util'
-import { DmxUsbDeviceConfig } from './DmxConnectionUsb'
+import { DmxUsbDeviceConfig } from './DmxUsbDeviceConfig'
 
 const messageLabels = {
   getWidgetParametersRequest: 0x03,

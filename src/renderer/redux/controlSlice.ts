@@ -3,26 +3,34 @@ import { LfoShape, normalizeLfoShape } from '../../shared/oscillator'
 import { DefaultParam, Params } from '../../shared/params'
 import { ReorderParams } from '../../shared/util'
 import { clampNormalized, clamp } from '../../math/util'
-import { initModulator } from '../../shared/modulation'
+import { initModulator, type ModManualAnchor } from '../../shared/modulation'
 import { nanoid } from 'nanoid'
 import { RandomizerOptions } from '../../shared/randomizer'
 import cloneDeep from 'lodash.clonedeep'
 import { LayerConfig } from '../../visualizer/threejs/layers/LayerConfig'
-import { EffectConfig } from '../../visualizer/threejs/effects/effectConfigs'
 import { DeviceState, initDeviceState, midiActions } from './deviceState'
+import {
+  AtmosphericsFixtureControlConfig,
+  AtmosphericsLevelChannelConfig,
+  AtmosphericsTriggerChannelConfig,
+} from '../../shared/atmospherics'
 import {
   ScenesStateBundle,
   initScenesState,
   initLightScene,
   initVisualScene,
+  initVisualScenesState,
   LightScene_t,
   LightScenes_t,
+  SplitScene_t,
   VisualScene_t,
   VisualScenes_t,
   SceneType,
-  initSplitScene
+  initSplitScene,
+  VisualSceneTransitionConfig,
 } from '../../shared/Scenes'
 import { reorderArray } from '../../shared/util'
+import { normalizeAudioBandConfig } from '../../shared/audioEngine'
 
 export interface ControlState extends ScenesStateBundle {
   device: DeviceState
@@ -31,7 +39,7 @@ export interface ControlState extends ScenesStateBundle {
 export function initControlState(): ControlState {
   return {
     light: initScenesState(initLightScene()),
-    visual: initScenesState(initVisualScene()),
+    visual: initVisualScenesState(),
     device: initDeviceState(),
     master: 1,
   }
@@ -50,6 +58,34 @@ interface SetModulationPayload {
   modIndex: number
   param: DefaultParam | string
   value: number | undefined
+}
+
+interface SetModManualAnchorPayload {
+  splitIndex: number
+  param: DefaultParam | string
+  /** Omit or `'center'` clears stored anchor (default center behavior). */
+  anchor?: ModManualAnchor
+}
+
+interface SetModulatorAudioConfigPayload {
+  index: number
+  audioBandLowHz?: number
+  audioBandHighHz?: number
+  audioThreshold?: number
+  audioMax?: number
+  audioAttack?: number
+  audioDecay?: number
+  audioEnergySmoothing?: number
+  audioBandSmoothing?: number
+}
+
+interface SetModulatorWaveConfigPayload {
+  index: number
+  sinePeakWidth?: number
+  rampCurve?: number
+  squareDuty?: number
+  sawFlatten?: number
+  noiseSeed?: number
 }
 
 function modifyActiveLightScene(
@@ -85,6 +121,30 @@ function modifyActiveVisualScene(
   }
 }
 
+function cloneProjectionMappingConfig(
+  mapping: LayerConfig['projectionMapping']
+): LayerConfig['projectionMapping'] {
+  return {
+    enabled: mapping.enabled === true,
+    showAlignmentGrid: mapping.showAlignmentGrid !== false,
+    showKeystoneGrid: mapping.showKeystoneGrid !== false,
+    showSelectedOutputGrid: mapping.showSelectedOutputGrid === true,
+    activeOutputId: mapping.activeOutputId,
+    outputs: mapping.outputs.map((output) => ({
+      id: output.id,
+      name: output.name,
+      enabled: output.enabled !== false,
+      sourceRect: { ...output.sourceRect },
+      corners: [
+        { ...output.corners[0] },
+        { ...output.corners[1] },
+        { ...output.corners[2] },
+        { ...output.corners[3] },
+      ],
+    })),
+  }
+}
+
 function modifyActiveScene(
   state: ControlState,
   sceneType: SceneType,
@@ -94,6 +154,18 @@ function modifyActiveScene(
   if (scene) {
     callback(scene)
   }
+}
+
+function quantizeBeatEighth(value: number) {
+  const safe = Number.isFinite(value) ? value : 0.25
+  return Math.round(safe * 8) / 8
+}
+
+function quantizePhaseShiftToBeatEighth(phaseShift: number, period: number) {
+  const safePeriod = Math.max(0.25, Number.isFinite(period) ? period : 4)
+  const phaseStep = 1 / (safePeriod * 8)
+  const safePhase = clampNormalized(phaseShift)
+  return clampNormalized(Math.round(safePhase / phaseStep) * phaseStep)
 }
 
 type ScopedAction<T> = PayloadAction<{
@@ -219,9 +291,16 @@ export const scenesSlice = createSlice({
     },
     autoBombacity: (state, { payload }: PayloadAction<SceneType>) => {
       const scenes = state[payload]
+      const count = scenes.ids.length
+      if (count === 0) return
+      if (count === 1) {
+        const onlyScene = scenes.byId[scenes.ids[0]]
+        if (onlyScene) onlyScene.epicness = 0
+        return
+      }
       scenes.ids.forEach((id, i) => {
         const scene = scenes.byId[id]
-        if (scene) scene.epicness = i / (scenes.ids.length - 1)
+        if (scene) scene.epicness = i / (count - 1)
       })
     },
 
@@ -234,7 +313,96 @@ export const scenesSlice = createSlice({
       { payload }: PayloadAction<{ index: number; shape: LfoShape }>
     ) => {
       modifyActiveLightScene(state, (scene) => {
-        scene.modulators[payload.index].lfo.shape = normalizeLfoShape(payload.shape)
+        const nextShape = normalizeLfoShape(payload.shape)
+        scene.modulators[payload.index].lfo.shape = nextShape
+        if (nextShape === LfoShape.AudioBand) {
+          const lfo = scene.modulators[payload.index].lfo
+          const cap = 0.65
+          if (lfo.audioMax > cap) {
+            lfo.audioMax = cap
+          }
+          if (lfo.audioMax <= lfo.audioThreshold) {
+            lfo.audioMax = Math.min(cap, lfo.audioThreshold + 0.01)
+          }
+        }
+      })
+    },
+    setModulatorAudioConfig: (
+      state,
+      { payload }: PayloadAction<SetModulatorAudioConfigPayload>
+    ) => {
+      modifyActiveLightScene(state, (scene) => {
+        const modulator = scene.modulators[payload.index]
+        if (modulator === undefined) return
+        if (
+          payload.audioBandLowHz !== undefined ||
+          payload.audioBandHighHz !== undefined
+        ) {
+          const band = normalizeAudioBandConfig({
+            lowHz:
+              payload.audioBandLowHz !== undefined
+                ? payload.audioBandLowHz
+                : modulator.lfo.audioBandLowHz,
+            highHz:
+              payload.audioBandHighHz !== undefined
+                ? payload.audioBandHighHz
+                : modulator.lfo.audioBandHighHz,
+          })
+          modulator.lfo.audioBandLowHz = band.lowHz
+          modulator.lfo.audioBandHighHz = band.highHz
+        }
+        if (payload.audioAttack !== undefined) {
+          modulator.lfo.audioAttack = clampNormalized(payload.audioAttack)
+        }
+        if (payload.audioDecay !== undefined) {
+          modulator.lfo.audioDecay = clampNormalized(payload.audioDecay)
+        }
+        if (payload.audioThreshold !== undefined) {
+          modulator.lfo.audioThreshold = Math.min(
+            0.99,
+            clampNormalized(payload.audioThreshold)
+          )
+        }
+        if (payload.audioMax !== undefined) {
+          modulator.lfo.audioMax = clampNormalized(payload.audioMax)
+        }
+        if (modulator.lfo.audioMax <= modulator.lfo.audioThreshold) {
+          modulator.lfo.audioMax = Math.min(1, modulator.lfo.audioThreshold + 0.01)
+        }
+        if (payload.audioEnergySmoothing !== undefined) {
+          modulator.lfo.audioEnergySmoothing = clampNormalized(
+            payload.audioEnergySmoothing
+          )
+        }
+        if (payload.audioBandSmoothing !== undefined) {
+          modulator.lfo.audioBandSmoothing = clampNormalized(
+            payload.audioBandSmoothing
+          )
+        }
+      })
+    },
+    setModulatorWaveConfig: (
+      state,
+      { payload }: PayloadAction<SetModulatorWaveConfigPayload>
+    ) => {
+      modifyActiveLightScene(state, (scene) => {
+        const modulator = scene.modulators[payload.index]
+        if (modulator === undefined) return
+        if (payload.sinePeakWidth !== undefined) {
+          modulator.lfo.sinePeakWidth = clampNormalized(payload.sinePeakWidth)
+        }
+        if (payload.rampCurve !== undefined) {
+          modulator.lfo.rampCurve = clampNormalized(payload.rampCurve)
+        }
+        if (payload.squareDuty !== undefined) {
+          modulator.lfo.squareDuty = clampNormalized(payload.squareDuty)
+        }
+        if (payload.sawFlatten !== undefined) {
+          modulator.lfo.sawFlatten = clampNormalized(payload.sawFlatten)
+        }
+        if (payload.noiseSeed !== undefined) {
+          modulator.lfo.noiseSeed = clampNormalized(payload.noiseSeed)
+        }
       })
     },
     setPeriod: (
@@ -242,7 +410,11 @@ export const scenesSlice = createSlice({
       { payload }: PayloadAction<{ index: number; newVal: number }>
     ) => {
       modifyActiveLightScene(state, (scene) => {
-        scene.modulators[payload.index].lfo.period = payload.newVal
+        scene.modulators[payload.index].lfo.period = clamp(
+          quantizeBeatEighth(payload.newVal),
+          0.25,
+          32
+        )
       })
     },
     incrementPeriod: (
@@ -251,7 +423,9 @@ export const scenesSlice = createSlice({
     ) => {
       modifyActiveLightScene(state, (scene) => {
         scene.modulators[payload.index].lfo.period = clamp(
-          scene.modulators[payload.index].lfo.period + payload.amount,
+          quantizeBeatEighth(
+            scene.modulators[payload.index].lfo.period + payload.amount
+          ),
           0.25,
           16
         )
@@ -264,8 +438,9 @@ export const scenesSlice = createSlice({
       modifyActiveLightScene(state, (scene) => {
         const modulator = scene.modulators[payload.index]
         modulator.lfo.flip = clampNormalized(modulator.lfo.flip + payload.flip)
-        modulator.lfo.phaseShift = clampNormalized(
-          modulator.lfo.phaseShift + payload.phaseShift
+        modulator.lfo.phaseShift = quantizePhaseShiftToBeatEighth(
+          modulator.lfo.phaseShift + payload.phaseShift,
+          modulator.lfo.period
         )
         modulator.lfo.skew = clampNormalized(modulator.lfo.skew + payload.skew)
         modulator.lfo.symmetricSkew = clampNormalized(
@@ -286,6 +461,31 @@ export const scenesSlice = createSlice({
     resetModulator: (state, { payload }: PayloadAction<number>) => {
       modifyActiveLightScene(state, (scene) => {
         scene.modulators[payload] = initModulator(scene.splitScenes.length)
+      })
+    },
+    setModManualAnchor: (
+      state,
+      { payload }: PayloadAction<SetModManualAnchorPayload>
+    ) => {
+      const { splitIndex, param, anchor } = payload
+      modifyActiveLightScene(state, (scene) => {
+        const splitScene = getSplitSceneSafe(scene, splitIndex)
+        if (splitScene === undefined) {
+          return
+        }
+        if (anchor === undefined || anchor === 'center') {
+          if (splitScene.modManualAnchors) {
+            delete splitScene.modManualAnchors[param]
+            if (Object.keys(splitScene.modManualAnchors).length === 0) {
+              delete splitScene.modManualAnchors
+            }
+          }
+          return
+        }
+        if (!splitScene.modManualAnchors) {
+          splitScene.modManualAnchors = {}
+        }
+        splitScene.modManualAnchors[param] = anchor
       })
     },
     setModulation: (
@@ -344,6 +544,12 @@ export const scenesSlice = createSlice({
           }
           const baseParams = splitScene.baseParams
           delete baseParams[param]
+          if (splitScene.modManualAnchors) {
+            delete splitScene.modManualAnchors[param]
+            if (Object.keys(splitScene.modManualAnchors).length === 0) {
+              delete splitScene.modManualAnchors
+            }
+          }
 
           // Now remove the params from any modulators
           scene.modulators.forEach((modulator) => {
@@ -403,11 +609,119 @@ export const scenesSlice = createSlice({
         })
       })
     },
+    ensureSplitSceneForGroup: (
+      state,
+      {
+        payload,
+      }: PayloadAction<{
+        group: string
+        defaultParams?: Params
+        removeParams?: string[]
+      }>
+    ) => {
+      modifyActiveLightScene(state, (scene) => {
+        const group = payload.group.trim()
+        if (group.length <= 0) return
+
+        let splitIndex = scene.splitScenes.findIndex(
+          (split) => split.groups[group] === true
+        )
+        if (splitIndex < 0) {
+          scene.splitScenes.push(initSplitScene())
+          scene.modulators.forEach((modulator) => {
+            modulator.splitModulations.push({})
+          })
+          splitIndex = scene.splitScenes.length - 1
+          scene.splitScenes[splitIndex].groups[group] = true
+        }
+
+        const split = scene.splitScenes[splitIndex]
+        split.groups[group] = true
+        if (payload.defaultParams === undefined) {
+          // still allow param removals on existing splits
+        } else {
+          for (const [param, value] of Object.entries(payload.defaultParams)) {
+            if (split.baseParams[param] === undefined) {
+              split.baseParams[param] = value
+            }
+          }
+        }
+
+        if (Array.isArray(payload.removeParams)) {
+          for (const param of payload.removeParams) {
+            if (typeof param !== 'string' || param.trim().length <= 0) continue
+            delete split.baseParams[param]
+            if (split.modManualAnchors) {
+              delete split.modManualAnchors[param]
+              if (Object.keys(split.modManualAnchors).length === 0) {
+                delete split.modManualAnchors
+              }
+            }
+            for (const modulator of scene.modulators) {
+              const modulation = modulator.splitModulations[splitIndex]
+              if (modulation !== undefined) {
+                delete modulation[param]
+              }
+            }
+          }
+        }
+      })
+    },
     removeSplitSceneByIndex: (state, { payload }: PayloadAction<number>) => {
       modifyActiveLightScene(state, (scene) => {
         scene.splitScenes.splice(payload, 1)
         scene.modulators.forEach((modulator) => {
           modulator.splitModulations.splice(payload, 1)
+        })
+      })
+    },
+    restoreSplitSceneForGroup: (
+      state,
+      {
+        payload,
+      }: PayloadAction<{
+        group: string
+        splitScene: SplitScene_t
+        splitModulations: Array<{ [key: string]: number | undefined }>
+      }>
+    ) => {
+      modifyActiveLightScene(state, (scene) => {
+        const group = payload.group.trim()
+        if (group.length <= 0) return
+
+        const restoredSplit: SplitScene_t = {
+          baseParams: { ...payload.splitScene.baseParams },
+          randomizer: { ...payload.splitScene.randomizer },
+          groups: { ...payload.splitScene.groups, [group]: true },
+          ...(payload.splitScene.modManualAnchors
+            ? { modManualAnchors: { ...payload.splitScene.modManualAnchors } }
+            : {}),
+        }
+
+        let splitIndex = scene.splitScenes.findIndex(
+          (split) => split.groups[group] === true
+        )
+        if (splitIndex < 0) {
+          scene.splitScenes.push(restoredSplit)
+          splitIndex = scene.splitScenes.length - 1
+          scene.modulators.forEach((modulator, modIndex) => {
+            const nextModulation = payload.splitModulations[modIndex]
+            modulator.splitModulations.push(
+              nextModulation ? { ...nextModulation } : {}
+            )
+          })
+          return
+        }
+
+        scene.splitScenes[splitIndex] = restoredSplit
+        scene.modulators.forEach((modulator, modIndex) => {
+          while (modulator.splitModulations.length <= splitIndex) {
+            modulator.splitModulations.push({})
+          }
+          const nextModulation = payload.splitModulations[modIndex]
+          modulator.splitModulations[splitIndex] = nextModulation
+            ? { ...nextModulation }
+            : {}
         })
       })
     },
@@ -436,50 +750,27 @@ export const scenesSlice = createSlice({
     setVisualSceneConfig: (state, { payload }: PayloadAction<LayerConfig>) => {
       modifyActiveVisualScene(state, (scene) => (scene.config = payload))
     },
-    activeVisualSceneEffect_add: (
+    setAllVisualScenesProjectionMapping: (
       state,
-      { payload }: PayloadAction<EffectConfig>
+      { payload }: PayloadAction<LayerConfig['projectionMapping']>
     ) => {
-      modifyActiveVisualScene(state, (scene) => {
-        scene.effectsConfig.push(payload)
-        scene.activeEffectIndex = scene.effectsConfig.length - 1
-      })
+      const next = cloneProjectionMappingConfig(payload)
+      for (const sceneId of state.visual.ids) {
+        const scene = state.visual.byId[sceneId]
+        if (scene === undefined) continue
+        scene.config.projectionMapping = cloneProjectionMappingConfig(next)
+      }
     },
-    activeVisualSceneEffect_set: (
+    setActiveVisualSceneTransition: (
       state,
-      { payload }: PayloadAction<EffectConfig>
+      { payload }: PayloadAction<Partial<VisualSceneTransitionConfig>>
     ) => {
       modifyActiveVisualScene(state, (scene) => {
-        scene.effectsConfig[scene.activeEffectIndex] = payload
-      })
-    },
-    activeVisualSceneEffect_removeIndex: (
-      state,
-      { payload }: PayloadAction<number>
-    ) => {
-      modifyActiveVisualScene(state, (scene) => {
-        scene.effectsConfig.splice(payload, 1)
-        if (scene.activeEffectIndex >= scene.effectsConfig.length) {
-          scene.activeEffectIndex = scene.effectsConfig.length - 1
+        scene.transition = {
+          ...scene.transition,
+          ...payload,
         }
       })
-    },
-    activeVisualSceneEffect_reorder: (
-      state,
-      { payload }: PayloadAction<ReorderParams>
-    ) => {
-      modifyActiveVisualScene(state, (scene) => {
-        reorderArray(scene.effectsConfig, payload)
-      })
-    },
-    activeVisualScene_setActiveEffectIndex: (
-      state,
-      { payload }: PayloadAction<number>
-    ) => {
-      modifyActiveVisualScene(
-        state,
-        (scene) => (scene.activeEffectIndex = payload)
-      )
     },
 
     // =====================   MIDI   ===========================================
@@ -506,6 +797,75 @@ export const scenesSlice = createSlice({
       midiActions.setDmxDeviceUniverse(state.device, action),
     setArtNetUniverseRoute: (state, action) =>
       midiActions.setArtNetUniverseRoute(state.device, action),
+    setAudioInputEnabled: (state, action) =>
+      midiActions.setAudioInputEnabled(state.device, action),
+    setAudioInputDeviceId: (state, action) =>
+      midiActions.setAudioInputDeviceId(state.device, action),
+    setAudioInputGain: (state, action) =>
+      midiActions.setAudioInputGain(state.device, action),
+    setAudioBeatClockEnabled: (state, action) =>
+      midiActions.setAudioBeatClockEnabled(state.device, action),
+    setMidiClockBpmEnabled: (state, action) =>
+      midiActions.setMidiClockBpmEnabled(state.device, action),
+    setAudioBeatSensitivity: (state, action) =>
+      midiActions.setAudioBeatSensitivity(state.device, action),
+    setAudioBeatMinIntervalMs: (state, action) =>
+      midiActions.setAudioBeatMinIntervalMs(state.device, action),
+    setAudioBpmSmoothing: (state, action) =>
+      midiActions.setAudioBpmSmoothing(state.device, action),
+    setAudioBeatTapHint: (state, action) =>
+      midiActions.setAudioBeatTapHint(state.device, action),
+    clearAudioBeatTapHint: (state) => midiActions.clearAudioBeatTapHint(state.device),
+    setAtmosphericsEnabled: (state, action) =>
+      midiActions.setAtmosphericsEnabled(state.device, action),
+    setAtmosphericsArmed: (state, action) =>
+      midiActions.setAtmosphericsArmed(state.device, action),
+    setAtmosphericsEmergencyStop: (state, action) =>
+      midiActions.setAtmosphericsEmergencyStop(state.device, action),
+    setAtmosphericsAllowPyro: (state, action) =>
+      midiActions.setAtmosphericsAllowPyro(state.device, action),
+    setAtmosphericsGlobalLevelLimit: (state, action) =>
+      midiActions.setAtmosphericsGlobalLevelLimit(state.device, action),
+    ensureAtmosphericsFixtureConfig: (
+      state,
+      action: PayloadAction<string>
+    ) => midiActions.ensureAtmosphericsFixtureConfig(state.device, action),
+    removeAtmosphericsFixtureConfig: (state, action: PayloadAction<string>) =>
+      midiActions.removeAtmosphericsFixtureConfig(state.device, action),
+    selectAtmosphericsFixture: (
+      state,
+      action: PayloadAction<string | null>
+    ) => midiActions.selectAtmosphericsFixture(state.device, action),
+    patchAtmosphericsFixtureConfig: (
+      state,
+      action: PayloadAction<{
+        fixtureId: string
+        patch: Partial<Omit<AtmosphericsFixtureControlConfig, 'fixtureId' | 'source' | 'auxChannels'>>
+      }>
+    ) => midiActions.patchAtmosphericsFixtureConfig(state.device, action),
+    setAtmosphericsFixtureGroupName: (
+      state,
+      action: PayloadAction<{
+        fixtureId: string
+        groupName: string
+      }>
+    ) => midiActions.setAtmosphericsFixtureGroupName(state.device, action),
+    patchAtmosphericsFixtureTriggerChannelConfig: (
+      state,
+      action: PayloadAction<{
+        fixtureId: string
+        channelNumber: number
+        patch: Partial<AtmosphericsTriggerChannelConfig>
+      }>
+    ) => midiActions.patchAtmosphericsFixtureTriggerChannelConfig(state.device, action),
+    patchAtmosphericsFixtureLevelChannelConfig: (
+      state,
+      action: PayloadAction<{
+        fixtureId: string
+        channelNumber: number
+        patch: Partial<AtmosphericsLevelChannelConfig>
+      }>
+    ) => midiActions.patchAtmosphericsFixtureLevelChannelConfig(state.device, action),
   },
 })
 
@@ -534,27 +894,29 @@ export const {
   deleteBaseParams,
   incrementBaseParams,
   setModulatorShape,
+  setModulatorAudioConfig,
+  setModulatorWaveConfig,
   setPeriod,
   incrementPeriod,
   incrementModulator,
   addModulator,
   removeModulator,
   setModulation,
+  setModManualAnchor,
   resetModulator,
   setRandomizer,
   addSplitScene,
+  ensureSplitSceneForGroup,
   removeSplitSceneByIndex,
+  restoreSplitSceneForGroup,
 
   setSceneGroup,
 
   // VISUAL SCENES
   resetVisualScenes,
   setVisualSceneConfig,
-  activeVisualSceneEffect_add,
-  activeVisualSceneEffect_removeIndex,
-  activeVisualSceneEffect_reorder,
-  activeVisualScene_setActiveEffectIndex,
-  activeVisualSceneEffect_set,
+  setAllVisualScenesProjectionMapping,
+  setActiveVisualSceneTransition,
 
   // MIDI
   midiListen,
@@ -569,6 +931,28 @@ export const {
   setUniverseCount,
   setDmxDeviceUniverse,
   setArtNetUniverseRoute,
+  setAudioInputEnabled,
+  setAudioInputDeviceId,
+  setAudioInputGain,
+  setAudioBeatClockEnabled,
+  setMidiClockBpmEnabled,
+  setAudioBeatSensitivity,
+  setAudioBeatMinIntervalMs,
+  setAudioBpmSmoothing,
+  setAudioBeatTapHint,
+  clearAudioBeatTapHint,
+  setAtmosphericsEnabled,
+  setAtmosphericsArmed,
+  setAtmosphericsEmergencyStop,
+  setAtmosphericsAllowPyro,
+  setAtmosphericsGlobalLevelLimit,
+  ensureAtmosphericsFixtureConfig,
+  removeAtmosphericsFixtureConfig,
+  selectAtmosphericsFixture,
+  patchAtmosphericsFixtureConfig,
+  setAtmosphericsFixtureGroupName,
+  patchAtmosphericsFixtureTriggerChannelConfig,
+  patchAtmosphericsFixtureLevelChannelConfig,
 } = scenesSlice.actions
 
 export default scenesSlice.reducer

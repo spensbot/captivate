@@ -80,6 +80,9 @@ const Root = styled.div`
   margin-bottom: 0.5rem;
   border-radius: 5px;
   border: 1px solid #0000;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   :hover {
     border: 1px solid ${(props) => props.theme.colors.divider};
   }
@@ -133,7 +136,7 @@ function ActiveFixtureType() {
         >
           <ExpandLessIcon />
         </IconButton>
-        <div style={{ flex: '1 0 0' }}>
+        <NameColumn>
           <Input
             value={ft.name}
             onChange={(newVal) =>
@@ -159,7 +162,7 @@ function ActiveFixtureType() {
             }
             placeholder="Manufacturer"
           />
-        </div>
+        </NameColumn>
       </Row>
       <Sp2 />
 
@@ -208,7 +211,17 @@ const Sp3 = styled.div`
   width: 0.5rem;
 `
 
+const NameColumn = styled.div`
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 100%;
+`
+
 const Row = styled.div`
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  row-gap: 0.25rem;
+  min-width: 0;
 `

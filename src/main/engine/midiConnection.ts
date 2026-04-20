@@ -14,6 +14,8 @@ interface Config {
   update_ms: number
   onUpdate: (activeDevices: UpdatePayload) => void
   onMessage: (message: MessagePayload) => void
+  /** MIDI realtime: 0xF8 clock, 0xFA start, 0xFC stop (single-byte messages). */
+  onMidiSystemRealtime?: (status: number, wallMs: number) => void
   getConnectable: () => ConnectionId[]
 }
 
@@ -72,6 +74,15 @@ function newInput(index: number, config: Config) {
   const input = new Input()
 
   input.on('message', (_dt, message) => {
+    const status = message[0]
+    if (
+      status === 0xf8 ||
+      status === 0xfa ||
+      status === 0xfc
+    ) {
+      config.onMidiSystemRealtime?.(status, Date.now())
+      return
+    }
     const midiMessage = parseMessage(message)
     if (midiMessage) config.onMessage(midiMessage)
     // I think dt is the seconds since the last message

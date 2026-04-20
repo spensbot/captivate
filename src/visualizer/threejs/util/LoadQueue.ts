@@ -1,6 +1,6 @@
 interface Loading<T> {
   state: 'loading'
-  canelled?: true
+  cancelled?: true
   promise: Promise<T>
 }
 interface Ready<T> {
@@ -50,7 +50,7 @@ export default class LoadQueue<T> {
         if (current.state === 'ready') {
           this.releaseItem(current.data)
         } else {
-          current.canelled = true
+          current.cancelled = true
           current.promise.then((data) => this.releaseItem(data))
         }
         this.queue[this.currentIndex] = this.loadNextAndBind(this.currentIndex)
@@ -72,7 +72,7 @@ export default class LoadQueue<T> {
       })
       .catch((err) => {
         console.error(`LoadQueue Load Error`, err)
-        this.loadNextAndBind(index)
+        this.queue[index] = this.loadNextAndBind(index)
       })
     return {
       state: 'loading',
@@ -85,7 +85,7 @@ export default class LoadQueue<T> {
       if (loadable.state === 'ready') {
         this.releaseItem(loadable.data)
       } else {
-        loadable.canelled = true
+        loadable.cancelled = true
       }
     })
   }
@@ -104,5 +104,5 @@ export default class LoadQueue<T> {
 }
 
 function isCancelled(loadable: Loadable<any>) {
-  return loadable.state === 'loading' && loadable.canelled
+  return loadable.state === 'loading' && loadable.cancelled
 }

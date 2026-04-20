@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import NumberField from '../base/NumberField'
+import StageLengthField from '../base/StageLengthField'
 import { useDispatch } from 'react-redux'
 import { useDmxSelector } from '../redux/store'
 import { setStageDimensions, setStageUnits } from '../redux/dmxSlice'
@@ -23,13 +23,14 @@ export default function StageScaleControls({ compact = false }: Props) {
     <Root compact={compact}>
       <Label>Stage</Label>
       <Fields compact={compact}>
-        <NumberField
+        <StageLengthField
           val={Number(width.toFixed(3))}
           numberType="float"
           step={0.01}
           min={0.1}
           label={`W (${unitLabel})`}
           variant="outlined"
+          stageUnit={stage.unit}
           onChange={(newValue) =>
             dispatch(
               setStageDimensions({
@@ -38,13 +39,14 @@ export default function StageScaleControls({ compact = false }: Props) {
             )
           }
         />
-        <NumberField
+        <StageLengthField
           val={Number(height.toFixed(3))}
           numberType="float"
           step={0.01}
           min={0.1}
           label={`H (${unitLabel})`}
           variant="outlined"
+          stageUnit={stage.unit}
           onChange={(newValue) =>
             dispatch(
               setStageDimensions({
@@ -53,13 +55,14 @@ export default function StageScaleControls({ compact = false }: Props) {
             )
           }
         />
-        <NumberField
+        <StageLengthField
           val={Number(depth.toFixed(3))}
           numberType="float"
           step={0.01}
           min={0.1}
           label={`D (${unitLabel})`}
           variant="outlined"
+          stageUnit={stage.unit}
           onChange={(newValue) =>
             dispatch(
               setStageDimensions({

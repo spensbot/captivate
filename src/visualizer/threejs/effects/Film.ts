@@ -9,12 +9,11 @@ export class Film extends EffectBase {
 
   constructor(config: FilmConfig) {
     super()
-    this.pass = new FilmPass(
-      config.intensity,
-      config.intensity,
-      config.scanlines,
-      config.grayscale ? 1 : 0
-    )
+    this.pass = new FilmPass(config.intensity, config.grayscale)
+    const uniforms = this.pass.uniforms as Record<string, { value: unknown }>
+    if (uniforms.sCount) {
+      uniforms.sCount.value = config.scanlines
+    }
     this.config = config
   }
 }

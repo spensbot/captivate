@@ -5,6 +5,10 @@ interface Props {
   orientation: 'vertical' | 'horizontal'
   onChange: (newVal: number) => void
   children: React.ReactNode
+  title?: string
+  ariaLabel?: string
+  /** When vertical, top/bottom inset inside the control (defaults to `radius`). */
+  verticalPadRem?: number
 }
 
 // SliderBase displays the track and handles dragging
@@ -13,10 +17,14 @@ export default function SliderBase({
   radius,
   onChange,
   children,
+  title,
+  ariaLabel,
+  verticalPadRem,
 }: Props) {
   const r = `${radius}rem`
   const d = `${radius * 2}rem`
   const v = orientation === 'vertical'
+  const vPad = v ? (verticalPadRem ?? radius) : radius
 
   const [dragContainer, onMouseDown] = useDragMapped(({ x, y }) => {
     onChange(v ? y : x)
@@ -29,7 +37,7 @@ export default function SliderBase({
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      padding: `${v ? radius : 0}rem ${v ? 0 : radius}rem`,
+      padding: `${v ? vPad : 0}rem ${v ? 0 : radius}rem`,
       boxSizing: 'border-box',
     },
     dragArea: {
@@ -50,7 +58,12 @@ export default function SliderBase({
   }
 
   return (
-    <div style={styles.root}>
+    <div
+      style={styles.root}
+      role="slider"
+      aria-label={ariaLabel ?? title ?? 'Adjust value'}
+      title={title ?? ariaLabel ?? 'Adjust value'}
+    >
       <div
         style={styles.dragArea}
         ref={dragContainer}

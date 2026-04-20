@@ -1,0 +1,36 @@
+diff --git a/node_modules/app-builder-lib/out/node-module-collector/nodeModulesCollector.js b/node_modules/app-builder-lib/out/node-module-collector/nodeModulesCollector.js
+index 0956d26..1dd008c 100644
+--- a/node_modules/app-builder-lib/out/node-module-collector/nodeModulesCollector.js
++++ b/node_modules/app-builder-lib/out/node-module-collector/nodeModulesCollector.js
+@@ -294,7 +294,13 @@ class NodeModulesCollector {
+      * @throws {Error} If the child process spawn fails or exits with a non-zero code
+      */
+     async streamCollectorCommandToFile(command, args, cwd, tempOutputFile) {
+-        const execName = path.basename(command, path.extname(command));
++        const originalCommand = command;
++        const isWindowsBareCommand = process.platform === "win32" && path.extname(command).length === 0;
++        if (isWindowsBareCommand) {
++            command = "cmd.exe";
++            args = ["/d", "/s", "/c", originalCommand, ...args];
++        }
++        const execName = path.basename(originalCommand, path.extname(originalCommand));
+         const isWindowsScriptFile = process.platform === "win32" && path.extname(command).toLowerCase() === ".cmd";
+         if (isWindowsScriptFile) {
+             // If the command is a Windows script file (.cmd), we need to wrap it in a .bat file to ensure it runs correctly with cmd.exe
+@@ -308,14 +314,14 @@ class NodeModulesCollector {
+             const batScript = `@echo off\r\n"${command}" %*\r\n`; // <-- CRLF required for .bat
+             await fs.writeFile(tempBatFile, batScript, { encoding: "utf8" });
+             command = "cmd.exe";
+-            args = ["/c", `"${tempBatFile}"`, ...args];
++            args = ["/c", tempBatFile, ...args];
+         }
+         await new Promise((resolve, reject) => {
+             const outStream = (0, fs_extra_1.createWriteStream)(tempOutputFile);
+             const child = childProcess.spawn(command, args, {
+                 cwd,
+                 env: { COREPACK_ENABLE_STRICT: "0", ...process.env }, // allow `process.env` overrides
+-                shell: true, // `true`` is now required: https://github.com/electron-userland/electron-builder/issues/9488
++                shell: false,
+             });
+             let stderr = "";
+             child.stdout.pipe(outStream);

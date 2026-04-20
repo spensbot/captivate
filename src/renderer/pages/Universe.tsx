@@ -9,7 +9,12 @@ export default function Universe() {
     <Root>
       <StatusBar />
       <SplitPane
-        style={{ flex: '1 0 0', overflow: 'auto' }}
+        style={{
+          flex: '1 1 0',
+          minWidth: 0,
+          minHeight: 0,
+          overflow: 'hidden',
+        }}
         type="vertical"
         initialSplit={0.3}
         rem={0.5}
@@ -39,12 +44,18 @@ export default function Universe() {
 }
 
 const Root = styled.div`
+  width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 `
 
 const SplitRoot = styled.div`
   height: 100%;
+  min-width: 0;
+  min-height: 0;
   overflow: auto;
 `

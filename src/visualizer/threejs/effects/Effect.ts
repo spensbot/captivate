@@ -7,6 +7,7 @@ import { HalfTone } from './HalfTone'
 import { LightSync } from './LightSync'
 import { Pixel } from './Pixel'
 import { RenderLayer } from './RenderLayer'
+import { StreamOverlay } from './StreamOverlay'
 import { UnrealBloom } from './UnrealBloom'
 import { EffectConfig } from './effectConfigs'
 
@@ -20,6 +21,7 @@ export type Effect =
   | LightSync
   | Pixel
   | RenderLayer
+  | StreamOverlay
   | UnrealBloom
 
 export function constructEffect(config: EffectConfig): Effect {
@@ -42,6 +44,8 @@ export function constructEffect(config: EffectConfig): Effect {
       return new Pixel(config)
     case 'UnrealBloom':
       return new UnrealBloom(config)
+    case 'StreamOverlay':
+      return new StreamOverlay(config)
     case 'RenderLayer':
       return new RenderLayer(config, false)
   }

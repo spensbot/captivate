@@ -19,8 +19,22 @@ import {
   setBaseParams,
   setAutoSceneEnabled,
 } from '../../renderer/redux/controlSlice'
+import {
+  setBlackout,
+  fireAtmosManualTrigger,
+  setMoverFollowOverridePan,
+  setMoverFollowOverrideTilt,
+  toggleMoverFollowOverrideEnabled,
+} from '../../renderer/redux/guiSlice'
 import NodeLink from 'node-link'
 import { PayloadAction } from '@reduxjs/toolkit'
+import type { SceneType } from '../../shared/Scenes'
+import { msUntilNextBeatBoundary } from '../../shared/sceneBeatQuantize'
+
+const buttonThresholdState = new Map<string, boolean>()
+const pendingMidiSceneTimeouts: Partial<
+  Record<SceneType, ReturnType<typeof setTimeout>>
+> = {}
 
 interface MidiInput {
   id: string
@@ -127,24 +141,51 @@ export function handleMessage(
   )?.[1]
 
   if (buttonAction) {
-    if (input.message.type !== 'Off') {
+    const actionKey = `${input.id}:${getActionID(buttonAction.action)}`
+
+    const fireButtonAction = () => {
       if (buttonAction.action.type === 'setActiveSceneIndex') {
-        dispatch(
-          setActiveSceneIndex({
-            sceneType: buttonAction.action.sceneType,
-            val: buttonAction.action.index,
-          })
-        )
+        const sceneType = buttonAction.action.sceneType
+        const val = buttonAction.action.index
+        const prev = pendingMidiSceneTimeouts[sceneType]
+        if (prev !== undefined) {
+          clearTimeout(prev)
+        }
+        const delayMs = msUntilNextBeatBoundary(rt_state.time)
+        pendingMidiSceneTimeouts[sceneType] = setTimeout(() => {
+          delete pendingMidiSceneTimeouts[sceneType]
+          dispatch(setActiveSceneIndex({ sceneType, val }))
+        }, delayMs)
       } else if (buttonAction.action.type === 'tapTempo') {
         tapTempo()
       } else if (buttonAction.action.type === 'toggleAutoScene') {
+        const sceneType = buttonAction.action.sceneType
         dispatch(
           setAutoSceneEnabled({
-            sceneType: buttonAction.action.sceneType,
-            val: !state.control.light.auto.enabled,
+            sceneType,
+            val: !state.control[sceneType].auto.enabled,
           })
         )
+      } else if (buttonAction.action.type === 'toggleBlackout') {
+        dispatch(setBlackout(!state.gui.blackout))
+      } else if (buttonAction.action.type === 'toggleMoverFollowOverride') {
+        dispatch(toggleMoverFollowOverrideEnabled())
+      } else if (buttonAction.action.type === 'triggerAtmosFixture') {
+        dispatch(fireAtmosManualTrigger(buttonAction.action.fixtureId))
       }
+    }
+
+    if (input.message.type === 'CC') {
+      const pressed = input.message.value >= 64
+      const wasPressed = buttonThresholdState.get(actionKey) === true
+      buttonThresholdState.set(actionKey, pressed)
+      if (pressed && !wasPressed) {
+        fireButtonAction()
+      }
+    } else if (input.message.type === 'On') {
+      fireButtonAction()
+    } else {
+      buttonThresholdState.set(actionKey, false)
     }
   }
 
@@ -170,6 +211,10 @@ export function handleMessage(
       )
     } else if (action.type === 'setMaster') {
       return state.control.master
+    } else if (action.type === 'setMoverFollowOverridePan') {
+      return state.gui.moverFollowOverridePan
+    } else if (action.type === 'setMoverFollowOverrideTilt') {
+      return state.gui.moverFollowOverrideTilt
     }
 
     return 0
@@ -200,6 +245,10 @@ export function handleMessage(
       nodeLink.setTempo(bounded)
     } else if (action.type === 'tapTempo') {
       tapTempo()
+    } else if (action.type === 'setMoverFollowOverridePan') {
+      dispatch(setMoverFollowOverridePan(clamp(bounded, 0, 1)))
+    } else if (action.type === 'setMoverFollowOverrideTilt') {
+      dispatch(setMoverFollowOverrideTilt(clamp(bounded, 0, 1)))
     }
   }
 

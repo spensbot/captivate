@@ -1,0 +1,27 @@
+diff --git a/node_modules/node-gyp/lib/find-visualstudio.js b/node_modules/node-gyp/lib/find-visualstudio.js
+index 22fc401..8f7d706 100644
+--- a/node_modules/node-gyp/lib/find-visualstudio.js
++++ b/node_modules/node-gyp/lib/find-visualstudio.js
+@@ -405,6 +405,7 @@ class VisualStudioFinder {
+   getMSBuild (info, versionYear) {
+     const pkg = 'Microsoft.VisualStudio.VC.MSBuild.Base'
+     const msbuildPath = path.join(info.path, 'MSBuild', 'Current', 'Bin', 'MSBuild.exe')
++    const msbuildPathAmd64 = path.join(info.path, 'MSBuild', 'Current', 'Bin', 'amd64', 'MSBuild.exe')
+     const msbuildPathArm64 = path.join(info.path, 'MSBuild', 'Current', 'Bin', 'arm64', 'MSBuild.exe')
+     if (info.packages.indexOf(pkg) !== -1) {
+       this.log.silly('- found VC.MSBuild.Base')
+@@ -426,7 +427,13 @@ class VisualStudioFinder {
+      */
+     if (process.arch === 'arm64' && this.msBuildPathExists(msbuildPathArm64)) {
+       return msbuildPathArm64
+-    } else if (this.msBuildPathExists(msbuildPath)) {
++    }
++    // Prefer Bin\amd64\MSBuild.exe on x64: the non-arch Bin\MSBuild.exe has been observed to
++    // exit with access violation (3221225477) on some Windows installs while amd64 works.
++    if (process.arch === 'x64' && this.msBuildPathExists(msbuildPathAmd64)) {
++      return msbuildPathAmd64
++    }
++    if (this.msBuildPathExists(msbuildPath)) {
+       return msbuildPath
+     }
+     return null

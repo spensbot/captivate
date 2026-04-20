@@ -18,13 +18,22 @@ import {
   DMX_MIN_VALUE,
   DMX_MAX_VALUE,
   DMX_MAX_UNIVERSES,
-  MOVER_MIN_TURNS,
-  MOVER_MAX_TURNS,
+  fixtureChannelLeafChannels,
+  MOVER_MIN_PAN_RANGE_DEG,
+  MOVER_MAX_PAN_RANGE_DEG,
+  MOVER_MIN_TILT_RANGE_DEG,
+  MOVER_MAX_TILT_RANGE_DEG,
+  MOVER_DEFAULT_PAN_RANGE_DEG,
+  MOVER_DEFAULT_TILT_RANGE_DEG,
 } from '../../shared/dmxFixtures'
 import { clampNormalized } from '../../math/util'
 import { defaultParamsList } from '../../shared/params'
 import { initLedState, LedState } from './ledState'
-import { initLedFixture, LedFixture } from '../../shared/ledFixtures'
+import {
+  initLedFixture,
+  LedFixture,
+  normalizeLedFixtureForRuntime,
+} from '../../shared/ledFixtures'
 import { Point } from '../../math/point'
 import { nanoid } from 'nanoid'
 import {
@@ -52,7 +61,9 @@ export function getCustomChannels(dmx: DmxState): Set<string> {
   let result = new Set() as Set<string>
 
   for (const ftId of dmx.fixtureTypes) {
-    for (const ch of dmx.fixtureTypesByID[ftId].channels) {
+    for (const ch of dmx.fixtureTypesByID[ftId].channels.flatMap((channel) =>
+      fixtureChannelLeafChannels(channel)
+    )) {
       if (ch.type === 'custom' && ch.isControllable) {
         result.add(ch.name)
       }
@@ -64,7 +75,9 @@ export function getCustomChannels(dmx: DmxState): Set<string> {
 
 function hasGoboMapChannels(dmx: DmxState): boolean {
   for (const ftId of dmx.fixtureTypes) {
-    for (const ch of dmx.fixtureTypesByID[ftId].channels) {
+    for (const ch of dmx.fixtureTypesByID[ftId].channels.flatMap((channel) =>
+      fixtureChannelLeafChannels(channel)
+    )) {
       if (ch.type === 'goboMap') {
         return true
       }
@@ -106,6 +119,25 @@ interface SetFixtureRotationPayload {
   z?: number
 }
 
+interface SetFixtureNamePayload {
+  index: number
+  name: string
+}
+
+interface SetLedFixturePositionPayload {
+  index: number
+  x?: number
+  y?: number
+  z?: number
+}
+
+interface SetLedFixtureRotationPayload {
+  index: number
+  x?: number
+  y?: number
+  z?: number
+}
+
 interface SetFixtureWindowEnabledPayload {
   dimension: 'x' | 'y' | 'z'
   index: number
@@ -137,6 +169,8 @@ interface SetLighting3DSettingsPayload {
   roomDepthFt?: number
   roomHeightFt?: number
 }
+
+const ATMOSPHERE_GROUP_NAME = 'Atmosphere'
 
 function clampNumber(value: number, min: number, max: number): number {
   if (!Number.isFinite(value)) return min
@@ -326,6 +360,7 @@ function normalizeMoverCalibration(calibration: unknown) {
       front?: unknown
       back?: unknown
       home?: unknown
+      rangeDeg?: unknown
       turns?: unknown
       invert?: unknown
     }
@@ -336,6 +371,7 @@ function normalizeMoverCalibration(calibration: unknown) {
       forward?: unknown
       up?: unknown
       home?: unknown
+      rangeDeg?: unknown
       invert?: unknown
     }
   }
@@ -366,10 +402,21 @@ function normalizeMoverCalibration(calibration: unknown) {
     )
   }
 
+  const panRangeRaw = Number(source.pan?.rangeDeg)
   const turnsRaw = Number(source.pan?.turns)
-  const turns = Number.isFinite(turnsRaw)
-    ? Math.max(MOVER_MIN_TURNS, Math.min(MOVER_MAX_TURNS, turnsRaw))
-    : defaults.pan.turns
+  const panRangeDeg = Number.isFinite(panRangeRaw)
+    ? Math.max(MOVER_MIN_PAN_RANGE_DEG, Math.min(MOVER_MAX_PAN_RANGE_DEG, panRangeRaw))
+    : Number.isFinite(turnsRaw)
+    ? Math.max(
+        MOVER_MIN_PAN_RANGE_DEG,
+        Math.min(MOVER_MAX_PAN_RANGE_DEG, turnsRaw * 360)
+      )
+    : defaults.pan.rangeDeg ?? MOVER_DEFAULT_PAN_RANGE_DEG
+
+  const tiltRangeRaw = Number(source.tilt?.rangeDeg)
+  const tiltRangeDeg = Number.isFinite(tiltRangeRaw)
+    ? Math.max(MOVER_MIN_TILT_RANGE_DEG, Math.min(MOVER_MAX_TILT_RANGE_DEG, tiltRangeRaw))
+    : defaults.tilt.rangeDeg ?? MOVER_DEFAULT_TILT_RANGE_DEG
 
   return {
     pan: {
@@ -378,7 +425,7 @@ function normalizeMoverCalibration(calibration: unknown) {
       front: toDmx(source.pan?.front, defaults.pan.front),
       back: toDmx(source.pan?.back, defaults.pan.back),
       home: toDmx(source.pan?.home, defaults.pan.home),
-      turns,
+      rangeDeg: panRangeDeg,
       invert: source.pan?.invert === true,
     },
     tilt: {
@@ -388,6 +435,7 @@ function normalizeMoverCalibration(calibration: unknown) {
       forward: toDmx(source.tilt?.forward, defaults.tilt.forward),
       up: toDmx(source.tilt?.up, defaults.tilt.up),
       home: toDmx(source.tilt?.home, defaults.tilt.home),
+      rangeDeg: tiltRangeDeg,
       invert: source.tilt?.invert === true,
     },
   }
@@ -477,6 +525,61 @@ function ensureMoverGroupForFixture(state: DmxState, fixture: Fixture) {
   }
 }
 
+function isAtmosphereFixtureType(fixtureType: FixtureType): boolean {
+  return fixtureType.channels
+    .flatMap((channel) => fixtureChannelLeafChannels(channel))
+    .some((channel) => {
+      if (channel.type === 'fxTrigger' || channel.type === 'fxLevel') {
+        return true
+      }
+      if (channel.type !== 'custom' || channel.isControllable !== true) {
+        return false
+      }
+      const name = channel.name.trim().toLowerCase()
+      if (name.length <= 0) {
+        return false
+      }
+      const exclusions = ['pan', 'tilt', 'speed', 'gobo', 'zoom', 'focus']
+      if (exclusions.some((token) => name.includes(token))) {
+        return false
+      }
+      const keywords = [
+        'volume',
+        'fan',
+        'fog',
+        'haze',
+        'bubble',
+        'confetti',
+        'co2',
+        'flame',
+        'pyro',
+        'output',
+        'pump',
+        'mist',
+        'jet',
+        'trigger',
+        'on/off',
+        'on off',
+        'onoff',
+        'fx',
+      ]
+      return keywords.some((token) => name.includes(token))
+    })
+}
+
+function ensureAtmosphereGroupForFixture(state: DmxState, fixture: Fixture) {
+  const fixtureType = state.fixtureTypesByID[fixture.type]
+  if (fixtureType === undefined || !isAtmosphereFixtureType(fixtureType)) {
+    return
+  }
+  const hasAtmosphereGroup = fixture.groups.some(
+    (group) => group.trim().toLowerCase() === ATMOSPHERE_GROUP_NAME.toLowerCase()
+  )
+  if (!hasAtmosphereGroup) {
+    fixture.groups.push(ATMOSPHERE_GROUP_NAME)
+  }
+}
+
 function syncMoverState(state: DmxState) {
   const validFixtureIds = new Set<string>()
 
@@ -500,6 +603,7 @@ function syncMoverState(state: DmxState) {
     )
 
     ensureMoverGroupForFixture(state, fixture)
+    ensureAtmosphereGroupForFixture(state, fixture)
   }
 
   for (const fixtureId of Object.keys(state.moverGroupByFixtureId)) {
@@ -528,6 +632,19 @@ function duplicateFixtureChannel(channel: FixtureChannel): FixtureChannel {
   const duplicated = JSON.parse(JSON.stringify(channel)) as FixtureChannel
   if (duplicated.type === 'custom') {
     duplicated.name = incrementNumberSuffix(duplicated.name)
+  } else if (duplicated.type === 'split') {
+    duplicated.ranges = duplicated.ranges.map((range) => {
+      if (range.channel.type === 'custom') {
+        return {
+          ...range,
+          channel: {
+            ...range.channel,
+            name: incrementNumberSuffix(range.channel.name),
+          },
+        }
+      }
+      return range
+    })
   }
   return duplicated
 }
@@ -544,6 +661,10 @@ export const dmxSlice = createSlice({
       }
     },
     addFixture: (state, { payload }: PayloadAction<Fixture>) => {
+      const fixtureType = state.fixtureTypesByID[payload.type]
+      if (fixtureType === undefined || fixtureType.channels.length <= 0) {
+        return
+      }
       const fixture = {
         ...payload,
         universe: clampUniverse(payload.universe ?? state.activeUniverse),
@@ -656,6 +777,19 @@ export const dmxSlice = createSlice({
           payload.z === undefined
             ? current.z
             : normalizeFixtureRotationAxis(payload.z),
+      }
+    },
+    setFixtureName: (state, { payload }: PayloadAction<SetFixtureNamePayload>) => {
+      const fixture = state.universe[payload.index]
+      if (fixture === undefined) {
+        return
+      }
+
+      const trimmedName = payload.name.trim()
+      if (trimmedName.length === 0) {
+        delete fixture.name
+      } else {
+        fixture.name = trimmedName
       }
     },
     setStageUnits: (state, { payload }: PayloadAction<StageUnit>) => {
@@ -1036,30 +1170,86 @@ export const dmxSlice = createSlice({
     },
     updateActiveLedFixture: (state, { payload }: PayloadAction<LedFixture>) => {
       if (state.led.activeFixture !== null) {
-        state.led.ledFixtures[state.led.activeFixture] = payload
+        state.led.ledFixtures[state.led.activeFixture] =
+          normalizeLedFixtureForRuntime(payload)
+      }
+    },
+    setLedFixturePosition: (
+      state,
+      { payload }: PayloadAction<SetLedFixturePositionPayload>
+    ) => {
+      const fixture = state.led.ledFixtures[payload.index]
+      if (fixture === undefined) return
+      fixture.position = {
+        x:
+          payload.x === undefined
+            ? fixture.position.x
+            : clampNormalized(payload.x),
+        y:
+          payload.y === undefined
+            ? fixture.position.y
+            : clampNormalized(payload.y),
+        z:
+          payload.z === undefined
+            ? fixture.position.z
+            : clampNormalized(payload.z),
+      }
+    },
+    setLedFixtureRotation: (
+      state,
+      { payload }: PayloadAction<SetLedFixtureRotationPayload>
+    ) => {
+      const fixture = state.led.ledFixtures[payload.index]
+      if (fixture === undefined) return
+      fixture.rotation = {
+        x:
+          payload.x === undefined
+            ? fixture.rotation.x
+            : normalizeFixtureRotationAxis(payload.x),
+        y:
+          payload.y === undefined
+            ? fixture.rotation.y
+            : normalizeFixtureRotationAxis(payload.y),
+        z:
+          payload.z === undefined
+            ? fixture.rotation.z
+            : normalizeFixtureRotationAxis(payload.z),
       }
     },
     addLedFixture: (state, _: PayloadAction<undefined>) => {
       state.led.ledFixtures.push(initLedFixture())
+      state.led.activeFixture = state.led.ledFixtures.length - 1
     },
     removeLedFixture: (state, { payload }: PayloadAction<number>) => {
       state.led.activeFixture = null
       state.led.ledFixtures.splice(payload, 1)
     },
     addLedFixturePoint: (state, { payload }: PayloadAction<Point>) => {
-      modifyActiveLedFixture(state, (f) => f.points.push(payload))
+      modifyActiveLedFixture(state, (f) => {
+        if (f.kind !== 'string') return
+        f.points.push({
+          x: clampNormalized(payload.x),
+          y: clampNormalized(payload.y),
+        })
+      })
     },
     removeLedFixturePoint: (state, { payload }: PayloadAction<number>) => {
-      modifyActiveLedFixture(state, (f) => f.points.splice(payload, 1))
+      modifyActiveLedFixture(state, (f) => {
+        if (f.kind !== 'string') return
+        f.points.splice(payload, 1)
+      })
     },
     updateLedFixturePoint: (
       state,
       { payload }: PayloadAction<{ index: number; newPoint: Point }>
     ) => {
-      modifyActiveLedFixture(
-        state,
-        (f) => (f.points[payload.index] = payload.newPoint)
-      )
+      modifyActiveLedFixture(state, (f) => {
+        if (f.kind !== 'string') return
+        f.points[payload.index] = {
+          x: clampNormalized(payload.newPoint.x),
+          y: clampNormalized(payload.newPoint.y),
+        }
+      })
     },
   },
 })
@@ -1072,6 +1262,7 @@ export const {
   setFixtureWindowEnabled,
   incrementFixtureWindow,
   setFixtureRotation,
+  setFixtureName,
   setStageUnits,
   setStageDimensions,
   setLighting3DSettings,
@@ -1101,6 +1292,8 @@ export const {
   replaceActiveFixtureTypeSubFixture,
   setActiveLedFixture,
   updateActiveLedFixture,
+  setLedFixturePosition,
+  setLedFixtureRotation,
   addLedFixture,
   removeLedFixture,
   addLedFixturePoint,

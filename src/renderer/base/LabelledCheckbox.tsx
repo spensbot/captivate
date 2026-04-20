@@ -8,10 +8,16 @@ interface Props {
 }
 
 export default function LabelledCheckbox({checked, onChange, label}: Props) {
+  const tooltip = label?.trim() || 'Toggle option'
   return (
     <Root>
       {label && <Label>{label}</Label>}
-      <Checkbox checked={checked} onClick={_ => onChange(!checked)}/>
+      <Checkbox
+        checked={checked}
+        onClick={_ => onChange(!checked)}
+        title={tooltip}
+        inputProps={{ 'aria-label': tooltip }}
+      />
     </Root>
   )
 }

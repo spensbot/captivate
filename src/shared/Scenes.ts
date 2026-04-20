@@ -1,15 +1,11 @@
 import { Params, initBaseParams } from './params'
-import { Modulator, initModulator } from './modulation'
+import { Modulator, initModulator, type ModManualAnchor } from './modulation'
 import { RandomizerOptions, initRandomizerOptions } from './randomizer'
 import { nanoid } from 'nanoid'
 import {
   LayerConfig,
   initLayerConfig,
 } from '../visualizer/threejs/layers/LayerConfig'
-import {
-  EffectsConfig,
-  initEffectsConfig,
-} from '../visualizer/threejs/effects/effectConfigs'
 
 export interface SceneBase {
   name: string
@@ -19,6 +15,11 @@ export interface SceneBase {
 
 export interface SplitScene_t {
   baseParams: Params
+  /**
+   * Per-parameter manual cursor anchor for combining modulation with the base
+   * set-point (see `ModManualAnchor` in modulation.ts).
+   */
+  modManualAnchors?: Partial<Record<string, ModManualAnchor>>
   randomizer: RandomizerOptions
   // true = include group | false = include not group
   groups: { [key: string]: boolean | undefined }
@@ -49,8 +50,25 @@ export function initLightScene(): LightScene_t {
 
 export interface VisualScene_t extends SceneBase {
   config: LayerConfig
-  effectsConfig: EffectsConfig
-  activeEffectIndex: number
+  transition: VisualSceneTransitionConfig
+}
+
+export type VisualSceneTransitionType =
+  | 'cut'
+  | 'fade'
+  | 'dissolve'
+  | 'flash'
+
+export interface VisualSceneTransitionConfig {
+  type: VisualSceneTransitionType
+  durationMs: number
+}
+
+export function initVisualSceneTransitionConfig(): VisualSceneTransitionConfig {
+  return {
+    type: 'fade',
+    durationMs: 420,
+  }
 }
 
 export function initVisualScene(): VisualScene_t {
@@ -58,9 +76,45 @@ export function initVisualScene(): VisualScene_t {
     name: 'Name',
     epicness: 0,
     autoEnabled: true,
-    config: initLayerConfig('TextParticles'),
-    effectsConfig: initEffectsConfig(),
-    activeEffectIndex: 0,
+    config: initLayerConfig('builtin'),
+    transition: initVisualSceneTransitionConfig(),
+  }
+}
+
+export function initVisualScenesState(): VisualScenes_t {
+  const scenes = [
+    { name: 'Pulse Grid', epicness: 0.15, preset: 'Pulse Grid' },
+    { name: 'Neon Peaks', epicness: 0.45, preset: 'Neon Peaks' },
+    { name: 'Orbit Wells', epicness: 0.7, preset: 'Orbit Wells' },
+    { name: 'Energy Stack', epicness: 0.95, preset: 'Energy Stack' },
+  ]
+
+  const ids: string[] = []
+  const byId: { [key: string]: VisualScene_t } = {}
+
+  for (const scene of scenes) {
+    const id = nanoid()
+    const config = initLayerConfig('builtin')
+    config.builtin.preset = scene.preset
+    ids.push(id)
+    byId[id] = {
+      name: scene.name,
+      epicness: scene.epicness,
+      autoEnabled: true,
+      config,
+      transition: initVisualSceneTransitionConfig(),
+    }
+  }
+
+  return {
+    ids,
+    byId,
+    active: ids[0],
+    auto: {
+      enabled: false,
+      epicness: 0,
+      period: 1,
+    },
   }
 }
 

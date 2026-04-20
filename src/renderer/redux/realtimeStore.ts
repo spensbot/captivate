@@ -15,6 +15,14 @@ import {
   Params,
 } from '../../shared/params'
 import { RandomizerState } from '../../shared/randomizer'
+import {
+  AudioEngineMetrics,
+  initAudioEngineMetrics,
+} from '../../shared/audioEngine'
+import {
+  AtmosphericsRuntimeState,
+  initAtmosphericsRuntimeState,
+} from '../../shared/atmospherics'
 
 function initDmxOut(): number[] {
   return Array(512).fill(0)
@@ -30,6 +38,8 @@ export interface RealtimeState {
   dmxOut: number[]
   dmxOutByUniverse: number[][]
   splitStates: SplitState[]
+  audio: AudioEngineMetrics
+  atmospherics: AtmosphericsRuntimeState
 }
 
 export function initRealtimeState(): RealtimeState {
@@ -39,6 +49,8 @@ export function initRealtimeState(): RealtimeState {
     dmxOut,
     dmxOutByUniverse: [dmxOut],
     splitStates: [],
+    audio: initAudioEngineMetrics(),
+    atmospherics: initAtmosphericsRuntimeState(),
   }
 }
 
@@ -59,9 +71,9 @@ function realtimeStoreReducer(
   return state
 }
 
-export const realtimeContext = React.createContext(
-  {} as ReactReduxContextValue<any, AnyAction> // force it to work: https://github.com/reduxjs/react-redux/issues/1565
-)
+export const realtimeContext = React.createContext<
+  ReactReduxContextValue<any, AnyAction> | null
+>(null)
 
 export const realtimeStore = configureStore({
   reducer: realtimeStoreReducer,

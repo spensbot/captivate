@@ -47,6 +47,10 @@ const Overlay = styled.div`
   flex-wrap: wrap;
   margin: 0.25rem 0 0.25rem 0.5rem;
   margin-right: 0;
+  pointer-events: none;
+  & > * {
+    pointer-events: auto;
+  }
 `
 
 const Container = styled.div`

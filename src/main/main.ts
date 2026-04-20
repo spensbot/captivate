@@ -9,10 +9,26 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import path from 'path'
-import { app, BrowserWindow, shell, dialog } from 'electron'
+import {
+  app,
+  BrowserWindow,
+  shell,
+  dialog,
+  desktopCapturer,
+  session,
+  ipcMain,
+  screen,
+  type WebContents,
+} from 'electron'
+import ipcChannels from '../shared/ipc_channels'
 import MenuBuilder from './menu'
 import { resolveHtmlPath } from './util'
 import * as engine from './engine/engine'
+import {
+  registerLighting3dPreviewPage,
+  seedLighting3dBootstrapDedupe,
+} from './engine/ipcHandler'
+import { stopLighting3dUtilityWorker } from './engine/lighting3dUtilityWorkerHost'
 import { VisualizerContainer } from './engine/createVisualizerWindow'
 import type { Page } from '../shared/pages'
 import type { FixtureType } from '../shared/dmxFixtures'
@@ -22,19 +38,362 @@ import {
   saveDefaultFixtureLibrary,
 } from './fixtureLibraryStorage'
 import './prevent_sleep'
+import { reportDiagnostic } from './diagnostics'
+import {
+  startMainTelemetry,
+  stopMainTelemetry,
+  telemetryCounter,
+  telemetryDuration,
+  telemetryEvent,
+  telemetryGauge,
+  telemetryHealth,
+} from './telemetry'
+import {
+  buildWindowConstructorOptions,
+  captureWindowPlacement,
+  DetachedWindowPlacement,
+  initWindowLayout,
+  PersistedWindowLayout,
+  WindowPlacement,
+  writeWindowLayout,
+  readWindowLayout,
+} from './windowStateStorage'
+import { setActivePage, setVideoEnabled } from '../renderer/redux/guiSlice'
 
 // Monkey-patch showErrorBox to avoid error modals at runtime
 // See https://stackoverflow.com/questions/35620764/how-to-disable-alert-dialogs-when-errors-occur-in-atom-electron
 dialog.showErrorBox = (title: string, content: string) => {
   console.error(`Top-level error: ${title}\n${content}`)
+  reportDiagnostic({
+    source: 'main',
+    area: 'dialog',
+    event: 'showErrorBox',
+    level: 'error',
+    message: `${title}: ${content}`,
+  })
 }
 
 let mainWindow: BrowserWindow | null = null
 const detachedWindows = new Set<BrowserWindow>()
+const detachedCloseApprovedWebContentsIds = new Set<number>()
+const detachedWindowPagesById = new Map<number, Page | undefined>()
+let detachedVisualizerFullscreenIpcRegistered = false
 let isClosing = false
 let visualizerContainer: VisualizerContainer = {
   visualizer: null,
+  visualizerState: null,
+  onVisualizerWindowStateChanged,
 }
+let fixtureLibraryCacheLoaded = false
+let cachedFixtureLibrarySerialized: string | null = null
+let persistedWindowLayout: PersistedWindowLayout = initWindowLayout()
+let persistedWindowLayoutDirty = false
+let persistWindowLayoutTimer: NodeJS.Timeout | null = null
+
+function schedulePersistWindowLayout() {
+  persistedWindowLayoutDirty = true
+  if (persistWindowLayoutTimer !== null) {
+    clearTimeout(persistWindowLayoutTimer)
+  }
+  persistWindowLayoutTimer = setTimeout(() => {
+    persistWindowLayoutTimer = null
+    flushPersistedWindowLayout()
+  }, 220)
+}
+
+function flushPersistedWindowLayout() {
+  if (!persistedWindowLayoutDirty) {
+    return
+  }
+  persistedWindowLayout = writeWindowLayout(persistedWindowLayout)
+  persistedWindowLayoutDirty = false
+}
+
+function captureWindowPlacementSafe(window: BrowserWindow): WindowPlacement {
+  try {
+    return captureWindowPlacement(window)
+  } catch (_error) {
+    const fallbackBounds = window.getBounds()
+    return {
+      x: fallbackBounds.x,
+      y: fallbackBounds.y,
+      width: fallbackBounds.width,
+      height: fallbackBounds.height,
+      isMaximized: window.isMaximized(),
+      isFullScreen: window.isFullScreen(),
+    }
+  }
+}
+
+function syncDetachedWindowLayoutSnapshot() {
+  if (isClosing) {
+    return
+  }
+  const detached: DetachedWindowPlacement[] = []
+  for (const window of detachedWindows) {
+    if (window.isDestroyed()) continue
+    const page = detachedWindowPagesById.get(window.webContents.id)
+    if (page === undefined) continue
+    detached.push({
+      page,
+      ...captureWindowPlacementSafe(window),
+    })
+  }
+  persistedWindowLayout.detached = detached
+  schedulePersistWindowLayout()
+}
+
+function findDetachedWindowByPage(page: Page): BrowserWindow | null {
+  for (const window of detachedWindows) {
+    if (window.isDestroyed()) continue
+    const windowPage = detachedWindowPagesById.get(window.webContents.id)
+    if (windowPage === page) {
+      return window
+    }
+  }
+  return null
+}
+
+function isVisualizerDetachedPage(page: Page | undefined): boolean {
+  return page === 'Video' || page === 'VideoViewport' || page === 'Streaming'
+}
+
+function isDetachedVisualizerWebContents(wc: WebContents): boolean {
+  const page = detachedWindowPagesById.get(wc.id)
+  return isVisualizerDetachedPage(page)
+}
+
+function registerDetachedVisualizerFullscreenIpcOnce() {
+  if (detachedVisualizerFullscreenIpcRegistered) {
+    return
+  }
+  detachedVisualizerFullscreenIpcRegistered = true
+  ipcMain.handle(
+    ipcChannels.visualizer_detached_fullscreen,
+    (
+      event,
+      payload?: { query?: boolean; next?: boolean }
+    ): { full: boolean } => {
+      if (!isDetachedVisualizerWebContents(event.sender)) {
+        return { full: false }
+      }
+      const win = BrowserWindow.fromWebContents(event.sender)
+      if (win === null || win.isDestroyed()) {
+        return { full: false }
+      }
+      if (payload?.query === true) {
+        return { full: win.isFullScreen() }
+      }
+      const target =
+        payload?.next !== undefined ? payload.next : !win.isFullScreen()
+      if (target !== win.isFullScreen()) {
+        win.setFullScreen(target)
+      }
+      return { full: win.isFullScreen() }
+    }
+  )
+}
+
+function countDetachedVisualizerWindows(): number {
+  let n = 0
+  for (const w of detachedWindows) {
+    if (w.isDestroyed()) continue
+    const page = detachedWindowPagesById.get(w.webContents.id)
+    if (isVisualizerDetachedPage(page)) {
+      n += 1
+    }
+  }
+  return n
+}
+
+function syncVideoEnabledToDetachedVisualizerCount() {
+  if (isClosing) {
+    return
+  }
+  engine.getIpcCallbacks()?.send_dispatch(
+    setVideoEnabled(countDetachedVisualizerWindows() > 0)
+  )
+}
+
+function focusWindow(window: BrowserWindow) {
+  if (window.isDestroyed()) return
+  if (window.isMinimized()) {
+    window.restore()
+  }
+  window.show()
+  window.focus()
+}
+
+function openOrFocusDetachedPage(page: Page) {
+  if (page === 'Atmospherics') {
+    if (mainWindow !== null) {
+      focusWindow(mainWindow)
+    }
+    engine.getIpcCallbacks()?.send_dispatch(setActivePage('Atmospherics'))
+    return
+  }
+
+  // Heavy pages are intentionally single-instance and process-isolated.
+  if (
+    page === 'Lighting3D' ||
+    page === 'Laser' ||
+    page === 'Video' ||
+    page === 'VideoViewport' ||
+    page === 'Streaming'
+  ) {
+    const existing = findDetachedWindowByPage(page)
+    if (existing !== null) {
+      focusWindow(existing)
+      return
+    }
+  }
+
+  createAppWindow({
+    isMain: false,
+    defaultPage: page,
+    maximizeOnFirstShow: page === 'VideoViewport',
+  })
+}
+
+function onVisualizerWindowStateChanged(state: {
+  isOpen: boolean
+  placement: WindowPlacement | null
+}) {
+  if (isClosing && state.isOpen === false) {
+    return
+  }
+  persistedWindowLayout.visualizer = {
+    isOpen: state.isOpen,
+    placement: state.placement,
+  }
+  visualizerContainer.visualizerState = state.placement
+  schedulePersistWindowLayout()
+}
+
+function bindVisualizerContainerWindow(window: BrowserWindow | null) {
+  const nextWindow =
+    window !== null && !window.isDestroyed()
+      ? window
+      : null
+  visualizerContainer.visualizer = nextWindow
+  const placement =
+    nextWindow !== null
+      ? captureWindowPlacementSafe(nextWindow)
+      : visualizerContainer.visualizerState ?? null
+  if (placement !== null) {
+    visualizerContainer.visualizerState = placement
+  }
+  visualizerContainer.onVisualizerWindowStateChanged?.({
+    isOpen: nextWindow !== null,
+    placement: placement ?? null,
+  })
+}
+
+function findFallbackVisualizerWindow(excludeWebContentsId?: number): BrowserWindow | null {
+  const viewportWindow = findDetachedWindowByPage('VideoViewport')
+  if (
+    viewportWindow !== null &&
+    (excludeWebContentsId === undefined ||
+      viewportWindow.webContents.id !== excludeWebContentsId)
+  ) {
+    return viewportWindow
+  }
+  const videoWindow = findDetachedWindowByPage('Video')
+  if (
+    videoWindow !== null &&
+    (excludeWebContentsId === undefined ||
+      videoWindow.webContents.id !== excludeWebContentsId)
+  ) {
+    return videoWindow
+  }
+  const streamingWindow = findDetachedWindowByPage('Streaming')
+  if (
+    streamingWindow !== null &&
+    (excludeWebContentsId === undefined ||
+      streamingWindow.webContents.id !== excludeWebContentsId)
+  ) {
+    return streamingWindow
+  }
+  return null
+}
+
+function setupDesktopLoopbackCapture() {
+  const defaultSession: {
+    setDisplayMediaRequestHandler?: (
+      handler: (
+        request: unknown,
+        callback: (streams: {
+          video?: Electron.DesktopCapturerSource
+          audio?: 'loopback' | 'loopbackWithMute'
+        }) => void
+      ) => void | Promise<void>
+    ) => void
+  } = session.defaultSession as any
+
+  if (typeof defaultSession.setDisplayMediaRequestHandler !== 'function') {
+    console.warn(
+      'Display media request handler is unavailable; desktop loopback audio may require manual screen-share selection.'
+    )
+    return
+  }
+
+  defaultSession.setDisplayMediaRequestHandler(async (_request, callback) => {
+    try {
+      const sources = await desktopCapturer.getSources({
+        types: ['screen'],
+        thumbnailSize: { width: 1, height: 1 },
+      })
+      const source = sources[0]
+
+      if (source === undefined) {
+        callback({})
+        return
+      }
+
+      callback({
+        video: source,
+        audio: 'loopback',
+      })
+    } catch (error) {
+      console.error('Failed to configure desktop loopback capture', error)
+      callback({})
+    }
+  })
+}
+
+ipcMain.handle(ipcChannels.request_window_close, (event) => {
+  const targetWindow = BrowserWindow.fromWebContents(event.sender)
+  if (
+    targetWindow === null ||
+    targetWindow === undefined ||
+    targetWindow.isDestroyed() ||
+    targetWindow === mainWindow
+  ) {
+    return false
+  }
+
+  detachedCloseApprovedWebContentsIds.add(targetWindow.webContents.id)
+  targetWindow.close()
+  return true
+})
+
+ipcMain.handle(
+  ipcChannels.get_page_window_media_source_id,
+  (_event, page: Page) => {
+    if (typeof page !== 'string' || page.length <= 0) {
+      return null
+    }
+    const targetWindow = findDetachedWindowByPage(page)
+    if (targetWindow === null || targetWindow.isDestroyed()) {
+      return null
+    }
+    try {
+      return targetWindow.getMediaSourceId()
+    } catch (_error) {
+      return null
+    }
+  }
+)
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support')
@@ -65,10 +424,15 @@ const installExtensions = async () => {
 function createAppWindow({
   isMain,
   defaultPage,
+  initialPlacement,
+  maximizeOnFirstShow = false,
 }: {
   isMain: boolean
   defaultPage?: Page
+  initialPlacement?: WindowPlacement | null
+  maximizeOnFirstShow?: boolean
 }) {
+  const createStartedAt = performance.now()
   const RESOURCES_PATH = app.isPackaged
     ? path.join(process.resourcesPath, 'assets')
     : path.join(__dirname, '../../assets')
@@ -77,78 +441,320 @@ function createAppWindow({
     return path.join(RESOURCES_PATH, ...paths)
   }
 
+  const initialBounds = buildWindowConstructorOptions(
+    initialPlacement ?? null,
+    1300,
+    900
+  )
+  const hideNativeMenuBar =
+    !isMain &&
+    (defaultPage === 'Lighting3D' ||
+      defaultPage === 'Video' ||
+      defaultPage === 'VideoViewport' ||
+      defaultPage === 'Streaming')
+  const shouldStartMaximized =
+    initialPlacement?.isMaximized === true || maximizeOnFirstShow
+  const detachedPartition =
+    !isMain && defaultPage === 'Lighting3D'
+      ? 'persist:captivate-lighting3d'
+      : !isMain && defaultPage === 'Atmospherics'
+      ? 'persist:captivate-atmospherics'
+      : !isMain && defaultPage === 'Laser'
+      ? 'persist:captivate-laser'
+      : !isMain &&
+        (defaultPage === 'Video' ||
+          defaultPage === 'VideoViewport' ||
+          defaultPage === 'Streaming')
+      ? 'persist:captivate-visualizer'
+      : undefined
+  const webPreferences: Electron.BrowserWindowConstructorOptions['webPreferences'] = {
+    preload: path.join(__dirname, 'preload.js'),
+    // These are disabled to allow Captivate to display local media
+    // This should be safe since Captivate doesn't run anything remote
+    webSecurity: false,
+    nodeIntegration: false,
+  }
+  if (detachedPartition !== undefined) {
+    webPreferences.partition = detachedPartition
+  }
+
   const window = new BrowserWindow({
     show: false,
-    width: 1300,
-    height: 900,
+    ...initialBounds,
     icon: getAssetPath('icon.png'),
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-      // These are disabled to allow Captivate to display local media
-      // This should be safe since Captivate doesn't run anything remote
-      webSecurity: false,
-      nodeIntegration: false,
-    },
+    autoHideMenuBar: hideNativeMenuBar,
+    webPreferences,
   })
+  if (hideNativeMenuBar) {
+    window.setMenuBarVisibility(false)
+    window.setMenu(null)
+  }
+  telemetryCounter(isMain ? 'window.main' : 'window.detached', 'created')
 
   const baseUrl = resolveHtmlPath('index.html')
   const pageQuery = defaultPage
     ? `${baseUrl.includes('?') ? '&' : '?'}page=${encodeURIComponent(defaultPage)}`
     : ''
   window.loadURL(`${baseUrl}${pageQuery}`)
+  telemetryDuration(
+    isMain ? 'window.main' : 'window.detached',
+    'load_url_ms',
+    performance.now() - createStartedAt
+  )
+
+  let recoveringRenderer = false
+  let lastRecoveryAttemptAt = 0
+  const attemptRendererRecovery = (reason: string) => {
+    if (!isMain || isClosing || window.isDestroyed()) {
+      return
+    }
+    const now = Date.now()
+    if (recoveringRenderer || now - lastRecoveryAttemptAt < 5000) {
+      return
+    }
+    recoveringRenderer = true
+    lastRecoveryAttemptAt = now
+    telemetryCounter(
+      isMain ? 'window.main' : 'window.detached',
+      'renderer_recovery_attempts'
+    )
+    telemetryEvent(
+      isMain ? 'window.main' : 'window.detached',
+      'renderer-recovery-attempt',
+      'warn',
+      `Renderer recovery triggered by ${reason}`
+    )
+    reportDiagnostic({
+      source: 'main-window',
+      area: 'webcontents',
+      event: 'recover-attempt',
+      level: 'warn',
+      message: `Attempting renderer recovery after ${reason}`,
+      data: {
+        id: window.id,
+        url: window.webContents.getURL(),
+      },
+    })
+    setTimeout(() => {
+      try {
+        if (!window.isDestroyed() && !window.webContents.isDestroyed()) {
+          window.webContents.reloadIgnoringCache()
+        }
+      } catch (error) {
+        telemetryCounter(
+          isMain ? 'window.main' : 'window.detached',
+          'renderer_recovery_failures'
+        )
+        telemetryHealth(
+          isMain ? 'window.main' : 'window.detached',
+          'warn',
+          'Renderer recovery failed'
+        )
+        reportDiagnostic({
+          source: 'main-window',
+          area: 'webcontents',
+          event: 'recover-failed',
+          level: 'error',
+          message: 'Failed to reload renderer during recovery attempt',
+          data: {
+            id: window.id,
+            error: error instanceof Error ? error.message : String(error),
+          },
+        })
+      } finally {
+        setTimeout(() => {
+          recoveringRenderer = false
+        }, 4000)
+      }
+    }, 250)
+  }
 
   window.on('ready-to-show', () => {
-    if (process.env.START_MINIMIZED) {
+    telemetryCounter(isMain ? 'window.main' : 'window.detached', 'ready_to_show')
+    if (isDevelopment && isMain && process.env.START_MINIMIZED) {
       window.minimize()
     } else {
-      window.show()
+      const shouldStartFullScreen =
+        !isMain &&
+        isVisualizerDetachedPage(defaultPage) &&
+        initialPlacement?.isFullScreen === true
+      if (shouldStartFullScreen) {
+        window.show()
+        window.setFullScreen(true)
+      } else {
+        if (shouldStartMaximized && !window.isMaximized()) {
+          window.maximize()
+        }
+        window.show()
+      }
     }
   })
 
-  window.webContents.on('new-window', (event, url) => {
-    event.preventDefault()
-    shell.openExternal(url)
+  window.webContents.on('did-finish-load', () => {
+    const snapshot = engine.getControlStateSnapshot()
+    if (snapshot !== null && !window.webContents.isDestroyed()) {
+      if (defaultPage === 'Lighting3D') {
+        registerLighting3dPreviewPage(window.webContents)
+        window.webContents.send(
+          ipcChannels.lighting3d_preview_bootstrap,
+          snapshot
+        )
+        seedLighting3dBootstrapDedupe(snapshot)
+      } else {
+        window.webContents.send(ipcChannels.new_control_state, snapshot)
+      }
+    }
+  })
+
+  const onWindowGeometryMaybeChanged = () => {
+    if (window.isDestroyed()) {
+      return
+    }
+    if (isMain) {
+      persistedWindowLayout.main = captureWindowPlacementSafe(window)
+      schedulePersistWindowLayout()
+    } else {
+      syncDetachedWindowLayoutSnapshot()
+      if (window === visualizerContainer.visualizer) {
+        bindVisualizerContainerWindow(window)
+      }
+    }
+  }
+  window.on('move', onWindowGeometryMaybeChanged)
+  window.on('resize', onWindowGeometryMaybeChanged)
+  window.on('maximize', onWindowGeometryMaybeChanged)
+  window.on('unmaximize', onWindowGeometryMaybeChanged)
+  window.on('enter-full-screen', onWindowGeometryMaybeChanged)
+  window.on('leave-full-screen', onWindowGeometryMaybeChanged)
+
+  window.webContents.setWindowOpenHandler(({ url }) => {
+    void shell.openExternal(url)
+    return { action: 'deny' }
+  })
+
+  window.on('unresponsive', () => {
+    telemetryCounter(isMain ? 'window.main' : 'window.detached', 'unresponsive')
+    telemetryHealth(
+      isMain ? 'window.main' : 'window.detached',
+      'error',
+      'Window reported unresponsive'
+    )
+    reportDiagnostic({
+      source: isMain ? 'main-window' : 'page-window',
+      area: 'window',
+      event: 'unresponsive',
+      level: 'error',
+      data: {
+        id: window.id,
+        url: window.webContents.getURL(),
+      },
+    })
+    attemptRendererRecovery('window-unresponsive')
+  })
+
+  window.on('responsive', () => {
+    telemetryCounter(isMain ? 'window.main' : 'window.detached', 'responsive')
+    telemetryHealth(
+      isMain ? 'window.main' : 'window.detached',
+      'ok',
+      'Window responsive'
+    )
+    reportDiagnostic({
+      source: isMain ? 'main-window' : 'page-window',
+      area: 'window',
+      event: 'responsive',
+      level: 'info',
+      data: {
+        id: window.id,
+      },
+    })
+  })
+
+  window.webContents.on('render-process-gone', (_event, details) => {
+    telemetryCounter(
+      isMain ? 'window.main' : 'window.detached',
+      'render_process_gone'
+    )
+    telemetryHealth(
+      isMain ? 'window.main' : 'window.detached',
+      'error',
+      'Renderer process exited unexpectedly',
+      details
+    )
+    reportDiagnostic({
+      source: isMain ? 'main-window' : 'page-window',
+      area: 'webcontents',
+      event: 'render-process-gone',
+      level: 'error',
+      data: {
+        id: window.id,
+        details,
+      },
+    })
+    attemptRendererRecovery('render-process-gone')
   })
 
   if (!isMain) {
+    const webContentsId = window.webContents.id
     detachedWindows.add(window)
+    detachedWindowPagesById.set(webContentsId, defaultPage)
+    if (
+      defaultPage === 'Video' ||
+      defaultPage === 'VideoViewport' ||
+      defaultPage === 'Streaming'
+    ) {
+      bindVisualizerContainerWindow(window)
+    }
+    syncDetachedWindowLayoutSnapshot()
+    if (isVisualizerDetachedPage(defaultPage)) {
+      syncVideoEnabledToDetachedVisualizerCount()
+    }
+    window.on('close', (event) => {
+      if (isClosing) {
+        detachedCloseApprovedWebContentsIds.delete(webContentsId)
+        return
+      }
+      if (detachedCloseApprovedWebContentsIds.has(webContentsId)) {
+        detachedCloseApprovedWebContentsIds.delete(webContentsId)
+        return
+      }
+
+      event.preventDefault()
+      if (!window.webContents.isDestroyed()) {
+        window.webContents.send(ipcChannels.detached_window_close_prompt)
+      }
+    })
+
     window.on('closed', () => {
+      telemetryCounter('window.detached', 'closed')
+      const wasVisualizerDetached = isVisualizerDetachedPage(defaultPage)
       detachedWindows.delete(window)
+      detachedCloseApprovedWebContentsIds.delete(webContentsId)
+      detachedWindowPagesById.delete(webContentsId)
+      if (window === visualizerContainer.visualizer) {
+        bindVisualizerContainerWindow(findFallbackVisualizerWindow(webContentsId))
+      }
+      syncDetachedWindowLayoutSnapshot()
+      if (wasVisualizerDetached) {
+        syncVideoEnabledToDetachedVisualizerCount()
+      }
     })
   }
 
   engine.getIpcCallbacks()?.register_renderer(window.webContents)
 
   if (isMain) {
+    persistedWindowLayout.main = captureWindowPlacementSafe(window)
+    schedulePersistWindowLayout()
     window.on('close', (e) => {
       if (!isClosing) {
         e.preventDefault()
-
-        dialog
-          .showMessageBox(window, {
-            message: 'Stop the show?',
-            buttons: ['Nevermind', 'Quit'],
-            cancelId: 0,
-            defaultId: 1,
-          })
-          .then(async ({ response }) => {
-            if (response === 1) {
-              try {
-                await saveFixtureLibraryIfDirty()
-              } catch (err) {
-                console.error('Failed to save fixture library on quit:', err)
-              }
-
-              isClosing = true
-              window.close()
-              engine.stop()
-              mainWindow = null
-              app.quit()
-            }
-          })
-          .catch((err) => {
-            console.error(`showMessageBox err: `, err)
-          })
+        if (!window.webContents.isDestroyed()) {
+          window.webContents.send(ipcChannels.app_close_prompt)
+        }
+      } else {
+        persistedWindowLayout.main = captureWindowPlacementSafe(window)
+        schedulePersistWindowLayout()
       }
     })
   }
@@ -169,32 +775,131 @@ function getCurrentFixtureTypes(): FixtureType[] {
 }
 
 async function saveFixtureLibraryIfDirty(): Promise<void> {
+  await primeFixtureLibraryCache()
   const serialized = serializeFixtureLibrary(getCurrentFixtureTypes())
-  const existing = await readDefaultFixtureLibrary()
-  if (existing === serialized) {
+  if (cachedFixtureLibrarySerialized === serialized) {
     return
   }
 
   await saveDefaultFixtureLibrary(serialized)
+  cachedFixtureLibrarySerialized = serialized
+}
+
+async function primeFixtureLibraryCache(): Promise<void> {
+  if (fixtureLibraryCacheLoaded) {
+    return
+  }
+  fixtureLibraryCacheLoaded = true
+  try {
+    cachedFixtureLibrarySerialized = await readDefaultFixtureLibrary()
+  } catch (error) {
+    console.warn('Failed to prime fixture library cache:', error)
+    cachedFixtureLibrarySerialized = null
+  }
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function requestMainWindowQuit(window: BrowserWindow): Promise<void> {
+  try {
+    const saveAttempt = saveFixtureLibraryIfDirty().catch((error) => {
+      console.error('Failed to save fixture library on quit:', error)
+    })
+    await Promise.race([saveAttempt, wait(800)])
+  } catch (err) {
+    console.error('Failed to save fixture library on quit:', err)
+  }
+
+  persistedWindowLayout.main = captureWindowPlacementSafe(window)
+  syncDetachedWindowLayoutSnapshot()
+  if (
+    visualizerContainer.visualizer !== null &&
+    !visualizerContainer.visualizer.isDestroyed()
+  ) {
+    persistedWindowLayout.visualizer = {
+      isOpen: true,
+      placement: captureWindowPlacementSafe(visualizerContainer.visualizer),
+    }
+  }
+
+  isClosing = true
+  flushPersistedWindowLayout()
+  engine.stop()
+  mainWindow = null
+  if (!window.isDestroyed()) {
+    window.close()
+  }
+  app.quit()
 }
 
 const createWindow = async () => {
+  registerDetachedVisualizerFullscreenIpcOnce()
   if (isDevelopment) {
     await installExtensions()
   }
 
-  mainWindow = createAppWindow({ isMain: true })
+  persistedWindowLayout = readWindowLayout()
+  visualizerContainer.visualizerState = persistedWindowLayout.visualizer.placement
+
+  const mainPlacement =
+    persistedWindowLayout.main ??
+    (() => {
+      const area = screen.getPrimaryDisplay().workArea
+      return {
+        width: area.width,
+        height: area.height,
+      } as WindowPlacement
+    })()
+
+  mainWindow = createAppWindow({
+    isMain: true,
+    initialPlacement: mainPlacement,
+    maximizeOnFirstShow: persistedWindowLayout.main === null,
+  })
 
   const ipcCallbacks = engine.start(
     mainWindow.webContents,
     visualizerContainer,
     (page) => {
-      createAppWindow({ isMain: false, defaultPage: page })
+      openOrFocusDetachedPage(page)
+    },
+    () => {
+      if (mainWindow !== null) {
+        void requestMainWindowQuit(mainWindow)
+      }
+    },
+    syncVideoEnabledToDetachedVisualizerCount
+  )
+
+  const menuBuilder = new MenuBuilder(mainWindow, {
+    ipcCallbacks,
+    openPageWindow: (page) => openOrFocusDetachedPage(page),
+  })
+  menuBuilder.buildMenu()
+  ipcMain.on(
+    ipcChannels.sync_led_sidebar_menu,
+    (_event, enabled: unknown) => {
+      if (typeof enabled !== 'boolean') {
+        return
+      }
+      menuBuilder.setLedSidebarMenuChecked(enabled)
+      menuBuilder.buildMenu()
     }
   )
 
-  const menuBuilder = new MenuBuilder(mainWindow, { ipcCallbacks })
-  menuBuilder.buildMenu()
+  const detachedToRestore = persistedWindowLayout.detached
+    .filter((state) => state.page !== 'Atmospherics')
+    .slice(0, 12)
+  for (const detachedState of detachedToRestore) {
+    createAppWindow({
+      isMain: false,
+      defaultPage: detachedState.page,
+      initialPlacement: detachedState,
+    })
+  }
+  syncVideoEnabledToDetachedVisualizerCount()
 
   // Remove this if your app does not use auto updates
   // eslint-disable-next-line
@@ -218,11 +923,50 @@ const createWindow = async () => {
 app
   .whenReady()
   .then(() => {
+    startMainTelemetry()
+    telemetryHealth('app', 'ok', 'App process initialized')
+    telemetryGauge('app', 'pid', process.pid, 'pid')
+    telemetryCounter('app', 'ready')
+    reportDiagnostic({
+      source: 'main',
+      area: 'app',
+      event: 'ready',
+      level: 'info',
+      data: {
+        appVersion: app.getVersion(),
+        isPackaged: app.isPackaged,
+      },
+    })
+    app.on('child-process-gone', (_event, details) => {
+      telemetryCounter('app', 'child_process_gone')
+      telemetryHealth('app', 'warn', 'Child process exited', details)
+      reportDiagnostic({
+        source: 'main',
+        area: 'app',
+        event: 'child-process-gone',
+        level: 'error',
+        data: details,
+      })
+    })
+    setupDesktopLoopbackCapture()
+    void primeFixtureLibraryCache()
     createWindow()
     app.on('activate', () => {
+      telemetryCounter('app', 'activate')
       // On macOS it's common to re-create a window in the app when the
       // dock icon is clicked and there are no other windows `open`.
       if (mainWindow === null) createWindow()
     })
   })
   .catch(console.log)
+
+app.on('will-quit', () => {
+  if (persistWindowLayoutTimer !== null) {
+    clearTimeout(persistWindowLayoutTimer)
+    persistWindowLayoutTimer = null
+  }
+  flushPersistedWindowLayout()
+  stopLighting3dUtilityWorker()
+  telemetryCounter('app', 'will_quit')
+  stopMainTelemetry()
+})

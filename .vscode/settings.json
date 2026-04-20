@@ -1,4 +1,29 @@
 {
+  "terminal.integrated.defaultProfile.windows": "Captivate Node",
+  "terminal.integrated.automationProfile.windows": {
+    "path": "powershell.exe",
+    "args": [
+      "-NoExit",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File",
+      "${workspaceFolder}/scripts/cursor-terminal-init.ps1"
+    ]
+  },
+  "terminal.integrated.profiles.windows": {
+    "Captivate Node": {
+      "path": "powershell.exe",
+      "args": [
+        "-NoExit",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/scripts/cursor-terminal-init.ps1"
+      ],
+      "icon": "terminal-powershell"
+    }
+  },
+
   "files.associations": {
     ".eslintrc": "jsonc",
     ".prettierrc": "jsonc",

@@ -16,7 +16,11 @@ export default class TapTempoEngine {
   private sessionTaps = 0
   private lastTapTime = 0
 
-  tap(setBpm: (newBPM: number) => void, setPhase: (newPhase: number, options: { force: boolean }) => void) {
+  tap(
+    setBpm: (newBPM: number) => void,
+    setPhase: (newPhase: number, options: { force: boolean }) => void,
+    reportBpmFromTap?: (bpm: number, wallMs: number) => void
+  ) {
     const now = Date.now()
     this.sessionTaps += 1
 
@@ -30,7 +34,10 @@ export default class TapTempoEngine {
           let bpm = getBPM(sessionTime / (TAPS_TO_COMMIT - 1))
           if (bpm < BPM_LIMIT) {
             this.avgBPM.reset(bpm)
-            setBpm(this.avgBPM.get())
+            const applied = this.avgBPM.get()
+            const wallMs = Date.now()
+            setBpm(applied)
+            reportBpmFromTap?.(applied, wallMs)
           } else {
             console.warn(`unusally large reset BPM: ${bpm}`)
           }
@@ -44,7 +51,10 @@ export default class TapTempoEngine {
         let bpm = getBPM(period)
         if (bpm < BPM_LIMIT) {
           this.avgBPM.push(bpm)
-          setBpm(this.avgBPM.get())
+          const applied = this.avgBPM.get()
+          const wallMs = Date.now()
+          setBpm(applied)
+          reportBpmFromTap?.(applied, wallMs)
         } else {
           console.warn(`unusally large push BPM: ${bpm}`)
         }

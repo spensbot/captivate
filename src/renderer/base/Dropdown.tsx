@@ -5,11 +5,16 @@ import ArrowRight from '@mui/icons-material/ArrowRight'
 interface Props {
   isOpen: boolean
   onClick: () => void
+  title?: string
 }
 
-export default function Dropdown({ isOpen, onClick }: Props) {
+export default function Dropdown({
+  isOpen,
+  onClick,
+  title = 'Toggle section',
+}: Props) {
   return (
-    <IconButton onClick={onClick}>
+    <IconButton onClick={onClick} title={title} aria-label={title}>
       {isOpen ? <ArrowDown /> : <ArrowRight />}
     </IconButton>
   )

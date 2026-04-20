@@ -2,41 +2,69 @@ import styled from 'styled-components'
 import { useRealtimeSelector } from '../redux/realtimeStore'
 import { send_user_command } from '../ipcHandler'
 
-interface Props {}
+interface Props {
+  /**
+   * `toolbar`: previous status-bar behaviour (spacer when Link is off).
+   * `menu`: used in Connections — render nothing when Link is off; compact layout when on.
+   */
+  mode?: 'toolbar' | 'menu'
+}
 
-export default function StartStopSyncButton({}: Props) {
+export default function StartStopSyncButton({ mode = 'toolbar' }: Props) {
   const linkEnabled = useRealtimeSelector((state) => state.time.isEnabled)
-  const sssEnabled = useRealtimeSelector(
+  const startStopSyncEnabled = useRealtimeSelector(
     (state) => state.time.isStartStopSyncEnabled
   )
 
-  const color = sssEnabled ? '#fff7' : '#fff3'
+  const color = startStopSyncEnabled ? '#fff7' : '#fff3'
+  const compact = mode === 'menu'
 
-  if (!linkEnabled) return <PlaceHolder />
+  if (!linkEnabled) {
+    return mode === 'menu' ? null : <PlaceHolder />
+  }
 
   return (
     <Root
+      $compact={compact}
+      role="button"
+      tabIndex={0}
+      title={
+        startStopSyncEnabled
+          ? 'Start/stop sync is on — click to turn off'
+          : 'Click to sync play/stop with other Link apps when supported'
+      }
       onClick={() =>
         send_user_command({
           type: 'EnableStartStopSync',
-          isEnabled: !sssEnabled,
+          isEnabled: !startStopSyncEnabled,
         })
       }
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          send_user_command({
+            type: 'EnableStartStopSync',
+            isEnabled: !startStopSyncEnabled,
+          })
+        }
+      }}
     >
-      <Line color={color} />
+      <Line $compact={compact} color={color} />
       <CircleBg color={color} />
       <Breaker color={color} />
-      <Circle enabled={sssEnabled} color={color} />
+      <Circle enabled={startStopSyncEnabled} color={color} />
     </Root>
   )
 }
 
 const color = '#fff5'
 
-const Root = styled.div`
+const Root = styled.div<{ $compact: boolean }>`
   position: relative;
-  /* opacity: 0.6; */
-  /* cursor: pointer; */
+  cursor: pointer;
+  width: ${(p) => (p.$compact ? '2.5rem' : 'auto')};
+  height: ${(p) => (p.$compact ? '1.65rem' : 'auto')};
+  flex: 0 0 auto;
   :hover {
     opacity: 1;
   }
@@ -46,11 +74,11 @@ const PlaceHolder = styled.div`
   width: 1rem;
 `
 
-const Line = styled.div`
+const Line = styled.div<{ $compact?: boolean }>`
   background-color: ${color};
   height: 0.1rem;
   width: 2.5rem;
-  margin: 1rem 0;
+  margin: ${(p) => (p.$compact ? '0.28rem 0' : '1rem 0')};
 `
 
 const centerIt = `

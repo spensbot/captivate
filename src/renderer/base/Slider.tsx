@@ -9,6 +9,8 @@ interface Params {
   onChange: (newVal: number) => void
   color?: string
   disabled?: boolean
+  title?: string
+  ariaLabel?: string
 }
 
 export default function Slider({
@@ -18,6 +20,8 @@ export default function Slider({
   onChange,
   color,
   disabled,
+  title,
+  ariaLabel,
 }: Params) {
   const [localVal, setLocalVal] = useState(0.0)
 
@@ -33,6 +37,8 @@ export default function Slider({
       radius={radius}
       orientation={orientation}
       onChange={localOnChange}
+      title={title}
+      ariaLabel={ariaLabel}
     >
       <SliderCursor
         value={value === undefined ? localVal : value}

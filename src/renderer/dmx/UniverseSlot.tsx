@@ -1,18 +1,19 @@
 import styled from 'styled-components'
-import { useDmxSelector } from '../redux/store'
+import { useDmxSelector, useTypedSelector } from '../redux/store'
 import { Fixture, FixtureType } from '../../shared/dmxFixtures'
-import { Slot_t } from './MyUniverse'
+import { Slot_t } from './UniverseSlotTypes'
 import { useDispatch } from 'react-redux'
 import {
   setSelectedFixture,
   setFixtureWindowEnabled,
+  setFixtureName,
   addFixture,
   removeFixture,
 } from '../redux/dmxSlice'
 import ToggleButton from '../base/ToggleButton'
 import Popup from '../base/Popup'
-import { useState } from 'react'
-import { TextField, IconButton, Tooltip } from '@mui/material'
+import { useEffect, useRef, useState } from 'react'
+import { TextField, IconButton, Tooltip, Button } from '@mui/material'
 import RemoveIcon from '@mui/icons-material/Remove'
 import AddIcon from '@mui/icons-material/Add'
 import { clamp } from '../../math/util'
@@ -37,7 +38,12 @@ function GapSlot({ ch, count }: { ch: number; count: number }) {
   const dmxState = useDmxSelector((state) => state)
   const applicableFixtures = dmxState.fixtureTypes
     .map((id) => dmxState.fixtureTypesByID[id])
-    .filter((ft) => ft.channels.length <= count - (inputCh - ch))
+    .filter(
+      (ft) =>
+        ft !== undefined &&
+        ft.channels.length > 0 &&
+        ft.channels.length <= count - (inputCh - ch)
+    )
 
   return (
     <Slot
@@ -72,6 +78,7 @@ function GapSlot({ ch, count }: { ch: number; count: number }) {
                 setPopupOpen(false)
                 dispatch(
                   addFixture({
+                    name: ft.name,
                     ch: inputCh,
                     universe: activeUniverse,
                     type: ft.id,
@@ -166,9 +173,69 @@ function FixtureSlot({
   const count = fixtureType.channels.length
   const start = fixture.ch
   const isSelected = activeFixture === globalIndex
+  const fixtureDisplayName =
+    typeof fixture.name === 'string' && fixture.name.trim().length > 0
+      ? fixture.name.trim()
+      : fixtureType.name
+  const [pendingName, setPendingName] = useState(fixtureDisplayName)
+  const [revertName, setRevertName] = useState(fixtureDisplayName)
+  const [showBlankNameWarning, setShowBlankNameWarning] = useState(false)
+  const nameInputRef = useRef<HTMLInputElement | null>(null)
+  const fixturePlacementDepthEnabled = useTypedSelector(
+    (state) => state.gui.fixturePlacementDepthEnabled
+  )
+  const showZToggle = fixturePlacementDepthEnabled
+
+  useEffect(() => {
+    setPendingName(fixtureDisplayName)
+    setRevertName(fixtureDisplayName)
+    if (!isSelected) {
+      setShowBlankNameWarning(false)
+    }
+  }, [fixtureDisplayName, globalIndex, isSelected])
+
+  function handleNameCommit() {
+    const trimmedName = pendingName.trim()
+    if (trimmedName.length === 0) {
+      setShowBlankNameWarning(true)
+      return
+    }
+
+    dispatch(
+      setFixtureName({
+        index: globalIndex,
+        name: trimmedName,
+      })
+    )
+    setPendingName(trimmedName)
+    setRevertName(trimmedName)
+  }
+
+  function handleBlankNameUseDefault() {
+    dispatch(
+      setFixtureName({
+        index: globalIndex,
+        name: '',
+      })
+    )
+    setPendingName(fixtureType.name)
+    setRevertName(fixtureType.name)
+    setShowBlankNameWarning(false)
+  }
+
+  function handleBlankNameGoBack() {
+    setPendingName(revertName)
+    setShowBlankNameWarning(false)
+    requestAnimationFrame(() => {
+      nameInputRef.current?.focus()
+      nameInputRef.current?.select()
+    })
+  }
 
   function setWindowEnabled(dimension: 'x' | 'y' | 'z', isEnabled: boolean) {
-    return (_e: React.MouseEvent) => {
+    return (e: React.MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
       dispatch(
         setFixtureWindowEnabled({
           dimension: dimension,
@@ -200,67 +267,99 @@ function FixtureSlot({
       }
       style={style}
     >
-      <ChannelSpan start={start} count={count} />
-      <div style={{ display: 'flex', alignItems: 'center' }}>
-        <div>{fixtureType.name}</div>
-      </div>
-      {isSelected ? (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            fontSize: '0.9rem',
-            zIndex: 1,
-          }}
-        >
-          <Tooltip title="Enable or disable Pan (X) window control">
-            <span>
-              <ToggleButton
-                isEnabled={!!fixture.window.x}
-                onClick={setWindowEnabled('x', !fixture.window.x)}
+      <AddressLabel>
+        <ChannelSpan start={start} count={count} />
+      </AddressLabel>
+      <MainContent>
+        {isSelected ? (
+          <>
+            <NameInput
+              ref={nameInputRef}
+              value={pendingName}
+              onChange={(e) => setPendingName(e.target.value)}
+              onBlur={handleNameCommit}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+              }}
+            />
+            {showBlankNameWarning && (
+              <Popup
+                title="Name Required"
+                onClose={handleBlankNameGoBack}
               >
-                X
-              </ToggleButton>
-            </span>
-          </Tooltip>
-          <Tooltip title="Enable or disable Tilt (Y) window control">
-            <span>
-              <ToggleButton
-                isEnabled={!!fixture.window.y}
-                onClick={setWindowEnabled('y', !fixture.window.y)}
-              >
-                Y
-              </ToggleButton>
-            </span>
-          </Tooltip>
-          <Tooltip title="Enable or disable Depth (Z) window control">
-            <span>
-              <ToggleButton
-                isEnabled={!!fixture.window.z}
-                onClick={setWindowEnabled('z', !fixture.window.z)}
-              >
-                Z
-              </ToggleButton>
-            </span>
-          </Tooltip>
-          <Tooltip title="Remove this fixture from the universe">
-            <span>
-              <IconButton
-                onClick={(e) => {
-                  e.preventDefault()
-                  dispatch(removeFixture(globalIndex))
-                }}
-              >
-                <RemoveIcon />
-              </IconButton>
-            </span>
-          </Tooltip>
-        </div>
-      ) : (
-        <div style={{ fontSize: '0.8rem', color: '#fff7' }}>
-          {fixtureType.manufacturer}
-        </div>
-      )}
+                <WarningText>
+                  Fixture name cannot be blank.
+                </WarningText>
+                <WarningActions>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={handleBlankNameUseDefault}
+                  >
+                    Use Default
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={handleBlankNameGoBack}
+                  >
+                    Go Back
+                  </Button>
+                </WarningActions>
+              </Popup>
+            )}
+            <ControlsRow onClick={(e) => e.stopPropagation()}>
+              <Tooltip title="Enable or disable Pan (X) window control">
+                <span>
+                  <ToggleButton
+                    isEnabled={!!fixture.window.x}
+                    onClick={setWindowEnabled('x', !fixture.window.x)}
+                  >
+                    X
+                  </ToggleButton>
+                </span>
+              </Tooltip>
+              <Tooltip title="Enable or disable Tilt (Y) window control">
+                <span>
+                  <ToggleButton
+                    isEnabled={!!fixture.window.y}
+                    onClick={setWindowEnabled('y', !fixture.window.y)}
+                  >
+                    Y
+                  </ToggleButton>
+                </span>
+              </Tooltip>
+              {showZToggle && (
+                <Tooltip title="Enable or disable Depth (Z) window control">
+                  <span>
+                    <ToggleButton
+                      isEnabled={!!fixture.window.z}
+                      onClick={setWindowEnabled('z', !fixture.window.z)}
+                    >
+                      Z
+                    </ToggleButton>
+                  </span>
+                </Tooltip>
+              )}
+              <Tooltip title="Remove this fixture from the universe">
+                <span>
+                  <IconButton
+                    onClick={(e) => {
+                      e.preventDefault()
+                      dispatch(removeFixture(globalIndex))
+                    }}
+                  >
+                    <RemoveIcon />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            </ControlsRow>
+          </>
+        ) : (
+          <FixtureName title={fixtureDisplayName}>{fixtureDisplayName}</FixtureName>
+        )}
+      </MainContent>
     </Slot>
   )
 }
@@ -281,7 +380,7 @@ export default function UniverseSlot({ slot }: { slot: Slot_t }) {
 }
 
 const height = 5
-const width = 7
+const width = 8
 
 const Slot = styled.div`
   height: ${height}rem;
@@ -291,9 +390,7 @@ const Slot = styled.div`
   margin-bottom: 0.3rem;
   color: #fff8;
   background-color: #2f2f2f;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  display: block;
   border: 1px solid #fff8;
   :hover {
     border: 1px solid #fffc;
@@ -302,4 +399,71 @@ const Slot = styled.div`
   }
   box-sizing: border-box;
   position: relative;
+  overflow: hidden;
+`
+
+const AddressLabel = styled.div`
+  position: absolute;
+  top: 0.32rem;
+  left: 0.38rem;
+  font-size: 0.72rem;
+  color: #ffffffd8;
+  z-index: 2;
+`
+
+const MainContent = styled.div`
+  position: absolute;
+  top: 1.2rem;
+  left: 0.35rem;
+  right: 0.35rem;
+  bottom: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+`
+
+const FixtureName = styled.div`
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  color: #fffef2;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`
+
+const NameInput = styled.input`
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  background: #090f1fdd;
+  color: #eef4ff;
+  border: 1px solid #ffffff55;
+  border-radius: 0.2rem;
+  padding: 0.12rem 0.25rem;
+  font-size: 0.76rem;
+  line-height: 1.2;
+`
+
+const ControlsRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.12rem;
+  width: 100%;
+  justify-content: flex-end;
+`
+
+const WarningText = styled.div`
+  color: ${(props) => props.theme.colors.text.primary};
+  margin-bottom: 0.9rem;
+`
+
+const WarningActions = styled.div`
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
 `

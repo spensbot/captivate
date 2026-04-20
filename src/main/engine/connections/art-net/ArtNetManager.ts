@@ -7,7 +7,7 @@ import { EngineContext } from 'main/engine/engineContext'
 
 export class ArtNetManager {
   private client: dgram.Socket
-  private intervalHandle: NodeJS.Timer
+  private intervalHandle: NodeJS.Timeout
 
   constructor(c: EngineContext) {
     this.client = dgram.createSocket('udp4')

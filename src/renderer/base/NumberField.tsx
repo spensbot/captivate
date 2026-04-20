@@ -1,3 +1,4 @@
+import type { SxProps, Theme } from '@mui/material/styles'
 import { TextField } from '@mui/material'
 import { clampMaybe } from '../../math/util'
 
@@ -16,6 +17,7 @@ interface Props2 {
   title?: string
   step?: number
   disabled?: boolean
+  sx?: SxProps<Theme>
 }
 
 export default function NumberField({
@@ -33,7 +35,36 @@ export default function NumberField({
   title,
   step,
   disabled = false,
+  sx: sxProp,
 }: Props2) {
+  const responsiveSx: SxProps<Theme> = {
+    minWidth: 0,
+    width: '100%',
+    maxWidth: '100%',
+  }
+
+  const focusSx: SxProps<Theme> | undefined = highlightOnFocus
+    ? {
+        '& .MuiInputBase-root': {
+          borderRadius: '4px',
+          transition: 'background-color 120ms ease, box-shadow 120ms ease',
+        },
+        '& .MuiInputBase-root:hover': {
+          backgroundColor: 'rgba(95, 140, 220, 0.08)',
+        },
+        '& .MuiInputBase-root.Mui-focused': {
+          backgroundColor: 'rgba(95, 140, 220, 0.18)',
+          boxShadow: '0 0 0 1px rgba(95, 140, 220, 0.45) inset',
+        },
+      }
+    : undefined
+
+  const mergedSx: SxProps<Theme> = [
+    responsiveSx,
+    ...(focusSx ? [focusSx] : []),
+    ...(Array.isArray(sxProp) ? sxProp : sxProp ? [sxProp] : []),
+  ]
+
   return (
     <TextField
       value={val.toString()}
@@ -54,23 +85,7 @@ export default function NumberField({
       type="number"
       title={title}
       inputProps={step !== undefined ? { step } : undefined}
-      sx={
-        highlightOnFocus
-          ? {
-              '& .MuiInputBase-root': {
-                borderRadius: '4px',
-                transition: 'background-color 120ms ease, box-shadow 120ms ease',
-              },
-              '& .MuiInputBase-root:hover': {
-                backgroundColor: 'rgba(95, 140, 220, 0.08)',
-              },
-              '& .MuiInputBase-root.Mui-focused': {
-                backgroundColor: 'rgba(95, 140, 220, 0.18)',
-                boxShadow: '0 0 0 1px rgba(95, 140, 220, 0.45) inset',
-              },
-            }
-          : undefined
-      }
+      sx={mergedSx}
     />
   )
 }

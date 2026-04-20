@@ -3,6 +3,7 @@ import {
   DMX_MIN_VALUE,
   DMX_NUM_CHANNELS,
   FlattenedFixture,
+  hasMoverFixtureInUniverse,
   MoverBounds,
 } from '../../shared/dmxFixtures'
 import { CleanReduxState } from '../../renderer/redux/store'
@@ -20,6 +21,104 @@ import { SplitState } from 'renderer/redux/realtimeStore'
 import { getUniverseOverwrites } from '../../renderer/redux/mixerSlice'
 import { clampNormalized, lerp } from '../../math/util'
 import { getParam } from '../../shared/params'
+
+const PAN_EQUIVALENT_CYCLE_DEG = 360
+const _panPathYawByFixtureKey = new Map<string, number>()
+type MoverPathState = {
+  panDmx: number
+  tiltDmx: number
+  panTargetDmx: number
+  tiltTargetDmx: number
+  panVelocityDmxPerSec: number
+  tiltVelocityDmxPerSec: number
+  panFineEnabled: boolean
+  tiltFineEnabled: boolean
+  lastSeenMs: number
+}
+const _moverPathStateByFixtureKey = new Map<string, MoverPathState>()
+let _lastMoverPathCleanupMs = 0
+const MOVER_PATH_MAX_DT_SEC = 0.12
+const MOVER_PATH_MIN_DT_SEC = 1 / 240
+const MOVER_PATH_MAX_PAN_DMX_PER_SEC = 360
+const MOVER_PATH_MAX_TILT_DMX_PER_SEC = 320
+const MOVER_PATH_MAX_PAN_ACCEL_DMX_PER_SEC2 = 1700
+const MOVER_PATH_MAX_TILT_ACCEL_DMX_PER_SEC2 = 1400
+const MOVER_PATH_STATE_STALE_MS = 15000
+const MOVER_PATH_TARGET_DEADBAND_DMX = 0.05
+const MOVER_PATH_SETTLE_DISTANCE_DMX = 0.08
+const MOVER_PATH_SETTLE_VELOCITY_DMX_PER_SEC = 0.9
+const MOVER_PATH_IDLE_HOLD_DISTANCE_DMX = 0.2
+const MOVER_PATH_IDLE_HOLD_VELOCITY_DMX_PER_SEC = 0.6
+const MOVER_FINE_ENABLE_DISTANCE_DMX = 0.35
+const MOVER_FINE_ENABLE_VELOCITY_DMX_PER_SEC = 5.5
+const MOVER_FINE_DISABLE_DISTANCE_DMX = 1.5
+const MOVER_FINE_DISABLE_VELOCITY_DMX_PER_SEC = 20
+const SPLIT_PAN_RANGE_DEG = 360
+const MOVER_TANDEM_MAX_SPREAD = 0.65
+const LIGHTING_CONTROL_PARAM_KEYS = [
+  'hue',
+  'saturation',
+  'brightness',
+  'white',
+  'warmWhite',
+  'amber',
+  'uv',
+  'x',
+  'y',
+  'width',
+  'height',
+  'z',
+  'depth',
+  'intensity',
+  'strobe',
+  'randomize',
+] as const
+
+function splitHasLightingControlBundle(
+  params: Record<string, number | undefined>
+) {
+  return LIGHTING_CONTROL_PARAM_KEYS.some((param) => params[param] !== undefined)
+}
+
+function isAtmosCustomChannelName(name: string) {
+  if (name.length <= 0) return false
+  const exclusions = ['pan', 'tilt', 'speed', 'gobo', 'zoom', 'focus']
+  if (exclusions.some((token) => name.includes(token))) {
+    return false
+  }
+  return [
+    'volume',
+    'fan',
+    'fog',
+    'haze',
+    'bubble',
+    'confetti',
+    'co2',
+    'flame',
+    'pyro',
+    'output',
+    'pump',
+    'mist',
+    'jet',
+    'trigger',
+    'on/off',
+    'on off',
+    'onoff',
+    'fx',
+  ].some((token) => name.includes(token))
+}
+
+function isAtmosControlChannel(
+  channel: FlattenedFixture['channels'][number][1]
+) {
+  if (channel.type === 'fxTrigger' || channel.type === 'fxLevel') {
+    return true
+  }
+  if (channel.type !== 'custom' || channel.isControllable !== true) {
+    return false
+  }
+  return isAtmosCustomChannelName(channel.name.trim().toLowerCase())
+}
 
 function getUniverseCount(state: CleanReduxState): number {
   const configuredUniverseCount =
@@ -60,6 +159,105 @@ function clampDmxFloatValue(value: number, fallback: number = 128): number {
   return Math.min(DMX_MAX_VALUE, Math.max(DMX_MIN_VALUE, value))
 }
 
+function resolveMoverPathDtSeconds(timeState: TimeState): number {
+  const dtMs = Number(timeState.dt)
+  if (!Number.isFinite(dtMs) || dtMs <= 0) {
+    return 1 / 90
+  }
+
+  return Math.min(
+    MOVER_PATH_MAX_DT_SEC,
+    Math.max(MOVER_PATH_MIN_DT_SEC, dtMs / 1000)
+  )
+}
+
+function stepPathAxisValue(
+  currentValue: number,
+  currentVelocity: number,
+  targetValue: number,
+  dtSec: number,
+  maxVelocity: number,
+  maxAcceleration: number,
+  minValue: number,
+  maxValue: number
+): { value: number; velocity: number } {
+  const clampedTarget = Math.min(maxValue, Math.max(minValue, targetValue))
+
+  if (!Number.isFinite(currentValue) || !Number.isFinite(currentVelocity)) {
+    return {
+      value: clampedTarget,
+      velocity: 0,
+    }
+  }
+  if (!Number.isFinite(dtSec) || dtSec <= 0.000001) {
+    return {
+      value: Math.min(maxValue, Math.max(minValue, currentValue)),
+      velocity: currentVelocity,
+    }
+  }
+
+  const distance = clampedTarget - currentValue
+  if (Math.abs(distance) <= 0.0001) {
+    return {
+      value: clampedTarget,
+      velocity: 0,
+    }
+  }
+
+  const safeDt = Math.max(MOVER_PATH_MIN_DT_SEC, dtSec)
+  const desiredVelocity = Math.min(
+    maxVelocity,
+    Math.max(-maxVelocity, distance / safeDt)
+  )
+  const velocityDeltaLimit = maxAcceleration * safeDt
+  const nextVelocity = Math.min(
+    currentVelocity + velocityDeltaLimit,
+    Math.max(currentVelocity - velocityDeltaLimit, desiredVelocity)
+  )
+
+  let nextValue = currentValue + nextVelocity * safeDt
+  if (
+    (distance > 0 && nextValue > clampedTarget) ||
+    (distance < 0 && nextValue < clampedTarget)
+  ) {
+    nextValue = clampedTarget
+    return {
+      value: nextValue,
+      velocity: 0,
+    }
+  }
+
+  nextValue = Math.min(maxValue, Math.max(minValue, nextValue))
+  if (
+    nextValue <= minValue + 0.0001 ||
+    nextValue >= maxValue - 0.0001
+  ) {
+    return {
+      value: nextValue,
+      velocity: 0,
+    }
+  }
+
+  return {
+    value: nextValue,
+    velocity: nextVelocity,
+  }
+}
+
+function cleanupMoverPathState(nowMs: number) {
+  if (nowMs - _lastMoverPathCleanupMs < 1000) {
+    return
+  }
+  _lastMoverPathCleanupMs = nowMs
+
+  for (const [key, state] of _moverPathStateByFixtureKey.entries()) {
+    if (nowMs - state.lastSeenMs > MOVER_PATH_STATE_STALE_MS) {
+      _moverPathStateByFixtureKey.delete(key)
+      _panPathYawByFixtureKey.delete(key)
+    }
+  }
+}
+
 function hasMoverAxisChannels(fixture: FlattenedFixture): boolean {
   return fixture.channels.some(([, channel]) => {
     return channel.type === 'axis' && !channel.isFine
@@ -75,12 +273,211 @@ function fixtureCenterPosition(
   }
 }
 
-function mapAxisNormalizedToDmx(
+function getMoverPlannerKey(
+  fixture: FlattenedFixture,
+  plannerNamespace: string
+): string {
+  let panChannelNumber = -1
+  let tiltChannelNumber = -1
+
+  fixture.channels.forEach(([channelNumber, channel]) => {
+    if (channel.type !== 'axis' || channel.isFine) return
+    if (channel.dir === 'x' && panChannelNumber < 0) {
+      panChannelNumber = channelNumber
+      return
+    }
+    if (channel.dir === 'y' && tiltChannelNumber < 0) {
+      tiltChannelNumber = channelNumber
+    }
+  })
+
+  const fixtureIdPart =
+    typeof fixture.fixtureId === 'string' && fixture.fixtureId.trim().length > 0
+      ? fixture.fixtureId.trim()
+      : `anon-${fixture.fixtureTypeId ?? 'fixture'}`
+
+  return `${plannerNamespace}:${fixtureIdPart}:x${panChannelNumber}:y${tiltChannelNumber}`
+}
+
+function orientDmxValue(
+  value: number,
+  min: number,
+  max: number,
+  invert: boolean
+): number {
+  return invert ? min + max - value : value
+}
+
+function unorientDmxValue(
+  value: number,
+  min: number,
+  max: number,
+  invert: boolean
+): number {
+  return invert ? min + max - value : value
+}
+
+function mapPanNormalizedToDmx(
   normalized: number,
   calibration?: {
     min: number
     max: number
+    front: number
+    back: number
+    home?: number
+    rangeDeg?: number
     invert: boolean
+  },
+  plannerKey?: string,
+  rangeDegOverride?: number
+): number {
+  const safeNormalized = clampNormalized(normalized)
+  const hasRangeOverride = Number.isFinite(rangeDegOverride)
+  if (calibration === undefined) {
+    if (plannerKey !== undefined) {
+      _panPathYawByFixtureKey.delete(plannerKey)
+    }
+    return clampDmxFloatValue(safeNormalized * DMX_MAX_VALUE)
+  }
+
+  const min = clampDmxValue(calibration.min, DMX_MIN_VALUE)
+  const max = clampDmxValue(calibration.max, DMX_MAX_VALUE)
+  const span = Math.max(1, Math.abs(max - min))
+  const calibrationRangeDeg = Math.max(
+    45,
+    Math.min(
+      1440,
+      Number.isFinite(calibration.rangeDeg) ? calibration.rangeDeg ?? 540 : 540
+    )
+  )
+  const rangeDeg = Number.isFinite(rangeDegOverride)
+    ? Math.max(45, Math.min(1440, rangeDegOverride as number))
+    : calibrationRangeDeg
+
+  const orientedMin = orientDmxValue(min, min, max, calibration.invert)
+  const orientedMax = orientDmxValue(max, min, max, calibration.invert)
+  const orientedFront = orientDmxValue(
+    clampDmxFloatValue(calibration.front, min),
+    min,
+    max,
+    calibration.invert
+  )
+  const orientedBack = orientDmxValue(
+    clampDmxFloatValue(calibration.back, min),
+    min,
+    max,
+    calibration.invert
+  )
+
+  const direction = Math.abs(orientedBack - orientedFront) > 0.0001
+    ? Math.sign(orientedBack - orientedFront)
+    : Math.sign(orientedMax - orientedMin) || 1
+
+  const canonicalYawDeg = (safeNormalized - 0.5) * rangeDeg
+  // For explicit split-pad mapping (1 turn), keep yaw deterministic and monotonic
+  // across the pad so equivalent-cycle selection cannot flip direction mid-travel.
+  if (hasRangeOverride) {
+    if (plannerKey !== undefined) {
+      _panPathYawByFixtureKey.delete(plannerKey)
+    }
+    const yawRatio = canonicalYawDeg / Math.max(0.0001, calibrationRangeDeg)
+    const orientedDeterministic =
+      orientedFront + direction * yawRatio * span
+    const orientedClamped = Math.min(
+      Math.max(orientedDeterministic, Math.min(orientedMin, orientedMax)),
+      Math.max(orientedMin, orientedMax)
+    )
+    return clampDmxFloatValue(
+      unorientDmxValue(orientedClamped, min, max, calibration.invert),
+      min
+    )
+  }
+
+  const yawAtMin = direction * ((orientedMin - orientedFront) / span) * rangeDeg
+  const yawAtMax = direction * ((orientedMax - orientedFront) / span) * rangeDeg
+  const yawMin = Math.min(yawAtMin, yawAtMax)
+  const yawMax = Math.max(yawAtMin, yawAtMax)
+  const preferredYaw =
+    plannerKey !== undefined
+      ? (_panPathYawByFixtureKey.get(plannerKey) ?? 0)
+      : 0
+  const targetYawDeg = resolveNearestEquivalentPanYaw(
+    canonicalYawDeg,
+    preferredYaw,
+    yawMin,
+    yawMax
+  )
+  if (plannerKey !== undefined) {
+    _panPathYawByFixtureKey.set(plannerKey, targetYawDeg)
+  }
+
+  const oriented = orientedFront + direction * (targetYawDeg / rangeDeg) * span
+  const orientedClamped = Math.min(
+    Math.max(oriented, Math.min(orientedMin, orientedMax)),
+    Math.max(orientedMin, orientedMax)
+  )
+  return clampDmxFloatValue(
+    unorientDmxValue(orientedClamped, min, max, calibration.invert),
+    min
+  )
+}
+
+function resolveNearestEquivalentPanYaw(
+  canonicalYawDeg: number,
+  preferredYawDeg: number,
+  minYawDeg: number,
+  maxYawDeg: number
+): number {
+  const low = Math.min(minYawDeg, maxYawDeg)
+  const high = Math.max(minYawDeg, maxYawDeg)
+  if (!Number.isFinite(low) || !Number.isFinite(high) || low > high) {
+    return canonicalYawDeg
+  }
+
+  const kMin = Math.ceil((low - canonicalYawDeg) / PAN_EQUIVALENT_CYCLE_DEG)
+  const kMax = Math.floor((high - canonicalYawDeg) / PAN_EQUIVALENT_CYCLE_DEG)
+  if (kMin > kMax) {
+    return Math.min(high, Math.max(low, canonicalYawDeg))
+  }
+
+  let bestYaw = canonicalYawDeg + kMin * PAN_EQUIVALENT_CYCLE_DEG
+  let bestPrimary = Math.abs(bestYaw - preferredYawDeg)
+  let bestSecondary = Math.abs(bestYaw - canonicalYawDeg)
+
+  for (let k = kMin + 1; k <= kMax; k++) {
+    const candidateYaw = canonicalYawDeg + k * PAN_EQUIVALENT_CYCLE_DEG
+    const primary = Math.abs(candidateYaw - preferredYawDeg)
+    const secondary = Math.abs(candidateYaw - canonicalYawDeg)
+    const isBetter =
+      primary < bestPrimary - 0.0001 ||
+      (Math.abs(primary - bestPrimary) <= 0.0001 &&
+        (secondary < bestSecondary - 0.0001 ||
+          (Math.abs(secondary - bestSecondary) <= 0.0001 &&
+            Math.abs(candidateYaw) < Math.abs(bestYaw))))
+    if (isBetter) {
+      bestYaw = candidateYaw
+      bestPrimary = primary
+      bestSecondary = secondary
+    }
+  }
+
+  return bestYaw
+}
+
+function mapTiltNormalizedToDmx(
+  normalized: number,
+  mountOrientation: 'upright' | 'inverted',
+  calibration?: {
+    min: number
+    max: number
+    down: number
+    forward: number
+    up: number
+    rangeDeg?: number
+    invert: boolean
+  },
+  options?: {
+    centerOnDown?: boolean
   }
 ): number {
   const safeNormalized = clampNormalized(normalized)
@@ -90,8 +487,81 @@ function mapAxisNormalizedToDmx(
 
   const min = clampDmxValue(calibration.min, DMX_MIN_VALUE)
   const max = clampDmxValue(calibration.max, DMX_MAX_VALUE)
-  const oriented = calibration.invert ? 1 - safeNormalized : safeNormalized
-  return clampDmxFloatValue(lerp(min, max, oriented))
+  const orientedLow = Math.min(
+    orientDmxValue(min, min, max, calibration.invert),
+    orientDmxValue(max, min, max, calibration.invert)
+  )
+  const orientedHigh = Math.max(
+    orientDmxValue(min, min, max, calibration.invert),
+    orientDmxValue(max, min, max, calibration.invert)
+  )
+  const orientedMin = orientDmxValue(min, min, max, calibration.invert)
+  const orientedMax = orientDmxValue(max, min, max, calibration.invert)
+  const orientedForward = orientDmxValue(
+    clampDmxFloatValue(calibration.forward, min),
+    min,
+    max,
+    calibration.invert
+  )
+  const orientedUp = orientDmxValue(
+    clampDmxFloatValue(calibration.up, min),
+    min,
+    max,
+    calibration.invert
+  )
+  const orientedDown = orientDmxValue(
+    clampDmxFloatValue(calibration.down, min),
+    min,
+    max,
+    calibration.invert
+  )
+  const centerOnDown = options?.centerOnDown === true
+  const preferredCenterAnchor = centerOnDown
+    ? orientedDown
+    : mountOrientation === 'inverted'
+      ? orientedDown
+      : orientedUp
+  const fallbackCenterAnchor = centerOnDown
+    ? orientedUp
+    : mountOrientation === 'inverted'
+      ? orientedUp
+      : orientedDown
+  const clampedForward = Math.min(Math.max(orientedForward, orientedLow), orientedHigh)
+  let clampedCenterAnchor = Math.min(
+    Math.max(preferredCenterAnchor, orientedLow),
+    orientedHigh
+  )
+  if (Math.abs(clampedCenterAnchor - clampedForward) <= 0.0001) {
+    clampedCenterAnchor = Math.min(
+      Math.max(fallbackCenterAnchor, orientedLow),
+      orientedHigh
+    )
+  }
+
+  // Center-focused tilt mapping:
+  // y=0.5 -> calibrated up/down anchor
+  // y=0   -> forward-side limit (min/max depending fixture orientation)
+  // y=1   -> behind-side limit
+  let forwardDirection = Math.sign(clampedForward - clampedCenterAnchor)
+  if (forwardDirection === 0) {
+    forwardDirection = Math.sign(orientedMax - orientedMin) || 1
+  }
+  const forwardLimit = forwardDirection >= 0 ? orientedHigh : orientedLow
+  const behindLimit = forwardDirection >= 0 ? orientedLow : orientedHigh
+  const signedRatio = safeNormalized * 2 - 1
+  const oriented =
+    signedRatio >= 0
+      ? lerp(clampedCenterAnchor, behindLimit, signedRatio)
+      : lerp(clampedCenterAnchor, forwardLimit, -signedRatio)
+
+  const orientedClamped = Math.min(
+    Math.max(oriented, Math.min(orientedMin, orientedMax)),
+    Math.max(orientedMin, orientedMax)
+  )
+  return clampDmxFloatValue(
+    unorientDmxValue(orientedClamped, min, max, calibration.invert),
+    min
+  )
 }
 
 function getMoverBoundValue(
@@ -144,26 +614,313 @@ function mapPointToBounds(
   }
 }
 
-function mapMoverPointToFixtureAxisTarget(
+function isLikelyUncalibratedMoverBounds(bounds: MoverBounds | undefined): boolean {
+  if (bounds === undefined) {
+    return true
+  }
+
+  const tolerance = 1.5
+  const closeTo = (value: number, target: number) =>
+    Math.abs(clampDmxFloatValue(value) - target) <= tolerance
+
+  const looksLikeDefault =
+    closeTo(bounds.topLeft.pan, DMX_MIN_VALUE) &&
+    closeTo(bounds.topLeft.tilt, DMX_MAX_VALUE) &&
+    closeTo(bounds.topRight.pan, DMX_MAX_VALUE) &&
+    closeTo(bounds.topRight.tilt, DMX_MAX_VALUE) &&
+    closeTo(bounds.bottomLeft.pan, DMX_MIN_VALUE) &&
+    closeTo(bounds.bottomLeft.tilt, DMX_MIN_VALUE) &&
+    closeTo(bounds.bottomRight.pan, DMX_MAX_VALUE) &&
+    closeTo(bounds.bottomRight.tilt, DMX_MIN_VALUE)
+
+  return looksLikeDefault
+}
+
+/**
+ * Fallback pan/tilt when floor bounds calibration is missing: movers use their
+ * own target space; fixture X/Y plus a shared default Z (when window.z absent)
+ * drive triangulation. Not tied to the fixture editor "Enable Z Depth" UI flag.
+ */
+function mapPointToFixturePlacementFallback(
   fixture: FlattenedFixture,
   x: number,
   y: number
+): { panNorm: number; tiltNorm: number } {
+  const fixtureX = clampNormalized(fixture.window?.x?.pos ?? 0.5)
+  const fixtureY = clampNormalized(fixture.window?.y?.pos ?? 0.5)
+  const fixtureZ = clampNormalized(fixture.window?.z?.pos ?? 0.75)
+
+  const dx = x - fixtureX
+  const dy = y - fixtureY
+
+  // Approximate source-to-target floor triangulation from fixture placement:
+  // pan comes from heading around the source point,
+  // tilt comes from the down-angle toward floor distance and whether target is
+  // in front/behind the fixture.
+  const panAngle = Math.atan2(dx, dy)
+  const panNorm = clampNormalized(0.5 + panAngle / (Math.PI * 2))
+
+  const horizontalDist = Math.max(0.0001, Math.hypot(dx, dy))
+  const downAngle = Math.atan2(Math.max(0.001, fixtureZ), horizontalDist)
+  const tiltMagnitude = clampNormalized(downAngle / (Math.PI / 2))
+  const isBehindFixture = dy < 0
+  const tiltNorm = clampNormalized(
+    0.5 + (isBehindFixture ? 1 : -1) * tiltMagnitude * 0.5
+  )
+
+  return { panNorm, tiltNorm }
+}
+
+function clampAxisToCalibrationRange(
+  value: number,
+  calibration?: { min: number; max: number }
+): number {
+  const safe = clampDmxFloatValue(value)
+  if (calibration === undefined) {
+    return safe
+  }
+  const min = clampDmxValue(calibration.min, DMX_MIN_VALUE)
+  const max = clampDmxValue(calibration.max, DMX_MAX_VALUE)
+  const low = Math.min(min, max)
+  const high = Math.max(min, max)
+  return Math.min(high, Math.max(low, safe))
+}
+
+function mapMoverPointToFixtureAxisTarget(
+  fixture: FlattenedFixture,
+  x: number,
+  y: number,
+  useFloorBoundsLock: boolean,
+  plannerKey: string | undefined,
+  timeState: TimeState
 ): MoverAxisOverrides {
   const normalizedX = clampNormalized(x)
   const normalizedY = clampNormalized(y)
-  const mappedBounds = mapPointToBounds(fixture.moverBounds, normalizedX, normalizedY)
-  if (mappedBounds !== undefined) {
-    return mappedBounds
+  const usableBounds =
+    useFloorBoundsLock && !isLikelyUncalibratedMoverBounds(fixture.moverBounds)
+      ? fixture.moverBounds
+      : undefined
+  // Keep split XY pad motion center-focused and deterministic.
+  // Bounds/triangulation mapping is only used for follow-style targets
+  // (group override), where floor calibration is intended to drive the look
+  // point in world-space.
+  const mappedBounds = useFloorBoundsLock
+    ? mapPointToBounds(usableBounds, normalizedX, normalizedY)
+    : undefined
+  const fallbackPlacementTarget =
+    useFloorBoundsLock && mappedBounds === undefined
+      ? mapPointToFixturePlacementFallback(fixture, normalizedX, normalizedY)
+      : undefined
+
+  const targetPanDmx =
+    mappedBounds?.panDmx ??
+    mapPanNormalizedToDmx(
+      fallbackPlacementTarget?.panNorm ?? normalizedX,
+      fixture.moverCalibration?.pan,
+      plannerKey,
+      SPLIT_PAN_RANGE_DEG
+    )
+  const targetTiltDmx =
+    mappedBounds?.tiltDmx ??
+    mapTiltNormalizedToDmx(
+      fallbackPlacementTarget?.tiltNorm ?? normalizedY,
+      fixture.moverMountOrientation === 'inverted' ? 'inverted' : 'upright',
+      fixture.moverCalibration?.tilt,
+      {
+        centerOnDown: !useFloorBoundsLock,
+      }
+    )
+
+  return resolveMoverAxisTargetWithPathing(
+    clampAxisToCalibrationRange(targetPanDmx, fixture.moverCalibration?.pan),
+    clampAxisToCalibrationRange(targetTiltDmx, fixture.moverCalibration?.tilt),
+    plannerKey,
+    timeState
+  )
+}
+
+function mapMoverHomeToFixtureAxisTarget(
+  fixture: FlattenedFixture,
+  plannerKey: string | undefined,
+  timeState: TimeState
+): MoverAxisOverrides {
+  const panHome = Number(fixture.moverCalibration?.pan?.home)
+  const tiltHome = Number(fixture.moverCalibration?.tilt?.home)
+
+  const targetPanDmx = Number.isFinite(panHome)
+    ? clampAxisToCalibrationRange(panHome, fixture.moverCalibration?.pan)
+    : mapPanNormalizedToDmx(
+        0.5,
+        fixture.moverCalibration?.pan,
+        plannerKey,
+        SPLIT_PAN_RANGE_DEG
+      )
+  const targetTiltDmx = Number.isFinite(tiltHome)
+    ? clampAxisToCalibrationRange(tiltHome, fixture.moverCalibration?.tilt)
+    : mapTiltNormalizedToDmx(
+        0.5,
+        fixture.moverMountOrientation === 'inverted' ? 'inverted' : 'upright',
+        fixture.moverCalibration?.tilt
+      )
+
+  return resolveMoverAxisTargetWithPathing(
+    clampAxisToCalibrationRange(targetPanDmx, fixture.moverCalibration?.pan),
+    clampAxisToCalibrationRange(targetTiltDmx, fixture.moverCalibration?.tilt),
+    plannerKey,
+    timeState
+  )
+}
+
+function resolveMoverAxisTargetWithPathing(
+  targetPanDmx: number,
+  targetTiltDmx: number,
+  plannerKey: string | undefined,
+  timeState: TimeState
+): MoverAxisOverrides {
+
+  if (plannerKey === undefined || plannerKey.length <= 0) {
+    return {
+      panDmx: clampDmxFloatValue(targetPanDmx),
+      tiltDmx: clampDmxFloatValue(targetTiltDmx),
+      panFineEnabled: true,
+      tiltFineEnabled: true,
+    }
   }
 
-  const orientedTiltY =
-    fixture.moverMountOrientation === 'inverted'
-      ? 1 - normalizedY
-      : normalizedY
+  const nowMs = Date.now()
+  cleanupMoverPathState(nowMs)
+  const frameDtSec = resolveMoverPathDtSeconds(timeState)
+
+  const existingState = _moverPathStateByFixtureKey.get(plannerKey)
+  const currentState = existingState ?? {
+    panDmx: clampDmxFloatValue(targetPanDmx),
+    tiltDmx: clampDmxFloatValue(targetTiltDmx),
+    panTargetDmx: clampDmxFloatValue(targetPanDmx),
+    tiltTargetDmx: clampDmxFloatValue(targetTiltDmx),
+    panVelocityDmxPerSec: 0,
+    tiltVelocityDmxPerSec: 0,
+    panFineEnabled: false,
+    tiltFineEnabled: false,
+    lastSeenMs: nowMs,
+  }
+  const elapsedSec =
+    existingState === undefined
+      ? frameDtSec
+      : Math.min(
+          MOVER_PATH_MAX_DT_SEC,
+          Math.max(0, (nowMs - existingState.lastSeenMs) / 1000)
+        )
+  const dtSec = elapsedSec
+
+  const rawPanTarget = clampDmxFloatValue(targetPanDmx)
+  const rawTiltTarget = clampDmxFloatValue(targetTiltDmx)
+  const stablePanTarget =
+    Math.abs(rawPanTarget - currentState.panTargetDmx) <=
+    MOVER_PATH_TARGET_DEADBAND_DMX
+      ? currentState.panTargetDmx
+      : rawPanTarget
+  const stableTiltTarget =
+    Math.abs(rawTiltTarget - currentState.tiltTargetDmx) <=
+    MOVER_PATH_TARGET_DEADBAND_DMX
+      ? currentState.tiltTargetDmx
+      : rawTiltTarget
+
+  const nextPan = stepPathAxisValue(
+    currentState.panDmx,
+    currentState.panVelocityDmxPerSec,
+    stablePanTarget,
+    dtSec,
+    MOVER_PATH_MAX_PAN_DMX_PER_SEC,
+    MOVER_PATH_MAX_PAN_ACCEL_DMX_PER_SEC2,
+    DMX_MIN_VALUE,
+    DMX_MAX_VALUE
+  )
+  const nextTilt = stepPathAxisValue(
+    currentState.tiltDmx,
+    currentState.tiltVelocityDmxPerSec,
+    stableTiltTarget,
+    dtSec,
+    MOVER_PATH_MAX_TILT_DMX_PER_SEC,
+    MOVER_PATH_MAX_TILT_ACCEL_DMX_PER_SEC2,
+    DMX_MIN_VALUE,
+    DMX_MAX_VALUE
+  )
+
+  const settledPan =
+    Math.abs(nextPan.value - stablePanTarget) <= MOVER_PATH_SETTLE_DISTANCE_DMX &&
+    Math.abs(nextPan.velocity) <= MOVER_PATH_SETTLE_VELOCITY_DMX_PER_SEC
+      ? { value: stablePanTarget, velocity: 0 }
+      : nextPan
+  const settledTilt =
+    Math.abs(nextTilt.value - stableTiltTarget) <= MOVER_PATH_SETTLE_DISTANCE_DMX &&
+    Math.abs(nextTilt.velocity) <= MOVER_PATH_SETTLE_VELOCITY_DMX_PER_SEC
+      ? { value: stableTiltTarget, velocity: 0 }
+      : nextTilt
+
+  // Keep planner continuous. Integer snap at rest can cause visible stair-stepping
+  // during slow/manual XY pad movement.
+  const holdPanAtRest =
+    Math.abs(settledPan.value - stablePanTarget) <= MOVER_PATH_IDLE_HOLD_DISTANCE_DMX &&
+    Math.abs(settledPan.velocity) <= MOVER_PATH_IDLE_HOLD_VELOCITY_DMX_PER_SEC
+  const holdTiltAtRest =
+    Math.abs(settledTilt.value - stableTiltTarget) <= MOVER_PATH_IDLE_HOLD_DISTANCE_DMX &&
+    Math.abs(settledTilt.velocity) <= MOVER_PATH_IDLE_HOLD_VELOCITY_DMX_PER_SEC
+
+  const finalPanTarget = stablePanTarget
+  const finalTiltTarget = stableTiltTarget
+
+  const finalPan = holdPanAtRest
+    ? { value: stablePanTarget, velocity: 0 }
+    : settledPan
+  const finalTilt = holdTiltAtRest
+    ? { value: stableTiltTarget, velocity: 0 }
+    : settledTilt
+
+  const priorPanFineEnabled = existingState?.panFineEnabled === true
+  const priorTiltFineEnabled = existingState?.tiltFineEnabled === true
+
+  const panDistance = Math.abs(finalPan.value - finalPanTarget)
+  const panSpeed = Math.abs(finalPan.velocity)
+  const tiltDistance = Math.abs(finalTilt.value - finalTiltTarget)
+  const tiltSpeed = Math.abs(finalTilt.velocity)
+
+  const panFineEnableCandidate =
+    panDistance <= MOVER_FINE_ENABLE_DISTANCE_DMX &&
+    panSpeed <= MOVER_FINE_ENABLE_VELOCITY_DMX_PER_SEC
+  const tiltFineEnableCandidate =
+    tiltDistance <= MOVER_FINE_ENABLE_DISTANCE_DMX &&
+    tiltSpeed <= MOVER_FINE_ENABLE_VELOCITY_DMX_PER_SEC
+  const panFineDisableCandidate =
+    panDistance >= MOVER_FINE_DISABLE_DISTANCE_DMX ||
+    panSpeed >= MOVER_FINE_DISABLE_VELOCITY_DMX_PER_SEC
+  const tiltFineDisableCandidate =
+    tiltDistance >= MOVER_FINE_DISABLE_DISTANCE_DMX ||
+    tiltSpeed >= MOVER_FINE_DISABLE_VELOCITY_DMX_PER_SEC
+
+  const panFineEnabled = priorPanFineEnabled
+    ? !panFineDisableCandidate
+    : panFineEnableCandidate
+  const tiltFineEnabled = priorTiltFineEnabled
+    ? !tiltFineDisableCandidate
+    : tiltFineEnableCandidate
+
+  _moverPathStateByFixtureKey.set(plannerKey, {
+    panDmx: finalPan.value,
+    tiltDmx: finalTilt.value,
+    panTargetDmx: finalPanTarget,
+    tiltTargetDmx: finalTiltTarget,
+    panVelocityDmxPerSec: finalPan.velocity,
+    tiltVelocityDmxPerSec: finalTilt.velocity,
+    panFineEnabled,
+    tiltFineEnabled,
+    lastSeenMs: nowMs,
+  })
 
   return {
-    panDmx: mapAxisNormalizedToDmx(normalizedX, fixture.moverCalibration?.pan),
-    tiltDmx: mapAxisNormalizedToDmx(orientedTiltY, fixture.moverCalibration?.tilt),
+    panDmx: finalPan.value,
+    tiltDmx: finalTilt.value,
+    panFineEnabled,
+    tiltFineEnabled,
   }
 }
 
@@ -171,60 +928,44 @@ function mirrorAroundCenter(value: number, center: number): number {
   return center * 2 - value
 }
 
-function findClosestReferenceIndex<T>(
-  items: T[],
-  isReference: (item: T, index: number) => boolean,
-  targetIndex: number,
-  primaryDistance: (left: T, right: T) => number,
-  secondaryDistance: (left: T, right: T) => number
-): number | undefined {
-  const target = items[targetIndex]
-  if (target === undefined) {
-    return undefined
-  }
-
-  let bestIndex: number | undefined
-  let bestPrimary = Number.POSITIVE_INFINITY
-  let bestSecondary = Number.POSITIVE_INFINITY
-
-  items.forEach((candidate, candidateIndex) => {
-    if (!isReference(candidate, candidateIndex)) {
-      return
-    }
-
-    const primary = primaryDistance(target, candidate)
-    const secondary = secondaryDistance(target, candidate)
-    const candidateId = candidateIndex
-    const bestId = bestIndex ?? Number.POSITIVE_INFINITY
-    const isBetter =
-      primary < bestPrimary - 0.000001 ||
-      (Math.abs(primary - bestPrimary) <= 0.000001 &&
-        (secondary < bestSecondary - 0.000001 ||
-          (Math.abs(secondary - bestSecondary) <= 0.000001 && candidateId < bestId)))
-
-    if (isBetter) {
-      bestIndex = candidateIndex
-      bestPrimary = primary
-      bestSecondary = secondary
-    }
-  })
-
-  return bestIndex
-}
-
 function buildMoverAxisOverridesForSplit(
   splitSceneFixtures: FlattenedFixture[],
-  outputParams: SplitState['outputParams']
+  baseParams: SplitState['outputParams'],
+  outputParams: SplitState['outputParams'],
+  timeState: TimeState,
+  plannerNamespace: string,
+  override?: {
+    enabled: boolean
+    pan: number
+    tilt: number
+    groupNames?: string[]
+  }
 ): { [fixtureIdx: number]: MoverAxisOverrides } {
   const axisOverridesByFixtureIdx: { [fixtureIdx: number]: MoverAxisOverrides } = {}
-  const baseX = clampNormalized(getParam(outputParams, 'xAxis'))
-  const baseY = clampNormalized(getParam(outputParams, 'yAxis'))
-  const spread = clampNormalized(getParam(outputParams, 'moverSpread'))
-  const legacyPanMirror = getParam(outputParams, 'xMirror') > 0.5
-  const mirrorLeftRight = getParam(outputParams, 'moverMirrorX') > 0.5
-  const mirrorTopBottom = getParam(outputParams, 'moverMirrorY') > 0.5
-  const moverModeRaw = Number(outputParams.moverMode ?? 0)
-  const moverMode = Number.isFinite(moverModeRaw)
+  const resolvedAxisParams = {
+    ...baseParams,
+    ...outputParams,
+  }
+  const overrideEnabled = override?.enabled === true
+  const overrideX = clampNormalized(Number(override?.pan ?? 0.5))
+  const overrideY = clampNormalized(Number(override?.tilt ?? 0.5))
+  const overrideGroupSet =
+    overrideEnabled && Array.isArray(override?.groupNames) && override.groupNames.length > 0
+      ? new Set(
+          override.groupNames
+            .map((name) => name.trim())
+            .filter((name) => name.length > 0)
+        )
+      : null
+  const spread = Math.min(
+    MOVER_TANDEM_MAX_SPREAD,
+    clampNormalized(getParam(resolvedAxisParams, 'moverSpread'))
+  )
+  const floorBoundsLocked = getParam(resolvedAxisParams, 'moverFloorLock') > 0.5
+  const mirrorLeftRight = getParam(resolvedAxisParams, 'moverMirrorX') > 0.5
+  const mirrorTopBottom = getParam(resolvedAxisParams, 'moverMirrorY') > 0.5
+  const moverModeRaw = Number(resolvedAxisParams.moverMode ?? 0)
+  const baseMoverMode = Number.isFinite(moverModeRaw)
     ? Math.max(0, Math.min(2, Math.round(moverModeRaw)))
     : 0
 
@@ -254,7 +995,29 @@ function buildMoverAxisOverridesForSplit(
     fixturesByGroup[groupName] = groupItems
   })
 
-  for (const [_groupName, fixturesInGroup] of Object.entries(fixturesByGroup)) {
+  for (const [groupName, fixturesInGroup] of Object.entries(fixturesByGroup)) {
+    const normalizedGroupName = groupName.trim()
+    const groupOverrideEnabled =
+      overrideEnabled &&
+      (overrideGroupSet === null || overrideGroupSet.has(normalizedGroupName))
+    const hasPanTarget =
+      groupOverrideEnabled || Number.isFinite(resolvedAxisParams.xAxis)
+    const hasTiltTarget =
+      groupOverrideEnabled || Number.isFinite(resolvedAxisParams.yAxis)
+    const baseX = groupOverrideEnabled
+      ? overrideX
+      : hasPanTarget
+        ? clampNormalized(Number(resolvedAxisParams.xAxis))
+        : 0.5
+    const baseY = groupOverrideEnabled
+      ? overrideY
+      : hasTiltTarget
+        ? clampNormalized(Number(resolvedAxisParams.yAxis))
+        : 0.5
+    const moverMode = groupOverrideEnabled ? 0 : baseMoverMode
+    const useMirrorLeftRight = !groupOverrideEnabled && mirrorLeftRight
+    const useMirrorTopBottom = !groupOverrideEnabled && mirrorTopBottom
+
     const orderedFixtures = [...fixturesInGroup].sort((left, right) => {
       if (left.x !== right.x) return left.x - right.x
       if (left.y !== right.y) return left.y - right.y
@@ -291,76 +1054,57 @@ function buildMoverAxisOverridesForSplit(
     )
 
     orderedFixtures.forEach((entry, entryIndex) => {
+      const plannerKey = getMoverPlannerKey(entry.fixture, plannerNamespace)
+
+      if (!hasPanTarget && !hasTiltTarget) {
+        axisOverridesByFixtureIdx[entry.fixtureIdx] = mapMoverHomeToFixtureAxisTarget(
+          entry.fixture,
+          plannerKey,
+          timeState
+        )
+        return
+      }
+
       const relX = hasHorizontalSpread
         ? clampNormalized((entry.x - minX) / spanX)
         : orderedFixtures.length <= 1
           ? 0.5
           : entryIndex / (orderedFixtures.length - 1)
-      const relY = hasVerticalSpread
-        ? clampNormalized((entry.y - minY) / spanY)
-        : 0.5
 
       const isRight = isRightFlags[entryIndex] === true
       const isBottom = isBottomFlags[entryIndex] === true
 
-      let fixtureX = baseX
-      let fixtureY = baseY
+      let fixtureX = hasPanTarget ? baseX : 0.5
+      let fixtureY = hasTiltTarget ? baseY : 0.5
 
-      if (moverMode === 1) {
+      if (moverMode === 1 && hasPanTarget) {
+        // Tandem pattern spreads movers horizontally only.
         fixtureX = baseX + (relX - 0.5) * spread
-        fixtureY = baseY + (relY - 0.5) * spread
       }
 
-      const applyLegacyMirrorX = moverMode !== 2 && legacyPanMirror
-      const applyPatternMirrorX = moverMode === 2 && mirrorLeftRight
-      const applyGroupMirrorX = applyLegacyMirrorX || applyPatternMirrorX
-      const applyGroupMirrorY = moverMode === 2 && mirrorTopBottom
+      const applyPatternMirrorX = moverMode === 2 && useMirrorLeftRight
+      const applyGroupMirrorX = hasPanTarget && applyPatternMirrorX
+      const applyGroupMirrorY = hasTiltTarget && moverMode === 2 && useMirrorTopBottom
 
       // Mirror in target-space relative to the group's center.
       // Left/top fixtures remain the reference; right/bottom fixtures mirror
       // by reflecting the reference side's look-direction in world-space.
       if (applyGroupMirrorX && isRight) {
-        if (applyPatternMirrorX) {
-          const refIndex = findClosestReferenceIndex(
-            orderedFixtures,
-            (_candidate, candidateIndex) => isRightFlags[candidateIndex] !== true,
-            entryIndex,
-            (left, right) => Math.abs(left.y - right.y),
-            (left, right) => Math.abs(left.x - right.x)
-          )
-          if (refIndex !== undefined) {
-            const ref = orderedFixtures[refIndex]
-            // Keep forward alignment while mirroring left/right turn direction.
-            fixtureX = entry.x + ref.x - fixtureX
-          } else {
-            fixtureX = mirrorAroundCenter(fixtureX, centerX)
-          }
-        } else {
-          // Legacy pan mirror: simple inverse around 0.5.
-          fixtureX = 1 - fixtureX
-        }
+        // Mirror around pad center for symmetric target-space motion.
+        fixtureX = mirrorAroundCenter(fixtureX, 0.5)
       }
       if (applyGroupMirrorY && isBottom) {
-        const refIndex = findClosestReferenceIndex(
-          orderedFixtures,
-          (_candidate, candidateIndex) => isBottomFlags[candidateIndex] !== true,
-          entryIndex,
-          (left, right) => Math.abs(left.x - right.x),
-          (left, right) => Math.abs(left.y - right.y)
-        )
-        if (refIndex !== undefined) {
-          const ref = orderedFixtures[refIndex]
-          // Keep forward alignment while mirroring up/down tilt direction.
-          fixtureY = entry.y + ref.y - fixtureY
-        } else {
-          fixtureY = mirrorAroundCenter(fixtureY, centerY)
-        }
+        // Mirror around pad center for symmetric target-space motion.
+        fixtureY = mirrorAroundCenter(fixtureY, 0.5)
       }
 
       axisOverridesByFixtureIdx[entry.fixtureIdx] = mapMoverPointToFixtureAxisTarget(
         entry.fixture,
-        clampNormalized(fixtureX),
-        clampNormalized(fixtureY)
+        clampNormalized(hasPanTarget ? fixtureX : baseX),
+        clampNormalized(hasTiltTarget ? fixtureY : baseY),
+        floorBoundsLocked,
+        plannerKey,
+        timeState
       )
     })
   }
@@ -429,6 +1173,10 @@ function calculateDmxForUniverse(
     state.dmx.fixtureTypesByID,
     state.dmx.moverGroupByFixtureId
   )
+  const universeHasMoverFixtureType = hasMoverFixtureInUniverse(
+    universeFixtures,
+    state.dmx.fixtureTypesByID
+  )
 
   // All channels start at 0
   const channels = Array(DMX_NUM_CHANNELS).fill(0)
@@ -439,11 +1187,8 @@ function calculateDmxForUniverse(
   const colorMapOnlyOverrideMode =
     !timeState.isPlaying && colorMapCalibrationOverride !== null
 
-  if (!timeState.isPlaying && !axisOnlyOverrideMode && !colorMapOnlyOverrideMode) {
-    return channels
-  }
-
   const syntheticStrobeFrameRateHz = getSyntheticStrobeFrameRateHz(state)
+  const placementDepth2DOnly = state.gui.fixturePlacementDepthEnabled !== true
 
   // Set each channel to its default value first.
   forEachChannel(all_fixtures, (_fixtureIdx, _fixture, channelIdx, channel) => {
@@ -490,23 +1235,70 @@ function calculateDmxForUniverse(
   } else {
     const scenes = state.control.light
     const activeScene = scenes.byId[scenes.active]
+    const plannerNamespace = `u${universeIndex}`
 
     for (const [{ outputParams, randomizer }, splitScene] of zip(
       splitStates,
       activeScene.splitScenes
     )) {
       const splitGroups = splitScene.groups
+      const splitHasAxisBundle =
+        splitScene.baseParams.xAxis !== undefined ||
+        splitScene.baseParams.yAxis !== undefined ||
+        splitScene.baseParams.moverFloorLock !== undefined ||
+        splitScene.baseParams.moverSpread !== undefined ||
+        splitScene.baseParams.moverMirrorX !== undefined ||
+        splitScene.baseParams.moverMirrorY !== undefined ||
+        splitScene.baseParams.moverMode !== undefined ||
+        outputParams.moverFloorLock !== undefined ||
+        outputParams.xAxis !== undefined ||
+        outputParams.yAxis !== undefined
+      const splitHasAtmosControlBundle =
+        splitScene.baseParams.atmosFxOnOff !== undefined ||
+        splitScene.baseParams.atmosFxLevel !== undefined ||
+        outputParams.atmosFxOnOff !== undefined ||
+        outputParams.atmosFxLevel !== undefined
+      const splitHasLightingControls = splitHasLightingControlBundle(
+        splitScene.baseParams
+      )
 
       const splitSceneFixtures = getFixturesInGroups(all_fixtures, splitGroups)
-      const splitMoverAxisOverrides = buildMoverAxisOverridesForSplit(
-        splitSceneFixtures,
-        outputParams
-      )
+      const followOverrideGroupNames =
+        state.gui.moverFollowOverrideUseAllGroups === true
+          ? undefined
+          : state.gui.moverFollowOverrideGroups
+      const splitMoverAxisOverrides =
+        splitHasAxisBundle && universeHasMoverFixtureType
+          ? buildMoverAxisOverridesForSplit(
+              splitSceneFixtures,
+              splitScene.baseParams,
+              outputParams,
+              timeState,
+              plannerNamespace,
+              {
+                enabled: state.gui.moverFollowOverrideEnabled === true,
+                pan: state.gui.moverFollowOverridePan,
+                tilt: state.gui.moverFollowOverrideTilt,
+                groupNames: followOverrideGroupNames,
+              }
+            )
+          : {}
 
       // Set each channel based on active scene fixtures.
       forEachChannel(
         splitSceneFixtures,
         (fixtureIdx, fixture, channelIdx, channel) => {
+          if (channel.type === 'axis' && !splitHasAxisBundle) {
+            return
+          }
+          if (channel.type !== 'axis' && !splitHasLightingControls) {
+            const allowAtmosChannel =
+              splitHasAtmosControlBundle && isAtmosControlChannel(channel)
+            if (!allowAtmosChannel) {
+              return
+            }
+          }
+
           const randomizerLevel = randomizer[fixtureIdx]?.level ?? 1
           const moverAxisOverride =
             channel.type === 'axis'
@@ -528,6 +1320,8 @@ function calculateDmxForUniverse(
             axisOverrides = {
               panDmx: calibrationOverride.panDmx,
               tiltDmx: calibrationOverride.tiltDmx,
+              panFineEnabled: true,
+              tiltFineEnabled: true,
             }
           }
 
@@ -551,7 +1345,8 @@ function calculateDmxForUniverse(
                     randomizerLevel,
                     timeState,
                     syntheticStrobeFrameRateHz,
-                    axisOverrides
+                    axisOverrides,
+                    placementDepth2DOnly
                   )
 
           if (channel.type === 'axis') {

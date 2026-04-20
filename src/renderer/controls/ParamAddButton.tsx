@@ -1,7 +1,13 @@
 import IconButton from '@mui/material/IconButton'
 import AddIcon from '@mui/icons-material/Add'
-import { useState, FunctionComponent } from 'react'
-import { useBaseParams, useDmxSelector } from 'renderer/redux/store'
+import { useMemo, useState, FunctionComponent } from 'react'
+import {
+  useActiveLightScene,
+  useActiveVisualScene,
+  useBaseParams,
+  useDeviceSelector,
+  useDmxSelector,
+} from 'renderer/redux/store'
 import styled from 'styled-components'
 import Popup from '../base/Popup'
 import { useDispatch } from 'react-redux'
@@ -10,6 +16,7 @@ import {
   Params,
   defaultParamsList,
   paramDisplayName,
+  visualSliderParams,
 } from 'shared/params'
 import { setBaseParams } from 'renderer/redux/controlSlice'
 import { initParams } from 'shared/params'
@@ -19,18 +26,59 @@ import RandomizeIcon from '@mui/icons-material/Shuffle'
 import PositionIcon from '@mui/icons-material/PictureInPicture'
 import axisIconSrc from '../../../assets/axis.svg'
 import { getAllParamKeys, getCustomChannels } from 'renderer/redux/dmxSlice'
+import { sumVisSliders } from '../visualizer/visualSliderAssignments'
+import { evaluateSceneGroups } from 'shared/sceneGroups'
+import {
+  fixtureChannelLeafChannels,
+  hasMoverFixtureInUniverse,
+  isMoverFixtureType,
+} from 'shared/dmxFixtures'
+import { getAtmosphericsFixtureDescriptors } from '../../shared/atmosphericsMapping'
+import { sumAtmosSliders } from '../atmospherics/atmosSliderAssignments'
+import { visSplitIdx } from '../scenes/splitUiVisibility'
+import { getSplitAuxColorGates } from '../../shared/splitAuxColorGates'
+import type { AuxColorGates } from '../../shared/splitAuxColorGates'
 
 interface Props {
   splitIndex: number
 }
 
-type ParamBundle = 'axis' | 'position' | 'depth'
-const paramBundleList: ParamBundle[] = ['position', 'depth', 'axis']
-
+type ParamBundle = 'axis' | 'position' | 'depth' | 'hsb' | 'wwauv'
+const paramBundleList: ParamBundle[] = ['position', 'depth', 'hsb', 'wwauv', 'axis']
+const visualSliderParamSet = new Set<string>(visualSliderParams as readonly string[])
+const moverOnlyParamSet = new Set<string>([
+  'xAxis',
+  'yAxis',
+  'moverFloorLock',
+  'moverSpread',
+  'moverMirrorX',
+  'moverMirrorY',
+  'moverMode',
+])
+const atmosphereOnlyParamSet = new Set<string>(['atmosFxOnOff', 'atmosFxLevel'])
+const colorParamSet = new Set<string>([
+  'hue',
+  'saturation',
+  'brightness',
+  'white',
+  'warmWhite',
+  'amber',
+  'uv',
+])
 export const paramBundles: { [key in ParamBundle]: DefaultParam[] } = {
-  axis: ['xAxis', 'yAxis', 'xMirror', 'moverSpread', 'moverMirrorX', 'moverMirrorY', 'moverMode'],
+  axis: [
+    'xAxis',
+    'yAxis',
+    'moverFloorLock',
+    'moverSpread',
+    'moverMirrorX',
+    'moverMirrorY',
+    'moverMode',
+  ],
   position: ['x', 'y', 'width', 'height'],
   depth: ['z', 'depth'],
+  hsb: ['hue', 'saturation', 'brightness'],
+  wwauv: ['white', 'warmWhite', 'amber', 'uv'],
 }
 
 function Axis() {
@@ -51,23 +99,86 @@ const icons: {
 const initialParams = initParams()
 
 function optionDisplayName(
-  option: DefaultParam | ParamBundle | string
+  option: DefaultParam | ParamBundle | string,
+  visualSliderLabels: Partial<Record<string, string>>
 ): string {
   if (option === 'axis') return 'Pan/Tilt'
   if (option === 'position') return 'Position'
   if (option === 'depth') return 'Z Depth'
+  if (option === 'hsb') return 'HSB Color'
+  if (option === 'wwauv') return 'White / Warm / Amber / UV'
+  if (visualSliderParamSet.has(option)) {
+    return visualSliderLabels[option] ?? paramDisplayName(option)
+  }
   return paramDisplayName(option)
 }
 
 function getOptions(
   customChannels: Set<string>,
   baseParams: Params,
-  allParamKeys: string[]
+  allParamKeys: string[],
+  isVisualizerSplit: boolean,
+  activeVisualizerSliders: Set<string>,
+  splitSupportsMovers: boolean,
+  splitSupportsGobo: boolean,
+  splitSupportsAtmosphere: boolean,
+  splitSupportsColorChannels: boolean,
+  auxColorGates: AuxColorGates
 ): (DefaultParam | ParamBundle | string)[] {
   const defaultParamSet = new Set(defaultParamsList as string[])
 
   const paramOptions: (DefaultParam | ParamBundle | string)[] =
     defaultParamsList.filter((param) => {
+      if (param === 'xMirror') {
+        return false
+      }
+      if (moverOnlyParamSet.has(param) && !splitSupportsMovers) {
+        return false
+      }
+      if (atmosphereOnlyParamSet.has(param) && !splitSupportsAtmosphere) {
+        return false
+      }
+      if (param === 'white' && !auxColorGates.white) {
+        return false
+      }
+      if (param === 'warmWhite' && !auxColorGates.warmWhite) {
+        return false
+      }
+      if (param === 'amber' && !auxColorGates.amber) {
+        return false
+      }
+      if (param === 'uv' && !auxColorGates.uv) {
+        return false
+      }
+      if (
+        colorParamSet.has(param) &&
+        !splitSupportsColorChannels &&
+        !(
+          isVisualizerSplit &&
+          (param === 'hue' || param === 'saturation' || param === 'brightness')
+        )
+      ) {
+        return false
+      }
+      if (
+        isVisualizerSplit &&
+        (param === 'white' ||
+          param === 'warmWhite' ||
+          param === 'amber' ||
+          param === 'uv')
+      ) {
+        return false
+      }
+      if (!isVisualizerSplit && visualSliderParamSet.has(param)) {
+        return false
+      }
+      if (
+        isVisualizerSplit &&
+        visualSliderParamSet.has(param) &&
+        !activeVisualizerSliders.has(param)
+      ) {
+        return false
+      }
       const isActive = baseParams[param] !== undefined
       const isInBundle = paramBundleList.find((pb) =>
         paramBundles[pb].find((p) => p === param)
@@ -76,22 +187,74 @@ function getOptions(
     })
 
   const paramBundleOptions = paramBundleList.filter((pb) => {
-    const isActive = paramBundles[pb].reduce(
-      (accum, param) => accum && baseParams[param] !== undefined,
-      true
-    )
+    if (pb === 'axis' && !splitSupportsMovers) {
+      return false
+    }
+    if (
+      (pb === 'hsb' || pb === 'wwauv') &&
+      !splitSupportsColorChannels &&
+      !(pb === 'hsb' && isVisualizerSplit)
+    ) {
+      return false
+    }
+    if (pb === 'wwauv' && isVisualizerSplit) {
+      return false
+    }
+    if (
+      pb === 'wwauv' &&
+      !auxColorGates.white &&
+      !auxColorGates.warmWhite &&
+      !auxColorGates.amber &&
+      !auxColorGates.uv
+    ) {
+      return false
+    }
+    let isActive = false
+    if (pb === 'wwauv') {
+      const relevant = paramBundles[pb].filter((param) => {
+        if (param === 'white') return auxColorGates.white
+        if (param === 'warmWhite') return auxColorGates.warmWhite
+        if (param === 'amber') return auxColorGates.amber
+        if (param === 'uv') return auxColorGates.uv
+        return false
+      })
+      isActive =
+        relevant.length > 0 &&
+        relevant.every((param) => baseParams[param] !== undefined)
+    } else {
+      isActive = paramBundles[pb].reduce(
+        (accum, param) => accum && baseParams[param] !== undefined,
+        true
+      )
+    }
     return !isActive
   })
 
   const customParamOptions = Array.from(customChannels).filter(
-    (option) => baseParams[option] === undefined
+    (option) =>
+      baseParams[option] === undefined &&
+      (!atmosphereOnlyParamSet.has(option) || splitSupportsAtmosphere) &&
+      (option !== 'warmWhite' || auxColorGates.warmWhite) &&
+      (option !== 'amber' || auxColorGates.amber) &&
+      (option !== 'uv' || auxColorGates.uv) &&
+      (option !== 'white' || auxColorGates.white) &&
+      (!moverOnlyParamSet.has(option) || splitSupportsMovers) &&
+      (option !== 'gobo' || splitSupportsGobo)
   )
 
   const dynamicParamOptions = allParamKeys.filter(
     (option) =>
       !defaultParamSet.has(option) &&
       !customChannels.has(option) &&
-      baseParams[option] === undefined
+      baseParams[option] === undefined &&
+      (!colorParamSet.has(option) || splitSupportsColorChannels) &&
+      (option !== 'warmWhite' || auxColorGates.warmWhite) &&
+      (option !== 'amber' || auxColorGates.amber) &&
+      (option !== 'uv' || auxColorGates.uv) &&
+      (option !== 'white' || auxColorGates.white) &&
+      (!atmosphereOnlyParamSet.has(option) || splitSupportsAtmosphere) &&
+      (!moverOnlyParamSet.has(option) || splitSupportsMovers) &&
+      (option !== 'gobo' || splitSupportsGobo)
   )
 
   return paramOptions
@@ -103,25 +266,167 @@ function getOptions(
 export default function ParamAddButton({ splitIndex }: Props) {
   const dispatch = useDispatch()
   const [isOpen, setIsOpen] = useState(false)
+  const dmx = useDmxSelector((state) => state)
   const baseParams = useBaseParams(splitIndex)
-  const hasAxis = useDmxSelector(
-    (dmx) =>
-      dmx.fixtureTypes.find(
-        (fixtureTypeId) =>
-          dmx.fixtureTypesByID[fixtureTypeId].channels.find(
-            (channel) => channel.type === 'axis'
-          ) !== undefined
-      ) !== undefined
-  )
   const customChannels = useDmxSelector((dmx) => getCustomChannels(dmx))
   const allParamKeys = useDmxSelector((dmx) => getAllParamKeys(dmx))
-
-  const unusableOptions: Set<DefaultParam | ParamBundle | string> = new Set()
-  if (!hasAxis) unusableOptions.add('axis')
-
-  const options = getOptions(customChannels, baseParams, allParamKeys).filter(
-    (option) => !unusableOptions.has(option)
+  const splitGroups = useActiveLightScene(
+    (scene) => scene.splitScenes[splitIndex]?.groups ?? {}
   )
+  const visualizerSplitIndex = useActiveLightScene((scene) =>
+    visSplitIdx(scene.splitScenes)
+  )
+  const isVisualizerSplit =
+    visualizerSplitIndex >= 0 && splitIndex === visualizerSplitIndex
+  const visualConfig = useActiveVisualScene((scene) => scene.config)
+  const atmosSettings = useDeviceSelector((state) => state.connectionSettings.atmospherics)
+  const atmosFixtures = useMemo(() => getAtmosphericsFixtureDescriptors(dmx), [dmx])
+  const atmosFixtureIdSet = useMemo(
+    () => new Set(atmosFixtures.map((fixture) => fixture.fixtureId)),
+    [atmosFixtures]
+  )
+  const visualSliderAssignments = useMemo(
+    () => sumVisSliders(visualConfig),
+    [visualConfig]
+  )
+  const atmosSliderAssignments = useMemo(
+    () => sumAtmosSliders(atmosSettings, atmosFixtures),
+    [atmosSettings, atmosFixtures]
+  )
+  const mergedSliderLabels = useMemo(
+    () => ({
+      ...visualSliderAssignments.labelsBySlider,
+      ...atmosSliderAssignments.labelsBySlider,
+    }),
+    [visualSliderAssignments.labelsBySlider, atmosSliderAssignments.labelsBySlider]
+  )
+  const activeVisualizerSliders = useMemo(() => {
+    const merged = new Set<string>()
+    visualSliderAssignments.activeSliders.forEach((slider) => merged.add(slider))
+    atmosSliderAssignments.activeSliders.forEach((slider) => merged.add(slider))
+    return merged
+  }, [visualSliderAssignments.activeSliders, atmosSliderAssignments.activeSliders])
+  const hasMoverFixturesInProject = useMemo(
+    () => hasMoverFixtureInUniverse(dmx.universe, dmx.fixtureTypesByID),
+    [dmx.universe, dmx.fixtureTypesByID]
+  )
+  const splitCapabilities = useDmxSelector((dmx) => {
+    let supportsMovers = false
+    let supportsGobo = false
+    let supportsAtmosphere = false
+    let supportsDmxColorChannels = false
+    let supportsLedColorChannels = false
+
+    for (const fixture of dmx.universe) {
+      const fixtureType = dmx.fixtureTypesByID[fixture.type]
+      if (fixtureType === undefined) {
+        continue
+      }
+
+      const groupedFixture = new Set(
+        fixture.groups
+          .concat(fixtureType.groups)
+          .map((group) => group.trim())
+          .filter((group) => group.length > 0)
+      )
+
+      const matchesSplit = evaluateSceneGroups(splitGroups, (group) => {
+        const normalized = group.trim()
+        if (normalized.length <= 0) return false
+        if (normalized === 'Visualizer') return false
+        if (normalized === 'Movers') return isMoverFixtureType(fixtureType)
+        return groupedFixture.has(normalized)
+      })
+
+      if (!matchesSplit) {
+        continue
+      }
+
+      if (isMoverFixtureType(fixtureType)) {
+        supportsMovers = true
+      }
+      if (fixtureType.channels.some((channel) => channel.type === 'goboMap')) {
+        supportsGobo = true
+      }
+      if (
+        fixtureType.channels
+          .flatMap((channel) => fixtureChannelLeafChannels(channel))
+          .some((channel) => {
+            return (
+              channel.type === 'master' ||
+              channel.type === 'color' ||
+              channel.type === 'colorMap' ||
+              channel.type === 'strobe'
+            )
+          })
+      ) {
+        supportsDmxColorChannels = true
+      }
+      if (
+        typeof fixture.id === 'string' &&
+        fixture.id.trim().length > 0 &&
+        atmosFixtureIdSet.has(fixture.id)
+      ) {
+        supportsAtmosphere = true
+      }
+
+      if (
+        supportsMovers &&
+        supportsGobo &&
+        supportsAtmosphere &&
+        supportsDmxColorChannels
+      ) {
+        break
+      }
+    }
+
+    for (const ledFixture of dmx.led.ledFixtures) {
+      const groupedFixture = new Set(
+        ledFixture.groups.map((group) => group.trim()).filter((group) => group.length > 0)
+      )
+      const matchesSplit = evaluateSceneGroups(splitGroups, (group) => {
+        const normalized = group.trim()
+        if (normalized.length <= 0) return false
+        if (normalized === 'Visualizer') return false
+        if (normalized === 'LEDs' || normalized === 'Pixels') {
+          return groupedFixture.has('LEDs') || groupedFixture.has('Pixels')
+        }
+        return groupedFixture.has(normalized)
+      })
+      if (!matchesSplit) continue
+      supportsLedColorChannels = true
+    }
+
+    return {
+      supportsMovers,
+      supportsGobo,
+      supportsAtmosphere,
+      supportsColorChannels: supportsDmxColorChannels || supportsLedColorChannels,
+    }
+  })
+
+  const auxColorGates = useMemo(
+    () => getSplitAuxColorGates(dmx, splitGroups, atmosFixtureIdSet),
+    [atmosFixtureIdSet, dmx, splitGroups]
+  )
+
+  const splitSupportsMoversInUi =
+    hasMoverFixturesInProject && splitCapabilities.supportsMovers
+  const unusableOptions: Set<DefaultParam | ParamBundle | string> = new Set()
+  if (!splitSupportsMoversInUi) unusableOptions.add('axis')
+
+  const options = getOptions(
+    customChannels,
+    baseParams,
+    allParamKeys,
+    isVisualizerSplit,
+    activeVisualizerSliders,
+    splitSupportsMoversInUi,
+    splitCapabilities.supportsGobo,
+    splitCapabilities.supportsAtmosphere,
+    splitCapabilities.supportsColorChannels,
+    auxColorGates
+  ).filter((option) => !unusableOptions.has(option))
 
   return (
     <Root>
@@ -152,6 +457,15 @@ export default function ParamAddButton({ splitIndex }: Props) {
                     for (const param of paramBundles[option]) {
                       newParams[param] = initialParams[param] ?? 0
                     }
+                  } else if (option === 'wwauv') {
+                    const initialParamDefaults = initialParams as Params
+                    for (const param of paramBundles.wwauv) {
+                      if (param === 'white' && !auxColorGates.white) continue
+                      if (param === 'warmWhite' && !auxColorGates.warmWhite) continue
+                      if (param === 'amber' && !auxColorGates.amber) continue
+                      if (param === 'uv' && !auxColorGates.uv) continue
+                      newParams[param] = initialParamDefaults[param] ?? 0
+                    }
                   } else {
                     const initialParamDefaults = initialParams as Params
                     newParams[option] = initialParamDefaults[option] ?? 0
@@ -166,7 +480,7 @@ export default function ParamAddButton({ splitIndex }: Props) {
                 }}
               >
                 {icon ? icon({}) : null}
-                {optionDisplayName(option)}
+                {optionDisplayName(option, mergedSliderLabels)}
               </Option>
             )
           })}

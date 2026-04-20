@@ -3,6 +3,7 @@ import {
   DmxValue,
   DMX_MAX_VALUE,
   FixtureChannel,
+  LeafFixtureChannel,
   Fixture,
   Universe,
   DMX_DEFAULT_VALUE,
@@ -26,6 +27,136 @@ import {
   getColorChannelLevel,
   inferColorKind,
 } from './dmxColors'
+import { evaluateSceneGroups } from './sceneGroups'
+
+type ChannelFamilyGroup =
+  | 'rgb'
+  | 'coolWhite'
+  | 'warmWhite'
+  | 'amber'
+  | 'uv'
+  | 'other'
+
+const CHANNEL_FAMILY_GROUP_NAME: Record<Exclude<ChannelFamilyGroup, 'other'>, string> = {
+  rgb: 'Emitters RGB',
+  coolWhite: 'Emitters Cool White',
+  warmWhite: 'Emitters Warm White',
+  amber: 'Emitters Amber',
+  uv: 'Emitters UV',
+}
+
+function channelFamilyGroupName(
+  family: ChannelFamilyGroup
+): string | undefined {
+  if (family === 'other') return undefined
+  return CHANNEL_FAMILY_GROUP_NAME[family]
+}
+
+function inferChannelFamilies(channel: FixtureChannel): Set<ChannelFamilyGroup> {
+  if (channel.type === 'split') {
+    const nestedFamilies = new Set<ChannelFamilyGroup>()
+    for (const range of channel.ranges) {
+      const rangeFamilies = inferChannelFamilies(range.channel)
+      rangeFamilies.forEach((family) => nestedFamilies.add(family))
+    }
+    if (nestedFamilies.size <= 0) {
+      nestedFamilies.add('other')
+    }
+    return nestedFamilies
+  }
+
+  if (channel.type === 'color') {
+    const colorKind = inferColorKind(channel.color)
+    if (colorKind === 'color') return new Set(['rgb'])
+    if (colorKind === 'white') return new Set(['coolWhite'])
+    if (colorKind === 'warmWhite') return new Set(['warmWhite'])
+    if (colorKind === 'amber') return new Set(['amber'])
+    if (colorKind === 'uv') return new Set(['uv'])
+    return new Set(['other'])
+  }
+
+  if (channel.type === 'colorMap') {
+    return new Set(['rgb'])
+  }
+
+  if (channel.type === 'custom') {
+    const name = channel.name.trim().toLowerCase()
+    if (name.includes('warm') && name.includes('white')) return new Set(['warmWhite'])
+    if (name.includes('cool') && name.includes('white')) return new Set(['coolWhite'])
+    if (name.includes('amber')) return new Set(['amber'])
+    if (name.includes('uv') || name.includes('ultraviolet')) return new Set(['uv'])
+    if (
+      name.includes('rgb') ||
+      name.includes('red') ||
+      name.includes('green') ||
+      name.includes('blue') ||
+      name.includes('color') ||
+      name.includes('colour')
+    ) {
+      return new Set(['rgb'])
+    }
+    if (name.includes('white')) return new Set(['coolWhite'])
+  }
+
+  return new Set(['other'])
+}
+
+function primaryChannelFamily(channel: FixtureChannel): ChannelFamilyGroup {
+  const families = Array.from(inferChannelFamilies(channel))
+  const nonOtherFamilies = families.filter((family) => family !== 'other')
+  if (nonOtherFamilies.length === 1) {
+    return nonOtherFamilies[0]
+  }
+  if (nonOtherFamilies.length > 1) {
+    return 'other'
+  }
+  return families[0] ?? 'other'
+}
+
+function uniqueGroups(groups: string[]): string[] {
+  const unique = new Set<string>()
+  for (const group of groups) {
+    const trimmed = group.trim()
+    if (trimmed.length <= 0) continue
+    unique.add(trimmed)
+  }
+  return Array.from(unique)
+}
+
+function partitionFlattenedFixtureByChannelFamily(
+  fixture: FlattenedFixture
+): FlattenedFixture[] {
+  if (fixture.channels.length <= 1) {
+    return [fixture]
+  }
+
+  const buckets = new Map<ChannelFamilyGroup, [number, FixtureChannel][]>()
+  for (const [channelNumber, channel] of fixture.channels) {
+    const family = primaryChannelFamily(channel)
+    const familyChannels = buckets.get(family) ?? []
+    familyChannels.push([channelNumber, channel])
+    buckets.set(family, familyChannels)
+  }
+
+  if (buckets.size <= 1 && buckets.has('other')) {
+    return [fixture]
+  }
+
+  const splitFixtures: FlattenedFixture[] = []
+  for (const [family, familyChannels] of buckets.entries()) {
+    if (familyChannels.length <= 0) continue
+    const derivedGroup = channelFamilyGroupName(family)
+    splitFixtures.push({
+      ...fixture,
+      channels: familyChannels,
+      groups:
+        derivedGroup === undefined
+          ? uniqueGroups(fixture.groups)
+          : uniqueGroups([...fixture.groups, derivedGroup]),
+    })
+  }
+  return splitFixtures.length > 0 ? splitFixtures : [fixture]
+}
 export function getWindowMultiplier2D(
   fixtureWindow: Window2D_t,
   movingWindow: Window2D_t
@@ -207,8 +338,30 @@ export function getDefaultDmxValue(
       return ch.min
     case 'axis':
       return lerp(ch.min, ch.max, 0.5)
+    case 'fxTrigger':
+      return ch.off
+    case 'fxLevel':
+      return ch.default
     case 'custom':
       return ch.default
+    case 'split': {
+      const ranges = getSplitRanges(ch)
+      if (ranges.length <= 0) {
+        return DMX_DEFAULT_VALUE
+      }
+      let combined = ranges[0].min
+      let bestActivity = Number.NEGATIVE_INFINITY
+      for (const range of ranges) {
+        const nestedDefault = getDefaultDmxValue(range.channel)
+        const clamped = Math.min(range.max, Math.max(range.min, nestedDefault))
+        const activity = splitRangeActivity(clamped, range.min, range.max)
+        if (activity > bestActivity) {
+          bestActivity = activity
+          combined = clamped
+        }
+      }
+      return combined
+    }
     case 'goboMap': {
       const defaultIndex = Math.max(
         0,
@@ -256,10 +409,13 @@ function isStrobePulseOpen(params: Params, timeState: TimeState): boolean {
 const SYNTHETIC_STROBE_OFF_THRESHOLD = 0.02
 const SYNTHETIC_STROBE_MIN_HZ = 0.5
 const DEFAULT_SYNTHETIC_STROBE_FRAME_RATE_HZ = 30
+const AXIS_FINE_SNAP_DEADBAND_DMX = 0.06
 
 export type MoverAxisOverrides = {
   panDmx?: number
   tiltDmx?: number
+  panFineEnabled?: boolean
+  tiltFineEnabled?: boolean
 }
 
 function mapAxisWithCalibration(
@@ -292,13 +448,83 @@ function mapAxisWithCalibration(
   return clampNormalized(calibratedDmx / DMX_MAX_VALUE)
 }
 
-function axisOverrideDmxToNormalized(dmxValue: number | undefined): Normalized | null {
+function axisOverrideDmxToNormalized(
+  dmxValue: number | undefined,
+  coarseChannel: ChannelAxis | undefined
+): Normalized | null {
+  if (dmxValue === undefined || !Number.isFinite(dmxValue) || coarseChannel === undefined) {
+    return null
+  }
+
+  const min = clampAxisDmxValue(coarseChannel.min, DMX_MIN_VALUE)
+  const max = clampAxisDmxValue(coarseChannel.max, DMX_MAX_VALUE)
+  const low = Math.min(min, max)
+  const high = Math.max(min, max)
+  const clamped = Math.min(high, Math.max(low, dmxValue))
+  const span = Math.max(1e-6, Math.abs(max - min))
+
+  if (max >= min) {
+    return clampNormalized((clamped - min) / span)
+  }
+
+  return clampNormalized((min - clamped) / span)
+}
+
+function axisOverrideDmxToChannelValue(
+  channel: ChannelAxis,
+  dmxValue: number | undefined,
+  fixture: FlattenedFixture,
+  fineEnabled: boolean = true
+): DmxValue | null {
   if (dmxValue === undefined || !Number.isFinite(dmxValue)) {
     return null
   }
 
-  const clamped = Math.min(DMX_MAX_VALUE, Math.max(DMX_MIN_VALUE, dmxValue))
-  return clampNormalized(clamped / DMX_MAX_VALUE)
+  const coarseChannel = channel.isFine
+    ? getCoarseAxisChannel(fixture, channel.dir)
+    : channel
+  if (coarseChannel === undefined) {
+    return null
+  }
+
+  const min = clampAxisDmxValue(coarseChannel.min, DMX_MIN_VALUE)
+  const max = clampAxisDmxValue(coarseChannel.max, DMX_MAX_VALUE)
+  const low = Math.min(min, max)
+  const high = Math.max(min, max)
+
+  let clamped = Math.min(high, Math.max(low, dmxValue))
+  const nearestStep = Math.round(clamped)
+  if (Math.abs(clamped - nearestStep) <= AXIS_FINE_SNAP_DEADBAND_DMX) {
+    clamped = nearestStep
+  }
+  if (!fineEnabled) {
+    // While travelling, keep output on coarse DMX steps to avoid fine-channel chatter.
+    clamped = Math.round(clamped)
+  }
+
+  const increasing = max >= min
+  const oriented = increasing ? clamped - min : min - clamped
+  const orientedWhole = Math.floor(oriented + 0.000001)
+  const orientedFraction = Math.min(
+    1,
+    Math.max(0, oriented - orientedWhole)
+  )
+  const coarseValue = increasing ? min + orientedWhole : min - orientedWhole
+  const fineValue = clampAxisDmxValue(
+    Math.round(orientedFraction * DMX_MAX_VALUE),
+    DMX_MIN_VALUE
+  )
+
+  if (channel.isFine) {
+    if (!fineEnabled) {
+      // Hold fine channels at center while coarse handles large travel.
+      // Fine should only engage near settle for pinpoint adjustment.
+      return Math.floor(rLerp(channel, 0.5))
+    }
+    return Math.floor(rLerp(channel, fineValue / DMX_MAX_VALUE))
+  }
+
+  return clampAxisDmxValue(coarseValue, min)
 }
 
 function getSyntheticStrobeHalfCycleFrames(
@@ -385,11 +611,45 @@ export function getDmxValue(
   randomizerLevel: number,
   timeState: TimeState,
   syntheticStrobeFrameRateHz: number = DEFAULT_SYNTHETIC_STROBE_FRAME_RATE_HZ,
-  axisOverrides?: MoverAxisOverrides
+  axisOverrides?: MoverAxisOverrides,
+  placementDepth2DOnly: boolean = false
 ): DmxValue {
-  const movingWindow = getMovingWindow(params)
+  const movingWindow = getMovingWindow(params, placementDepth2DOnly)
 
   switch (ch.type) {
+    case 'split': {
+      const ranges = getSplitRanges(ch)
+      if (ranges.length <= 0) {
+        return DMX_DEFAULT_VALUE
+      }
+
+      let combined = ranges[0].min
+      let bestActivity = Number.NEGATIVE_INFINITY
+      for (const range of ranges) {
+        const nestedValue = getDmxValue(
+          range.channel,
+          params,
+          fixture,
+          master,
+          randomizerLevel,
+          timeState,
+          syntheticStrobeFrameRateHz,
+          axisOverrides,
+          placementDepth2DOnly
+        )
+        const clampedValue = Math.min(
+          range.max,
+          Math.max(range.min, nestedValue)
+        )
+        const activity = splitRangeActivity(clampedValue, range.min, range.max)
+        if (activity > bestActivity) {
+          bestActivity = activity
+          combined = clampedValue
+        }
+      }
+
+      return combined
+    }
     case 'master': {
       const level =
         getWindowRandomizerLevel(
@@ -452,7 +712,21 @@ export function getDmxValue(
     }
     case 'axis':
       if (ch.dir === 'x') {
-        const panOverride = axisOverrideDmxToNormalized(axisOverrides?.panDmx)
+        const channelOverrideValue = axisOverrideDmxToChannelValue(
+          ch,
+          axisOverrides?.panDmx,
+          fixture,
+          axisOverrides?.panFineEnabled !== false
+        )
+        if (channelOverrideValue !== null) {
+          return channelOverrideValue
+        }
+
+        const coarseChannel = ch.isFine ? getCoarseAxisChannel(fixture, 'x') : ch
+        const panOverride = axisOverrideDmxToNormalized(
+          axisOverrides?.panDmx,
+          coarseChannel
+        )
         const panValue =
           panOverride ??
           mapAxisWithCalibration(
@@ -460,7 +734,7 @@ export function getDmxValue(
             fixture.moverCalibration?.pan
           )
 
-        const panMirrorAmount = panOverride === null ? getParam(params, 'xMirror') : 0
+        const panMirrorAmount = 0
 
         return calculate_axis_channel(
           ch,
@@ -470,7 +744,21 @@ export function getDmxValue(
           fixture
         )
       } else {
-        const tiltOverride = axisOverrideDmxToNormalized(axisOverrides?.tiltDmx)
+        const channelOverrideValue = axisOverrideDmxToChannelValue(
+          ch,
+          axisOverrides?.tiltDmx,
+          fixture,
+          axisOverrides?.tiltFineEnabled !== false
+        )
+        if (channelOverrideValue !== null) {
+          return channelOverrideValue
+        }
+
+        const coarseChannel = ch.isFine ? getCoarseAxisChannel(fixture, 'y') : ch
+        const tiltOverride = axisOverrideDmxToNormalized(
+          axisOverrides?.tiltDmx,
+          coarseChannel
+        )
         const tiltValue =
           tiltOverride ??
           mapAxisWithCalibration(
@@ -559,6 +847,15 @@ export function getDmxValue(
         return rLerp(ch, customParam)
       }
     }
+    case 'fxTrigger':
+      return ch.off
+    case 'fxLevel': {
+      const customParam = params[ch.name]
+      if (customParam === undefined) {
+        return ch.default
+      }
+      return rLerp(ch, customParam)
+    }
     default:
       return DMX_DEFAULT_VALUE
   }
@@ -595,7 +892,10 @@ export function getBrightness(
   )
 }
 
-export function getMovingWindow(params: Params): Window2D_t {
+export function getMovingWindow(
+  params: Params,
+  placementDepth2DOnly: boolean = false
+): Window2D_t {
   const movingWindow: Window2D_t = {
     x: {
       pos: getParam(params, 'x'),
@@ -607,17 +907,33 @@ export function getMovingWindow(params: Params): Window2D_t {
     },
   }
 
-  if (params.z !== undefined || params.depth !== undefined) {
-    const zPos = getParam(params, 'z')
-    const depth = getParam(params, 'depth')
+  if (
+    !placementDepth2DOnly &&
+    (params.z !== undefined || params.depth !== undefined)
+  ) {
+    const zPos = clampNormalized(getParam(params, 'z'))
+    const depth = clampNormalized(getParam(params, 'depth'))
     const zCenterReference = Number(params.zCenterReference ?? 0)
     const isDanceCenter = Number.isFinite(zCenterReference) && zCenterReference > 0.5
 
     // Dance-center depth behaves like XY width/height (symmetric around Z).
-    // Stage-center depth is one-sided and expands from stage edge toward audience.
-    movingWindow.z = {
-      pos: isDanceCenter ? zPos : 1 - depth / 2,
-      width: depth,
+    // Stage-center depth uses Z as the stage-edge anchor (0 at stage, 1 at far edge).
+    if (isDanceCenter) {
+      movingWindow.z = {
+        pos: zPos,
+        width: depth,
+      }
+    } else {
+      const stageStart = zPos
+      const stageEnd = clampNormalized(stageStart + depth)
+      const internalStart = 1 - stageStart
+      const internalEnd = 1 - stageEnd
+      const min = Math.min(internalStart, internalEnd)
+      const max = Math.max(internalStart, internalEnd)
+      movingWindow.z = {
+        pos: (min + max) / 2,
+        width: max - min,
+      }
     }
   }
 
@@ -628,23 +944,70 @@ export function getFixturesInGroups(
   fixtures: FlattenedFixture[],
   scene_groups: { [key: string]: boolean | undefined }
 ) {
-  let entries = Object.entries(scene_groups)
+  function fixtureMatchesGroup(fixture: FlattenedFixture, group: string) {
+    if (group === 'Visualizer') {
+      // Visualizer is a virtual group with no physical DMX fixtures.
+      return false
+    }
+    if (group === 'Atmosphere') {
+      return fixture.channels.some(([, channel]) => {
+        if (channel.type === 'fxTrigger' || channel.type === 'fxLevel') {
+          return true
+        }
+        if (channel.type !== 'custom' || channel.isControllable !== true) {
+          return false
+        }
+        const name = channel.name.trim().toLowerCase()
+        if (name.length <= 0) {
+          return false
+        }
+        if (
+          ['pan', 'tilt', 'speed', 'gobo', 'zoom', 'focus'].some((token) =>
+            name.includes(token)
+          )
+        ) {
+          return false
+        }
+        return [
+          'volume',
+          'fan',
+          'fog',
+          'haze',
+          'bubble',
+          'confetti',
+          'co2',
+          'flame',
+          'pyro',
+          'output',
+          'pump',
+          'mist',
+          'jet',
+          'trigger',
+          'on/off',
+          'on off',
+          'onoff',
+          'fx',
+        ].some((token) => name.includes(token))
+      })
+    }
+    if (group === 'Movers') {
+      if (fixture.moverCalibration !== undefined) return true
+      if (fixture.moverBounds !== undefined) return true
+      return fixture.channels.some(([, channel]) => {
+        return (
+          channel.type === 'axis' &&
+          (channel.dir === 'x' || channel.dir === 'y')
+        )
+      })
+    }
+    return fixture.groups.includes(group)
+  }
 
-  let groups = entries
-    .filter(([_, include]) => include === true)
-    .map(([group, _]) => group)
-  let not_groups = entries
-    .filter(([_, include]) => include === false)
-    .map(([group, _]) => group)
-
-  // Scenes with no groups specified affect
-  if (entries.length === 0) return fixtures
-
-  return fixtures.filter((fixture) => {
-    if (groups.find((g) => fixture.groups.includes(g))) return true
-    if (not_groups.find((g) => !fixture.groups.includes(g))) return true
-    return false
-  })
+  return fixtures.filter((fixture) =>
+    evaluateSceneGroups(scene_groups, (group) =>
+      fixtureMatchesGroup(fixture, group)
+    )
+  )
 }
 
 export function getSortedGroupsForFixture(
@@ -687,6 +1050,14 @@ export function getSortedGroups(
         groupSet.add(group)
       }
     }
+    for (const channel of fixtureType.channels) {
+      for (const family of inferChannelFamilies(channel)) {
+        const familyGroup = channelFamilyGroupName(family)
+        if (familyGroup !== undefined) {
+          groupSet.add(familyGroup)
+        }
+      }
+    }
   }
   return Array.from(groupSet.keys()).sort((a, b) => (a > b ? 1 : -1))
 }
@@ -710,6 +1081,25 @@ function getCoarseAxisChannel(
   }
 
   return undefined
+}
+
+function getSplitRanges(
+  channel: Extract<FixtureChannel, { type: 'split' }>
+): Array<{ min: number; max: number; channel: LeafFixtureChannel }> {
+  return channel.ranges.map((range) => ({
+    min: Math.min(range.min, range.max),
+    max: Math.max(range.min, range.max),
+    channel: range.channel,
+  }))
+}
+
+function splitRangeActivity(
+  value: number,
+  min: number,
+  max: number
+): number {
+  const span = Math.max(1, max - min)
+  return clampNormalized((value - min) / span)
 }
 
 function getAxisCoarseFineValues(
@@ -779,6 +1169,17 @@ function defaultMoverGroupName(fixture: Fixture, fixtureType: FixtureType): stri
   return fixtureType.name.trim().length > 0 ? fixtureType.name : 'Mover Group'
 }
 
+function moverGroupWithOrientation(
+  groupName: string,
+  orientation: Fixture['moverMountOrientation']
+): string {
+  const normalizedGroupName = groupName
+    .trim()
+    .replace(/\s+\((Upright|Hung)\)$/i, '')
+  const suffix = orientation === 'inverted' ? 'Hung' : 'Upright'
+  return `${normalizedGroupName} (${suffix})`
+}
+
 export function flatten_fixture(
   fixture: Fixture,
   fixture_type: FixtureType,
@@ -798,8 +1199,11 @@ export function flatten_fixture(
       : undefined
 
   const moverGroup =
-    moverGroupByFixtureId?.[fixtureId ?? ''] ??
-    defaultMoverGroupName(fixture, fixture_type)
+    moverGroupWithOrientation(
+      moverGroupByFixtureId?.[fixtureId ?? ''] ??
+        defaultMoverGroupName(fixture, fixture_type),
+      fixture.moverMountOrientation
+    )
 
   const moverCalibration = isMoverFixtureType(fixture_type)
     ? fixture_type.moverCalibration ?? initMoverCalibration()
@@ -845,9 +1249,16 @@ export function flatten_fixture(
     moverMountOrientation: fixture.moverMountOrientation,
   })
 
+  // Further split each flattened fixture into channel-family partitions so
+  // split groups can target WW/CW/RGB/etc independently while preserving each
+  // subfixture's spatial mapping window.
+  flattened = flattened
+    .flatMap((fixtureItem) => partitionFlattenedFixtureByChannelFamily(fixtureItem))
+    .filter((fixtureItem) => fixtureItem.channels.length > 0)
+
   // Only return fixtures that actually have channels.
   // This improves the behavior of the randomizer engine.
-  return flattened.filter((fixtureItem) => fixtureItem.channels.length > 0)
+  return flattened
 }
 
 export function flatten_fixtures(

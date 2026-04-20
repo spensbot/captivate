@@ -27,6 +27,22 @@ export default abstract class LayerBase {
     return visibleSizeAtZ(z, this.camera)
   }
 
+  applyConfig(_nextConfig: unknown): boolean {
+    return false
+  }
+
+  isFrameReady(): boolean {
+    return true
+  }
+
+  /**
+   * When true, visual scene transitions must not treat the async readiness timeout as a
+   * substitute for `isFrameReady()` (used for ProjectM: timeout would fade into black).
+   */
+  blocksTransitionReadinessTimeout(): boolean {
+    return false
+  }
+
   // Dispose of Geometries, Materials, Textures... Anything that has a dispose() method
   //https://threejs.org/docs/index.html#manual/en/introduction/How-to-dispose-of-objects
   abstract dispose(): void

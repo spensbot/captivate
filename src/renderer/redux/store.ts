@@ -6,14 +6,14 @@ import {
 } from '@reduxjs/toolkit'
 import { useSelector, TypedUseSelectorHook } from 'react-redux'
 import dmxReducer, { DmxState } from './dmxSlice'
-import guiReducer from './guiSlice'
+import guiReducer, { GuiState } from './guiSlice'
 import controlReducer, { ControlState } from './controlSlice'
 import { LightScene_t } from '../../shared/Scenes'
-import mixerReducer from './mixerSlice'
+import mixerReducer, { initMixerState } from './mixerSlice'
 import undoable, { StateWithHistory } from 'redux-undo'
 import { DeviceState } from './deviceState'
 import { VisualScene_t, SceneType } from '../../shared/Scenes'
-import { DefaultParam, Params } from '../../shared/params'
+import { DefaultParam, initBaseParams, Params } from '../../shared/params'
 import { SaveInfo } from 'shared/save'
 import { FixtureType } from 'shared/dmxFixtures'
 
@@ -52,6 +52,7 @@ export type ReduxState = ReturnType<typeof baseReducer>
 
 const APPLY_SAVE = 'apply-save'
 const RESET_STATE = 'reset-state'
+const RESET_REMOTE_STATE = 'reset-remote-state'
 const RESET_UNIVERSE = 'reset-universe'
 const RESET_CONTROL = 'reset-control'
 export function applySave(info: SaveInfo): PayloadAction<SaveInfo> {
@@ -69,6 +70,15 @@ export function resetState(
     payload: newState,
   }
 }
+
+export function resetRemoteState(
+  newState: CleanReduxState
+): PayloadAction<CleanReduxState> {
+  return {
+    type: RESET_REMOTE_STATE,
+    payload: newState,
+  }
+}
 export function resetUniverse(newDmxState: DmxState): PayloadAction<DmxState> {
   return {
     type: RESET_UNIVERSE,
@@ -81,6 +91,23 @@ export function resetControl(
   return {
     type: RESET_CONTROL,
     payload: newControlState,
+  }
+}
+
+function sanitizeGuiTransientState(gui: GuiState): GuiState {
+  return {
+    ...gui,
+    connectionMenu: false,
+    saving: false,
+    loading: null,
+    newProjectDialog: false,
+    moverCalibrationOverride: null,
+    colorMapCalibrationOverride: null,
+    statusMessages: [],
+    statusLogOpen: false,
+    appDialog: null,
+    aboutOpen: false,
+    atmosManualTriggerNonceByFixtureId: {},
   }
 }
 
@@ -101,7 +128,29 @@ const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (
     const cleanState: CleanReduxState = action.payload
     return {
       dmx: initUndoState(cleanState.dmx),
-      gui: cleanState.gui,
+      gui: sanitizeGuiTransientState(cleanState.gui),
+      control: initUndoState(cleanState.control),
+      mixer: cleanState.mixer,
+    }
+  } else if (action.type === RESET_REMOTE_STATE) {
+    const cleanState: CleanReduxState = action.payload
+    const localGui = state.gui
+    return {
+      dmx: initUndoState(cleanState.dmx),
+      gui: {
+        ...sanitizeGuiTransientState(cleanState.gui),
+        activePage: localGui.activePage,
+        connectionMenu: localGui.connectionMenu,
+        saving: localGui.saving,
+        loading: localGui.loading,
+        newProjectDialog: localGui.newProjectDialog,
+        moverCalibrationOverride: localGui.moverCalibrationOverride,
+        colorMapCalibrationOverride: localGui.colorMapCalibrationOverride,
+        statusLogOpen: localGui.statusLogOpen,
+        appDialog: localGui.appDialog,
+        aboutOpen: localGui.aboutOpen,
+        atmosManualTriggerNonceByFixtureId: {},
+      },
       control: initUndoState(cleanState.control),
       mixer: cleanState.mixer,
     }
@@ -123,6 +172,32 @@ const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (
   } else if (action.type === APPLY_SAVE) {
     const info: SaveInfo = action.payload
     const control = state.control.present
+    const loadedGuiRaw =
+      info.config.gui && info.state.gui
+        ? {
+            ...state.gui,
+            ...info.state.gui,
+            activePage:
+              info.state.gui.activePage === 'Streaming'
+                ? 'Video'
+                : (info.state.gui.activePage ?? state.gui.activePage),
+            saving: false,
+            loading: null,
+            connectionMenu: false,
+            newProjectDialog: false,
+            moverCalibrationOverride: null,
+            colorMapCalibrationOverride: null,
+            statusLogOpen: false,
+            appDialog: null,
+            aboutOpen: false,
+          }
+        : state.gui
+    const loadedGui =
+      loadedGuiRaw !== state.gui &&
+      loadedGuiRaw.activePage === 'Led' &&
+      loadedGuiRaw.ledSidebarEnabled !== true
+        ? { ...loadedGuiRaw, activePage: 'Universe' as const }
+        : loadedGuiRaw
     return {
       ...state,
       dmx: {
@@ -150,6 +225,11 @@ const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (
               : control.visual,
         },
       },
+      gui: loadedGui,
+      mixer:
+        info.config.mixer && info.state.mixer
+          ? { ...initMixerState(), ...info.state.mixer }
+          : state.mixer,
     }
     // I HAVE NO IDEA WHY THE BELOW APPROACH DOESN"T WORK IF ANYBODY KNOWS PLEASE TELL ME!!!
     // let newState = {
@@ -189,7 +269,7 @@ export const useTypedSelector: TypedUseSelectorHook<ReduxState> = useSelector
 export function getCleanReduxState(state: ReduxState) {
   return {
     dmx: state.dmx.present,
-    gui: state.gui,
+    gui: sanitizeGuiTransientState(state.gui),
     control: state.control.present,
     mixer: state.mixer,
   }
@@ -253,14 +333,14 @@ export function useBaseParam(
   splitIndex: number
 ): number | undefined {
   const baseParam = useActiveLightScene((state) => {
-    return state.splitScenes[splitIndex].baseParams[param]
+    return state.splitScenes[splitIndex]?.baseParams[param]
   })
   return baseParam
 }
 
 export function useBaseParams(splitIndex: number): Params {
   const baseParams = useActiveLightScene((state) => {
-    return state.splitScenes[splitIndex].baseParams
+    return state.splitScenes[splitIndex]?.baseParams ?? initBaseParams()
   })
   return baseParams
 }
@@ -274,5 +354,3 @@ export function useModParam(
     return scene.modulators[modIndex]?.splitModulations?.[splitIndex]?.[param]
   })
 }
-
-

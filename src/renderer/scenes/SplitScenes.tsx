@@ -1,11 +1,19 @@
 import ParamsControl from 'renderer/controls/ParamsControl'
-import { useActiveLightScene, useControlSelector } from 'renderer/redux/store'
+import {
+  useActiveLightScene,
+  useControlSelector,
+  useDmxSelector,
+  useTypedSelector,
+} from 'renderer/redux/store'
+import {
+  hideMoversSplitUi,
+  hideVisSplitUi,
+} from './splitUiVisibility'
+import { hasMoverFixtureInUniverse } from 'shared/dmxFixtures'
 import { indexArray } from 'shared/util'
 import styled from 'styled-components'
 import GroupSelection from './GroupSelection'
-import Button from '@mui/material/Button'
 import AddIcon from '@mui/icons-material/Add'
-import IconButton from '@mui/material/IconButton'
 import { useDispatch } from 'react-redux'
 import { addSplitScene } from 'renderer/redux/controlSlice'
 
@@ -20,22 +28,23 @@ export default function SplitScenes() {
 
   const onAddSplitScene = () => dispatch(addSplitScene())
 
-  if (splitSceneCount < 1) {
-    return (
-      <Root>
-        <Button onClick={onAddSplitScene}>Split</Button>
-      </Root>
-    )
-  }
-
   return (
     <Root>
-      {indexes.map((index) => (
-        <SplitScene key={activeScene + index} index={index} />
-      ))}
-      <IconButton onClick={onAddSplitScene} title="Add split">
-        <AddIcon />
-      </IconButton>
+      <Title>Splits</Title>
+      <SplitList>
+        {splitSceneCount < 1 ? (
+          <EmptyState>No splits yet. Add a split to start mapping groups and params.</EmptyState>
+        ) : (
+          indexes.map((index) => <SplitScene key={activeScene + index} index={index} />)
+        )}
+      </SplitList>
+      <AddSplitFooter>
+        <AddSplitDivider />
+        <AddSplitButton type="button" onClick={onAddSplitScene} title="Add split">
+          <AddIcon fontSize="small" />
+          <span>Add Split</span>
+        </AddSplitButton>
+      </AddSplitFooter>
     </Root>
   )
 }
@@ -43,6 +52,68 @@ export default function SplitScenes() {
 const Root = styled.div`
   display: flex;
   flex-direction: column;
+  gap: 0.55rem;
+  min-width: 0;
+`
+
+const Title = styled.div`
+  font-size: ${(props) => props.theme.font.size.h1};
+  color: ${(props) => props.theme.colors.text.primary};
+`
+
+const SplitList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-width: 0;
+`
+
+const AddSplitButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  border: 1px solid ${(props) => props.theme.colors.divider};
+  border-radius: 0.35rem;
+  background: ${(props) => props.theme.colors.bg.primary};
+  color: ${(props) => props.theme.colors.text.primary};
+  padding: 0.26rem 0.5rem;
+  font-size: 0.76rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 120ms ease, border-color 120ms ease;
+  align-self: flex-start;
+
+  &:hover {
+    background: ${(props) => props.theme.colors.bg.lighter};
+    border-color: ${(props) => props.theme.colors.text.secondary};
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+`
+
+const AddSplitFooter = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-width: 0;
+`
+
+const AddSplitDivider = styled.div`
+  width: 100%;
+  height: 1px;
+  background: ${(props) => props.theme.colors.divider};
+  opacity: 0.85;
+`
+
+const EmptyState = styled.div`
+  border: 1px dashed ${(props) => props.theme.colors.divider};
+  border-radius: 0.35rem;
+  color: ${(props) => props.theme.colors.text.secondary};
+  font-size: 0.78rem;
+  padding: 0.7rem 0.75rem;
 `
 
 interface Props {
@@ -50,6 +121,19 @@ interface Props {
 }
 
 function SplitScene({ index }: Props) {
+  const videoEnabled = useTypedSelector((state) => state.gui.videoEnabled)
+  const hasMoverFixtures = useDmxSelector((dmx) =>
+    hasMoverFixtureInUniverse(dmx.universe, dmx.fixtureTypesByID)
+  )
+  const groups = useActiveLightScene(
+    (scene) => scene.splitScenes[index]?.groups
+  )
+  if (hideVisSplitUi(videoEnabled, groups)) {
+    return null
+  }
+  if (hideMoversSplitUi(hasMoverFixtures, groups)) {
+    return null
+  }
   return (
     <Root2>
       <GroupSelection splitIndex={index} />

@@ -15,18 +15,19 @@ jobs:
 
     steps:
       - name: Check out Git repository
-        uses: actions/checkout@v1
+        uses: actions/checkout@v4
       - name: Checkout submodules
         run: git submodule update --init --recursive
       - name: Pull Git LFS
         run: git lfs pull
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
-        run: sudo apt-get update -y && sudo apt-get install -y libasound2-dev
+        run: sudo apt-get update -y && sudo apt-get install -y libasound2-dev libx11-dev libgl1-mesa-dev
       - name: Install Node.js and NPM
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 25.9.0
+          cache: npm
       - uses: actions/setup-python@v4 # https://github.com/nodejs/node-gyp/issues/2869
         with:
           python-version: '3.11'

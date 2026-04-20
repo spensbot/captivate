@@ -7,7 +7,9 @@ import LedFixturePlacement from 'renderer/led/LedFixturePlacement'
 export default function LedPage() {
   const splitPaneStyle: React.CSSProperties = {
     flex: '1 1 0',
-    overflow: 'auto',
+    minWidth: 0,
+    minHeight: 0,
+    overflow: 'hidden',
   }
 
   return (
@@ -37,10 +39,15 @@ const Root = styled.div`
   height: 100%;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 `
 
 const Pane = styled.div<{ with_border?: boolean }>`
   border-right: ${(props) =>
     props.with_border && `1px solid ${props.theme.colors.divider}`};
   height: 100%;
+  min-width: 0;
+  min-height: 0;
 `

@@ -23,12 +23,34 @@ export type DefaultParam =
   | 'xAxis'
   | 'yAxis'
   | 'xMirror'
+  | 'moverFloorLock'
   | 'moverSpread'
   | 'moverMirrorX'
   | 'moverMirrorY'
   | 'moverMode'
+  | 'atmosFxOnOff'
+  | 'atmosFxLevel'
+  | 'visSlider1'
+  | 'visSlider2'
+  | 'visSlider3'
+  | 'visSlider4'
+  | 'visSlider5'
+  | 'visSlider6'
+  | 'visSlider7'
+  | 'visSlider8'
 
 export type Params = { [key: string]: number | undefined }
+
+export const visualSliderParams: readonly DefaultParam[] = [
+  'visSlider1',
+  'visSlider2',
+  'visSlider3',
+  'visSlider4',
+  'visSlider5',
+  'visSlider6',
+  'visSlider7',
+  'visSlider8',
+]
 
 export function initBaseParams(): Params {
   return {
@@ -74,10 +96,21 @@ export function initParams(): { [key in DefaultParam]: number } {
     xAxis: 0.5,
     yAxis: 0.5,
     xMirror: 0.0,
+    moverFloorLock: 1.0,
     moverSpread: 0.0,
     moverMirrorX: 0.0,
     moverMirrorY: 0.0,
     moverMode: 0.0,
+    atmosFxOnOff: 0.5,
+    atmosFxLevel: 1.0,
+    visSlider1: 0.5,
+    visSlider2: 0.5,
+    visSlider3: 0.5,
+    visSlider4: 0.5,
+    visSlider5: 0.5,
+    visSlider6: 0.5,
+    visSlider7: 0.5,
+    visSlider8: 0.5,
   }
 }
 
@@ -106,10 +139,21 @@ const defaultParams: { [key in DefaultParam]: number } = {
   xAxis: 0.5,
   yAxis: 0.5,
   xMirror: 0.0,
+  moverFloorLock: 1.0,
   moverSpread: 0.0,
   moverMirrorX: 0.0,
   moverMirrorY: 0.0,
   moverMode: 0.0,
+  atmosFxOnOff: 0.5,
+  atmosFxLevel: 1.0,
+  visSlider1: 0.5,
+  visSlider2: 0.5,
+  visSlider3: 0.5,
+  visSlider4: 0.5,
+  visSlider5: 0.5,
+  visSlider6: 0.5,
+  visSlider7: 0.5,
+  visSlider8: 0.5,
 }
 
 export function getParam(params: Params, param: DefaultParam): number {
@@ -162,11 +206,21 @@ export const defaultParamsList: DefaultParam[] = [
   'randomize',
   'xAxis',
   'yAxis',
-  'xMirror',
+  'moverFloorLock',
   'moverSpread',
   'moverMirrorX',
   'moverMirrorY',
   'moverMode',
+  'atmosFxOnOff',
+  'atmosFxLevel',
+  'visSlider1',
+  'visSlider2',
+  'visSlider3',
+  'visSlider4',
+  'visSlider5',
+  'visSlider6',
+  'visSlider7',
+  'visSlider8',
 ]
 
 const paramDisplayNames: { [key: string]: string } = {
@@ -180,10 +234,21 @@ const paramDisplayNames: { [key: string]: string } = {
   xAxis: 'Pan',
   yAxis: 'Tilt',
   xMirror: 'Pan Mirror',
+  moverFloorLock: 'Floor Bounds Lock',
   moverSpread: 'Tandem Spread',
   moverMirrorX: 'Mirror Left/Right',
   moverMirrorY: 'Mirror Top/Bottom',
   moverMode: 'Mover Mode',
+  atmosFxOnOff: 'FX On/Off',
+  atmosFxLevel: 'FX Level',
+  visSlider1: 'Visual Slider 1',
+  visSlider2: 'Visual Slider 2',
+  visSlider3: 'Visual Slider 3',
+  visSlider4: 'Visual Slider 4',
+  visSlider5: 'Visual Slider 5',
+  visSlider6: 'Visual Slider 6',
+  visSlider7: 'Visual Slider 7',
+  visSlider8: 'Visual Slider 8',
 }
 
 export function paramDisplayName(param: DefaultParam | string): string {

@@ -5,9 +5,17 @@ export default function useHover() {
   const hoverDiv = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    if (hoverDiv.current) {
-      hoverDiv.current.addEventListener('mouseenter', () => setIsHover(true))
-      hoverDiv.current.addEventListener('mouseleave', () => setIsHover(false))
+    const node = hoverDiv.current
+    if (node === null) {
+      return
+    }
+    const onEnter = () => setIsHover(true)
+    const onLeave = () => setIsHover(false)
+    node.addEventListener('mouseenter', onEnter)
+    node.addEventListener('mouseleave', onLeave)
+    return () => {
+      node.removeEventListener('mouseenter', onEnter)
+      node.removeEventListener('mouseleave', onLeave)
     }
   }, [])
 

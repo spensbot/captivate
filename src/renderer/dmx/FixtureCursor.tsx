@@ -77,37 +77,29 @@ function rotatedForwardVector(rotation: FixtureRotation | undefined): {
   return { x, y, z }
 }
 
-function planeNormalAxis(horizontalAxis: WindowAxis, verticalAxis: WindowAxis): WindowAxis {
-  const axes: WindowAxis[] = ['x', 'y', 'z']
-  const normal = axes.find((axis) => axis !== horizontalAxis && axis !== verticalAxis)
-  return normal ?? 'z'
-}
+/** In-plane length below this ⇒ forward is nearly perpendicular to the pad (head-on); use a dot. */
+const ARROW_IN_PLANE_MIN = 0.14
 
-function projectedDirection(
+type DirectionGlyph =
+  | { kind: 'arrow'; x: number; y: number }
+  | { kind: 'dot' }
+
+function projectedDirectionGlyph(
   rotation: FixtureRotation | undefined,
   horizontalAxis: WindowAxis,
   verticalAxis: WindowAxis
-): { x: number; y: number } {
+): DirectionGlyph {
   const forward = rotatedForwardVector(rotation)
-  let x = axisComponent(horizontalAxis, forward)
-  let y = axisComponent(verticalAxis, forward)
-  let length = Math.hypot(x, y)
+  const x = axisComponent(horizontalAxis, forward)
+  const y = axisComponent(verticalAxis, forward)
+  const length = Math.hypot(x, y)
 
-  // If the fixture faces in/out of this plane, fall back to the plane-normal
-  // rotation so we still show a stable direction indicator.
-  if (length < 0.0001) {
-    const normalAxis = planeNormalAxis(horizontalAxis, verticalAxis)
-    const angle = degToRad(rotationAxisValue(rotation, normalAxis))
-    x = Math.cos(angle)
-    y = Math.sin(angle)
-    length = Math.hypot(x, y)
-  }
-
-  if (length < 0.0001) {
-    return { x: 1, y: 0 }
+  if (!Number.isFinite(length) || length < ARROW_IN_PLANE_MIN) {
+    return { kind: 'dot' }
   }
 
   return {
+    kind: 'arrow',
     x: x / length,
     y: y / length,
   }
@@ -163,6 +155,38 @@ function DirectionArrow({
   )
 }
 
+function DirectionDot({
+  x,
+  y,
+  color,
+  isSelected,
+}: {
+  x: number
+  y: number
+  color: string
+  isSelected: boolean
+}) {
+  const size = isSelected ? '0.55rem' : '0.45rem'
+  return (
+    <div
+      aria-hidden
+      style={{
+        position: 'absolute',
+        top: `${(1 - y) * 100}%`,
+        left: `${x * 100}%`,
+        width: size,
+        height: size,
+        borderRadius: '999px',
+        background: color,
+        transform: 'translate(-50%, -50%)',
+        pointerEvents: 'none',
+        zIndex: isSelected ? 6 : 4,
+        boxShadow: '0 0 0 1px #0008',
+      }}
+    />
+  )
+}
+
 export default function FixtureCursor({
   index,
   horizontalAxis = 'x',
@@ -189,7 +213,7 @@ export default function FixtureCursor({
   const window = fixture.window
   const x = windowAxisPos(window, horizontalAxis)
   const y = windowAxisPos(window, verticalAxis)
-  const direction = projectedDirection(
+  const directionGlyph = projectedDirectionGlyph(
     fixture.rotation,
     horizontalAxis,
     verticalAxis
@@ -230,15 +254,18 @@ export default function FixtureCursor({
             bgColor={cursorFillColor}
             thickness={cursorThickness}
           />
-          {showDirection && (
-            <DirectionArrow
-              x={x}
-              y={y}
-              direction={direction}
-              color={cursorColor}
-              isSelected={true}
-            />
-          )}
+          {showDirection &&
+            (directionGlyph.kind === 'dot' ? (
+              <DirectionDot x={x} y={y} color={cursorColor} isSelected={true} />
+            ) : (
+              <DirectionArrow
+                x={x}
+                y={y}
+                direction={{ x: directionGlyph.x, y: directionGlyph.y }}
+                color={cursorColor}
+                isSelected={true}
+              />
+            ))}
           <Window2D2
             window2D={fixture.window}
             horizontalAxis={horizontalAxis}
@@ -255,15 +282,18 @@ export default function FixtureCursor({
             bgColor={cursorFillColor}
             thickness={cursorThickness}
           />
-          {showDirection && (
-            <DirectionArrow
-              x={x}
-              y={y}
-              direction={direction}
-              color={cursorColor}
-              isSelected={false}
-            />
-          )}
+          {showDirection &&
+            (directionGlyph.kind === 'dot' ? (
+              <DirectionDot x={x} y={y} color={cursorColor} isSelected={false} />
+            ) : (
+              <DirectionArrow
+                x={x}
+                y={y}
+                direction={{ x: directionGlyph.x, y: directionGlyph.y }}
+                color={cursorColor}
+                isSelected={false}
+              />
+            ))}
         </div>
       )}
     </div>

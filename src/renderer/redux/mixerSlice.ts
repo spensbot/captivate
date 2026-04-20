@@ -6,6 +6,8 @@ export interface MixerState {
   channelsPerPage: number
   activeUniverse: number
   overwritesByUniverse: { [universe: number]: number[] }
+  /** When true, list all DMX channels; when false (default), only channels used by fixtures on the active universe. */
+  showAllMixerChannels: boolean
 }
 
 export function initMixerState(): MixerState {
@@ -14,6 +16,7 @@ export function initMixerState(): MixerState {
     channelsPerPage: DMX_NUM_CHANNELS,
     activeUniverse: 1,
     overwritesByUniverse: {},
+    showAllMixerChannels: false,
   }
 }
 
@@ -70,6 +73,9 @@ export const guiSlice = createSlice({
       const universe = clampUniverse(payload ?? state.activeUniverse)
       state.overwritesByUniverse[universe] = []
     },
+    setMixerShowAllChannels: (state, { payload }: PayloadAction<boolean>) => {
+      state.showAllMixerChannels = payload
+    },
   },
 })
 
@@ -79,6 +85,7 @@ export const {
   setActiveMixerUniverse,
   setOverwrite,
   clearOverwrites,
+  setMixerShowAllChannels,
 } = guiSlice.actions
 
 export default guiSlice.reducer

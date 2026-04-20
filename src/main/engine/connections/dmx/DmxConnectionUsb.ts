@@ -3,15 +3,7 @@ import { SerialConnection } from '../SerialConnection'
 import DmxUsbPro, { isDmxUsbPro } from './DmxUsbPro'
 import OpenDmxUsb from './OpenDmxUsb'
 import { EngineContext } from 'main/engine/engineContext'
-
-export interface DmxUsbDeviceConfig {
-  sendUniverse: (
-    universe: number[],
-    connection: SerialConnection
-  ) => Promise<void>
-  refreshHz: (c: EngineContext) => number
-  name: string
-}
+import { DmxUsbDeviceConfig } from './DmxUsbDeviceConfig'
 
 const configByDeviceType: { [key in DmxUsbDeviceType]: DmxUsbDeviceConfig } = {
   DmxUsbPro,
@@ -22,7 +14,7 @@ export class DmxConnectionUsb {
   type = 'DmxConnectionUsb'
   device: DmxDeviceUsb_t
   private serialConnection: SerialConnection
-  private intervalHandle: NodeJS.Timer
+  private intervalHandle: NodeJS.Timeout
   private config: DmxUsbDeviceConfig
   private c: EngineContext
   private lastHz: number = 0
@@ -54,7 +46,7 @@ export class DmxConnectionUsb {
     return new DmxConnectionUsb(device, serialConnection, c)
   }
 
-  beginInterval(): NodeJS.Timer {
+  beginInterval(): NodeJS.Timeout {
     return setInterval(() => {
       this.sendDmx()
       const hz = this.config.refreshHz(this.c)

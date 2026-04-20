@@ -1,5 +1,5 @@
 import { EngineContext } from 'main/engine/engineContext'
-import { DmxUsbDeviceConfig } from './DmxConnectionUsb'
+import { DmxUsbDeviceConfig } from './DmxUsbDeviceConfig'
 
 const cfg: DmxUsbDeviceConfig = {
   refreshHz: (c: EngineContext) => {

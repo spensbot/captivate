@@ -5,7 +5,6 @@ import DraggableNumber from '../base/DraggableNumber'
 import { useDispatch } from 'react-redux'
 import { setRandomizer } from '../redux/controlSlice'
 import Slider from '../base/Slider'
-import ParamXButton from './ParamXButton'
 import ParamSlider from './ParamSlider'
 import ADSR, { Control } from './ADSR'
 
@@ -14,20 +13,22 @@ interface Props {
 }
 
 export default function Randomizer({ splitIndex }: Props) {
+  const randomizer = useActiveLightScene((scene) =>
+    scene.splitScenes[splitIndex]?.randomizer
+  )
+  const dispatch = useDispatch()
+  const randomize = useBaseParam('randomize', splitIndex)
+
+  if (randomizer === undefined || randomize === undefined) {
+    return null
+  }
+
   const {
     triggerPeriod,
     triggerDensity,
     envelopeRatio,
     envelopeDuration,
-  } = useActiveLightScene((scene) => {
-    return scene.splitScenes[splitIndex].randomizer
-  })
-  const dispatch = useDispatch()
-  const randomize = useBaseParam('randomize', splitIndex)
-
-  if (randomize === undefined) {
-    return null
-  }
+  } = randomizer
 
   const ratio: Control = {
     val: envelopeRatio,
@@ -100,7 +101,6 @@ export default function Randomizer({ splitIndex }: Props) {
             }
           />
         </Row>
-        <ParamXButton splitIndex={splitIndex} params={['randomize']} />
       </Root>
       <ParamSlider param={'randomize'} splitIndex={splitIndex} />
     </>

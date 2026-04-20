@@ -1,26 +1,32 @@
 import { Params } from '../../shared/params'
 import { TimeState } from '../../shared/TimeState'
 import { isNewPeriod, beatsIn, beatsLeft } from '../../shared/TimeState'
-import { LightScene_t } from '../../shared/Scenes'
 import { Size } from 'math/size'
 import { Range, rLerp } from 'math/range'
+import { AudioEngineMetrics } from '../../shared/audioEngine'
+
+interface UpdateScene {
+  epicness: number
+}
 
 interface UpdateData {
   dt: number
   time: TimeState
   params: Params
-  scene: LightScene_t
+  scene: UpdateScene
   master: number
   size: Size
+  audio: AudioEngineMetrics
 }
 
 export default class UpdateResource {
   dt: number
   time: TimeState
   params: Params
-  scene: LightScene_t
+  scene: UpdateScene
   master: number
   size: Size
+  audio: AudioEngineMetrics
   private lastBeats: number
 
   constructor(stuff: UpdateData) {
@@ -30,6 +36,7 @@ export default class UpdateResource {
     this.scene = stuff.scene
     this.master = stuff.master
     this.size = stuff.size
+    this.audio = stuff.audio
     this.lastBeats = this.time.beats
   }
 
@@ -41,6 +48,7 @@ export default class UpdateResource {
     this.scene = stuff.scene
     this.master = stuff.master
     this.size = stuff.size
+    this.audio = stuff.audio
   }
 
   isNewPeriod(period: number) {

@@ -24,6 +24,8 @@ export default function LfoMenu({ index }: Props) {
   const lfo = useActiveLightScene(
     (activeScene) => activeScene.modulators[index].lfo
   )
+  const isAudioShape =
+    lfo.shape === LfoShape.AudioBand || lfo.shape === LfoShape.AudioEnergy
 
   return (
     <div
@@ -42,6 +44,7 @@ export default function LfoMenu({ index }: Props) {
         value={lfo.shape}
         size="small"
         variant="standard"
+        title="Choose the waveform/LFO source"
         onChange={(e) => {
           dispatch(
             setModulatorShape({
@@ -52,18 +55,21 @@ export default function LfoMenu({ index }: Props) {
         }}
       >
         <MenuItem value={LfoShape.Ramp}>Ramp</MenuItem>
-        <MenuItem value={LfoShape.Sin}>Sin</MenuItem>
+        <MenuItem value={LfoShape.Sin}>Sine</MenuItem>
         <MenuItem value={LfoShape.Square}>Square</MenuItem>
         <MenuItem value={LfoShape.Saw}>Saw</MenuItem>
         <MenuItem value={LfoShape.Noise}>Noise</MenuItem>
+        <MenuItem value={LfoShape.AudioBand}>Audio Band</MenuItem>
+        <MenuItem value={LfoShape.AudioEnergy}>Audio Energy</MenuItem>
       </Select>
       <div style={{ flex: '1 0 0' }} />
-      <LfoPeriod index={index} />
+      {!isAudioShape && <LfoPeriod index={index} />}
       <Divider vertical color={'#fff3'} />
       <IconButton
         color="primary"
         aria-label="delete"
         size="small"
+        title="Reset this LFO to defaults"
         onClick={() => dispatch(resetModulator(index))}
       >
         <SettingsBackupRestoreIcon />
@@ -73,6 +79,7 @@ export default function LfoMenu({ index }: Props) {
         color="primary"
         aria-label="delete"
         size="small"
+        title="Remove this LFO"
         onClick={() => dispatch(removeModulator(index))}
       >
         <CloseIcon />

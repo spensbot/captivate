@@ -6,7 +6,7 @@ import {
   useControlSelector,
 } from '../redux/store'
 import { useDispatch } from 'react-redux'
-import { Button, IconButton, Tooltip } from '@mui/material'
+import { Button, FormControlLabel, IconButton, Switch, Tooltip } from '@mui/material'
 import ForwardIcon from '@mui/icons-material/ArrowForward'
 import BackIcon from '@mui/icons-material/ArrowBack'
 import {
@@ -14,31 +14,102 @@ import {
   setOverwrite,
   clearOverwrites,
   getUniverseOverwrites,
+  setMixerShowAllChannels,
 } from '../redux/mixerSlice'
+import type { DmxState } from '../redux/dmxSlice'
 import { useRealtimeSelector } from '../redux/realtimeStore'
 import StatusBar from '../menu/StatusBar'
-import React from 'react'
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import useHover from 'renderer/hooks/useHover'
 import {
   DMX_NUM_CHANNELS,
   FixtureChannel,
-  FixtureType,
   axisDirName,
 } from 'shared/dmxFixtures'
 import zIndexes from 'renderer/zIndexes'
 import useMousePosition from 'renderer/hooks/useMousePosition'
 import { getCustomColorChannelName } from 'shared/dmxColors'
 
+function buildAssignedChannelIndices(
+  dmx: DmxState,
+  activeUniverse: number
+): number[] {
+  const set = new Set<number>()
+  for (const f of dmx.universe) {
+    if ((f.universe ?? 1) !== activeUniverse) {
+      continue
+    }
+    const ft = dmx.fixtureTypesByID[f.type]
+    if (!ft?.channels) {
+      continue
+    }
+    const n = ft.channels.length
+    for (let i = 0; i < n; i++) {
+      const idx = f.ch - 1 + i
+      if (idx >= 0 && idx < DMX_NUM_CHANNELS) {
+        set.add(idx)
+      }
+    }
+  }
+  return [...set].sort((a, b) => a - b)
+}
+
 export default function Mixer() {
-  const dmxIndexes = Array.from({ length: DMX_NUM_CHANNELS }, (_, i) => i)
+  const activeUniverse = useTypedSelector((s) => s.mixer.activeUniverse)
+  const showAllMixerChannels = useTypedSelector(
+    (s) => s.mixer.showAllMixerChannels
+  )
+  const assignedIndices = useDmxSelector((dmx) =>
+    buildAssignedChannelIndices(dmx, activeUniverse)
+  )
+  const dmxIndexes = useMemo(() => {
+    if (showAllMixerChannels) {
+      return Array.from({ length: DMX_NUM_CHANNELS }, (_, i) => i)
+    }
+    return assignedIndices
+  }, [showAllMixerChannels, assignedIndices])
+  const wrapperRef = useRef<HTMLDivElement | null>(null)
+  const [colsPerRow, setColsPerRow] = useState(1)
+
+  useLayoutEffect(() => {
+    const el = wrapperRef.current
+    if (el === null) {
+      return
+    }
+    const measure = () => {
+      const first = el.firstElementChild as HTMLElement | undefined
+      if (first === undefined) {
+        return
+      }
+      const colW = first.offsetWidth
+      if (colW <= 0) {
+        return
+      }
+      const n = Math.max(1, Math.floor(el.clientWidth / colW))
+      setColsPerRow((prev) => (prev !== n ? n : prev))
+    }
+    measure()
+    if (typeof ResizeObserver === 'undefined') {
+      return
+    }
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
 
   return (
     <Root>
       <StatusBar />
       <Header />
-      <LabelledSliderWrapper>
-        {dmxIndexes.map((i) => (
-          <LabelledSlider key={i} index={i} />
+      <LabelledSliderWrapper ref={wrapperRef}>
+        {dmxIndexes.map((channelIndex, gridIndex) => (
+          <LabelledSlider
+            key={channelIndex}
+            channelIndex={channelIndex}
+            gridIndex={gridIndex}
+            visibleChannels={dmxIndexes}
+            colsPerRow={colsPerRow}
+          />
         ))}
       </LabelledSliderWrapper>
     </Root>
@@ -54,6 +125,7 @@ const Root = styled.div`
 const LabelledSliderWrapper = styled.div`
   display: flex;
   flex-wrap: wrap;
+  align-content: flex-start;
   overflow-y: auto;
   overflow-x: hidden;
   margin: 0 1rem;
@@ -78,6 +150,7 @@ const LabelledSliderWrapper = styled.div`
 function Header() {
   const dispatch = useDispatch()
   const _s = useTypedSelector((state) => state.mixer)
+  const showAllMixerChannels = _s.showAllMixerChannels
   const universeCount = useControlSelector(
     (state) => state.device.connectionSettings.universeCount
   )
@@ -121,6 +194,23 @@ function Header() {
         </span>
       </Tooltip>
       <S />
+      <Tooltip title="Show every DMX channel. When off, only channels used by fixtures on this universe are listed.">
+        <FormControlLabel
+          sx={{ marginLeft: 0, marginRight: 0, gap: 0.5 }}
+          control={
+            <Switch
+              size="small"
+              checked={showAllMixerChannels}
+              onChange={(_, checked) =>
+                dispatch(setMixerShowAllChannels(checked))
+              }
+              inputProps={{ 'aria-label': 'Show all DMX channels' }}
+            />
+          }
+          label={<MixerToggleLabel>All channels</MixerToggleLabel>}
+        />
+      </Tooltip>
+      <S />
       <Tooltip title="Clear manual slider overwrites for this universe">
         <span>
           <Button
@@ -135,6 +225,12 @@ function Header() {
     </HeaderRoot>
   )
 }
+
+const MixerToggleLabel = styled.span`
+  font-size: 0.85rem;
+  color: ${(props) => props.theme.colors.text.secondary};
+  user-select: none;
+`
 
 const HeaderTitle = styled.div`
   font-size: 1.3rem;
@@ -177,13 +273,75 @@ function getColor(index: number | null) {
 
 type Status_t = 'single' | 'begin' | 'mid' | 'end' | 'none'
 
-function LabelledSlider({ index }: { index: number }) {
-  const ch = index + 1
+function fixtureChannelName(channel: FixtureChannel | null): string {
+  if (!channel) {
+    return 'N/A'
+  }
+  if (channel.type === 'custom') {
+    return channel.name
+  }
+  if (channel.type === 'axis') {
+    const axis = axisDirName(channel.dir)
+    return channel.isFine ? `${axis} Fine` : axis
+  }
+  if (channel.type === 'color') {
+    return getCustomColorChannelName(channel.color)
+  }
+  if (channel.type === 'goboMap') {
+    return 'Gobo Map'
+  }
+  if (channel.type === 'colorMap') {
+    return 'Color Map'
+  }
+  if (channel.type === 'fxTrigger') {
+    return channel.name
+  }
+  if (channel.type === 'fxLevel') {
+    return channel.name
+  }
+  if (channel.type === 'master') {
+    return 'Master'
+  }
+  if (channel.type === 'strobe') {
+    return 'Strobe'
+  }
+  return 'Split'
+}
+
+function LabelledSlider({
+  channelIndex,
+  gridIndex,
+  visibleChannels,
+  colsPerRow,
+}: {
+  /** Absolute 0-based DMX channel index for this universe. */
+  channelIndex: number
+  /** Position in the wrapped mixer grid (0 .. visibleChannels.length-1). */
+  gridIndex: number
+  visibleChannels: readonly number[]
+  colsPerRow: number
+}) {
+  const ch = channelIndex + 1
   const activeUniverse = useTypedSelector((state) => state.mixer.activeUniverse)
   const overwrite: number | undefined = useTypedSelector(
-    (state) => getUniverseOverwrites(state.mixer, state.mixer.activeUniverse)[index]
+    (state) =>
+      getUniverseOverwrites(state.mixer, state.mixer.activeUniverse)[channelIndex]
   )
-  const [status, fixtureIndex]: [Status_t, number | null] = useDmxSelector(
+  const {
+    status,
+    fixtureIndex,
+    fixtureName,
+    channelName,
+    fixtureStartCh,
+    fixtureEndCh,
+  }: {
+    status: Status_t
+    fixtureIndex: number | null
+    fixtureName: string
+    channelName: string
+    fixtureStartCh: number
+    fixtureEndCh: number
+  } = useDmxSelector(
     (state) => {
       let i = 0
       for (const f of state.universe) {
@@ -192,41 +350,128 @@ function LabelledSlider({ index }: { index: number }) {
         }
 
         const ft = state.fixtureTypesByID[f.type]
+        const fixtureDisplayName =
+          f.name?.trim().length
+            ? f.name.trim()
+            : ft.name
+        const fixtureChannel = ft.channels[ch - f.ch] ?? null
+        const channelDisplayName = fixtureChannelName(fixtureChannel)
         const endChannel = f.ch + ft.channels.length - 1
         if (ch == f.ch) {
           if (ch == endChannel) {
-            return ['single', i]
+            return {
+              status: 'single',
+              fixtureIndex: i,
+              fixtureName: fixtureDisplayName,
+              channelName: channelDisplayName,
+              fixtureStartCh: f.ch,
+              fixtureEndCh: endChannel,
+            }
           } else {
-            return ['begin', i]
+            return {
+              status: 'begin',
+              fixtureIndex: i,
+              fixtureName: fixtureDisplayName,
+              channelName: channelDisplayName,
+              fixtureStartCh: f.ch,
+              fixtureEndCh: endChannel,
+            }
           }
         }
-        if (ch == endChannel) return ['end', i]
-        if (ch > f.ch && ch < endChannel) return ['mid', i]
+        if (ch == endChannel) {
+          return {
+            status: 'end',
+            fixtureIndex: i,
+            fixtureName: fixtureDisplayName,
+            channelName: channelDisplayName,
+            fixtureStartCh: f.ch,
+            fixtureEndCh: endChannel,
+          }
+        }
+        if (ch > f.ch && ch < endChannel) {
+          return {
+            status: 'mid',
+            fixtureIndex: i,
+            fixtureName: fixtureDisplayName,
+            channelName: channelDisplayName,
+            fixtureStartCh: f.ch,
+            fixtureEndCh: endChannel,
+          }
+        }
         i += 1
       }
-      return ['none', null]
+      return {
+        status: 'none',
+        fixtureIndex: null,
+        fixtureName: '',
+        channelName: 'N/A',
+        fixtureStartCh: 0,
+        fixtureEndCh: 0,
+      }
     }
   )
   const output: number = useRealtimeSelector(
-    (state) => state.dmxOutByUniverse[activeUniverse - 1]?.[index] ?? 0
+    (state) => state.dmxOutByUniverse[activeUniverse - 1]?.[channelIndex] ?? 0
   )
   const dispatch = useDispatch()
   const { hoverDiv, isHover } = useHover()
 
   const onChange = (newVal: number) => {
-    dispatch(setOverwrite({ index: index, value: newVal, universe: activeUniverse }))
+    dispatch(
+      setOverwrite({
+        index: channelIndex,
+        value: newVal,
+        universe: activeUniverse,
+      })
+    )
   }
+
+  const fixtureStartIndex = fixtureStartCh - 1
+  const fixtureEndIndex = fixtureEndCh - 1
+  const safeCols = Math.max(1, colsPerRow)
+  const row = Math.floor(gridIndex / safeCols)
+  const rowFirstGrid = row * safeCols
+  const rowLastGrid = Math.min(
+    rowFirstGrid + safeCols - 1,
+    Math.max(0, visibleChannels.length - 1)
+  )
+
+  let rowSpan = 0
+  let segStartCh = -1
+  for (let g = rowFirstGrid; g <= rowLastGrid; g++) {
+    const ci = visibleChannels[g]
+    if (ci === undefined) continue
+    if (ci >= fixtureStartIndex && ci <= fixtureEndIndex) {
+      rowSpan++
+      if (segStartCh < 0) {
+        segStartCh = ci
+      }
+    }
+  }
+
+  const showRowFixtureLabel =
+    status !== 'none' &&
+    fixtureName.length > 0 &&
+    rowSpan > 0 &&
+    channelIndex === segStartCh &&
+    channelIndex >= fixtureStartIndex &&
+    channelIndex <= fixtureEndIndex
 
   return (
     <Col ref={hoverDiv}>
-      <Slider
-        value={output / 255}
-        radius={0.5}
-        onChange={onChange}
-        orientation="vertical"
-        disabled={overwrite === undefined}
-        color={overwrite !== undefined ? '#b1b1ff' : undefined}
-      />
+      <SliderRow>
+        <ChannelName title={channelName}>{channelName}</ChannelName>
+        <SliderWrap>
+          <Slider
+            value={output / 255}
+            radius={0.5}
+            onChange={onChange}
+            orientation="vertical"
+            disabled={overwrite === undefined}
+            color={overwrite !== undefined ? '#b1b1ff' : undefined}
+          />
+        </SliderWrap>
+      </SliderRow>
       <Div>
         <Status
           style={{
@@ -234,16 +479,26 @@ function LabelledSlider({ index }: { index: number }) {
             backgroundColor: getColor(fixtureIndex),
           }}
         />
-        <Label>{ch.toString()}</Label>
+        {showRowFixtureLabel ? (
+          <MixerFixtureRowLabel text={fixtureName} rowSpan={rowSpan} />
+        ) : null}
+        <ChannelLabel>{ch.toString()}</ChannelLabel>
       </Div>
-      {isHover && <InfoCursor index={index} />}
+      {isHover && (
+        <InfoCursor
+          output={output}
+          fixtureName={fixtureName}
+          fixtureChannelName={channelName}
+        />
+      )}
     </Col>
   )
 }
 
 const Col = styled.div`
+  --mixer-col-width: 2.85rem;
   height: 14rem;
-  width: 2rem;
+  width: var(--mixer-col-width);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -251,19 +506,82 @@ const Col = styled.div`
   margin-bottom: 1rem;
 `
 
+const SliderRow = styled.div`
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: stretch;
+  gap: 0.12rem;
+`
+
+const ChannelName = styled.div`
+  width: 0.72rem;
+  min-width: 0.72rem;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  color: ${(props) => props.theme.colors.text.secondary};
+  font-size: 0.6rem;
+  letter-spacing: 0.02rem;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  text-align: center;
+  user-select: none;
+`
+
+const SliderWrap = styled.div`
+  flex: 1 1 auto;
+  min-width: 1.5rem;
+  height: 100%;
+`
+
 const Div = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  position: relative;
+  margin-top: 0.5rem;
+  padding-top: 0.15rem;
+  padding-bottom: 0.1rem;
+  height: 2rem;
+  width: 100%;
+  overflow: visible;
+`
+
+const FixtureGroupLabel = styled.div`
+  position: absolute;
+  left: 0.2rem;
+  top: 0.14rem;
+  height: 0.62rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  margin-top: 0.5rem;
-  height: 1.5rem;
-  width: 100%;
+  text-align: center;
+  color: #ddd;
+  font-size: 0.52rem;
+  line-height: 1;
+  z-index: 1;
+  pointer-events: none;
 `
 
-const Label = styled.div`
+/** One row of a wrapped fixture group: fixture name across merged column width (scroll if long). */
+function MixerFixtureRowLabel({ text, rowSpan }: { text: string; rowSpan: number }) {
+  const widthStyle = {
+    width: `calc(var(--mixer-col-width) * ${Math.max(1, rowSpan)} - 0.4rem)`,
+  } as const
+
+  return (
+    <FixtureGroupLabel title={text} style={widthStyle}>
+      <AutoScrollText text={text} />
+    </FixtureGroupLabel>
+  )
+}
+
+const ChannelLabel = styled.div`
   color: #ddd;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
+  line-height: 1;
   z-index: 1;
 `
 
@@ -304,44 +622,16 @@ const statusStyles: { [key in Status_t]: React.CSSProperties } = {
   },
 }
 
-function InfoCursor({ index }: { index: number }) {
-  const ch = index + 1
-  const activeUniverse = useTypedSelector((state) => state.mixer.activeUniverse)
-  const output: number = useRealtimeSelector(
-    (state) => state.dmxOutByUniverse[activeUniverse - 1]?.[index] ?? 0
-  )
+function InfoCursor({
+  output,
+  fixtureName,
+  fixtureChannelName,
+}: {
+  output: number
+  fixtureName: string
+  fixtureChannelName: string
+}) {
   const pos = useMousePosition()
-  const [fixtureType, fixtureChannel]: [
-    FixtureType | null,
-    FixtureChannel | null
-  ] = useDmxSelector((state) => {
-    for (const f of state.universe) {
-      if ((f.universe ?? 1) !== activeUniverse) {
-        continue
-      }
-
-      const ft = state.fixtureTypesByID[f.type]
-      const fc = ft.channels[ch - f.ch]
-      const endChannel = f.ch + ft.channels.length - 1
-      if (ch >= f.ch && ch <= endChannel) return [ft, fc]
-    }
-    return [null, null]
-  })
-
-  const fixtureName = fixtureType?.name
-  let fixtureChannelName: string = fixtureChannel?.type ?? 'N/A'
-  if (fixtureChannel?.type === 'custom') {
-    fixtureChannelName = fixtureChannel.name
-  }
-  if (fixtureChannel?.type === 'axis') {
-    fixtureChannelName = axisDirName(fixtureChannel.dir)
-  }
-  if (fixtureChannel?.type === 'color') {
-    fixtureChannelName = getCustomColorChannelName(fixtureChannel.color)
-  }
-  if (fixtureChannel?.type === 'goboMap') {
-    fixtureChannelName = 'Gobo Map'
-  }
 
   return (
     <Info style={{ left: `${pos.x}px`, top: `${pos.y}px` }}>
@@ -371,4 +661,76 @@ const Val = styled.div`
 const FixtureName = styled.div``
 
 const FixtureChannelName = styled.div``
+
+function AutoScrollText({ text }: { text: string }) {
+  const viewportRef = useRef<HTMLDivElement | null>(null)
+  const tickerRef = useRef<HTMLDivElement | null>(null)
+  const [overflowPx, setOverflowPx] = useState(0)
+
+  useLayoutEffect(() => {
+    const viewport = viewportRef.current
+    const ticker = tickerRef.current
+    if (viewport === null || ticker === null) return
+
+    const measure = () => {
+      const nextOverflow = Math.max(0, ticker.scrollWidth - viewport.clientWidth)
+      setOverflowPx((current) =>
+        Math.abs(current - nextOverflow) > 0.5 ? nextOverflow : current
+      )
+    }
+
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(measure)
+    observer.observe(viewport)
+    observer.observe(ticker)
+    return () => observer.disconnect()
+  }, [text])
+
+  useEffect(() => {
+    const ticker = tickerRef.current
+    if (ticker === null || overflowPx <= 1) return
+    const durationMs = Math.max(4000, Math.round(overflowPx * 60 + 2800))
+    const animation = ticker.animate(
+      [
+        { transform: 'translateX(0px)', offset: 0 },
+        { transform: 'translateX(0px)', offset: 0.18 },
+        { transform: `translateX(-${overflowPx}px)`, offset: 0.5 },
+        { transform: `translateX(-${overflowPx}px)`, offset: 0.82 },
+        { transform: 'translateX(0px)', offset: 1 },
+      ],
+      {
+        duration: durationMs,
+        easing: 'ease-in-out',
+        iterations: Infinity,
+      }
+    )
+    return () => animation.cancel()
+  }, [overflowPx, text])
+
+  return (
+    <div
+      ref={viewportRef}
+      style={{
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <div
+        ref={tickerRef}
+        style={{
+          display: 'inline-block',
+          padding: '0 0.08rem',
+          willChange: overflowPx > 1 ? 'transform' : 'auto',
+        }}
+      >
+        {text}
+      </div>
+    </div>
+  )
+}
 

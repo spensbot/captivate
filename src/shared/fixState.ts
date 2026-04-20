@@ -4,6 +4,15 @@ import {
   SliderControlOptions,
   normalizeSliderOptionsForAction,
 } from 'renderer/redux/deviceState'
+import {
+  initAudioInputSettings,
+  normalizeAudioBandConfig,
+  normalizeAudioInputSettings,
+} from './audioEngine'
+import {
+  initAtmosphericsSettings,
+  normalizeAtmosphericsSettings,
+} from './atmospherics'
 import { DmxState, normalizeLighting3DSettings } from 'renderer/redux/dmxSlice'
 import { initLedState } from 'renderer/redux/ledState'
 import { CleanReduxState } from '../renderer/redux/store'
@@ -22,22 +31,25 @@ import {
   DMX_MIN_VALUE,
   DMX_MAX_VALUE,
   DMX_MAX_UNIVERSES,
-  MOVER_MIN_TURNS,
-  MOVER_MAX_TURNS,
+  MOVER_MIN_PAN_RANGE_DEG,
+  MOVER_MAX_PAN_RANGE_DEG,
+  MOVER_MIN_TILT_RANGE_DEG,
+  MOVER_MAX_TILT_RANGE_DEG,
+  MOVER_DEFAULT_PAN_RANGE_DEG,
+  MOVER_DEFAULT_TILT_RANGE_DEG,
   MoverMountOrientation,
 } from './dmxFixtures'
 import { normalizeStageDimensions } from './stage'
-import { Modulator } from './modulation'
-import { normalizeLfoShape } from './oscillator'
-import { Modulation, Params } from './params'
-import { RandomizerOptions } from './randomizer'
+import { LfoShape, normalizeLfoShape } from './oscillator'
 import { nanoid } from 'nanoid'
 import {
   LightScenes_t,
-  LightScene_t,
-  SplitScene_t,
   VisualScenes_t,
+  VisualSceneTransitionConfig,
 } from './Scenes'
+import {
+  normLayerCfg,
+} from '../visualizer/threejs/layers/LayerConfig'
 type Deprecated_ChannelOther = {
   type: 'other'
   default: DmxValue
@@ -52,15 +64,6 @@ type Deprecated_ChannelMode = {
   type: 'mode'
   min: DmxValue
   max: DmxValue
-}
-
-interface Deprecated_LightScene_t extends LightScene_t {
-  baseParams?: Params
-  randomizer?: RandomizerOptions
-}
-
-interface Deprecated_Modulator extends Modulator {
-  modulation?: Modulation
 }
 
 type Deprecated_Color = 'red' | 'green' | 'blue' | 'white' | ColorChannel
@@ -147,6 +150,7 @@ function normalizeMoverCalibrationValues(calibration: unknown) {
       front?: unknown
       back?: unknown
       home?: unknown
+      rangeDeg?: unknown
       turns?: unknown
       invert?: unknown
     }
@@ -157,6 +161,7 @@ function normalizeMoverCalibrationValues(calibration: unknown) {
       forward?: unknown
       up?: unknown
       home?: unknown
+      rangeDeg?: unknown
       invert?: unknown
     }
     notes?: unknown
@@ -188,10 +193,21 @@ function normalizeMoverCalibrationValues(calibration: unknown) {
     )
   }
 
+  const panRangeRaw = Number(source.pan?.rangeDeg)
   const turnsRaw = Number(source.pan?.turns)
-  const turns = Number.isFinite(turnsRaw)
-    ? Math.max(MOVER_MIN_TURNS, Math.min(MOVER_MAX_TURNS, turnsRaw))
-    : defaults.pan.turns
+  const panRangeDeg = Number.isFinite(panRangeRaw)
+    ? Math.max(MOVER_MIN_PAN_RANGE_DEG, Math.min(MOVER_MAX_PAN_RANGE_DEG, panRangeRaw))
+    : Number.isFinite(turnsRaw)
+    ? Math.max(
+        MOVER_MIN_PAN_RANGE_DEG,
+        Math.min(MOVER_MAX_PAN_RANGE_DEG, turnsRaw * 360)
+      )
+    : defaults.pan.rangeDeg ?? MOVER_DEFAULT_PAN_RANGE_DEG
+
+  const tiltRangeRaw = Number(source.tilt?.rangeDeg)
+  const tiltRangeDeg = Number.isFinite(tiltRangeRaw)
+    ? Math.max(MOVER_MIN_TILT_RANGE_DEG, Math.min(MOVER_MAX_TILT_RANGE_DEG, tiltRangeRaw))
+    : defaults.tilt.rangeDeg ?? MOVER_DEFAULT_TILT_RANGE_DEG
 
   return {
     pan: {
@@ -200,7 +216,7 @@ function normalizeMoverCalibrationValues(calibration: unknown) {
       front: toDmx(source.pan?.front, defaults.pan.front),
       back: toDmx(source.pan?.back, defaults.pan.back),
       home: toDmx(source.pan?.home, defaults.pan.home),
-      turns,
+      rangeDeg: panRangeDeg,
       invert: source.pan?.invert === true,
     },
     tilt: {
@@ -210,6 +226,7 @@ function normalizeMoverCalibrationValues(calibration: unknown) {
       forward: toDmx(source.tilt?.forward, defaults.tilt.forward),
       up: toDmx(source.tilt?.up, defaults.tilt.up),
       home: toDmx(source.tilt?.home, defaults.tilt.home),
+      rangeDeg: tiltRangeDeg,
       invert: source.tilt?.invert === true,
     },
   }
@@ -357,31 +374,7 @@ export default function fixState(state: CleanReduxState): CleanReduxState {
 }
 
 export function fixLightScenes(light: LightScenes_t) {
-  // Move deprecated main scene to split scenes
-  for (const lightScene of lightScenes(light)) {
-    const _lightScene = lightScene as Deprecated_LightScene_t
-    if (
-      _lightScene.baseParams !== undefined &&
-      _lightScene.randomizer !== undefined
-    ) {
-      const oldMainScene: SplitScene_t = {
-        baseParams: _lightScene.baseParams,
-        randomizer: _lightScene.randomizer,
-        groups: {},
-      }
-      delete _lightScene.baseParams
-      delete _lightScene.randomizer
-      lightScene.splitScenes.unshift(oldMainScene)
-    }
-  }
-
   for (const modulator of modulators(light)) {
-    const _modulator = modulator as Deprecated_Modulator
-    if (_modulator.modulation !== undefined) {
-      modulator.splitModulations.unshift(_modulator.modulation)
-      delete _modulator.modulation
-    }
-
     const lfo = modulator.lfo as {
       shape?: unknown
       skew?: number
@@ -389,6 +382,20 @@ export function fixLightScenes(light: LightScenes_t) {
       phaseShift?: number
       flip?: number
       period?: number
+      sinePeakWidth?: number
+      rampCurve?: number
+      squareDuty?: number
+      sawFlatten?: number
+      noiseSeed?: number
+      audioBandLowHz?: number
+      audioBandHighHz?: number
+      audioThreshold?: number
+      audioMax?: number
+      audioAttack?: number
+      audioDecay?: number
+      audioEnergySmoothing?: number
+      audioBandSmoothing?: number
+      audioGain?: number
     }
 
     modulator.lfo.shape = normalizeLfoShape(lfo.shape)
@@ -417,23 +424,56 @@ export function fixLightScenes(light: LightScenes_t) {
     if (!Number.isFinite(lfo.period) || (lfo.period ?? 0) <= 0) {
       modulator.lfo.period = 4
     }
-  }
+    modulator.lfo.sinePeakWidth = Number.isFinite(lfo.sinePeakWidth)
+      ? Math.min(1, Math.max(0, Number(lfo.sinePeakWidth)))
+      : 0.5
+    modulator.lfo.rampCurve = Number.isFinite(lfo.rampCurve)
+      ? Math.min(1, Math.max(0, Number(lfo.rampCurve)))
+      : 0.5
+    modulator.lfo.squareDuty = Number.isFinite(lfo.squareDuty)
+      ? Math.min(1, Math.max(0, Number(lfo.squareDuty)))
+      : 0.5
+    modulator.lfo.sawFlatten = Number.isFinite(lfo.sawFlatten)
+      ? Math.min(1, Math.max(0, Number(lfo.sawFlatten)))
+      : 0
+    modulator.lfo.noiseSeed = Number.isFinite(lfo.noiseSeed)
+      ? Math.min(1, Math.max(0, Number(lfo.noiseSeed)))
+      : 0.5
 
-  for (const lightScene of lightScenes(light)) {
-    const maybeLegacyMover = lightScene as LightScene_t & { mover?: unknown }
-    if (Object.prototype.hasOwnProperty.call(maybeLegacyMover, 'mover')) {
-      delete maybeLegacyMover.mover
-    }
-  }
-
-  for (const split of splits(light)) {
-    if (Array.isArray(split.groups)) {
-      const groups = split.groups as string[]
-      split.groups = {}
-      for (const group of groups) {
-        split.groups[group] = true
+    const normalizedBand = normalizeAudioBandConfig({
+      lowHz: lfo.audioBandLowHz,
+      highHz: lfo.audioBandHighHz,
+    })
+    modulator.lfo.audioBandLowHz = normalizedBand.lowHz
+    modulator.lfo.audioBandHighHz = normalizedBand.highHz
+    modulator.lfo.audioThreshold = Number.isFinite(lfo.audioThreshold)
+      ? Math.min(0.99, Math.max(0, Number(lfo.audioThreshold)))
+      : 0.02
+    modulator.lfo.audioMax = Number.isFinite(lfo.audioMax)
+      ? Math.min(1, Math.max(modulator.lfo.audioThreshold + 0.01, Number(lfo.audioMax)))
+      : Math.min(1, Math.max(modulator.lfo.audioThreshold + 0.01, 0.6))
+    if (normalizeLfoShape(modulator.lfo.shape) === LfoShape.AudioBand) {
+      const cap = 0.65
+      modulator.lfo.audioMax = Math.min(cap, modulator.lfo.audioMax)
+      if (modulator.lfo.audioMax <= modulator.lfo.audioThreshold) {
+        modulator.lfo.audioMax = Math.min(
+          cap,
+          modulator.lfo.audioThreshold + 0.01
+        )
       }
     }
+    modulator.lfo.audioAttack = Number.isFinite(lfo.audioAttack)
+      ? Math.min(1, Math.max(0, Number(lfo.audioAttack)))
+      : 0.35
+    modulator.lfo.audioDecay = Number.isFinite(lfo.audioDecay)
+      ? Math.min(1, Math.max(0, Number(lfo.audioDecay)))
+      : 0.55
+    modulator.lfo.audioEnergySmoothing = Number.isFinite(lfo.audioEnergySmoothing)
+      ? Math.min(1, Math.max(0, Number(lfo.audioEnergySmoothing)))
+      : 0.65
+    modulator.lfo.audioBandSmoothing = Number.isFinite(lfo.audioBandSmoothing)
+      ? Math.min(1, Math.max(0, Number(lfo.audioBandSmoothing)))
+      : 0
   }
 
   for (const split of splits(light)) {
@@ -497,7 +537,46 @@ export function fixLightScenes(light: LightScenes_t) {
   }
 }
 
-export function fixVisualScenes(_visualScenes: VisualScenes_t) {}
+export function fixVisualScenes(visualState: VisualScenes_t) {
+  for (const scene of visualScenes(visualState)) {
+    scene.config = normLayerCfg(scene.config) as typeof scene.config
+
+    if (typeof scene.name !== 'string') {
+      scene.name = 'Name'
+    }
+
+    if (!Number.isFinite(scene.epicness)) {
+      scene.epicness = 0
+    } else {
+      scene.epicness = Math.min(1, Math.max(0, scene.epicness))
+    }
+
+    scene.autoEnabled = scene.autoEnabled !== false
+    scene.transition = normalizeVisualSceneTransition(scene.transition)
+  }
+}
+
+function normalizeVisualSceneTransition(
+  value: unknown
+): VisualSceneTransitionConfig {
+  const source = (value ?? {}) as Partial<VisualSceneTransitionConfig>
+  const type =
+    source.type === 'cut' ||
+    source.type === 'fade' ||
+    source.type === 'dissolve' ||
+    source.type === 'flash'
+      ? source.type
+      : 'fade'
+  const rawDuration = Number(source.durationMs)
+  const durationMs =
+    Number.isFinite(rawDuration) && rawDuration > 0
+      ? Math.max(80, Math.min(6000, Math.round(rawDuration)))
+      : 420
+  return {
+    type,
+    durationMs,
+  }
+}
 
 export function fixDmxState(dmx: DmxState) {
   const maybeStageState = dmx as DmxState & { stage?: unknown }
@@ -563,8 +642,18 @@ export function fixDmxState(dmx: DmxState) {
   }
   for (const fixture of dmx.universe as (typeof dmx.universe[number] & {
     universe?: number
+    name?: unknown
   })[]) {
     ensureFixtureId(fixture)
+
+    if (typeof fixture.name === 'string') {
+      fixture.name = fixture.name.trim()
+      if (fixture.name.length === 0) {
+        delete fixture.name
+      }
+    } else {
+      delete fixture.name
+    }
 
     if (!Array.isArray(fixture.groups)) {
       fixture.groups = []
@@ -732,8 +821,14 @@ export function fixDeviceState(deviceState: DeviceState) {
       universeCount: 1,
       dmxUniverseByDevice: {},
       artNetIpByUniverse: {},
+      audioInput: initAudioInputSettings(),
+      midiClockBpmEnabled: false,
+      atmospherics: initAtmosphericsSettings(),
     }
   }
+
+  deviceState.connectionSettings.midiClockBpmEnabled =
+    deviceState.connectionSettings.midiClockBpmEnabled === true
 
   if (deviceState.connectionSettings.universeCount === undefined) {
     deviceState.connectionSettings.universeCount = 1
@@ -750,6 +845,15 @@ export function fixDeviceState(deviceState: DeviceState) {
   if (deviceState.connectionSettings.artNetIpByUniverse === undefined) {
     deviceState.connectionSettings.artNetIpByUniverse = {}
   }
+
+  deviceState.connectionSettings.audioInput = normalizeAudioInputSettings(
+    deviceState.connectionSettings.audioInput
+  )
+  deviceState.connectionSettings.audioInput.beatTapHintBpm = null
+  deviceState.connectionSettings.audioInput.beatTapHintAtMs = 0
+  deviceState.connectionSettings.atmospherics = normalizeAtmosphericsSettings(
+    deviceState.connectionSettings.atmospherics
+  )
 
   for (const [connectionId, universe] of Object.entries(
     deviceState.connectionSettings.dmxUniverseByDevice

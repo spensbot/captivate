@@ -18,6 +18,7 @@ interface Props {
   style?: React.CSSProperties
   suffix?: string
   noArrows?: boolean
+  title?: string
 }
 
 // This is really bad react behavior... But IDK what else to do
@@ -35,6 +36,7 @@ export default function DraggableNumber({
   style,
   suffix,
   noArrows,
+  title,
 }: Props) {
   const speedAdjust = 500 / (max - min)
 
@@ -113,7 +115,7 @@ export default function DraggableNumber({
   }
 
   return (
-    <Root style={style}>
+    <Root style={style} title={title}>
       <DragArea ref={dragContainer} onMouseDown={onMouseDownWrapper}>
         {valueString}
       </DragArea>

@@ -46,7 +46,7 @@ export default class EffectManager {
   }
 
   dispose() {
-    this.effects.forEach((effect) => effect.dispose())
+    this.removeAllEffects()
   }
 
   resetEffects(width: number, height: number) {

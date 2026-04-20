@@ -119,9 +119,7 @@ function shapeOrHoleMesh(
   style: StrokeStyle,
   material: THREE.Material
 ) {
-  const points = shapeOrHole
-    .getPoints()
-    .map((p) => new THREE.Vector3(p.x, p.y, 0))
+  const points = shapeOrHole.getPoints().map((p) => new THREE.Vector2(p.x, p.y))
   const geometry = SVGLoader.pointsToStroke(points, style)
   return new THREE.Mesh(geometry, material)
 }

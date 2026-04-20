@@ -1,5 +1,3 @@
-import { randomRanged } from "math/util"
-
 export interface ParticleState {
   x: number
   y: number
@@ -46,10 +44,11 @@ export function gravity(
   dt: number,
   { x, y, tx, ty, vx, vy }: ParticleState,
   { gravity, drag }: Gravity,
+  beatTime: number,
 ): ParticleState {
   const { distance, nx, ny } = positionInfo(x, y, tx, ty)
   const { speed, nvx, nvy } = velocityInfo(vx, vy)
-  const rand = randomRanged(-1, 1) * 3
+  const rand = deterministicNoise(tx, ty, beatTime) * 3
 
   //acceleration
   const aGrav = gravity // ((distance ^ 2) + 0.01)
@@ -71,6 +70,11 @@ export function gravity(
     vx: vx + ax * dt,
     vy: vy + ay * dt,
   }
+}
+
+function deterministicNoise(x: number, y: number, beatTime: number) {
+  const n = Math.sin(x * 12.9898 + y * 78.233 + beatTime * 34.37) * 43758.5453
+  return (n - Math.floor(n)) * 2 - 1
 }
 
 // interface Smoke {

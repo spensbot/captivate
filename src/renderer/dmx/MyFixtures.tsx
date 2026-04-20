@@ -12,6 +12,7 @@ import {
   captivateFileFilters,
   getDefaultFixtureLibraryPath,
   loadFile,
+  loadFixtureLibraryFromDefaultPath,
   saveFixtureLibraryToDefaultPath,
 } from '../autosave'
 import {
@@ -20,6 +21,9 @@ import {
   serializeFixtureLibrary,
 } from '../../shared/fixtureLibrary'
 import QlcFixtureBrowserModal from './QlcFixtureBrowserModal'
+import { openAppAlert, openAppConfirm } from 'renderer/overlays/appDialogService'
+import BusyModal from 'renderer/overlays/BusyModal'
+import useStandardBusy from 'renderer/hooks/useStandardBusy'
 
 export default function MyFixtures() {
   const fixtureTypeIds = useDmxSelector((state) => state.fixtureTypes)
@@ -34,6 +38,7 @@ export default function MyFixtures() {
   })
   const [isPopup, setIsPopup] = useState(false)
   const [isQlcModalOpen, setIsQlcModalOpen] = useState(false)
+  const { busy, busyMessage, startBusy, stopBusy } = useStandardBusy()
 
   function addImportedFixtures(importedFixtures: FixtureType[]) {
     for (const importedFixture of importedFixtures) {
@@ -41,37 +46,145 @@ export default function MyFixtures() {
     }
   }
 
+  async function loadFixtureDatabaseFromFile() {
+    startBusy({
+      title: 'Loading Fixture Database',
+      message: 'Reading fixture database file...',
+    })
+    try {
+      const serialized = await loadFile('Load Fixture Database', [
+        captivateFileFilters.captivateFixtures,
+      ])
+      if (serialized === null) {
+        return
+      }
+      const importedFixtures = parseFixtureLibrary(serialized)
+      addImportedFixtures(importedFixtures)
+      stopBusy()
+      await openAppAlert({
+        title: 'Fixture Database',
+        message: `Loaded ${importedFixtures.length} fixture${
+          importedFixtures.length === 1 ? '' : 's'
+        } from selected database.`,
+        level: 'info',
+        source: 'Fixtures',
+      })
+    } finally {
+      stopBusy()
+    }
+  }
+
+  async function loadFixtureDatabase() {
+    try {
+      startBusy({
+        title: 'Loading Fixture Database',
+        message: 'Reading saved fixture database...',
+      })
+      const serialized = await loadFixtureLibraryFromDefaultPath()
+      if (serialized !== null) {
+        const importedFixtures = parseFixtureLibrary(serialized)
+        addImportedFixtures(importedFixtures)
+        stopBusy()
+        await openAppAlert({
+          title: 'Fixture Database',
+          message: `Loaded ${importedFixtures.length} fixture${
+            importedFixtures.length === 1 ? '' : 's'
+          } from saved fixture database.`,
+          level: 'info',
+          source: 'Fixtures',
+        })
+        return
+      }
+
+      stopBusy()
+      const defaultPath = await getDefaultFixtureLibraryPath()
+      const shouldPickFile = await openAppConfirm({
+        title: 'Fixture Database',
+        message: `No saved fixture database was found at:\n${defaultPath}\n\nDo you want to pick a fixture database file instead?`,
+        confirmLabel: 'Pick File',
+        cancelLabel: 'Cancel',
+      })
+      if (shouldPickFile) {
+        await loadFixtureDatabaseFromFile()
+      }
+    } catch (err) {
+      console.warn(err)
+      const message =
+        err instanceof Error ? err.message : 'Unknown fixture database error.'
+      stopBusy()
+      await openAppAlert({
+        title: 'Fixture Database',
+        message: `Fixture database load failed: ${message}`,
+        level: 'error',
+        source: 'Fixtures',
+      })
+    } finally {
+      stopBusy()
+    }
+  }
+
   async function importFixtures() {
     try {
+      startBusy({
+        title: 'Importing Fixtures',
+        message: 'Reading fixture definitions...',
+      })
       const serialized = await loadFile('Import Fixtures', [
         captivateFileFilters.captivateFixtures,
         captivateFileFilters.qlcFixtures,
       ])
+      if (serialized === null) {
+        return
+      }
       const importedFixtures = parseFixtureLibrary(serialized)
       addImportedFixtures(importedFixtures)
     } catch (err) {
       console.warn(err)
       const message =
         err instanceof Error ? err.message : 'Unknown fixture import error.'
-      window.alert(`Fixture import failed: ${message}`)
+      stopBusy()
+      await openAppAlert({
+        title: 'Fixture Import',
+        message: `Fixture import failed: ${message}`,
+        level: 'error',
+        source: 'Fixtures',
+      })
+    } finally {
+      stopBusy()
     }
   }
 
   async function exportFixtures() {
     try {
+      startBusy({
+        title: 'Saving Fixture Database',
+        message: 'Writing fixture database to disk...',
+      })
       const serialized = serializeFixtureLibrary(fixtureTypes)
       const savedPath = await saveFixtureLibraryToDefaultPath(serialized)
-      window.alert(`Fixture database saved to:\n${savedPath}`)
+      stopBusy()
+      await openAppAlert({
+        title: 'Fixture Database',
+        message: `Fixture database saved to:\n${savedPath}`,
+        level: 'info',
+        source: 'Fixtures',
+      })
     } catch (err) {
       console.warn(err)
       const fallbackPath = await getDefaultFixtureLibraryPath().catch(
         () => 'default fixture library path'
       )
-      window.alert(
-        `Failed to save fixture database to:\n${fallbackPath}\n\n${
+      stopBusy()
+      await openAppAlert({
+        title: 'Fixture Database',
+        message: `Failed to save fixture database to:\n${fallbackPath}\n\n${
           err instanceof Error ? err.message : 'Unknown save error.'
-        }`
-      )
+        }`,
+        level: 'error',
+        source: 'Fixtures',
+      })
+    } finally {
+      stopBusy()
     }
   }
 
@@ -80,14 +193,20 @@ export default function MyFixtures() {
       <Header>
         <Title>Fixtures</Title>
         <HeaderButtons>
-          <Button
-            size="small"
+          <HeaderDbButton
+            variant="outlined"
+            onClick={() => void loadFixtureDatabase()}
+            title="Load all fixtures from your saved fixture database"
+          >
+            Load DB
+          </HeaderDbButton>
+          <HeaderDbButton
             variant="outlined"
             onClick={() => void exportFixtures()}
             title="Save all fixtures in this project to the default fixture database file"
           >
-            Save Fixture Database
-          </Button>
+            Save DB
+          </HeaderDbButton>
         </HeaderButtons>
       </Header>
       <Items>
@@ -143,12 +262,20 @@ export default function MyFixtures() {
         onClose={() => setIsQlcModalOpen(false)}
         onImportFixtures={addImportedFixtures}
       />
+      <BusyModal
+        open={busy !== null}
+        title={busy?.title ?? 'Working...'}
+        message={busyMessage}
+        progress={busy?.progress}
+      />
     </Root>
   )
 }
 
 const Root = styled.div`
   height: 100%;
+  min-width: 0;
+  max-width: 100%;
   padding: 1rem;
   background-color: ${(props) => props.theme.colors.bg.darker};
   border-right: 1px solid ${(props) => props.theme.colors.divider};
@@ -170,6 +297,17 @@ const HeaderButtons = styled.div`
   display: flex;
   gap: 0.35rem;
   margin-left: auto;
+  padding: 0.2rem 0.25rem;
+  border-radius: 0.35rem;
+  background: rgba(255, 255, 255, 0.04);
+`
+
+const HeaderDbButton = styled(Button)`
+  min-width: 0;
+  padding: 0.14rem 0.45rem;
+  font-size: 0.68rem;
+  line-height: 1.05;
+  text-transform: none;
 `
 
 const Items = styled.div`

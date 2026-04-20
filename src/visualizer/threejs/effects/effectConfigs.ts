@@ -89,7 +89,7 @@ export interface RenderLayerConfig {
 export function initRenderLayerConfig(): RenderLayerConfig {
   return {
     type: 'RenderLayer',
-    layerConfig: initLayerConfig('CubeSphere'),
+    layerConfig: initLayerConfig('builtin'),
   }
 }
 export interface UnrealBloomConfig {
@@ -103,6 +103,20 @@ export function initUnrealBloomConfig(): UnrealBloomConfig {
   return { type: 'UnrealBloom', strength: 0.5, radius: 1, threshold: 0.5 }
 }
 
+export interface StreamOverlayConfig {
+  type: 'StreamOverlay'
+  url: string
+  opacity: number
+}
+
+export function initStreamOverlayConfig(): StreamOverlayConfig {
+  return {
+    type: 'StreamOverlay',
+    url: '',
+    opacity: 0.5,
+  }
+}
+
 export type EffectConfig =
   | AdaptiveToneMappingConfig
   | AfterImageConfig
@@ -114,6 +128,7 @@ export type EffectConfig =
   | PixelConfig
   | RenderLayerConfig
   | UnrealBloomConfig
+  | StreamOverlayConfig
 
 export type EffectType = EffectConfig['type']
 
@@ -143,6 +158,8 @@ export function initEffectConfig(type: EffectConfig['type']): EffectConfig {
       return initPixelConfig()
     case 'UnrealBloom':
       return initUnrealBloomConfig()
+    case 'StreamOverlay':
+      return initStreamOverlayConfig()
     case 'RenderLayer':
       return initRenderLayerConfig()
     default:
@@ -156,6 +173,7 @@ export const effectTypes: EffectType[] = [
   'UnrealBloom',
   'AfterImage',
   'Pixel',
+  'StreamOverlay',
   'DotScreen',
   'Film',
   'Glitch',
@@ -173,6 +191,7 @@ export const effectDisplayNames: { [key in EffectType]: string } = {
   HalfTone: 'Half Tone',
   LightSync: 'Light Sync',
   Pixel: 'Pixel',
+  StreamOverlay: 'Stream Overlay',
   UnrealBloom: 'Bloom',
   RenderLayer: 'Layer',
   AdaptiveToneMapping: 'Adaptive Tone Mapping',

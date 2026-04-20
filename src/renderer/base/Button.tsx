@@ -8,7 +8,7 @@ type Props = {
 
 export default function Button({ label, fontSize = '0.9rem', onClick }: Props) {
   return (
-    <Root onClick={onClick} style={{ fontSize: fontSize }}>
+    <Root onClick={onClick} style={{ fontSize: fontSize }} title={label}>
       {label}
     </Root>
   )

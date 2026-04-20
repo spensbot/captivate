@@ -44,6 +44,7 @@ export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
         }}
       >
         <Button
+          title="Enable/disable automatic scene changes"
           style={{
             backgroundColor: enabled ? '#3d5a' : '#fff3',
             color: enabled ? '#eee' : '#fff9',
@@ -65,6 +66,7 @@ export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
         min={1}
         max={64}
         onChange={onPeriodChange}
+        title="Auto-scene period in beats"
         style={{
           backgroundColor: '#0005',
           color: enabled ? '#fff' : '#fff5',

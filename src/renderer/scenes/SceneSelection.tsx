@@ -1,12 +1,14 @@
 import { sortScenesByBombacity, autoBombacity } from '../redux/controlSlice'
 import { SceneType } from '../../shared/Scenes'
-import { IconButton } from '@mui/material'
+import { IconButton, Tooltip } from '@mui/material'
 import styled from 'styled-components'
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import SortIcon from '@mui/icons-material/Sort'
 import AutoScene from './AutoScene'
 import ScenesList from './ScenesList'
 import { useDispatch } from 'react-redux'
+import VisualSceneTransitionControls from './VisualSceneTransitionControls'
+import { useControlSelector } from '../redux/store'
 
 export default function SceneSelection({
   sceneType,
@@ -14,6 +16,8 @@ export default function SceneSelection({
   sceneType: SceneType
 }) {
   const dispatch = useDispatch()
+  const sceneCount = useControlSelector((state) => state[sceneType].ids.length)
+  const canReweightScenes = sceneCount > 1
 
   return (
     <Root>
@@ -23,19 +27,51 @@ export default function SceneSelection({
         {sceneType === 'light' && (
           <>
             {' '}
-            <IconButton
-              onClick={() => dispatch(sortScenesByBombacity(sceneType))}
+            <Tooltip
+              title={
+                canReweightScenes
+                  ? 'Sort scenes by energy level'
+                  : 'Add at least 2 scenes to sort'
+              }
             >
-              <SortIcon style={{ transform: 'scaleY(-1)' }} />
-            </IconButton>
-            <IconButton onClick={() => dispatch(autoBombacity(sceneType))}>
-              <AutoAwesomeIcon />
-            </IconButton>
+              <span>
+                <IconButton
+                  title="Sort scenes by energy level"
+                  disabled={!canReweightScenes}
+                  onClick={() => dispatch(sortScenesByBombacity(sceneType))}
+                >
+                  <SortIcon style={{ transform: 'scaleY(-1)' }} />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip
+              title={
+                canReweightScenes
+                  ? 'Distribute scene energy from low to high automatically'
+                  : 'Add at least 2 scenes to auto-distribute energy'
+              }
+            >
+              <span>
+                <IconButton
+                  title="Auto-distribute scene energy"
+                  disabled={!canReweightScenes}
+                  onClick={() => dispatch(autoBombacity(sceneType))}
+                >
+                  <AutoAwesomeIcon />
+                </IconButton>
+              </span>
+            </Tooltip>
           </>
         )}
       </Header>
       <Sp2 />
       <AutoScene sceneType={sceneType} />
+      {sceneType === 'visual' && (
+        <>
+          <Sp2 />
+          <VisualSceneTransitionControls />
+        </>
+      )}
       <Sp2 />
       <ScenesList sceneType={sceneType} />
     </Root>

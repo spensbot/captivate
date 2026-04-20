@@ -1,7 +1,7 @@
 import styled from 'styled-components'
 import { Scene, NewScene } from './Scene'
 import { useControlSelector } from '../redux/store'
-import { DragDropContext, Droppable } from 'react-beautiful-dnd'
+import { DragDropContext, Droppable } from '@hello-pangea/dnd'
 import { useDispatch } from 'react-redux'
 import { reorderScene } from '../redux/controlSlice'
 import { SceneType } from '../../shared/Scenes'
@@ -71,4 +71,3 @@ const Root = styled.div`
     border-radius: 999px;
   }
 `
-

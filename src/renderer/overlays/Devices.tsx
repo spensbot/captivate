@@ -5,6 +5,7 @@ import { useDispatch } from 'react-redux'
 import {
   setDmxConnectable,
   setMidiConnectable,
+  setMidiClockBpmEnabled,
   setOpenDmxRefreshRateHz,
   setUniverseCount,
   setDmxDeviceUniverse,
@@ -22,10 +23,16 @@ import {
 import DmxTroubleShoot from './DmxTroubleshoot'
 import Input from 'renderer/base/Input'
 import DraggableNumber from 'renderer/base/DraggableNumber'
+import LabelledCheckbox from 'renderer/base/LabelledCheckbox'
+import LinkButton from '../menu/LinkButton'
+import StartStopSyncButton from '../menu/StartStopSyncButton'
+import { useRealtimeSelector } from '../redux/realtimeStore'
 
-interface Props {}
+interface Props {
+  embedded?: boolean
+}
 
-export default function Devices({}: Props) {
+export default function Devices({ embedded = false }: Props) {
   const dispatch = useDispatch()
 
   const deviceSetup = useControlSelector((state) => state.device)
@@ -36,9 +43,9 @@ export default function Devices({}: Props) {
   const hasOpenDmx =
     dmx.available.find((device) => device.type === 'OpenDmxUsb') !== undefined
 
-  return (
-    <Root>
-      <Modal>
+  const content = (
+    <>
+      {!embedded && (
         <Row style={{ paddingBottom: '0' }}>
           <Title>Connections</Title>
           <Tooltip title="Close connections menu">
@@ -47,66 +54,80 @@ export default function Devices({}: Props) {
             </IconButton>
           </Tooltip>
         </Row>
-        <Row>
-          <Pane>
-            <SubTitle>Dmx</SubTitle>
+      )}
+      <Row>
+        <Pane>
+          <SubTitle>Dmx</SubTitle>
+          <SettingRow>
+            <SettingLabel>Universe Count</SettingLabel>
+            <Tooltip title="Total universes available for DMX and Art-Net routing">
+              <div>
+                <DraggableNumber
+                  value={deviceSetup.connectionSettings.universeCount}
+                  min={1}
+                  max={16}
+                  onChange={(newVal) => dispatch(setUniverseCount(newVal))}
+                />
+              </div>
+            </Tooltip>
+          </SettingRow>
+          {dmx.available.map((device) => (
+            <DmxDevice
+              key={device.connectionId}
+              device={device}
+              connected={dmx.connected}
+              connectable={connectable.dmx}
+            />
+          ))}
+          {dmx.available.length === 0 && <NoneFound />}
+          {hasOpenDmx && (
             <SettingRow>
-              <SettingLabel>Universe Count</SettingLabel>
-              <Tooltip title="Total universes available for DMX and Art-Net routing">
+              <SettingLabel>Open Dmx Refresh Rate</SettingLabel>
+              <Tooltip title="Refresh rate used by Open DMX USB devices">
                 <div>
                   <DraggableNumber
-                    value={deviceSetup.connectionSettings.universeCount}
-                    min={1}
-                    max={16}
-                    onChange={(newVal) => dispatch(setUniverseCount(newVal))}
+                    value={deviceSetup.connectionSettings.openDmxRefreshRateHz}
+                    min={5}
+                    max={40}
+                    onChange={(newVal) =>
+                      dispatch(setOpenDmxRefreshRateHz(newVal))
+                    }
+                    suffix="hz"
                   />
                 </div>
               </Tooltip>
             </SettingRow>
-            {dmx.available.map((device) => (
-              <DmxDevice
-                key={device.connectionId}
-                device={device}
-                connected={dmx.connected}
-                connectable={connectable.dmx}
-              />
-            ))}
-            {dmx.available.length === 0 && <NoneFound />}
-            {hasOpenDmx && (
-              <SettingRow>
-                <SettingLabel>Open Dmx Refresh Rate</SettingLabel>
-                <Tooltip title="Refresh rate used by Open DMX USB devices">
-                  <div>
-                    <DraggableNumber
-                      value={deviceSetup.connectionSettings.openDmxRefreshRateHz}
-                      min={5}
-                      max={40}
-                      onChange={(newVal) =>
-                        dispatch(setOpenDmxRefreshRateHz(newVal))
-                      }
-                      suffix="hz"
-                    />
-                  </div>
-                </Tooltip>
-              </SettingRow>
-            )}
-            <ArtNetDevices />
-          </Pane>
-          <Divider />
-          <Pane>
-            <SubTitle>Midi</SubTitle>
-            {midi.available.map((device) => (
-              <MidiDevice
-                key={device.name}
-                device={device}
-                connected={midi.connected}
-                connectable={connectable.midi}
-              />
-            ))}
-            {midi.available.length === 0 && <NoneFound />}
-          </Pane>
-        </Row>
-        <DmxTroubleShoot />
+          )}
+          <ArtNetDevices />
+        </Pane>
+        <Divider />
+        <Pane>
+          <SubTitle>Midi</SubTitle>
+          {midi.available.map((device) => (
+            <MidiDevice
+              key={device.name}
+              device={device}
+              connected={midi.connected}
+              connectable={connectable.midi}
+            />
+          ))}
+          {midi.available.length === 0 && <NoneFound />}
+          <MidiClockBpmControl />
+          <AbletonLinkConnections />
+        </Pane>
+      </Row>
+      <DmxTroubleShoot />
+    </>
+  )
+
+  if (embedded) {
+    return <Modal $embedded={true}>{content}</Modal>
+  }
+
+  return (
+    <Root>
+      <Modal $embedded={false}>
+        {content}
       </Modal>
     </Root>
   )
@@ -116,14 +137,21 @@ const Root = styled.div`
   width: 100%;
   height: 100%;
   display: flex;
-  align-items: flex-start;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: center;
   background-color: #0007;
 `
 
-const Modal = styled.div`
-  background-color: ${(props) => props.theme.colors.bg.primary};
-  margin: 3rem;
+const Modal = styled.div<{ $embedded: boolean }>`
+  background-color: ${(props) =>
+    props.$embedded ? 'transparent' : props.theme.colors.bg.primary};
+  width: ${(props) =>
+    props.$embedded ? '100%' : 'min(68rem, calc(100vw - 3rem))'};
+  max-height: ${(props) => (props.$embedded ? 'none' : 'calc(100vh - 3rem)')};
+  overflow: ${(props) => (props.$embedded ? 'visible' : 'auto')};
+  border: ${(props) => (props.$embedded ? 'none' : '1px solid #ffffff2d')};
+  border-radius: ${(props) => (props.$embedded ? '0' : '0.5rem')};
+  ${(props) => (props.$embedded ? 'margin: 0;' : 'margin: 1.5rem;')}
 `
 
 const Row = styled.div`
@@ -176,6 +204,113 @@ const HelperText = styled.p`
   font-size: 0.7rem;
   margin: 0 0 0.5rem;
 `
+
+function MidiClockBpmControl() {
+  const dispatch = useDispatch()
+  const enabled = useControlSelector(
+    (state) => state.device.connectionSettings.midiClockBpmEnabled === true
+  )
+
+  return (
+    <>
+      <SubSubTitle style={{ marginTop: '1.1rem' }}>Tempo from MIDI clock</SubSubTitle>
+      <HelperText>
+        When enabled, master BPM follows MIDI Timing Clock (24 pulses per quarter) from any
+        enabled MIDI input above. Your DAW or hardware must send MIDI clock on that port.
+        This turns off audio beat detection driving tempo (only one external source at a
+        time).
+      </HelperText>
+      <Tooltip title="Requires an enabled MIDI device that transmits 0xF8 clock messages (common in Ableton Live, Reaper, hardware sequencers).">
+        <MidiClockRow>
+          <LabelledCheckbox
+            label="Drive BPM from MIDI clock"
+            checked={enabled}
+            onChange={(next) => dispatch(setMidiClockBpmEnabled(next))}
+          />
+        </MidiClockRow>
+      </Tooltip>
+    </>
+  )
+}
+
+const MidiClockRow = styled.div`
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.35rem;
+`
+
+const SyncTransportBlock = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 0.35rem;
+`
+
+const SyncTransportInner = styled.div`
+  display: flex;
+  align-items: center;
+`
+
+const SyncTransportText = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.08rem;
+  min-width: 0;
+`
+
+const SyncTransportTitle = styled.div`
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: ${(p) => p.theme.colors.text.primary};
+`
+
+const SyncTransportState = styled.div`
+  font-size: 0.68rem;
+  color: ${(p) => p.theme.colors.text.secondary};
+`
+
+function AbletonLinkConnections() {
+  const linkEnabled = useRealtimeSelector((state) => state.time.isEnabled)
+  const startStopSyncEnabled = useRealtimeSelector(
+    (state) => state.time.isStartStopSyncEnabled
+  )
+
+  return (
+    <>
+      <SubSubTitle style={{ marginTop: '1.1rem' }}>Ableton Link</SubSubTitle>
+      <HelperText>
+        Sync tempo (BPM) with Ableton Live and other Link-enabled apps on this computer and
+        the same network. This is separate from MIDI — it uses the network for timing, not
+        a MIDI cable.
+      </HelperText>
+      <LinkButton />
+      {!linkEnabled && (
+        <HelperText>
+          When Link is on, you can optionally sync master play/stop with compatible apps
+          using the control below.
+        </HelperText>
+      )}
+      {linkEnabled && (
+        <SyncTransportBlock>
+          <Tooltip
+            title="When supported, play and stop follow other Link apps in the session. Click the icon to turn sync on or off."
+            placement="right"
+          >
+            <SyncTransportInner>
+              <StartStopSyncButton mode="menu" />
+            </SyncTransportInner>
+          </Tooltip>
+          <SyncTransportText>
+            <SyncTransportTitle>Start/stop sync</SyncTransportTitle>
+            <SyncTransportState>
+              {startStopSyncEnabled ? 'On — follows Link transport' : 'Off'}
+            </SyncTransportState>
+          </SyncTransportText>
+        </SyncTransportBlock>
+      )}
+    </>
+  )
+}
 
 function ArtNetDevices() {
   const dispatch = useDispatch()

@@ -1,52 +1,38 @@
 import styled from 'styled-components'
 import IconButton from '@mui/material/IconButton'
-import zIndexes from '../zIndexes'
 import CloseIcon from '@mui/icons-material/Close'
-import useBounds from '../hooks/useBounds'
+import zIndexes from '../zIndexes'
 
 interface Props {
-  title: string
+  title: React.ReactNode
   children: React.ReactNode
   onClose: () => void
+  cardWidth?: string
+  cardMaxWidth?: string
+  cardMaxHeight?: string
 }
 
-const PADDING_REM = 1
-
-function remToPx(rem: number) {
-  return rem * parseFloat(getComputedStyle(document.documentElement).fontSize)
-}
-
-export default function Popup({ title, onClose, children }: Props) {
-  const [rootRef, rootBounds] = useBounds()
-  const [popupRef, popupBounds] = useBounds()
-
-  const style: React.CSSProperties = {}
-
-  if (rootBounds && popupBounds) {
-    const padding = remToPx(PADDING_REM)
-
-    if (rootBounds.top + popupBounds.height + padding > window.innerHeight) {
-      style.bottom = padding
-    } else {
-      style.top = rootBounds.top
-    }
-
-    if (rootBounds.left + popupBounds.width + padding > window.innerWidth) {
-      style.right = padding
-    } else {
-      style.left = rootBounds.left
-    }
-  }
-
+export default function Popup({
+  title,
+  onClose,
+  children,
+  cardWidth,
+  cardMaxWidth,
+  cardMaxHeight,
+}: Props) {
   return (
-    <Root ref={rootRef}>
-      <Dimmer
-        onClick={(e) => {
-          e.preventDefault()
+    <Root
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
           onClose()
-        }}
-      />
-      <Popup_ ref={popupRef} style={style}>
+        }
+      }}
+    >
+      <Card
+        $cardWidth={cardWidth}
+        $cardMaxWidth={cardMaxWidth}
+        $cardMaxHeight={cardMaxHeight}
+      >
         <Title>
           {title}
           <IconButton
@@ -59,40 +45,46 @@ export default function Popup({ title, onClose, children }: Props) {
           </IconButton>
         </Title>
         {children}
-      </Popup_>
+      </Card>
     </Root>
   )
 }
 
 const Root = styled.div`
-  cursor: default;
-`
-
-const Dimmer = styled.div`
   position: fixed;
+  inset: 0;
+  z-index: ${zIndexes.popups};
   background-color: #000a;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: ${zIndexes.popups};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  box-sizing: border-box;
 `
 
-const Popup_ = styled.div`
+const Card = styled.div<{
+  $cardWidth?: string
+  $cardMaxWidth?: string
+  $cardMaxHeight?: string
+}>`
   background-color: ${(props) => props.theme.colors.bg.primary};
-  position: fixed;
-  width: fit-content;
-  height: fit-content;
+  width: ${(props) => props.$cardWidth ?? 'min(32rem, calc(100vw - 2rem))'};
+  max-width: ${(props) => props.$cardMaxWidth ?? 'calc(100vw - 2rem)'};
+  max-height: ${(props) => props.$cardMaxHeight ?? 'calc(100vh - 2rem)'};
+  overflow: auto;
   padding: 1rem;
-  z-index: ${zIndexes.popups};
-  box-shadow: 0px 5px 21px 8px #000000;
+  box-sizing: border-box;
+  border: 1px solid #ffffff24;
+  border-radius: 0.45rem;
+  box-shadow: 0 0.5rem 2rem #0009;
 `
 
 const Title = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 1.3rem;
+  font-size: 1.05rem;
+  font-weight: 700;
   min-width: 15rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.7rem;
 `

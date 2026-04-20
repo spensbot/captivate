@@ -9,7 +9,11 @@ function getRollingAverage() {
 export default function FPS({ dt }: { dt: number }) {
   const avg = useRef(getRollingAverage())
 
-  avg.current.push(1000 / dt)
+  if (Number.isFinite(dt) && dt > 0) {
+    avg.current.push(1000 / dt)
+  }
+  const current = avg.current.get()
+  const safeFps = Number.isFinite(current) && current >= 0 ? current : 0
 
   return (
     <div
@@ -22,7 +26,7 @@ export default function FPS({ dt }: { dt: number }) {
         left: 0,
       }}
     >
-      {`${Math.floor(avg.current.get())} FPS`}
+      {`${Math.floor(safeFps)} FPS`}
     </div>
   )
 }

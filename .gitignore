@@ -30,3 +30,15 @@ npm-debug.log.*
 
 .VSCodeCounter
 .husky
+
+# Local temporary/debug scratch files
+.tmp-*
+.tmp-projectm/
+
+# Local runtime binaries (downloaded/installed per machine, not source-controlled)
+assets/projectm-runtime/
+assets/projectm-bridge/
+assets/ndi-runtime/
+
+# projectM native bridge (node-gyp / MSBuild output; rebuilt by prepare scripts)
+native/projectm-bridge/build/

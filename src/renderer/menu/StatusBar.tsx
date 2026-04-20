@@ -3,36 +3,40 @@ import ConnectionStatus from './ConnectionStatus'
 import styled from 'styled-components'
 import UndoRedo from 'renderer/controls/UndoRedo'
 import SettingsEthernetIcon from '@mui/icons-material/SettingsEthernet'
-import IconButton from '@mui/material/IconButton'
 import PianoIcon from '@mui/icons-material/Piano'
-import { useDeviceSelector, useDmxSelector, useTypedSelector } from '../redux/store'
+import IconButton from '@mui/material/IconButton'
+import { useDeviceSelector, useTypedSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import { midiSetIsEditing } from '../redux/controlSlice'
 import { setConnectionsMenu } from '../redux/guiSlice'
-import { setStageUnits } from '../redux/dmxSlice'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import TapTempo from './TapTempo'
 import StartStopButton from './StartStopButton'
 import SaveLoad from './SaveLoad'
-import LinkButton from './LinkButton'
 import Bpm from './Bpm'
-import StartStopSyncButton from './StartStopSyncButton'
+import AudioInputMenu from './AudioInputMenu'
+import { send_open_page_window } from '../ipcHandler'
 
 export default function StatusBar() {
   const isEditing = useDeviceSelector((state) => state.isEditing)
   const connectionMenu = useTypedSelector((state) => state.gui.connectionMenu)
+  const activePage = useTypedSelector((state) => state.gui.activePage)
   const dispatch = useDispatch()
   const midiConnected = useTypedSelector(
     (state) => state.gui.midi.connected.length > 0
   )
-  const stageUnit = useDmxSelector((state) => state.stage.unit)
+  const handleMidiAssignClick = () => {
+    if (!midiConnected) {
+      dispatch(setConnectionsMenu(true))
+      return
+    }
+    dispatch(midiSetIsEditing(!isEditing))
+  }
+  const canPopOutActivePage = activePage !== 'Atmospherics'
 
   return (
     <Root>
       <StartStopButton />
-      {/* <Sp /> */}
-      <StartStopSyncButton />
-      {/* <Sp /> */}
-      <LinkButton />
       <Sp />
       <TapTempo />
       <Sp />
@@ -41,25 +45,47 @@ export default function StatusBar() {
       <Counter2 />
       <UndoRedo />
       <div style={{ flex: '1 0 0' }} />
-      {midiConnected && (
-        <IconButton onClick={() => dispatch(midiSetIsEditing(!isEditing))}>
-          <PianoIcon />
+      {canPopOutActivePage && (
+        <IconButton
+          title={`Open ${activePage} in a detached window`}
+          onClick={() => send_open_page_window(activePage)}
+          size="small"
+          sx={{ color: 'text.secondary' }}
+        >
+          <OpenInNewIcon fontSize="small" />
         </IconButton>
       )}
-      <UnitsButton
-        type="button"
-        title="Stage unit preset (used by XYZ mapping and 3D stage scale)"
-        onClick={() => dispatch(setStageUnits(stageUnit === 'ft' ? 'm' : 'ft'))}
+      <IconButton
+        title={
+          midiConnected
+            ? isEditing
+              ? 'Exit MIDI mapping mode'
+              : 'Enter MIDI mapping mode'
+            : 'No MIDI device connected. Open Connections to set up MIDI.'
+        }
+        onClick={handleMidiAssignClick}
+        size="small"
+        sx={{
+          color: isEditing ? 'success.main' : 'text.secondary',
+          opacity: midiConnected ? 1 : 0.55,
+        }}
       >
-        {stageUnit.toUpperCase()}
-      </UnitsButton>
-      <IconButton onClick={() => dispatch(setConnectionsMenu(!connectionMenu))}>
-        <SettingsEthernetIcon />
+        <PianoIcon fontSize="small" />
+      </IconButton>
+      <AudioInputMenu />
+      <IconButton
+        title="Open connection settings"
+        onClick={() => dispatch(setConnectionsMenu(!connectionMenu))}
+        size="small"
+        sx={{ color: 'text.secondary' }}
+      >
+        <SettingsEthernetIcon fontSize="small" />
       </IconButton>
       <SaveLoad />
       <Connections>
         <ConnectionStatus type={'midi'} />
         <ConnectionStatus type={'dmx'} />
+        <ConnectionStatus type={'link'} />
       </Connections>
     </Root>
   )
@@ -69,10 +95,20 @@ const Root = styled.div`
   display: flex;
   justify-content: right;
   align-items: center;
+  flex: 0 0 3.2rem;
+  width: 100%;
+  height: 3.2rem;
+  min-height: 3.2rem;
+  max-height: 3.2rem;
+  min-width: 0;
   font-size: 1.2rem;
-  padding: 0.2rem 1rem 0.2rem 0.5rem;
+  padding: 0 1rem 0 0.5rem;
+  box-sizing: border-box;
   border-bottom: 1px solid ${(props) => props.theme.colors.divider};
   background-color: ${(props) => props.theme.colors.bg.primary};
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
 `
 
 const Connections = styled.div`
@@ -83,16 +119,4 @@ const Connections = styled.div`
 
 const Sp = styled.div`
   width: 0.8rem;
-`
-
-const UnitsButton = styled.button`
-  border: 1px solid #ffffff44;
-  background: #0007;
-  color: #d6def1;
-  border-radius: 0.3rem;
-  font-size: 0.68rem;
-  letter-spacing: 0.03em;
-  cursor: pointer;
-  padding: 0.2rem 0.4rem;
-  margin-right: 0.35rem;
 `

@@ -22,6 +22,23 @@ export interface ColorMapCalibrationOverride {
   dmxValue: number
 }
 
+export interface StatusMessage {
+  id: string
+  level: 'info' | 'warn' | 'error'
+  message: string
+  source?: string
+  ts: number
+}
+
+export interface AppDialogState {
+  id: string
+  title: string
+  message: string
+  confirmLabel?: string
+  cancelLabel?: string
+  danger?: boolean
+}
+
 export interface GuiState {
   activePage: Page
   blackout: boolean
@@ -34,7 +51,20 @@ export interface GuiState {
   ledEnabled: boolean
   videoEnabled: boolean
   moverCalibrationOverride: MoverCalibrationOverride | null
+  moverFollowOverrideEnabled: boolean
+  moverFollowOverridePan: number
+  moverFollowOverrideTilt: number
+  moverFollowOverrideUseAllGroups: boolean
+  moverFollowOverrideGroups: string[]
   colorMapCalibrationOverride: ColorMapCalibrationOverride | null
+  fixturePlacementDepthEnabled: boolean
+  /** When true, the left sidebar shows the LED editor page (off by default; Extras menu). */
+  ledSidebarEnabled: boolean
+  statusMessages: StatusMessage[]
+  statusLogOpen: boolean
+  appDialog: AppDialogState | null
+  aboutOpen: boolean
+  atmosManualTriggerNonceByFixtureId: { [fixtureId: string]: number | undefined }
 }
 
 export function initGuiState(): GuiState {
@@ -47,10 +77,22 @@ export function initGuiState(): GuiState {
     saving: false,
     loading: null,
     newProjectDialog: false,
-    ledEnabled: false,
+    ledEnabled: true,
     videoEnabled: false,
     moverCalibrationOverride: null,
+    moverFollowOverrideEnabled: false,
+    moverFollowOverridePan: 0.5,
+    moverFollowOverrideTilt: 0.5,
+    moverFollowOverrideUseAllGroups: true,
+    moverFollowOverrideGroups: [],
     colorMapCalibrationOverride: null,
+    fixturePlacementDepthEnabled: false,
+    ledSidebarEnabled: false,
+    statusMessages: [],
+    statusLogOpen: false,
+    appDialog: null,
+    aboutOpen: false,
+    atmosManualTriggerNonceByFixtureId: {},
   }
 }
 
@@ -59,7 +101,7 @@ export const guiSlice = createSlice({
   initialState: initGuiState(),
   reducers: {
     setActivePage: (state, { payload }: PayloadAction<Page>) => {
-      state.activePage = payload
+      state.activePage = payload === 'Streaming' ? 'Video' : payload
     },
     setBlackout: (state, { payload }: PayloadAction<boolean>) => {
       state.blackout = payload
@@ -83,10 +125,13 @@ export const guiSlice = createSlice({
       state.newProjectDialog = payload
     },
     toggleLedEnabled: (state, _: PayloadAction<undefined>) => {
-      state.ledEnabled = !state.ledEnabled
+      state.ledEnabled = true
     },
     toggleVideoEnabled: (state, _: PayloadAction<undefined>) => {
       state.videoEnabled = !state.videoEnabled
+    },
+    setVideoEnabled: (state, { payload }: PayloadAction<boolean>) => {
+      state.videoEnabled = payload === true
     },
     setMoverCalibrationOverride: (
       state,
@@ -97,6 +142,68 @@ export const guiSlice = createSlice({
     clearMoverCalibrationOverride: (state, _: PayloadAction<undefined>) => {
       state.moverCalibrationOverride = null
     },
+    setMoverFollowOverrideEnabled: (
+      state,
+      { payload }: PayloadAction<boolean>
+    ) => {
+      state.moverFollowOverrideEnabled = payload === true
+    },
+    toggleMoverFollowOverrideEnabled: (state, _: PayloadAction<undefined>) => {
+      state.moverFollowOverrideEnabled = !state.moverFollowOverrideEnabled
+    },
+    setMoverFollowOverridePan: (
+      state,
+      { payload }: PayloadAction<number>
+    ) => {
+      const next = Number(payload)
+      state.moverFollowOverridePan = Number.isFinite(next)
+        ? Math.min(1, Math.max(0, next))
+        : 0.5
+    },
+    setMoverFollowOverrideTilt: (
+      state,
+      { payload }: PayloadAction<number>
+    ) => {
+      const next = Number(payload)
+      state.moverFollowOverrideTilt = Number.isFinite(next)
+        ? Math.min(1, Math.max(0, next))
+        : 0.5
+    },
+    setMoverFollowOverrideUseAllGroups: (
+      state,
+      { payload }: PayloadAction<boolean>
+    ) => {
+      state.moverFollowOverrideUseAllGroups = payload === true
+    },
+    setMoverFollowOverrideGroups: (
+      state,
+      { payload }: PayloadAction<string[]>
+    ) => {
+      const next = Array.isArray(payload)
+        ? payload
+            .map((group) => (typeof group === 'string' ? group.trim() : ''))
+            .filter((group) => group.length > 0)
+        : []
+      state.moverFollowOverrideGroups = Array.from(new Set(next))
+    },
+    toggleMoverFollowOverrideGroup: (
+      state,
+      { payload }: PayloadAction<string>
+    ) => {
+      const groupName =
+        typeof payload === 'string' ? payload.trim() : ''
+      if (groupName.length <= 0) {
+        return
+      }
+
+      const current = new Set(state.moverFollowOverrideGroups)
+      if (current.has(groupName)) {
+        current.delete(groupName)
+      } else {
+        current.add(groupName)
+      }
+      state.moverFollowOverrideGroups = Array.from(current)
+    },
     setColorMapCalibrationOverride: (
       state,
       { payload }: PayloadAction<ColorMapCalibrationOverride>
@@ -105,6 +212,81 @@ export const guiSlice = createSlice({
     },
     clearColorMapCalibrationOverride: (state, _: PayloadAction<undefined>) => {
       state.colorMapCalibrationOverride = null
+    },
+    setFixturePlacementDepthEnabled: (
+      state,
+      { payload }: PayloadAction<boolean>
+    ) => {
+      state.fixturePlacementDepthEnabled = payload === true
+    },
+    setLedSidebarEnabled: (state, { payload }: PayloadAction<boolean>) => {
+      const on = payload === true
+      state.ledSidebarEnabled = on
+      if (!on && state.activePage === 'Led') {
+        state.activePage = 'Universe'
+      }
+    },
+    pushStatusMessage: (
+      state,
+      {
+        payload,
+      }: PayloadAction<{
+        level: 'info' | 'warn' | 'error'
+        message: string
+        source?: string
+      }>
+    ) => {
+      const nextMessage = payload.message.trim()
+      if (nextMessage.length <= 0) {
+        return
+      }
+      const now = Date.now()
+      const latest = state.statusMessages[state.statusMessages.length - 1]
+      if (
+        latest !== undefined &&
+        latest.level === payload.level &&
+        latest.message === nextMessage &&
+        now - latest.ts < 1500
+      ) {
+        latest.ts = now
+        return
+      }
+      state.statusMessages.push({
+        id: `${now}-${Math.random().toString(36).slice(2, 8)}`,
+        level: payload.level,
+        message: nextMessage,
+        source: payload.source,
+        ts: now,
+      })
+      if (state.statusMessages.length > 150) {
+        state.statusMessages.splice(0, state.statusMessages.length - 150)
+      }
+    },
+    clearStatusMessages: (state, _: PayloadAction<undefined>) => {
+      state.statusMessages = []
+    },
+    setStatusLogOpen: (state, { payload }: PayloadAction<boolean>) => {
+      state.statusLogOpen = payload === true
+    },
+    showAppDialog: (state, { payload }: PayloadAction<AppDialogState>) => {
+      state.appDialog = payload
+    },
+    hideAppDialog: (state, _: PayloadAction<undefined>) => {
+      state.appDialog = null
+    },
+    setAboutOpen: (state, { payload }: PayloadAction<boolean>) => {
+      state.aboutOpen = payload === true
+    },
+    fireAtmosManualTrigger: (state, { payload }: PayloadAction<string>) => {
+      const fixtureId = typeof payload === 'string' ? payload.trim() : ''
+      if (fixtureId.length <= 0) {
+        return
+      }
+      const current = state.atmosManualTriggerNonceByFixtureId[fixtureId] ?? 0
+      state.atmosManualTriggerNonceByFixtureId[fixtureId] = current + 1
+    },
+    clearAtmosManualTriggers: (state, _: PayloadAction<undefined>) => {
+      state.atmosManualTriggerNonceByFixtureId = {}
     },
   },
 })
@@ -120,10 +302,28 @@ export const {
   setNewProjectDialog,
   toggleLedEnabled,
   toggleVideoEnabled,
+  setVideoEnabled,
   setMoverCalibrationOverride,
   clearMoverCalibrationOverride,
+  setMoverFollowOverrideEnabled,
+  toggleMoverFollowOverrideEnabled,
+  setMoverFollowOverridePan,
+  setMoverFollowOverrideTilt,
+  setMoverFollowOverrideUseAllGroups,
+  setMoverFollowOverrideGroups,
+  toggleMoverFollowOverrideGroup,
   setColorMapCalibrationOverride,
   clearColorMapCalibrationOverride,
+  setFixturePlacementDepthEnabled,
+  setLedSidebarEnabled,
+  pushStatusMessage,
+  clearStatusMessages,
+  setStatusLogOpen,
+  showAppDialog,
+  hideAppDialog,
+  setAboutOpen,
+  fireAtmosManualTrigger,
+  clearAtmosManualTriggers,
 } = guiSlice.actions
 
 export default guiSlice.reducer

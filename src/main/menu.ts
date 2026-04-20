@@ -8,10 +8,7 @@ import {
 } from 'electron'
 import { IPC_Callbacks } from './engine/ipcHandler'
 import { SerialPort } from 'serialport'
-import {
-  toggleLedEnabled,
-  toggleVideoEnabled,
-} from '../renderer/redux/guiSlice'
+import { exportTelemetrySnapshot } from './telemetry'
 
 interface DarwinMenuItemConstructorOptions extends MenuItemConstructorOptions {
   selector?: string
@@ -20,15 +17,37 @@ interface DarwinMenuItemConstructorOptions extends MenuItemConstructorOptions {
 
 interface MenuResource {
   ipcCallbacks: IPC_Callbacks
+  openPageWindow: (page: import('../shared/pages').Page) => void
 }
 
 export default class MenuBuilder {
   mainWindow: BrowserWindow
   res: MenuResource
+  /** Mirrored from renderer: WLED sidebar feature on (`true` = show “Disable…”, off = show “Enable…”). */
+  ledSidebarMenuChecked = false
 
   constructor(mainWindow: BrowserWindow, res: MenuResource) {
     this.mainWindow = mainWindow
     this.res = res
+  }
+
+  setLedSidebarMenuChecked(checked: boolean) {
+    this.ledSidebarMenuChecked = checked
+  }
+
+  private async exportTelemetryFromMenu() {
+    try {
+      const result = await exportTelemetrySnapshot()
+      await dialog.showMessageBox(this.mainWindow, {
+        title: 'Telemetry Exported',
+        message: `Telemetry snapshot saved to:\n${result.filePath}`,
+      })
+    } catch (error) {
+      await dialog.showMessageBox(this.mainWindow, {
+        title: 'Telemetry Export Failed',
+        message: error instanceof Error ? error.message : String(error),
+      })
+    }
   }
 
   buildMenu(): Menu {
@@ -67,11 +86,13 @@ export default class MenuBuilder {
 
   buildDarwinTemplate(): MenuItemConstructorOptions[] {
     const subMenuAbout: DarwinMenuItemConstructorOptions = {
-      label: 'Electron',
+      label: app.name,
       submenu: [
         {
           label: 'About Captivate 2',
-          selector: 'orderFrontStandardAboutPanel:',
+          click: () => {
+            this.res.ipcCallbacks.send_main_command({ type: 'about' })
+          },
         },
         { type: 'separator' },
         {
@@ -164,18 +185,6 @@ export default class MenuBuilder {
             this.mainWindow.setFullScreen(!this.mainWindow.isFullScreen())
           },
         },
-        {
-          label: 'Toggle Visuals (Alpha)',
-          click: () => {
-            this.res.ipcCallbacks.send_dispatch(toggleVideoEnabled())
-          },
-        },
-        {
-          label: 'Toggle Led (Alpha)',
-          click: () => {
-            this.res.ipcCallbacks.send_dispatch(toggleLedEnabled())
-          },
-        },
         { type: 'separator' },
         {
           label: 'Toggle Developer Tools',
@@ -196,24 +205,41 @@ export default class MenuBuilder {
             this.mainWindow.setFullScreen(!this.mainWindow.isFullScreen())
           },
         },
-        {
-          label: 'Toggle Visuals (Alpha)',
-          click: () => {
-            this.res.ipcCallbacks.send_dispatch(toggleVideoEnabled())
-          },
-        },
-        {
-          label: 'Toggle Led (Alpha)',
-          click: () => {
-            this.res.ipcCallbacks.send_dispatch(toggleLedEnabled())
-          },
-        },
         { type: 'separator' },
         {
           label: 'Toggle Developer Tools',
           accelerator: 'Alt+Command+I',
           click: () => {
             this.mainWindow.webContents.toggleDevTools()
+          },
+        },
+      ],
+    }
+    const subMenuExtras: MenuItemConstructorOptions = {
+      label: 'Extras',
+      submenu: [
+        {
+          label: this.ledSidebarMenuChecked
+            ? 'Disable WLED Feature'
+            : 'Enable WLED Feature',
+          click: () => {
+            this.res.ipcCallbacks.send_main_command({
+              type: 'set-led-sidebar-enabled',
+              enabled: !this.ledSidebarMenuChecked,
+            })
+          },
+        },
+        { type: 'separator' },
+        {
+          label: 'Open Lighting 3D Window',
+          click: () => {
+            this.res.openPageWindow('Lighting3D')
+          },
+        },
+        {
+          label: 'Open Laser Window (Alpha)',
+          click: () => {
+            this.res.openPageWindow('Laser')
           },
         },
       ],
@@ -235,9 +261,28 @@ export default class MenuBuilder {
       label: 'Help',
       submenu: [
         {
+          label: 'About Captivate 2',
+          click: () => {
+            this.res.ipcCallbacks.send_main_command({ type: 'about' })
+          },
+        },
+        { type: 'separator' },
+        {
           label: 'Learn More',
           click() {
             shell.openExternal('https://captivatesynth.com/')
+          },
+        },
+        {
+          label: 'GitHub Repository',
+          click() {
+            shell.openExternal('https://github.com/spensbot/captivate')
+          },
+        },
+        {
+          label: 'GitHub Issues',
+          click() {
+            shell.openExternal('https://github.com/spensbot/captivate/issues')
           },
         },
         {
@@ -266,6 +311,12 @@ export default class MenuBuilder {
             )
           },
         },
+        {
+          label: 'Export Telemetry Snapshot',
+          click: () => {
+            void this.exportTelemetryFromMenu()
+          },
+        },
       ],
     }
 
@@ -279,14 +330,15 @@ export default class MenuBuilder {
       subMenuAbout,
       subMenuFile,
       subMenuEdit,
-      subMenuView,
       subMenuWindow,
+      subMenuView,
+      subMenuExtras,
       subMenuHelp,
     ]
   }
 
-  buildDefaultTemplate() {
-    const templateDefault = [
+  buildDefaultTemplate(): MenuItemConstructorOptions[] {
+    const templateDefault: MenuItemConstructorOptions[] = [
       {
         label: '&File',
         submenu: [
@@ -336,18 +388,6 @@ export default class MenuBuilder {
                   },
                 },
                 {
-                  label: 'Toggle Visuals (Alpha)',
-                  click: () => {
-                    this.res.ipcCallbacks.send_dispatch(toggleVideoEnabled())
-                  },
-                },
-                {
-                  label: 'Toggle Led (Alpha)',
-                  click: () => {
-                    this.res.ipcCallbacks.send_dispatch(toggleLedEnabled())
-                  },
-                },
-                {
                   label: 'Toggle &Developer Tools',
                   accelerator: 'Alt+Ctrl+I',
                   click: () => {
@@ -366,18 +406,6 @@ export default class MenuBuilder {
                   },
                 },
                 {
-                  label: 'Toggle Visuals (Alpha)',
-                  click: () => {
-                    this.res.ipcCallbacks.send_dispatch(toggleVideoEnabled())
-                  },
-                },
-                {
-                  label: 'Toggle Led (Alpha)',
-                  click: () => {
-                    this.res.ipcCallbacks.send_dispatch(toggleLedEnabled())
-                  },
-                },
-                {
                   label: 'Toggle &Developer Tools',
                   accelerator: 'Alt+Ctrl+I',
                   click: () => {
@@ -387,12 +415,72 @@ export default class MenuBuilder {
               ],
       },
       {
+        label: 'Extras',
+        submenu: [
+          {
+            label: this.ledSidebarMenuChecked
+              ? 'Disable WLED Feature'
+              : 'Enable WLED Feature',
+            click: () => {
+              this.res.ipcCallbacks.send_main_command({
+                type: 'set-led-sidebar-enabled',
+                enabled: !this.ledSidebarMenuChecked,
+              })
+            },
+          },
+          { type: 'separator' },
+          {
+            label: 'Open Lighting 3D Window',
+            click: () => {
+              this.res.openPageWindow('Lighting3D')
+            },
+          },
+          {
+            label: 'Open Laser Window (Alpha)',
+            click: () => {
+              this.res.openPageWindow('Laser')
+            },
+          },
+        ],
+      },
+      {
         label: 'Help',
         submenu: [
+          {
+            label: 'About Captivate 2',
+            click: () => {
+              this.res.ipcCallbacks.send_main_command({ type: 'about' })
+            },
+          },
+          { type: 'separator' },
           {
             label: 'Learn More',
             click() {
               shell.openExternal('https://captivatesynth.com/')
+            },
+          },
+          {
+            label: 'GitHub Repository',
+            click() {
+              shell.openExternal('https://github.com/spensbot/captivate')
+            },
+          },
+          {
+            label: 'GitHub Issues',
+            click() {
+              shell.openExternal('https://github.com/spensbot/captivate/issues')
+            },
+          },
+          {
+            label: 'GitHub Discussions',
+            click() {
+              shell.openExternal('https://github.com/spensbot/captivate/discussions')
+            },
+          },
+          {
+            label: 'Export Telemetry Snapshot',
+            click: () => {
+              void this.exportTelemetryFromMenu()
             },
           },
         ],

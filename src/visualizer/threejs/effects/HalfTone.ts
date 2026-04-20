@@ -10,7 +10,7 @@ export class HalfTone extends EffectBase {
   constructor(config: HalfToneConfig) {
     super()
     this.config = config
-    this.pass = new HalftonePass(0, 0, {
+    this.pass = new HalftonePass({
       radius: config.radius,
       scatter: config.scatter,
       shape: config.shape,
@@ -18,10 +18,6 @@ export class HalfTone extends EffectBase {
   }
 
   resize(width: number, height: number): void {
-    this.pass = new HalftonePass(width, height, {
-      radius: this.config.radius,
-      scatter: this.config.scatter,
-      shape: this.config.shape,
-    })
+    this.pass.setSize(width, height)
   }
 }

@@ -1,37 +1,15 @@
 import styled from 'styled-components'
 import { useActiveVisualScene } from '../redux/store'
-import Select from '../base/Select'
-import {
-  visualizerTypeList,
-  initLayerConfig,
-  layerDisplayNames,
-  layerTypeFromDisplayName,
-} from '../../visualizer/threejs/layers/LayerConfig'
 import { useDispatch } from 'react-redux'
 import { setVisualSceneConfig } from '../redux/controlSlice'
 import LayerEditor from './LayerEditor'
 
-interface Props {}
-
-export default function VisualizerSceneEditor({}: Props) {
+export default function VisualizerSceneEditor() {
   const config = useActiveVisualScene((scene) => scene.config)
   const dispatch = useDispatch()
 
   return (
     <Root>
-      <Select
-        label="Type"
-        val={layerDisplayNames[config.type]}
-        items={visualizerTypeList.map((type) => layerDisplayNames[type])}
-        onChange={(displayName) =>
-          dispatch(
-            setVisualSceneConfig(
-              initLayerConfig(layerTypeFromDisplayName(displayName))
-            )
-          )
-        }
-        style={{ fontSize: '1.4rem' }}
-      />
       <LayerEditor
         config={config}
         onChange={(newConfig) => dispatch(setVisualSceneConfig(newConfig))}
@@ -41,12 +19,30 @@ export default function VisualizerSceneEditor({}: Props) {
 }
 
 const Root = styled.div`
-  padding: 1rem;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 0.8rem;
   display: flex;
   flex-direction: column;
-  min-height: 100%;
-  & > * {
-    margin-bottom: 0.5rem;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  scrollbar-gutter: stable both-edges;
+  scrollbar-width: thin;
+  scrollbar-color: #7a7a7a99 #0000;
+
+  &::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
   }
-  border-right: 1px solid #777;
+
+  &::-webkit-scrollbar-track {
+    background: #0000;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #7a7a7a99;
+    border-radius: 999px;
+  }
 `

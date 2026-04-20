@@ -1,17 +1,20 @@
-import { useState } from 'react'
+import { useMemo, useRef } from 'react'
 import styled from 'styled-components'
-import { useDmxSelector } from '../redux/store'
+import { useDmxSelector, useTypedSelector } from '../redux/store'
 import FixtureCursor from './FixtureCursor'
 import useDragMapped, { MappedPos } from '../hooks/useDragMapped'
 import { useDispatch } from 'react-redux'
 import {
   incrementFixtureWindow,
+  setSelectedFixture,
   setFixtureRotation,
   setFixtureWindow,
   setFixtureWindowEnabled,
 } from '../redux/dmxSlice'
+import { setFixturePlacementDepthEnabled } from '../redux/guiSlice'
 import { secondaryEnabled } from 'renderer/base/keyUtil'
 import {
+  METERS_PER_FOOT,
   StageAxis,
   StageDimensions,
   STAGE_SNAP_GRID_FEET,
@@ -22,7 +25,9 @@ import {
 } from '../../shared/stage'
 import StageScaleControls from './StageScaleControls'
 import NumberField from '../base/NumberField'
+import StageLengthField from '../base/StageLengthField'
 import { Window2D_t } from '../../shared/window'
+import { isMoverFixtureType } from '../../shared/dmxFixtures'
 
 type DragStatus = 'Start' | 'Moved' | 'End'
 type Axis = StageAxis
@@ -39,6 +44,20 @@ function defaultAxisPos(axis: Axis): number {
 
 function axisPos(window: Window2D_t | undefined, axis: Axis): number {
   return window?.[axis]?.pos ?? defaultAxisPos(axis)
+}
+
+const FIXTURE_PICK_TOLERANCE = 0.04
+const DRAG_MOVE_THRESHOLD = 0.001
+
+/** Physical width / height of the pad so 1 normalized unit matches the same stage footage on both axes. */
+function padPhysicalAspectRatio(
+  stage: StageDimensions,
+  horizontalAxis: Axis,
+  verticalAxis: Axis
+): number {
+  const w = Math.max(0.01, stageAxisLengthFt(stage, horizontalAxis))
+  const h = Math.max(0.01, stageAxisLengthFt(stage, verticalAxis))
+  return w / h
 }
 
 function getGridStops(stage: StageDimensions, axis: Axis): number[] {
@@ -92,11 +111,16 @@ function Pad({
   )
   const horizontalStops = getGridStops(stage, horizontalAxis)
   const verticalStops = getGridStops(stage, verticalAxis)
+  const aspectRatio = padPhysicalAspectRatio(stage, horizontalAxis, verticalAxis)
 
   return (
     <PadCard>
       <PadTitle>{title}</PadTitle>
-      <PadRoot ref={dragContainer} onMouseDown={onMouseDown}>
+      <PadRoot
+        ref={dragContainer}
+        onMouseDown={onMouseDown}
+        $aspectRatio={aspectRatio}
+      >
         {horizontalStops.map((stop) => (
           <GridLineV key={`v-${horizontalAxis}-${stop}`} style={{ left: `${stop * 100}%` }} />
         ))}
@@ -133,6 +157,13 @@ export default function FixturePlacement() {
       .filter(({ fixture }) => (fixture.universe ?? 1) === state.activeUniverse)
   )
   const fixtureIndexes = fixtureRows.map(({ index }) => index)
+  const fixtureWindowByIndex = useMemo(() => {
+    const map = new Map<number, Window2D_t>()
+    for (const row of fixtureRows) {
+      map.set(row.index, row.fixture.window)
+    }
+    return map
+  }, [fixtureRows])
   const activeFixture = useDmxSelector((state) => state.activeFixture)
   const selectedFixtureWindow = useDmxSelector((state) =>
     state.activeFixture === null ? undefined : state.universe[state.activeFixture]?.window
@@ -142,12 +173,34 @@ export default function FixturePlacement() {
       ? undefined
       : state.universe[state.activeFixture]?.rotation
   )
+  const selectedFixtureIsMover = useDmxSelector((state) => {
+    if (state.activeFixture === null) {
+      return false
+    }
+
+    const fixture = state.universe[state.activeFixture]
+    if (fixture === undefined) {
+      return false
+    }
+
+    const fixtureType = state.fixtureTypesByID[fixture.type]
+    if (fixtureType === undefined) {
+      return false
+    }
+
+    return isMoverFixtureType(fixtureType)
+  })
   const stage = useDmxSelector((state) => state.stage)
   const dispatch = useDispatch()
-  const [zDepthEnabled, setZDepthEnabled] = useState(false)
+  const zDepthEnabled = useTypedSelector(
+    (state) => state.gui.fixturePlacementDepthEnabled
+  )
+  const dragFixtureIndexRef = useRef<number | null>(null)
+  const dragHasMovedRef = useRef(false)
 
   function ensureAxisEnabled(index: number, axis: Axis) {
-    if (selectedFixtureWindow?.[axis] !== undefined) {
+    const fixtureWindow = fixtureWindowByIndex.get(index)
+    if (fixtureWindow?.[axis] !== undefined) {
       return
     }
     dispatch(
@@ -159,6 +212,45 @@ export default function FixturePlacement() {
     )
   }
 
+  function resolveFixtureAtPoint(
+    horizontalAxis: Axis,
+    verticalAxis: Axis,
+    x: number,
+    y: number
+  ): number | null {
+    const candidates = fixtureRows
+      .filter(({ fixture }) => {
+        const fixtureX = axisPos(fixture.window, horizontalAxis)
+        const fixtureY = axisPos(fixture.window, verticalAxis)
+        return Math.hypot(fixtureX - x, fixtureY - y) <= FIXTURE_PICK_TOLERANCE
+      })
+      .map((row) => ({
+        index: row.index,
+        distance: Math.hypot(
+          axisPos(row.fixture.window, horizontalAxis) - x,
+          axisPos(row.fixture.window, verticalAxis) - y
+        ),
+      }))
+      .sort((left, right) => left.distance - right.distance)
+
+    if (candidates.length === 0) {
+      return null
+    }
+
+    if (candidates.length === 1) {
+      return candidates[0].index
+    }
+
+    if (
+      activeFixture !== null &&
+      candidates.some((candidate) => candidate.index === activeFixture)
+    ) {
+      return activeFixture
+    }
+
+    return activeFixture ?? candidates[0].index
+  }
+
   function onPadDrag(
     horizontalAxis: Axis,
     verticalAxis: Axis,
@@ -166,11 +258,43 @@ export default function FixturePlacement() {
     e: MouseEvent,
     status: DragStatus
   ) {
-    if (activeFixture === null) return
-
     if (status === 'Start') {
-      ensureAxisEnabled(activeFixture, horizontalAxis)
-      ensureAxisEnabled(activeFixture, verticalAxis)
+      const clickedFixture = resolveFixtureAtPoint(
+        horizontalAxis,
+        verticalAxis,
+        mapped.x,
+        mapped.y
+      )
+      if (clickedFixture !== null && clickedFixture !== activeFixture) {
+        dispatch(setSelectedFixture(clickedFixture))
+      }
+      dragFixtureIndexRef.current = clickedFixture ?? activeFixture ?? null
+      dragHasMovedRef.current = false
+      return
+    }
+
+    if (status === 'End') {
+      dragFixtureIndexRef.current = null
+      dragHasMovedRef.current = false
+      return
+    }
+
+    const dragFixtureIndex =
+      dragFixtureIndexRef.current ?? activeFixture ?? undefined
+    if (dragFixtureIndex === undefined) return
+
+    if (status !== 'Moved') {
+      return
+    }
+
+    const movementMagnitude = Math.hypot(mapped.dx, mapped.dy)
+    if (!dragHasMovedRef.current) {
+      if (movementMagnitude < DRAG_MOVE_THRESHOLD) {
+        return
+      }
+      dragHasMovedRef.current = true
+      ensureAxisEnabled(dragFixtureIndex, horizontalAxis)
+      ensureAxisEnabled(dragFixtureIndex, verticalAxis)
     }
 
     if (secondaryEnabled(e)) {
@@ -180,7 +304,7 @@ export default function FixturePlacement() {
         dHeight?: number
         dDepth?: number
       } = {
-        index: activeFixture,
+        index: dragFixtureIndex,
       }
       if (horizontalAxis === 'x') incrementPayload.dWidth = mapped.dx
       if (horizontalAxis === 'y') incrementPayload.dHeight = mapped.dx
@@ -213,7 +337,7 @@ export default function FixturePlacement() {
       y?: number
       z?: number
     } = {
-      index: activeFixture,
+      index: dragFixtureIndex,
     }
     payload[horizontalAxis] = nextHorizontal
     payload[verticalAxis] = nextVertical
@@ -260,7 +384,7 @@ export default function FixturePlacement() {
               type="checkbox"
               checked={zDepthEnabled}
               onChange={(event) => {
-                setZDepthEnabled(event.target.checked)
+                dispatch(setFixturePlacementDepthEnabled(event.target.checked))
               }}
             />
             <span>Enable Z Depth</span>
@@ -268,93 +392,109 @@ export default function FixturePlacement() {
           <StageScaleControls compact />
         </TopControls>
       </TopRow>
-      <GridViews $withDepth={zDepthEnabled}>
-        <Pad
-          title="XY View (Front of House)"
-          horizontalAxis="x"
-          verticalAxis="y"
-          stage={stage}
-          fixtureIndexes={fixtureIndexes}
-          onDrag={onPadDrag}
-        />
-        {zDepthEnabled && (
-          <Pad
-            title="Top Down View (Stage At Top)"
-            horizontalAxis="x"
-            verticalAxis="z"
-            stage={stage}
-            fixtureIndexes={fixtureIndexes}
-            onDrag={onPadDrag}
-          />
-        )}
-      </GridViews>
-      {activeFixture !== null && (
-        <Inspector>
-          <InspectorTitle>Selected Fixture Position</InspectorTitle>
-          <InspectorRow $columns={positionAxes.length}>
-            {positionAxes.map((axis) => {
-              const displayVal = stageAxisToDisplayValue(
-                stage,
-                axis,
-                axisPos(selectedFixtureWindow, axis)
-              )
-
-              return (
-                <NumberField
-                  key={axis}
-                  val={Number(displayVal.toFixed(3))}
-                  label={`${AXIS_LABEL[axis]} (${stage.unit})`}
-                  numberType="float"
-                  step={0.01}
-                  min={0}
-                  max={Number(
-                    (stageAxisLengthFt(stage, axis) * (stage.unit === 'm' ? 0.3048 : 1)).toFixed(6)
-                  )}
-                  variant="outlined"
-                  onChange={(newVal) => setFixtureAxisFromInput(axis, newVal)}
-                  title={`Precise ${AXIS_LABEL[axis]} position (${stage.unit}). Snap grid is ${STAGE_SNAP_GRID_FEET} ft.`}
-                />
-              )
-            })}
-          </InspectorRow>
-          <InspectorHint>
-            Mouse drag uses snap increments of {STAGE_SNAP_GRID_FEET} ft.
-            Right-click/secondary drag adjusts window size per axis.
-          </InspectorHint>
-          {!zDepthEnabled && (
-            <InspectorHint>
-              Turn on `Enable Z Depth` above to edit depth with a top-down stage view.
-            </InspectorHint>
-          )}
-          <InspectorTitle style={{ marginTop: '0.45rem' }}>
-            Fixture Rotation
-          </InspectorTitle>
-          <InspectorRow $columns={3}>
-            {(['x', 'y', 'z'] as Axis[]).map((axis) => (
-              <NumberField
-                key={`rotation-${axis}`}
-                val={Number(rotationAngle(axis).toFixed(3))}
-                label={`Rot ${AXIS_LABEL[axis]} (deg)`}
-                numberType="float"
-                step={0.1}
-                min={-360}
-                max={360}
-                variant="outlined"
-                onChange={(newVal) => setFixtureRotationAxis(axis, newVal)}
+      <BodyScroller>
+        <GridViewsScroller>
+          <GridViews $withDepth={zDepthEnabled}>
+            <Pad
+              title="XY View (Front of House)"
+              horizontalAxis="x"
+              verticalAxis="y"
+              stage={stage}
+              fixtureIndexes={fixtureIndexes}
+              onDrag={onPadDrag}
+            />
+            {zDepthEnabled && (
+              <Pad
+                title="Top Down View (Stage At Top)"
+                horizontalAxis="x"
+                verticalAxis="z"
+                stage={stage}
+                fixtureIndexes={fixtureIndexes}
+                onDrag={onPadDrag}
               />
-            ))}
-          </InspectorRow>
-        </Inspector>
-      )}
+            )}
+          </GridViews>
+        </GridViewsScroller>
+        {activeFixture !== null && (
+          <Inspector>
+            <InspectorTitle>Selected Fixture Position</InspectorTitle>
+            <InspectorRow>
+              {positionAxes.map((axis) => {
+                const displayVal = stageAxisToDisplayValue(
+                  stage,
+                  axis,
+                  axisPos(selectedFixtureWindow, axis)
+                )
+
+                const axisMaxDisplay = Number(
+                  (
+                    stageAxisLengthFt(stage, axis) *
+                    (stage.unit === 'm' ? METERS_PER_FOOT : 1)
+                  ).toFixed(6)
+                )
+                return (
+                  <StageLengthField
+                    key={axis}
+                    val={Number(displayVal.toFixed(3))}
+                    label={`${AXIS_LABEL[axis]} (${stage.unit})`}
+                    numberType="float"
+                    step={0.01}
+                    min={0}
+                    max={axisMaxDisplay}
+                    variant="outlined"
+                    stageUnit={stage.unit}
+                    onChange={(newVal) => setFixtureAxisFromInput(axis, newVal)}
+                    title={`Precise ${AXIS_LABEL[axis]} position (${stage.unit}). Snap grid is ${STAGE_SNAP_GRID_FEET} ft.`}
+                  />
+                )
+              })}
+            </InspectorRow>
+            <InspectorHint>
+              Mouse drag uses snap increments of {STAGE_SNAP_GRID_FEET} ft.
+              Right-click/secondary drag adjusts window size per axis.
+            </InspectorHint>
+            {!zDepthEnabled && (
+              <InspectorHint>
+                Lighting scenes and LED color windows use the X/Y plane only (no Z
+                windowing). Movers keep their own pan/tilt space; Enable Z Depth for fixture
+                depth editing, Z windowing, and depth in the 3D preview.
+              </InspectorHint>
+            )}
+            {!selectedFixtureIsMover && (
+              <>
+                <InspectorTitle style={{ marginTop: '0.45rem' }}>
+                  Fixture Rotation
+                </InspectorTitle>
+                <InspectorRow>
+                  {(['x', 'y', 'z'] as Axis[]).map((axis) => (
+                    <NumberField
+                      key={`rotation-${axis}`}
+                      val={Number(rotationAngle(axis).toFixed(3))}
+                      label={`Rot ${AXIS_LABEL[axis]} (deg)`}
+                      numberType="float"
+                      step={0.1}
+                      min={-360}
+                      max={360}
+                      variant="outlined"
+                      onChange={(newVal) => setFixtureRotationAxis(axis, newVal)}
+                    />
+                  ))}
+                </InspectorRow>
+              </>
+            )}
+          </Inspector>
+        )}
+      </BodyScroller>
     </Root>
   )
 }
 
 const Root = styled.div`
   background-color: #0008;
-  overflow: auto;
+  overflow: hidden;
   padding: 0.5rem;
-  flex: 1 0 50%;
+  flex: 1 1 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -365,6 +505,31 @@ const TopRow = styled.div`
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  flex-wrap: wrap;
+`
+
+const BodyScroller = styled.div`
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 0.15rem;
+  scrollbar-width: thin;
+  scrollbar-color: #7a7a7a99 #0000;
+
+  &::-webkit-scrollbar {
+    display: block !important;
+    width: 10px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #0000;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #7a7a7a99;
+    border-radius: 999px;
+  }
 `
 
 const SectionTitle = styled.div`
@@ -375,6 +540,8 @@ const SectionTitle = styled.div`
 const TopControls = styled.div`
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 0.75rem;
 `
 
@@ -387,25 +554,46 @@ const DepthToggle = styled.label`
   user-select: none;
 `
 
+const GridViewsScroller = styled.div`
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 0.15rem;
+  scrollbar-width: thin;
+  scrollbar-color: #7a7a7a99 #0000;
+
+  &::-webkit-scrollbar {
+    display: block !important;
+    height: 10px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #0000;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #7a7a7a99;
+    border-radius: 999px;
+  }
+`
+
 const GridViews = styled.div<{ $withDepth: boolean }>`
-  --pad-size: ${(props) =>
-    props.$withDepth ? 'clamp(18rem, 38vw, 30rem)' : 'clamp(18rem, 56vw, 34rem)'};
   display: grid;
-  grid-template-columns: repeat(${(props) => (props.$withDepth ? 2 : 1)}, var(--pad-size));
-  gap: 0.5rem;
-  width: max-content;
-  min-width: 100%;
+  grid-template-columns: ${(props) => (props.$withDepth ? '1fr 1fr' : '1fr')};
+  gap: 0.7rem;
+  width: 100%;
   align-items: start;
 `
 
 const PadCard = styled.div`
-  width: var(--pad-size);
+  width: 100%;
   border: 1px solid #ffffff22;
   border-radius: 0.35rem;
   background: #070a1299;
   padding: 0.35rem;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 `
 
 const PadTitle = styled.div`
@@ -414,11 +602,15 @@ const PadTitle = styled.div`
   margin-bottom: 0.25rem;
 `
 
-const PadRoot = styled.div`
+const PadRoot = styled.div<{ $aspectRatio: number }>`
   position: relative;
   width: 100%;
-  aspect-ratio: 1 / 1;
+  max-width: 100%;
+  aspect-ratio: ${(props) => props.$aspectRatio} / 1;
   flex: 0 0 auto;
+  min-height: 12rem;
+  max-height: min(52vh, 28rem);
+  margin-inline: auto;
   background: #000a;
   border: 1px solid #ffffff22;
   border-radius: 0.2rem;
@@ -474,6 +666,7 @@ const Inspector = styled.div`
   border-radius: 0.35rem;
   background: #070a1299;
   padding: 0.45rem;
+  margin-top: 0.45rem;
 `
 
 const InspectorTitle = styled.div`
@@ -482,9 +675,9 @@ const InspectorTitle = styled.div`
   margin-bottom: 0.35rem;
 `
 
-const InspectorRow = styled.div<{ $columns: number }>`
+const InspectorRow = styled.div`
   display: grid;
-  grid-template-columns: repeat(${(props) => props.$columns}, minmax(8rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(8.75rem, 1fr));
   gap: 0.4rem;
 `
 

@@ -3,6 +3,25 @@ import { DefaultParam } from '../../shared/params'
 import { SceneType } from '.../../shared/Scenes'
 import { ConnectionId } from '../../shared/connection'
 import { DMX_MAX_UNIVERSES } from '../../shared/dmxFixtures'
+import {
+  AudioInputSettings,
+  initAudioInputSettings,
+  normalizeAudioInputSettings,
+} from '../../shared/audioEngine'
+import {
+  AtmosphericsFixtureControlConfig,
+  AtmosphericsLevelChannelConfig,
+  AtmosphericsSettings,
+  AtmosphericsTriggerChannelConfig,
+  initAtmosphericsFixtureControlConfig,
+  initAtmosphericsLevelChannelConfig,
+  initAtmosphericsSettings,
+  initAtmosphericsTriggerChannelConfig,
+  normalizeAtmosphericsLevelChannelConfig,
+  normalizeAtmosphericsSettings,
+  normalizeAtmosphericsFixtureControlConfig,
+  normalizeAtmosphericsTriggerChannelConfig,
+} from '../../shared/atmospherics'
 
 interface Range {
   min: number
@@ -61,17 +80,41 @@ interface ToggleAutoScene {
   sceneType: SceneType
 }
 
+interface ToggleBlackout {
+  type: 'toggleBlackout'
+}
+interface ToggleMoverFollowOverride {
+  type: 'toggleMoverFollowOverride'
+}
+interface SetMoverFollowOverridePan {
+  type: 'setMoverFollowOverridePan'
+}
+interface SetMoverFollowOverrideTilt {
+  type: 'setMoverFollowOverrideTilt'
+}
+interface TriggerAtmosFixture {
+  type: 'triggerAtmosFixture'
+  fixtureId: string
+}
+
 interface ConnectionSettings {
   openDmxRefreshRateHz: number
   universeCount: number
   dmxUniverseByDevice: { [connectionId: string]: number }
   artNetIpByUniverse: { [universe: number]: string }
+  audioInput: AudioInputSettings
+  /** Follow MIDI timing clock (0xF8) from enabled MIDI inputs for master BPM. */
+  midiClockBpmEnabled: boolean
+  atmospherics: AtmosphericsSettings
 }
 
 export const buttonMidiActionTypes: Set<MidiAction['type']> = new Set([
   'setActiveSceneIndex',
   'tapTempo',
   'toggleAutoScene',
+  'toggleBlackout',
+  'toggleMoverFollowOverride',
+  'triggerAtmosFixture',
 ])
 
 export type MidiAction =
@@ -82,6 +125,11 @@ export type MidiAction =
   | SetBpm
   | TapTempo
   | ToggleAutoScene
+  | ToggleBlackout
+  | ToggleMoverFollowOverride
+  | SetMoverFollowOverridePan
+  | SetMoverFollowOverrideTilt
+  | TriggerAtmosFixture
 
 export function getMidiSliderBounds(action: MidiAction): MidiSliderBounds {
   switch (action.type) {
@@ -164,6 +212,9 @@ export function getActionID(action: MidiAction) {
   }
   if (action.type === 'setBaseParam') {
     return action.type + action.paramKey
+  }
+  if (action.type === 'triggerAtmosFixture') {
+    return action.type + action.fixtureId
   }
   if (action.type === 'toggleAutoScene') {
     return action.type + action.sceneType
@@ -248,8 +299,70 @@ export function initDeviceState(): DeviceState {
       universeCount: 1,
       dmxUniverseByDevice: {},
       artNetIpByUniverse: {},
+      audioInput: initAudioInputSettings(),
+      midiClockBpmEnabled: false,
+      atmospherics: initAtmosphericsSettings(),
     },
   }
+}
+
+function withNormalizedAtmospherics(state: DeviceState) {
+  state.connectionSettings.atmospherics = normalizeAtmosphericsSettings(
+    state.connectionSettings.atmospherics
+  )
+}
+
+function findAtmosphericsFixtureConfig(
+  state: DeviceState,
+  fixtureId: string
+): AtmosphericsFixtureControlConfig | undefined {
+  return state.connectionSettings.atmospherics.fixtures[fixtureId]
+}
+
+function ensureAtmosphericsFixtureConfigMutable(
+  state: DeviceState,
+  fixtureId: string
+): AtmosphericsFixtureControlConfig {
+  const existing = findAtmosphericsFixtureConfig(state, fixtureId)
+  if (existing !== undefined) {
+    return existing
+  }
+  const created = initAtmosphericsFixtureControlConfig(fixtureId)
+  state.connectionSettings.atmospherics.fixtures[fixtureId] = created
+  return created
+}
+
+function ensureAtmosphericsTriggerChannelConfigMutable(
+  fixture: AtmosphericsFixtureControlConfig,
+  channelNumber: number
+): AtmosphericsTriggerChannelConfig {
+  const existing = fixture.triggerChannels[channelNumber]
+  if (existing !== undefined) {
+    return existing
+  }
+  const fallback = initAtmosphericsTriggerChannelConfig(channelNumber)
+  fallback.threshold = fixture.threshold
+  fallback.triggerAction = fixture.triggerAction
+  fallback.delayMs = fixture.delayMs
+  fallback.intervalMs = fixture.intervalMs
+  fallback.pulseMs = fixture.pulseMs
+  fallback.manualDelayMs = fixture.manualDelayMs
+  fallback.manualIntervalMs = fixture.manualIntervalMs
+  fixture.triggerChannels[channelNumber] = fallback
+  return fallback
+}
+
+function ensureAtmosphericsLevelChannelConfigMutable(
+  fixture: AtmosphericsFixtureControlConfig,
+  channelNumber: number
+): AtmosphericsLevelChannelConfig {
+  const existing = fixture.levelChannels[channelNumber]
+  if (existing !== undefined) {
+    return existing
+  }
+  const fallback = initAtmosphericsLevelChannelConfig(channelNumber)
+  fixture.levelChannels[channelNumber] = fallback
+  return fallback
 }
 
 export const midiActions = {
@@ -356,6 +469,352 @@ export const midiActions = {
     } else {
       state.connectionSettings.artNetIpByUniverse[universe] = ip
     }
+  },
+  setAudioInputEnabled: (
+    state: DeviceState,
+    { payload }: PayloadAction<boolean>
+  ) => {
+    const current = normalizeAudioInputSettings(state.connectionSettings.audioInput)
+    state.connectionSettings.audioInput = {
+      ...current,
+      enabled: payload === true,
+    }
+  },
+  setAudioInputDeviceId: (
+    state: DeviceState,
+    { payload }: PayloadAction<string>
+  ) => {
+    const current = normalizeAudioInputSettings(state.connectionSettings.audioInput)
+    state.connectionSettings.audioInput = {
+      ...current,
+      deviceId: typeof payload === 'string' ? payload.trim() : '',
+    }
+  },
+  setAudioInputGain: (
+    state: DeviceState,
+    { payload }: PayloadAction<number>
+  ) => {
+    const current = normalizeAudioInputSettings(state.connectionSettings.audioInput)
+    state.connectionSettings.audioInput = {
+      ...current,
+      inputGain: normalizeAudioInputSettings({
+        ...current,
+        inputGain: payload,
+      }).inputGain,
+    }
+  },
+  setAudioBeatClockEnabled: (
+    state: DeviceState,
+    { payload }: PayloadAction<boolean>
+  ) => {
+    const current = normalizeAudioInputSettings(state.connectionSettings.audioInput)
+    state.connectionSettings.audioInput = {
+      ...current,
+      useBeatClock: payload === true,
+    }
+    if (payload === true) {
+      state.connectionSettings.midiClockBpmEnabled = false
+    }
+  },
+  setMidiClockBpmEnabled: (
+    state: DeviceState,
+    { payload }: PayloadAction<boolean>
+  ) => {
+    state.connectionSettings.midiClockBpmEnabled = payload === true
+    if (payload === true) {
+      const current = normalizeAudioInputSettings(state.connectionSettings.audioInput)
+      state.connectionSettings.audioInput = {
+        ...current,
+        useBeatClock: false,
+      }
+    }
+  },
+  setAudioBeatSensitivity: (
+    state: DeviceState,
+    { payload }: PayloadAction<number>
+  ) => {
+    const current = normalizeAudioInputSettings(state.connectionSettings.audioInput)
+    state.connectionSettings.audioInput = {
+      ...current,
+      beatSensitivity: normalizeAudioInputSettings({
+        ...current,
+        beatSensitivity: payload,
+      }).beatSensitivity,
+    }
+  },
+  setAudioBeatMinIntervalMs: (
+    state: DeviceState,
+    { payload }: PayloadAction<number>
+  ) => {
+    const current = normalizeAudioInputSettings(state.connectionSettings.audioInput)
+    state.connectionSettings.audioInput = {
+      ...current,
+      beatMinIntervalMs: normalizeAudioInputSettings({
+        ...current,
+        beatMinIntervalMs: payload,
+      }).beatMinIntervalMs,
+    }
+  },
+  setAudioBpmSmoothing: (
+    state: DeviceState,
+    { payload }: PayloadAction<number>
+  ) => {
+    const current = normalizeAudioInputSettings(state.connectionSettings.audioInput)
+    state.connectionSettings.audioInput = {
+      ...current,
+      bpmSmoothing: normalizeAudioInputSettings({
+        ...current,
+        bpmSmoothing: payload,
+      }).bpmSmoothing,
+    }
+  },
+  setAudioBeatTapHint: (
+    state: DeviceState,
+    { payload }: PayloadAction<{ bpm: number; atMs?: number }>
+  ) => {
+    const rawBpm = Number(payload.bpm)
+    if (!Number.isFinite(rawBpm)) {
+      return
+    }
+    const bpm = Math.min(220, Math.max(45, rawBpm))
+    const atMs =
+      payload.atMs != null && Number.isFinite(payload.atMs) && payload.atMs > 0
+        ? payload.atMs
+        : Date.now()
+    const current = normalizeAudioInputSettings(state.connectionSettings.audioInput)
+    state.connectionSettings.audioInput = {
+      ...current,
+      beatTapHintBpm: bpm,
+      beatTapHintAtMs: atMs,
+    }
+  },
+  clearAudioBeatTapHint: (state: DeviceState) => {
+    const current = normalizeAudioInputSettings(state.connectionSettings.audioInput)
+    state.connectionSettings.audioInput = {
+      ...current,
+      beatTapHintBpm: null,
+      beatTapHintAtMs: 0,
+    }
+  },
+  setAtmosphericsEnabled: (
+    state: DeviceState,
+    { payload }: PayloadAction<boolean>
+  ) => {
+    withNormalizedAtmospherics(state)
+    state.connectionSettings.atmospherics.enabled = payload === true
+  },
+  setAtmosphericsArmed: (
+    state: DeviceState,
+    { payload }: PayloadAction<boolean>
+  ) => {
+    withNormalizedAtmospherics(state)
+    state.connectionSettings.atmospherics.armed = payload === true
+  },
+  setAtmosphericsEmergencyStop: (
+    state: DeviceState,
+    { payload }: PayloadAction<boolean>
+  ) => {
+    withNormalizedAtmospherics(state)
+    state.connectionSettings.atmospherics.emergencyStop = payload === true
+  },
+  setAtmosphericsAllowPyro: (
+    state: DeviceState,
+    { payload }: PayloadAction<boolean>
+  ) => {
+    withNormalizedAtmospherics(state)
+    state.connectionSettings.atmospherics.allowPyro = payload === true
+  },
+  setAtmosphericsGlobalLevelLimit: (
+    state: DeviceState,
+    { payload }: PayloadAction<number>
+  ) => {
+    withNormalizedAtmospherics(state)
+    state.connectionSettings.atmospherics.globalLevelLimit = Math.min(
+      1,
+      Math.max(0, Number(payload) || 0)
+    )
+  },
+  ensureAtmosphericsFixtureConfig: (
+    state: DeviceState,
+    { payload }: PayloadAction<string>
+  ) => {
+    withNormalizedAtmospherics(state)
+    const fixtureId = payload.trim()
+    if (fixtureId.length <= 0) return
+    if (state.connectionSettings.atmospherics.fixtures[fixtureId] === undefined) {
+      state.connectionSettings.atmospherics.fixtures[fixtureId] =
+        initAtmosphericsFixtureControlConfig(fixtureId)
+    }
+    state.connectionSettings.atmospherics.selectedFixtureId = fixtureId
+  },
+  removeAtmosphericsFixtureConfig: (
+    state: DeviceState,
+    { payload }: PayloadAction<string>
+  ) => {
+    withNormalizedAtmospherics(state)
+    const fixtureId = payload.trim()
+    delete state.connectionSettings.atmospherics.fixtures[fixtureId]
+    if (state.connectionSettings.atmospherics.selectedFixtureId === fixtureId) {
+      const firstKey =
+        Object.keys(state.connectionSettings.atmospherics.fixtures)[0] ?? null
+      state.connectionSettings.atmospherics.selectedFixtureId = firstKey
+    }
+  },
+  selectAtmosphericsFixture: (
+    state: DeviceState,
+    { payload }: PayloadAction<string | null>
+  ) => {
+    withNormalizedAtmospherics(state)
+    if (payload === null) {
+      state.connectionSettings.atmospherics.selectedFixtureId = null
+      return
+    }
+    const fixtureId = payload.trim()
+    const exists = state.connectionSettings.atmospherics.fixtures[fixtureId] !== undefined
+    state.connectionSettings.atmospherics.selectedFixtureId = exists ? fixtureId : null
+  },
+  patchAtmosphericsFixtureConfig: (
+    state: DeviceState,
+    {
+      payload,
+    }: PayloadAction<{
+      fixtureId: string
+      patch: Partial<
+        Omit<
+          AtmosphericsFixtureControlConfig,
+          'fixtureId' | 'source' | 'auxChannels' | 'triggerChannels' | 'levelChannels'
+        >
+      >
+    }>
+  ) => {
+    withNormalizedAtmospherics(state)
+    const fixtureId = payload.fixtureId.trim()
+    const target = findAtmosphericsFixtureConfig(state, fixtureId)
+    if (target === undefined) {
+      return
+    }
+    if (payload.patch.enabled !== undefined) {
+      target.enabled = payload.patch.enabled === true
+    }
+    if (payload.patch.groupName !== undefined) {
+      const nextGroupName = payload.patch.groupName.trim()
+      if (nextGroupName.length > 0) {
+        target.groupName = nextGroupName
+      }
+    }
+    if (payload.patch.threshold !== undefined) target.threshold = payload.patch.threshold
+    if (payload.patch.hysteresis !== undefined) target.hysteresis = payload.patch.hysteresis
+    if (payload.patch.triggerAction !== undefined)
+      target.triggerAction = payload.patch.triggerAction
+    if (payload.patch.delayMs !== undefined) target.delayMs = payload.patch.delayMs
+    if (payload.patch.intervalMs !== undefined) target.intervalMs = payload.patch.intervalMs
+    if (payload.patch.pulseMs !== undefined) target.pulseMs = payload.patch.pulseMs
+    if (payload.patch.manualDelayMs !== undefined)
+      target.manualDelayMs = payload.patch.manualDelayMs
+    if (payload.patch.manualIntervalMs !== undefined)
+      target.manualIntervalMs = payload.patch.manualIntervalMs
+    state.connectionSettings.atmospherics.fixtures[fixtureId] =
+      normalizeAtmosphericsFixtureControlConfig(target, fixtureId)
+  },
+  setAtmosphericsFixtureGroupName: (
+    state: DeviceState,
+    {
+      payload,
+    }: PayloadAction<{
+      fixtureId: string
+      groupName: string
+    }>
+  ) => {
+    withNormalizedAtmospherics(state)
+    const fixtureId = payload.fixtureId.trim()
+    if (fixtureId.length <= 0) return
+    const targetFixture = ensureAtmosphericsFixtureConfigMutable(state, fixtureId)
+    const nextGroupName = payload.groupName.trim()
+    if (nextGroupName.length > 0) {
+      targetFixture.groupName = nextGroupName
+    }
+    state.connectionSettings.atmospherics.fixtures[fixtureId] =
+      normalizeAtmosphericsFixtureControlConfig(targetFixture, fixtureId)
+  },
+  patchAtmosphericsFixtureTriggerChannelConfig: (
+    state: DeviceState,
+    {
+      payload,
+    }: PayloadAction<{
+      fixtureId: string
+      channelNumber: number
+      patch: Partial<AtmosphericsTriggerChannelConfig>
+    }>
+  ) => {
+    withNormalizedAtmospherics(state)
+    const fixtureId = payload.fixtureId.trim()
+    if (fixtureId.length <= 0) return
+    const channelNumber = Math.max(1, Math.min(512, Math.round(payload.channelNumber)))
+    const targetFixture = ensureAtmosphericsFixtureConfigMutable(state, fixtureId)
+    const targetChannel = ensureAtmosphericsTriggerChannelConfigMutable(
+      targetFixture,
+      channelNumber
+    )
+    if (payload.patch.useGroupThreshold !== undefined) {
+      targetChannel.useGroupThreshold = payload.patch.useGroupThreshold === true
+    }
+    if (payload.patch.threshold !== undefined) {
+      targetChannel.threshold = payload.patch.threshold
+    }
+    if (payload.patch.triggerAction !== undefined) {
+      targetChannel.triggerAction = payload.patch.triggerAction
+    }
+    if (payload.patch.delayMs !== undefined) {
+      targetChannel.delayMs = payload.patch.delayMs
+    }
+    if (payload.patch.intervalMs !== undefined) {
+      targetChannel.intervalMs = payload.patch.intervalMs
+    }
+    if (payload.patch.pulseMs !== undefined) {
+      targetChannel.pulseMs = payload.patch.pulseMs
+    }
+    if (payload.patch.manualDelayMs !== undefined) {
+      targetChannel.manualDelayMs = payload.patch.manualDelayMs
+    }
+    if (payload.patch.manualIntervalMs !== undefined) {
+      targetChannel.manualIntervalMs = payload.patch.manualIntervalMs
+    }
+    targetFixture.triggerChannels[channelNumber] =
+      normalizeAtmosphericsTriggerChannelConfig(targetChannel, channelNumber)
+    state.connectionSettings.atmospherics.fixtures[fixtureId] =
+      normalizeAtmosphericsFixtureControlConfig(targetFixture, fixtureId)
+  },
+  patchAtmosphericsFixtureLevelChannelConfig: (
+    state: DeviceState,
+    {
+      payload,
+    }: PayloadAction<{
+      fixtureId: string
+      channelNumber: number
+      patch: Partial<AtmosphericsLevelChannelConfig>
+    }>
+  ) => {
+    withNormalizedAtmospherics(state)
+    const fixtureId = payload.fixtureId.trim()
+    if (fixtureId.length <= 0) return
+    const channelNumber = Math.max(1, Math.min(512, Math.round(payload.channelNumber)))
+    const targetFixture = ensureAtmosphericsFixtureConfigMutable(state, fixtureId)
+    const targetChannel = ensureAtmosphericsLevelChannelConfigMutable(
+      targetFixture,
+      channelNumber
+    )
+    if (payload.patch.controlMode !== undefined) {
+      targetChannel.controlMode = payload.patch.controlMode
+    }
+    if (payload.patch.manualValue !== undefined) {
+      targetChannel.manualValue = payload.patch.manualValue
+    }
+    targetFixture.levelChannels[channelNumber] = normalizeAtmosphericsLevelChannelConfig(
+      targetChannel,
+      channelNumber
+    )
+    state.connectionSettings.atmospherics.fixtures[fixtureId] =
+      normalizeAtmosphericsFixtureControlConfig(targetFixture, fixtureId)
   },
 }
 

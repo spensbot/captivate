@@ -5,20 +5,13 @@ import { IconButton } from '@mui/material'
 import FixtureChannelPopup from './FixtureChannelPopup'
 import Popup from '../base/Popup'
 import RemoveIcon from '@mui/icons-material/Remove'
+import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew'
+import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos'
 import { FixtureChannel, axisDirName } from '../../shared/dmxFixtures'
 import { removeFixtureChannel } from '..//redux/dmxSlice'
 import { getCustomColorChannelName } from '../../shared/dmxColors'
 import { ChannelToggle } from './Subfixtures'
-
-export interface FixtureChannelItemProps {
-  fixtureID: string
-  channelIndex: number
-  channelCount: number
-  hasMaster: boolean
-  isInUse: boolean
-  editing: number | null
-  setEditing: (ch: number | null) => void
-}
+import { FixtureChannelItemProps } from './FixtureChannelTypes'
 
 export default function FixtureChannelItem(props: FixtureChannelItemProps) {
   const {
@@ -34,6 +27,8 @@ export default function FixtureChannelItem(props: FixtureChannelItemProps) {
   )
 
   const dispatch = useDispatch()
+  const canEditPrevious = channelIndex > 0
+  const canEditNext = channelIndex < channelCount - 1
 
   const props3 = { ...props, ch: ch }
 
@@ -71,7 +66,39 @@ export default function FixtureChannelItem(props: FixtureChannelItemProps) {
       )}
       {editing === channelIndex && (
         <Popup
-          title={`Channel ${channelIndex + 1}`}
+          title={
+            <PopupTitleRow>
+              <PopupTitleText>{`Channel ${channelIndex + 1}`}</PopupTitleText>
+              <PopupTitleActions>
+                <IconButton
+                  size="small"
+                  disabled={!canEditPrevious}
+                  title="Previous Channel"
+                  onClick={(event) => {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    if (!canEditPrevious) return
+                    setEditing(channelIndex - 1)
+                  }}
+                >
+                  <ArrowBackIosNewIcon fontSize="inherit" />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  disabled={!canEditNext}
+                  title="Next Channel"
+                  onClick={(event) => {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    if (!canEditNext) return
+                    setEditing(channelIndex + 1)
+                  }}
+                >
+                  <ArrowForwardIosIcon fontSize="inherit" />
+                </IconButton>
+              </PopupTitleActions>
+            </PopupTitleRow>
+          }
           onClose={() => {
             setEditing(null)
           }}
@@ -111,6 +138,22 @@ const Sp = styled.div`
   flex: 1 0 0;
 `
 
+const PopupTitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+`
+
+const PopupTitleText = styled.div`
+  font-size: 1rem;
+`
+
+const PopupTitleActions = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+`
+
 function getInfo(ch: FixtureChannel): string {
   switch (ch.type) {
     case 'axis':
@@ -125,8 +168,14 @@ function getInfo(ch: FixtureChannel): string {
       return `Master`
     case 'strobe':
       return `Strobe`
+    case 'fxTrigger':
+      return ch.name.length > 0 ? ch.name : 'FX Trigger'
+    case 'fxLevel':
+      return ch.name.length > 0 ? ch.name : 'FX Level'
     case 'custom':
       return ch.isControllable ? ch.name : ''
+    case 'split':
+      return ch.ranges.length > 0 ? ch.ranges[0].name : 'Split'
   }
 }
 
@@ -140,10 +189,16 @@ function getSubInfo(ch: FixtureChannel): string | null {
       return `${ch.gobos.length} gobos`
     case 'strobe':
       return `Solid: ${ch.default_solid} | Strobe: ${ch.default_strobe}`
+    case 'fxTrigger':
+      return `Off: ${ch.off} | On: ${ch.on}`
+    case 'fxLevel':
+      return `${ch.min} - ${ch.max} | Default: ${ch.default}`
     case 'master':
       return `${ch.min} - ${ch.max}`
     case 'custom':
       return ch.isControllable ? '' : ch.name
+    case 'split':
+      return `${ch.ranges.length} range${ch.ranges.length === 1 ? '' : 's'}`
     default:
       return null
   }

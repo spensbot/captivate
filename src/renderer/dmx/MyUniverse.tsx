@@ -6,26 +6,12 @@ import styled from 'styled-components'
 import { TextField, Tooltip } from '@mui/material'
 import { useDispatch } from 'react-redux'
 import { setActiveUniverse } from '../redux/dmxSlice'
+import { Slot_t } from './UniverseSlotTypes'
 
 interface FixtureWithIndex {
   fixture: Fixture
   globalIndex: number
 }
-
-interface GapSlot_t {
-  kind: 'gap'
-  ch: number
-  count: number
-}
-
-interface FixtureSlot_t {
-  kind: 'fixture'
-  localIndex: number
-  globalIndex: number
-  fixture: Fixture
-}
-
-export type Slot_t = GapSlot_t | FixtureSlot_t
 
 export default function MyUniverse() {
   const dispatch = useDispatch()
@@ -55,7 +41,11 @@ export default function MyUniverse() {
       for (let i = 0; i < universe.length - 1; i++) {
         const f0 = universe[i].fixture
         const f1 = universe[i + 1].fixture
-        const f0_endCh = f0.ch + fixtureTypesByID[f0.type].channels.length - 1
+        const f0ChannelCount = Math.max(
+          1,
+          fixtureTypesByID[f0.type]?.channels.length ?? 1
+        )
+        const f0_endCh = f0.ch + f0ChannelCount - 1
 
         slots.push({
           kind: 'fixture',
@@ -81,7 +71,10 @@ export default function MyUniverse() {
       })
 
       const last = universe[universe.length - 1].fixture
-      const lastCount = fixtureTypesByID[last.type].channels.length
+      const lastCount = Math.max(
+        1,
+        fixtureTypesByID[last.type]?.channels.length ?? 1
+      )
       const lastChannel = last.ch + lastCount - 1
       if (lastChannel < 512) {
         slots.push({
@@ -126,7 +119,9 @@ export default function MyUniverse() {
         </Tooltip>
       </HeaderRow>
       <Slots>{elements}</Slots>
-      <FixturePlacement />
+      <PlacementArea>
+        <FixturePlacement />
+      </PlacementArea>
     </Root>
   )
 }
@@ -148,6 +143,8 @@ const Root = styled.div`
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  min-height: 0;
+  overflow: hidden;
 `
 
 const Slots = styled.div`
@@ -155,10 +152,12 @@ const Slots = styled.div`
   flex-direction: row;
   align-items: start;
   flex-wrap: wrap;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
+  max-height: clamp(7.5rem, 32vh, 16rem);
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  margin-bottom: 0.45rem;
   scrollbar-width: thin;
   scrollbar-color: #7a7a7a33 #0000;
 
@@ -175,4 +174,10 @@ const Slots = styled.div`
     background: #7a7a7a99;
     border-radius: 999px;
   }
+`
+
+const PlacementArea = styled.div`
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
 `

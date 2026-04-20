@@ -32,7 +32,12 @@ const configuration: webpack.Configuration = {
   entry: {
     main: path.join(webpackPaths.srcMainPath, 'main.ts'),
     preload: path.join(webpackPaths.srcMainPath, 'preload.js'),
-    visualizer_preload: path.join(webpackPaths.srcMainPath, 'engine', 'visualizer_preload.js')
+    visualizer_preload: path.join(webpackPaths.srcMainPath, 'engine', 'visualizer_preload.js'),
+    lighting3dPreviewWorker: path.join(
+      webpackPaths.srcMainPath,
+      'workers',
+      'lighting3dPreviewWorker.ts'
+    ),
   },
 
   output: {

@@ -15,7 +15,7 @@ export default function LedFixtureList({}: Props) {
 
   return (
     <Root>
-      <Title>Led Fixtures</Title>
+      <Title>LED Pixel Fixtures</Title>
       {indexArray(numLedFixtures).map((i) => (
         <LedFixtureDefinition key={i} index={i} />
       ))}
