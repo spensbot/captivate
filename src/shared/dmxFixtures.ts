@@ -1,4 +1,4 @@
-import { Window2D_t } from '../shared/window'
+import { Window2D_t, windowAxes } from '../shared/window'
 import { ColorChannel, ColorKind } from './dmxColors'
 import { nanoid } from 'nanoid'
 
@@ -42,15 +42,15 @@ type ChannelStrobe = {
   default_solid: DmxValue
 }
 
-export type ChannelFxTrigger = {
-  type: 'fxTrigger'
+export type ChannelFxtrTrigger = {
+  type: 'fxtrTrigger'
   name: string
   off: DmxValue
   on: DmxValue
 }
 
-export type ChannelFxLevel = {
-  type: 'fxLevel'
+export type ChannelFxtrLevel = {
+  type: 'fxtrLevel'
   name: string
   default: DmxValue
   min: DmxValue
@@ -106,8 +106,8 @@ export type LeafFixtureChannel =
   | ChannelColorMap
   | ChannelGoboMap
   | ChannelStrobe
-  | ChannelFxTrigger
-  | ChannelFxLevel
+  | ChannelFxtrTrigger
+  | ChannelFxtrLevel
   | ChannelAxis
   | ChannelCustom
 
@@ -135,8 +135,8 @@ export const channelTypes: ChannelType[] = [
   'colorMap',
   'goboMap',
   'strobe',
-  'fxTrigger',
-  'fxLevel',
+  'fxtrTrigger',
+  'fxtrLevel',
   'axis',
   'custom',
   'split',
@@ -155,10 +155,10 @@ export function initFixtureChannel(
     return initChannelStrobe()
   } else if (type === 'axis') {
     return initChannelAxis('x', false)
-  } else if (type === 'fxTrigger') {
-    return initChannelFxTrigger('Trigger')
-  } else if (type === 'fxLevel') {
-    return initChannelFxLevel('Level')
+  } else if (type === 'fxtrTrigger') {
+    return initChannelFxtrTrigger('Trigger')
+  } else if (type === 'fxtrLevel') {
+    return initChannelFxtrLevel('Level')
   } else if (type === 'colorMap') {
     return initChannelColorMap([
       { max: 0, hue: 0, saturation: 1.0, kind: 'color' },
@@ -217,7 +217,7 @@ export function initChannelSplit(): ChannelSplit {
         DMX_MIN_VALUE,
         9,
         {
-          ...initChannelFxTrigger('On/Off'),
+          ...initChannelFxtrTrigger('On/Off'),
           off: DMX_MIN_VALUE,
           on: 9,
         },
@@ -227,7 +227,7 @@ export function initChannelSplit(): ChannelSplit {
         10,
         DMX_MAX_VALUE,
         {
-          ...initChannelFxLevel('FX Level'),
+          ...initChannelFxtrLevel('Level'),
           default: 10,
           min: 10,
           max: DMX_MAX_VALUE,
@@ -294,23 +294,39 @@ export function initChannelStrobe(): ChannelStrobe {
   }
 }
 
-export function initChannelFxTrigger(name: string): ChannelFxTrigger {
+export function initChannelFxtrTrigger(name: string): ChannelFxtrTrigger {
   return {
-    type: 'fxTrigger',
+    type: 'fxtrTrigger',
     name,
     off: DMX_MIN_VALUE,
     on: DMX_MAX_VALUE,
   }
 }
 
-export function initChannelFxLevel(name: string): ChannelFxLevel {
+export function initChannelFxtrLevel(name: string): ChannelFxtrLevel {
   return {
-    type: 'fxLevel',
+    type: 'fxtrLevel',
     name,
     default: DMX_MIN_VALUE,
     min: DMX_MIN_VALUE,
     max: DMX_MAX_VALUE,
   }
+}
+
+/** Rewrites legacy persisted fixture-related strings inside serialized JSON. */
+export function migrateLegacyFixturePersistedJson(json: string): string {
+  return json
+    .replaceAll('"type":"fxTrigger"', '"type":"fxtrTrigger"')
+    .replaceAll('"type":"fxLevel"', '"type":"fxtrLevel"')
+    .replaceAll('"kind":"atmosphericFx"', '"kind":"atmosphericFxtr"')
+}
+
+export function migrateLegacyFixtureChannelDiscriminators(
+  channels: FixtureChannel[]
+): FixtureChannel[] {
+  return JSON.parse(
+    migrateLegacyFixturePersistedJson(JSON.stringify(channels))
+  ) as FixtureChannel[]
 }
 
 export function initChannelAxis(dir: AxisDir, isFine: boolean): ChannelAxis {
@@ -451,7 +467,7 @@ export type FixtureModelKind =
   | 'uplight'
   | 'moverSpot'
   | 'moverWash'
-  | 'atmosphericFx'
+  | 'atmosphericFxtr'
 
 export type AtmosphereEffectType =
   | 'fog'
@@ -498,7 +514,7 @@ export const fixtureModelKinds: FixtureModelKind[] = [
   'uplight',
   'moverSpot',
   'moverWash',
-  'atmosphericFx',
+  'atmosphericFxtr',
 ]
 
 export const washBarLayoutModes: WashBarLayoutMode[] = ['linear', 'multiStrip']
@@ -517,7 +533,7 @@ export function fixtureModelKindName(kind: FixtureModelKind): string {
   if (kind === 'uplight') return 'Uplight'
   if (kind === 'moverSpot') return 'Mover Spot/Beam'
   if (kind === 'moverWash') return 'Mover Wash'
-  return 'Atmospheric FX Box'
+  return 'Atmospheric fixture box'
 }
 
 /** PAR box forward-face layout (emitters on the wide rectangular face). */
@@ -633,7 +649,7 @@ export function defaultMoverBeamAngleForModelKind(
   if (kind === 'moverWash') {
     return FIXTURE_MODEL_DEFAULT_MOVER_WASH_BEAM_ANGLE
   }
-  if (kind === 'atmosphericFx') {
+  if (kind === 'atmosphericFxtr') {
     return 16
   }
 
@@ -1362,7 +1378,7 @@ function defaultBodyHeightForKind(
   }
   if (kind === 'washBar') return 0.074
   if (kind === 'uplight') return 0.24
-  if (kind === 'atmosphericFx') return 0.22
+  if (kind === 'atmosphericFxtr') return 0.22
   if (kind === 'moverSpot' || kind === 'moverWash') return 0.18
   return 0.3
 }
@@ -1371,7 +1387,7 @@ function defaultBodyDepthForKind(kind: FixtureModelKind): number {
   if (kind === 'parCan') return PAR_DEFAULT_CYLINDER_DEPTH_M
   if (kind === 'washBar') return 0.061
   if (kind === 'uplight') return 0.3
-  if (kind === 'atmosphericFx') return 0.32
+  if (kind === 'atmosphericFxtr') return 0.32
   if (kind === 'moverSpot' || kind === 'moverWash') return 0.24
   return 0.34
 }
@@ -1628,7 +1644,7 @@ export function isMoverFixtureType(fixtureType: FixtureType): boolean {
 }
 
 /** True if any mapped universe fixture uses a mover-style fixture type (pan+tilt head). */
-export function hasMoverFixtureInUniverse(
+export function universeHasMovers(
   universe: Universe,
   fixtureTypesByID: { [id: string]: FixtureType | undefined }
 ): boolean {
@@ -1652,13 +1668,13 @@ export function fixtureTypeHasFocusChannel(fixtureType: FixtureType): boolean {
 }
 
 export function inferFixtureModelKind(fixtureType: FixtureType): FixtureModelKind {
-  const hasAtmosFxChannels = fixtureType.channels.flatMap((channel) =>
+  const hasAtmosFxtrChannels = fixtureType.channels.flatMap((channel) =>
     fixtureChannelLeafChannels(channel)
   ).some(
-    (channel) => channel.type === 'fxTrigger' || channel.type === 'fxLevel'
+    (channel) => channel.type === 'fxtrTrigger' || channel.type === 'fxtrLevel'
   )
-  if (hasAtmosFxChannels) {
-    return 'atmosphericFx'
+  if (hasAtmosFxtrChannels) {
+    return 'atmosphericFxtr'
   }
 
   if (isMoverFixtureType(fixtureType)) {
@@ -1707,10 +1723,14 @@ export function normalizeFixtureModelConfig(
         })
       : {}
 
+  const rawKind =
+    typeof source.kind === 'string' ? source.kind.trim() : ''
+  const migratedKind =
+    rawKind === 'atmosphericFx' ? 'atmosphericFxtr' : rawKind
   const kind =
-    typeof source.kind === 'string' &&
-    fixtureModelKinds.includes(source.kind as FixtureModelKind)
-      ? (source.kind as FixtureModelKind)
+    migratedKind.length > 0 &&
+    fixtureModelKinds.includes(migratedKind as FixtureModelKind)
+      ? (migratedKind as FixtureModelKind)
       : defaults.kind
 
   const normalizedKind = kind === 'auto' ? inferFixtureModelKind(fixtureType) : kind
@@ -1720,7 +1740,7 @@ export function normalizeFixtureModelConfig(
       ? 4
       : normalizedKind === 'moverWash'
       ? 7
-      : normalizedKind === 'atmosphericFx'
+      : normalizedKind === 'atmosphericFxtr'
       ? 1
       : 1
 
@@ -1740,7 +1760,7 @@ export function normalizeFixtureModelConfig(
   const defaultWidth =
     normalizedKind === 'washBar'
       ? 2.2
-      : normalizedKind === 'atmosphericFx'
+      : normalizedKind === 'atmosphericFxtr'
       ? 0.6
       : normalizedKind === 'parCan'
       ? bodyShape === 'cylinder'
@@ -1954,6 +1974,83 @@ export function normalizeFixtureModelConfig(
     parRectLayout,
     parCylinderLayout,
   }
+}
+
+export function computeEmitterCentroid(
+  emitters: FixtureEmitterDefinition[]
+): { x: number; y: number; z: number } | null {
+  if (emitters.length === 0) return null
+  let sx = 0
+  let sy = 0
+  let sz = 0
+  for (const e of emitters) {
+    sx += clampNormalized(e.x)
+    sy += clampNormalized(e.y)
+    sz += clampNormalized(e.z)
+  }
+  const n = emitters.length
+  return { x: sx / n, y: sy / n, z: sz / n }
+}
+
+export function emittersForSubfixtureIndex(
+  fixtureType: FixtureType,
+  allEmitters: FixtureEmitterDefinition[],
+  subIndex: number
+): FixtureEmitterDefinition[] {
+  const subs = fixtureType.subFixtures
+  if (subs.length === 0) {
+    return allEmitters
+  }
+  const sub = subs[subIndex]
+  if (sub === undefined || sub.channels.length === 0) {
+    return []
+  }
+  const channelSet = new Set(sub.channels)
+  return allEmitters.filter((em) =>
+    em.channelIndexes.some((ch) => channelSet.has(ch))
+  )
+}
+
+/**
+ * Fills missing `relative_window` axes from emitter-layout centroid so spatial
+ * modulation matches physical subfixture placement on the fixture face.
+ * Explicit relative positions always win.
+ */
+export function mergeSubRelativeWindowWithEmitterCentroid(
+  explicit: Window2D_t | undefined,
+  centroid: { x: number; y: number; z: number },
+  parentWindow: Window2D_t
+): Window2D_t {
+  const out: Window2D_t = {}
+  for (const axis of windowAxes) {
+    if (parentWindow[axis] === undefined) continue
+    const ex = explicit?.[axis]
+    const widthOk =
+      ex?.width !== undefined && Number.isFinite(ex.width) && ex.width > 0
+    const width = widthOk ? ex!.width! : 1
+    if (ex?.pos !== undefined && Number.isFinite(ex.pos)) {
+      out[axis] = {
+        pos: clampNormalized(ex.pos),
+        width,
+      }
+    } else {
+      out[axis] = {
+        pos: clampNormalized(centroid[axis]),
+        width,
+      }
+    }
+  }
+  return out
+}
+
+export function resolvedEmittersForFixtureType(
+  fixtureType: FixtureType
+): FixtureEmitterDefinition[] {
+  const model = normalizeFixtureModelConfig(fixtureType.model, fixtureType)
+  if (model.useCustomEmitterLayout && model.customEmitters.length > 0) {
+    return model.customEmitters
+  }
+  return buildAutoFittedDefaultCustomEmitters(fixtureType, model)
 }
 
 export interface Fixture {

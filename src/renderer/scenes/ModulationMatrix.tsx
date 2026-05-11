@@ -9,6 +9,7 @@ import styled from 'styled-components'
 import { indexArray } from 'shared/util'
 import ModulationSlider, { AddModulationButton } from './ModulationSlider'
 import { getAllParamKeys } from 'renderer/redux/dmxSlice'
+import { activeInterModParamKeys } from '../../shared/modulation'
 
 export default function ModulationMatrix({ index }: { index: number }) {
   const numSplits = useActiveLightScene((scene) => scene.splitScenes.length)
@@ -49,6 +50,11 @@ function SplitSceneModulationMatrix({
   splitIndex: number
 }) {
   const allParamKeys = useDmxSelector((dmx) => getAllParamKeys(dmx))
+  const interModKeys = useActiveLightScene((scene) =>
+    activeInterModParamKeys(
+      scene.modulators[modIndex]?.splitModulations[splitIndex]
+    )
+  )
 
   return (
     <SplitRoot>
@@ -62,6 +68,14 @@ function SplitSceneModulationMatrix({
           />
         )
       })}
+      {interModKeys.map((paramKey) => (
+        <ModulationSlider
+          splitIndex={splitIndex}
+          key={`${paramKey}:im:${splitIndex}:mod${modIndex}`}
+          modIndex={modIndex}
+          param={paramKey}
+        />
+      ))}
     </SplitRoot>
   )
 }

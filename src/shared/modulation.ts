@@ -19,10 +19,55 @@ export interface Modulator {
 /** How modulation combines with the manual (base) set-point for a parameter. */
 export type ModManualAnchor = 'center' | 'bottom' | 'top'
 
+/**
+ * Applied per split only: shapes the 0–1 LFO driver **after** LFO/inter-mod synthesis,
+ * before the modulation matrix combines with base params.
+ */
+export interface SplitModShaping {
+  /** Mirror LFO contribution around center (0↔1). */
+  invertModulation?: boolean
+  /** Advance/delay all modulators on this split in beat time (fractions of a beat). */
+  phaseOffsetBeats?: number
+  /**
+   * Stair-step the shaped LFO into N discrete levels (bit-crush style).
+   * Omit or values &lt; 2 = smooth output. Capped at {@link SPLIT_MOD_MAX_STAIR_STEPS}.
+   */
+  modulationStairSteps?: number
+}
+
+/** Maximum quantize levels for split modulation shaping (UI + engine). */
+export const SPLIT_MOD_MAX_STAIR_STEPS = 32
+
+/** Persist only meaningful keys; omit empty shaping block. */
+export function normSplitShapingForStore(
+  raw: SplitModShaping | undefined
+): SplitModShaping | undefined {
+  if (!raw) return undefined
+  const out: SplitModShaping = {}
+  if (raw.invertModulation === true) {
+    out.invertModulation = true
+  }
+  if (Number.isFinite(raw.phaseOffsetBeats) && raw.phaseOffsetBeats !== 0) {
+    out.phaseOffsetBeats = raw.phaseOffsetBeats
+  }
+  if (
+    raw.modulationStairSteps !== undefined &&
+    Number.isFinite(raw.modulationStairSteps) &&
+    raw.modulationStairSteps >= 2
+  ) {
+    out.modulationStairSteps = Math.min(
+      SPLIT_MOD_MAX_STAIR_STEPS,
+      Math.max(2, Math.round(raw.modulationStairSteps))
+    )
+  }
+  return Object.keys(out).length > 0 ? out : undefined
+}
+
 interface LightSceneLike {
   splitScenes: Array<{
     baseParams: Modulation
     modManualAnchors?: Partial<Record<string, ModManualAnchor>>
+    splitModShaping?: SplitModShaping
   }>
   modulators: Modulator[]
 }
@@ -52,6 +97,209 @@ interface ModSnapshot {
   lfoVal: number
 }
 
+const INTER_MOD_PREFIX = 'intermod:lfo:'
+const INTER_MOD_PROPS = new Set([
+  'period',
+  'phaseShift',
+  'flip',
+  'skew',
+  'sinePeakWidth',
+  'rampCurve',
+  'squareDuty',
+  'sawFlatten',
+  'noiseSeed',
+  'audioBandLowHz',
+  'audioBandHighHz',
+  'audioThreshold',
+  'audioMax',
+  'audioAttack',
+  'audioDecay',
+  'audioEnergySmoothing',
+  'audioBandSmoothing',
+])
+
+type InterModTarget = {
+  targetIndex: number
+  prop: string
+}
+
+function parseInterModKey(key: string): InterModTarget | null {
+  if (!key.startsWith(INTER_MOD_PREFIX)) return null
+  const remainder = key.slice(INTER_MOD_PREFIX.length)
+  const [targetRaw, prop] = remainder.split(':')
+  const targetIndex = Number(targetRaw)
+  if (!Number.isInteger(targetIndex) || targetIndex < 0) return null
+  if (typeof prop !== 'string' || !INTER_MOD_PROPS.has(prop)) return null
+  return { targetIndex, prop }
+}
+
+/** For each target LFO index, which wave/prop keys receive inter-mod on this split. */
+export function intermodPropsIncoming(
+  scene: LightSceneLike,
+  splitIndex: number
+): Map<number, Set<string>> {
+  const map = new Map<number, Set<string>>()
+  for (const modulator of scene.modulators) {
+    const splitMod = modulator.splitModulations[splitIndex] ?? {}
+    for (const [key, amount] of Object.entries(splitMod)) {
+      if (typeof amount !== 'number' || !Number.isFinite(amount)) continue
+      const t = parseInterModKey(key)
+      if (t === null) continue
+      let set = map.get(t.targetIndex)
+      if (set === undefined) {
+        set = new Set()
+        map.set(t.targetIndex, set)
+      }
+      set.add(t.prop)
+    }
+  }
+  return map
+}
+
+export function modOutgoingIntermod(
+  scene: LightSceneLike,
+  splitIndex: number,
+  sourceModIndex: number
+): boolean {
+  const splitMod = scene.modulators[sourceModIndex]?.splitModulations[splitIndex]
+  if (splitMod === undefined) return false
+  return Object.keys(splitMod).some((k) => k.startsWith(INTER_MOD_PREFIX))
+}
+
+/** Inter-mod matrix keys on this split that have an amount (for LFO panel strips). */
+export function activeInterModParamKeys(
+  splitMod: Modulation | undefined | null
+): string[] {
+  if (splitMod === null || splitMod === undefined) return []
+  const out: string[] = []
+  for (const [key, val] of Object.entries(splitMod)) {
+    if (!key.startsWith(INTER_MOD_PREFIX)) continue
+    if (typeof val !== 'number' || !Number.isFinite(val)) continue
+    if (parseInterModKey(key) === null) continue
+    out.push(key)
+  }
+  out.sort((a, b) => a.localeCompare(b, 'en'))
+  return out
+}
+
+/** Distinct target LFO indices this source modulates on the split (inter-mod routes only). */
+export function intermodOutgoingTargets(
+  scene: LightSceneLike,
+  splitIndex: number,
+  sourceIndex: number
+): number[] {
+  const n = scene.modulators.length
+  const splitMod = scene.modulators[sourceIndex]?.splitModulations[splitIndex]
+  if (splitMod === undefined) return []
+  const set = new Set<number>()
+  for (const [key, val] of Object.entries(splitMod)) {
+    if (typeof val !== 'number' || !Number.isFinite(val)) continue
+    const t = parseInterModKey(key)
+    if (t === null) continue
+    if (t.targetIndex === sourceIndex) continue
+    if (t.targetIndex < 0 || t.targetIndex >= n) continue
+    set.add(t.targetIndex)
+  }
+  return Array.from(set).sort((a, b) => a - b)
+}
+
+/** Distinct source LFO indices that modulate this target on the split. */
+export function intermodIncomingSources(
+  scene: LightSceneLike,
+  splitIndex: number,
+  targetIndex: number
+): number[] {
+  const n = scene.modulators.length
+  if (targetIndex < 0 || targetIndex >= n) return []
+  const set = new Set<number>()
+  for (let s = 0; s < n; s++) {
+    if (s === targetIndex) continue
+    const splitMod = scene.modulators[s]?.splitModulations[splitIndex]
+    if (splitMod === undefined) continue
+    for (const [key, val] of Object.entries(splitMod)) {
+      if (typeof val !== 'number' || !Number.isFinite(val)) continue
+      const t = parseInterModKey(key)
+      if (t === null) continue
+      if (t.targetIndex === targetIndex) {
+        set.add(s)
+        break
+      }
+    }
+  }
+  return Array.from(set).sort((a, b) => a - b)
+}
+
+const INTERMOD_SOURCE_COLOR_SLOTS = 16
+
+/**
+ * Stable accent color for an LFO when it acts as an inter-mod **source**. Used for that
+ * LFO’s single left-edge strip and for the matching stripes on each target’s right edge.
+ */
+export function intermodSourceAccentColor(sourceIndex: number): string {
+  const slot = sourceIndex % INTERMOD_SOURCE_COLOR_SLOTS
+  const hue = ((slot * 37 + sourceIndex * 23) % 360 + 360) % 360
+  const sat = 64 + (slot % 4) * 8
+  const light = 48 + (slot % 3) * 7
+  return `hsla(${hue}, ${sat}%, ${light}%, 0.9)`
+}
+
+function cloneLfo(lfo: Lfo): Lfo {
+  return { ...lfo }
+}
+
+function applyInterModToLfoProp(
+  targetLfo: Lfo,
+  prop: string,
+  delta: number
+) {
+  if (prop === 'period') {
+    const basePeriod = Math.max(0.125, Number(targetLfo.period) || 4)
+    const ratio = Math.pow(2, delta * 2)
+    targetLfo.period = Math.min(64, Math.max(0.125, basePeriod * ratio))
+    return
+  }
+
+  if (prop === 'audioBandLowHz') {
+    const min = 20
+    const max = 20000
+    const span = max - min
+    const current = Number.isFinite(targetLfo.audioBandLowHz)
+      ? targetLfo.audioBandLowHz
+      : 240
+    const next = Math.min(max, Math.max(min, current + delta * span * 0.2))
+    targetLfo.audioBandLowHz = next
+    if (targetLfo.audioBandHighHz < next + 20) {
+      targetLfo.audioBandHighHz = Math.min(max, next + 20)
+    }
+    return
+  }
+
+  if (prop === 'audioBandHighHz') {
+    const min = 20
+    const max = 20000
+    const span = max - min
+    const current = Number.isFinite(targetLfo.audioBandHighHz)
+      ? targetLfo.audioBandHighHz
+      : 1600
+    const next = Math.min(max, Math.max(min, current + delta * span * 0.2))
+    targetLfo.audioBandHighHz = next
+    if (targetLfo.audioBandLowHz > next - 20) {
+      targetLfo.audioBandLowHz = Math.max(min, next - 20)
+    }
+    return
+  }
+
+  if (prop === 'audioMax') {
+    const next = clamp01((Number(targetLfo.audioMax) || 0.6) + delta)
+    targetLfo.audioMax = Math.max(targetLfo.audioThreshold + 0.01, next)
+    return
+  }
+
+  const current = Number((targetLfo as unknown as Record<string, number>)[prop])
+  const next = clamp01((Number.isFinite(current) ? current : 0.5) + delta)
+  ;(targetLfo as unknown as Record<string, number>)[prop] = next
+}
+
 function clampOutputParamValue(param: DefaultParam | string, value: number): number {
   if (param === 'moverMode') {
     // Mover mode is discrete 0..2 (Follow/Tandem/Mirror), not normalized 0..1.
@@ -66,6 +314,66 @@ function clampOutputParamValue(param: DefaultParam | string, value: number): num
   return clampNormalized(value)
 }
 
+function applySplitModShapingToLfoVal(
+  lfoVal: number,
+  shaping: SplitModShaping | undefined
+): number {
+  let v = clampNormalized(lfoVal)
+  if (!shaping) {
+    return v
+  }
+  if (shaping.invertModulation === true) {
+    v = 1 - v
+  }
+  const steps = shaping.modulationStairSteps
+  if (steps !== undefined && Number.isFinite(steps) && steps >= 2) {
+    const n = Math.min(SPLIT_MOD_MAX_STAIR_STEPS, Math.max(2, Math.round(steps)))
+    v = Math.round(v * (n - 1)) / (n - 1)
+  }
+  return clampNormalized(v)
+}
+
+/**
+ * LFO definitions after applying `intermod:lfo:*` routes for one split (same rules as the
+ * DMX engine). Source LFO values use the split's phase-offset clock when present.
+ */
+export function effectiveLfosAtSplit(
+  scene: LightSceneLike,
+  splitIndex: number,
+  beats: number,
+  audioInput: AudioEngineMetrics
+): Lfo[] {
+  const splitScene = scene.splitScenes[splitIndex]
+  const phaseOff = splitScene?.splitModShaping?.phaseOffsetBeats
+  const effectiveBeats =
+    beats + (Number.isFinite(phaseOff) ? Number(phaseOff) : 0)
+
+  const sourceLfoValues = scene.modulators.map((modulator, sourceIndex) =>
+    getModulatorLfoValue(modulator.lfo, effectiveBeats, audioInput, sourceIndex)
+  )
+  const effectiveLfos = scene.modulators.map((modulator) => cloneLfo(modulator.lfo))
+
+  scene.modulators.forEach((modulator, sourceIndex) => {
+    const sourceLfoVal = sourceLfoValues[sourceIndex]
+    const splitMod = modulator.splitModulations[splitIndex] ?? {}
+    for (const [key, amount] of Object.entries(splitMod)) {
+      if (!Number.isFinite(amount)) continue
+      const amountNorm = Number(amount)
+      const target = parseInterModKey(key)
+      if (target === null) continue
+      if (target.targetIndex >= effectiveLfos.length) continue
+      if (target.targetIndex === sourceIndex) continue
+
+      const delta =
+        ((amountNorm - 0.5) * 2 * ((sourceLfoVal - 0.5) * 2)) / 2
+      const targetLfo = effectiveLfos[target.targetIndex]
+      applyInterModToLfoProp(targetLfo, target.prop, delta)
+    }
+  })
+
+  return effectiveLfos
+}
+
 export function getOutputParams(
   beats: number,
   scene: LightSceneLike,
@@ -76,15 +384,30 @@ export function getOutputParams(
   const splitScene = scene.splitScenes[splitIndex]
   const baseParams = splitScene.baseParams
   const modManualAnchors = splitScene.modManualAnchors
+  const shaping = splitScene.splitModShaping
+  const phaseOff = shaping?.phaseOffsetBeats ?? 0
+  const effectiveBeats = beats + (Number.isFinite(phaseOff) ? phaseOff : 0)
+
   const outputParams: Modulation = {
     ...defaultOutputParams(),
     ...baseParams,
   }
 
-  const snapshots: ModSnapshot[] = scene.modulators.map((modulator) => ({
-    modulation: modulator.splitModulations[splitIndex],
-    lfoVal: getModulatorLfoValue(modulator.lfo, beats, audioInput),
-  }))
+  const effectiveLfos = effectiveLfosAtSplit(scene, splitIndex, beats, audioInput)
+
+  const snapshots: ModSnapshot[] = scene.modulators.map((modulator, index) => {
+    let lfoVal = getModulatorLfoValue(
+      effectiveLfos[index],
+      effectiveBeats,
+      audioInput,
+      index
+    )
+    lfoVal = applySplitModShapingToLfoVal(lfoVal, shaping)
+    return {
+      modulation: modulator.splitModulations[splitIndex],
+      lfoVal,
+    }
+  })
 
   allParamKeys.forEach((param) => {
     const baseParam =
@@ -102,11 +425,12 @@ export function getOutputParams(
 export function getModulatorLfoValue(
   lfo: Lfo,
   beats: number,
-  audioInput: AudioEngineMetrics
+  audioInput: AudioEngineMetrics,
+  modulatorIndex?: number
 ) {
   if (lfo.shape === LfoShape.AudioBand) {
     if (audioInput.enabled !== true) {
-      const state = getAudioLfoState(lfo, beats)
+      const state = getAudioLfoState(lfo, beats, modulatorIndex)
       state.initialized = false
       state.peak = 0
       state.valley = 0
@@ -125,18 +449,23 @@ export function getModulatorLfoValue(
       ...band,
       gain: 1,
     })
-    return getAudioBandLevelSmoothed(raw, lfo, beats)
+    return getAudioBandLevelSmoothed(raw, lfo, beats, modulatorIndex)
   }
 
   if (lfo.shape === LfoShape.AudioEnergy) {
     if (audioInput.enabled !== true) {
-      const state = getAudioLfoState(lfo, beats)
+      const state = getAudioLfoState(lfo, beats, modulatorIndex)
       state.initialized = false
       state.smoothed = 0
       state.lastBeat = Number.isFinite(beats) ? beats : state.lastBeat
       return 0
     }
-    return getAudioEnergyLevelSmoothed(clamp01(audioInput.energyLevel), lfo, beats)
+    return getAudioEnergyLevelSmoothed(
+      clamp01(audioInput.energyLevel),
+      lfo,
+      beats,
+      modulatorIndex
+    )
   }
 
   return GetValue(lfo, beats)
@@ -153,6 +482,8 @@ interface AudioLfoRuntimeState {
 }
 
 const audioLfoState = new WeakMap<Lfo, AudioLfoRuntimeState>()
+/** Stable across `cloneLfo()` copies (used by engine + UI); keys modulator index. */
+const audioLfoStateByModulatorIndex = new Map<number, AudioLfoRuntimeState>()
 
 function clamp01(value: number) {
   if (!Number.isFinite(value)) return 0
@@ -164,7 +495,29 @@ function alphaFromBeats(dtBeats: number, tauBeats: number) {
   return 1 - Math.exp(-dtBeats / Math.max(0.001, tauBeats))
 }
 
-function getAudioLfoState(lfo: Lfo, beats: number): AudioLfoRuntimeState {
+function getAudioLfoState(
+  lfo: Lfo,
+  beats: number,
+  modulatorIndex?: number
+): AudioLfoRuntimeState {
+  if (modulatorIndex !== undefined) {
+    const existing = audioLfoStateByModulatorIndex.get(modulatorIndex)
+    if (existing !== undefined) {
+      return existing
+    }
+    const created: AudioLfoRuntimeState = {
+      lastBeat: Number.isFinite(beats) ? beats : 0,
+      initialized: false,
+      peak: 0,
+      valley: 0,
+      smoothed: 0,
+      bandPostSmoothed: 0,
+      bandPostInitialized: false,
+    }
+    audioLfoStateByModulatorIndex.set(modulatorIndex, created)
+    return created
+  }
+
   const existing = audioLfoState.get(lfo)
   if (existing !== undefined) {
     return existing
@@ -183,8 +536,12 @@ function getAudioLfoState(lfo: Lfo, beats: number): AudioLfoRuntimeState {
   return created
 }
 
-function getAudioBandSmoothedValue(raw: number, lfo: Lfo, dtBeats: number) {
-  const state = getAudioLfoState(lfo, 0)
+function getAudioBandSmoothedValue(
+  raw: number,
+  lfo: Lfo,
+  dtBeats: number,
+  state: AudioLfoRuntimeState
+) {
   if (!state.initialized) {
     state.initialized = true
     state.smoothed = raw
@@ -201,7 +558,7 @@ function getAudioBandSmoothedValue(raw: number, lfo: Lfo, dtBeats: number) {
       : alphaFromBeats(dtBeats, decayTauBeats)
   state.smoothed += (raw - state.smoothed) * alpha
   state.smoothed = clamp01(state.smoothed)
-  return state.smoothed
+  return clamp01(state.smoothed)
 }
 
 function getAudioLfoThresholdAndMax(lfo: Lfo) {
@@ -222,8 +579,13 @@ function applyAudioLfoThreshold(raw: number, lfo: Lfo) {
   return clamp01((safeRaw - threshold) / Math.max(0.01, maxLevel - threshold))
 }
 
-function getAudioBandLevelSmoothed(raw: number, lfo: Lfo, beats: number) {
-  const state = getAudioLfoState(lfo, beats)
+function getAudioBandLevelSmoothed(
+  raw: number,
+  lfo: Lfo,
+  beats: number,
+  modulatorIndex?: number
+) {
+  const state = getAudioLfoState(lfo, beats, modulatorIndex)
   const beatNow = Number.isFinite(beats) ? beats : state.lastBeat
   const dtBeatsRaw = beatNow - state.lastBeat
   const dtBeats = Math.max(0, Math.min(4, dtBeatsRaw))
@@ -231,7 +593,7 @@ function getAudioBandLevelSmoothed(raw: number, lfo: Lfo, beats: number) {
     state.initialized = false
     state.bandPostInitialized = false
   }
-  const envelope = getAudioBandSmoothedValue(clamp01(raw), lfo, dtBeats)
+  const envelope = getAudioBandSmoothedValue(clamp01(raw), lfo, dtBeats, state)
 
   const smoothAmt = clamp01(lfo.audioBandSmoothing ?? 0)
   let post = envelope
@@ -256,8 +618,13 @@ function getAudioBandLevelSmoothed(raw: number, lfo: Lfo, beats: number) {
   return output
 }
 
-function getAudioEnergyLevelSmoothed(raw: number, lfo: Lfo, beats: number) {
-  const state = getAudioLfoState(lfo, beats)
+function getAudioEnergyLevelSmoothed(
+  raw: number,
+  lfo: Lfo,
+  beats: number,
+  modulatorIndex?: number
+) {
+  const state = getAudioLfoState(lfo, beats, modulatorIndex)
   const beatNow = Number.isFinite(beats) ? beats : state.lastBeat
   const dtBeatsRaw = beatNow - state.lastBeat
   const dtBeats = Math.max(0, Math.min(4, dtBeatsRaw))
@@ -269,7 +636,7 @@ function getAudioEnergyLevelSmoothed(raw: number, lfo: Lfo, beats: number) {
     state.initialized = true
     state.smoothed = raw
     state.lastBeat = beatNow
-    return clamp01(state.smoothed)
+    return applyAudioLfoThreshold(clamp01(state.smoothed), lfo)
   }
 
   const smoothing = clamp01(lfo.audioEnergySmoothing)

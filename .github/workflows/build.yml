@@ -34,12 +34,14 @@ jobs:
       - name: npm install
         run: |
           npm install
-      - name: npm test
+      - name: Typecheck
+        run: |
+          npm run typecheck:all
+      - name: Package application
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           npm run package
-          npm exec tsc
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:

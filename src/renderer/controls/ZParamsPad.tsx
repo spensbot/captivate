@@ -230,26 +230,22 @@ const Root = styled.div`
 
 const ParamToolbar = styled.div`
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1.05rem;
+  top: -0.42rem;
+  right: -0.72rem;
+  left: auto;
+  height: auto;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding-right: 0.12rem;
+  padding: 0;
   z-index: 20;
-  pointer-events: none;
-
-  & > * {
-    pointer-events: auto;
-  }
+  pointer-events: auto;
 `
 
 const ParamBodyRow = styled.div`
   flex: 1 1 auto;
   min-height: 0;
-  padding-top: 1.08rem;
+  padding-top: 0;
   box-sizing: border-box;
   display: flex;
   flex-direction: row;

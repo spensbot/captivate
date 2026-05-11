@@ -13,7 +13,6 @@ import {
   clampRectFaceExtentM,
   EMITTER_DIAMETER_MAX_M,
   EMITTER_DIAMETER_MIN_M,
-  FIXTURE_EMITTER_FACE_WIDTH_SCALE,
   fixtureFrontFaceDimensionsM,
   inferFixtureModelKind,
   initFixtureEmitterDefinition,
@@ -54,13 +53,9 @@ type BodyBounds = {
 }
 
 function computeBodyBounds(model: FixtureModelConfig): BodyBounds {
-  const faceWidth = Math.max(
-    0.05,
-    model.bodyShape === 'cylinder'
-      ? model.bodyDiameter
-      : model.width * FIXTURE_EMITTER_FACE_WIDTH_SCALE
-  )
-  const faceHeight = Math.max(0.05, model.bodyHeight)
+  const dims = fixtureFrontFaceDimensionsM(model)
+  const faceWidth = Math.max(0.05, dims.faceWidthM)
+  const faceHeight = Math.max(0.05, dims.faceHeightM)
   const aspect = Math.max(0.2, Math.min(8, faceWidth / faceHeight))
 
   const maxWidth = 100 - EDITOR_SAFE_PADDING_PERCENT * 2
@@ -278,10 +273,10 @@ function fixtureChannelLabel(channel: FixtureChannel, index: number): string {
   if (channel.type === 'strobe') {
     return `Ch ${index + 1}: Strobe`
   }
-  if (channel.type === 'fxTrigger') {
+  if (channel.type === 'fxtrTrigger') {
     return `Ch ${index + 1}: ${channel.name || 'FX Trigger'}`
   }
-  if (channel.type === 'fxLevel') {
+  if (channel.type === 'fxtrLevel') {
     return `Ch ${index + 1}: ${channel.name || 'FX Level'}`
   }
   if (channel.type === 'colorMap') {

@@ -6,15 +6,27 @@ import AddIcon from '@mui/icons-material/Add'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
 import { useActiveLightScene } from '../redux/store'
+import { splitDisplayName } from '../scenes/splitUiVisibility'
 import { LfoShape } from '../../shared/oscillator'
 import { send_open_page_window } from '../ipcHandler'
+import LaserEditorCanvas from '../laser/LaserEditorCanvas'
+import LaserSceneStrip, { createEmptyLaserScene } from '../laser/LaserSceneStrip'
+import LaserSvgImportDialog from '../laser/LaserSvgImportDialog'
+import LaserGradientModal from '../laser/LaserGradientModal'
+import type {
+  BeamGradientStop,
+  LaserScene,
+  LaserRgbCapabilities,
+  LaserTool,
+} from '../laser/laserEditorTypes'
+import { LASER_SCENES_PER_PAGE } from '../laser/laserEditorTypes'
+import { DEFAULT_LASER_RGB_CAPABILITIES } from '../laser/laserBeamColor'
 
 interface LaserAlphaPageProps {
   standalone?: boolean
 }
 
 type LaserBackend = 'helios' | 'etherdream' | 'fb4' | 'generic'
-type LaserTool = 'select' | 'line' | 'freehand' | 'rect' | 'circle' | 'poly'
 type LaserParamRouteMode = 'manual' | 'split' | 'lfo' | 'split+lfo'
 
 interface LaserUnit {
@@ -23,6 +35,7 @@ interface LaserUnit {
   group: string
   zone: string
   enabled: boolean
+  laserChannels: LaserRgbCapabilities
 }
 
 const LFO_SHAPE_LABEL: Record<LfoShape, string> = {
@@ -36,23 +49,17 @@ const LFO_SHAPE_LABEL: Record<LfoShape, string> = {
 }
 
 export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
+  const ildaBootstrap = useRef<{ scenes: LaserScene[]; activeId: string } | null>(null)
+  if (!ildaBootstrap.current) {
+    const first = createEmptyLaserScene('Graphic 1')
+    ildaBootstrap.current = { scenes: [first], activeId: first.id }
+  }
+
   const splitSummaries = useActiveLightScene((scene) =>
-    scene.splitScenes.map((split, index) => {
-      const entries = Object.entries(split.groups).filter(
-        ([name]) => name.trim().length > 0
-      )
-      const groupLabel =
-        entries.length > 0
-          ? entries
-              .map(([name, include]) => `${include === false ? 'not ' : ''}${name}`)
-              .join(', ')
-          : 'all'
-      return {
-        index,
-        label: `Split ${index + 1}`,
-        groups: groupLabel,
-      }
-    })
+    scene.splitScenes.map((split, index) => ({
+      index,
+      label: splitDisplayName(index, split.groups),
+    }))
   )
   const lfoSummaries = useActiveLightScene((scene) =>
     scene.modulators.map((mod, index) => ({
@@ -73,14 +80,30 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
   const [selectedTool, setSelectedTool] = useState<LaserTool>('line')
   const [activeSplit, setActiveSplit] = useState(0)
   const [activeLfo, setActiveLfo] = useState(0)
-  const [activeGraphicName, setActiveGraphicName] = useState('Graphic 1')
+  const [laserScenes, setLaserScenes] = useState(() => ildaBootstrap.current!.scenes)
+  const [activeLaserSceneId, setActiveLaserSceneId] = useState(
+    () => ildaBootstrap.current!.activeId
+  )
+  const [laserScenePage, setLaserScenePage] = useState(0)
+  const [ildaSelectedLayerId, setIldaSelectedLayerId] = useState<string | null>(null)
+  const [svgImportOpen, setSvgImportOpen] = useState(false)
   const [laserPresetName, setLaserPresetName] = useState('Main Drop')
   const [dotDensityRoute, setDotDensityRoute] = useState<LaserParamRouteMode>('lfo')
   const [scanMotionRoute, setScanMotionRoute] =
     useState<LaserParamRouteMode>('split+lfo')
   const [beamColorRoute, setBeamColorRoute] = useState<LaserParamRouteMode>('split')
   const [lineColor, setLineColor] = useState('#00ff88')
-  const [fillColor, setFillColor] = useState('#5d7dff')
+  const [beamStrokeMode, setBeamStrokeMode] = useState<
+    'solid' | 'gradient' | 'rainbow'
+  >('solid')
+  const [beamGradientStops, setBeamGradientStops] = useState<BeamGradientStop[]>(
+    [
+      { offset: 0, color: '#ff3030' },
+      { offset: 1, color: '#30ff90' },
+    ]
+  )
+  const [rainbowCycles, setRainbowCycles] = useState(1.25)
+  const [gradientModalOpen, setGradientModalOpen] = useState(false)
   const [units, setUnits] = useState<LaserUnit[]>([
     {
       id: 'laser-front-left',
@@ -88,6 +111,7 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
       group: 'Main Lasers',
       zone: 'Floor',
       enabled: true,
+      laserChannels: { ...DEFAULT_LASER_RGB_CAPABILITIES },
     },
     {
       id: 'laser-front-right',
@@ -95,6 +119,7 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
       group: 'Main Lasers',
       zone: 'Floor',
       enabled: true,
+      laserChannels: { ...DEFAULT_LASER_RGB_CAPABILITIES },
     },
   ])
   const [selectedUnitId, setSelectedUnitId] = useState<string>('laser-front-left')
@@ -105,6 +130,19 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
     () => units.find((unit) => unit.id === selectedUnitId) ?? null,
     [selectedUnitId, units]
   )
+  const activeLaserScene = useMemo(
+    () => laserScenes.find((s) => s.id === activeLaserSceneId) ?? null,
+    [laserScenes, activeLaserSceneId]
+  )
+  const laserPageCount = Math.max(
+    1,
+    Math.ceil((laserScenes.length + 1) / LASER_SCENES_PER_PAGE)
+  )
+  useEffect(() => {
+    setLaserScenePage((p) =>
+      Math.min(Math.max(0, p), Math.max(0, laserPageCount - 1))
+    )
+  }, [laserPageCount])
   const groupNames = useMemo(() => {
     const names = new Set<string>()
     for (const unit of units) {
@@ -115,6 +153,11 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
     return Array.from(names).sort((a, b) => a.localeCompare(b))
   }, [units])
 
+  const editorLaserCaps = useMemo(
+    () => selectedUnit?.laserChannels ?? DEFAULT_LASER_RGB_CAPABILITIES,
+    [selectedUnit]
+  )
+
   const addLaserUnit = () => {
     const nextIndex = units.length + 1
     const id = `laser-${Date.now()}-${nextIndex}`
@@ -124,6 +167,7 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
       group: 'Main Lasers',
       zone: 'Floor',
       enabled: true,
+      laserChannels: { ...DEFAULT_LASER_RGB_CAPABILITIES },
     }
     setUnits((current) => [...current, next])
     setSelectedUnitId(id)
@@ -273,6 +317,34 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
                     />
                     Enabled
                   </CheckboxRow>
+                  <MiniFieldLabel>Output channels (RGBY+)</MiniFieldLabel>
+                  <ChannelGrid>
+                    {(
+                      [
+                        ['red', 'Red'],
+                        ['green', 'Green'],
+                        ['blue', 'Blue'],
+                        ['yellow', 'Yellow'],
+                        ['white', 'White'],
+                      ] as const
+                    ).map(([key, label]) => (
+                      <CheckboxRow key={key}>
+                        <input
+                          type="checkbox"
+                          checked={selectedUnit.laserChannels[key]}
+                          onChange={() =>
+                            updateSelectedUnit({
+                              laserChannels: {
+                                ...selectedUnit.laserChannels,
+                                [key]: !selectedUnit.laserChannels[key],
+                              },
+                            })
+                          }
+                        />
+                        {label}
+                      </CheckboxRow>
+                    ))}
+                  </ChannelGrid>
                 </>
               )}
             </SectionBlock>
@@ -295,37 +367,20 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
 
         <DrawPanel>
           <PanelTitle>Main Laser Control</PanelTitle>
-          <DrawToolbar>
-            {([
-              ['select', 'Select'],
-              ['line', 'Line'],
-              ['freehand', 'Free Hand'],
-              ['rect', 'Rect'],
-              ['circle', 'Circle'],
-              ['poly', 'Polygon'],
-            ] as Array<[LaserTool, string]>).map(([tool, label]) => (
-              <ToolButton
-                key={tool}
-                type="button"
-                $active={selectedTool === tool}
-                onClick={() => setSelectedTool(tool)}
-              >
-                {label}
-              </ToolButton>
-            ))}
-            <ToolDivider />
-            <TinyButton type="button">
-              <UploadFileIcon fontSize="inherit" />
-              Import Vector
-            </TinyButton>
-            <TinyButton type="button">Save Graphic</TinyButton>
-          </DrawToolbar>
           <GraphicMetaRow>
             <MetaField>
               <MiniFieldLabel>Graphic Name</MiniFieldLabel>
               <TextField
-                value={activeGraphicName}
-                onChange={(event) => setActiveGraphicName(event.target.value)}
+                value={activeLaserScene?.name ?? ''}
+                onChange={(event) => {
+                  const v = event.target.value
+                  setLaserScenes((prev) =>
+                    prev.map((s) =>
+                      s.id === activeLaserSceneId ? { ...s, name: v } : s
+                    )
+                  )
+                }}
+                disabled={activeLaserScene === null}
               />
             </MetaField>
             <MetaField>
@@ -335,33 +390,47 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
                 onChange={(event) => setLaserPresetName(event.target.value)}
               />
             </MetaField>
-            <MetaColorRow>
-              <MetaColorField>
-                <MiniFieldLabel>Line Color</MiniFieldLabel>
-                <ColorField
-                  type="color"
-                  value={lineColor}
-                  onChange={(event) => setLineColor(event.target.value)}
-                />
-              </MetaColorField>
-              <MetaColorField>
-                <MiniFieldLabel>Fill Color</MiniFieldLabel>
-                <ColorField
-                  type="color"
-                  value={fillColor}
-                  onChange={(event) => setFillColor(event.target.value)}
-                />
-              </MetaColorField>
-            </MetaColorRow>
           </GraphicMetaRow>
-          <DrawCanvas>
-            <CanvasGrid />
-            <CanvasHint>
-              Draw zone-ready laser graphics here.
-              <br />
-              Tools: lines, free hand, shapes, imported vector art.
-            </CanvasHint>
-          </DrawCanvas>
+          <EditorImportRow>
+            <TinyButton
+              type="button"
+              onClick={() => setSvgImportOpen(true)}
+              disabled={activeLaserScene === null}
+            >
+              <UploadFileIcon fontSize="inherit" />
+              Import Vector
+            </TinyButton>
+            <TinyButton type="button">Save Graphic</TinyButton>
+          </EditorImportRow>
+          {activeLaserScene ? (
+            <LaserEditorCanvas
+              layers={activeLaserScene.layers}
+              onLayersChange={(next) =>
+                setLaserScenes((prev) =>
+                  prev.map((s) =>
+                    s.id === activeLaserSceneId ? { ...s, layers: next } : s
+                  )
+                )
+              }
+              selectedLayerId={ildaSelectedLayerId}
+              onSelectLayer={setIldaSelectedLayerId}
+              tool={selectedTool}
+              onToolChange={setSelectedTool}
+              lineColor={lineColor}
+              onLineColorChange={setLineColor}
+              laserCapabilities={editorLaserCaps}
+              beamStrokeMode={beamStrokeMode}
+              onBeamStrokeModeChange={setBeamStrokeMode}
+              beamGradientStops={beamGradientStops}
+              rainbowCycles={rainbowCycles}
+              onRainbowCyclesChange={setRainbowCycles}
+              onOpenBeamGradientModal={() => setGradientModalOpen(true)}
+            />
+          ) : (
+            <EditorFallback>
+              <MutedLine>Select or create a scene below.</MutedLine>
+            </EditorFallback>
+          )}
           <LinkPanel>
             <SectionBlockTitle>Scene / Split / LFO Linkage</SectionBlockTitle>
             <LinkGrid>
@@ -373,7 +442,7 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
                 >
                   {splitSummaries.map((split) => (
                     <option key={split.index} value={split.index}>
-                      {`${split.label} (${split.groups})`}
+                      {split.label}
                     </option>
                   ))}
                 </SelectLike>
@@ -514,6 +583,51 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
           </PanelBody>
         </ControlPanel>
       </MainGrid>
+
+      <LaserSvgImportDialog
+        open={svgImportOpen}
+        onClose={() => setSvgImportOpen(false)}
+        beamColor={lineColor}
+        onAccept={(newLayers) => {
+          if (activeLaserSceneId === null) return
+          setLaserScenes((prev) =>
+            prev.map((s) =>
+              s.id === activeLaserSceneId
+                ? { ...s, layers: [...s.layers, ...newLayers] }
+                : s
+            )
+          )
+          const top = newLayers[newLayers.length - 1]
+          if (top) {
+            setIldaSelectedLayerId(top.id)
+          }
+        }}
+      />
+      <LaserGradientModal
+        open={gradientModalOpen}
+        onClose={() => setGradientModalOpen(false)}
+        stops={beamGradientStops}
+        onApply={setBeamGradientStops}
+        laserCaps={editorLaserCaps}
+      />
+      <LaserSceneStrip
+        scenes={laserScenes}
+        activeSceneId={activeLaserSceneId}
+        onSelectScene={(id) => {
+          setActiveLaserSceneId(id)
+          setIldaSelectedLayerId(null)
+        }}
+        onAddScene={() => {
+          const idx = laserScenes.length
+          const s = createEmptyLaserScene(`Scene ${idx + 1}`)
+          setLaserScenes((prev) => [...prev, s])
+          setActiveLaserSceneId(s.id)
+          setIldaSelectedLayerId(null)
+          setLaserScenePage(Math.floor(idx / LASER_SCENES_PER_PAGE))
+        }}
+        page={laserScenePage}
+        onPageChange={setLaserScenePage}
+      />
 
       <FooterStrip>
         <FooterBlock>
@@ -868,19 +982,17 @@ const CheckboxRow = styled.label`
   font-size: 0.68rem;
 `
 
-const DrawToolbar = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.32rem;
-  padding: 0.5rem 0.56rem;
-  border-bottom: 1px solid ${(props) => props.theme.colors.divider};
+const ChannelGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.2rem 0.5rem;
 `
 
 const GraphicMetaRow = styled.div`
   border-bottom: 1px solid ${(props) => props.theme.colors.divider};
   padding: 0.44rem 0.56rem;
   display: grid;
-  grid-template-columns: minmax(10rem, 1fr) minmax(10rem, 1fr) minmax(12rem, 1.2fr);
+  grid-template-columns: minmax(10rem, 1fr) minmax(10rem, 1fr);
   gap: 0.44rem;
 `
 
@@ -890,64 +1002,23 @@ const MetaField = styled.div`
   gap: 0.22rem;
 `
 
-const MetaColorRow = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, minmax(5rem, 1fr));
-  gap: 0.4rem;
-`
-
-const MetaColorField = styled.div`
+const EditorImportRow = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: 0.22rem;
+  flex-wrap: wrap;
+  gap: 0.32rem;
+  padding: 0.38rem 0.56rem 0;
+  border-bottom: 1px solid ${(props) => props.theme.colors.divider};
 `
 
-const ToolButton = styled.button<{ $active: boolean }>`
-  border: 1px solid ${(props) => (props.$active ? '#75c6ff' : props.theme.colors.divider)};
-  background: ${(props) =>
-    props.$active ? 'rgba(45, 114, 168, 0.38)' : props.theme.colors.bg.primary};
-  color: ${(props) => props.theme.colors.text.primary};
-  border-radius: 0.28rem;
-  padding: 0.22rem 0.44rem;
-  font-size: 0.67rem;
-  cursor: pointer;
-`
-
-const ToolDivider = styled.div`
-  width: 1px;
-  background: ${(props) => props.theme.colors.divider};
-  margin: 0 0.1rem;
-`
-
-const DrawCanvas = styled.div`
+const EditorFallback = styled.div`
   flex: 1 1 auto;
   min-height: 14rem;
   margin: 0.52rem;
   border: 1px solid ${(props) => props.theme.colors.divider};
   border-radius: 0.4rem;
-  background: radial-gradient(circle at 50% 50%, #101822 0%, #090c12 68%, #05070b 100%);
-  position: relative;
-  overflow: hidden;
-`
-
-const CanvasGrid = styled.div`
-  position: absolute;
-  inset: 0;
-  background-image: linear-gradient(#ffffff0e 1px, transparent 1px),
-    linear-gradient(90deg, #ffffff0e 1px, transparent 1px);
-  background-size: 2rem 2rem;
-`
-
-const CanvasHint = styled.div`
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-  font-size: 0.73rem;
-  color: #dfe9ffb5;
-  line-height: 1.35;
-  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `
 
 const LinkPanel = styled.div`

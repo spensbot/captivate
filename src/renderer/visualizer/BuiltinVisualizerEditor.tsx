@@ -846,10 +846,13 @@ export default function BuiltinVisualizerEditor({ config, onChange }: Props) {
                           </ProjectMInlineCurrent>
                         </FieldRow>
                         <ProjectMInlineActions>
-                          <SmallButton type="button" onClick={chooseInlineProjectMDirectory}>
+                          <ProjectMPresetActionButton
+                            type="button"
+                            onClick={chooseInlineProjectMDirectory}
+                          >
                             Directory...
-                          </SmallButton>
-                          <SmallButton
+                          </ProjectMPresetActionButton>
+                          <ProjectMPresetActionButton
                             type="button"
                             onClick={() =>
                               void refreshInlineProjectMPresets(projectMPresetDirectory)
@@ -857,8 +860,8 @@ export default function BuiltinVisualizerEditor({ config, onChange }: Props) {
                             disabled={projectMPresetLoading}
                           >
                             {projectMPresetLoading ? '...' : 'Reload'}
-                          </SmallButton>
-                          <SmallButton
+                          </ProjectMPresetActionButton>
+                          <ProjectMPresetActionButton
                             type="button"
                             onClick={() =>
                               updateLayer(config, patch, index, {
@@ -867,7 +870,7 @@ export default function BuiltinVisualizerEditor({ config, onChange }: Props) {
                             }
                           >
                             Runtime Default
-                          </SmallButton>
+                          </ProjectMPresetActionButton>
                         </ProjectMInlineActions>
                         <ProjectMInlineDirectory title={projectMPresetDirectory}>
                           {projectMPresetDirectory.trim().length > 0
@@ -895,7 +898,7 @@ export default function BuiltinVisualizerEditor({ config, onChange }: Props) {
                           {filteredPresetOptions.length === 1 ? '' : 's'} found
                         </ProjectMInlineMeta>
                         <ProjectMInlinePager>
-                          <SmallButton
+                          <ProjectMPresetActionButton
                             type="button"
                             onClick={() =>
                               setProjectMPresetPageByLayer((current) => ({
@@ -906,9 +909,9 @@ export default function BuiltinVisualizerEditor({ config, onChange }: Props) {
                             disabled={presetPage <= 0}
                           >
                             Prev
-                          </SmallButton>
+                          </ProjectMPresetActionButton>
                           <ProjectMInlineMeta>{`Page ${presetPage + 1} / ${presetPageCount}`}</ProjectMInlineMeta>
-                          <SmallButton
+                          <ProjectMPresetActionButton
                             type="button"
                             onClick={() =>
                               setProjectMPresetPageByLayer((current) => ({
@@ -922,7 +925,7 @@ export default function BuiltinVisualizerEditor({ config, onChange }: Props) {
                             disabled={presetPage >= presetPageCount - 1}
                           >
                             Next
-                          </SmallButton>
+                          </ProjectMPresetActionButton>
                         </ProjectMInlinePager>
                         <ProjectMInlineList>
                           {pagedPresetOptions.map((option) => (
@@ -942,11 +945,13 @@ export default function BuiltinVisualizerEditor({ config, onChange }: Props) {
                             </ProjectMInlineListItem>
                           ))}
                           {pagedPresetOptions.length <= 0 && (
-                            <ProjectMInlineEmpty>
-                              {projectMPresetLoading
-                                ? 'Loading presets...'
-                                : 'No presets match this filter.'}
-                            </ProjectMInlineEmpty>
+                            <ProjectMInlineListItem>
+                              <ProjectMInlineEmpty>
+                                {projectMPresetLoading
+                                  ? 'Loading presets...'
+                                  : 'No presets match this filter.'}
+                              </ProjectMInlineEmpty>
+                            </ProjectMInlineListItem>
                           )}
                         </ProjectMInlineList>
                         {projectMPresetMessage.trim().length > 0 && (
@@ -2616,29 +2621,57 @@ const LiveValue = styled.div`
 `
 
 const ProjectMInlineBrowser = styled.div`
-  border: 1px solid ${(props) => props.theme.colors.divider};
-  border-radius: 0.3rem;
-  padding: 0.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 0.35rem;
+  padding: 0.45rem 0.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.28rem;
+  gap: 0.32rem;
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
+  background: rgba(6, 6, 6, 0.88);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 2px 12px rgba(0, 0, 0, 0.35);
+`
+
+const ProjectMPresetActionButton = styled.button`
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: linear-gradient(180deg, #242424 0%, #161616 100%);
+  color: #f0f0f0;
+  border-radius: 0.28rem;
+  padding: 0.16rem 0.38rem;
+  font-size: 0.72rem;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+  &:hover:not(:disabled) {
+    border-color: rgba(255, 255, 255, 0.34);
+    background: #2a2a2a;
+    color: #fff;
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
 `
 
 const ProjectMInlineCurrent = styled.div`
   flex: 1 1 auto;
   min-width: 0;
-  border: 1px solid ${(props) => props.theme.colors.divider};
-  border-radius: 0.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 0.28rem;
   padding: 0.2rem 0.34rem;
-  background: ${(props) => props.theme.colors.bg.primary};
-  color: ${(props) => props.theme.colors.text.primary};
+  background: #0f0f0f;
+  color: #ececec;
   font-size: 0.7rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 `
 
 const ProjectMInlineActions = styled.div`
@@ -2649,7 +2682,7 @@ const ProjectMInlineActions = styled.div`
 
 const ProjectMInlineDirectory = styled.div`
   font-size: 0.63rem;
-  color: ${(props) => props.theme.colors.text.secondary};
+  color: #b8b8b8;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2661,16 +2694,28 @@ const ProjectMInlineSearch = styled.input`
   max-width: 100%;
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid ${(props) => props.theme.colors.divider};
-  border-radius: 0.25rem;
-  padding: 0.2rem 0.32rem;
-  background: ${(props) => props.theme.colors.bg.primary};
-  color: ${(props) => props.theme.colors.text.primary};
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.28rem;
+  padding: 0.22rem 0.36rem;
+  background: #050505;
+  color: #f0f0f0;
+  font-size: 0.7rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.42);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: rgba(120, 180, 255, 0.55);
+    box-shadow: inset 0 0 0 1px rgba(120, 180, 255, 0.2);
+  }
 `
 
 const ProjectMInlineMeta = styled.div`
   font-size: 0.63rem;
-  color: ${(props) => props.theme.colors.text.secondary};
+  color: #b0b0b0;
 `
 
 const ProjectMInlinePager = styled.div`
@@ -2684,43 +2729,69 @@ const ProjectMInlinePager = styled.div`
 
 const ProjectMInlineList = styled.div`
   max-height: 8.4rem;
-  border: 1px solid ${(props) => props.theme.colors.divider};
-  border-radius: 0.25rem;
-  padding: 0.16rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.32rem;
+  padding: 0;
   overflow: auto;
   scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.28) #000000;
+  background: #000000;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.65);
 `
 
 const ProjectMInlineListItem = styled.div`
   display: block;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+
+  &:nth-child(odd) {
+    background: #181818;
+  }
+
+  &:nth-child(even) {
+    background: #262626;
+  }
+
+  &:last-child {
+    border-bottom: none;
+  }
 `
 
 const ProjectMInlinePresetButton = styled.button<{ $selected: boolean }>`
   width: 100%;
   text-align: left;
-  border: 1px solid
-    ${(props) => (props.$selected ? '#7ed6a5' : props.theme.colors.divider)};
+  border: none;
   background: ${(props) =>
-    props.$selected ? 'rgba(56, 112, 78, 0.45)' : props.theme.colors.bg.primary};
-  color: ${(props) => props.theme.colors.text.primary};
-  border-radius: 0.22rem;
-  padding: 0.18rem 0.34rem;
+    props.$selected ? 'rgba(90, 150, 255, 0.38)' : 'transparent'};
+  color: ${(props) => (props.$selected ? '#ffffff' : '#e6e6e6')};
+  border-radius: 0;
+  padding: 0.22rem 0.38rem;
   font-size: 0.66rem;
   cursor: pointer;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.25;
+  box-shadow: ${(props) =>
+    props.$selected ? 'inset 3px 0 0 #7eb8ff' : 'none'};
+
+  &:hover {
+    background: ${(props) =>
+      props.$selected
+        ? 'rgba(100, 165, 255, 0.48)'
+        : 'rgba(255, 255, 255, 0.07)'};
+  }
 `
 
 const ProjectMInlineEmpty = styled.div`
   font-size: 0.65rem;
-  color: ${(props) => props.theme.colors.text.secondary};
-  padding: 0.24rem 0.2rem;
+  color: #aeaeae;
+  padding: 0.38rem 0.36rem;
+  background: transparent;
 `
 
 const ProjectMInlineMessage = styled.div`
   font-size: 0.62rem;
-  color: ${(props) => props.theme.colors.text.secondary};
+  color: #c0c0c0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

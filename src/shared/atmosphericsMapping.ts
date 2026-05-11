@@ -1,8 +1,8 @@
 import { DmxState } from '../renderer/redux/dmxSlice'
 import {
   ATMOSPHERICS_DEFAULT_GROUP,
-  AtmosphericsDmxFixtureDescriptor,
-  normalizeDmxFixtureDescriptor,
+  AtmosFxtrDesc,
+  normAtmosFxtrDesc,
 } from './atmospherics'
 import { FixtureChannel, fixtureChannelLeafChannels, FixtureType } from './dmxFixtures'
 
@@ -54,7 +54,7 @@ function isAtmosCustomChannelName(name: string) {
 
 function isAtmosAuxChannel(channel: FixtureChannel) {
   return (
-    channel.type === 'fxLevel' ||
+    channel.type === 'fxtrLevel' ||
     (channel.type === 'custom' &&
       channel.isControllable === true &&
       isAtmosCustomChannelName(normalizedChannelName(channel)))
@@ -83,13 +83,13 @@ function extractLogicalChannels(channel: FixtureChannel): LogicalAtmosChannel[] 
   }))
 }
 
-export function isAtmosphericsFixtureType(fixtureType: FixtureType): boolean {
+export function isAtmosFxtrType(fixtureType: FixtureType): boolean {
   return fixtureType.channels
     .flatMap((channel) => fixtureChannelLeafChannels(channel))
     .some(
       (channel) =>
-        channel.type === 'fxTrigger' ||
-        channel.type === 'fxLevel' ||
+        channel.type === 'fxtrTrigger' ||
+        channel.type === 'fxtrLevel' ||
         (channel.type === 'custom' &&
           channel.isControllable === true &&
           isAtmosCustomChannelName(channel.name.trim().toLowerCase()))
@@ -107,10 +107,10 @@ function getFixtureGroups(fixtureGroups: string[], typeGroups: string[]): string
   return Array.from(groups)
 }
 
-export function getAtmosphericsFixtureDescriptors(
+export function listAtmosFxtrs(
   dmx: DmxState
-): AtmosphericsDmxFixtureDescriptor[] {
-  const descriptors: AtmosphericsDmxFixtureDescriptor[] = []
+): AtmosFxtrDesc[] {
+  const descriptors: AtmosFxtrDesc[] = []
 
   for (const fixture of dmx.universe) {
     const fixtureType = dmx.fixtureTypesByID[fixture.type]
@@ -122,8 +122,8 @@ export function getAtmosphericsFixtureDescriptors(
       continue
     }
 
-    const triggerChannels: AtmosphericsDmxFixtureDescriptor['triggerChannels'] = []
-    const auxChannels: AtmosphericsDmxFixtureDescriptor['auxChannels'] = []
+    const triggerChannels: AtmosFxtrDesc['triggerChannels'] = []
+    const auxChannels: AtmosFxtrDesc['auxChannels'] = []
     fixtureType.channels.forEach((channel, channelIndex) => {
       const channelNumber = fixture.ch + channelIndex
       if (channelNumber < 1 || channelNumber > 512) {
@@ -133,7 +133,7 @@ export function getAtmosphericsFixtureDescriptors(
       const logicalChannels = extractLogicalChannels(channel)
       logicalChannels.forEach((logicalChannel) => {
         const logical = logicalChannel.channel
-        if (logical.type === 'fxTrigger') {
+        if (logical.type === 'fxtrTrigger') {
           triggerChannels.push({
             channel: channelNumber,
             name: channelNameOrDefault(logical, `Trigger ${triggerChannels.length + 1}`),
@@ -147,7 +147,7 @@ export function getAtmosphericsFixtureDescriptors(
           return
         }
 
-        if (logical.type === 'fxLevel') {
+        if (logical.type === 'fxtrLevel') {
           auxChannels.push({
             channel: channelNumber,
             name: channelNameOrDefault(logical, `Level ${auxChannels.length + 1}`),
@@ -183,7 +183,7 @@ export function getAtmosphericsFixtureDescriptors(
     }
 
     descriptors.push(
-      normalizeDmxFixtureDescriptor({
+      normAtmosFxtrDesc({
         fixtureId,
         fixtureName:
           (fixture.name?.trim() || fixtureType.name?.trim()) ?? `Fixture ${fixtureId}`,

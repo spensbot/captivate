@@ -1,5 +1,10 @@
 import { Params, initBaseParams } from './params'
-import { Modulator, initModulator, type ModManualAnchor } from './modulation'
+import {
+  Modulator,
+  initModulator,
+  type ModManualAnchor,
+  type SplitModShaping,
+} from './modulation'
 import { RandomizerOptions, initRandomizerOptions } from './randomizer'
 import { nanoid } from 'nanoid'
 import {
@@ -20,6 +25,10 @@ export interface SplitScene_t {
    * set-point (see `ModManualAnchor` in modulation.ts).
    */
   modManualAnchors?: Partial<Record<string, ModManualAnchor>>
+  /**
+   * Optional invert / phase offset / stair-step applied to LFO drivers on this split only.
+   */
+  splitModShaping?: SplitModShaping
   randomizer: RandomizerOptions
   // true = include group | false = include not group
   groups: { [key: string]: boolean | undefined }

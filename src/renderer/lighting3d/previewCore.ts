@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Lighting 3D preview core: DMX→preview targets, fixture mesh factory, WebGL renderer preset.
  */
 import * as THREE from 'three'
@@ -381,7 +381,7 @@ export function isMoverModelKind(kind: FixtureModelKind): boolean {
 }
 
 export function isAtmosphericModelKind(kind: FixtureModelKind): boolean {
-  return kind === 'atmosphericFx'
+  return kind === 'atmosphericFxtr'
 }
 
 export function isCloudModelKind(kind: FixtureModelKind): boolean {
@@ -1356,9 +1356,9 @@ export function buildTargets(
   floorSpec: FloorSpec,
   stageHeight: number,
   master: number,
-  fixturePlacementDepthEnabled: boolean
+  fxtrDepthOn: boolean
 ): PreviewTarget[] {
-  const placementDepth2DOnly = !fixturePlacementDepthEnabled
+  const placementDepth2DOnly = !fxtrDepthOn
   const baseX = clamp01(getParam(fallbackParams, 'xAxis'))
   const baseY = clamp01(getParam(fallbackParams, 'yAxis'))
   const spread = clamp01(getParam(fallbackParams, 'moverSpread'))
@@ -1643,7 +1643,7 @@ export function buildTargets(
             emitterChannels.effectChannels,
             universeData
           )
-          if (modelKind === 'atmosphericFx' && hasLightingChannels) {
+          if (modelKind === 'atmosphericFxtr' && hasLightingChannels) {
             hasAtmosLighting = true
           }
 
@@ -1667,7 +1667,7 @@ export function buildTargets(
             localZ,
             color: beamValues.color.clone(),
             intensity:
-              modelKind === 'atmosphericFx' && !hasLightingChannels
+              modelKind === 'atmosphericFxtr' && !hasLightingChannels
                 ? 0
                 : beamValues.intensity,
             effectIntensity: effectLevel,
@@ -1740,7 +1740,7 @@ export function buildTargets(
             hasLightingChannels,
           }
         })
-        if (modelKind === 'atmosphericFx') {
+        if (modelKind === 'atmosphericFxtr') {
           hasAtmosLighting = groupSamples.some((sample) => sample.hasLightingChannels)
         }
 
@@ -1795,15 +1795,17 @@ export function buildTargets(
           pushStripEmitter(warmWhiteCount, 0, 0.03, 'disc', 1.12)
           pushStripEmitter(coolWhiteCount, 0, 0.034, 'rect-v', 0.9)
         } else {
-        for (const [groupIndex, groupSample] of groupSamples.entries()) {
+        for (const [, groupSample] of groupSamples.entries()) {
           const { emitterGroup, beamValues, effectLevel, hasLightingChannels } = groupSample
           const count = Math.max(
             1,
             Math.min(64, Math.round(emitterGroup.emitterCount))
           )
           if (modelKind === 'washBar') {
+            // Align cluster centers with subfixture anchors (same semantics as DMX spatial
+            // windows), not only equal spacing by sub-index.
             const centerX =
-              -washBarUsableWidth / 2 + washBarSectionWidth * (groupIndex + 0.5)
+              (clamp01(emitterGroup.relativeX) - 0.5) * washBarUsableWidth
             const centerY = 0
             const centerZ = 0
 
@@ -1855,7 +1857,7 @@ export function buildTargets(
                 sizeScale: 1,
               })
             }
-          } else if (modelKind === 'atmosphericFx') {
+          } else if (modelKind === 'atmosphericFxtr') {
             const centerX = (clamp01(emitterGroup.relativeX) - 0.5) * modelWidth * 0.7
             const centerY = (0.5 - clamp01(emitterGroup.relativeY)) * 0.12
             const centerZ = (clamp01(emitterGroup.relativeZ) - 0.5) * 0.25
@@ -2046,7 +2048,7 @@ export function shouldCreateDynamicEmitterLight(
   if (target.isLedFixture) {
     return ENABLE_LED_PIXEL_LIGHTS
   }
-  if (target.modelKind === 'atmosphericFx' && !target.hasAtmosLighting) {
+  if (target.modelKind === 'atmosphericFxtr' && !target.hasAtmosLighting) {
     return false
   }
   if (target.isMoverModel) {
@@ -2069,7 +2071,7 @@ export function shouldCreateFillRectLight(
     target.modelKind === 'moverWash' ||
     target.modelKind === 'washBar' ||
     target.modelKind === 'uplight' ||
-    (target.modelKind === 'atmosphericFx' && target.hasAtmosLighting)
+    (target.modelKind === 'atmosphericFxtr' && target.hasAtmosLighting)
   )
 }
 
@@ -2097,7 +2099,7 @@ export function nonMoverEmitterBaseY(modelKind: FixtureModelKind): number {
   if (modelKind === 'washBar') return 0.12
   if (modelKind === 'parCan') return 0.2
   if (modelKind === 'uplight') return 0.26
-  if (modelKind === 'atmosphericFx') return 0.18
+  if (modelKind === 'atmosphericFxtr') return 0.18
   return 0.23
 }
 
@@ -2902,7 +2904,7 @@ export function createFixtureVisual(target: PreviewTarget): FixtureVisual {
     )
     top.position.y = nonMoverEmitterBaseY(target.modelKind) + clamp(target.bodyHeight * 0.44, 0.08, 1)
     root.add(top)
-  } else if (target.modelKind === 'atmosphericFx') {
+  } else if (target.modelKind === 'atmosphericFxtr') {
     const width = clamp(target.modelWidth, 0.2, 4)
     const body = new THREE.Mesh(
       new THREE.BoxGeometry(width, clamp(target.bodyHeight, 0.06, 2), clamp(target.bodyDepth, 0.08, 2.8)),

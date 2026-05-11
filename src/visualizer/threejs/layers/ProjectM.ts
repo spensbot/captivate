@@ -18,12 +18,41 @@ export interface ProjectMConfig {
 
 const BRIDGE_TARGET_FPS = 30
 const BRIDGE_RENDER_FPS = 24
+const BRIDGE_RENDER_IPC_TIMEOUT_MS = 7000
 const BRIDGE_MIN_WIDTH = 256
 const BRIDGE_MAX_WIDTH = 640
 const BRIDGE_MIN_HEIGHT = 144
 const BRIDGE_MAX_HEIGHT = 360
 const BRIDGE_QUALITY_MIN = 0.26
 const BRIDGE_QUALITY_MAX = 0.45
+
+function withProjectMRenderTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    let settled = false
+    const t = globalThis.setTimeout(() => {
+      if (!settled) {
+        settled = true
+        reject(new Error('projectM render IPC timeout'))
+      }
+    }, ms)
+    promise.then(
+      (value) => {
+        if (!settled) {
+          settled = true
+          globalThis.clearTimeout(t)
+          resolve(value)
+        }
+      },
+      (err: unknown) => {
+        if (!settled) {
+          settled = true
+          globalThis.clearTimeout(t)
+          reject(err)
+        }
+      }
+    )
+  })
+}
 
 export function initProjectMConfig(): ProjectMConfig {
   return {
@@ -183,10 +212,13 @@ export default class ProjectM extends LayerBase {
       this.renderInFlight = true
       const dispatchStartedAt = performance.now()
       const currentGeneration = this.sessionGeneration
-      void renderProjectMBridgeFrame({
-        sessionId: this.sessionId,
-        frameTimeMs: Math.min(250, Math.max(1, Math.round(elapsedSinceLastBridgeFrame))),
-      })
+      void withProjectMRenderTimeout(
+        renderProjectMBridgeFrame({
+          sessionId: this.sessionId,
+          frameTimeMs: Math.min(250, Math.max(1, Math.round(elapsedSinceLastBridgeFrame))),
+        }),
+        BRIDGE_RENDER_IPC_TIMEOUT_MS
+      )
         .then((result) => {
           this.updateAdaptiveQuality(performance.now() - dispatchStartedAt)
           if (currentGeneration !== this.sessionGeneration) {

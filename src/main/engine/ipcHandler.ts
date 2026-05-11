@@ -1,4 +1,4 @@
-import { ipcMain, WebContents, dialog, desktopCapturer, app } from 'electron'
+import { ipcMain, WebContents, dialog, desktopCapturer, app, screen } from 'electron'
 import ipcChannels, {
   UserCommand,
   MainCommand,
@@ -17,6 +17,10 @@ import type { VisualizerResource } from '../../visualizer/threejs/VisualizerMana
 import { VisualizerContainer } from './createVisualizerWindow'
 import { DmxConnectionInfo } from 'shared/connection'
 import type { Page } from '../../shared/pages'
+import type {
+  OpenPageWindowOptions,
+  ScreenDisplayChoice,
+} from '../../shared/screenDisplays'
 import {
   getDefaultFixtureLibraryPath,
   readDefaultFixtureLibrary,
@@ -57,6 +61,10 @@ import {
   telemetryCounter,
   telemetryMark,
 } from '../telemetry'
+import {
+  ingestStageLightMapFrame,
+  getStageLightMapPreviewPayload,
+} from './stageLightMapRuntime'
 import path from 'path'
 import {
   AppAboutInfo,
@@ -81,7 +89,7 @@ interface Config {
   on_user_command: (command: UserCommand) => void
   on_open_visualizer: () => void
   on_request_app_quit: () => void
-  on_open_page_window: (page: Page) => void
+  on_open_page_window: (page: Page, options?: OpenPageWindowOptions) => void
   on_audio_engine_metrics: (metrics: AudioEngineMetrics) => void
   on_visualizer_stream_start: (
     config: VisualizerStreamConfig
@@ -166,6 +174,29 @@ export function registerLighting3dPreviewPage(wc: WebContents) {
   lighting3dPreviewTargets.add(wc)
   wc.once('destroyed', () => {
     lighting3dPreviewTargets.delete(wc)
+  })
+}
+
+function getScreenDisplayChoices(): ScreenDisplayChoice[] {
+  const displays = screen.getAllDisplays()
+  const primary = screen.getPrimaryDisplay()
+  return displays.map((d, index) => {
+    const rawLabel = typeof d.label === 'string' ? d.label.trim() : ''
+    const fallback = `Display ${index + 1}`
+    const name = rawLabel.length > 0 ? rawLabel : fallback
+    const suffix = d.id === primary.id ? ' — primary' : ''
+    const label = `${name}${suffix} · ${d.workArea.width}×${d.workArea.height}`
+    return {
+      id: d.id,
+      label,
+      isPrimary: d.id === primary.id,
+      workArea: {
+        x: d.workArea.x,
+        y: d.workArea.y,
+        width: d.workArea.width,
+        height: d.workArea.height,
+      },
+    }
   })
 }
 
@@ -634,10 +665,24 @@ export function ipcSetup(config: Config) {
     _config.on_open_visualizer()
   })
 
-  ipcMain.on(ipcChannels.open_page_window, (_e, page: Page) => {
-    telemetryCounter('ipc', `open_page_window_${page}`)
-    _config.on_open_page_window(page)
-  })
+  ipcMain.on(
+    ipcChannels.open_page_window,
+    (_e, page: unknown, opts?: unknown) => {
+      if (typeof page !== 'string' || page.length === 0) {
+        return
+      }
+      const p = page as Page
+      let options: OpenPageWindowOptions | undefined
+      if (opts !== undefined && opts !== null && typeof opts === 'object') {
+        const id = Number((opts as OpenPageWindowOptions).displayId)
+        if (Number.isFinite(id)) {
+          options = { displayId: Math.trunc(id) }
+        }
+      }
+      telemetryCounter('ipc', `open_page_window_${p}`)
+      _config.on_open_page_window(p, options)
+    }
+  )
 
   ipcMain.on(
     ipcChannels.audio_engine_metrics,
@@ -665,6 +710,19 @@ export function ipcSetup(config: Config) {
     telemetryMark(mark)
   })
 
+  ipcMain.on(
+    ipcChannels.visualizer_stage_light_map,
+    (_event, payload: { width: number; height: number; data: Uint8Array }) => {
+      telemetryCounter('ipc', 'visualizer_stage_light_map')
+      ingestStageLightMapFrame(payload)
+    }
+  )
+
+  ipcMain.handle(ipcChannels.list_screen_displays, () => {
+    telemetryCounter('ipc', 'list_screen_displays')
+    return getScreenDisplayChoices()
+  })
+
   ipcMain.handle(ipcChannels.telemetry_get_snapshot, () => {
     telemetryCounter('ipc', 'telemetry_get_snapshot')
     return getTelemetrySnapshot()
@@ -678,6 +736,11 @@ export function ipcSetup(config: Config) {
   ipcMain.handle(ipcChannels.app_about_info, async () => {
     telemetryCounter('ipc', 'app_about_info')
     return await getAppAboutInfo()
+  })
+
+  ipcMain.handle(ipcChannels.stage_light_map_preview_get, () => {
+    telemetryCounter('ipc', 'stage_light_map_preview_get')
+    return getStageLightMapPreviewPayload()
   })
 
   ipcMain.handle(

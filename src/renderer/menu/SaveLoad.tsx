@@ -64,7 +64,7 @@ async function save(config: SaveConfig) {
     blackout: state.gui.blackout,
     ledEnabled: state.gui.ledEnabled,
     videoEnabled: state.gui.videoEnabled,
-    fixturePlacementDepthEnabled: state.gui.fixturePlacementDepthEnabled,
+    fxtrDepthOn: state.gui.fxtrDepthOn,
     ledSidebarEnabled: state.gui.ledSidebarEnabled,
   }
 

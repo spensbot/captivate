@@ -173,8 +173,8 @@ export default function FixtureChannelPopup(props: Props) {
 }
 
 function channelTypeLabel(type: ChannelType): string {
-  if (type === 'fxTrigger') return 'FX Trigger (On/Off)'
-  if (type === 'fxLevel') return 'FX Level (Volume/Fan)'
+  if (type === 'fxtrTrigger') return 'Fixture trigger (On/Off)'
+  if (type === 'fxtrLevel') return 'Fixture level (Volume/Fan)'
   if (type === 'custom') return 'Custom (Optional FX)'
   if (type === 'axis') return 'Axis (Pan/Tilt)'
   if (type === 'colorMap') return 'Color Map'
@@ -293,7 +293,7 @@ function Fields({ ch, fixtureID, channelIndex }: Props) {
       )
     }
 
-    if (channel.type === 'fxTrigger') {
+    if (channel.type === 'fxtrTrigger') {
       return (
         <>
           <Input
@@ -312,7 +312,7 @@ function Fields({ ch, fixtureID, channelIndex }: Props) {
       )
     }
 
-    if (channel.type === 'fxLevel') {
+    if (channel.type === 'fxtrLevel') {
       return (
         <>
           <Input

@@ -38,3 +38,46 @@ export function hideMoversSplitUi(
   if (hasMoverFixturesInProject) return false
   return groups?.Movers === true
 }
+
+/** Group filter summary for one split, e.g. `all`, `not movers`, `front, back`. */
+export function formatSplitGroupsLabel(
+  groups: SplitScene_t['groups'] | undefined | null
+): string {
+  if (groups === undefined || groups === null) return 'all'
+  const entries = Object.entries(groups).filter(
+    (entry): entry is [string, boolean] =>
+      (entry[1] === true || entry[1] === false) &&
+      entry[0].trim().length > 0
+  )
+  if (entries.length === 0) return 'all'
+  return entries
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([group, include]) => `${include === false ? 'not ' : ''}${group}`)
+    .join(', ')
+}
+
+/** Split heading for UI, e.g. `Split 1 - all`, `Split 2 - not movers`. */
+export function splitDisplayName(
+  splitIndex: number,
+  groups: SplitScene_t['groups'] | undefined | null
+): string {
+  return `Split ${splitIndex + 1} - ${formatSplitGroupsLabel(groups)}`
+}
+
+/**
+ * First split row shown in modulation UI (same visibility rules as the matrix).
+ * LFO previews use this split so inter-mod matches what you see in the modulators panel.
+ */
+export function firstModUiSplitIx(
+  videoEnabled: boolean,
+  hasMoverFixturesInProject: boolean,
+  splitScenes: readonly { groups?: SplitScene_t['groups'] }[]
+): number {
+  for (let i = 0; i < splitScenes.length; i++) {
+    const groups = splitScenes[i]?.groups
+    if (hideVisSplitUi(videoEnabled, groups)) continue
+    if (hideMoversSplitUi(hasMoverFixturesInProject, groups)) continue
+    return i
+  }
+  return 0
+}

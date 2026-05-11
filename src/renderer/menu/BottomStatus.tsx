@@ -27,8 +27,8 @@ export default function BottomStatus() {
   const blackoutActive = useTypedSelector((state) => state.gui.blackout === true)
   const emergencyStopActive = useTypedSelector(
     (state) =>
-      state.control.present.device.connectionSettings.atmospherics
-        .emergencyStop === true
+      state.control.present.device.connectionSettings.atmos?.emergencyStop ===
+      true
   )
   const statusMessages = useTypedSelector((state) => state.gui.statusMessages)
   const statusLogOpen = useTypedSelector((state) => state.gui.statusLogOpen)

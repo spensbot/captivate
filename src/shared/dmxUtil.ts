@@ -1,5 +1,6 @@
 import { Window, Window2D_t, window2DToParentCoords } from '../shared/window'
 import {
+  computeEmitterCentroid,
   DmxValue,
   DMX_MAX_VALUE,
   FixtureChannel,
@@ -15,6 +16,9 @@ import {
   FlattenedFixture,
   initMoverCalibration,
   isMoverFixtureType,
+  mergeSubRelativeWindowWithEmitterCentroid,
+  emittersForSubfixtureIndex,
+  resolvedEmittersForFixtureType,
 } from './dmxFixtures'
 import { getParam, Params } from './params'
 import { clampNormalized, lerp, Normalized } from '../math/util'
@@ -338,9 +342,9 @@ export function getDefaultDmxValue(
       return ch.min
     case 'axis':
       return lerp(ch.min, ch.max, 0.5)
-    case 'fxTrigger':
+    case 'fxtrTrigger':
       return ch.off
-    case 'fxLevel':
+    case 'fxtrLevel':
       return ch.default
     case 'custom':
       return ch.default
@@ -847,9 +851,9 @@ export function getDmxValue(
         return rLerp(ch, customParam)
       }
     }
-    case 'fxTrigger':
+    case 'fxtrTrigger':
       return ch.off
-    case 'fxLevel': {
+    case 'fxtrLevel': {
       const customParam = params[ch.name]
       if (customParam === undefined) {
         return ch.default
@@ -951,7 +955,7 @@ export function getFixturesInGroups(
     }
     if (group === 'Atmosphere') {
       return fixture.channels.some(([, channel]) => {
-        if (channel.type === 'fxTrigger' || channel.type === 'fxLevel') {
+        if (channel.type === 'fxtrTrigger' || channel.type === 'fxtrLevel') {
           return true
         }
         if (channel.type !== 'custom' || channel.isControllable !== true) {
@@ -1042,6 +1046,48 @@ export function getSortedGroups(
   }
   for (const id of fixtureTypeIds) {
     const fixtureType = fixtureTypesById[id]
+    for (const group of fixtureType.groups) {
+      groupSet.add(group)
+    }
+    for (const sub of fixtureType.subFixtures) {
+      for (const group of sub.groups) {
+        groupSet.add(group)
+      }
+    }
+    for (const channel of fixtureType.channels) {
+      for (const family of inferChannelFamilies(channel)) {
+        const familyGroup = channelFamilyGroupName(family)
+        if (familyGroup !== undefined) {
+          groupSet.add(familyGroup)
+        }
+      }
+    }
+  }
+  return Array.from(groupSet.keys()).sort((a, b) => (a > b ? 1 : -1))
+}
+
+/**
+ * Like {@link getSortedGroups}, but only considers fixture **types that appear on the DMX
+ * universe** (placed fixtures). Omits groups defined only on fixture definitions that are
+ * not currently used — keeps split / scene group pickers aligned with the active rig.
+ */
+export function getSortedGroupsFromPlacedFixtures(
+  universe: Universe,
+  fixtureTypesById: { [id: string]: FixtureType }
+) {
+  const groupSet: Set<string> = new Set()
+  const usedFixtureTypeIds = new Set<string>()
+  for (const fixture of universe) {
+    usedFixtureTypeIds.add(fixture.type)
+    for (const group of fixture.groups) {
+      groupSet.add(group)
+    }
+  }
+  for (const id of usedFixtureTypeIds) {
+    const fixtureType = fixtureTypesById[id]
+    if (fixtureType === undefined) {
+      continue
+    }
     for (const group of fixtureType.groups) {
       groupSet.add(group)
     }
@@ -1209,11 +1255,28 @@ export function flatten_fixture(
     ? fixture_type.moverCalibration ?? initMoverCalibration()
     : undefined
 
-  let flattened: FlattenedFixture[] = fixture_type.subFixtures.map((sub) => {
+  const resolvedEmitters = resolvedEmittersForFixtureType(fixture_type)
+
+  let flattened: FlattenedFixture[] = fixture_type.subFixtures.map((sub, subIndex) => {
+    const subEmitters = emittersForSubfixtureIndex(
+      fixture_type,
+      resolvedEmitters,
+      subIndex
+    )
+    const centroid = computeEmitterCentroid(subEmitters)
+    const effectiveRelative =
+      centroid !== null
+        ? mergeSubRelativeWindowWithEmitterCentroid(
+            sub.relative_window,
+            centroid,
+            fixture.window
+          )
+        : sub.relative_window
+
     return {
       intensity: sub.intensity ?? fixture_type.intensity,
-      window: sub.relative_window
-        ? window2DToParentCoords(sub.relative_window, fixture.window)
+      window: effectiveRelative
+        ? window2DToParentCoords(effectiveRelative, fixture.window)
         : fixture.window,
       channels: sub.channels.map((ch_index) => {
         subfixture_ch_indexes.add(ch_index)

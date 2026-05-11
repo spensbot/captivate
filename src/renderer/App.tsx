@@ -17,7 +17,7 @@ import Visualizer from './visualizer/Visualizer'
 import DetachedVisualizerFullscreenBar from './visualizer/DetachedVisualizerFullscreenBar'
 import { useTypedSelector } from './redux/store'
 import { setActivePage } from './redux/guiSlice'
-import { hasMoverFixtureInUniverse } from '../shared/dmxFixtures'
+import { universeHasMovers } from '../shared/dmxFixtures'
 import FullscreenOverlay from './overlays/FullscreenOverlay'
 import BottomStatus from './menu/BottomStatus'
 import LedPage from './pages/LedPage'
@@ -32,7 +32,7 @@ export default function App() {
   const activePage = useTypedSelector((state) => state.gui.activePage)
   const ledSidebarEnabled = useTypedSelector((state) => state.gui.ledSidebarEnabled)
   const hasMoverFixtures = useTypedSelector((state) =>
-    hasMoverFixtureInUniverse(state.dmx.present.universe, state.dmx.present.fixtureTypesByID)
+    universeHasMovers(state.dmx.present.universe, state.dmx.present.fixtureTypesByID)
   )
   useEffect(() => {
     if (activePage === 'Movers' && !hasMoverFixtures) {

@@ -102,3 +102,11 @@ export function sendTelemetryMark(mark: TelemetryMark) {
     ts: mark.ts ?? Date.now(),
   })
 }
+
+export function sendStageLightMapFrame(payload: {
+  width: number
+  height: number
+  data: Uint8Array
+}) {
+  ipcRenderer.send(sharedIpcChannels.visualizer_stage_light_map, payload)
+}

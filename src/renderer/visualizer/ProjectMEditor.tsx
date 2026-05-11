@@ -411,7 +411,9 @@ export default function ProjectMEditor({ config, onChange }: Props) {
                 </ModalListItem>
               ))}
               {pagedPresetOptions.length === 0 && (
-                <ModalEmpty>No presets match your search.</ModalEmpty>
+                <ModalListItem>
+                  <ModalEmpty>No presets match your search.</ModalEmpty>
+                </ModalListItem>
               )}
             </ModalList>
           </Field>
@@ -536,7 +538,9 @@ export default function ProjectMEditor({ config, onChange }: Props) {
               </ModalListItem>
             ))}
             {presetModalOptions.length === 0 && (
-              <ModalEmpty>No presets found in this folder.</ModalEmpty>
+              <ModalListItem>
+                <ModalEmpty>No presets found in this folder.</ModalEmpty>
+              </ModalListItem>
             )}
           </ModalList>
         </ModalBody>
@@ -653,31 +657,49 @@ const DirectoryValue = styled.div`
 const PresetCurrent = styled.div`
   flex: 1 1 auto;
   min-width: 0;
-  border: 1px solid ${(props) => props.theme.colors.divider};
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 0.25rem;
   padding: 0.32rem 0.4rem;
-  background: ${(props) => props.theme.colors.bg.primary};
-  color: ${(props) => props.theme.colors.text.primary};
+  background: #0f0f0f;
+  color: #ececec;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 `
 
 const MiniButton = styled.button`
   flex-shrink: 0;
-  border: 1px solid ${(props) => props.theme.colors.divider};
-  border-radius: 0.25rem;
-  background: ${(props) => props.theme.colors.bg.primary};
-  color: ${(props) => props.theme.colors.text.primary};
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 0.28rem;
+  background: linear-gradient(180deg, #242424 0%, #161616 100%);
+  color: #f0f0f0;
   padding: 0.3rem 0.5rem;
   cursor: pointer;
   white-space: nowrap;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+  &:hover:not(:disabled) {
+    border-color: rgba(255, 255, 255, 0.34);
+    background: #2a2a2a;
+    color: #fff;
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
 `
 
 const ModalBody = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
+  padding: 0.55rem 0.6rem;
+  border-radius: 0.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(10, 10, 10, 0.92);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 `
 
 const ModalTopRow = styled.div`
@@ -702,14 +724,15 @@ const PresetChooserTopRow = styled.div`
 const ModalPath = styled.div`
   min-width: 0;
   flex: 1 1 auto;
-  border: 1px solid ${(props) => props.theme.colors.divider};
-  border-radius: 0.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 0.28rem;
   padding: 0.34rem 0.45rem;
-  color: ${(props) => props.theme.colors.text.secondary};
-  background: ${(props) => props.theme.colors.bg.primary};
+  color: #c4c4c4;
+  background: #0a0a0a;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 `
 
 const SearchInput = styled.input`
@@ -718,18 +741,25 @@ const SearchInput = styled.input`
   flex: 1 1 8rem;
   max-width: 100%;
   box-sizing: border-box;
-  border: 1px solid ${(props) => props.theme.colors.divider};
-  border-radius: 0.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.28rem;
   padding: 0.34rem 0.45rem;
-  color: #ffffff;
-  background: #000000;
+  color: #f2f2f2;
+  background: #050505;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 
   &::placeholder {
-    color: rgba(255, 255, 255, 0.45);
+    color: rgba(255, 255, 255, 0.42);
   }
 
   &:disabled {
     color: rgba(255, 255, 255, 0.38);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: rgba(120, 180, 255, 0.55);
+    box-shadow: inset 0 0 0 1px rgba(120, 180, 255, 0.2);
   }
 `
 
@@ -754,24 +784,37 @@ const PagerText = styled.div`
 
 const ModalHint = styled.div`
   font-size: 0.76rem;
-  color: ${(props) => props.theme.colors.text.secondary};
+  color: #b0b0b0;
+  padding: 0.15rem 0.05rem 0;
 `
 
 const ModalList = styled.ul`
   list-style: none;
   margin: 0;
   padding: 0;
-  border: 1px solid ${(props) => props.theme.colors.divider};
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 0.35rem;
   max-height: 16rem;
   overflow: auto;
-  background: #0000002b;
+  background: #000000;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.65);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.28) #0a0a0a;
 `
 
 const ModalListItem = styled.li`
   margin: 0;
   padding: 0;
-  border-bottom: 1px solid ${(props) => props.theme.colors.divider};
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+
+  &:nth-child(odd) {
+    background: #181818;
+  }
+
+  &:nth-child(even) {
+    background: #262626;
+  }
+
   &:last-child {
     border-bottom: none;
   }
@@ -782,41 +825,56 @@ const ModalPresetButton = styled.button<{ $selected: boolean }>`
   text-align: left;
   border: none;
   background: ${(props) =>
-    props.$selected ? 'rgba(106, 162, 255, 0.24)' : 'transparent'};
-  color: ${(props) => props.theme.colors.text.primary};
+    props.$selected ? 'rgba(90, 150, 255, 0.38)' : 'transparent'};
+  color: ${(props) => (props.$selected ? '#ffffff' : '#e8e8e8')};
   cursor: pointer;
-  padding: 0.42rem 0.52rem;
+  padding: 0.44rem 0.55rem;
   font-size: 0.78rem;
+  line-height: 1.25;
+  box-shadow: ${(props) =>
+    props.$selected ? 'inset 3px 0 0 #7eb8ff' : 'none'};
+
+  &:hover {
+    background: ${(props) =>
+      props.$selected
+        ? 'rgba(100, 165, 255, 0.48)'
+        : 'rgba(255, 255, 255, 0.07)'};
+  }
 `
 
 const ModalEmpty = styled.div`
-  padding: 0.6rem;
+  padding: 0.65rem 0.55rem;
   font-size: 0.76rem;
-  color: ${(props) => props.theme.colors.text.secondary};
+  color: #aeaeae;
+  background: transparent;
 `
 
 const Note = styled.div`
   font-size: 0.72rem;
-  color: ${(props) => props.theme.colors.text.secondary};
-  border-top: 1px solid ${(props) => props.theme.colors.divider};
-  padding-top: 0.45rem;
+  color: #bdbdbd;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.35rem;
+  background: rgba(8, 8, 8, 0.65);
+  padding: 0.5rem 0.55rem;
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
   min-width: 0;
   width: 100%;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 `
 
 const MissingPanel = styled.div`
-  border: 1px solid ${(props) => props.theme.colors.divider};
-  border-radius: 0.35rem;
-  padding: 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 0.4rem;
+  padding: 0.65rem;
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
-  background: rgba(0, 0, 0, 0.18);
+  background: rgba(6, 6, 6, 0.88);
   min-width: 0;
   width: 100%;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 `
 
 const MissingTitle = styled.div`
@@ -830,16 +888,22 @@ const MissingLine = styled.div`
 `
 
 const InstallButton = styled.button`
-  border: 1px solid ${(props) => props.theme.colors.divider};
-  border-radius: 0.26rem;
-  background: ${(props) => props.theme.colors.bg.primary};
-  color: ${(props) => props.theme.colors.text.primary};
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 0.28rem;
+  background: linear-gradient(180deg, #2a2a2a 0%, #181818 100%);
+  color: #f2f2f2;
   padding: 0.32rem 0.5rem;
   cursor: pointer;
   text-align: left;
   width: 100%;
   white-space: normal;
   overflow-wrap: anywhere;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+  &:hover:not(:disabled) {
+    border-color: rgba(255, 255, 255, 0.34);
+    background: #303030;
+  }
 `
 
 const InstallMessage = styled.div`
@@ -872,14 +936,20 @@ const StatusLine = styled.div`
 `
 
 const RefreshButton = styled.button`
-  border: 1px solid ${(props) => props.theme.colors.divider};
-  border-radius: 0.25rem;
-  background: ${(props) => props.theme.colors.bg.primary};
-  color: ${(props) => props.theme.colors.text.primary};
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 0.28rem;
+  background: linear-gradient(180deg, #242424 0%, #161616 100%);
+  color: #f0f0f0;
   padding: 0.18rem 0.45rem;
   cursor: pointer;
   max-width: 100%;
   white-space: nowrap;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+  &:hover:not(:disabled) {
+    border-color: rgba(255, 255, 255, 0.34);
+    background: #2a2a2a;
+  }
 `
 
 const StatusLink = styled.a`

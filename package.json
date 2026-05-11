@@ -11,8 +11,10 @@
     "prepare:node-link": "node tools/prepare_node_link_runtime.js",
     "check:build-env": "node tools/check-build-environment.js",
     "package:bundle": "node tools/run-with-qualified-node.cjs -- npm run package:bundle:inner",
-    "package:bundle:inner": "node tools/check-build-environment.js && ts-node ./.erb/scripts/clean.js dist && npm run prepare:projectm-bridge && npm run prepare:node-link && npm run rebuild && npm run build",
+    "package:bundle:inner": "node tools/run-with-qualified-node.cjs -- npm run __package:bundle:inner",
+    "__package:bundle:inner": "node tools/check-build-environment.js && ts-node ./.erb/scripts/clean.js dist && npm run prepare:projectm-bridge && npm run prepare:node-link && npm run rebuild && npm run build",
     "package": "npm run package:bundle && electron-builder build --publish never",
+    "package:installer-only": "node tools/run-with-qualified-node.cjs -- node tools/run-electron-builder-installer.cjs",
     "package:win": "npm run package:bundle && electron-builder build --win --publish never",
     "package:linux": "npm run package:bundle && electron-builder build --linux --publish never",
     "package:mac": "npm run package:bundle && electron-builder build --mac --publish never",
@@ -22,7 +24,10 @@
     "start:preload": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.preload.dev.ts",
     "start:renderer": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack serve --config ./.erb/configs/webpack.config.renderer.dev.ts",
     "start:visualizer": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack serve --config ./.erb/configs/webpack.config.visualizer.dev.ts",
-    "qlc_fixture_parse": "ts-node tools/qlc_fixture_parser/index.ts"
+    "qlc_fixture_parse": "ts-node tools/qlc_fixture_parser/index.ts",
+    "typecheck": "tsc --noEmit",
+    "typecheck:node-link": "npm --prefix release/app/node-link install --ignore-scripts && npm --prefix release/app/node-link run typecheck",
+    "typecheck:all": "npm run typecheck && npm run typecheck:node-link"
   },
   "browserslist": [],
   "prettier": {

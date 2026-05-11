@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import styled from 'styled-components'
 import { useDispatch } from 'react-redux'
-import IconButton from '@mui/material/IconButton'
 import ChevronLeft from '@mui/icons-material/ChevronLeft'
 import ChevronRight from '@mui/icons-material/ChevronRight'
+import ExpandMore from '@mui/icons-material/ExpandMore'
+import ExpandLess from '@mui/icons-material/ExpandLess'
 import LfoMenu from './LfoMenu'
 import LfoVisualizer from './LfoVisualizer'
 import LfoCursor from './LfoCursor'
+import LfoStoredCursor from './LfoStoredCursor'
+import LfoShapeParamSlider from './LfoShapeParamSlider'
 import ModulationMatrix from './ModulationMatrix'
 import { useActiveLightScene } from '../redux/store'
 import { LfoShape } from '../../shared/oscillator'
@@ -16,6 +19,12 @@ import {
   AUDIO_MIN_BAND_HZ,
 } from '../../shared/audioEngine'
 import { setModulatorAudioConfig, setModulatorWaveConfig } from '../redux/controlSlice'
+import {
+  intermodIncomingSources,
+  intermodOutgoingTargets,
+  intermodSourceAccentColor,
+} from '../../shared/modulation'
+import { useModPreviewSplit } from './useModPreviewSplit'
 
 const AUDIO_BAND_MAX_LEVEL_UI = 0.65
 
@@ -38,8 +47,14 @@ type SliderSpec = {
 export default function ModulatorControl({ index }: Props) {
   const dispatch = useDispatch()
   const [shapeSlidersOpen, setShapeSlidersOpen] = useState(true)
+  const [modMatrixOpen, setModMatrixOpen] = useState(true)
   const lfo = useActiveLightScene((activeScene) => activeScene.modulators[index].lfo)
   const audioMetrics = useRealtimeSelector((state) => state.audio)
+  const splitIx = useModPreviewSplit()
+  const intermodAccents = useActiveLightScene((scene) => ({
+    outgoingTargets: intermodOutgoingTargets(scene, splitIx, index),
+    incomingSources: intermodIncomingSources(scene, splitIx, index),
+  }))
 
   const nyquistCapHz = Math.max(
     AUDIO_MIN_BAND_HZ + 40,
@@ -325,6 +340,29 @@ export default function ModulatorControl({ index }: Props) {
 
   return (
     <Root>
+      {intermodAccents.outgoingTargets.length > 0 ? (
+        <IntermodAccentRail $side="left">
+          <IntermodAccentStripe
+            $color={intermodSourceAccentColor(index)}
+            title={
+              intermodAccents.outgoingTargets.length === 1
+                ? `This LFO modulates LFO ${intermodAccents.outgoingTargets[0]! + 1} (same color on that LFO’s right edge)`
+                : `This LFO modulates LFOs ${intermodAccents.outgoingTargets.map((i) => i + 1).join(', ')} (same color on each target’s right edge for this source)`
+            }
+          />
+        </IntermodAccentRail>
+      ) : null}
+      {intermodAccents.incomingSources.length > 0 ? (
+        <IntermodAccentRail $side="right">
+          {intermodAccents.incomingSources.map((srcIdx) => (
+            <IntermodAccentStripe
+              key={`im-in-${srcIdx}-to-${index}`}
+              $color={intermodSourceAccentColor(srcIdx)}
+              title={`LFO ${srcIdx + 1} modulates this LFO (same color on that LFO’s left edge)`}
+            />
+          ))}
+        </IntermodAccentRail>
+      ) : null}
       <LfoMenu index={index} />
       <TopRow>
         <GraphArea>
@@ -334,41 +372,29 @@ export default function ModulatorControl({ index }: Props) {
             padding={0.05}
             index={index}
           />
+          <LfoStoredCursor index={index} padding={0.05} />
           <LfoCursor index={index} padding={0.05} />
         </GraphArea>
 
         {hasShapeSliders ? (
           <>
-            <SideRail>
-              <IconButton
-                size="small"
-                aria-expanded={shapeSlidersOpen}
-                aria-label={
-                  shapeSlidersOpen
-                    ? 'Hide LFO shape controls'
-                    : 'Show LFO shape controls'
-                }
-                title={shapeSlidersOpen ? 'Hide shape sliders' : 'Show shape sliders'}
-                onClick={() => setShapeSlidersOpen((open) => !open)}
-                onMouseDown={(e) => e.stopPropagation()}
-                sx={{
-                  minWidth: 0,
-                  width: '0.95rem',
-                  padding: '0.04rem',
-                  color: '#b8c4d9',
-                  borderRadius: '0.16rem',
-                  '&:hover': {
-                    color: '#fff',
-                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                  },
-                }}
-              >
-                {shapeSlidersOpen ? (
-                  <ChevronLeft sx={{ fontSize: '0.95rem' }} />
-                ) : (
-                  <ChevronRight sx={{ fontSize: '0.95rem' }} />
-                )}
-              </IconButton>
+            <SideRail
+              type="button"
+              aria-expanded={shapeSlidersOpen}
+              aria-label={
+                shapeSlidersOpen
+                  ? 'Hide LFO shape controls'
+                  : 'Show LFO shape controls'
+              }
+              title={shapeSlidersOpen ? 'Hide shape sliders' : 'Show shape sliders'}
+              onClick={() => setShapeSlidersOpen((open) => !open)}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              {shapeSlidersOpen ? (
+                <ChevronLeft sx={{ fontSize: '0.62rem', display: 'block' }} />
+              ) : (
+                <ChevronRight sx={{ fontSize: '0.62rem', display: 'block' }} />
+              )}
             </SideRail>
             {shapeSlidersOpen ? (
               <ControlPanel
@@ -380,15 +406,23 @@ export default function ModulatorControl({ index }: Props) {
                     <VerticalControl key={spec.id}>
                       <VerticalLabel title={spec.title}>{spec.label}</VerticalLabel>
                       <VerticalSliderShell $centerDetent={spec.centerDetent === true}>
-                        <VerticalSlider
-                          type="range"
-                          min={spec.min}
-                          max={spec.max}
-                          step={spec.step}
-                          value={spec.value}
-                          title={spec.title}
-                          onChange={(event) =>
-                            spec.onChange(Number(event.target.value) || 0)
+                        <LfoShapeParamSlider
+                          modIndex={index}
+                          splitIndex={splitIx}
+                          centerDetent={spec.centerDetent === true}
+                          spec={spec}
+                          nativeSlider={
+                            <VerticalSlider
+                              type="range"
+                              min={spec.min}
+                              max={spec.max}
+                              step={spec.step}
+                              value={spec.value}
+                              title={spec.title}
+                              onChange={(event) =>
+                                spec.onChange(Number(event.target.value) || 0)
+                              }
+                            />
                           }
                         />
                       </VerticalSliderShell>
@@ -405,15 +439,112 @@ export default function ModulatorControl({ index }: Props) {
           </ControlPanel>
         )}
       </TopRow>
-      <ModulationMatrix index={index} />
+      <MatrixSection>
+        <MatrixCollapseBar
+          type="button"
+          aria-expanded={modMatrixOpen}
+          aria-label={
+            modMatrixOpen
+              ? 'Collapse LFO modulation list'
+              : 'Expand LFO modulation list'
+          }
+          title={modMatrixOpen ? 'Hide modulation targets' : 'Show modulation targets'}
+          onClick={() => setModMatrixOpen((open) => !open)}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          {modMatrixOpen ? (
+            <ExpandLess sx={{ fontSize: '0.58rem', display: 'block' }} />
+          ) : (
+            <ExpandMore sx={{ fontSize: '0.58rem', display: 'block' }} />
+          )}
+        </MatrixCollapseBar>
+        {modMatrixOpen ? (
+          <MatrixBody>
+            <ModulationMatrix index={index} />
+          </MatrixBody>
+        ) : null}
+      </MatrixSection>
     </Root>
   )
 }
 
 const Root = styled.div`
+  position: relative;
   border: 1px solid ${(props) => props.theme.colors.divider};
   margin-right: 1rem;
   flex: 0 0 auto;
+`
+
+const INTERMOD_STRIPE_PX = 3
+
+const IntermodAccentRail = styled.div<{ $side: 'left' | 'right' }>`
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  ${(p) => (p.$side === 'left' ? `left: 0;` : `right: 0;`)}
+  display: flex;
+  flex-direction: ${(p) => (p.$side === 'left' ? 'row' : 'row-reverse')};
+  pointer-events: none;
+  z-index: 4;
+`
+
+const IntermodAccentStripe = styled.div<{ $color: string }>`
+  width: ${INTERMOD_STRIPE_PX}px;
+  flex: 0 0 ${INTERMOD_STRIPE_PX}px;
+  align-self: stretch;
+  background: ${(p) => p.$color};
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.42);
+  pointer-events: auto;
+  cursor: help;
+`
+
+const MatrixSection = styled.div`
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+`
+
+const MatrixCollapseBar = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0.055rem 0.17rem 0.08rem;
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0;
+  background: linear-gradient(to bottom, rgba(22, 26, 34, 0.72), rgba(8, 10, 14, 0.88));
+  color: #b8c4d9;
+  cursor: pointer;
+  font: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 0;
+  line-height: 1;
+
+  &:hover {
+    color: #fff;
+    background: linear-gradient(
+      to bottom,
+      rgba(32, 38, 48, 0.88),
+      rgba(14, 16, 22, 0.94)
+    );
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(142, 178, 255, 0.85);
+    outline-offset: -1px;
+  }
+`
+
+const MatrixBody = styled.div`
+  width: 100%;
+  min-width: 0;
+  padding: 0 0.3rem 0.28rem;
+  box-sizing: border-box;
 `
 
 const TopRow = styled.div`
@@ -433,10 +564,10 @@ const GraphArea = styled.div`
   border: 1px solid rgba(255, 255, 255, 0.1);
 `
 
-const SideRail = styled.div`
+const SideRail = styled.button`
   flex: 0 0 auto;
-  width: 1.1rem;
-  min-width: 1.1rem;
+  width: 0.92rem;
+  min-width: 0.92rem;
   height: 150px;
   align-self: stretch;
   display: flex;
@@ -444,9 +575,30 @@ const SideRail = styled.div`
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 0.26rem;
   background: linear-gradient(to bottom, rgba(22, 26, 34, 0.92), rgba(8, 10, 14, 0.96));
+  color: #b8c4d9;
+  cursor: pointer;
+  font: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+
+  &:hover {
+    color: #fff;
+    background: linear-gradient(
+      to bottom,
+      rgba(32, 38, 48, 0.96),
+      rgba(14, 16, 22, 0.98)
+    );
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(142, 178, 255, 0.85);
+    outline-offset: 2px;
+  }
 `
 
 const ControlPanel = styled.div`

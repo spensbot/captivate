@@ -80,7 +80,7 @@ export default class WledManager {
           continue
         }
 
-        const placementDepth2DOnly = state.gui.fixturePlacementDepthEnabled !== true
+        const placementDepth2DOnly = state.gui.fxtrDepthOn !== true
         const layers = paramsList.map((params) =>
           getLedValues(params, fixture, state.control.master, placementDepth2DOnly)
         )

@@ -6,7 +6,7 @@ contextBridge.exposeInMainWorld('electron', {
       ipcRenderer.send('ipc-example', 'ping')
     },
     send(channel, ...args) {
-      const validChannels = ['diagnostics_event', 'telemetry_mark']
+      const validChannels = ['diagnostics_event', 'telemetry_mark', 'visualizer_stage_light_map']
       if (validChannels.includes(channel)) {
         ipcRenderer.send(channel, ...args)
       } else {

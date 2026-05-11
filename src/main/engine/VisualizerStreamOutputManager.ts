@@ -460,7 +460,11 @@ export default class VisualizerStreamOutputManager {
 function normalizeConfig(config: VisualizerStreamConfig): VisualizerStreamConfig {
   return {
     ...config,
-    protocol: config.protocol === 'NDI' ? 'NDI' : 'RTSP',
+    protocol:
+      typeof config.protocol === 'string' &&
+      config.protocol.trim().toUpperCase() === 'NDI'
+        ? 'NDI'
+        : 'RTSP',
     ffmpegPath:
       typeof config.ffmpegPath === 'string' && config.ffmpegPath.trim().length > 0
         ? config.ffmpegPath.trim()

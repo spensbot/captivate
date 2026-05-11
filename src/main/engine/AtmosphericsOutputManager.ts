@@ -6,16 +6,16 @@ import {
   ATMOSPHERICS_DEFAULT_GROUP,
   ATMOSPHERICS_SPLIT_LEVEL_PARAM,
   ATMOSPHERICS_SPLIT_TRIGGER_PARAM,
-  AtmosphericsLevelChannelConfig,
-  AtmosphericsRuntimeState,
-  AtmosphericsTriggerChannelConfig,
-  initAtmosphericsFixtureControlConfig,
-  initAtmosphericsLevelChannelConfig,
-  initAtmosphericsRuntimeState,
-  initAtmosphericsTriggerChannelConfig,
-  normalizeAtmosphericsSettings,
+  AtmosLevelChConfig,
+  AtmosRunState,
+  AtmosTrigChConfig,
+  initAtmosFxtrControlConfig,
+  initAtmosLevelChConfig,
+  initAtmosRunState,
+  initAtmosTriggerChConfig,
+  normAtmosSettings,
 } from '../../shared/atmospherics'
-import { getAtmosphericsFixtureDescriptors } from '../../shared/atmosphericsMapping'
+import { listAtmosFxtrs } from '../../shared/atmosphericsMapping'
 
 type TriggerRuntime = {
   wasAbove: boolean
@@ -119,29 +119,29 @@ function findSplitIndexForGroup(controlState: CleanReduxState, groupName: string
 }
 
 function resolveTriggerConfig(
-  config: ReturnType<typeof initAtmosphericsFixtureControlConfig>,
+  config: ReturnType<typeof initAtmosFxtrControlConfig>,
   channelNumber: number
-): AtmosphericsTriggerChannelConfig {
+): AtmosTrigChConfig {
   const explicit = config.triggerChannels[channelNumber]
   if (explicit !== undefined) {
     return explicit
   }
-  return initAtmosphericsTriggerChannelConfig(channelNumber)
+  return initAtmosTriggerChConfig(channelNumber)
 }
 
 function resolveLevelConfig(
-  config: ReturnType<typeof initAtmosphericsFixtureControlConfig>,
+  config: ReturnType<typeof initAtmosFxtrControlConfig>,
   channelNumber: number
-): AtmosphericsLevelChannelConfig {
+): AtmosLevelChConfig {
   const explicit = config.levelChannels[channelNumber]
   if (explicit !== undefined) {
     return explicit
   }
-  return initAtmosphericsLevelChannelConfig(channelNumber)
+  return initAtmosLevelChConfig(channelNumber)
 }
 
 export default class AtmosphericsOutputManager {
-  private runtimeState: AtmosphericsRuntimeState = initAtmosphericsRuntimeState()
+  private runtimeState: AtmosRunState = initAtmosRunState()
   private triggerRuntimeByChannelKey = new Map<string, TriggerRuntime>()
 
   getRuntimeState() {
@@ -155,10 +155,10 @@ export default class AtmosphericsOutputManager {
     _audioMetrics: AudioEngineMetrics,
     dmxOutByUniverse: number[][]
   ) {
-    const settings = normalizeAtmosphericsSettings(
-      controlState.control.device.connectionSettings.atmospherics
+    const settings = normAtmosSettings(
+      controlState.control.device.connectionSettings.atmos
     )
-    const descriptors = getAtmosphericsFixtureDescriptors(controlState.dmx)
+    const descriptors = listAtmosFxtrs(controlState.dmx)
     const nowMs = Date.now()
     const messages: string[] = []
 
@@ -176,7 +176,7 @@ export default class AtmosphericsOutputManager {
     const runtimeFixtures = descriptors.map((descriptor) => {
       const config =
         settings.fixtures[descriptor.fixtureId] ??
-        initAtmosphericsFixtureControlConfig(descriptor.fixtureId)
+        initAtmosFxtrControlConfig(descriptor.fixtureId)
 
       const preferredGroup = config.groupName.trim()
       const descriptorDefaultGroup =

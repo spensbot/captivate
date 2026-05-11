@@ -96,6 +96,7 @@ contextBridge.exposeInMainWorld('electron', {
         'projectm_bridge_shutdown_session',
         'get_desktop_audio_source_id',
         'get_page_window_media_source_id',
+        'list_screen_displays',
         'wled_discover_controllers',
         'wled_probe_controller',
         'request_app_quit',
@@ -104,6 +105,7 @@ contextBridge.exposeInMainWorld('electron', {
         'telemetry_get_snapshot',
         'telemetry_export_snapshot',
         'app_about_info',
+        'stage_light_map_preview_get',
       ]
       if (validChannels.includes(channel)) {
         return ipcRenderer.invoke(channel, ...args)

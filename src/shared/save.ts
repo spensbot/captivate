@@ -4,13 +4,14 @@ import { DeviceState } from 'renderer/redux/deviceState'
 import { MixerState } from 'renderer/redux/mixerSlice'
 import type { Page } from './pages'
 import type { VisualizerStreamingSettings } from './visualizerStreaming'
+import { migrateLegacyFixturePersistedJson } from './dmxFixtures'
 
 export interface ProfileGuiState {
   activePage?: Page
   blackout?: boolean
   ledEnabled?: boolean
   videoEnabled?: boolean
-  fixturePlacementDepthEnabled?: boolean
+  fxtrDepthOn?: boolean
   ledSidebarEnabled?: boolean
 }
 
@@ -40,7 +41,8 @@ export interface SaveInfo {
 }
 
 export const PROJECT_SAVE_SCHEMA = 'captivate.project'
-export const PROJECT_SAVE_VERSION = 3
+export const PROJECT_SAVE_VERSION = 6
+const MIN_SUPPORTED_PROJECT_SAVE_VERSION = 5
 
 export interface VersionedProjectSave {
   schema: string
@@ -126,11 +128,15 @@ export function parseVersionedProjectSave(raw: unknown): ParsedProjectSave {
     }
   }
 
-  if (Number(source.version) !== PROJECT_SAVE_VERSION) {
+  const version = Number(source.version)
+  if (
+    version < MIN_SUPPORTED_PROJECT_SAVE_VERSION ||
+    version > PROJECT_SAVE_VERSION
+  ) {
     return {
       compatible: false,
       save: null,
-      reason: `Unsupported save version ${Number(source.version)} (expected ${PROJECT_SAVE_VERSION}).`,
+      reason: `Unsupported save version ${version} (expected ${MIN_SUPPORTED_PROJECT_SAVE_VERSION}–${PROJECT_SAVE_VERSION}).`,
     }
   }
 
@@ -142,9 +148,16 @@ export function parseVersionedProjectSave(raw: unknown): ParsedProjectSave {
     }
   }
 
+  const state = JSON.parse(JSON.stringify(source.state)) as SaveState
+  if (state.dmx) {
+    state.dmx = JSON.parse(
+      migrateLegacyFixturePersistedJson(JSON.stringify(state.dmx))
+    ) as DmxState
+  }
+
   return {
     compatible: true,
-    save: source.state as SaveState,
+    save: state,
     reason: null,
   }
 }

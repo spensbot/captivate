@@ -1,4 +1,5 @@
-import { Alert, Button, TextField } from '@mui/material'
+import { Alert, Button, Collapse, TextField } from '@mui/material'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import Select from 'renderer/base/Select'
 import styled from 'styled-components'
 import { useEffect, useMemo, useState } from 'react'
@@ -22,8 +23,14 @@ import {
   VisStreamHealth,
 } from 'shared/visualizerStreaming'
 
-const protocolOptions: VisualizerStreamProtocol[] = ['RTSP', 'NDI']
 const rtspTransportOptions: RtspTransport[] = ['tcp', 'udp']
+
+const PROTOCOL_OPTIONS: VisualizerStreamProtocol[] = ['RTSP', 'NDI']
+
+function normalizeProtocol(p: unknown): VisualizerStreamProtocol {
+  if (typeof p === 'string' && p.trim().toUpperCase() === 'NDI') return 'NDI'
+  return 'RTSP'
+}
 
 export default function StreamOutputControls() {
   const [config, setConfig] = useState<VisualizerStreamConfig>(
@@ -37,6 +44,7 @@ export default function StreamOutputControls() {
     useState<VisualizerNdiRuntimeDetection | null>(null)
   const [settingsMessage, setSettingsMessage] = useState<string | null>(null)
   const [isBusy, setIsBusy] = useState(false)
+  const [ndiMachinePanelOpen, setNdiMachinePanelOpen] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -50,6 +58,7 @@ export default function StreamOutputControls() {
           ...prev,
           ffmpegPath: settings.defaultFfmpegPath,
           ndiRuntimePath: settings.ndiRuntimePath,
+          protocol: normalizeProtocol(prev.protocol),
         }))
 
         const detection = await detectVisualizerNdiRuntime()
@@ -83,6 +92,12 @@ export default function StreamOutputControls() {
       mounted = false
     }
   }, [])
+
+  useEffect(() => {
+    if (config.protocol !== 'NDI') {
+      setNdiMachinePanelOpen(false)
+    }
+  }, [config.protocol])
 
   useEffect(() => {
     let mounted = true
@@ -245,21 +260,21 @@ export default function StreamOutputControls() {
           <Label>Protocol</Label>
           <Select
             label="Protocol"
-            val={config.protocol}
-            items={protocolOptions}
-            onChange={(protocol) =>
-              setConfig({
-                ...config,
+            val={normalizeProtocol(config.protocol)}
+            items={PROTOCOL_OPTIONS}
+            disabled={controlsLocked}
+            onChange={(protocol) => {
+              setConfig((prev) => ({
+                ...prev,
                 protocol,
                 fps:
                   protocol === 'NDI'
-                    ? Math.max(config.fps, 60)
-                    : config.fps === 60
+                    ? Math.max(prev.fps, 60)
+                    : prev.fps === 60
                     ? 30
-                    : config.fps,
-              })
-            }
-            disabled={controlsLocked}
+                    : prev.fps,
+              }))
+            }}
           />
         </FieldRow>
 
@@ -425,9 +440,15 @@ export default function StreamOutputControls() {
               <strong>{health?.ndi.supported ? 'Ready' : 'Unavailable'}</strong>
             </DiagLine>
             <DiagLine>
-              SDK Availability:{' '}
+              SDK / muxer path:{' '}
               <strong>
-                {health?.ndi.nativeSdkSupported ? 'Available' : 'Not available'}
+                {health === null
+                  ? '—'
+                  : health.ndi.delivery === 'native_sdk'
+                  ? 'Native SDK'
+                  : health.ndi.delivery === 'ffmpeg_muxer'
+                  ? 'FFmpeg muxer'
+                  : 'None'}
               </strong>
             </DiagLine>
           </>
@@ -443,6 +464,94 @@ export default function StreamOutputControls() {
             </DiagLine>
           </>
         )}
+
+        {config.protocol === 'NDI' ? (
+          <NdiOptionalFold>
+            <NdiOptionalHead
+              type="button"
+              id="ndi-machine-panel-trigger"
+              aria-expanded={ndiMachinePanelOpen}
+              aria-controls="ndi-machine-panel-body"
+              onClick={() => setNdiMachinePanelOpen((v) => !v)}
+            >
+              <NdiOptionalHeadLabel>
+                <NdiOptionalHeadTitle>NDI on this machine</NdiOptionalHeadTitle>
+                <NdiOptionalHeadSub>Optional · expand for capability detail</NdiOptionalHeadSub>
+              </NdiOptionalHeadLabel>
+              <ExpandMoreIcon
+                sx={{
+                  flexShrink: 0,
+                  color: 'text.secondary',
+                  transition: 'transform 0.2s ease',
+                  transform: ndiMachinePanelOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                }}
+              />
+            </NdiOptionalHead>
+            <Collapse in={ndiMachinePanelOpen} timeout="auto">
+              <div id="ndi-machine-panel-body">
+                <NdiStatusPanel>
+                  <NdiStatusGrid>
+                    <span>Ready</span>
+                    <NdiStatusValue $ok={health?.ndi.supported === true}>
+                      {health === null
+                        ? 'Checking…'
+                        : health.ndi.supported
+                        ? 'Yes'
+                        : 'No'}
+                    </NdiStatusValue>
+                    <span>Output path</span>
+                    <NdiStatusValue
+                      $ok={health !== null && health.ndi.delivery !== 'none'}
+                    >
+                      {health === null
+                        ? '—'
+                        : health.ndi.delivery === 'native_sdk'
+                        ? 'Native NDI SDK (in-app)'
+                        : health.ndi.delivery === 'ffmpeg_muxer'
+                        ? 'FFmpeg libndi_newtek'
+                        : 'Unavailable'}
+                    </NdiStatusValue>
+                    <span>NDI runtime libs</span>
+                    <NdiStatusValue $ok={health?.ndi.runtimeReady === true}>
+                      {health === null
+                        ? '—'
+                        : health.ndi.runtimeReady
+                        ? 'Found'
+                        : 'Not found'}
+                    </NdiStatusValue>
+                    <span>FFmpeg {health?.ndi.requestedMuxer ?? 'libndi_newtek'}</span>
+                    <NdiStatusValue $ok={health?.ndi.ffmpegMuxerSupported === true}>
+                      {health === null
+                        ? '—'
+                        : health.ndi.ffmpegMuxerSupported
+                        ? 'Available in FFmpeg'
+                        : 'Not in this FFmpeg build'}
+                    </NdiStatusValue>
+                    <span>Native SDK load</span>
+                    <NdiStatusValue $ok={health?.ndi.nativeSdkSupported === true}>
+                      {health === null
+                        ? '—'
+                        : health.ndi.nativeSdkSupported
+                        ? 'Runtime DLLs resolved'
+                        : 'Not resolved'}
+                    </NdiStatusValue>
+                  </NdiStatusGrid>
+                  {health !== null && health.ndi.message.length > 0 && (
+                    <NdiStatusHint>{health.ndi.message}</NdiStatusHint>
+                  )}
+                  {ndiDetection !== null && ndiDetection.foundPaths.length > 0 && (
+                    <NdiStatusHint>
+                      Scan: {ndiDetection.foundPaths.slice(0, 4).join(' · ')}
+                      {ndiDetection.foundPaths.length > 4
+                        ? ` (+${ndiDetection.foundPaths.length - 4} more)`
+                        : ''}
+                    </NdiStatusHint>
+                  )}
+                </NdiStatusPanel>
+              </div>
+            </Collapse>
+          </NdiOptionalFold>
+        ) : null}
       </Section>
 
       {settingsMessage && <Status status="idle">{settingsMessage}</Status>}
@@ -519,4 +628,90 @@ const DiagLine = styled.div`
   color: ${(props) => props.theme.colors.text.secondary};
   font-size: 0.8rem;
   word-break: break-word;
+`
+
+const NdiOptionalFold = styled.div`
+  margin-top: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+`
+
+const NdiOptionalHead = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.45rem 0.5rem;
+  border-radius: 0.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.18);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-sizing: border-box;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.28);
+    border-color: rgba(255, 255, 255, 0.18);
+  }
+`
+
+const NdiOptionalHeadLabel = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+`
+
+const NdiOptionalHeadTitle = styled.span`
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: ${(props) => props.theme.colors.text.secondary};
+`
+
+const NdiOptionalHeadSub = styled.span`
+  font-size: 0.68rem;
+  color: ${(props) => props.theme.colors.text.secondary};
+  opacity: 0.88;
+`
+
+const NdiStatusPanel = styled.div`
+  border-radius: 0.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.22);
+  padding: 0.5rem 0.6rem;
+  margin-top: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+`
+
+const NdiStatusGrid = styled.div`
+  display: grid;
+  grid-template-columns: minmax(7.5rem, auto) 1fr;
+  gap: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  color: ${(props) => props.theme.colors.text.secondary};
+`
+
+const NdiStatusValue = styled.span<{ $ok?: boolean }>`
+  color: ${(props) =>
+    props.$ok === true
+      ? '#9de6b4'
+      : props.$ok === false
+      ? '#ffb4a8'
+      : props.theme.colors.text.primary};
+  font-weight: 600;
+`
+
+const NdiStatusHint = styled.div`
+  font-size: 0.68rem;
+  color: ${(props) => props.theme.colors.text.secondary};
+  line-height: 1.35;
 `

@@ -11,8 +11,8 @@ import {
   removeSplitSceneByIndex,
   restoreSplitSceneForGroup,
 } from 'renderer/redux/controlSlice'
-import { hasMoverFixtureInUniverse } from '../../shared/dmxFixtures'
-import { getAtmosphericsFixtureDescriptors } from '../../shared/atmosphericsMapping'
+import { universeHasMovers } from '../../shared/dmxFixtures'
+import { listAtmosFxtrs } from '../../shared/atmosphericsMapping'
 import { LightScene_t, SplitScene_t } from '../../shared/Scenes'
 
 interface CachedAutoSplit {
@@ -53,6 +53,9 @@ function createSplitSnapshot(
       baseParams: { ...splitScene.baseParams },
       randomizer: { ...splitScene.randomizer },
       groups: { ...splitScene.groups },
+      ...(splitScene.splitModShaping !== undefined
+        ? { splitModShaping: { ...splitScene.splitModShaping } }
+        : {}),
     },
     splitModulations: scene.modulators.map((modulator) => ({
       ...(modulator.splitModulations[splitIndex] ?? {}),
@@ -67,11 +70,11 @@ export default function AutoManagedSplitSync() {
   const videoEnabled = useTypedSelector((state) => state.gui.videoEnabled)
   const dmx = useDmxSelector((state) => state)
   const hasMovers = useMemo(
-    () => hasMoverFixtureInUniverse(dmx.universe, dmx.fixtureTypesByID),
+    () => universeHasMovers(dmx.universe, dmx.fixtureTypesByID),
     [dmx.fixtureTypesByID, dmx.universe]
   )
   const hasAtmospherics = useMemo(
-    () => getAtmosphericsFixtureDescriptors(dmx).length > 0,
+    () => listAtmosFxtrs(dmx).length > 0,
     [dmx]
   )
   const hasLedFixtures = useMemo(
@@ -98,8 +101,8 @@ export default function AutoManagedSplitSync() {
         group: 'Atmosphere',
         present: hasAtmospherics,
         defaultParams: {
-          atmosFxOnOff: 0.5,
-          atmosFxLevel: 1,
+          atmosFxtrOnOff: 0.5,
+          atmosFxtrLevel: 1,
         } as const,
       },
       {

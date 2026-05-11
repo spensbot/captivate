@@ -79,7 +79,7 @@ export default function FixtureModelEditor({ fixtureType }: Props) {
       ? `Bar Width (${widthUnitLabel})`
       : effectiveKind === 'moverSpot' || effectiveKind === 'moverWash'
       ? `Head Diameter (${widthUnitLabel})`
-      : effectiveKind === 'atmosphericFx'
+      : effectiveKind === 'atmosphericFxtr'
       ? `Body Width (${widthUnitLabel})`
       : `Fixture Size (${widthUnitLabel})`
   const bodyHeightDisplay =
@@ -142,7 +142,7 @@ export default function FixtureModelEditor({ fixtureType }: Props) {
                       ? current.width
                       : kind === 'washBar'
                       ? 2.2
-                      : kind === 'atmosphericFx'
+                      : kind === 'atmosphericFxtr'
                       ? 0.6
                       : kind === 'parCan'
                       ? defaultBodyShapeForKind('parCan') === 'cylinder'
@@ -487,7 +487,7 @@ export default function FixtureModelEditor({ fixtureType }: Props) {
             />
           </>
         )}
-        {effectiveKind === 'atmosphericFx' && (
+        {effectiveKind === 'atmosphericFxtr' && (
           <>
             <Row style={{ gridColumn: '1 / -1' }}>
               <Label>Effect</Label>

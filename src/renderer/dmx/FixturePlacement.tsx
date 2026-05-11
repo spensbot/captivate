@@ -11,7 +11,7 @@ import {
   setFixtureWindow,
   setFixtureWindowEnabled,
 } from '../redux/dmxSlice'
-import { setFixturePlacementDepthEnabled } from '../redux/guiSlice'
+import { setFxtrDepthOn } from '../redux/guiSlice'
 import { secondaryEnabled } from 'renderer/base/keyUtil'
 import {
   METERS_PER_FOOT,
@@ -118,6 +118,7 @@ function Pad({
       <PadTitle>{title}</PadTitle>
       <PadRoot
         ref={dragContainer}
+        data-fixture-pad=""
         onMouseDown={onMouseDown}
         $aspectRatio={aspectRatio}
       >
@@ -193,7 +194,7 @@ export default function FixturePlacement() {
   const stage = useDmxSelector((state) => state.stage)
   const dispatch = useDispatch()
   const zDepthEnabled = useTypedSelector(
-    (state) => state.gui.fixturePlacementDepthEnabled
+    (state) => state.gui.fxtrDepthOn
   )
   const dragFixtureIndexRef = useRef<number | null>(null)
   const dragHasMovedRef = useRef(false)
@@ -384,7 +385,7 @@ export default function FixturePlacement() {
               type="checkbox"
               checked={zDepthEnabled}
               onChange={(event) => {
-                dispatch(setFixturePlacementDepthEnabled(event.target.checked))
+                dispatch(setFxtrDepthOn(event.target.checked))
               }}
             />
             <span>Enable Z Depth</span>
@@ -450,8 +451,9 @@ export default function FixturePlacement() {
               })}
             </InspectorRow>
             <InspectorHint>
-              Mouse drag uses snap increments of {STAGE_SNAP_GRID_FEET} ft.
-              Right-click/secondary drag adjusts window size per axis.
+              Mouse drag uses snap increments of {STAGE_SNAP_GRID_FEET} ft. Drag the
+              white edge handles on the selected fixture to resize its motion window on
+              each visible axis; right-click/secondary drag also adjusts size.
             </InspectorHint>
             {!zDepthEnabled && (
               <InspectorHint>

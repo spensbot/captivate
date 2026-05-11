@@ -2,11 +2,16 @@ import { useRef } from 'react'
 import type { SxProps, Theme } from '@mui/material/styles'
 import MuiSelect from '@mui/material/Select'
 import MenuItem from '@mui/material/MenuItem'
+import zIndexes from '../zIndexes'
 
-const selectMenuPaperSx = {
+/** Menu list sizing only — z-index must be on the Modal root, not Paper (see below). */
+const selectMenuPaperSx: SxProps<Theme> = {
   maxWidth: 'min(100vw - 32px, 28rem)',
   maxHeight: 'min(50vh, 22rem)',
 }
+
+/** MUI Menu uses Modal with theme.zIndex.modal (~1300). AppModal is fullscreenOverlay+2 (~10002). */
+const selectMenuModalZIndex = zIndexes.fullscreenOverlay + 60
 
 interface Props<T extends string> {
   label: string
@@ -66,6 +71,9 @@ export default function Select<T extends string>({
         anchorOrigin: { vertical: 'bottom', horizontal: 'left' },
         transformOrigin: { vertical: 'top', horizontal: 'left' },
         slotProps: {
+          root: {
+            sx: { zIndex: selectMenuModalZIndex },
+          },
           paper: {
             sx: selectMenuPaperSx,
           },

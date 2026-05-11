@@ -16,6 +16,8 @@ import {
 } from '../../shared/Scenes'
 import { Params } from '../../shared/params'
 import { nextBeatBoundaryStrict } from '../../shared/sceneBeatQuantize'
+import { stageLightMapGridDimensions, stageLightMapMasterFromEffects } from '../../shared/stageLightMap'
+import { sendStageLightMapFrame } from '../ipcHandler'
 
 const MAX_DT = 100 // ms
 /**
@@ -257,6 +259,9 @@ export default class VisualizerManager {
   private compositeMaterial: THREE.ShaderMaterial
   private transitionSeed = Math.random()
   private transitionDestinationReadyDeadlineMs: number | null = null
+  private lightMapReadTarget: THREE.WebGLRenderTarget | null = null
+  private lightMapReadBuffer: Uint8Array | null = null
+  private lightMapFrameTick = 0
 
   constructor() {
     this.renderer = new THREE.WebGLRenderer()
@@ -408,6 +413,11 @@ export default class VisualizerManager {
     }
     const negativeAmount = this.getGlobalNegativeAmount(layerConfig, stuff.params)
     const overlayFx = this.getGlobalOverlayEffects(layerConfig, stuff.params)
+    const stageLightMapStrength = stageLightMapMasterFromEffects(
+      layerConfig.builtin.effects,
+      stuff.params
+    )
+    const stageLightMapGrid = stageLightMapGridDimensions(layerConfig.previewAspectRatio)
     this.ensureRenderTargets(this.width, this.height)
     if (this.toTarget === null) {
       const [scene, camera] = this.activeLayer.getRenderInputs()
@@ -464,7 +474,9 @@ export default class VisualizerManager {
         toCompositeMode(this.transitionConfig.type),
         negativeAmount,
         overlayFx,
-        Date.now() / 1000
+        Date.now() / 1000,
+        stageLightMapStrength,
+        stageLightMapGrid
       )
       if (progress >= 1) {
         this.transitionFadeStartMs = null
@@ -495,7 +507,9 @@ export default class VisualizerManager {
       0,
       negativeAmount,
       overlayFx,
-      Date.now() / 1000
+      Date.now() / 1000,
+      stageLightMapStrength,
+      stageLightMapGrid
     )
   }
 
@@ -553,6 +567,9 @@ export default class VisualizerManager {
     this.transitionRandomSeed = null
     this.fromTarget?.dispose()
     this.toTarget?.dispose()
+    this.lightMapReadTarget?.dispose()
+    this.lightMapReadTarget = null
+    this.lightMapReadBuffer = null
     this.compositeMaterial.dispose()
     this.compositeScene.clear()
     this.renderer.renderLists.dispose()
@@ -655,7 +672,9 @@ export default class VisualizerManager {
       afterImage: number
       posterize: number
     },
-    beatTime: number
+    beatTime: number,
+    stageLightMapStrength: number,
+    stageLightMapGrid: { width: number; height: number }
   ) {
     this.compositeMaterial.uniforms.fromTex.value = fromTexture
     this.compositeMaterial.uniforms.toTex.value = toTexture
@@ -679,6 +698,50 @@ export default class VisualizerManager {
     this.renderer.setRenderTarget(null)
     this.renderer.clear()
     this.renderer.render(this.compositeScene, this.compositeCamera)
+    if (stageLightMapStrength > 0.001) {
+      this.captureStageLightMapFrame(stageLightMapStrength, stageLightMapGrid)
+    }
+  }
+
+  private captureStageLightMapFrame(
+    strength: number,
+    grid: { width: number; height: number }
+  ) {
+    if (strength <= 0.001) return
+    if (++this.lightMapFrameTick % 2 !== 0) return
+    const w = grid.width
+    const h = grid.height
+    if (this.lightMapReadTarget === null) {
+      this.lightMapReadTarget = new THREE.WebGLRenderTarget(w, h, {
+        depthBuffer: false,
+        stencilBuffer: false,
+      })
+    } else {
+      this.lightMapReadTarget.setSize(w, h)
+    }
+    const prevTarget = this.renderer.getRenderTarget()
+    this.renderer.setRenderTarget(this.lightMapReadTarget)
+    this.renderer.clear(true, true, true)
+    this.renderer.render(this.compositeScene, this.compositeCamera)
+    this.renderer.setRenderTarget(prevTarget)
+
+    const expected = w * h * 4
+    if (this.lightMapReadBuffer === null || this.lightMapReadBuffer.length !== expected) {
+      this.lightMapReadBuffer = new Uint8Array(expected)
+    }
+    this.renderer.readRenderTargetPixels(
+      this.lightMapReadTarget,
+      0,
+      0,
+      w,
+      h,
+      this.lightMapReadBuffer
+    )
+    sendStageLightMapFrame({
+      width: w,
+      height: h,
+      data: this.lightMapReadBuffer,
+    })
   }
 
   private renderLayerToTarget(

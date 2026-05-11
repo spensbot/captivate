@@ -33,6 +33,7 @@ import { getAllParamKeys } from '../../renderer/redux/dmxSlice'
 import { indexArray } from '../../shared/util'
 import WledManager from './wled/wled_manager'
 import type { Page } from '../../shared/pages'
+import type { OpenPageWindowOptions } from '../../shared/screenDisplays'
 import VisualizerStreamOutputManager from './VisualizerStreamOutputManager'
 import VisualizerInputRelayManager from './VisualizerInputRelayManager'
 import ProjectMBridgeManager from './ProjectMBridgeManager'
@@ -284,7 +285,7 @@ export function getControlStateSnapshot(): CleanReduxState | null {
 export function start(
   renderer: WebContents,
   visualizerContainer: VisualizerContainer,
-  openPageWindow: (page: Page) => void,
+  openPageWindow: (page: Page, options?: OpenPageWindowOptions) => void,
   requestAppQuit: () => void,
   reconcileVideoEnabled?: () => void
 ) {
@@ -327,8 +328,8 @@ export function start(
     on_request_app_quit: () => {
       requestAppQuit()
     },
-    on_open_page_window: (page) => {
-      openPageWindow(page)
+    on_open_page_window: (page, options) => {
+      openPageWindow(page, options)
     },
     on_audio_engine_metrics: (metrics: AudioEngineMetrics) => {
       _latestAudioMetrics = normalizeAudioEngineMetrics(metrics)
@@ -1034,7 +1035,7 @@ function getNextRealtimeState(
 
   const dmxStartedAt = performance.now()
   const dmxOutByUniverse = calculateDmx(controlState, splitStates, nextTimeState)
-  const atmospherics = _atmosphericsOutputManager.apply(
+  const atmos = _atmosphericsOutputManager.apply(
     controlState,
     splitStates,
     nextTimeState,
@@ -1073,7 +1074,7 @@ function getNextRealtimeState(
     dmxOut: dmxOutByUniverse[0] ?? Array(512).fill(0),
     splitStates,
     audio: _latestAudioMetrics,
-    atmospherics,
+    atmos,
   }
 }
 

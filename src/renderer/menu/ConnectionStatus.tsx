@@ -18,7 +18,7 @@ export default function ConnectionStatus({ type }: Props) {
     return (
       <Root title={title}>
         <Text>link</Text>
-        <LinkIndicatorSquare $enabled={isEnabled}>{peerCount}</LinkIndicatorSquare>
+        <Square style={{ backgroundColor: isEnabled ? '#0f0' : '#f00' }} />
       </Root>
     )
   }
@@ -52,21 +52,5 @@ const Square = styled.div`
   width: 0.6rem;
   height: 0.6rem;
   margin-left: 0.5rem;
-`
-
-const LinkIndicatorSquare = styled.div<{ $enabled: boolean }>`
-  width: 0.95rem;
-  height: 0.75rem;
-  margin-left: 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   flex-shrink: 0;
-  background-color: ${(p) => (p.$enabled ? '#0f0' : '#f00')};
-  color: #000;
-  font-size: 0.52rem;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-  border-radius: 0.06rem;
 `

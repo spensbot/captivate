@@ -57,7 +57,7 @@ export interface GuiState {
   moverFollowOverrideUseAllGroups: boolean
   moverFollowOverrideGroups: string[]
   colorMapCalibrationOverride: ColorMapCalibrationOverride | null
-  fixturePlacementDepthEnabled: boolean
+  fxtrDepthOn: boolean
   /** When true, the left sidebar shows the LED editor page (off by default; Extras menu). */
   ledSidebarEnabled: boolean
   statusMessages: StatusMessage[]
@@ -86,7 +86,7 @@ export function initGuiState(): GuiState {
     moverFollowOverrideUseAllGroups: true,
     moverFollowOverrideGroups: [],
     colorMapCalibrationOverride: null,
-    fixturePlacementDepthEnabled: false,
+    fxtrDepthOn: false,
     ledSidebarEnabled: false,
     statusMessages: [],
     statusLogOpen: false,
@@ -213,11 +213,11 @@ export const guiSlice = createSlice({
     clearColorMapCalibrationOverride: (state, _: PayloadAction<undefined>) => {
       state.colorMapCalibrationOverride = null
     },
-    setFixturePlacementDepthEnabled: (
+    setFxtrDepthOn: (
       state,
       { payload }: PayloadAction<boolean>
     ) => {
-      state.fixturePlacementDepthEnabled = payload === true
+      state.fxtrDepthOn = payload === true
     },
     setLedSidebarEnabled: (state, { payload }: PayloadAction<boolean>) => {
       const on = payload === true
@@ -314,7 +314,7 @@ export const {
   toggleMoverFollowOverrideGroup,
   setColorMapCalibrationOverride,
   clearColorMapCalibrationOverride,
-  setFixturePlacementDepthEnabled,
+  setFxtrDepthOn,
   setLedSidebarEnabled,
   pushStatusMessage,
   clearStatusMessages,

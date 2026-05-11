@@ -181,10 +181,10 @@ function FixtureSlot({
   const [revertName, setRevertName] = useState(fixtureDisplayName)
   const [showBlankNameWarning, setShowBlankNameWarning] = useState(false)
   const nameInputRef = useRef<HTMLInputElement | null>(null)
-  const fixturePlacementDepthEnabled = useTypedSelector(
-    (state) => state.gui.fixturePlacementDepthEnabled
+  const fxtrDepthOn = useTypedSelector(
+    (state) => state.gui.fxtrDepthOn
   )
-  const showZToggle = fixturePlacementDepthEnabled
+  const showZToggle = fxtrDepthOn
 
   useEffect(() => {
     setPendingName(fixtureDisplayName)

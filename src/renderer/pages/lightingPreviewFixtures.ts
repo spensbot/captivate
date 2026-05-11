@@ -7,6 +7,9 @@ import {
   initFixtureModelConfig,
   MoverMountOrientation,
   isMoverFixtureType,
+  computeEmitterCentroid,
+  emittersForSubfixtureIndex,
+  mergeSubRelativeWindowWithEmitterCentroid,
   normalizeFixtureModelConfig,
 } from '../../shared/dmxFixtures'
 import {
@@ -151,9 +154,9 @@ export function buildMoverPreviewRows(
 
 export function mapRowsToPreviewFixtures(
   rows: LightingPreviewFixtureRow[],
-  options?: { fixturePlacementDepthEnabled?: boolean }
+  options?: { fxtrDepthOn?: boolean }
 ): MoverPreviewFixture[] {
-  const depthEnabled = options?.fixturePlacementDepthEnabled !== false
+  const depthEnabled = options?.fxtrDepthOn !== false
   return rows.map((row) => {
     let panCoarseChannel: number | undefined
     let panFineChannel: number | undefined
@@ -193,14 +196,14 @@ export function mapRowsToPreviewFixtures(
             max: clampToRange(leaf.max, logicalChannel.min, logicalChannel.max),
             isOnOff: leaf.isOnOff,
           })
-        } else if (leaf.type === 'fxTrigger') {
+        } else if (leaf.type === 'fxtrTrigger') {
           effectChannels.push({
             channelIndex: absoluteChannel,
             min: clampToRange(leaf.off, logicalChannel.min, logicalChannel.max),
             max: clampToRange(leaf.on, logicalChannel.min, logicalChannel.max),
             isOnOff: true,
           })
-        } else if (leaf.type === 'fxLevel') {
+        } else if (leaf.type === 'fxtrLevel') {
           effectChannels.push({
             channelIndex: absoluteChannel,
             min: clampToRange(leaf.min, logicalChannel.min, logicalChannel.max),
@@ -310,14 +313,14 @@ export function mapRowsToPreviewFixtures(
                 max: clampToRange(leaf.max, logicalChannel.min, logicalChannel.max),
                 isOnOff: leaf.isOnOff,
               })
-            } else if (leaf.type === 'fxTrigger') {
+            } else if (leaf.type === 'fxtrTrigger') {
               subEffectChannels.push({
                 channelIndex: absoluteChannel,
                 min: clampToRange(leaf.off, logicalChannel.min, logicalChannel.max),
                 max: clampToRange(leaf.on, logicalChannel.min, logicalChannel.max),
                 isOnOff: true,
               })
-            } else if (leaf.type === 'fxLevel') {
+            } else if (leaf.type === 'fxtrLevel') {
               subEffectChannels.push({
                 channelIndex: absoluteChannel,
                 min: clampToRange(leaf.min, logicalChannel.min, logicalChannel.max),
@@ -340,16 +343,31 @@ export function mapRowsToPreviewFixtures(
           }
         })
 
+        const subEmitters = emittersForSubfixtureIndex(
+          row.fixtureType,
+          resolvedCustomEmitters,
+          subFixtureIndex
+        )
+        const centroid = computeEmitterCentroid(subEmitters)
+        const effectiveRelative =
+          centroid !== null
+            ? mergeSubRelativeWindowWithEmitterCentroid(
+                subFixture.relative_window,
+                centroid,
+                row.fixture.window
+              )
+            : subFixture.relative_window
+
         emitterGroups.push({
           emitterCount: model.emittersPerSubFixture,
           relativeX:
-            subFixture.relative_window?.x?.pos ??
+            effectiveRelative?.x?.pos ??
             (row.fixtureType.subFixtures.length <= 1
               ? 0.5
               : subFixtureIndex / fallbackDenominator),
-          relativeY: subFixture.relative_window?.y?.pos ?? 0.5,
+          relativeY: effectiveRelative?.y?.pos ?? 0.5,
           relativeZ: depthEnabled
-            ? subFixture.relative_window?.z?.pos ?? 0.5
+            ? effectiveRelative?.z?.pos ?? 0.5
             : 0.5,
           colorChannels: subColorChannels,
           colorMapChannels: subColorMapChannels,

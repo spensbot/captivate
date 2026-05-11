@@ -73,7 +73,7 @@ export default function ParamSlider({
           flex: '1 1 auto',
           minHeight: 0,
           alignSelf: 'stretch',
-          paddingTop: hideRemoveButton ? 0 : '1.05rem',
+          paddingTop: 0,
           boxSizing: 'border-box',
         }}
       >
@@ -135,8 +135,8 @@ const defaultWrapperStyle: CSSProperties = {
 
 const CornerRemoveButton = styled.button`
   position: absolute;
-  top: 0.18rem;
-  right: 0.18rem;
+  top: -0.42rem;
+  right: -0.72rem;
   z-index: 6;
   width: 1rem;
   height: 1rem;

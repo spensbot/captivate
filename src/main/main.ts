@@ -31,6 +31,7 @@ import {
 import { stopLighting3dUtilityWorker } from './engine/lighting3dUtilityWorkerHost'
 import { VisualizerContainer } from './engine/createVisualizerWindow'
 import type { Page } from '../shared/pages'
+import type { OpenPageWindowOptions } from '../shared/screenDisplays'
 import type { FixtureType } from '../shared/dmxFixtures'
 import { serializeFixtureLibrary } from '../shared/fixtureLibrary'
 import {
@@ -224,7 +225,20 @@ function focusWindow(window: BrowserWindow) {
   window.focus()
 }
 
-function openOrFocusDetachedPage(page: Page) {
+function videoViewportPlacementOnDisplay(displayId: number): WindowPlacement | null {
+  const target = screen.getAllDisplays().find((d) => d.id === displayId)
+  if (target === undefined) {
+    return null
+  }
+  const wa = target.workArea
+  const width = Math.min(1300, Math.max(320, wa.width))
+  const height = Math.min(900, Math.max(240, wa.height))
+  const x = wa.x + Math.max(0, Math.floor((wa.width - width) / 2))
+  const y = wa.y + Math.max(0, Math.floor((wa.height - height) / 2))
+  return { x, y, width, height }
+}
+
+function openOrFocusDetachedPage(page: Page, options?: OpenPageWindowOptions) {
   if (page === 'Atmospherics') {
     if (mainWindow !== null) {
       focusWindow(mainWindow)
@@ -248,11 +262,19 @@ function openOrFocusDetachedPage(page: Page) {
     }
   }
 
-  createAppWindow({
-    isMain: false,
-    defaultPage: page,
-    maximizeOnFirstShow: page === 'VideoViewport',
-  })
+    const initialPlacementForVideoViewport =
+      page === 'VideoViewport' &&
+      options?.displayId !== undefined &&
+      Number.isFinite(options.displayId)
+        ? videoViewportPlacementOnDisplay(Math.trunc(options.displayId))
+        : null
+
+    createAppWindow({
+      isMain: false,
+      defaultPage: page,
+      maximizeOnFirstShow: page === 'VideoViewport',
+      initialPlacement: initialPlacementForVideoViewport ?? undefined,
+    })
 }
 
 function onVisualizerWindowStateChanged(state: {
@@ -458,7 +480,7 @@ function createAppWindow({
     !isMain && defaultPage === 'Lighting3D'
       ? 'persist:captivate-lighting3d'
       : !isMain && defaultPage === 'Atmospherics'
-      ? 'persist:captivate-atmospherics'
+      ? 'persist:captivate-atmos'
       : !isMain && defaultPage === 'Laser'
       ? 'persist:captivate-laser'
       : !isMain &&
@@ -862,8 +884,8 @@ const createWindow = async () => {
   const ipcCallbacks = engine.start(
     mainWindow.webContents,
     visualizerContainer,
-    (page) => {
-      openOrFocusDetachedPage(page)
+    (page, opts) => {
+      openOrFocusDetachedPage(page, opts)
     },
     () => {
       if (mainWindow !== null) {

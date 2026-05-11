@@ -529,7 +529,7 @@ function isAtmosphereFixtureType(fixtureType: FixtureType): boolean {
   return fixtureType.channels
     .flatMap((channel) => fixtureChannelLeafChannels(channel))
     .some((channel) => {
-      if (channel.type === 'fxTrigger' || channel.type === 'fxLevel') {
+      if (channel.type === 'fxtrTrigger' || channel.type === 'fxtrLevel') {
         return true
       }
       if (channel.type !== 'custom' || channel.isControllable !== true) {

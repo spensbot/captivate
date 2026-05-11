@@ -1,6 +1,6 @@
 import {
-  AtmosphericsDmxFixtureDescriptor,
-  AtmosphericsSettings,
+  AtmosFxtrDesc,
+  AtmosSettings,
 } from '../../shared/atmospherics'
 
 export interface AtmosSliderAssignmentSummary {
@@ -10,8 +10,8 @@ export interface AtmosSliderAssignmentSummary {
 
 /** Which atmospherics sliders are linked (stub until wiring is added). */
 export function sumAtmosSliders(
-  _settings: AtmosphericsSettings,
-  _fixtures: AtmosphericsDmxFixtureDescriptor[]
+  _settings: AtmosSettings,
+  _fixtures: AtmosFxtrDesc[]
 ): AtmosSliderAssignmentSummary {
   return {
     labelsBySlider: {},

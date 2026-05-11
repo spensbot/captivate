@@ -3,16 +3,21 @@ import { LfoShape, normalizeLfoShape } from '../../shared/oscillator'
 import { DefaultParam, Params } from '../../shared/params'
 import { ReorderParams } from '../../shared/util'
 import { clampNormalized, clamp } from '../../math/util'
-import { initModulator, type ModManualAnchor } from '../../shared/modulation'
+import {
+  initModulator,
+  type ModManualAnchor,
+  type SplitModShaping,
+  normSplitShapingForStore,
+} from '../../shared/modulation'
 import { nanoid } from 'nanoid'
 import { RandomizerOptions } from '../../shared/randomizer'
 import cloneDeep from 'lodash.clonedeep'
 import { LayerConfig } from '../../visualizer/threejs/layers/LayerConfig'
 import { DeviceState, initDeviceState, midiActions } from './deviceState'
 import {
-  AtmosphericsFixtureControlConfig,
-  AtmosphericsLevelChannelConfig,
-  AtmosphericsTriggerChannelConfig,
+  AtmosFxtrConfig,
+  AtmosLevelChConfig,
+  AtmosTrigChConfig,
 } from '../../shared/atmospherics'
 import {
   ScenesStateBundle,
@@ -65,6 +70,12 @@ interface SetModManualAnchorPayload {
   param: DefaultParam | string
   /** Omit or `'center'` clears stored anchor (default center behavior). */
   anchor?: ModManualAnchor
+}
+
+interface SetSplitModShapingPayload {
+  splitIndex: number
+  /** Full replacement; normalized before store (empty → field removed). */
+  shaping: SplitModShaping | undefined
 }
 
 interface SetModulatorAudioConfigPayload {
@@ -456,6 +467,34 @@ export const scenesSlice = createSlice({
     removeModulator: (state, { payload }: PayloadAction<number>) => {
       modifyActiveLightScene(state, (scene) => {
         scene.modulators.splice(payload, 1)
+        const prefix = 'intermod:lfo:'
+        scene.modulators.forEach((modulator) => {
+          modulator.splitModulations = modulator.splitModulations.map((splitMod) => {
+            if (!splitMod) return {}
+            const remapped: Record<string, number | undefined> = {}
+            for (const [key, value] of Object.entries(splitMod)) {
+              if (!key.startsWith(prefix)) {
+                remapped[key] = value
+                continue
+              }
+              const [targetRaw, prop] = key.slice(prefix.length).split(':')
+              const targetIndex = Number(targetRaw)
+              if (!Number.isInteger(targetIndex) || !prop) {
+                remapped[key] = value
+                continue
+              }
+              if (targetIndex === payload) {
+                continue
+              }
+              if (targetIndex > payload) {
+                remapped[`${prefix}${targetIndex - 1}:${prop}`] = value
+              } else {
+                remapped[key] = value
+              }
+            }
+            return remapped
+          })
+        })
       })
     },
     resetModulator: (state, { payload }: PayloadAction<number>) => {
@@ -486,6 +525,24 @@ export const scenesSlice = createSlice({
           splitScene.modManualAnchors = {}
         }
         splitScene.modManualAnchors[param] = anchor
+      })
+    },
+    setSplitModShaping: (
+      state,
+      { payload }: PayloadAction<SetSplitModShapingPayload>
+    ) => {
+      const { splitIndex, shaping } = payload
+      modifyActiveLightScene(state, (scene) => {
+        const splitScene = getSplitSceneSafe(scene, splitIndex)
+        if (splitScene === undefined) {
+          return
+        }
+        const stored = normSplitShapingForStore(shaping)
+        if (stored === undefined) {
+          delete splitScene.splitModShaping
+        } else {
+          splitScene.splitModShaping = stored
+        }
       })
     },
     setModulation: (
@@ -816,56 +873,56 @@ export const scenesSlice = createSlice({
     setAudioBeatTapHint: (state, action) =>
       midiActions.setAudioBeatTapHint(state.device, action),
     clearAudioBeatTapHint: (state) => midiActions.clearAudioBeatTapHint(state.device),
-    setAtmosphericsEnabled: (state, action) =>
-      midiActions.setAtmosphericsEnabled(state.device, action),
-    setAtmosphericsArmed: (state, action) =>
-      midiActions.setAtmosphericsArmed(state.device, action),
-    setAtmosphericsEmergencyStop: (state, action) =>
-      midiActions.setAtmosphericsEmergencyStop(state.device, action),
-    setAtmosphericsAllowPyro: (state, action) =>
-      midiActions.setAtmosphericsAllowPyro(state.device, action),
-    setAtmosphericsGlobalLevelLimit: (state, action) =>
-      midiActions.setAtmosphericsGlobalLevelLimit(state.device, action),
-    ensureAtmosphericsFixtureConfig: (
+    setAtmosOn: (state, action) =>
+      midiActions.setAtmosOn(state.device, action),
+    setAtmosArmed: (state, action) =>
+      midiActions.setAtmosArmed(state.device, action),
+    setAtmosEStop: (state, action) =>
+      midiActions.setAtmosEStop(state.device, action),
+    setAtmosPyro: (state, action) =>
+      midiActions.setAtmosPyro(state.device, action),
+    setAtmosLevelCap: (state, action) =>
+      midiActions.setAtmosLevelCap(state.device, action),
+    ensureAtmosFxtrConfig: (
       state,
       action: PayloadAction<string>
-    ) => midiActions.ensureAtmosphericsFixtureConfig(state.device, action),
-    removeAtmosphericsFixtureConfig: (state, action: PayloadAction<string>) =>
-      midiActions.removeAtmosphericsFixtureConfig(state.device, action),
-    selectAtmosphericsFixture: (
+    ) => midiActions.ensureAtmosFxtrConfig(state.device, action),
+    removeAtmosFxtr: (state, action: PayloadAction<string>) =>
+      midiActions.removeAtmosFxtr(state.device, action),
+    selectAtmosFxtr: (
       state,
       action: PayloadAction<string | null>
-    ) => midiActions.selectAtmosphericsFixture(state.device, action),
-    patchAtmosphericsFixtureConfig: (
+    ) => midiActions.selectAtmosFxtr(state.device, action),
+    patchAtmosFxtr: (
       state,
       action: PayloadAction<{
         fixtureId: string
-        patch: Partial<Omit<AtmosphericsFixtureControlConfig, 'fixtureId' | 'source' | 'auxChannels'>>
+        patch: Partial<Omit<AtmosFxtrConfig, 'fixtureId' | 'source' | 'auxChannels'>>
       }>
-    ) => midiActions.patchAtmosphericsFixtureConfig(state.device, action),
-    setAtmosphericsFixtureGroupName: (
+    ) => midiActions.patchAtmosFxtr(state.device, action),
+    setAtmosFxtrGroup: (
       state,
       action: PayloadAction<{
         fixtureId: string
         groupName: string
       }>
-    ) => midiActions.setAtmosphericsFixtureGroupName(state.device, action),
-    patchAtmosphericsFixtureTriggerChannelConfig: (
+    ) => midiActions.setAtmosFxtrGroup(state.device, action),
+    patchAtmosTrigCh: (
       state,
       action: PayloadAction<{
         fixtureId: string
         channelNumber: number
-        patch: Partial<AtmosphericsTriggerChannelConfig>
+        patch: Partial<AtmosTrigChConfig>
       }>
-    ) => midiActions.patchAtmosphericsFixtureTriggerChannelConfig(state.device, action),
-    patchAtmosphericsFixtureLevelChannelConfig: (
+    ) => midiActions.patchAtmosTrigCh(state.device, action),
+    patchAtmosLevelCh: (
       state,
       action: PayloadAction<{
         fixtureId: string
         channelNumber: number
-        patch: Partial<AtmosphericsLevelChannelConfig>
+        patch: Partial<AtmosLevelChConfig>
       }>
-    ) => midiActions.patchAtmosphericsFixtureLevelChannelConfig(state.device, action),
+    ) => midiActions.patchAtmosLevelCh(state.device, action),
   },
 })
 
@@ -903,6 +960,7 @@ export const {
   removeModulator,
   setModulation,
   setModManualAnchor,
+  setSplitModShaping,
   resetModulator,
   setRandomizer,
   addSplitScene,
@@ -941,18 +999,18 @@ export const {
   setAudioBpmSmoothing,
   setAudioBeatTapHint,
   clearAudioBeatTapHint,
-  setAtmosphericsEnabled,
-  setAtmosphericsArmed,
-  setAtmosphericsEmergencyStop,
-  setAtmosphericsAllowPyro,
-  setAtmosphericsGlobalLevelLimit,
-  ensureAtmosphericsFixtureConfig,
-  removeAtmosphericsFixtureConfig,
-  selectAtmosphericsFixture,
-  patchAtmosphericsFixtureConfig,
-  setAtmosphericsFixtureGroupName,
-  patchAtmosphericsFixtureTriggerChannelConfig,
-  patchAtmosphericsFixtureLevelChannelConfig,
+  setAtmosOn,
+  setAtmosArmed,
+  setAtmosEStop,
+  setAtmosPyro,
+  setAtmosLevelCap,
+  ensureAtmosFxtrConfig,
+  removeAtmosFxtr,
+  selectAtmosFxtr,
+  patchAtmosFxtr,
+  setAtmosFxtrGroup,
+  patchAtmosTrigCh,
+  patchAtmosLevelCh,
 } = scenesSlice.actions
 
 export default scenesSlice.reducer

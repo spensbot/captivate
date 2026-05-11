@@ -14,8 +14,8 @@ import { setActivePage, Page } from '../redux/guiSlice'
 import MasterSlider from '../controls/MasterSlider'
 import BlackoutButton from '../controls/BlackoutButton'
 import { send_open_page_window } from '../ipcHandler'
-import { getAtmosphericsFixtureDescriptors } from '../../shared/atmosphericsMapping'
-import { hasMoverFixtureInUniverse } from '../../shared/dmxFixtures'
+import { listAtmosFxtrs } from '../../shared/atmosphericsMapping'
+import { universeHasMovers } from '../../shared/dmxFixtures'
 
 const selectedBorder = 0.2 //rem
 type SidebarAccent =
@@ -77,10 +77,10 @@ function accentColors(accent: SidebarAccent) {
 export default function MenuBar() {
   const activePage = useTypedSelector((state) => state.gui.activePage)
   const hasAtmosphericsFixtures = useTypedSelector(
-    (state) => getAtmosphericsFixtureDescriptors(state.dmx.present).length > 0
+    (state) => listAtmosFxtrs(state.dmx.present).length > 0
   )
   const hasMoverFixtures = useTypedSelector((state) =>
-    hasMoverFixtureInUniverse(state.dmx.present.universe, state.dmx.present.fixtureTypesByID)
+    universeHasMovers(state.dmx.present.universe, state.dmx.present.fixtureTypesByID)
   )
   const ledSidebarEnabled = useTypedSelector((state) => state.gui.ledSidebarEnabled)
   const dispatch = useDispatch()

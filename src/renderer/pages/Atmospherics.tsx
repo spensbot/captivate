@@ -11,22 +11,22 @@ import {
   ATMOSPHERICS_DEFAULT_GROUP,
   ATMOSPHERICS_SPLIT_LEVEL_PARAM,
   ATMOSPHERICS_SPLIT_TRIGGER_PARAM,
-  initAtmosphericsFixtureControlConfig,
-  initAtmosphericsLevelChannelConfig,
-  initAtmosphericsTriggerChannelConfig,
+  initAtmosFxtrControlConfig,
+  initAtmosLevelChConfig,
+  initAtmosTriggerChConfig,
 } from '../../shared/atmospherics'
-import { getAtmosphericsFixtureDescriptors } from '../../shared/atmosphericsMapping'
+import { listAtmosFxtrs } from '../../shared/atmosphericsMapping'
 import {
-  ensureAtmosphericsFixtureConfig,
-  patchAtmosphericsFixtureConfig,
-  patchAtmosphericsFixtureLevelChannelConfig,
-  patchAtmosphericsFixtureTriggerChannelConfig,
-  selectAtmosphericsFixture,
-  setAtmosphericsAllowPyro,
-  setAtmosphericsArmed,
-  setAtmosphericsEmergencyStop,
-  setAtmosphericsEnabled,
-  setAtmosphericsFixtureGroupName,
+  ensureAtmosFxtrConfig,
+  patchAtmosFxtr,
+  patchAtmosLevelCh,
+  patchAtmosTrigCh,
+  selectAtmosFxtr,
+  setAtmosPyro,
+  setAtmosArmed,
+  setAtmosEStop,
+  setAtmosOn,
+  setAtmosFxtrGroup,
 } from '../redux/controlSlice'
 import { fireAtmosManualTrigger } from '../redux/guiSlice'
 
@@ -125,9 +125,9 @@ function formatStatus(
 export default function AtmosphericsPage() {
   const dispatch = useDispatch()
   const dmx = useDmxSelector((state) => state)
-  const fixtures = useMemo(() => getAtmosphericsFixtureDescriptors(dmx), [dmx])
-  const settings = useDeviceSelector((state) => state.connectionSettings.atmospherics)
-  const runtime = useRealtimeSelector((state) => state.atmospherics)
+  const fixtures = useMemo(() => listAtmosFxtrs(dmx), [dmx])
+  const settings = useDeviceSelector((state) => state.connectionSettings.atmos)
+  const runtime = useRealtimeSelector((state) => state.atmos)
   const splitStates = useRealtimeSelector((state) => state.splitStates)
   const splitScenes = useActiveLightScene((scene) => scene.splitScenes)
 
@@ -144,23 +144,23 @@ export default function AtmosphericsPage() {
 
   useEffect(() => {
     if (fixtures.length <= 0) {
-      if (settings.selectedFixtureId !== null) dispatch(selectAtmosphericsFixture(null))
+      if (settings.selectedFixtureId !== null) dispatch(selectAtmosFxtr(null))
       return
     }
     if (selectedFixtureId === null) return
     if (settings.selectedFixtureId !== selectedFixtureId) {
-      dispatch(selectAtmosphericsFixture(selectedFixtureId))
+      dispatch(selectAtmosFxtr(selectedFixtureId))
       return
     }
     for (const fixture of fixtures) {
       const config = settings.fixtures[fixture.fixtureId]
       if (config === undefined) {
-        dispatch(ensureAtmosphericsFixtureConfig(fixture.fixtureId))
+        dispatch(ensureAtmosFxtrConfig(fixture.fixtureId))
         return
       }
       if (config.groupName.trim().length <= 0) {
         dispatch(
-          setAtmosphericsFixtureGroupName({
+          setAtmosFxtrGroup({
             fixtureId: fixture.fixtureId,
             groupName: fixture.groups[0] ?? ATMOSPHERICS_DEFAULT_GROUP,
           })
@@ -170,7 +170,7 @@ export default function AtmosphericsPage() {
       for (const trigger of fixture.triggerChannels) {
         if (config.triggerChannels[trigger.channel] === undefined) {
           dispatch(
-            patchAtmosphericsFixtureTriggerChannelConfig({
+            patchAtmosTrigCh({
               fixtureId: fixture.fixtureId,
               channelNumber: trigger.channel,
               patch: {},
@@ -182,7 +182,7 @@ export default function AtmosphericsPage() {
       for (const level of fixture.auxChannels) {
         if (config.levelChannels[level.channel] === undefined) {
           dispatch(
-            patchAtmosphericsFixtureLevelChannelConfig({
+            patchAtmosLevelCh({
               fixtureId: fixture.fixtureId,
               channelNumber: level.channel,
               patch: {},
@@ -198,7 +198,7 @@ export default function AtmosphericsPage() {
   const selectedConfig =
     selectedFixtureId === null
       ? null
-      : settings.fixtures[selectedFixtureId] ?? initAtmosphericsFixtureControlConfig(selectedFixtureId)
+      : settings.fixtures[selectedFixtureId] ?? initAtmosFxtrControlConfig(selectedFixtureId)
   const selectedRuntime = runtime.fixtures.find((fixture) => fixture.fixtureId === selectedFixtureId)
 
   const groupName =
@@ -248,7 +248,7 @@ export default function AtmosphericsPage() {
             <strong>Atmospherics + FX</strong>
           </Row>
           <Muted>
-            Add fixtures with `fxTrigger` and/or `fxLevel` channels to enable this page.
+            Add fixtures with `fxtrTrigger` and/or `fxtrLevel` channels to enable this page.
           </Muted>
         </Panel>
       </Root>
@@ -260,7 +260,7 @@ export default function AtmosphericsPage() {
       <EmergencyButton
         type="button"
         $active={settings.emergencyStop}
-        onClick={() => dispatch(setAtmosphericsEmergencyStop(!settings.emergencyStop))}
+        onClick={() => dispatch(setAtmosEStop(!settings.emergencyStop))}
       >
         {settings.emergencyStop ? (
           <MarqueeWrap>
@@ -290,7 +290,7 @@ export default function AtmosphericsPage() {
                     $selected={fixture.fixtureId === selectedFixtureId}
                     $active={fixtureRuntime?.triggerOutputActive === true}
                     $disabled={config?.enabled === false || settings.emergencyStop}
-                    onClick={() => dispatch(selectAtmosphericsFixture(fixture.fixtureId))}
+                    onClick={() => dispatch(selectAtmosFxtr(fixture.fixtureId))}
                   >
                     <div>{fixture.fixtureName}</div>
                     <Muted>
@@ -314,8 +314,8 @@ export default function AtmosphericsPage() {
                 type="checkbox"
                 checked={settings.enabled && settings.armed}
                 onChange={(event) => {
-                  dispatch(setAtmosphericsEnabled(event.target.checked))
-                  dispatch(setAtmosphericsArmed(event.target.checked))
+                  dispatch(setAtmosOn(event.target.checked))
+                  dispatch(setAtmosArmed(event.target.checked))
                 }}
               />{' '}
               System Active
@@ -324,7 +324,7 @@ export default function AtmosphericsPage() {
               <input
                 type="checkbox"
                 checked={settings.allowPyro}
-                onChange={(event) => dispatch(setAtmosphericsAllowPyro(event.target.checked))}
+                onChange={(event) => dispatch(setAtmosPyro(event.target.checked))}
               />{' '}
               Allow Pyro
             </label>
@@ -335,7 +335,7 @@ export default function AtmosphericsPage() {
                   checked={selectedConfig.enabled !== false}
                   onChange={(event) =>
                     dispatch(
-                      patchAtmosphericsFixtureConfig({
+                      patchAtmosFxtr({
                         fixtureId: selectedConfig.fixtureId,
                         patch: { enabled: event.target.checked },
                       })
@@ -354,7 +354,7 @@ export default function AtmosphericsPage() {
                   value={groupName}
                   onChange={(event) =>
                     dispatch(
-                      setAtmosphericsFixtureGroupName({
+                      setAtmosFxtrGroup({
                         fixtureId: selectedFixture.fixtureId,
                         groupName: event.target.value,
                       })
@@ -375,7 +375,7 @@ export default function AtmosphericsPage() {
               {selectedFixture.triggerChannels.map((channel) => {
                 const config =
                   selectedConfig.triggerChannels[channel.channel] ??
-                  initAtmosphericsTriggerChannelConfig(channel.channel)
+                  initAtmosTriggerChConfig(channel.channel)
                 const channelRuntime = selectedRuntime?.triggerChannels.find(
                   (entry) => entry.channelNumber === channel.channel
                 )
@@ -388,7 +388,7 @@ export default function AtmosphericsPage() {
                       radius={0.34}
                       onChange={(value) =>
                         dispatch(
-                          patchAtmosphericsFixtureTriggerChannelConfig({
+                          patchAtmosTrigCh({
                             fixtureId: selectedFixture.fixtureId,
                             channelNumber: channel.channel,
                             patch: {
@@ -413,7 +413,7 @@ export default function AtmosphericsPage() {
                         $active={config.useGroupThreshold}
                         onClick={() =>
                           dispatch(
-                            patchAtmosphericsFixtureTriggerChannelConfig({
+                            patchAtmosTrigCh({
                               fixtureId: selectedFixture.fixtureId,
                               channelNumber: channel.channel,
                               patch: {
@@ -443,7 +443,7 @@ export default function AtmosphericsPage() {
                           $active={config.triggerAction === action}
                           onClick={() =>
                             dispatch(
-                              patchAtmosphericsFixtureTriggerChannelConfig({
+                              patchAtmosTrigCh({
                                 fixtureId: selectedFixture.fixtureId,
                                 channelNumber: channel.channel,
                                 patch: { triggerAction: action },
@@ -464,7 +464,7 @@ export default function AtmosphericsPage() {
                         step={10}
                         onCommit={(next) =>
                           dispatch(
-                            patchAtmosphericsFixtureTriggerChannelConfig({
+                            patchAtmosTrigCh({
                               fixtureId: selectedFixture.fixtureId,
                               channelNumber: channel.channel,
                               patch: { delayMs: next },
@@ -481,7 +481,7 @@ export default function AtmosphericsPage() {
                           step={10}
                           onCommit={(next) =>
                             dispatch(
-                              patchAtmosphericsFixtureTriggerChannelConfig({
+                              patchAtmosTrigCh({
                                 fixtureId: selectedFixture.fixtureId,
                                 channelNumber: channel.channel,
                                 patch: { pulseMs: next },
@@ -499,7 +499,7 @@ export default function AtmosphericsPage() {
                           step={10}
                           onCommit={(next) =>
                             dispatch(
-                              patchAtmosphericsFixtureTriggerChannelConfig({
+                              patchAtmosTrigCh({
                                 fixtureId: selectedFixture.fixtureId,
                                 channelNumber: channel.channel,
                                 patch: { intervalMs: next },
@@ -516,7 +516,7 @@ export default function AtmosphericsPage() {
                         step={10}
                         onCommit={(next) =>
                           dispatch(
-                            patchAtmosphericsFixtureTriggerChannelConfig({
+                            patchAtmosTrigCh({
                               fixtureId: selectedFixture.fixtureId,
                               channelNumber: channel.channel,
                               patch: { manualDelayMs: next },
@@ -533,7 +533,7 @@ export default function AtmosphericsPage() {
                           step={10}
                           onCommit={(next) =>
                             dispatch(
-                              patchAtmosphericsFixtureTriggerChannelConfig({
+                              patchAtmosTrigCh({
                                 fixtureId: selectedFixture.fixtureId,
                                 channelNumber: channel.channel,
                                 patch: { manualIntervalMs: next },
@@ -569,7 +569,7 @@ export default function AtmosphericsPage() {
               {selectedFixture.auxChannels.map((channel) => {
                 const config =
                   selectedConfig.levelChannels[channel.channel] ??
-                  initAtmosphericsLevelChannelConfig(channel.channel)
+                  initAtmosLevelChConfig(channel.channel)
                 const channelRuntime = selectedRuntime?.levelChannels.find(
                   (entry) => entry.channelNumber === channel.channel
                 )
@@ -582,7 +582,7 @@ export default function AtmosphericsPage() {
                         $active={config.controlMode === 'split'}
                         onClick={() =>
                           dispatch(
-                            patchAtmosphericsFixtureLevelChannelConfig({
+                            patchAtmosLevelCh({
                               fixtureId: selectedFixture.fixtureId,
                               channelNumber: channel.channel,
                               patch: { controlMode: 'split' },
@@ -597,7 +597,7 @@ export default function AtmosphericsPage() {
                         $active={config.controlMode === 'manual'}
                         onClick={() =>
                           dispatch(
-                            patchAtmosphericsFixtureLevelChannelConfig({
+                            patchAtmosLevelCh({
                               fixtureId: selectedFixture.fixtureId,
                               channelNumber: channel.channel,
                               patch: { controlMode: 'manual' },
@@ -614,7 +614,7 @@ export default function AtmosphericsPage() {
                         radius={0.34}
                         onChange={(value) =>
                           dispatch(
-                            patchAtmosphericsFixtureLevelChannelConfig({
+                            patchAtmosLevelCh({
                               fixtureId: selectedFixture.fixtureId,
                               channelNumber: channel.channel,
                               patch: { manualValue: clamp01(value) },

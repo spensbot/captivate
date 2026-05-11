@@ -8,9 +8,11 @@ import {
 import ipcChannels from '../shared/ipc_channels'
 import AutoSavedVal, { printTimePassed } from './AutoSavedVal'
 import defaultState from './redux/defaultState'
+import { migrateLegacyFixturePersistedJson } from '../shared/dmxFixtures'
 
 const AUTOSAVE_SCHEMA = 'captivate.autosave'
-const AUTOSAVE_VERSION = 3
+const AUTOSAVE_VERSION = 4
+const MIN_SUPPORTED_AUTOSAVE_VERSION = 3
 
 interface VersionedAutoSaveState {
   schema: string
@@ -177,9 +179,11 @@ function parseVersionedAutoSaveState(raw: unknown): {
     return { compatible: false, state: null }
   }
 
+  const version = Number(source.version)
   if (
     source.schema !== AUTOSAVE_SCHEMA ||
-    Number(source.version) !== AUTOSAVE_VERSION
+    version < MIN_SUPPORTED_AUTOSAVE_VERSION ||
+    version > AUTOSAVE_VERSION
   ) {
     return { compatible: false, state: null }
   }
@@ -188,8 +192,15 @@ function parseVersionedAutoSaveState(raw: unknown): {
     return { compatible: false, state: null }
   }
 
+  const state = JSON.parse(JSON.stringify(source.state)) as CleanReduxState
+  if (state.dmx) {
+    state.dmx = JSON.parse(
+      migrateLegacyFixturePersistedJson(JSON.stringify(state.dmx))
+    ) as CleanReduxState['dmx']
+  }
+
   return {
     compatible: true,
-    state: source.state as CleanReduxState,
+    state,
   }
 }

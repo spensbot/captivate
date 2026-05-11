@@ -111,6 +111,22 @@ function pickBest(hits) {
   return hits.sort((a, b) => compareSemver(a.version, b.version))[hits.length - 1]
 }
 
+/** Some hosts (e.g. IDE shells) omit System32 from PATH; child tools still need cmd.exe. */
+function ensureWindowsSystem32OnPath(env) {
+  if (process.platform !== 'win32') return
+  const sysRoot = env.SystemRoot || process.env.SystemRoot || 'C:\\Windows'
+  const system32 = path.join(sysRoot, 'System32')
+  const sep = path.delimiter
+  const raw = env.PATH || ''
+  const parts = raw.split(sep).filter(Boolean)
+  const norm = (s) => s.replace(/[/\\]+$/, '').toLowerCase()
+  const target = norm(system32)
+  if (parts.some((d) => norm(d) === target)) {
+    return
+  }
+  env.PATH = `${system32}${sep}${raw}`
+}
+
 function main() {
   const dash = process.argv.indexOf('--')
   if (dash < 0 || dash === process.argv.length - 1) {
@@ -157,6 +173,8 @@ function main() {
       `[captivate] Using Node ${best.version.join('.')} from ${best.dir} (was ${process.version}).`
     )
   }
+
+  ensureWindowsSystem32OnPath(childEnv)
 
   const cmd = process.argv.slice(dash + 1)
   let proc = cmd[0]

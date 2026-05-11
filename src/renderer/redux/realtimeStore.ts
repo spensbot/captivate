@@ -20,8 +20,8 @@ import {
   initAudioEngineMetrics,
 } from '../../shared/audioEngine'
 import {
-  AtmosphericsRuntimeState,
-  initAtmosphericsRuntimeState,
+  AtmosRunState,
+  initAtmosRunState,
 } from '../../shared/atmospherics'
 
 function initDmxOut(): number[] {
@@ -39,7 +39,7 @@ export interface RealtimeState {
   dmxOutByUniverse: number[][]
   splitStates: SplitState[]
   audio: AudioEngineMetrics
-  atmospherics: AtmosphericsRuntimeState
+  atmos: AtmosRunState
 }
 
 export function initRealtimeState(): RealtimeState {
@@ -50,7 +50,7 @@ export function initRealtimeState(): RealtimeState {
     dmxOutByUniverse: [dmxOut],
     splitStates: [],
     audio: initAudioEngineMetrics(),
-    atmospherics: initAtmosphericsRuntimeState(),
+    atmos: initAtmosRunState(),
   }
 }
 

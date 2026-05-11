@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import styled from 'styled-components'
 import { useControlSelector, useTypedSelector } from '../redux/store'
 import { setConnectionsMenu } from '../redux/guiSlice'
@@ -23,7 +24,8 @@ import {
 import DmxTroubleShoot from './DmxTroubleshoot'
 import Input from 'renderer/base/Input'
 import DraggableNumber from 'renderer/base/DraggableNumber'
-import LabelledCheckbox from 'renderer/base/LabelledCheckbox'
+import ToggleSwitch from 'renderer/base/ToggleSwitch'
+import InfoOutlined from '@mui/icons-material/InfoOutlined'
 import LinkButton from '../menu/LinkButton'
 import StartStopSyncButton from '../menu/StartStopSyncButton'
 import { useRealtimeSelector } from '../redux/realtimeStore'
@@ -55,9 +57,13 @@ export default function Devices({ embedded = false }: Props) {
           </Tooltip>
         </Row>
       )}
-      <Row>
-        <Pane>
-          <SubTitle>Dmx</SubTitle>
+      <ConnectionsGrid>
+        <ConnectionSection>
+          <SectionHeader
+            title="DMX"
+            tooltip={DMX_SECTION_TOOLTIP}
+            tooltipAriaLabel="About DMX output"
+          />
           <SettingRow>
             <SettingLabel>Universe Count</SettingLabel>
             <Tooltip title="Total universes available for DMX and Art-Net routing">
@@ -98,11 +104,21 @@ export default function Devices({ embedded = false }: Props) {
               </Tooltip>
             </SettingRow>
           )}
+        </ConnectionSection>
+        <ConnectionSection>
+          <SectionHeader
+            title="Art-Net"
+            tooltip={ART_NET_SECTION_TOOLTIP}
+            tooltipAriaLabel="About Art-Net routing"
+          />
           <ArtNetDevices />
-        </Pane>
-        <Divider />
-        <Pane>
-          <SubTitle>Midi</SubTitle>
+        </ConnectionSection>
+        <ConnectionSection>
+          <SectionHeader
+            title="MIDI"
+            tooltip={MIDI_SECTION_TOOLTIP}
+            tooltipAriaLabel="About MIDI inputs"
+          />
           {midi.available.map((device) => (
             <MidiDevice
               key={device.name}
@@ -112,10 +128,17 @@ export default function Devices({ embedded = false }: Props) {
             />
           ))}
           {midi.available.length === 0 && <NoneFound />}
-          <MidiClockBpmControl />
+          <MidiClockBpmControl midiConnected={midi.connected.length > 0} />
+        </ConnectionSection>
+        <ConnectionSection>
+          <SectionHeader
+            title="Ableton Link"
+            tooltip={ABLETON_LINK_SECTION_TOOLTIP}
+            tooltipAriaLabel="About Ableton Link"
+          />
           <AbletonLinkConnections />
-        </Pane>
-      </Row>
+        </ConnectionSection>
+      </ConnectionsGrid>
       <DmxTroubleShoot />
     </>
   )
@@ -156,36 +179,101 @@ const Modal = styled.div<{ $embedded: boolean }>`
 
 const Row = styled.div`
   display: flex;
-  padding: 1rem;
-  align-items: stretch;
+  padding: 1rem 1rem 0;
+  align-items: center;
   justify-content: space-between;
 `
 
-const Pane = styled.div`
-  flex: 1 0 0;
+const ConnectionsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+  /* Stretch items in each row so left/right neighbors share the same height;
+     rows remain independent (top/bottom can differ). */
+  align-items: stretch;
+  box-sizing: border-box;
+
+  @media (max-width: 52rem) {
+    grid-template-columns: 1fr;
+  }
+`
+
+const ConnectionSection = styled.section`
+  border: 1px solid ${(p) => p.theme.colors.divider};
+  border-radius: 0.45rem;
+  padding: 0.9rem 1rem 1rem;
+  min-width: 0;
+  min-height: 0;
   height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  box-sizing: border-box;
 `
 
-const Divider = styled.div`
-  width: 1px;
-  background-color: ${(props) => props.theme.colors.divider};
-  margin: 0 1rem;
+const SectionHeaderRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+  min-height: 1.75rem;
 `
 
-const Title = styled.div`
-  font-size: 1.4rem;
+const SectionTitle = styled.h2`
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: ${(p) => p.theme.colors.text.primary};
+  letter-spacing: 0.02em;
 `
 
-const SubTitle = styled.div`
-  font-size: 1.1rem;
-  margin-bottom: 1rem;
-`
+const TOOLTIP_BODY_SX = {
+  maxWidth: '22rem',
+  py: 1,
+  px: 1.15,
+  lineHeight: 1.45,
+} as const
 
-const SubSubTitle = styled.div`
-  font-size: 0.9rem;
-  margin-bottom: 0.5rem;
-  margin-top: 1rem;
-`
+function SectionHeader({
+  title,
+  tooltip,
+  tooltipAriaLabel,
+}: {
+  title: string
+  tooltip?: ReactNode
+  tooltipAriaLabel?: string
+}) {
+  return (
+    <SectionHeaderRow>
+      <SectionTitle>{title}</SectionTitle>
+      {tooltip !== undefined && (
+        <Tooltip
+          title={tooltip}
+          placement="top"
+          enterDelay={350}
+          slotProps={{
+            tooltip: { sx: TOOLTIP_BODY_SX },
+          }}
+        >
+          <IconButton
+            size="small"
+            aria-label={tooltipAriaLabel ?? `About ${title}`}
+            onMouseDown={(e) => e.stopPropagation()}
+            sx={{
+              padding: '0.12rem',
+              color: 'text.secondary',
+              '&:hover': { color: 'text.primary' },
+            }}
+          >
+            <InfoOutlined sx={{ fontSize: '1rem' }} />
+          </IconButton>
+        </Tooltip>
+      )}
+    </SectionHeaderRow>
+  )
+}
 
 const SettingRow = styled.div`
   display: flex;
@@ -199,44 +287,137 @@ const SettingLabel = styled.p`
   margin-right: 0.3rem;
 `
 
-const HelperText = styled.p`
-  color: #aaa;
-  font-size: 0.7rem;
-  margin: 0 0 0.5rem;
+const Title = styled.div`
+  font-size: 1.4rem;
 `
 
-function MidiClockBpmControl() {
+const DMX_SECTION_TOOLTIP = (
+  <>
+    USB DMX adapters detected on this computer appear here. Click a device to enable or
+    disable it for DMX output.
+    <br />
+    <br />
+    Universe count sets how many universes are available for DMX and Art-Net together.
+    Assign each adapter the universe it should drive. If you use Open DMX USB hardware, a
+    refresh rate control appears when that device is present.
+  </>
+)
+
+const MIDI_SECTION_TOOLTIP = (
+  <>
+    MIDI input ports appear here. Click a device to enable or disable it for use in
+    Captivate.
+    <br />
+    <br />
+    When at least one input is enabled, you can optionally drive master BPM from MIDI timing
+    clock using the toggle below (see the info icon there for details).
+  </>
+)
+
+const ART_NET_SECTION_TOOLTIP = (
+  <>
+    Set destination IP per universe. Leave blank to disable output on that universe.
+  </>
+)
+
+const ABLETON_LINK_SECTION_TOOLTIP = (
+  <>
+    Sync tempo (BPM) with Ableton Live and other Link-enabled apps on this computer and the
+    same network. This is separate from MIDI — it uses the network for timing, not a MIDI
+    cable.
+    <br />
+    <br />
+    When Link is enabled, you can optionally sync master play/stop with compatible apps
+    using the start/stop control in this section (when supported by the session).
+  </>
+)
+
+const MIDI_CLOCK_TOOLTIP = (
+  <>
+    When enabled, master BPM follows MIDI timing clock (24 pulses per quarter note) from any
+    enabled MIDI input above. Your DAW or hardware must send MIDI clock on that port. This
+    disables audio beat detection as the tempo source (only one external BPM source at a
+    time).
+    <br />
+    <br />
+    Requires a device that transmits 0xF8 clock messages (common in Ableton Live, Reaper,
+    and hardware sequencers).
+  </>
+)
+
+function MidiClockBpmControl({ midiConnected }: { midiConnected: boolean }) {
   const dispatch = useDispatch()
   const enabled = useControlSelector(
     (state) => state.device.connectionSettings.midiClockBpmEnabled === true
   )
 
+  if (!midiConnected) {
+    return null
+  }
+
   return (
-    <>
-      <SubSubTitle style={{ marginTop: '1.1rem' }}>Tempo from MIDI clock</SubSubTitle>
-      <HelperText>
-        When enabled, master BPM follows MIDI Timing Clock (24 pulses per quarter) from any
-        enabled MIDI input above. Your DAW or hardware must send MIDI clock on that port.
-        This turns off audio beat detection driving tempo (only one external source at a
-        time).
-      </HelperText>
-      <Tooltip title="Requires an enabled MIDI device that transmits 0xF8 clock messages (common in Ableton Live, Reaper, hardware sequencers).">
-        <MidiClockRow>
-          <LabelledCheckbox
-            label="Drive BPM from MIDI clock"
-            checked={enabled}
-            onChange={(next) => dispatch(setMidiClockBpmEnabled(next))}
-          />
-        </MidiClockRow>
-      </Tooltip>
-    </>
+    <MidiClockBlock>
+      <MidiClockRow>
+        <MidiClockLabelGroup>
+          <MidiClockLabel>Drive BPM from MIDI clock</MidiClockLabel>
+          <Tooltip
+            title={MIDI_CLOCK_TOOLTIP}
+            placement="right-start"
+            enterDelay={350}
+            slotProps={{
+              tooltip: {
+                sx: TOOLTIP_BODY_SX,
+              },
+            }}
+          >
+            <IconButton
+              size="small"
+              aria-label="About MIDI clock tempo"
+              onMouseDown={(e) => e.stopPropagation()}
+              sx={{
+                padding: '0.12rem',
+                marginLeft: '0.08rem',
+                color: 'text.secondary',
+                '&:hover': { color: 'text.primary' },
+              }}
+            >
+              <InfoOutlined sx={{ fontSize: '1rem' }} />
+            </IconButton>
+          </Tooltip>
+        </MidiClockLabelGroup>
+        <ToggleSwitch
+          checked={enabled}
+          onChange={(next) => dispatch(setMidiClockBpmEnabled(next))}
+          aria-label="Drive BPM from MIDI clock"
+        />
+      </MidiClockRow>
+    </MidiClockBlock>
   )
 }
+
+const MidiClockBlock = styled.div`
+  margin-top: 1.1rem;
+`
 
 const MidiClockRow = styled.div`
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
   margin-bottom: 0.35rem;
+`
+
+const MidiClockLabelGroup = styled.div`
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1 1 auto;
+`
+
+const MidiClockLabel = styled.div`
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: ${(p) => p.theme.colors.text.primary};
 `
 
 const SyncTransportBlock = styled.div`
@@ -277,19 +458,7 @@ function AbletonLinkConnections() {
 
   return (
     <>
-      <SubSubTitle style={{ marginTop: '1.1rem' }}>Ableton Link</SubSubTitle>
-      <HelperText>
-        Sync tempo (BPM) with Ableton Live and other Link-enabled apps on this computer and
-        the same network. This is separate from MIDI — it uses the network for timing, not
-        a MIDI cable.
-      </HelperText>
       <LinkButton />
-      {!linkEnabled && (
-        <HelperText>
-          When Link is on, you can optionally sync master play/stop with compatible apps
-          using the control below.
-        </HelperText>
-      )}
       {linkEnabled && (
         <SyncTransportBlock>
           <Tooltip
@@ -325,10 +494,6 @@ function ArtNetDevices() {
 
   return (
     <>
-      <SubSubTitle>Art-Net Routing</SubSubTitle>
-      <HelperText>
-        Set destination IP per universe. Leave blank to disable that universe.
-      </HelperText>
       {universes.map((universe) => (
         <ArtNetRouteRow key={universe}>
           <ArtNetUniverseTag>U{universe}</ArtNetUniverseTag>

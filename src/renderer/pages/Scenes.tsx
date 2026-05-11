@@ -52,6 +52,7 @@ const Root = styled.div`
 
 const Pane = styled.div`
   height: 100%;
+  min-height: 0;
 `
 
 const Column = styled.div`
@@ -59,6 +60,9 @@ const Column = styled.div`
   flex-direction: column;
   padding: 1rem;
   min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
 `
 
 const Sp = styled.div`

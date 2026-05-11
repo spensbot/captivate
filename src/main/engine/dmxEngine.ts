@@ -3,7 +3,7 @@ import {
   DMX_MIN_VALUE,
   DMX_NUM_CHANNELS,
   FlattenedFixture,
-  hasMoverFixtureInUniverse,
+  universeHasMovers,
   MoverBounds,
 } from '../../shared/dmxFixtures'
 import { CleanReduxState } from '../../renderer/redux/store'
@@ -13,6 +13,7 @@ import {
   flatten_fixtures,
   forEachChannel,
   getDefaultDmxValue,
+  getMovingWindow,
   type MoverAxisOverrides,
 } from '../../shared/dmxUtil'
 import { indexArray, zip } from '../../shared/util'
@@ -20,7 +21,13 @@ import { TimeState } from '../../shared/TimeState'
 import { SplitState } from 'renderer/redux/realtimeStore'
 import { getUniverseOverwrites } from '../../renderer/redux/mixerSlice'
 import { clampNormalized, lerp } from '../../math/util'
-import { getParam } from '../../shared/params'
+import { getParam, type Params } from '../../shared/params'
+import {
+  getVisualizerDriverOutputParams,
+  mergeParamsWithStageLightSample,
+  stageLightMapMasterFromEffects,
+} from '../../shared/stageLightMap'
+import { getLatestStageLightMap } from './stageLightMapRuntime'
 
 const PAN_EQUIVALENT_CYCLE_DEG = 360
 const _panPathYawByFixtureKey = new Map<string, number>()
@@ -72,6 +79,7 @@ const LIGHTING_CONTROL_PARAM_KEYS = [
   'intensity',
   'strobe',
   'randomize',
+  'visStageMapMix',
 ] as const
 
 function splitHasLightingControlBundle(
@@ -111,7 +119,7 @@ function isAtmosCustomChannelName(name: string) {
 function isAtmosControlChannel(
   channel: FlattenedFixture['channels'][number][1]
 ) {
-  if (channel.type === 'fxTrigger' || channel.type === 'fxLevel') {
+  if (channel.type === 'fxtrTrigger' || channel.type === 'fxtrLevel') {
     return true
   }
   if (channel.type !== 'custom' || channel.isControllable !== true) {
@@ -1173,7 +1181,7 @@ function calculateDmxForUniverse(
     state.dmx.fixtureTypesByID,
     state.dmx.moverGroupByFixtureId
   )
-  const universeHasMoverFixtureType = hasMoverFixtureInUniverse(
+  const universeHasMoverFixtureType = universeHasMovers(
     universeFixtures,
     state.dmx.fixtureTypesByID
   )
@@ -1188,7 +1196,7 @@ function calculateDmxForUniverse(
     !timeState.isPlaying && colorMapCalibrationOverride !== null
 
   const syntheticStrobeFrameRateHz = getSyntheticStrobeFrameRateHz(state)
-  const placementDepth2DOnly = state.gui.fixturePlacementDepthEnabled !== true
+  const placementDepth2DOnly = state.gui.fxtrDepthOn !== true
 
   // Set each channel to its default value first.
   forEachChannel(all_fixtures, (_fixtureIdx, _fixture, channelIdx, channel) => {
@@ -1254,10 +1262,10 @@ function calculateDmxForUniverse(
         outputParams.xAxis !== undefined ||
         outputParams.yAxis !== undefined
       const splitHasAtmosControlBundle =
-        splitScene.baseParams.atmosFxOnOff !== undefined ||
-        splitScene.baseParams.atmosFxLevel !== undefined ||
-        outputParams.atmosFxOnOff !== undefined ||
-        outputParams.atmosFxLevel !== undefined
+        splitScene.baseParams.atmosFxtrOnOff !== undefined ||
+        splitScene.baseParams.atmosFxtrLevel !== undefined ||
+        outputParams.atmosFxtrOnOff !== undefined ||
+        outputParams.atmosFxtrLevel !== undefined
       const splitHasLightingControls = splitHasLightingControlBundle(
         splitScene.baseParams
       )
@@ -1283,6 +1291,27 @@ function calculateDmxForUniverse(
               }
             )
           : {}
+
+      const stageLightGrid = getLatestStageLightMap()
+      const visualScenes = state.control.visual
+      const activeVisualScene = visualScenes.byId[visualScenes.active]
+      const vizDriverParams = getVisualizerDriverOutputParams(
+        activeScene,
+        splitStates
+      )
+      const stageMapMaster =
+        activeVisualScene !== undefined
+          ? stageLightMapMasterFromEffects(
+              activeVisualScene.config.builtin.effects,
+              vizDriverParams
+            )
+          : 0
+      const stageMapMix = getParam(outputParams, 'visStageMapMix') * stageMapMaster
+      const stageCrop2d = getMovingWindow(outputParams, placementDepth2DOnly)
+      const stageLightFixtureParams =
+        stageLightGrid !== null && stageMapMix > 0.001
+          ? new Map<number, Params>()
+          : null
 
       // Set each channel based on active scene fixtures.
       forEachChannel(
@@ -1314,6 +1343,22 @@ function calculateDmxForUniverse(
               ? getColorMapCalibrationOverrideTarget(state, fixture, channel)
               : undefined
 
+          let dmxParams = outputParams
+          if (stageLightFixtureParams !== null && stageLightGrid !== null) {
+            let merged = stageLightFixtureParams.get(fixtureIdx)
+            if (merged === undefined) {
+              merged = mergeParamsWithStageLightSample(
+                outputParams,
+                fixture,
+                stageLightGrid,
+                stageMapMix,
+                stageCrop2d
+              )
+              stageLightFixtureParams.set(fixtureIdx, merged)
+            }
+            dmxParams = merged
+          }
+
           let axisOverrides: MoverAxisOverrides | undefined = moverAxisOverride
 
           if (calibrationOverride !== undefined) {
@@ -1339,7 +1384,7 @@ function calculateDmxForUniverse(
                 ? colorMapOverrideValue
                 : getDmxValue(
                     channel,
-                    outputParams,
+                    dmxParams,
                     fixture,
                     state.control.master,
                     randomizerLevel,

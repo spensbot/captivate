@@ -1,5 +1,9 @@
 import { nanoid } from 'nanoid'
-import { FixtureType, normalizeFixtureModelConfig } from './dmxFixtures'
+import {
+  FixtureType,
+  normalizeFixtureModelConfig,
+  migrateLegacyFixtureChannelDiscriminators,
+} from './dmxFixtures'
 import {
   looksLikeQlcFixtureDefinition,
   parseQlcFixtureDefinition,
@@ -10,7 +14,7 @@ import {
 } from './oflFixtureImport'
 
 export const FIXTURE_LIBRARY_SCHEMA = 'captivate.fixture-library'
-export const FIXTURE_LIBRARY_VERSION = 1
+export const FIXTURE_LIBRARY_VERSION = 2
 
 export interface FixtureLibrary {
   schema: string
@@ -74,11 +78,12 @@ function normalizeFixtureType(input: unknown): FixtureType | null {
       ? (rawFixture.fixture as JsonRecord)
       : rawFixture
 
-  const channels = normalizeChannels(rootFixture.channels)
-  if (typeof rootFixture.name !== 'string' || channels === null) {
+  const channelsRaw = normalizeChannels(rootFixture.channels)
+  if (typeof rootFixture.name !== 'string' || channelsRaw === null) {
     return null
   }
 
+  const channels = migrateLegacyFixtureChannelDiscriminators(channelsRaw)
   const normalizedFixtureType: FixtureType = {
     id:
       typeof rootFixture.id === 'string' && rootFixture.id.trim().length > 0
@@ -114,27 +119,36 @@ function normalizeFixtureType(input: unknown): FixtureType | null {
 }
 
 function extractFixturesFromRecord(raw: JsonRecord): unknown[] {
-  if (Array.isArray(raw.fixtures)) {
+  if (Array.isArray(raw.fixtures) && raw.fixtures.length > 0) {
     return raw.fixtures
   }
 
   if (Array.isArray(raw.fixtureTypes)) {
     const fixtures = raw.fixtureTypes
+    const byIdRecord =
+      raw.fixtureTypesByID !== null && typeof raw.fixtureTypesByID === 'object'
+        ? (raw.fixtureTypesByID as JsonRecord)
+        : null
 
     // Some state formats store fixtureType ids in fixtureTypes and fixtures in fixtureTypesByID.
     if (
       fixtures.length > 0 &&
       typeof fixtures[0] === 'string' &&
-      raw.fixtureTypesByID !== null &&
-      typeof raw.fixtureTypesByID === 'object'
+      byIdRecord !== null
     ) {
-      const byId = raw.fixtureTypesByID as JsonRecord
-      return (fixtures as string[])
-        .map((id) => byId[id])
+      const mapped = (fixtures as string[])
+        .map((id) => byIdRecord[id])
         .filter((fixture) => fixture !== undefined)
+      if (mapped.length > 0) {
+        return mapped
+      }
+      // ID list empty after resolution, or every id missing — fall through to byId values below.
+    } else if (fixtures.length > 0) {
+      // Inline fixture objects (non-string entries) in fixtureTypes.
+      return fixtures
     }
 
-    return fixtures
+    // fixtureTypes is [] or only unresolved string ids — try fixtureTypesByID next.
   }
 
   if (raw.fixtureTypesByID !== null && typeof raw.fixtureTypesByID === 'object') {

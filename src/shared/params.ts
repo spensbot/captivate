@@ -28,8 +28,8 @@ export type DefaultParam =
   | 'moverMirrorX'
   | 'moverMirrorY'
   | 'moverMode'
-  | 'atmosFxOnOff'
-  | 'atmosFxLevel'
+  | 'atmosFxtrOnOff'
+  | 'atmosFxtrLevel'
   | 'visSlider1'
   | 'visSlider2'
   | 'visSlider3'
@@ -38,6 +38,7 @@ export type DefaultParam =
   | 'visSlider6'
   | 'visSlider7'
   | 'visSlider8'
+  | 'visStageMapMix'
 
 export type Params = { [key: string]: number | undefined }
 
@@ -101,8 +102,8 @@ export function initParams(): { [key in DefaultParam]: number } {
     moverMirrorX: 0.0,
     moverMirrorY: 0.0,
     moverMode: 0.0,
-    atmosFxOnOff: 0.5,
-    atmosFxLevel: 1.0,
+    atmosFxtrOnOff: 0.5,
+    atmosFxtrLevel: 1.0,
     visSlider1: 0.5,
     visSlider2: 0.5,
     visSlider3: 0.5,
@@ -111,6 +112,7 @@ export function initParams(): { [key in DefaultParam]: number } {
     visSlider6: 0.5,
     visSlider7: 0.5,
     visSlider8: 0.5,
+    visStageMapMix: 0,
   }
 }
 
@@ -144,8 +146,8 @@ const defaultParams: { [key in DefaultParam]: number } = {
   moverMirrorX: 0.0,
   moverMirrorY: 0.0,
   moverMode: 0.0,
-  atmosFxOnOff: 0.5,
-  atmosFxLevel: 1.0,
+  atmosFxtrOnOff: 0.5,
+  atmosFxtrLevel: 1.0,
   visSlider1: 0.5,
   visSlider2: 0.5,
   visSlider3: 0.5,
@@ -154,6 +156,7 @@ const defaultParams: { [key in DefaultParam]: number } = {
   visSlider6: 0.5,
   visSlider7: 0.5,
   visSlider8: 0.5,
+  visStageMapMix: 0,
 }
 
 export function getParam(params: Params, param: DefaultParam): number {
@@ -211,8 +214,8 @@ export const defaultParamsList: DefaultParam[] = [
   'moverMirrorX',
   'moverMirrorY',
   'moverMode',
-  'atmosFxOnOff',
-  'atmosFxLevel',
+  'atmosFxtrOnOff',
+  'atmosFxtrLevel',
   'visSlider1',
   'visSlider2',
   'visSlider3',
@@ -221,6 +224,7 @@ export const defaultParamsList: DefaultParam[] = [
   'visSlider6',
   'visSlider7',
   'visSlider8',
+  'visStageMapMix',
 ]
 
 const paramDisplayNames: { [key: string]: string } = {
@@ -239,8 +243,8 @@ const paramDisplayNames: { [key: string]: string } = {
   moverMirrorX: 'Mirror Left/Right',
   moverMirrorY: 'Mirror Top/Bottom',
   moverMode: 'Mover Mode',
-  atmosFxOnOff: 'FX On/Off',
-  atmosFxLevel: 'FX Level',
+  atmosFxtrOnOff: 'Atmosphere on/off',
+  atmosFxtrLevel: 'Atmosphere level',
   visSlider1: 'Visual Slider 1',
   visSlider2: 'Visual Slider 2',
   visSlider3: 'Visual Slider 3',
@@ -249,6 +253,7 @@ const paramDisplayNames: { [key: string]: string } = {
   visSlider6: 'Visual Slider 6',
   visSlider7: 'Visual Slider 7',
   visSlider8: 'Visual Slider 8',
+  visStageMapMix: 'Stage light map',
 }
 
 export function paramDisplayName(param: DefaultParam | string): string {

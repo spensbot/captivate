@@ -10,12 +10,12 @@ import {
   normalizeAudioInputSettings,
 } from './audioEngine'
 import {
-  initAtmosphericsSettings,
-  normalizeAtmosphericsSettings,
+  initAtmosSettings,
+  normAtmosSettings,
 } from './atmospherics'
 import { DmxState, normalizeLighting3DSettings } from 'renderer/redux/dmxSlice'
 import { initLedState } from 'renderer/redux/ledState'
-import { CleanReduxState } from '../renderer/redux/store'
+import type { CleanReduxState } from '../renderer/redux/store'
 import { MixerState } from 'renderer/redux/mixerSlice'
 import { ColorChannel, inferColorKind } from './dmxColors'
 import {
@@ -28,6 +28,7 @@ import {
   initMoverBounds,
   isMoverFixtureType,
   normalizeFixtureModelConfig,
+  migrateLegacyFixtureChannelDiscriminators,
   DMX_MIN_VALUE,
   DMX_MAX_VALUE,
   DMX_MAX_UNIVERSES,
@@ -579,6 +580,13 @@ function normalizeVisualSceneTransition(
 }
 
 export function fixDmxState(dmx: DmxState) {
+  for (const id of dmx.fixtureTypes) {
+    const ft = dmx.fixtureTypesByID[id]
+    if (ft !== undefined) {
+      ft.channels = migrateLegacyFixtureChannelDiscriminators(ft.channels)
+    }
+  }
+
   const maybeStageState = dmx as DmxState & { stage?: unknown }
   maybeStageState.stage = normalizeStageDimensions(maybeStageState.stage)
   const maybeLighting3DState = dmx as DmxState & { lighting3d?: unknown }
@@ -823,7 +831,7 @@ export function fixDeviceState(deviceState: DeviceState) {
       artNetIpByUniverse: {},
       audioInput: initAudioInputSettings(),
       midiClockBpmEnabled: false,
-      atmospherics: initAtmosphericsSettings(),
+      atmos: initAtmosSettings(),
     }
   }
 
@@ -851,8 +859,8 @@ export function fixDeviceState(deviceState: DeviceState) {
   )
   deviceState.connectionSettings.audioInput.beatTapHintBpm = null
   deviceState.connectionSettings.audioInput.beatTapHintAtMs = 0
-  deviceState.connectionSettings.atmospherics = normalizeAtmosphericsSettings(
-    deviceState.connectionSettings.atmospherics
+  deviceState.connectionSettings.atmos = normAtmosSettings(
+    deviceState.connectionSettings.atmos
   )
 
   for (const [connectionId, universe] of Object.entries(

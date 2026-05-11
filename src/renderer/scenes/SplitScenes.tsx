@@ -9,7 +9,7 @@ import {
   hideMoversSplitUi,
   hideVisSplitUi,
 } from './splitUiVisibility'
-import { hasMoverFixtureInUniverse } from 'shared/dmxFixtures'
+import { universeHasMovers } from 'shared/dmxFixtures'
 import { indexArray } from 'shared/util'
 import styled from 'styled-components'
 import GroupSelection from './GroupSelection'
@@ -54,6 +54,9 @@ const Root = styled.div`
   flex-direction: column;
   gap: 0.55rem;
   min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
 `
 
 const Title = styled.div`
@@ -66,6 +69,28 @@ const SplitList = styled.div`
   flex-direction: column;
   gap: 0.55rem;
   min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 0.18rem;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #7a7a7a99 #0000;
+
+  &::-webkit-scrollbar {
+    display: block !important;
+    width: 10px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #0000;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #7a7a7a99;
+    border-radius: 999px;
+  }
 `
 
 const AddSplitButton = styled.button`
@@ -123,7 +148,7 @@ interface Props {
 function SplitScene({ index }: Props) {
   const videoEnabled = useTypedSelector((state) => state.gui.videoEnabled)
   const hasMoverFixtures = useDmxSelector((dmx) =>
-    hasMoverFixtureInUniverse(dmx.universe, dmx.fixtureTypesByID)
+    universeHasMovers(dmx.universe, dmx.fixtureTypesByID)
   )
   const groups = useActiveLightScene(
     (scene) => scene.splitScenes[index]?.groups

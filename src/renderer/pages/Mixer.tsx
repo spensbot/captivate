@@ -77,8 +77,8 @@ export default function Mixer() {
       return
     }
     const measure = () => {
-      const first = el.firstElementChild as HTMLElement | undefined
-      if (first === undefined) {
+      const first = el.firstElementChild
+      if (!(first instanceof HTMLElement)) {
         return
       }
       const colW = first.offsetWidth
@@ -293,10 +293,10 @@ function fixtureChannelName(channel: FixtureChannel | null): string {
   if (channel.type === 'colorMap') {
     return 'Color Map'
   }
-  if (channel.type === 'fxTrigger') {
+  if (channel.type === 'fxtrTrigger') {
     return channel.name
   }
-  if (channel.type === 'fxLevel') {
+  if (channel.type === 'fxtrLevel') {
     return channel.name
   }
   if (channel.type === 'master') {

@@ -168,9 +168,9 @@ function getInfo(ch: FixtureChannel): string {
       return `Master`
     case 'strobe':
       return `Strobe`
-    case 'fxTrigger':
+    case 'fxtrTrigger':
       return ch.name.length > 0 ? ch.name : 'FX Trigger'
-    case 'fxLevel':
+    case 'fxtrLevel':
       return ch.name.length > 0 ? ch.name : 'FX Level'
     case 'custom':
       return ch.isControllable ? ch.name : ''
@@ -189,9 +189,9 @@ function getSubInfo(ch: FixtureChannel): string | null {
       return `${ch.gobos.length} gobos`
     case 'strobe':
       return `Solid: ${ch.default_solid} | Strobe: ${ch.default_strobe}`
-    case 'fxTrigger':
+    case 'fxtrTrigger':
       return `Off: ${ch.off} | On: ${ch.on}`
-    case 'fxLevel':
+    case 'fxtrLevel':
       return `${ch.min} - ${ch.max} | Default: ${ch.default}`
     case 'master':
       return `${ch.min} - ${ch.max}`

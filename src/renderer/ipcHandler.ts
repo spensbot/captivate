@@ -6,6 +6,10 @@ import * as midiConnection from '../main/engine/midiConnection'
 import { PayloadAction } from '@reduxjs/toolkit'
 import { DmxConnectionInfo } from 'shared/connection'
 import type { Page } from '../shared/pages'
+import type {
+  OpenPageWindowOptions,
+  ScreenDisplayChoice,
+} from '../shared/screenDisplays'
 import {
   VisualizerNdiRuntimeDetection,
   NdiSourceList,
@@ -146,8 +150,16 @@ export function send_open_visualizer() {
   // Route legacy "open visualizer" actions to the dedicated visualizer page window.
   ipcRenderer.send(ipc_channels.open_page_window, 'Video')
 }
-export function send_open_page_window(page: Page) {
-  ipcRenderer.send(ipc_channels.open_page_window, page)
+export function send_open_page_window(
+  page: Page,
+  options?: OpenPageWindowOptions
+) {
+  ipcRenderer.send(ipc_channels.open_page_window, page, options ?? {})
+}
+
+export async function listScreenDisplays(): Promise<ScreenDisplayChoice[]> {
+  const raw = await ipcRenderer.invoke(ipc_channels.list_screen_displays)
+  return Array.isArray(raw) ? (raw as ScreenDisplayChoice[]) : []
 }
 
 /** Tell main to set `videoEnabled` from detached visualizer windows (e.g. after loading a project). */
@@ -223,6 +235,21 @@ export async function exportTelemetrySnapshot() {
 export async function getAppAboutInfo() {
   return (await ipcRenderer.invoke(ipc_channels.app_about_info)) as AppAboutInfo
 }
+
+export async function getStageLightMapPreview(): Promise<{
+  width: number
+  height: number
+  data: number[]
+} | null> {
+  return (await ipcRenderer.invoke(
+    ipc_channels.stage_light_map_preview_get
+  )) as {
+    width: number
+    height: number
+    data: number[]
+  } | null
+}
+
 export async function getLocalFilepaths(
   title: string,
   fileFilters: Electron.FileFilter[]

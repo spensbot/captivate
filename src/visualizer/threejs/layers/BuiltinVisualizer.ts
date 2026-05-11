@@ -64,6 +64,7 @@ export type BuiltinEffectType =
   | 'parallaxBarrier'
   | 'ascii'
   | 'rimLight'
+  | 'stageLightMap'
   | 'customModule'
 
 export type BuiltinEffectLinkSource =
@@ -269,6 +270,7 @@ export const builtinEffectTypeList: BuiltinEffectType[] = [
   'parallaxBarrier',
   'ascii',
   'rimLight',
+  'stageLightMap',
   'customModule',
 ]
 
@@ -294,6 +296,7 @@ export const builtinEffectDisplayName: Record<BuiltinEffectType, string> = {
   parallaxBarrier: 'Parallax Barrier',
   ascii: 'ASCII',
   rimLight: 'Rim Light (behind camera)',
+  stageLightMap: 'Stage light map (DMX)',
   customModule: 'Custom Module',
 }
 
@@ -449,7 +452,7 @@ export function createBuiltinEffect(type: BuiltinEffectType): BuiltinEffectItem 
         ? 0.35
         : type === 'strobe'
         ? 0.42
-        : type === 'colorSync' || type === 'positionSync'
+        : type === 'colorSync' || type === 'positionSync' || type === 'stageLightMap'
         ? 1
         : type === 'bpmSync' || type === 'audioReact'
         ? 0.7
@@ -561,6 +564,8 @@ interface RuntimeProjectMMediaBinding {
   sessionReady: boolean
   sessionInitPromise: Promise<void> | null
   renderInFlight: boolean
+  /** Wall time when `renderInFlight` was set true; 0 if idle. */
+  renderInFlightStartedMs: number
   audioPushInFlight: boolean
   lastAudioPushMs: number
   lastRenderDispatchMs: number
@@ -570,6 +575,39 @@ interface RuntimeProjectMMediaBinding {
   hasRenderedFrame: boolean
   consecutiveRenderMisses: number
   lastSuccessfulFrameMs: number
+}
+
+/** If the main-process bridge stalls, release `renderInFlight` so frames can resume. */
+const PROJECTM_LAYER_RENDER_IPC_TIMEOUT_MS = 7000
+/** Failsafe when a render promise never settles (should not happen if timeout works). */
+const PROJECTM_LAYER_RENDER_STALE_IN_FLIGHT_MS = 12000
+
+function withProjectMRenderTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    let settled = false
+    const t = globalThis.setTimeout(() => {
+      if (!settled) {
+        settled = true
+        reject(new Error('projectM render IPC timeout'))
+      }
+    }, ms)
+    promise.then(
+      (value) => {
+        if (!settled) {
+          settled = true
+          globalThis.clearTimeout(t)
+          resolve(value)
+        }
+      },
+      (err: unknown) => {
+        if (!settled) {
+          settled = true
+          globalThis.clearTimeout(t)
+          reject(err)
+        }
+      }
+    )
+  })
 }
 
 const PROJECTM_LAYER_TARGET_FPS = 30
@@ -1496,6 +1534,7 @@ export default class BuiltinVisualizer extends LayerBase {
       sessionReady: false,
       sessionInitPromise: null,
       renderInFlight: false,
+      renderInFlightStartedMs: 0,
       audioPushInFlight: false,
       lastAudioPushMs: 0,
       lastRenderDispatchMs: 0,
@@ -1519,6 +1558,8 @@ export default class BuiltinVisualizer extends LayerBase {
       return
     }
     const sessionId = projectM.sessionId
+    projectM.renderInFlight = false
+    projectM.renderInFlightStartedMs = 0
     projectM.sessionInitPromise = (async () => {
       const normalizedPresetPath =
         typeof presetPath === 'string' ? presetPath.trim() : ''
@@ -1603,9 +1644,22 @@ export default class BuiltinVisualizer extends LayerBase {
       return
     }
 
+    const now = Date.now()
+    if (
+      projectM.renderInFlight &&
+      projectM.renderInFlightStartedMs > 0 &&
+      now - projectM.renderInFlightStartedMs > PROJECTM_LAYER_RENDER_STALE_IN_FLIGHT_MS
+    ) {
+      projectM.renderInFlight = false
+      projectM.renderInFlightStartedMs = 0
+      this.noteProjectMRenderMiss(runtimeLayer, projectM.sessionId)
+    }
+
     const requestedPresetPath = runtimeLayer.layer.source.trim()
     const requestedPresetKey = this.getProjectMReuseKey(requestedPresetPath)
     if (requestedPresetKey !== projectM.presetPathKey) {
+      projectM.renderInFlight = false
+      projectM.renderInFlightStartedMs = 0
       projectM.presetPath = requestedPresetPath
       projectM.presetPathKey = requestedPresetKey
       projectM.sessionReady = false
@@ -1626,7 +1680,6 @@ export default class BuiltinVisualizer extends LayerBase {
       void this.initProjectMMediaSession(runtimeLayer, projectM.presetPath)
     }
 
-    const now = Date.now()
     const sessionId = projectM.sessionId
 
     if (
@@ -1664,11 +1717,15 @@ export default class BuiltinVisualizer extends LayerBase {
           : Math.round(1000 / PROJECTM_LAYER_RENDER_FPS)
       projectM.lastBridgeFrameTimeMs = now
       projectM.lastRenderDispatchMs = now
+      projectM.renderInFlightStartedMs = now
 
-      void renderProjectMBridgeFrame({
-        sessionId,
-        frameTimeMs: Math.min(250, Math.max(1, Math.round(elapsedSinceLastFrame))),
-      })
+      void withProjectMRenderTimeout(
+        renderProjectMBridgeFrame({
+          sessionId,
+          frameTimeMs: Math.min(250, Math.max(1, Math.round(elapsedSinceLastFrame))),
+        }),
+        PROJECTM_LAYER_RENDER_IPC_TIMEOUT_MS
+      )
         .then((result) => {
           const currentProjectM = runtimeLayer.media?.projectM
           if (!currentProjectM || currentProjectM.sessionId !== sessionId) {
@@ -1699,6 +1756,7 @@ export default class BuiltinVisualizer extends LayerBase {
             return
           }
           currentProjectM.renderInFlight = false
+          currentProjectM.renderInFlightStartedMs = 0
         })
     }
   }
@@ -1807,6 +1865,7 @@ export default class BuiltinVisualizer extends LayerBase {
     projectM.sessionReady = false
     projectM.sessionInitPromise = null
     projectM.renderInFlight = false
+    projectM.renderInFlightStartedMs = 0
     projectM.audioPushInFlight = false
     projectM.lastAudioPushMs = 0
     projectM.lastRenderDispatchMs = 0
@@ -5026,6 +5085,7 @@ function createEmptyEffectAmountMap(): Record<BuiltinResolvedEffectType, number>
     parallaxBarrier: 0,
     ascii: 0,
     rimLight: 0,
+    stageLightMap: 0,
   }
 }
 

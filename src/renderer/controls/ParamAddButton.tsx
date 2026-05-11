@@ -30,10 +30,10 @@ import { sumVisSliders } from '../visualizer/visualSliderAssignments'
 import { evaluateSceneGroups } from 'shared/sceneGroups'
 import {
   fixtureChannelLeafChannels,
-  hasMoverFixtureInUniverse,
+  universeHasMovers,
   isMoverFixtureType,
 } from 'shared/dmxFixtures'
-import { getAtmosphericsFixtureDescriptors } from '../../shared/atmosphericsMapping'
+import { listAtmosFxtrs } from '../../shared/atmosphericsMapping'
 import { sumAtmosSliders } from '../atmospherics/atmosSliderAssignments'
 import { visSplitIdx } from '../scenes/splitUiVisibility'
 import { getSplitAuxColorGates } from '../../shared/splitAuxColorGates'
@@ -55,7 +55,7 @@ const moverOnlyParamSet = new Set<string>([
   'moverMirrorY',
   'moverMode',
 ])
-const atmosphereOnlyParamSet = new Set<string>(['atmosFxOnOff', 'atmosFxLevel'])
+const atmosphereOnlyParamSet = new Set<string>(['atmosFxtrOnOff', 'atmosFxtrLevel'])
 const colorParamSet = new Set<string>([
   'hue',
   'saturation',
@@ -279,19 +279,19 @@ export default function ParamAddButton({ splitIndex }: Props) {
   const isVisualizerSplit =
     visualizerSplitIndex >= 0 && splitIndex === visualizerSplitIndex
   const visualConfig = useActiveVisualScene((scene) => scene.config)
-  const atmosSettings = useDeviceSelector((state) => state.connectionSettings.atmospherics)
-  const atmosFixtures = useMemo(() => getAtmosphericsFixtureDescriptors(dmx), [dmx])
+  const atmosSettings = useDeviceSelector((state) => state.connectionSettings.atmos)
+  const atmosFxtrs = useMemo(() => listAtmosFxtrs(dmx), [dmx])
   const atmosFixtureIdSet = useMemo(
-    () => new Set(atmosFixtures.map((fixture) => fixture.fixtureId)),
-    [atmosFixtures]
+    () => new Set(atmosFxtrs.map((fixture) => fixture.fixtureId)),
+    [atmosFxtrs]
   )
   const visualSliderAssignments = useMemo(
     () => sumVisSliders(visualConfig),
     [visualConfig]
   )
   const atmosSliderAssignments = useMemo(
-    () => sumAtmosSliders(atmosSettings, atmosFixtures),
-    [atmosSettings, atmosFixtures]
+    () => sumAtmosSliders(atmosSettings, atmosFxtrs),
+    [atmosSettings, atmosFxtrs]
   )
   const mergedSliderLabels = useMemo(
     () => ({
@@ -307,7 +307,7 @@ export default function ParamAddButton({ splitIndex }: Props) {
     return merged
   }, [visualSliderAssignments.activeSliders, atmosSliderAssignments.activeSliders])
   const hasMoverFixturesInProject = useMemo(
-    () => hasMoverFixtureInUniverse(dmx.universe, dmx.fixtureTypesByID),
+    () => universeHasMovers(dmx.universe, dmx.fixtureTypesByID),
     [dmx.universe, dmx.fixtureTypesByID]
   )
   const splitCapabilities = useDmxSelector((dmx) => {

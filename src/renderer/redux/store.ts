@@ -12,6 +12,7 @@ import { LightScene_t } from '../../shared/Scenes'
 import mixerReducer, { initMixerState } from './mixerSlice'
 import undoable, { StateWithHistory } from 'redux-undo'
 import { DeviceState } from './deviceState'
+import fixState, { fixDeviceState } from '../../shared/fixState'
 import { VisualScene_t, SceneType } from '../../shared/Scenes'
 import { DefaultParam, initBaseParams, Params } from '../../shared/params'
 import { SaveInfo } from 'shared/save'
@@ -126,6 +127,7 @@ const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (
   if (state === undefined) return baseReducer(state, action)
   if (action.type === RESET_STATE) {
     const cleanState: CleanReduxState = action.payload
+    fixState(cleanState)
     return {
       dmx: initUndoState(cleanState.dmx),
       gui: sanitizeGuiTransientState(cleanState.gui),
@@ -134,6 +136,7 @@ const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (
     }
   } else if (action.type === RESET_REMOTE_STATE) {
     const cleanState: CleanReduxState = action.payload
+    fixState(cleanState)
     const localGui = state.gui
     return {
       dmx: initUndoState(cleanState.dmx),
@@ -165,6 +168,7 @@ const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (
     }
   } else if (action.type === RESET_CONTROL) {
     const cs: ControlState = action.payload
+    fixDeviceState(cs.device)
     return {
       ...state,
       control: initUndoState(cs),
@@ -198,6 +202,11 @@ const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (
       loadedGuiRaw.ledSidebarEnabled !== true
         ? { ...loadedGuiRaw, activePage: 'Universe' as const }
         : loadedGuiRaw
+    const nextDevice =
+      info.config.device && info.state.device
+        ? info.state.device
+        : control.device
+    fixDeviceState(nextDevice)
     return {
       ...state,
       dmx: {
@@ -211,10 +220,7 @@ const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (
         ...state.control,
         present: {
           ...state.control.present,
-          device:
-            info.config.device && info.state.device
-              ? info.state.device
-              : control.device,
+          device: nextDevice,
           light:
             info.config.light && info.state.light
               ? info.state.light

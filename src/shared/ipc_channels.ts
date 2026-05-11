@@ -53,6 +53,8 @@ export default {
   projectm_bridge_shutdown_session: 'projectm_bridge_shutdown_session',
   get_desktop_audio_source_id: 'get_desktop_audio_source_id',
   get_page_window_media_source_id: 'get_page_window_media_source_id',
+  /** List connected displays for choosing where a detached window opens. */
+  list_screen_displays: 'list_screen_displays',
   wled_discover_controllers: 'wled_discover_controllers',
   wled_probe_controller: 'wled_probe_controller',
   audio_engine_metrics: 'audio_engine_metrics',
@@ -61,6 +63,10 @@ export default {
   telemetry_get_snapshot: 'telemetry_get_snapshot',
   telemetry_export_snapshot: 'telemetry_export_snapshot',
   app_about_info: 'app_about_info',
+  /** Visualizer → main: downsampled RGBA frame for stage pixel mapping. */
+  visualizer_stage_light_map: 'visualizer_stage_light_map',
+  /** Main renderer → main: fetch latest stage light map for split UI preview. */
+  stage_light_map_preview_get: 'stage_light_map_preview_get',
 } as const
 
 export interface SetLinkEnabled {

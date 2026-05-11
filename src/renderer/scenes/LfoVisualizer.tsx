@@ -6,8 +6,9 @@ import { incrementModulator } from '../redux/controlSlice'
 import { useActiveLightScene } from '../redux/store'
 import { secondaryEnabled } from 'renderer/base/keyUtil'
 import { useRealtimeSelector } from '../redux/realtimeStore'
-import { getModulatorLfoValue } from '../../shared/modulation'
+import { effectiveLfosAtSplit, getModulatorLfoValue } from '../../shared/modulation'
 import { LfoShape } from '../../shared/oscillator'
+import { useModPreviewSplit } from './useModPreviewSplit'
 
 type Props = {
   index: number
@@ -60,12 +61,23 @@ export default function LfoVisualizer({
   const modulator = useActiveLightScene(
     (activeScene) => activeScene.modulators[index]
   )
+  const lightScene = useActiveLightScene((s) => s)
+  const splitIx = useModPreviewSplit()
   const time = useRealtimeSelector((state) => state.time)
   const audio = useRealtimeSelector((state) => state.audio)
+  const effectiveLfo = useMemo(() => {
+    const lfos = effectiveLfosAtSplit(
+      lightScene,
+      splitIx,
+      time.beats,
+      audio
+    )
+    return lfos[index] ?? modulator.lfo
+  }, [lightScene, splitIx, time.beats, audio, index, modulator.lfo])
   const isAudioShape =
     modulator.lfo.shape === LfoShape.AudioBand ||
     modulator.lfo.shape === LfoShape.AudioEnergy
-  const audioValue = getModulatorLfoValue(modulator.lfo, time.beats, audio)
+  const audioValue = getModulatorLfoValue(effectiveLfo, time.beats, audio, index)
   const audioHistoryRef = useRef<Array<{ beat: number; value: number }>>([])
 
   function GetPoints() {
@@ -73,7 +85,7 @@ export default function LfoVisualizer({
 
     const pointsArray = zeros.map((_, i) => {
       const x = (i * stepSize) / width_
-      const y = 1 - GetValueFromPhase(modulator.lfo, x)
+      const y = 1 - GetValueFromPhase(effectiveLfo, x)
       return [x * width_ + xPadding, y * height_ + yPadding]
     })
 

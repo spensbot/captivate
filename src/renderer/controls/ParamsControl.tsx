@@ -24,16 +24,17 @@ import { useEffect } from 'react'
 import { deleteBaseParams, setBaseParams } from 'renderer/redux/controlSlice'
 import {
   fixtureChannelLeafChannels,
-  hasMoverFixtureInUniverse,
+  universeHasMovers,
   isMoverFixtureType,
 } from '../../shared/dmxFixtures'
 import { DefaultParam, initBaseParams, visualSliderParams } from '../../shared/params'
 import { sumVisSliders } from '../visualizer/visualSliderAssignments'
-import { getAtmosphericsFixtureDescriptors } from '../../shared/atmosphericsMapping'
+import { listAtmosFxtrs } from '../../shared/atmosphericsMapping'
 import { sumAtmosSliders } from '../atmospherics/atmosSliderAssignments'
 import { evaluateSceneGroups } from '../../shared/sceneGroups'
 import { visSplitIdx } from '../scenes/splitUiVisibility'
 import { getSplitAuxColorGates } from '../../shared/splitAuxColorGates'
+import StageLightMapSplitPreview from '../scenes/StageLightMapSplitPreview'
 
 const moverBundleParams = [
   'xAxis',
@@ -45,7 +46,7 @@ const moverBundleParams = [
   'moverMode',
 ] as const
 
-const atmosphereSplitParams = ['atmosFxOnOff', 'atmosFxLevel'] as const
+const atmosphereSplitParams = ['atmosFxtrOnOff', 'atmosFxtrLevel'] as const
 const colorControlParams = [
   'hue',
   'saturation',
@@ -78,18 +79,24 @@ const auxColorSliderLastStyle: CSSProperties = {
   marginRight: '0.85rem',
 }
 
+/** Align vertical slider height with XY / Z pads (180px). */
+const stageLightMapSliderWrapperStyle: CSSProperties = {
+  height: '180px',
+  minHeight: '180px',
+}
+
 export default function ParamsControl({ splitIndex }: Params) {
   const dispatch = useDispatch()
-  const fixturePlacementDepthEnabled = useTypedSelector(
-    (state) => state.gui.fixturePlacementDepthEnabled
+  const fxtrDepthOn = useTypedSelector(
+    (state) => state.gui.fxtrDepthOn
   )
   const dmx = useDmxSelector((state) => state)
   const customChannels = useDmxSelector((dmx) => getCustomChannels(dmx))
-  const atmosSettings = useDeviceSelector((state) => state.connectionSettings.atmospherics)
-  const atmosFixtures = useMemo(() => getAtmosphericsFixtureDescriptors(dmx), [dmx])
+  const atmosSettings = useDeviceSelector((state) => state.connectionSettings.atmos)
+  const atmosFxtrs = useMemo(() => listAtmosFxtrs(dmx), [dmx])
   const atmosFixtureIdSet = useMemo(
-    () => new Set(atmosFixtures.map((fixture) => fixture.fixtureId)),
-    [atmosFixtures]
+    () => new Set(atmosFxtrs.map((fixture) => fixture.fixtureId)),
+    [atmosFxtrs]
   )
   const baseParams = useBaseParams(splitIndex)
   const splitGroups = useActiveLightScene(
@@ -228,7 +235,7 @@ export default function ParamsControl({ splitIndex }: Params) {
   )
 
   const hasMoverFixturesInProject = useMemo(
-    () => hasMoverFixtureInUniverse(dmx.universe, dmx.fixtureTypesByID),
+    () => universeHasMovers(dmx.universe, dmx.fixtureTypesByID),
     [dmx.universe, dmx.fixtureTypesByID]
   )
   const showMoverControls =
@@ -246,8 +253,8 @@ export default function ParamsControl({ splitIndex }: Params) {
     [visualConfig]
   )
   const atmosSliderAssignments = useMemo(
-    () => sumAtmosSliders(atmosSettings, atmosFixtures),
-    [atmosSettings, atmosFixtures]
+    () => sumAtmosSliders(atmosSettings, atmosFxtrs),
+    [atmosSettings, atmosFxtrs]
   )
   const mergedSliderLabels = useMemo(
     () => ({
@@ -619,8 +626,19 @@ export default function ParamsControl({ splitIndex }: Params) {
             )}
         </AuxColorRoot>
       )}
+      {baseParams.visStageMapMix !== undefined && !isVisualizerSplit && (
+        <StageLightMapRow>
+          <StageLightMapSplitPreview />
+          <ParamSlider
+            param="visStageMapMix"
+            splitIndex={splitIndex}
+            label="Stage light map"
+            wrapperStyle={stageLightMapSliderWrapperStyle}
+          />
+        </StageLightMapRow>
+      )}
       <XyPad splitIndex={splitIndex} />
-      {fixturePlacementDepthEnabled ? (
+      {fxtrDepthOn ? (
         <ZParamsPad splitIndex={splitIndex} />
       ) : null}
       {showMoverControls && <XYAxispad splitIndex={splitIndex} />}
@@ -631,14 +649,14 @@ export default function ParamsControl({ splitIndex }: Params) {
       {isAtmosphereSplit && (
         <AtmosphereSliderRow>
           <ParamSlider
-            param={'atmosFxOnOff'}
+            param={'atmosFxtrOnOff'}
             splitIndex={splitIndex}
             label={'FX On/Off'}
             manualCursorColor="#69b6ff"
             hideRemoveButton
           />
           <ParamSlider
-            param={'atmosFxLevel'}
+            param={'atmosFxtrLevel'}
             splitIndex={splitIndex}
             label={'FX Level'}
             hideRemoveButton
@@ -694,5 +712,13 @@ const VisualizerSliderRow = styled.div`
 const AtmosphereSliderRow = styled.div`
   display: flex;
   align-items: flex-start;
+`
+
+const StageLightMapRow = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  height: 180px;
+  gap: 0.42rem;
 `
 

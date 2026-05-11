@@ -2,16 +2,16 @@ import { clampNormalized } from '../math/util'
 import { DMX_MAX_UNIVERSES, DMX_NUM_CHANNELS } from './dmxFixtures'
 import { DefaultParam } from './params'
 
-export type AtmosphericsSourceMode = 'manual' | 'split' | 'lfo'
-export type AtmosphericsTriggerAction = 'momentary' | 'latching' | 'interval'
-export type AtmosphericsLevelControlMode = 'split' | 'manual'
+export type AtmosSrcMode = 'manual' | 'split' | 'lfo'
+export type AtmosTrigAction = 'momentary' | 'latching' | 'interval'
+export type AtmosLevelMode = 'split' | 'manual'
 
 export const ATMOSPHERICS_DEFAULT_GROUP = 'Atmosphere'
-export const ATMOSPHERICS_SPLIT_TRIGGER_PARAM = 'atmosFxOnOff'
-export const ATMOSPHERICS_SPLIT_LEVEL_PARAM = 'atmosFxLevel'
+export const ATMOSPHERICS_SPLIT_TRIGGER_PARAM = 'atmosFxtrOnOff'
+export const ATMOSPHERICS_SPLIT_LEVEL_PARAM = 'atmosFxtrLevel'
 
-export interface AtmosphericsSourceRouting {
-  mode: AtmosphericsSourceMode
+export interface AtmosSrcRoute {
+  mode: AtmosSrcMode
   manualValue: number
   splitIndex: number
   param: DefaultParam | string
@@ -21,11 +21,11 @@ export interface AtmosphericsSourceRouting {
   invert: boolean
 }
 
-export interface AtmosphericsTriggerChannelConfig {
+export interface AtmosTrigChConfig {
   channelNumber: number
   useGroupThreshold: boolean
   threshold: number
-  triggerAction: AtmosphericsTriggerAction
+  triggerAction: AtmosTrigAction
   delayMs: number
   intervalMs: number
   pulseMs: number
@@ -33,39 +33,39 @@ export interface AtmosphericsTriggerChannelConfig {
   manualIntervalMs: number
 }
 
-export interface AtmosphericsLevelChannelConfig {
+export interface AtmosLevelChConfig {
   channelNumber: number
-  controlMode: AtmosphericsLevelControlMode
+  controlMode: AtmosLevelMode
   manualValue: number
 }
 
-export interface AtmosphericsFixtureControlConfig {
+export interface AtmosFxtrConfig {
   fixtureId: string
   enabled: boolean
   groupName: string
   triggerChannels: {
-    [channelNumber: number]: AtmosphericsTriggerChannelConfig | undefined
+    [channelNumber: number]: AtmosTrigChConfig | undefined
   }
   levelChannels: {
-    [channelNumber: number]: AtmosphericsLevelChannelConfig | undefined
+    [channelNumber: number]: AtmosLevelChConfig | undefined
   }
 
   // Legacy fields kept for old save compatibility.
   threshold: number
   hysteresis: number
-  source: AtmosphericsSourceRouting
-  triggerAction: AtmosphericsTriggerAction
+  source: AtmosSrcRoute
+  triggerAction: AtmosTrigAction
   delayMs: number
   intervalMs: number
   pulseMs: number
   manualDelayMs: number
   manualIntervalMs: number
   auxChannels: {
-    [channelNumber: number]: AtmosphericsSourceRouting | undefined
+    [channelNumber: number]: AtmosSrcRoute | undefined
   }
 }
 
-export interface AtmosphericsSettings {
+export interface AtmosSettings {
   enabled: boolean
   armed: boolean
   emergencyStop: boolean
@@ -73,11 +73,11 @@ export interface AtmosphericsSettings {
   globalLevelLimit: number
   selectedFixtureId: string | null
   fixtures: {
-    [fixtureId: string]: AtmosphericsFixtureControlConfig | undefined
+    [fixtureId: string]: AtmosFxtrConfig | undefined
   }
 }
 
-export interface AtmosphericsRuntimeFixtureState {
+export interface AtmosRunFxtrState {
   fixtureId: string
   fixtureName: string
   universe: number
@@ -85,7 +85,7 @@ export interface AtmosphericsRuntimeFixtureState {
   sourceLiveValue: number
   threshold: number
   crossed: boolean
-  action: AtmosphericsTriggerAction
+  action: AtmosTrigAction
   triggerOutputActive: boolean
   pendingDelayMs: number
   intervalActive: boolean
@@ -96,7 +96,7 @@ export interface AtmosphericsRuntimeFixtureState {
     sourceLiveValue: number
     threshold: number
     crossed: boolean
-    action: AtmosphericsTriggerAction
+    action: AtmosTrigAction
     triggerOutputActive: boolean
     pendingDelayMs: number
     intervalActive: boolean
@@ -108,17 +108,17 @@ export interface AtmosphericsRuntimeFixtureState {
     channelNumber: number
     name: string
     sourceValue: number
-    controlMode: AtmosphericsLevelControlMode
+    controlMode: AtmosLevelMode
   }>
 }
 
-export interface AtmosphericsRuntimeState {
+export interface AtmosRunState {
   enabled: boolean
   armed: boolean
   emergencyStop: boolean
   active: boolean
   messages: string[]
-  fixtures: AtmosphericsRuntimeFixtureState[]
+  fixtures: AtmosRunFxtrState[]
   updatedAtMs: number
 }
 
@@ -150,17 +150,17 @@ function clampSigned(value: number, min: number, max: number, fallback: number) 
   return Math.max(min, Math.min(max, value))
 }
 
-function normalizeSourceMode(value: unknown): AtmosphericsSourceMode {
+function normalizeSourceMode(value: unknown): AtmosSrcMode {
   return value === 'split' || value === 'lfo' ? value : 'manual'
 }
 
-function normalizeLevelControlMode(value: unknown): AtmosphericsLevelControlMode {
+function normalizeLevelControlMode(value: unknown): AtmosLevelMode {
   return value === 'manual' ? 'manual' : 'split'
 }
 
-export function initAtmosphericsSourceRouting(
-  mode: AtmosphericsSourceMode = 'manual'
-): AtmosphericsSourceRouting {
+export function initAtmosSrcRoute(
+  mode: AtmosSrcMode = 'manual'
+): AtmosSrcRoute {
   return {
     mode,
     manualValue: 0,
@@ -173,11 +173,11 @@ export function initAtmosphericsSourceRouting(
   }
 }
 
-export function normalizeAtmosphericsSourceRouting(raw: unknown): AtmosphericsSourceRouting {
+export function normAtmosSrcRoute(raw: unknown): AtmosSrcRoute {
   const source = (raw !== null && typeof raw === 'object'
     ? raw
-    : {}) as Partial<AtmosphericsSourceRouting>
-  const defaults = initAtmosphericsSourceRouting()
+    : {}) as Partial<AtmosSrcRoute>
+  const defaults = initAtmosSrcRoute()
   return {
     mode: normalizeSourceMode(source.mode),
     manualValue: clampNormalized(Number(source.manualValue ?? defaults.manualValue)),
@@ -193,9 +193,9 @@ export function normalizeAtmosphericsSourceRouting(raw: unknown): AtmosphericsSo
   }
 }
 
-export function initAtmosphericsTriggerChannelConfig(
+export function initAtmosTriggerChConfig(
   channelNumber: number
-): AtmosphericsTriggerChannelConfig {
+): AtmosTrigChConfig {
   return {
     channelNumber: clampChannel(channelNumber, 1),
     useGroupThreshold: true,
@@ -209,15 +209,15 @@ export function initAtmosphericsTriggerChannelConfig(
   }
 }
 
-export function normalizeAtmosphericsTriggerChannelConfig(
+export function normAtmosTriggerChConfig(
   raw: unknown,
   channelNumberFallback: number
-): AtmosphericsTriggerChannelConfig {
+): AtmosTrigChConfig {
   const source = (raw !== null && typeof raw === 'object'
     ? raw
-    : {}) as Partial<AtmosphericsTriggerChannelConfig>
-  const defaults = initAtmosphericsTriggerChannelConfig(channelNumberFallback)
-  const triggerAction: AtmosphericsTriggerAction =
+    : {}) as Partial<AtmosTrigChConfig>
+  const defaults = initAtmosTriggerChConfig(channelNumberFallback)
+  const triggerAction: AtmosTrigAction =
     source.triggerAction === 'latching' || source.triggerAction === 'interval'
       ? source.triggerAction
       : defaults.triggerAction
@@ -249,9 +249,9 @@ export function normalizeAtmosphericsTriggerChannelConfig(
   }
 }
 
-export function initAtmosphericsLevelChannelConfig(
+export function initAtmosLevelChConfig(
   channelNumber: number
-): AtmosphericsLevelChannelConfig {
+): AtmosLevelChConfig {
   return {
     channelNumber: clampChannel(channelNumber, 1),
     controlMode: 'split',
@@ -259,14 +259,14 @@ export function initAtmosphericsLevelChannelConfig(
   }
 }
 
-export function normalizeAtmosphericsLevelChannelConfig(
+export function normAtmosLevelChConfig(
   raw: unknown,
   channelNumberFallback: number
-): AtmosphericsLevelChannelConfig {
+): AtmosLevelChConfig {
   const source = (raw !== null && typeof raw === 'object'
     ? raw
-    : {}) as Partial<AtmosphericsLevelChannelConfig>
-  const defaults = initAtmosphericsLevelChannelConfig(channelNumberFallback)
+    : {}) as Partial<AtmosLevelChConfig>
+  const defaults = initAtmosLevelChConfig(channelNumberFallback)
   return {
     channelNumber: clampChannel(
       Number(source.channelNumber ?? defaults.channelNumber),
@@ -277,9 +277,9 @@ export function normalizeAtmosphericsLevelChannelConfig(
   }
 }
 
-export function initAtmosphericsFixtureControlConfig(
+export function initAtmosFxtrControlConfig(
   fixtureId: string
-): AtmosphericsFixtureControlConfig {
+): AtmosFxtrConfig {
   return {
     fixtureId,
     enabled: true,
@@ -288,7 +288,7 @@ export function initAtmosphericsFixtureControlConfig(
     levelChannels: {},
     threshold: 0.5,
     hysteresis: 0.05,
-    source: initAtmosphericsSourceRouting('split'),
+    source: initAtmosSrcRoute('split'),
     triggerAction: 'momentary',
     delayMs: 0,
     intervalMs: 500,
@@ -299,16 +299,16 @@ export function initAtmosphericsFixtureControlConfig(
   }
 }
 
-export function normalizeAtmosphericsFixtureControlConfig(
+export function normAtmosFxtrControlConfig(
   raw: unknown,
   fixtureIdFallback: string
-): AtmosphericsFixtureControlConfig {
+): AtmosFxtrConfig {
   const source = (raw !== null && typeof raw === 'object'
     ? raw
-    : {}) as Partial<AtmosphericsFixtureControlConfig>
-  const defaults = initAtmosphericsFixtureControlConfig(fixtureIdFallback)
+    : {}) as Partial<AtmosFxtrConfig>
+  const defaults = initAtmosFxtrControlConfig(fixtureIdFallback)
 
-  const triggerAction: AtmosphericsTriggerAction =
+  const triggerAction: AtmosTrigAction =
     source.triggerAction === 'latching' || source.triggerAction === 'interval'
       ? source.triggerAction
       : 'momentary'
@@ -316,33 +316,33 @@ export function normalizeAtmosphericsFixtureControlConfig(
     source.auxChannels !== null && typeof source.auxChannels === 'object'
       ? (source.auxChannels as { [channel: number]: unknown })
       : {}
-  const auxChannels: AtmosphericsFixtureControlConfig['auxChannels'] = {}
+  const auxChannels: AtmosFxtrConfig['auxChannels'] = {}
   for (const [channelKey, routing] of Object.entries(auxChannelsRaw)) {
     const channel = clampChannel(Number(channelKey), -1)
     if (channel <= 0) continue
-    auxChannels[channel] = normalizeAtmosphericsSourceRouting(routing)
+    auxChannels[channel] = normAtmosSrcRoute(routing)
   }
 
   const triggerChannelsRaw =
     source.triggerChannels !== null && typeof source.triggerChannels === 'object'
       ? (source.triggerChannels as { [channel: number]: unknown })
       : {}
-  const triggerChannels: AtmosphericsFixtureControlConfig['triggerChannels'] = {}
+  const triggerChannels: AtmosFxtrConfig['triggerChannels'] = {}
   for (const [channelKey, trigger] of Object.entries(triggerChannelsRaw)) {
     const channel = clampChannel(Number(channelKey), -1)
     if (channel <= 0) continue
-    triggerChannels[channel] = normalizeAtmosphericsTriggerChannelConfig(trigger, channel)
+    triggerChannels[channel] = normAtmosTriggerChConfig(trigger, channel)
   }
 
   const levelChannelsRaw =
     source.levelChannels !== null && typeof source.levelChannels === 'object'
       ? (source.levelChannels as { [channel: number]: unknown })
       : {}
-  const levelChannels: AtmosphericsFixtureControlConfig['levelChannels'] = {}
+  const levelChannels: AtmosFxtrConfig['levelChannels'] = {}
   for (const [channelKey, level] of Object.entries(levelChannelsRaw)) {
     const channel = clampChannel(Number(channelKey), -1)
     if (channel <= 0) continue
-    levelChannels[channel] = normalizeAtmosphericsLevelChannelConfig(level, channel)
+    levelChannels[channel] = normAtmosLevelChConfig(level, channel)
   }
 
   return {
@@ -359,7 +359,7 @@ export function normalizeAtmosphericsFixtureControlConfig(
     levelChannels,
     threshold: clampNormalized(Number(source.threshold ?? defaults.threshold)),
     hysteresis: clampSigned(Number(source.hysteresis), 0, 0.5, defaults.hysteresis),
-    source: normalizeAtmosphericsSourceRouting(source.source),
+    source: normAtmosSrcRoute(source.source),
     triggerAction,
     delayMs: Math.max(0, Math.min(600000, Math.round(Number(source.delayMs ?? defaults.delayMs) || 0))),
     intervalMs: Math.max(
@@ -382,7 +382,7 @@ export function normalizeAtmosphericsFixtureControlConfig(
   }
 }
 
-export function initAtmosphericsSettings(): AtmosphericsSettings {
+export function initAtmosSettings(): AtmosSettings {
   return {
     enabled: false,
     armed: false,
@@ -394,19 +394,19 @@ export function initAtmosphericsSettings(): AtmosphericsSettings {
   }
 }
 
-export function normalizeAtmosphericsSettings(raw: unknown): AtmosphericsSettings {
+export function normAtmosSettings(raw: unknown): AtmosSettings {
   const source = (raw !== null && typeof raw === 'object'
     ? raw
-    : {}) as Partial<AtmosphericsSettings>
-  const defaults = initAtmosphericsSettings()
+    : {}) as Partial<AtmosSettings>
+  const defaults = initAtmosSettings()
   const fixturesSource =
     source.fixtures !== null && typeof source.fixtures === 'object'
       ? (source.fixtures as { [fixtureId: string]: unknown })
       : {}
-  const fixtures: AtmosphericsSettings['fixtures'] = {}
+  const fixtures: AtmosSettings['fixtures'] = {}
   for (const [fixtureId, config] of Object.entries(fixturesSource)) {
     if (typeof fixtureId !== 'string' || fixtureId.trim().length <= 0) continue
-    fixtures[fixtureId] = normalizeAtmosphericsFixtureControlConfig(config, fixtureId)
+    fixtures[fixtureId] = normAtmosFxtrControlConfig(config, fixtureId)
   }
 
   return {
@@ -424,7 +424,7 @@ export function normalizeAtmosphericsSettings(raw: unknown): AtmosphericsSetting
   }
 }
 
-export function initAtmosphericsRuntimeState(): AtmosphericsRuntimeState {
+export function initAtmosRunState(): AtmosRunState {
   return {
     enabled: false,
     armed: false,
@@ -436,7 +436,7 @@ export function initAtmosphericsRuntimeState(): AtmosphericsRuntimeState {
   }
 }
 
-export interface AtmosphericsDmxFixtureDescriptor {
+export interface AtmosFxtrDesc {
   fixtureId: string
   fixtureName: string
   universe: number
@@ -456,9 +456,9 @@ export interface AtmosphericsDmxFixtureDescriptor {
   }>
 }
 
-export function normalizeDmxFixtureDescriptor(
-  raw: AtmosphericsDmxFixtureDescriptor
-): AtmosphericsDmxFixtureDescriptor {
+export function normAtmosFxtrDesc(
+  raw: AtmosFxtrDesc
+): AtmosFxtrDesc {
   return {
     fixtureId: raw.fixtureId.trim(),
     fixtureName: raw.fixtureName.trim(),
