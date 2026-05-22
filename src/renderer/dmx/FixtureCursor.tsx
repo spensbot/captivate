@@ -1,17 +1,25 @@
 import React from 'react'
-import { useMemo } from 'react'
+import { useLayoutEffect, useMemo } from 'react'
 import { useDispatch } from 'react-redux'
 import { useDmxSelector } from '../redux/store'
 import Cursor from '../base/Cursor'
-import { incrementFixtureWindow, setSelectedFixture } from '../redux/dmxSlice'
+import {
+  incrementFixtureWindow,
+  setFixtureWindow,
+  setSelectedFixture,
+} from '../redux/dmxSlice'
 import Window2D2 from '../base/Window2D2'
-import { Window2D_t, WindowAxis, window2DToParentCoords } from 'shared/window'
+import { Window2D_t, WindowAxis } from 'shared/window'
 import {
   computeEmitterCentroid,
   emittersForSubfixtureIndex,
+  FIXTURE_MOTION_PAD_MIN_AXIS_SPAN,
   FixtureEmitterDefinition,
   FixtureRotation,
+  mapFixtureFaceCoordToParentAxis,
   resolvedEmittersForFixtureType,
+  subfixtureMappingPadCoords,
+  suggestedFixtureMotionWindowWidths,
 } from '../../shared/dmxFixtures'
 import {
   fixtureCursorColor,
@@ -89,13 +97,6 @@ function rotatedForwardVector(rotation: FixtureRotation | undefined): {
   return { x, y, z }
 }
 
-/**
- * When a motion-window axis width is unset/zero, match {@link Window2D2}'s displayed extent
- * (`width + 0.05` with zero stored width → 0.05), so emitter dots stay within the crosshair
- * instead of spanning ±0.5 of the pad (which looked wildly oversized vs the outline).
- */
-const DEFAULT_EMITTER_SPAN_ON_PAD = 0.05
-
 /** In-plane length below this ⇒ forward is nearly perpendicular to the pad (head-on); use a dot. */
 const ARROW_IN_PLANE_MIN = 0.14
 
@@ -103,54 +104,16 @@ type DirectionGlyph =
   | { kind: 'arrow'; x: number; y: number }
   | { kind: 'dot' }
 
-function clampNormalized(value: number): number {
-  if (!Number.isFinite(value)) return 0.5
-  return Math.max(0, Math.min(1, value))
-}
-
-function normalizedAxisWidth(window: Window2D_t | undefined, axis: WindowAxis): number {
-  const w = window?.[axis]?.width
-  if (Number.isFinite(w) && (w ?? 0) > 0) {
-    return Number(w)
-  }
-  return DEFAULT_EMITTER_SPAN_ON_PAD
-}
-
-function emitterOffsetsOnPad(
-  window: Window2D_t | undefined,
-  emitter: FixtureEmitterDefinition
-): { dx: number; dy: number; dz: number } {
-  const xw = normalizedAxisWidth(window, 'x')
-  const yw = normalizedAxisWidth(window, 'y')
-  const zw = normalizedAxisWidth(window, 'z')
-
-  const ex = clampNormalized(emitter.x)
-  const ey = clampNormalized(emitter.y)
-  const ez = clampNormalized(emitter.z)
-
-  return {
-    dx: (ex - 0.5) * xw,
-    dy: (0.5 - ey) * yw,
-    dz: (ez - 0.5) * zw,
-  }
-}
-
 function emitterPadCoordinates(
-  scopeWindow: Window2D_t | undefined,
-  anchorWindow: Window2D_t,
+  fixtureWindow: Window2D_t,
   emitter: FixtureEmitterDefinition,
   horizontalAxis: WindowAxis,
   verticalAxis: WindowAxis
 ): { x: number; y: number } {
-  const { dx, dy, dz } = emitterOffsetsOnPad(scopeWindow, emitter)
-  const xh = axisComponent(horizontalAxis, { x: dx, y: dy, z: dz })
-  const xv = axisComponent(verticalAxis, { x: dx, y: dy, z: dz })
-
-  let h = windowAxisPos(anchorWindow, horizontalAxis) + xh
-  let v = windowAxisPos(anchorWindow, verticalAxis) + xv
-  if (!Number.isFinite(h)) h = fallbackAxisPos(horizontalAxis)
-  if (!Number.isFinite(v)) v = fallbackAxisPos(verticalAxis)
-  return { x: clampNormalized(h), y: clampNormalized(v) }
+  return {
+    x: mapFixtureFaceCoordToParentAxis(fixtureWindow, horizontalAxis, emitter.x),
+    y: mapFixtureFaceCoordToParentAxis(fixtureWindow, verticalAxis, emitter.y),
+  }
 }
 
 /** Synthetic emitter at group centroid for pad projection only. */
@@ -171,45 +134,53 @@ function motionAnchorEmitterFromEmitters(
   }
 }
 
-function resolvedSubWindow(
-  fixtureWindow: Window2D_t,
-  sub: { relative_window?: Window2D_t }
-): Window2D_t {
-  return sub.relative_window
-    ? window2DToParentCoords(sub.relative_window, fixtureWindow)
-    : fixtureWindow
-}
-
 function EmitterLayoutMarkers({
   emitters,
-  scopeWindow,
-  anchorWindow,
+  fixtureWindow,
+  padX,
+  padY,
   horizontalAxis,
   verticalAxis,
   dotColor,
 }: {
   emitters: FixtureEmitterDefinition[]
-  scopeWindow: Window2D_t | undefined
-  anchorWindow: Window2D_t
+  fixtureWindow: Window2D_t
+  padX?: number
+  padY?: number
   horizontalAxis: WindowAxis
   verticalAxis: WindowAxis
   dotColor: string
 }) {
-  const anchorEmitter = motionAnchorEmitterFromEmitters(emitters)
-  if (!anchorEmitter) {
-    return null
+  const anchorEmitter =
+    emitters.length > 0 ? motionAnchorEmitterFromEmitters(emitters) : null
+  let ex: number
+  let ey: number
+  if (padX !== undefined && padY !== undefined) {
+    ex = padX
+    ey = padY
+  } else if (anchorEmitter) {
+    const p = emitterPadCoordinates(
+      fixtureWindow,
+      anchorEmitter,
+      horizontalAxis,
+      verticalAxis
+    )
+    ex = p.x
+    ey = p.y
+  } else {
+    ex = windowAxisPos(fixtureWindow, horizontalAxis)
+    ey = windowAxisPos(fixtureWindow, verticalAxis)
   }
-  const { x: ex, y: ey } = emitterPadCoordinates(
-    scopeWindow,
-    anchorWindow,
-    anchorEmitter,
-    horizontalAxis,
-    verticalAxis
-  )
   return (
     <div
       aria-hidden
-      title="Subfixture motion anchor (emitter-layout centroid)"
+      title={
+        anchorEmitter
+          ? 'Subfixture mapping anchor — centroid of emitters on channels mapped to this sub (DMX spatial anchor)'
+          : emitters.length > 0
+            ? 'Subfixture mapping anchor'
+            : 'No emitters on mapped channels for this sub — saved sub window center'
+      }
       style={{
         position: 'absolute',
         top: `${(1 - ey) * 100}%`,
@@ -347,8 +318,8 @@ function WindowResizeHandles({
   const yPos =
     vWin?.pos ?? (verticalAxis === 'z' ? 1 : 0.5)
 
-  const width = (hWin?.width ?? 0) + 0.05
-  const height = (vWin?.width ?? 0) + 0.05
+  const width = (hWin?.width ?? 0) + FIXTURE_MOTION_PAD_MIN_AXIS_SPAN
+  const height = (vWin?.width ?? 0) + FIXTURE_MOTION_PAD_MIN_AXIS_SPAN
 
   const handleStyle: React.CSSProperties = {
     position: 'absolute',
@@ -553,14 +524,35 @@ export default function FixtureCursor({
     verticalAxis
   )
 
-  const subWindows =
-    fixtureType !== undefined
-      ? fixtureType.subFixtures.map((sub) =>
-          sub.relative_window
-            ? window2DToParentCoords(sub.relative_window, fixture.window)
-            : fixture.window
-        )
-      : []
+  const resolvedEmitters = useMemo(() => {
+    if (fixtureType === undefined) {
+      return []
+    }
+    return resolvedEmittersForFixtureType(fixtureType)
+  }, [fixtureType])
+
+  const subPadPositions = useMemo(() => {
+    if (!showSubFixtures || fixtureType === undefined) {
+      return []
+    }
+    return fixtureType.subFixtures.map((_, subIndex) =>
+      subfixtureMappingPadCoords(
+        fixture.window,
+        fixtureType,
+        resolvedEmitters,
+        subIndex,
+        horizontalAxis,
+        verticalAxis
+      )
+    )
+  }, [
+    fixture.window,
+    fixtureType,
+    horizontalAxis,
+    resolvedEmitters,
+    showSubFixtures,
+    verticalAxis,
+  ])
 
   const cursorColor = fixtureCursorColor(index, isSelected)
   const subCursorColor = fixtureSubCursorColor(index, isSelected)
@@ -571,59 +563,102 @@ export default function FixtureCursor({
     if (!showEmitterLayout || fixtureType === undefined) {
       return null
     }
-    const resolved = resolvedEmittersForFixtureType(fixtureType)
+    const resolved = resolvedEmitters
     if (fixtureType.subFixtures.length === 0) {
       return [
         {
-          scope: fixture.window,
-          anchor: fixture.window,
+          fixtureWindow: fixture.window,
           emitters: resolved,
         },
       ]
     }
-    return fixtureType.subFixtures
-      .map((sub, subIndex) => {
-        const anchor = resolvedSubWindow(fixture.window, sub)
-        const emitters = emittersForSubfixtureIndex(
-          fixtureType,
-          resolved,
-          subIndex
-        )
-        return {
-          scope: anchor,
-          anchor,
-          emitters,
-        }
+    return fixtureType.subFixtures.map((_, subIndex) => ({
+      fixtureWindow: fixture.window,
+      pad: subfixtureMappingPadCoords(
+        fixture.window,
+        fixtureType,
+        resolved,
+        subIndex,
+        horizontalAxis,
+        verticalAxis
+      ),
+      emitters: emittersForSubfixtureIndex(fixtureType, resolved, subIndex),
+    }))
+  }, [
+    fixture.window,
+    fixtureType,
+    horizontalAxis,
+    resolvedEmitters,
+    showEmitterLayout,
+    verticalAxis,
+  ])
+
+  useLayoutEffect(() => {
+    if (!isSelected || fixtureType === undefined) {
+      return
+    }
+    const win = fixture.window
+    const needsWidth =
+      (win.x !== undefined && (win.x.width ?? 0) < 1e-8) ||
+      (win.y !== undefined && (win.y.width ?? 0) < 1e-8) ||
+      (win.z !== undefined && (win.z.width ?? 0) < 1e-8)
+    if (!needsWidth) {
+      return
+    }
+    const sug = suggestedFixtureMotionWindowWidths(
+      fixture.window,
+      fixtureType,
+      resolvedEmitters
+    )
+    if (Object.keys(sug).length === 0) {
+      return
+    }
+    dispatch(
+      setFixtureWindow({
+        index,
+        ...(sug.x !== undefined ? { xWidth: sug.x } : {}),
+        ...(sug.y !== undefined ? { yWidth: sug.y } : {}),
+        ...(sug.z !== undefined ? { zWidth: sug.z } : {}),
       })
-      .filter((layout) => layout.emitters.length > 0)
-  }, [fixture.window, fixture.type, fixtureType, showEmitterLayout])
+    )
+  }, [
+    dispatch,
+    fixture.window,
+    fixtureType,
+    index,
+    isSelected,
+    resolvedEmitters,
+  ])
 
   return (
     <div>
       {showSubFixtures && (
         <div>
-          {subWindows.map((subWindow, subIndex) => (
+          {subPadPositions.map((pos, subIndex) => (
             <Cursor
               key={subIndex}
-              x={windowAxisPos(subWindow, horizontalAxis)}
-              y={windowAxisPos(subWindow, verticalAxis)}
+              x={pos.x}
+              y={pos.y}
               color={subCursorColor}
               thickness={1.5}
+              radius={0.19}
             />
           ))}
         </div>
       )}
-      {emitterLayouts?.map((layout, layoutIndex) => (
-        <EmitterLayoutMarkers
-          key={`emitters-${layoutIndex}`}
-          emitters={layout.emitters}
-          scopeWindow={layout.scope}
-          anchorWindow={layout.anchor}
-          horizontalAxis={horizontalAxis}
-          verticalAxis={verticalAxis}
-          dotColor={subCursorColor}
-        />
-      ))}
+      {/* Subfixture anchors: only the ring Cursor above (avoids double dots vs filled centroid). */}
+      {fixtureType !== undefined &&
+        fixtureType.subFixtures.length === 0 &&
+        emitterLayouts?.map((layout, layoutIndex) => (
+          <EmitterLayoutMarkers
+            key={`emitters-${layoutIndex}`}
+            emitters={layout.emitters}
+            fixtureWindow={layout.fixtureWindow}
+            horizontalAxis={horizontalAxis}
+            verticalAxis={verticalAxis}
+            dotColor={subCursorColor}
+          />
+        ))}
       {isSelected ? (
         <div>
           <Cursor

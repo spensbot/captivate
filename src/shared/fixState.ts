@@ -2,6 +2,7 @@ import {
   DeviceState,
   MidiAction,
   SliderControlOptions,
+  initDeviceState,
   normalizeSliderOptionsForAction,
 } from 'renderer/redux/deviceState'
 import {
@@ -346,6 +347,9 @@ function fixGuiState(gui: CleanReduxState['gui']) {
 }
 
 export default function fixState(state: CleanReduxState): CleanReduxState {
+  if (state.control.device === undefined || state.control.device === null) {
+    state.control.device = initDeviceState()
+  }
   fixGuiState(state.gui)
   fixLightScenes(state.control.light)
   fixVisualScenes(state.control.visual)
@@ -533,6 +537,27 @@ export function fixLightScenes(light: LightScenes_t) {
         ) {
           modulator.splitModulations[i] = {}
         }
+      }
+
+      const INTER_MOD_PREFIX = 'intermod:lfo:'
+      const merged: Record<string, number> = {
+        ...(modulator.lfoInterModulation as Record<string, number> | undefined),
+      }
+      for (let i = 0; i < modulator.splitModulations.length; i++) {
+        const sm = modulator.splitModulations[i]
+        if (sm === undefined || sm === null) continue
+        for (const [key, val] of Object.entries(sm)) {
+          if (!key.startsWith(INTER_MOD_PREFIX)) continue
+          if (typeof val === 'number' && Number.isFinite(val)) {
+            merged[key] = val
+          }
+          delete sm[key]
+        }
+      }
+      if (Object.keys(merged).length > 0) {
+        modulator.lfoInterModulation = merged
+      } else {
+        delete modulator.lfoInterModulation
       }
     }
   }
@@ -828,6 +853,7 @@ export function fixDeviceState(deviceState: DeviceState) {
       openDmxRefreshRateHz: 30,
       universeCount: 1,
       dmxUniverseByDevice: {},
+      dmxUsbUseWidgetProtocolByDevice: {},
       artNetIpByUniverse: {},
       audioInput: initAudioInputSettings(),
       midiClockBpmEnabled: false,
@@ -848,6 +874,10 @@ export function fixDeviceState(deviceState: DeviceState) {
 
   if (deviceState.connectionSettings.dmxUniverseByDevice === undefined) {
     deviceState.connectionSettings.dmxUniverseByDevice = {}
+  }
+
+  if (deviceState.connectionSettings.dmxUsbUseWidgetProtocolByDevice === undefined) {
+    deviceState.connectionSettings.dmxUsbUseWidgetProtocolByDevice = {}
   }
 
   if (deviceState.connectionSettings.artNetIpByUniverse === undefined) {
@@ -914,6 +944,12 @@ export function fixDeviceState(deviceState: DeviceState) {
   }
 
   normalizeDeviceMidiMappings(deviceState)
+  if (deviceState.keyboardShortcuts === undefined) {
+    ;(deviceState as DeviceState & { keyboardShortcuts?: DeviceState['keyboardShortcuts'] }).keyboardShortcuts = {}
+  }
+  if (deviceState.keyboardLearnMode === undefined) {
+    ;(deviceState as DeviceState & { keyboardLearnMode?: boolean }).keyboardLearnMode = false
+  }
 }
 
 function normalizeSliderOptions(

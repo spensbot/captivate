@@ -24,10 +24,14 @@ import LedPage from './pages/LedPage'
 import { ErrorBoundary } from 'react-error-boundary'
 import ErrorBoundaryFallback from './error-boundary/ErrorBoundaryFallback'
 import useGlobalControlTooltips from './hooks/useGlobalControlTooltips'
+import useKeyboardShortcuts from './hooks/useKeyboardShortcuts'
+import KeyboardMappingFocus from './base/KeyboardMappingFocus'
+import DetachedKeyboardMappingBar from './menu/DetachedKeyboardMappingBar'
 import AutoManagedSplitSync from './sync/AutoManagedSplitSync'
 
 export default function App() {
   useGlobalControlTooltips()
+  useKeyboardShortcuts()
   const dispatch = useDispatch()
   const activePage = useTypedSelector((state) => state.gui.activePage)
   const ledSidebarEnabled = useTypedSelector((state) => state.gui.ledSidebarEnabled)
@@ -71,6 +75,7 @@ export default function App() {
   if (isDedicatedLighting3DWindow) {
     return (
       <Root>
+        <KeyboardMappingFocus />
         <ErrorBoundary FallbackComponent={ErrorBoundaryFallback}>
           <Col>
             <PageWrapper>
@@ -86,6 +91,7 @@ export default function App() {
   if (isDedicatedLaserWindow) {
     return (
       <Root>
+        <KeyboardMappingFocus />
         <ErrorBoundary FallbackComponent={ErrorBoundaryFallback}>
           <Col>
             <PageWrapper>
@@ -101,9 +107,11 @@ export default function App() {
   if (isDedicatedVisualizerWindow) {
     return (
       <Root>
+        <KeyboardMappingFocus />
         <ErrorBoundary FallbackComponent={ErrorBoundaryFallback}>
           <Col>
-            <PageWrapper>
+            <PageWrapper style={{ position: 'relative' }}>
+              <DetachedKeyboardMappingBar />
               <Video standalone />
             </PageWrapper>
           </Col>
@@ -116,9 +124,11 @@ export default function App() {
   if (isDedicatedVisualizerViewportWindow) {
     return (
       <Root>
+        <KeyboardMappingFocus />
         <ErrorBoundary FallbackComponent={ErrorBoundaryFallback}>
           <Col>
             <PageWrapper style={{ position: 'relative' }}>
+              <DetachedKeyboardMappingBar />
               <DetachedVisualizerFullscreenBar />
               <Visualizer viewportOnly />
             </PageWrapper>
@@ -131,6 +141,7 @@ export default function App() {
 
   return (
     <Root>
+      <KeyboardMappingFocus />
       <ErrorBoundary FallbackComponent={ErrorBoundaryFallback}>
         <AutoManagedSplitSync />
         <MenuBar />

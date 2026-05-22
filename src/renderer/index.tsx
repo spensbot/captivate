@@ -40,6 +40,8 @@ import {
   send_control_state,
   send_sync_led_sidebar_menu,
 } from './ipcHandler'
+import { registerHostTransport } from '../shared/hostTransport'
+import ipc_channels from '../shared/ipc_channels'
 import { lighting3dPreviewRuntimeManager } from './lighting3d/Lighting3dPreviewRuntimeManager'
 import { ThemeProvider as MuiThemeProvider } from '@emotion/react'
 import { createTheme } from '@mui/material/styles'
@@ -140,6 +142,7 @@ const isPrimaryWindow = pageFromLocation === null
 const useFrameDrivenRealtimeDispatch = isPrimaryWindow
 let _canPublishControlState = !isDetachedPageWindow
 let _lastPublishedControlStateSerialized: string | null = null
+let _lastReceivedControlStateSerialized: string | null = null
 /** Detached windows: coalesce rapid full-state IPC to one Redux replace per frame. */
 let _pendingRemoteCleanState: CleanReduxState | null = null
 let _pendingRemoteStateRaf: number | null = null
@@ -343,6 +346,19 @@ async function autoLoadFixtureLibrary(promptForImport: boolean) {
 
 void autoLoadFixtureLibrary(autoSaveRestoreStatus === 'incompatible')
 
+registerHostTransport({
+  sendDispatch: (action) => {
+    const ipcRenderer = (window as { electron?: { ipcRenderer?: { send: (c: string, a: unknown) => void } } })
+      .electron?.ipcRenderer
+    ipcRenderer?.send(ipc_channels.dispatch_to_main, action)
+  },
+  sendUserCommand: (command) => {
+    const ipcRenderer = (window as { electron?: { ipcRenderer?: { send: (c: string, a: unknown) => void } } })
+      .electron?.ipcRenderer
+    ipcRenderer?.send(ipc_channels.user_command, command)
+  },
+})
+
 ipc_setup({
   on_dmx_connection_update: (payload) => {
     store.dispatch(setDmx(payload))
@@ -470,6 +486,11 @@ ipc_setup({
     if (pageFromLocation === 'Lighting3D') {
       return
     }
+    const serialized = JSON.stringify(newState)
+    if (serialized === _lastReceivedControlStateSerialized) {
+      return
+    }
+    _lastReceivedControlStateSerialized = serialized
     if (isDetachedPageWindow) {
       _pendingRemoteCleanState = newState
       scheduleRemoteStateApply()

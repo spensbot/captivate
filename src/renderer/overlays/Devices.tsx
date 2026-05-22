@@ -10,6 +10,7 @@ import {
   setOpenDmxRefreshRateHz,
   setUniverseCount,
   setDmxDeviceUniverse,
+  setDmxUsbWidgetProtocol,
   setArtNetUniverseRoute,
 } from '../redux/controlSlice'
 import CloseIcon from '@mui/icons-material/Close'
@@ -22,6 +23,7 @@ import {
   ConnectionId,
 } from '../../shared/connection'
 import DmxTroubleShoot from './DmxTroubleshoot'
+import RemoteControlSection from './RemoteControlSection'
 import Input from 'renderer/base/Input'
 import DraggableNumber from 'renderer/base/DraggableNumber'
 import ToggleSwitch from 'renderer/base/ToggleSwitch'
@@ -138,6 +140,7 @@ export default function Devices({ embedded = false }: Props) {
           />
           <AbletonLinkConnections />
         </ConnectionSection>
+        <RemoteControlSection />
       </ConnectionsGrid>
       <DmxTroubleShoot />
     </>
@@ -298,8 +301,13 @@ const DMX_SECTION_TOOLTIP = (
     <br />
     <br />
     Universe count sets how many universes are available for DMX and Art-Net together.
-    Assign each adapter the universe it should drive. If you use Open DMX USB hardware, a
+    Assign each adapter the universe it should drive.     If you use Open DMX USB hardware, a
     refresh rate control appears when that device is present.
+    <br />
+    <br />
+    Some FTDI-based adapters speak the Enttec DMX USB Pro (widget) wire format but do not
+    answer auto-detection; use &quot;USB Pro protocol&quot; on that device so output matches
+    Euro Light USB Pro / Enttec-style framing.
   </>
 )
 
@@ -587,6 +595,12 @@ function DmxDevice({ device, connected, connectable }: Props2<DmxDevice_t>) {
       state.device.connectionSettings.dmxUniverseByDevice[device.connectionId] ??
       1
   )
+  const forceUsbProProtocol = useControlSelector(
+    (state) =>
+      state.device.connectionSettings.dmxUsbUseWidgetProtocolByDevice?.[
+        device.connectionId
+      ] === true
+  )
 
   const onClick = () => {
     let connectableSet = new Set(connectable)
@@ -599,36 +613,62 @@ function DmxDevice({ device, connected, connectable }: Props2<DmxDevice_t>) {
   }
 
   return (
-    <DeviceRow>
-      <DeviceRoot
-        {...status}
-        onClick={onClick}
-        title="Click to enable or disable this DMX adapter"
+    <DmxUsbDeviceBlock>
+      <DeviceRow>
+        <DeviceRoot
+          {...status}
+          onClick={onClick}
+          title="Click to enable or disable this DMX adapter"
+        >
+          {device.name}
+        </DeviceRoot>
+        <Tooltip title="Universe this DMX adapter outputs">
+          <TextField
+            size="small"
+            label="Universe"
+            value={assignedUniverse.toString()}
+            type="number"
+            inputProps={{ min: 1, max: universeCount }}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => {
+              const universe = parseInt(e.target.value, 10)
+              if (!Number.isNaN(universe)) {
+                dispatch(
+                  setDmxDeviceUniverse({
+                    connectionId: device.connectionId,
+                    universe,
+                  })
+                )
+              }
+            }}
+          />
+        </Tooltip>
+      </DeviceRow>
+      <WidgetProtoRow
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
-        {device.name}
-      </DeviceRoot>
-      <Tooltip title="Universe this DMX adapter outputs">
-        <TextField
-          size="small"
-          label="Universe"
-          value={assignedUniverse.toString()}
-          type="number"
-          inputProps={{ min: 1, max: universeCount }}
-          onClick={(e) => e.stopPropagation()}
-          onChange={(e) => {
-            const universe = parseInt(e.target.value, 10)
-            if (!Number.isNaN(universe)) {
-              dispatch(
-                setDmxDeviceUniverse({
-                  connectionId: device.connectionId,
-                  universe,
-                })
-              )
-            }
-          }}
+        <Tooltip
+          title="Always use Enttec DMX USB Pro / widget framing for this port (skip auto-detect). Use for clones that behave like Euro Light USB Pro but do not answer the probe."
+          placement="left"
+        >
+          <WidgetProtoLabel>USB Pro protocol</WidgetProtoLabel>
+        </Tooltip>
+        <ToggleSwitch
+          checked={forceUsbProProtocol}
+          onChange={(next) =>
+            dispatch(
+              setDmxUsbWidgetProtocol({
+                connectionId: device.connectionId,
+                useWidgetProtocol: next,
+              })
+            )
+          }
+          title="Force Enttec USB Pro / widget protocol"
+          aria-label="Force USB Pro widget protocol for this DMX adapter"
         />
-      </Tooltip>
-    </DeviceRow>
+      </WidgetProtoRow>
+    </DmxUsbDeviceBlock>
   )
 }
 
@@ -657,11 +697,31 @@ function MidiDevice({ device, connected, connectable }: Props2<MidiDevice_t>) {
   )
 }
 
+const DmxUsbDeviceBlock = styled.div`
+  margin-bottom: 0.45rem;
+`
+
 const DeviceRow = styled.div`
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.25rem;
+`
+
+const WidgetProtoRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  margin: 0.15rem 0 0 0.35rem;
+  padding-right: 0.15rem;
+`
+
+const WidgetProtoLabel = styled.span`
+  font-size: 0.68rem;
+  color: ${(p) => p.theme.colors.text.secondary};
+  line-height: 1.2;
+  text-align: right;
+  max-width: 11rem;
 `
 
 const DeviceRoot = styled.div<Status>`

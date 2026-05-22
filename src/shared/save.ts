@@ -5,6 +5,8 @@ import { MixerState } from 'renderer/redux/mixerSlice'
 import type { Page } from './pages'
 import type { VisualizerStreamingSettings } from './visualizerStreaming'
 import { migrateLegacyFixturePersistedJson } from './dmxFixtures'
+import type { LaserProjectState } from '../renderer/laser/laserProjectState'
+import { migrateLaserProjectState } from '../renderer/laser/laserProjectState'
 
 export interface ProfileGuiState {
   activePage?: Page
@@ -23,6 +25,7 @@ export interface SaveState {
   device?: DeviceState
   gui?: ProfileGuiState
   mixer?: MixerState
+  laser?: LaserProjectState
 }
 export type SaveType = keyof SaveState
 export type SaveConfig = { [key in SaveType]: boolean }
@@ -34,6 +37,7 @@ export const saveTypes: SaveType[] = [
   'device',
   'gui',
   'mixer',
+  'laser',
 ]
 export interface SaveInfo {
   state: SaveState
@@ -41,7 +45,7 @@ export interface SaveInfo {
 }
 
 export const PROJECT_SAVE_SCHEMA = 'captivate.project'
-export const PROJECT_SAVE_VERSION = 6
+export const PROJECT_SAVE_VERSION = 7
 const MIN_SUPPORTED_PROJECT_SAVE_VERSION = 5
 
 export interface VersionedProjectSave {
@@ -73,6 +77,8 @@ export function displaySaveType(saveType: SaveType) {
       return 'App UI Settings'
     case 'mixer':
       return 'DMX Mixer State'
+    case 'laser':
+      return 'Laser Engine (fixtures, zones, scenes)'
   }
 }
 
@@ -153,6 +159,9 @@ export function parseVersionedProjectSave(raw: unknown): ParsedProjectSave {
     state.dmx = JSON.parse(
       migrateLegacyFixturePersistedJson(JSON.stringify(state.dmx))
     ) as DmxState
+  }
+  if (state.laser !== undefined) {
+    state.laser = migrateLaserProjectState(state.laser)
   }
 
   return {

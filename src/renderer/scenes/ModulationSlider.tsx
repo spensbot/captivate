@@ -194,11 +194,7 @@ export default function ModulationSlider({
   const left = modVal > 0.5 ? 0.5 : modVal
 
   return (
-    <Root
-      ref={dragContainer}
-      onMouseDown={onMouseDown}
-      $intermodRoute={parsedIm !== null}
-    >
+    <Root ref={dragContainer} onMouseDown={onMouseDown}>
       <StripHeader>
         <span>{stripTitle}</span>
       </StripHeader>
@@ -399,11 +395,9 @@ function InterModParamEditor({
   param: string
 }) {
   const dispatch = useDispatch()
-  const numSplits = useActiveLightScene((scene) => scene.splitScenes.length)
   const isActive = useActiveLightScene((scene) => {
-    const splits = scene.modulators[modIndex]?.splitModulations
-    if (!splits) return false
-    return splits.some((m) => m[param] !== undefined)
+    const im = scene.modulators[modIndex]?.lfoInterModulation
+    return im !== undefined && im[param] !== undefined
   })
   const parsed = parseInterModParam(param)
   const label =
@@ -414,16 +408,14 @@ function InterModParamEditor({
       $active={isActive}
       onClick={() => {
         const next = isActive ? undefined : 1
-        for (let s = 0; s < numSplits; s++) {
-          dispatch(
-            setModulation({
-              splitIndex: s,
-              modIndex,
-              param,
-              value: next,
-            })
-          )
-        }
+        dispatch(
+          setModulation({
+            splitIndex: 0,
+            modIndex,
+            param,
+            value: next,
+          })
+        )
       }}
     >
       <span>{label}</span>
@@ -467,14 +459,12 @@ function ParamEditor({
   )
 }
 
-const Root = styled.div<{ $intermodRoute?: boolean }>`
+const Root = styled.div`
   position: relative;
   user-select: none;
   text-align: center;
   background-color: #ffffff08;
   border-bottom: 1px solid #fff1;
-  border-left: ${(p) =>
-    p.$intermodRoute ? '2px solid rgba(120, 176, 255, 0.55)' : 'none'};
   color: #fff7;
   font-size: 0.8rem;
   cursor: ew-resize;

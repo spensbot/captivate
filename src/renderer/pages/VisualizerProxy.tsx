@@ -3,6 +3,8 @@ import styled from 'styled-components'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import { send_open_page_window } from '../ipcHandler'
 
+const AUTO_OPEN_VIDEO_SESSION_KEY = 'captivate:autoOpenedVideoWindow'
+
 export default function VisualizerProxy() {
   const openedRef = useRef(false)
 
@@ -11,6 +13,11 @@ export default function VisualizerProxy() {
       return
     }
     openedRef.current = true
+    // Avoid re-opening the popout after electronmon/renderer reload if the user closed it.
+    if (sessionStorage.getItem(AUTO_OPEN_VIDEO_SESSION_KEY) === '1') {
+      return
+    }
+    sessionStorage.setItem(AUTO_OPEN_VIDEO_SESSION_KEY, '1')
     send_open_page_window('Video')
   }, [])
 

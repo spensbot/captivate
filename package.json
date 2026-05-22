@@ -1,10 +1,12 @@
 {
-  "main": "./src/main/main.ts",
+  "main": "./release/app/dist/main/main.js",
   "scripts": {
-    "build": "npm-run-all --parallel build:main build:renderer build:visualizer",
+    "build": "npm-run-all --parallel build:main build:renderer build:remote build:visualizer",
+    "build:remote": "cross-env NODE_ENV=production TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.remote.prod.ts",
     "build:projectm-bridge": "node tools/run-projectm-node-gyp.js",
     "prepare:projectm-bridge": "node tools/prepare_projectm_bridge.js",
     "build:main": "cross-env NODE_ENV=production TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.main.prod.ts",
+    "build:main:dev": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.main.dev.ts",
     "build:renderer": "cross-env NODE_ENV=production TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.renderer.prod.ts",
     "build:visualizer": "cross-env NODE_ENV=production TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.visualizer.prod.ts",
     "postinstall": "ts-node .erb/scripts/check-native-dep.js && electron-builder install-app-deps && patch-package && cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.renderer.dev.dll.ts",
@@ -13,21 +15,23 @@
     "package:bundle": "node tools/run-with-qualified-node.cjs -- npm run package:bundle:inner",
     "package:bundle:inner": "node tools/run-with-qualified-node.cjs -- npm run __package:bundle:inner",
     "__package:bundle:inner": "node tools/check-build-environment.js && ts-node ./.erb/scripts/clean.js dist && npm run prepare:projectm-bridge && npm run prepare:node-link && npm run rebuild && npm run build",
-    "package": "npm run package:bundle && electron-builder build --publish never",
-    "package:installer-only": "node tools/run-with-qualified-node.cjs -- node tools/run-electron-builder-installer.cjs",
-    "package:win": "npm run package:bundle && electron-builder build --win --publish never",
+    "package": "npm run package:bundle && node tools/run-with-qualified-node.cjs -- node tools/run-electron-builder-installer.cjs",
+    "package:installer-only": "node tools/run-with-qualified-node.cjs -- node tools/run-electron-builder-installer.cjs --win",
+    "package:win": "npm run package:bundle && node tools/run-with-qualified-node.cjs -- node tools/run-electron-builder-installer.cjs --win",
     "package:linux": "npm run package:bundle && electron-builder build --linux --publish never",
     "package:mac": "npm run package:bundle && electron-builder build --mac --publish never",
     "rebuild": "node -r ts-node/register/transpile-only ./.erb/scripts/electron-rebuild.js",
     "start": "ts-node ./.erb/scripts/check-port-in-use.js && npm run start:renderer",
-    "start:main": "cross-env NODE_ENV=development electronmon -r ts-node/register/transpile-only .",
+    "start:main": "cross-env NODE_ENV=development electronmon .",
+    "start:main:watch": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --watch --config ./.erb/configs/webpack.config.main.dev.ts",
     "start:preload": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.preload.dev.ts",
     "start:renderer": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack serve --config ./.erb/configs/webpack.config.renderer.dev.ts",
     "start:visualizer": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack serve --config ./.erb/configs/webpack.config.visualizer.dev.ts",
     "qlc_fixture_parse": "ts-node tools/qlc_fixture_parser/index.ts",
     "typecheck": "tsc --noEmit",
-    "typecheck:node-link": "npm --prefix release/app/node-link install --ignore-scripts && npm --prefix release/app/node-link run typecheck",
-    "typecheck:all": "npm run typecheck && npm run typecheck:node-link"
+    "typecheck:node-link": "tsc --noEmit -p release/app/node-link/tsconfig.json",
+    "typecheck:all": "npm run typecheck && npm run typecheck:node-link",
+    "setup:local-cursor-node": "node tools/setup-local-cursor-node.cjs"
   },
   "browserslist": [],
   "prettier": {
@@ -68,7 +72,8 @@
     "redux": "^5.0.1",
     "redux-undo": "^1.0.1",
     "styled-components": "^5.3.5",
-    "three": "^0.183.2"
+    "three": "^0.183.2",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
     "@electron/rebuild": "^4.0.3",
@@ -210,8 +215,10 @@
   },
   "electronmon": {
     "patterns": [
-      "!**/**",
-      "src/main/*"
+      "release/app/dist/main/**",
+      "!captivate-diagnostics.log",
+      "!captivate-diagnostics.log.*",
+      "!**/*.log"
     ],
     "logLevel": "quiet"
   },

@@ -100,8 +100,15 @@ Captivate 2 is an **Electron** app (see `package.json` / lockfile for the resolv
 - **Clone on a local drive** (e.g. `C:\dev\captivate`). Building from a **UNC** path can trigger MSBuild instability; `check:build-env` warns if the cwd is `\\server\...`.
 - **MSBuild exit `3221225477`:** usually fixed by staying on **Node 25.9+**, using a local clone, and keeping the VS C++ workload updated.
 - **Parallel MSBuild:** packaging defaults to **`JOBS=1`** for stability. If your machine is stable with more parallelism, set e.g. `set JOBS=4` (cmd) or `$env:JOBS='4'` (PowerShell) before `npm run package:win`.
-- **Cursor / VS Code on Windows:** the repo includes a workspace terminal profile (`.vscode/settings.json` + `scripts/cursor-terminal-init.ps1`) that prepends a qualifying **standalone** Node (WinGet / Program Files / `CAPTIVATE_NODE_BIN` / nvm symlink) so integrated terminals do not pick **Cursor’s bundled Node** first. You can also set **`CAPTIVATE_NODE_BIN`** to the folder that contains `node.exe`. Avoid packaging with an IDE-bundled Node; `check-build-environment.js` warns when `process.execPath` looks editor-embedded.
-- **Cursor Agent / headless shells** do not load that terminal profile. **`npm run package:bundle`** (and therefore `package:win` / `package`) first runs **`tools/run-with-qualified-node.cjs`**, which on Windows searches the same locations and prepends a matching Node to `PATH` before running the rest—so packaging still picks **Node 25.9+** even when the outer `node` is older.
+- **Windows integrated terminals:** Some editors prepend an older **Node** to `PATH`. Prefer a standalone shell (cmd/PowerShell) where **`node -v`** matches **`.node-version`**, or set **`CAPTIVATE_NODE_BIN`** to the folder that contains `node.exe`. `npm run check:build-env` warns if Node appears editor-embedded.
+- **Headless / automation shells:** **`npm run package:bundle`** (and therefore `package:win` / `package`) first runs **`tools/run-with-qualified-node.cjs`**, which on Windows searches the same locations and prepends a matching Node to `PATH` before running the rest—so packaging still picks **Node 25.9+** even when the outer `node` is older.
+
+#### Optional: local Windows terminal (Cursor / VS Code)
+
+The repo defines a workspace terminal profile **`Captivate local Node`** (see `.vscode/settings.json`) that runs a small PowerShell bootstrap. The **actual script file is gitignored** so it never ships in git:
+
+1. Run **`npm run setup:local-cursor-node`** once — copies **`scripts/cursor-terminal-init.example.ps1`** → **`scripts/cursor-terminal-init.ps1`** (ignored by git).
+2. Open a new integrated terminal and choose profile **Captivate local Node**, *or* set this in your **User** settings (local to your machine, not the repo): `"terminal.integrated.defaultProfile.windows": "Captivate local Node"`.
 
 ### Clone and run (development)
 
@@ -135,6 +142,14 @@ CI runs **`npm run package`** on macOS, Windows, and Ubuntu after `setup-node` (
 - For NDI output, install NDI runtime system-wide or place runtime libraries in:
   `assets/ndi-runtime/`
 - Use the **Streaming** page in-app to run diagnostics for FFmpeg + NDI support.
+
+### Laser FB4 (Pangolin BEYOND)
+
+FB4 output uses **BEYOND + BEYONDIO.dll** on Windows (see [docs/laser-fb4-beyond.md](docs/laser-fb4-beyond.md)).
+
+### Remote control (LAN)
+
+Optional tablet/phone UI for scenes, modulation, and DMX mixer: [docs/remote-control.md](docs/remote-control.md). Enable under **Connections → Remote control (LAN)**.
 
 Thanks to [electron-react-boilerplate](https://github.com/electron-react-boilerplate/electron-react-boilerplate) for the app boilerplate
 

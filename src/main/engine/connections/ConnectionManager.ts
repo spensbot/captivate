@@ -26,6 +26,8 @@ export class ConnectionManager {
   ): Promise<DmxConnectionInfo> {
     const connectTo = new Set(connectTo_list)
 
+    this.reconcileUsbDmxProtocolPreferences()
+
     const [availableDevices, serialports] = await this.availableDevices()
 
     this.makeConnections(connectTo, availableDevices)
@@ -53,6 +55,27 @@ export class ConnectionManager {
     }
 
     return status
+  }
+
+  /** Drop USB DMX connections when the "force widget protocol" setting no longer matches how they were opened. */
+  private reconcileUsbDmxProtocolPreferences() {
+    const cs = this.c.controlState()
+    if (!cs) return
+    const wantById = cs.control.device.connectionSettings.dmxUsbUseWidgetProtocolByDevice
+    for (const [id, connection] of Object.entries(this.dmxConnections)) {
+      if (connection.type !== 'DmxConnectionUsb') continue
+      const usb = connection as DmxConnectionUsb
+      const wantForce = wantById?.[id] === true
+      if (wantForce !== usb.usesForcedWidgetProtocol()) {
+        console.log(`DMX USB reconnect ${id}: widget-protocol preference changed`)
+        try {
+          connection.disconnect()
+        } catch {
+          /* ignore */
+        }
+        delete this.dmxConnections[id]
+      }
+    }
   }
 
   private async availableDevices(): Promise<[DmxDevice_t[], SerialportInfo[]]> {
@@ -101,6 +124,23 @@ export class ConnectionManager {
         connection.disconnect()
         delete this.dmxConnections[id]
       }
+    }
+  }
+
+  /** Close DMX/USB connections and stop Art-Net send loop (shutdown / app quit). */
+  shutdown(): void {
+    for (const [id, connection] of Object.entries(this.dmxConnections)) {
+      try {
+        connection.disconnect()
+      } catch {
+        /* ignore */
+      }
+      delete this.dmxConnections[id]
+    }
+    try {
+      this.artNet.destroy()
+    } catch {
+      /* ignore */
     }
   }
 }

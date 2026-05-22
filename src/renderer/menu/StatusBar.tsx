@@ -7,7 +7,7 @@ import PianoIcon from '@mui/icons-material/Piano'
 import IconButton from '@mui/material/IconButton'
 import { useDeviceSelector, useTypedSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
-import { midiSetIsEditing } from '../redux/controlSlice'
+import { midiSetIsEditing, midiSetKeyboardLearnMode } from '../redux/controlSlice'
 import { setConnectionsMenu } from '../redux/guiSlice'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import TapTempo from './TapTempo'
@@ -16,6 +16,7 @@ import SaveLoad from './SaveLoad'
 import Bpm from './Bpm'
 import AudioInputMenu from './AudioInputMenu'
 import { send_open_page_window } from '../ipcHandler'
+import KeyboardShortcutMenuButton from '../overlays/KeyboardShortcutEditorDialog'
 
 export default function StatusBar() {
   const isEditing = useDeviceSelector((state) => state.isEditing)
@@ -30,6 +31,7 @@ export default function StatusBar() {
       dispatch(setConnectionsMenu(true))
       return
     }
+    dispatch(midiSetKeyboardLearnMode(false))
     dispatch(midiSetIsEditing(!isEditing))
   }
   const canPopOutActivePage = activePage !== 'Atmospherics'
@@ -55,6 +57,7 @@ export default function StatusBar() {
           <OpenInNewIcon fontSize="small" />
         </IconButton>
       )}
+      <KeyboardShortcutMenuButton />
       <IconButton
         title={
           midiConnected

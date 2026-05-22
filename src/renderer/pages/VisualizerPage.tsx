@@ -1,5 +1,11 @@
 import styled from 'styled-components'
+import { useEffect } from 'react'
 import { useDispatch } from 'react-redux'
+import {
+  clearKeyboardListening,
+  midiSetIsEditing,
+  midiSetKeyboardLearnMode,
+} from '../redux/controlSlice'
 import StatusBar from '../menu/StatusBar'
 import SplitPane from '../base/SplitPane'
 import SceneSelection from '../scenes/SceneSelection'
@@ -16,6 +22,14 @@ interface VisualizerPageProps {
 
 export default function VisualizerPage({ standalone = false }: VisualizerPageProps) {
   const dispatch = useDispatch()
+  useEffect(() => {
+    if (!standalone) {
+      return
+    }
+    dispatch(clearKeyboardListening())
+    dispatch(midiSetKeyboardLearnMode(false))
+    dispatch(midiSetIsEditing(false))
+  }, [dispatch, standalone])
   const videoEnabled = useTypedSelector((state) => state.gui.videoEnabled)
   const visualSceneConfig = useActiveVisualScene((scene) => scene.config)
   const projectionMappingEnabled = visualSceneConfig.projectionMapping.enabled === true

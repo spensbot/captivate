@@ -27,6 +27,9 @@ import { probeWledController } from 'renderer/ipcHandler'
 import {
   WledControllerCapabilities,
   WledOutputMode,
+  findWledSegment,
+  resolveWledPixelRouting,
+  wledPixelRoutingFieldsVisible,
 } from 'shared/wledDiscovery'
 
 interface Props {
@@ -150,19 +153,33 @@ export default function LedFixtureDefinition({ index }: Props) {
           setProbeError(nextCapabilities.warnings[0] ?? 'Controller is unreachable.')
           return
         }
+        const nextController = { ...def.controller }
         const currentMode = def.controller.output_mode
         if (
           currentMode === 'auto' &&
           nextCapabilities.defaultOutputMode !== 'auto'
         ) {
-          patchFixture({
-            controller: {
-              ...def.controller,
-              output_mode: nextCapabilities.defaultOutputMode,
-              pixel_format:
-                nextCapabilities.supportsPixelRgbw === true ? 'rgbw' : 'rgb',
-            },
-          } as Partial<LedFixture>)
+          nextController.output_mode = nextCapabilities.defaultOutputMode
+          nextController.pixel_format =
+            nextCapabilities.supportsPixelRgbw === true ? 'rgbw' : 'rgb'
+        }
+        const resolvedRouting = resolveWledPixelRouting(
+          nextController.segment_id,
+          nextController.pixel_start,
+          nextController.pixel_count,
+          nextCapabilities
+        )
+        if (resolvedRouting.source !== 'manual') {
+          nextController.pixel_start = resolvedRouting.pixel_start
+          nextController.pixel_count = resolvedRouting.pixel_count
+        }
+        const routingChanged =
+          nextController.pixel_start !== def.controller.pixel_start ||
+          nextController.pixel_count !== def.controller.pixel_count ||
+          nextController.output_mode !== def.controller.output_mode ||
+          nextController.pixel_format !== def.controller.pixel_format
+        if (routingChanged) {
+          patchFixture({ controller: nextController } as Partial<LedFixture>)
         }
       })
       .catch((err) => {
@@ -189,15 +206,6 @@ export default function LedFixtureDefinition({ index }: Props) {
     return Array.from(new Set(options))
   })()
 
-  const selectedSegmentLength = (() => {
-    if (capabilities === null || def.controller.segment_id === null) {
-      return null
-    }
-    const segment = capabilities.segments.find(
-      (candidate) => candidate.id === def.controller.segment_id
-    )
-    return segment?.length ?? null
-  })()
   const effectiveOutputMode =
     def.controller.output_mode === 'auto'
       ? capabilities?.defaultOutputMode ?? 'pixel'
@@ -209,6 +217,18 @@ export default function LedFixtureDefinition({ index }: Props) {
     }
     return options
   })()
+
+  const resolvedPixelRouting = resolveWledPixelRouting(
+    def.controller.segment_id,
+    def.controller.pixel_start,
+    def.controller.pixel_count,
+    capabilities
+  )
+  const pixelFieldVisibility = wledPixelRoutingFieldsVisible(
+    effectiveOutputMode,
+    resolvedPixelRouting.source
+  )
+  const selectedSegment = findWledSegment(capabilities, def.controller.segment_id)
 
   if (isActive)
     return (
@@ -268,19 +288,21 @@ export default function LedFixtureDefinition({ index }: Props) {
                     onChange={(event) => {
                       const raw = event.target.value
                       const segmentId = raw.length <= 0 ? null : Number(raw)
-                      const segment =
-                        segmentId === null
-                          ? null
-                          : capabilities.segments.find((s) => s.id === segmentId) ?? null
+                      const segment = findWledSegment(capabilities, segmentId)
+                      const routing = resolveWledPixelRouting(
+                        segmentId,
+                        segment?.start ?? def.controller.pixel_start,
+                        segment !== null && segment.length > 0
+                          ? segment.length
+                          : def.controller.pixel_count,
+                        capabilities
+                      )
                       patchFixture({
                         controller: {
                           ...def.controller,
                           segment_id: segmentId,
-                          pixel_start: segment?.start ?? def.controller.pixel_start,
-                          pixel_count:
-                            segment !== null && segment.length > 0
-                              ? segment.length
-                              : def.controller.pixel_count,
+                          pixel_start: routing.pixel_start,
+                          pixel_count: routing.pixel_count,
                         },
                       } as Partial<LedFixture>)
                     }}
@@ -293,8 +315,15 @@ export default function LedFixtureDefinition({ index }: Props) {
                     ))}
                   </Select>
                 </Field>
-                {selectedSegmentLength !== null && (
-                  <Hint>{`Segment length: ${selectedSegmentLength} px`}</Hint>
+                {resolvedPixelRouting.source === 'segment' && selectedSegment !== null && (
+                  <Hint>
+                    {`Using segment “${selectedSegment.name}”: ${resolvedPixelRouting.pixel_count} px @ offset ${resolvedPixelRouting.pixel_start}`}
+                  </Hint>
+                )}
+                {resolvedPixelRouting.source === 'controller' && (
+                  <Hint>
+                    {`Using controller LED count: ${resolvedPixelRouting.pixel_count} px (offset ${resolvedPixelRouting.pixel_start})`}
+                  </Hint>
                 )}
               </>
             )}
@@ -321,45 +350,53 @@ export default function LedFixtureDefinition({ index }: Props) {
                     ))}
                   </Select>
                 </Field>
-                <Sp />
-                <Field>
-                  <Label>Start Pixel</Label>
-                  <NumberField
-                    label=""
-                    val={def.controller.pixel_start}
-                    onChange={(pixel_start) =>
-                      patchFixture({
-                        controller: {
-                          ...def.controller,
-                          pixel_start,
-                        },
-                      } as Partial<LedFixture>)
-                    }
-                    min={0}
-                    max={1000000}
-                    step={1}
-                  />
-                </Field>
-                <Sp />
-                <Field>
-                  <Label>Pixel Limit</Label>
-                  <NumberField
-                    label=""
-                    val={def.controller.pixel_count ?? 0}
-                    onChange={(pixel_count) =>
-                      patchFixture({
-                        controller: {
-                          ...def.controller,
-                          pixel_count: pixel_count <= 0 ? null : pixel_count,
-                        },
-                      } as Partial<LedFixture>)
-                    }
-                    min={0}
-                    max={1000000}
-                    step={1}
-                  />
-                </Field>
-                <Hint>Set to 0 for no limit.</Hint>
+                {pixelFieldVisibility.showPixelStart && (
+                  <>
+                    <Sp />
+                    <Field>
+                      <Label>Start Pixel</Label>
+                      <NumberField
+                        label=""
+                        val={def.controller.pixel_start}
+                        onChange={(pixel_start) =>
+                          patchFixture({
+                            controller: {
+                              ...def.controller,
+                              pixel_start,
+                            },
+                          } as Partial<LedFixture>)
+                        }
+                        min={0}
+                        max={1000000}
+                        step={1}
+                      />
+                    </Field>
+                  </>
+                )}
+                {pixelFieldVisibility.showPixelLimit && (
+                  <>
+                    <Sp />
+                    <Field>
+                      <Label>Pixel Limit</Label>
+                      <NumberField
+                        label=""
+                        val={def.controller.pixel_count ?? 0}
+                        onChange={(pixel_count) =>
+                          patchFixture({
+                            controller: {
+                              ...def.controller,
+                              pixel_count: pixel_count <= 0 ? null : pixel_count,
+                            },
+                          } as Partial<LedFixture>)
+                        }
+                        min={0}
+                        max={1000000}
+                        step={1}
+                      />
+                    </Field>
+                    <Hint>Set to 0 for no limit.</Hint>
+                  </>
+                )}
               </>
             )}
             {effectiveOutputMode !== 'pixel' && (
@@ -380,6 +417,7 @@ export default function LedFixtureDefinition({ index }: Props) {
             )}
             {!isProbingHost &&
               capabilities !== null &&
+              capabilities.reachable &&
               capabilities.warnings.map((warning, warningIndex) => (
                 <WarnText key={`${def.id}_wled_warn_${warningIndex}`}>{warning}</WarnText>
               ))}

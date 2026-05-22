@@ -43,7 +43,8 @@ export function getStageLightMapPreviewPayload(): {
   height: number
   data: number[]
 } | null {
-  const g = getLatestStageLightMap(1200)
+  // Keep last frame visible briefly if the visualizer hiccups (preview-only).
+  const g = getLatestStageLightMap(8000)
   if (g === null) return null
   return {
     width: g.width,

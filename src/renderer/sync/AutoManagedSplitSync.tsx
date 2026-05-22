@@ -14,6 +14,7 @@ import {
 import { universeHasMovers } from '../../shared/dmxFixtures'
 import { listAtmosFxtrs } from '../../shared/atmosphericsMapping'
 import { LightScene_t, SplitScene_t } from '../../shared/Scenes'
+import { isDedicatedGroupSplit } from '../scenes/splitUiVisibility'
 
 interface CachedAutoSplit {
   splitScene: SplitScene_t
@@ -27,20 +28,6 @@ type AutoSplitCacheByScene = {
 }
 
 const autoSplitSessionCache: AutoSplitCacheByScene = {}
-
-function isDedicatedAutoGroupSplit(
-  groups: SplitScene_t['groups'],
-  group: string
-) {
-  const entries = Object.entries(groups).filter(
-    ([_, included]) => included !== undefined
-  )
-  return (
-    entries.length === 1 &&
-    entries[0][0] === group &&
-    entries[0][1] === true
-  )
-}
 
 function createSplitSnapshot(
   scene: LightScene_t,
@@ -177,7 +164,7 @@ export default function AutoManagedSplitSync() {
       const splitScene = scene.splitScenes[splitIndex]
       if (
         splitScene === undefined ||
-        !isDedicatedAutoGroupSplit(splitScene.groups, groupState.group)
+        !isDedicatedGroupSplit(splitScene.groups, groupState.group)
       ) {
         continue
       }

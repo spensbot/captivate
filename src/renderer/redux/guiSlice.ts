@@ -1,4 +1,5 @@
 import type { Page } from '../../shared/pages'
+import type { LaserTool } from '../laser/laserEditorTypes'
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { SaveInfo } from '../../shared/save'
 import {
@@ -65,6 +66,8 @@ export interface GuiState {
   appDialog: AppDialogState | null
   aboutOpen: boolean
   atmosManualTriggerNonceByFixtureId: { [fixtureId: string]: number | undefined }
+  /** Laser editor (detached window) applies tool when this nonce bumps. */
+  laserToolMidiRequest: { tool: LaserTool; nonce: number } | null
 }
 
 export function initGuiState(): GuiState {
@@ -93,6 +96,7 @@ export function initGuiState(): GuiState {
     appDialog: null,
     aboutOpen: false,
     atmosManualTriggerNonceByFixtureId: {},
+    laserToolMidiRequest: null,
   }
 }
 
@@ -288,6 +292,15 @@ export const guiSlice = createSlice({
     clearAtmosManualTriggers: (state, _: PayloadAction<undefined>) => {
       state.atmosManualTriggerNonceByFixtureId = {}
     },
+    setLaserToolFromMidiMapping: (
+      state,
+      { payload }: PayloadAction<{ tool: LaserTool }>
+    ) => {
+      state.laserToolMidiRequest = {
+        tool: payload.tool,
+        nonce: (state.laserToolMidiRequest?.nonce ?? 0) + 1,
+      }
+    },
   },
 })
 
@@ -324,6 +337,7 @@ export const {
   setAboutOpen,
   fireAtmosManualTrigger,
   clearAtmosManualTriggers,
+  setLaserToolFromMidiMapping,
 } = guiSlice.actions
 
 export default guiSlice.reducer

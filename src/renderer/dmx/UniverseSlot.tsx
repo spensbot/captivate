@@ -36,14 +36,13 @@ function GapSlot({ ch, count }: { ch: number; count: number }) {
   const dispatch = useDispatch()
   const activeUniverse = useDmxSelector((state) => state.activeUniverse)
   const dmxState = useDmxSelector((state) => state)
-  const applicableFixtures = dmxState.fixtureTypes
+  const definedLibraryTypes = dmxState.fixtureTypes
     .map((id) => dmxState.fixtureTypesByID[id])
-    .filter(
-      (ft) =>
-        ft !== undefined &&
-        ft.channels.length > 0 &&
-        ft.channels.length <= count - (inputCh - ch)
-    )
+    .filter((ft) => ft !== undefined && ft.channels.length > 0)
+  const hasNoFixtureLibrary = definedLibraryTypes.length === 0
+  const applicableFixtures = definedLibraryTypes.filter(
+    (ft) => ft.channels.length <= count - (inputCh - ch)
+  )
 
   return (
     <Slot
@@ -70,29 +69,45 @@ function GapSlot({ ch, count }: { ch: number; count: number }) {
             }}
             type="number"
           />
-          {applicableFixtures.map((ft) => (
-            <FixtureChoice
-              key={ft.id}
-              fixtureType={ft}
-              onClick={() => {
-                setPopupOpen(false)
-                dispatch(
-                  addFixture({
-                    name: ft.name,
-                    ch: inputCh,
-                    universe: activeUniverse,
-                    type: ft.id,
-                    window: {
-                      x: { pos: 0.5, width: 0 },
-                      y: { pos: 0.5, width: 0 },
-                      z: { pos: 1, width: 0 },
-                    },
-                    groups: [],
-                  })
-                )
-              }}
-            />
-          ))}
+          {applicableFixtures.length === 0 ? (
+            <NoFixtureHelp role="status">
+              {hasNoFixtureLibrary ? (
+                <>
+                  There are no fixture types in the fixture library yet. Define at least one
+                  fixture under <strong>Fixtures</strong> before you can patch the universe.
+                </>
+              ) : (
+                <>
+                  No fixture type fits in this gap from channel {inputCh} with the current
+                  selection. The gap may be too narrow, or try moving the start channel.
+                </>
+              )}
+            </NoFixtureHelp>
+          ) : (
+            applicableFixtures.map((ft) => (
+              <FixtureChoice
+                key={ft.id}
+                fixtureType={ft}
+                onClick={() => {
+                  setPopupOpen(false)
+                  dispatch(
+                    addFixture({
+                      name: ft.name,
+                      ch: inputCh,
+                      universe: activeUniverse,
+                      type: ft.id,
+                      window: {
+                        x: { pos: 0.5, width: 0 },
+                        y: { pos: 0.5, width: 0 },
+                        z: { pos: 1, width: 0 },
+                      },
+                      groups: [],
+                    })
+                  )
+                }}
+              />
+            ))
+          )}
         </Popup>
       )}
       <GSRoot>
@@ -154,6 +169,17 @@ const RCRoot = styled.div`
   :hover {
     color: ${(props) => props.theme.colors.text.primary};
   }
+`
+
+const NoFixtureHelp = styled.div`
+  margin-top: 0.65rem;
+  padding: 0.55rem 0.45rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: ${(props) => props.theme.colors.text.secondary};
+  border-radius: 0.28rem;
+  border: 1px dashed ${(props) => props.theme.colors.divider};
+  background: ${(props) => props.theme.colors.bg.darker};
 `
 
 function FixtureSlot({

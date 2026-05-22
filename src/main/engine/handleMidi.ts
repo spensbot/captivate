@@ -10,31 +10,22 @@ import {
   initSliderOptions,
   normalizeSliderOptionsForAction,
 } from '../../renderer/redux/deviceState'
+import { fireMidiButtonAction } from '../../renderer/redux/fireMidiButtonAction'
 import {
   midiSetButtonAction,
   midiSetSliderAction,
-  setActiveSceneIndex,
   setAutoSceneBombacity,
   setMaster,
   setBaseParams,
-  setAutoSceneEnabled,
 } from '../../renderer/redux/controlSlice'
 import {
-  setBlackout,
-  fireAtmosManualTrigger,
   setMoverFollowOverridePan,
   setMoverFollowOverrideTilt,
-  toggleMoverFollowOverrideEnabled,
 } from '../../renderer/redux/guiSlice'
 import NodeLink from 'node-link'
 import { PayloadAction } from '@reduxjs/toolkit'
-import type { SceneType } from '../../shared/Scenes'
-import { msUntilNextBeatBoundary } from '../../shared/sceneBeatQuantize'
 
 const buttonThresholdState = new Map<string, boolean>()
-const pendingMidiSceneTimeouts: Partial<
-  Record<SceneType, ReturnType<typeof setTimeout>>
-> = {}
 
 interface MidiInput {
   id: string
@@ -144,35 +135,7 @@ export function handleMessage(
     const actionKey = `${input.id}:${getActionID(buttonAction.action)}`
 
     const fireButtonAction = () => {
-      if (buttonAction.action.type === 'setActiveSceneIndex') {
-        const sceneType = buttonAction.action.sceneType
-        const val = buttonAction.action.index
-        const prev = pendingMidiSceneTimeouts[sceneType]
-        if (prev !== undefined) {
-          clearTimeout(prev)
-        }
-        const delayMs = msUntilNextBeatBoundary(rt_state.time)
-        pendingMidiSceneTimeouts[sceneType] = setTimeout(() => {
-          delete pendingMidiSceneTimeouts[sceneType]
-          dispatch(setActiveSceneIndex({ sceneType, val }))
-        }, delayMs)
-      } else if (buttonAction.action.type === 'tapTempo') {
-        tapTempo()
-      } else if (buttonAction.action.type === 'toggleAutoScene') {
-        const sceneType = buttonAction.action.sceneType
-        dispatch(
-          setAutoSceneEnabled({
-            sceneType,
-            val: !state.control[sceneType].auto.enabled,
-          })
-        )
-      } else if (buttonAction.action.type === 'toggleBlackout') {
-        dispatch(setBlackout(!state.gui.blackout))
-      } else if (buttonAction.action.type === 'toggleMoverFollowOverride') {
-        dispatch(toggleMoverFollowOverrideEnabled())
-      } else if (buttonAction.action.type === 'triggerAtmosFixture') {
-        dispatch(fireAtmosManualTrigger(buttonAction.action.fixtureId))
-      }
+      fireMidiButtonAction(dispatch, state, rt_state, buttonAction.action, tapTempo)
     }
 
     if (input.message.type === 'CC') {

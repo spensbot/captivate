@@ -4,16 +4,23 @@ import { clampNormalized } from '../math/util'
 import { defaultOutputParams } from './params'
 import {
   AudioEngineMetrics,
+  getAudioBandCutoffSliderBounds,
   getAudioBandLevel,
   initAudioBandConfig,
   initAudioEngineMetrics,
   normalizeAudioBandConfig,
 } from './audioEngine'
+import { AUDIO_BAND_MAX_LEVEL_UI } from './lfoShapeSlider'
 import { LfoShape } from './oscillator'
 
 export interface Modulator {
   lfo: Lfo
   splitModulations: Modulation[]
+  /**
+   * LFO→LFO inter-modulation (not tied to lighting splits). Keys: `intermod:lfo:{target}:{prop}`.
+   * Legacy scenes may still have these keys under `splitModulations[*]` until `fixLightScenes` migrates them.
+   */
+  lfoInterModulation?: Modulation
 }
 
 /** How modulation combines with the manual (base) set-point for a parameter. */
@@ -89,6 +96,7 @@ export function initModulator(splitCount: number): Modulator {
     splitModulations: Array(splitCount)
       .fill(0)
       .map(() => initModulation()),
+    lfoInterModulation: {},
   }
 }
 
@@ -133,15 +141,12 @@ function parseInterModKey(key: string): InterModTarget | null {
   return { targetIndex, prop }
 }
 
-/** For each target LFO index, which wave/prop keys receive inter-mod on this split. */
-export function intermodPropsIncoming(
-  scene: LightSceneLike,
-  splitIndex: number
-): Map<number, Set<string>> {
+/** For each target LFO index, which wave/prop keys receive inter-mod (global LFO graph). */
+export function intermodPropsIncoming(scene: LightSceneLike): Map<number, Set<string>> {
   const map = new Map<number, Set<string>>()
   for (const modulator of scene.modulators) {
-    const splitMod = modulator.splitModulations[splitIndex] ?? {}
-    for (const [key, amount] of Object.entries(splitMod)) {
+    const im = modulator.lfoInterModulation ?? {}
+    for (const [key, amount] of Object.entries(im)) {
       if (typeof amount !== 'number' || !Number.isFinite(amount)) continue
       const t = parseInterModKey(key)
       if (t === null) continue
@@ -158,21 +163,20 @@ export function intermodPropsIncoming(
 
 export function modOutgoingIntermod(
   scene: LightSceneLike,
-  splitIndex: number,
   sourceModIndex: number
 ): boolean {
-  const splitMod = scene.modulators[sourceModIndex]?.splitModulations[splitIndex]
-  if (splitMod === undefined) return false
-  return Object.keys(splitMod).some((k) => k.startsWith(INTER_MOD_PREFIX))
+  const im = scene.modulators[sourceModIndex]?.lfoInterModulation
+  if (im === undefined) return false
+  return Object.keys(im).some((k) => k.startsWith(INTER_MOD_PREFIX))
 }
 
-/** Inter-mod matrix keys on this split that have an amount (for LFO panel strips). */
+/** Inter-mod matrix keys on this modulator that have an amount. */
 export function activeInterModParamKeys(
-  splitMod: Modulation | undefined | null
+  lfoInterModulation: Modulation | undefined | null
 ): string[] {
-  if (splitMod === null || splitMod === undefined) return []
+  if (lfoInterModulation === null || lfoInterModulation === undefined) return []
   const out: string[] = []
-  for (const [key, val] of Object.entries(splitMod)) {
+  for (const [key, val] of Object.entries(lfoInterModulation)) {
     if (!key.startsWith(INTER_MOD_PREFIX)) continue
     if (typeof val !== 'number' || !Number.isFinite(val)) continue
     if (parseInterModKey(key) === null) continue
@@ -182,17 +186,16 @@ export function activeInterModParamKeys(
   return out
 }
 
-/** Distinct target LFO indices this source modulates on the split (inter-mod routes only). */
+/** Distinct target LFO indices this source modulates (inter-mod routes only). */
 export function intermodOutgoingTargets(
   scene: LightSceneLike,
-  splitIndex: number,
   sourceIndex: number
 ): number[] {
   const n = scene.modulators.length
-  const splitMod = scene.modulators[sourceIndex]?.splitModulations[splitIndex]
-  if (splitMod === undefined) return []
+  const im = scene.modulators[sourceIndex]?.lfoInterModulation
+  if (im === undefined) return []
   const set = new Set<number>()
-  for (const [key, val] of Object.entries(splitMod)) {
+  for (const [key, val] of Object.entries(im)) {
     if (typeof val !== 'number' || !Number.isFinite(val)) continue
     const t = parseInterModKey(key)
     if (t === null) continue
@@ -203,10 +206,9 @@ export function intermodOutgoingTargets(
   return Array.from(set).sort((a, b) => a - b)
 }
 
-/** Distinct source LFO indices that modulate this target on the split. */
+/** Distinct source LFO indices that modulate this target. */
 export function intermodIncomingSources(
   scene: LightSceneLike,
-  splitIndex: number,
   targetIndex: number
 ): number[] {
   const n = scene.modulators.length
@@ -214,9 +216,9 @@ export function intermodIncomingSources(
   const set = new Set<number>()
   for (let s = 0; s < n; s++) {
     if (s === targetIndex) continue
-    const splitMod = scene.modulators[s]?.splitModulations[splitIndex]
-    if (splitMod === undefined) continue
-    for (const [key, val] of Object.entries(splitMod)) {
+    const im = scene.modulators[s]?.lfoInterModulation
+    if (im === undefined) continue
+    for (const [key, val] of Object.entries(im)) {
       if (typeof val !== 'number' || !Number.isFinite(val)) continue
       const t = parseInterModKey(key)
       if (t === null) continue
@@ -247,10 +249,32 @@ function cloneLfo(lfo: Lfo): Lfo {
   return { ...lfo }
 }
 
+/** Map inter-mod delta (±0.5 at full depth) across the band slider like a 0–1 param. */
+function applyInterModDeltaToBandHz(
+  currentHz: number,
+  defaultHz: number,
+  minHz: number,
+  maxHz: number,
+  delta: number
+): number {
+  const span = maxHz - minHz
+  if (span <= 0) {
+    return Number.isFinite(currentHz) ? currentHz : defaultHz
+  }
+  const safeCurrent = Number.isFinite(currentHz) ? currentHz : defaultHz
+  const norm = (safeCurrent - minHz) / span
+  const nextNorm = Math.min(1, Math.max(0, norm + delta))
+  return minHz + nextNorm * span
+}
+
+type AudioBandCutoffBounds = ReturnType<typeof getAudioBandCutoffSliderBounds>
+
 function applyInterModToLfoProp(
   targetLfo: Lfo,
+  targetShape: LfoShape,
   prop: string,
-  delta: number
+  delta: number,
+  bandBounds: AudioBandCutoffBounds
 ) {
   if (prop === 'period') {
     const basePeriod = Math.max(0.125, Number(targetLfo.period) || 4)
@@ -260,38 +284,35 @@ function applyInterModToLfoProp(
   }
 
   if (prop === 'audioBandLowHz') {
-    const min = 20
-    const max = 20000
-    const span = max - min
-    const current = Number.isFinite(targetLfo.audioBandLowHz)
-      ? targetLfo.audioBandLowHz
-      : 240
-    const next = Math.min(max, Math.max(min, current + delta * span * 0.2))
-    targetLfo.audioBandLowHz = next
-    if (targetLfo.audioBandHighHz < next + 20) {
-      targetLfo.audioBandHighHz = Math.min(max, next + 20)
-    }
+    targetLfo.audioBandLowHz = applyInterModDeltaToBandHz(
+      targetLfo.audioBandLowHz,
+      240,
+      bandBounds.lowCutMinHz,
+      bandBounds.lowCutMaxHz,
+      delta
+    )
     return
   }
 
   if (prop === 'audioBandHighHz') {
-    const min = 20
-    const max = 20000
-    const span = max - min
-    const current = Number.isFinite(targetLfo.audioBandHighHz)
-      ? targetLfo.audioBandHighHz
-      : 1600
-    const next = Math.min(max, Math.max(min, current + delta * span * 0.2))
-    targetLfo.audioBandHighHz = next
-    if (targetLfo.audioBandLowHz > next - 20) {
-      targetLfo.audioBandLowHz = Math.max(min, next - 20)
-    }
+    targetLfo.audioBandHighHz = applyInterModDeltaToBandHz(
+      targetLfo.audioBandHighHz,
+      1600,
+      bandBounds.highCutMinHz,
+      bandBounds.highCutMaxHz,
+      delta
+    )
     return
   }
 
   if (prop === 'audioMax') {
     const next = clamp01((Number(targetLfo.audioMax) || 0.6) + delta)
-    targetLfo.audioMax = Math.max(targetLfo.audioThreshold + 0.01, next)
+    const maxLevel =
+      targetShape === LfoShape.AudioBand ? AUDIO_BAND_MAX_LEVEL_UI : 1
+    targetLfo.audioMax = Math.min(
+      maxLevel,
+      Math.max(targetLfo.audioThreshold + 0.01, next)
+    )
     return
   }
 
@@ -352,11 +373,12 @@ export function effectiveLfosAtSplit(
     getModulatorLfoValue(modulator.lfo, effectiveBeats, audioInput, sourceIndex)
   )
   const effectiveLfos = scene.modulators.map((modulator) => cloneLfo(modulator.lfo))
+  const bandBounds = getAudioBandCutoffSliderBounds(audioInput.nyquistHz)
 
   scene.modulators.forEach((modulator, sourceIndex) => {
     const sourceLfoVal = sourceLfoValues[sourceIndex]
-    const splitMod = modulator.splitModulations[splitIndex] ?? {}
-    for (const [key, amount] of Object.entries(splitMod)) {
+    const im = modulator.lfoInterModulation ?? {}
+    for (const [key, amount] of Object.entries(im)) {
       if (!Number.isFinite(amount)) continue
       const amountNorm = Number(amount)
       const target = parseInterModKey(key)
@@ -367,11 +389,46 @@ export function effectiveLfosAtSplit(
       const delta =
         ((amountNorm - 0.5) * 2 * ((sourceLfoVal - 0.5) * 2)) / 2
       const targetLfo = effectiveLfos[target.targetIndex]
-      applyInterModToLfoProp(targetLfo, target.prop, delta)
+      const targetShape = scene.modulators[target.targetIndex]?.lfo.shape ?? LfoShape.Sin
+      applyInterModToLfoProp(targetLfo, targetShape, target.prop, delta, bandBounds)
+    }
+  })
+
+  effectiveLfos.forEach((lfo, index) => {
+    if (scene.modulators[index]?.lfo.shape === LfoShape.AudioBand) {
+      enforceAudioBandCutoffGap(lfo, bandBounds)
     }
   })
 
   return effectiveLfos
+}
+
+const AUDIO_BAND_MIN_GAP_HZ = 20
+
+function enforceAudioBandCutoffGap(
+  lfo: Lfo,
+  bandBounds: AudioBandCutoffBounds
+) {
+  lfo.audioBandLowHz = Math.min(
+    bandBounds.lowCutMaxHz,
+    Math.max(bandBounds.lowCutMinHz, lfo.audioBandLowHz)
+  )
+  lfo.audioBandHighHz = Math.min(
+    bandBounds.highCutMaxHz,
+    Math.max(bandBounds.highCutMinHz, lfo.audioBandHighHz)
+  )
+  if (lfo.audioBandHighHz < lfo.audioBandLowHz + AUDIO_BAND_MIN_GAP_HZ) {
+    lfo.audioBandHighHz = Math.min(
+      bandBounds.highCutMaxHz,
+      lfo.audioBandLowHz + AUDIO_BAND_MIN_GAP_HZ
+    )
+  }
+  if (lfo.audioBandLowHz > lfo.audioBandHighHz - AUDIO_BAND_MIN_GAP_HZ) {
+    lfo.audioBandLowHz = Math.max(
+      bandBounds.lowCutMinHz,
+      lfo.audioBandHighHz - AUDIO_BAND_MIN_GAP_HZ
+    )
+  }
 }
 
 export function getOutputParams(

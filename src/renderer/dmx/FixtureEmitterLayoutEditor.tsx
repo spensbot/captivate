@@ -8,7 +8,12 @@ import {
   FixtureEmitterShape,
   FixtureModelConfig,
   FixtureType,
+  assignEmitterLayoutPositionsInOrder,
   autoResizeEmittersToFitFace,
+  bundleSubfixtureChannelsOntoEmitters,
+  fitEmitterLayoutToFace,
+  fitUniformHorizontalLineDiscLayoutToFace,
+  type EmitterAutoLayoutKind,
   clampEmitterDiameterM,
   clampRectFaceExtentM,
   EMITTER_DIAMETER_MAX_M,
@@ -30,6 +35,7 @@ import {
 import { getCustomColorChannelName } from '../../shared/dmxColors'
 import { FEET_PER_METER } from '../../shared/stage'
 import { clamp } from '../../math/util'
+import { nanoid } from 'nanoid'
 
 interface Props {
   fixtureType: FixtureType
@@ -52,25 +58,29 @@ type BodyBounds = {
   aspect: number
 }
 
-function computeBodyBounds(model: FixtureModelConfig): BodyBounds {
+/**
+ * Insets for the face inside the editor pane. Width and height use the **same**
+ * percentage of the pane's width and height so the drawn face keeps the true
+ * physical aspect ratio (the pane already has `aspect-ratio: faceW / faceH`).
+ */
+function computeBodyBounds(
+  model: Pick<
+    FixtureModelConfig,
+    'bodyShape' | 'width' | 'bodyHeight' | 'bodyDiameter' | 'kind'
+  >
+): BodyBounds {
   const dims = fixtureFrontFaceDimensionsM(model)
   const faceWidth = Math.max(0.05, dims.faceWidthM)
   const faceHeight = Math.max(0.05, dims.faceHeightM)
   const aspect = Math.max(0.2, Math.min(8, faceWidth / faceHeight))
 
-  const maxWidth = 100 - EDITOR_SAFE_PADDING_PERCENT * 2
-  const maxHeight = 100 - EDITOR_SAFE_PADDING_PERCENT * 2
-  let width = maxWidth
-  let height = width / aspect
-  if (height > maxHeight) {
-    height = maxHeight
-    width = height * aspect
-  }
+  const margin = EDITOR_SAFE_PADDING_PERCENT
+  const span = Math.max(10, 100 - 2 * margin)
   return {
-    left: (100 - width) * 0.5,
-    top: (100 - height) * 0.5,
-    width,
-    height,
+    left: margin,
+    top: margin,
+    width: span,
+    height: span,
     aspect,
   }
 }
@@ -155,38 +165,35 @@ function snapEmitterXY(
   return { x: clamp01(x), y: clamp01(y) }
 }
 
-/**
- * Emitter size as % of the editor pane so the WYSIWYG matches physical size vs. face
- * (avoids rem + arbitrary caps that made large emitters tiny or mis-scaled).
- */
-function emitterVisualSizePercent(
+/** Emitter size as % of the face clip (true physical ratio vs. face width / height). */
+function emitterVisualSizeBodyRelative(
   emitter: Pick<
     FixtureEmitterDefinition,
     'shape' | 'size' | 'rectWidthM' | 'rectHeightM'
   >,
   faceWidthM: number,
-  faceHeightM: number,
-  bounds: BodyBounds
-): { wPct: number; hPct: number } {
+  faceHeightM: number
+): { wPct: number; hPct: number; discCircle: boolean } {
   const fw = Math.max(0.001, faceWidthM)
   const fh = Math.max(0.001, faceHeightM)
 
   if (emitter.shape === 'disc') {
     const d = clampEmitterDiameterM(emitter.size)
-    const wPct = (d / fw) * bounds.width
-    const hPct = (d / fh) * bounds.height
+    const wPct = (d / fw) * 100
+    const hPct = (d / fh) * 100
+    const circlePct = Math.min(wPct, hPct)
     return {
-      wPct: clamp(wPct, 1.1, bounds.width * 0.98),
-      hPct: clamp(hPct, 1.1, bounds.height * 0.98),
+      wPct: clamp(circlePct, 0.4, 100),
+      hPct: clamp(circlePct, 0.4, 100),
+      discCircle: true as const,
     }
   }
 
   const { widthM, heightM } = normalizeRectEmitterFaceDimensionsM(emitter)
-  const wPct = (widthM / fw) * bounds.width
-  const hPct = (heightM / fh) * bounds.height
   return {
-    wPct: clamp(wPct, 1.1, bounds.width * 0.98),
-    hPct: clamp(hPct, 1.1, bounds.height * 0.98),
+    wPct: clamp((widthM / fw) * 100, 0.4, 100),
+    hPct: clamp((heightM / fh) * 100, 0.4, 100),
+    discCircle: false as const,
   }
 }
 
@@ -309,17 +316,39 @@ export default function FixtureEmitterLayoutEditor({
     model.customEmitters[0]?.id ?? null
   )
   const [draggingEmitterId, setDraggingEmitterId] = useState<string | null>(null)
-  const bodyBounds = useMemo(() => computeBodyBounds(model), [model])
-  const editorFaceM = useMemo(() => fixtureFrontFaceDimensionsM(model), [model])
+  const effectiveKindForFace =
+    model.kind === 'auto' ? inferFixtureModelKind(fixtureType) : model.kind
+  const bodyBounds = useMemo(
+    () =>
+      computeBodyBounds({
+        ...model,
+        kind: effectiveKindForFace,
+      }),
+    [model, effectiveKindForFace]
+  )
+  const editorFaceM = useMemo(
+    () =>
+      fixtureFrontFaceDimensionsM({
+        ...model,
+        kind: effectiveKindForFace,
+      }),
+    [model, effectiveKindForFace]
+  )
   const widthUnitLabel = stageUnit === 'ft' ? 'ft' : 'm'
+  const faceWidthDisplay =
+    stageUnit === 'ft'
+      ? editorFaceM.faceWidthM * FEET_PER_METER
+      : editorFaceM.faceWidthM
+  const faceHeightDisplay =
+    stageUnit === 'ft'
+      ? editorFaceM.faceHeightM * FEET_PER_METER
+      : editorFaceM.faceHeightM
   const bodyWidthDisplay =
     stageUnit === 'ft' ? model.width * FEET_PER_METER : model.width
   const bodyHeightDisplay =
     stageUnit === 'ft' ? model.bodyHeight * FEET_PER_METER : model.bodyHeight
   const bodyDepthDisplay =
     stageUnit === 'ft' ? model.bodyDepth * FEET_PER_METER : model.bodyDepth
-  const bodyDiameterDisplay =
-    stageUnit === 'ft' ? model.bodyDiameter * FEET_PER_METER : model.bodyDiameter
   const effectiveKind =
     model.kind === 'auto' ? inferFixtureModelKind(fixtureType) : model.kind
   const isPar = effectiveKind === 'parCan'
@@ -344,6 +373,27 @@ export default function FixtureEmitterLayoutEditor({
     }
   }, [model.customEmitters, selectedEmitterId])
 
+  function fitEmittersToEditorFace(emitters: FixtureEmitterDefinition[]) {
+    return fitEmitterLayoutToFace(
+      emitters,
+      editorFaceM.faceWidthM,
+      editorFaceM.faceHeightM
+    )
+  }
+
+  function bundleEmittersToSubfixtureChannels(
+    emitters: FixtureEmitterDefinition[]
+  ): FixtureEmitterDefinition[] {
+    if (fixtureType.subFixtures.length === 0) {
+      return emitters
+    }
+    return bundleSubfixtureChannelsOntoEmitters(
+      fixtureType,
+      model.emittersPerSubFixture,
+      emitters
+    )
+  }
+
   function updateModelEmitters(nextEmitters: FixtureEmitterDefinition[]) {
     onChange({
       ...model,
@@ -366,17 +416,39 @@ export default function FixtureEmitterLayoutEditor({
 
   function addEmitter() {
     if (!model.useCustomEmitterLayout) return
-    const fallbackChannelIndex = Math.max(
-      0,
-      Math.min(fixtureType.channels.length - 1, model.customEmitters.length)
+    const template =
+      selectedEmitter ??
+      model.customEmitters[model.customEmitters.length - 1] ??
+      null
+    let emitter: FixtureEmitterDefinition
+    if (template !== null) {
+      const nx = clamp01(template.x + 0.045)
+      const ny = clamp01(template.y + 0.045)
+      emitter = {
+        ...template,
+        id: nanoid(),
+        x: nx > 0.97 ? clamp01(template.x - 0.045) : nx,
+        y: ny > 0.97 ? clamp01(template.y - 0.045) : ny,
+        channelIndexes: [...template.channelIndexes],
+      }
+    } else {
+      const fallbackChannelIndex = Math.max(
+        0,
+        Math.min(
+          Math.max(0, fixtureType.channels.length - 1),
+          model.customEmitters.length
+        )
+      )
+      emitter = initFixtureEmitterDefinition(
+        fixtureType.channels.length > 0 ? [fallbackChannelIndex] : []
+      )
+      emitter.x = 0.5
+      emitter.y = 0.5
+      emitter.z = 0.65
+    }
+    updateModelEmitters(
+      bundleEmittersToSubfixtureChannels([...model.customEmitters, emitter])
     )
-    const emitter = initFixtureEmitterDefinition(
-      fixtureType.channels.length > 0 ? [fallbackChannelIndex] : []
-    )
-    emitter.x = 0.5
-    emitter.y = 0.5
-    emitter.z = 0.65
-    updateModelEmitters([...model.customEmitters, emitter])
     setSelectedEmitterId(emitter.id)
   }
 
@@ -386,7 +458,7 @@ export default function FixtureEmitterLayoutEditor({
     const nextEmitters = model.customEmitters.filter(
       (emitter) => emitter.id !== selectedEmitter.id
     )
-    updateModelEmitters(nextEmitters)
+    updateModelEmitters(bundleEmittersToSubfixtureChannels(nextEmitters))
     setSelectedEmitterId(nextEmitters[0]?.id ?? null)
   }
 
@@ -411,7 +483,7 @@ export default function FixtureEmitterLayoutEditor({
       hardResetEmitterLayoutFromDefaults()
       return
     }
-    const dims = fixtureFrontFaceDimensionsM(model)
+    const dims = editorFaceM
     const n = emitters.length
     const current = emitters.map((e) => ({ x: e.x, y: e.y }))
 
@@ -426,7 +498,14 @@ export default function FixtureEmitterLayoutEditor({
           ]
         : model.bodyShape === 'box'
         ? [
-            { name: 'line', positions: normalizedParBoxLineEmitterPositions(n) },
+            {
+              name: 'line',
+              positions: normalizedParBoxLineEmitterPositions(
+                n,
+                dims.faceWidthM,
+                dims.faceHeightM
+              ),
+            },
             { name: 'grid', positions: normalizedParBoxGridEmitterPositions(n) },
           ]
         : []
@@ -438,7 +517,7 @@ export default function FixtureEmitterLayoutEditor({
         dims.faceWidthM,
         dims.faceHeightM
       )
-      updateModelEmitters(nextEmitters)
+      updateModelEmitters(bundleEmittersToSubfixtureChannels(nextEmitters))
       return
     }
 
@@ -453,15 +532,31 @@ export default function FixtureEmitterLayoutEditor({
       }
     }
 
-    const assign = minCostAssignmentGreedy(current, best.positions)
-    const targetPerEmitter = emitters.map((_, i) => best.positions[assign[i]!]!)
-    const nextEmitters = autoResizeEmittersToFitFace(
+    const layoutKind = best.name as EmitterAutoLayoutKind
+    const targetPerEmitter = assignEmitterLayoutPositionsInOrder(
       emitters,
-      targetPerEmitter,
-      dims.faceWidthM,
-      dims.faceHeightM
+      best.positions,
+      layoutKind
     )
-    updateModelEmitters(nextEmitters)
+    const nextEmitters =
+      layoutKind === 'line' &&
+      emitters.every((emitter) => emitter.shape === 'disc')
+        ? fitUniformHorizontalLineDiscLayoutToFace(
+            emitters.map((emitter, index) => ({
+              ...emitter,
+              x: targetPerEmitter[index]?.x ?? emitter.x,
+              y: targetPerEmitter[index]?.y ?? emitter.y,
+            })),
+            dims.faceWidthM,
+            dims.faceHeightM
+          )
+        : autoResizeEmittersToFitFace(
+            emitters,
+            targetPerEmitter,
+            dims.faceWidthM,
+            dims.faceHeightM
+          )
+    updateModelEmitters(bundleEmittersToSubfixtureChannels(nextEmitters))
   }
 
   function resetEmitterLayout() {
@@ -475,22 +570,54 @@ export default function FixtureEmitterLayoutEditor({
 
   function applyParLayoutRing() {
     if (!model.useCustomEmitterLayout || model.customEmitters.length === 0) return
-    updateModelEmitters(layoutEmittersParRing(model.customEmitters))
+    updateModelEmitters(
+      bundleEmittersToSubfixtureChannels(
+        layoutEmittersParRing(
+          model.customEmitters,
+          editorFaceM.faceWidthM,
+          editorFaceM.faceHeightM
+        )
+      )
+    )
   }
 
   function applyParLayoutHoneycomb() {
     if (!model.useCustomEmitterLayout || model.customEmitters.length === 0) return
-    updateModelEmitters(layoutEmittersParHoneycomb(model.customEmitters))
+    updateModelEmitters(
+      bundleEmittersToSubfixtureChannels(
+        layoutEmittersParHoneycomb(
+          model.customEmitters,
+          editorFaceM.faceWidthM,
+          editorFaceM.faceHeightM
+        )
+      )
+    )
   }
 
   function applyParLayoutBoxLine() {
     if (!model.useCustomEmitterLayout || model.customEmitters.length === 0) return
-    updateModelEmitters(layoutEmittersParBoxLine(model.customEmitters))
+    updateModelEmitters(
+      bundleEmittersToSubfixtureChannels(
+        layoutEmittersParBoxLine(
+          model.customEmitters,
+          editorFaceM.faceWidthM,
+          editorFaceM.faceHeightM
+        )
+      )
+    )
   }
 
   function applyParLayoutBoxGrid() {
     if (!model.useCustomEmitterLayout || model.customEmitters.length === 0) return
-    updateModelEmitters(layoutEmittersParBoxGrid(model.customEmitters))
+    updateModelEmitters(
+      bundleEmittersToSubfixtureChannels(
+        layoutEmittersParBoxGrid(
+          model.customEmitters,
+          editorFaceM.faceWidthM,
+          editorFaceM.faceHeightM
+        )
+      )
+    )
   }
 
   function toggleEmitterChannel(channelIndex: number) {
@@ -545,7 +672,13 @@ export default function FixtureEmitterLayoutEditor({
     }
 
     const handleMouseUp = () => {
+      const draggedId = draggingEmitterId
       setDraggingEmitterId(null)
+      if (draggedId === null) {
+        return
+      }
+      const { emitters } = snapRef.current
+      updateModelEmitters(fitEmittersToEditorFace(emitters))
     }
 
     window.addEventListener('mousemove', handleMouseMove)
@@ -560,39 +693,47 @@ export default function FixtureEmitterLayoutEditor({
     <Root>
       <SectionTitle>Emitter Layout Editor</SectionTitle>
       <SubText>
-        Front-face view: the outline matches the fixture opening in the 3D preview
-        (rectangular bodies use the same reduced face width as the renderer). Drag
-        emitters to position them; select an emitter for channels, shape, size, and
-        depth. Hold <strong>Shift</strong> while dragging to bypass snap (grid,
-        center and quarter lines, other emitters, and radial lines on round PAR
-        faces).
+        The editor frame keeps the real front-face aspect ratio (width / height in
+        meters), so horizontal and vertical distances are to the same scale. The
+        outline is the emitter face (wash bars use full bar width; other rectangular
+        bodies use a reduced opening width). Drag emitters to position
+        them; select an emitter for channels, shape, size, and depth. Hold{' '}
+        <strong>Shift</strong> while dragging to bypass snap (grid, center and
+        quarter lines, other emitters, and radial lines on round PAR faces).
       </SubText>
       {isPar && (
         <SubText style={{ marginTop: '0.35rem' }}>
           With custom layout off, PAR emitters follow the{' '}
           <strong>Box layout</strong> (single row or grid) or <strong>Round layout</strong>{' '}
           (ring or honeycomb) on the fixture model, including optional auto-expand of the
-          face. The PAR buttons below only rearrange positions (ids and channel mapping
-          stay put).
+          face. The PAR buttons below rearrange positions and resize to the face (ids and
+          channel mapping stay put).
         </SubText>
       )}
       <SubText style={{ marginTop: isPar ? '0.28rem' : '0.35rem' }}>
         <strong>Auto-Generate</strong> (all fixture types with custom layout): picks the
         closest ring vs honeycomb on a <strong>round</strong> front face, or single row
         vs grid on a <strong>rectangular</strong> front face, matches it to your current
-        layout, then scales emitters to fill the face with small gaps. With no recognized
-        body shape, it only resizes emitters at their current positions.
+        layout, then places emitters in list order (Emitter 1, 2, 3… left→right on a
+        row) and scales each to the largest size allowed: 1% face inset and 10% neighbor
+        gap. When the fixture has subfixtures, each emitter is assigned every channel in
+        its subfixture (by emitter list order and emitters per subfixture). With no
+        recognized body shape, it only resizes at current positions.
       </SubText>
       <BodyDims>
-        <DimsLabel>{isPar ? 'PAR face dimensions:' : 'Body dimensions:'}</DimsLabel>
+        <DimsLabel>Emitter face (layout scale):</DimsLabel>
         <DimsValue>
-          {isParCylinder
-            ? `Face diameter ${bodyDiameterDisplay.toFixed(2)} ${widthUnitLabel} · Depth ${bodyDepthDisplay.toFixed(2)} ${widthUnitLabel}`
-            : isParBox
-            ? `Face width ${bodyWidthDisplay.toFixed(2)} ${widthUnitLabel} · Face height ${bodyHeightDisplay.toFixed(2)} ${widthUnitLabel} · Depth ${bodyDepthDisplay.toFixed(2)} ${widthUnitLabel}`
-            : model.bodyShape === 'cylinder'
-            ? `Diameter ${bodyDiameterDisplay.toFixed(2)} ${widthUnitLabel} · Height ${bodyHeightDisplay.toFixed(2)} ${widthUnitLabel}`
-            : `Width ${bodyWidthDisplay.toFixed(2)} ${widthUnitLabel} · Height ${bodyHeightDisplay.toFixed(2)} ${widthUnitLabel} · Depth ${bodyDepthDisplay.toFixed(2)} ${widthUnitLabel}`}
+          {model.bodyShape === 'cylinder'
+            ? `Diameter ${faceWidthDisplay.toFixed(2)} ${widthUnitLabel} · Height ${bodyHeightDisplay.toFixed(2)} ${widthUnitLabel}`
+            : `Width ${faceWidthDisplay.toFixed(2)} ${widthUnitLabel} · Height ${faceHeightDisplay.toFixed(2)} ${widthUnitLabel}`}
+          {effectiveKind === 'washBar' && model.bodyShape === 'box'
+            ? ` · Bar width ${bodyWidthDisplay.toFixed(2)} ${widthUnitLabel}`
+            : !isPar && model.bodyShape === 'box'
+              ? ` · Body width ${bodyWidthDisplay.toFixed(2)} ${widthUnitLabel}`
+              : ''}
+          {model.bodyShape !== 'cylinder' || isPar
+            ? ` · Depth ${bodyDepthDisplay.toFixed(2)} ${widthUnitLabel}`
+            : ''}
         </DimsValue>
       </BodyDims>
       <Toolbar>
@@ -666,54 +807,49 @@ export default function FixtureEmitterLayoutEditor({
           $disabled={!model.useCustomEmitterLayout}
           $aspect={bodyBounds.aspect}
         >
-          {model.bodyShape === 'cylinder' ? (
-            <BodyCircle
-              style={{
-                left: `${bodyBounds.left}%`,
-                top: `${bodyBounds.top}%`,
-                width: `${bodyBounds.width}%`,
-                height: `${bodyBounds.height}%`,
-              }}
-            />
-          ) : (
-            <BodyRect
-              style={{
-                left: `${bodyBounds.left}%`,
-                top: `${bodyBounds.top}%`,
-                width: `${bodyBounds.width}%`,
-                height: `${bodyBounds.height}%`,
-              }}
-            />
-          )}
-          {model.customEmitters.map((emitter, emitterIndex) => {
-            const selected = emitter.id === selectedEmitterId
-            const vis = emitterVisualSizePercent(
-              emitter,
-              editorFaceM.faceWidthM,
-              editorFaceM.faceHeightM,
-              bodyBounds
-            )
-            return (
-              <EmitterDot
-                key={emitter.id}
-                $x={bodyBounds.left + emitter.x * bodyBounds.width}
-                $y={bodyBounds.top + emitter.y * bodyBounds.height}
-                $shape={emitter.shape}
-                $wPct={vis.wPct}
-                $hPct={vis.hPct}
-                $selected={selected}
-                title={`Emitter ${emitterIndex + 1}`}
-                onMouseDown={(event) => {
-                  if (!model.useCustomEmitterLayout) return
-                  event.preventDefault()
-                  setSelectedEmitterId(emitter.id)
-                  setDraggingEmitterId(emitter.id)
-                }}
-              >
-                {emitterIndex + 1}
-              </EmitterDot>
-            )
-          })}
+          <BodyFaceClip
+            style={{
+              left: `${bodyBounds.left}%`,
+              top: `${bodyBounds.top}%`,
+              width: `${bodyBounds.width}%`,
+              aspectRatio: bodyBounds.aspect,
+            }}
+          >
+            {model.bodyShape === 'cylinder' ? (
+              <BodyCircle />
+            ) : (
+              <BodyRect />
+            )}
+            {model.customEmitters.map((emitter, emitterIndex) => {
+              const selected = emitter.id === selectedEmitterId
+              const vis = emitterVisualSizeBodyRelative(
+                emitter,
+                editorFaceM.faceWidthM,
+                editorFaceM.faceHeightM
+              )
+              return (
+                <EmitterDot
+                  key={emitter.id}
+                  $x={emitter.x * 100}
+                  $y={emitter.y * 100}
+                  $shape={emitter.shape}
+                  $wPct={vis.wPct}
+                  $hPct={vis.hPct}
+                  $discCircle={vis.discCircle}
+                  $selected={selected}
+                  title={`Emitter ${emitterIndex + 1}`}
+                  onMouseDown={(event) => {
+                    if (!model.useCustomEmitterLayout) return
+                    event.preventDefault()
+                    setSelectedEmitterId(emitter.id)
+                    setDraggingEmitterId(emitter.id)
+                  }}
+                >
+                  {emitterIndex + 1}
+                </EmitterDot>
+              )
+            })}
+          </BodyFaceClip>
         </EditorPane>
         <Sidebar>
           {selectedEmitter === null ? (
@@ -1080,20 +1216,30 @@ const DisabledNote = styled.div`
   color: ${(props) => props.theme.colors.text.secondary};
 `
 
+const BodyFaceClip = styled.div`
+  position: absolute;
+  z-index: 0;
+  overflow: visible;
+`
+
 const BodyRect = styled.div`
   position: absolute;
+  inset: 0;
   z-index: 0;
   border: 1px solid #ffffff26;
   border-radius: 0.25rem;
   background: #ffffff08;
+  pointer-events: none;
 `
 
 const BodyCircle = styled.div`
   position: absolute;
+  inset: 0;
   z-index: 0;
   border: 1px solid #ffffff26;
   border-radius: 999rem;
   background: #ffffff08;
+  pointer-events: none;
 `
 
 const EmitterDot = styled.button<{
@@ -1102,18 +1248,29 @@ const EmitterDot = styled.button<{
   $shape: FixtureEmitterShape
   $wPct: number
   $hPct: number
+  $discCircle: boolean
   $selected: boolean
 }>`
   position: absolute;
   left: ${(props) => props.$x}%;
   top: ${(props) => props.$y}%;
   transform: translate(-50%, -50%);
-  width: ${(props) => props.$wPct}%;
-  height: ${(props) => props.$hPct}%;
-  min-width: 0.35rem;
-  min-height: 0.35rem;
+  ${(props) =>
+    props.$discCircle
+      ? `
+    width: ${props.$wPct}%;
+    height: auto;
+    aspect-ratio: 1;
+    min-height: 0;
+  `
+      : `
+    width: ${props.$wPct}%;
+    height: ${props.$hPct}%;
+  `}
+  min-width: ${(props) => (props.$discCircle ? '0' : '0.35rem')};
+  min-height: ${(props) => (props.$discCircle ? '0' : '0.35rem')};
   max-width: 100%;
-  max-height: 100%;
+  max-height: ${(props) => (props.$discCircle ? 'none' : '100%')};
   border-radius: ${(props) => (props.$shape === 'disc' ? '999rem' : '0.2rem')};
   border: 1px solid ${(props) => (props.$selected ? '#6fb0ff' : '#ffffff55')};
   background: ${(props) => (props.$selected ? '#2f7ef4' : '#333c48')};
@@ -1125,6 +1282,7 @@ const EmitterDot = styled.button<{
   justify-content: center;
   padding: 0;
   z-index: 1;
+  box-sizing: border-box;
 `
 
 const Sidebar = styled.div`

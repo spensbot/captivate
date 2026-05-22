@@ -1,8 +1,9 @@
 import { nanoid } from 'nanoid'
 import { distanceBetween, pLerp, Point } from '../math/point'
 import { BaseColors, getBaseColorsFromHsv } from './baseColors'
-import { getMovingWindow, getWindowMultiplier2D } from './dmxUtil'
+import { getMovingWindow, getWindowRandomizerLevel } from './dmxUtil'
 import { getParam, Params } from './params'
+import type { RandomizerState } from './randomizer'
 import { Window2D_t } from './window'
 import { WledOutputMode } from './wledDiscovery'
 
@@ -88,7 +89,7 @@ export function initLedFixture(): LedFixture {
     id: nanoid(),
     name: 'Name',
     groups: ['LEDs'],
-    mdns: 'Wled1',
+    mdns: '',
     controller: {
       output_mode: 'auto',
       pixel_format: 'auto',
@@ -143,11 +144,17 @@ export interface LedStringPlacementStats {
   isComplete: boolean
 }
 
+export type LedRandomizerContext = {
+  state: RandomizerState
+  baseIndex: number
+}
+
 export function getLedValues(
   params: Params,
   ledFixture: LedFixture,
   master: number,
-  placementDepth2DOnly: boolean = false
+  placementDepth2DOnly: boolean = false,
+  randomizer?: LedRandomizerContext
 ): BaseColors[] {
   const ledWindows = getLedWindows(ledFixture)
   if (ledWindows.length === 0) {
@@ -159,8 +166,15 @@ export function getLedValues(
   const brightness = getParam(params, 'brightness')
   const movingWindow = getMovingWindow(params, placementDepth2DOnly)
 
-  return ledWindows.map((ledWindow) => {
-    const windowMultiplier = getWindowMultiplier2D(ledWindow, movingWindow)
+  return ledWindows.map((ledWindow, pixelIndex) => {
+    const randomizerLevel =
+      randomizer?.state[randomizer.baseIndex + pixelIndex]?.level ?? 1
+    const windowMultiplier = getWindowRandomizerLevel(
+      params,
+      randomizerLevel,
+      ledWindow,
+      movingWindow
+    )
 
     return getBaseColorsFromHsv(
       hue,

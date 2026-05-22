@@ -7,6 +7,7 @@ import {
   useBaseParams,
   useDeviceSelector,
   useDmxSelector,
+  useTypedSelector,
 } from 'renderer/redux/store'
 import styled from 'styled-components'
 import Popup from '../base/Popup'
@@ -75,11 +76,14 @@ export const paramBundles: { [key in ParamBundle]: DefaultParam[] } = {
     'moverMirrorY',
     'moverMode',
   ],
-  position: ['x', 'y', 'width', 'height'],
+  position: ['x', 'y', 'width', 'height', 'positionFeather'],
   depth: ['z', 'depth'],
   hsb: ['hue', 'saturation', 'brightness'],
   wwauv: ['white', 'warmWhite', 'amber', 'uv'],
 }
+
+/** Params owned by the XY pad; removed together via the bundle X only. */
+export const positionPadParams = paramBundles.position
 
 function Axis() {
   return <img style={{ width: '1.5rem', height: '1.5rem' }} src={axisIconSrc} />
@@ -123,12 +127,16 @@ function getOptions(
   splitSupportsGobo: boolean,
   splitSupportsAtmosphere: boolean,
   splitSupportsColorChannels: boolean,
-  auxColorGates: AuxColorGates
+  auxColorGates: AuxColorGates,
+  fxtrDepthEnabled: boolean
 ): (DefaultParam | ParamBundle | string)[] {
   const defaultParamSet = new Set(defaultParamsList as string[])
 
   const paramOptions: (DefaultParam | ParamBundle | string)[] =
     defaultParamsList.filter((param) => {
+      if (!fxtrDepthEnabled && (param === 'z' || param === 'depth')) {
+        return false
+      }
       if (param === 'xMirror') {
         return false
       }
@@ -187,6 +195,9 @@ function getOptions(
     })
 
   const paramBundleOptions = paramBundleList.filter((pb) => {
+    if (pb === 'depth' && !fxtrDepthEnabled) {
+      return false
+    }
     if (pb === 'axis' && !splitSupportsMovers) {
       return false
     }
@@ -266,6 +277,7 @@ function getOptions(
 export default function ParamAddButton({ splitIndex }: Props) {
   const dispatch = useDispatch()
   const [isOpen, setIsOpen] = useState(false)
+  const fxtrDepthOn = useTypedSelector((state) => state.gui.fxtrDepthOn)
   const dmx = useDmxSelector((state) => state)
   const baseParams = useBaseParams(splitIndex)
   const customChannels = useDmxSelector((dmx) => getCustomChannels(dmx))
@@ -425,7 +437,8 @@ export default function ParamAddButton({ splitIndex }: Props) {
     splitCapabilities.supportsGobo,
     splitCapabilities.supportsAtmosphere,
     splitCapabilities.supportsColorChannels,
-    auxColorGates
+    auxColorGates,
+    fxtrDepthOn
   ).filter((option) => !unusableOptions.has(option))
 
   return (

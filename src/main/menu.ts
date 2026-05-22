@@ -18,6 +18,8 @@ interface DarwinMenuItemConstructorOptions extends MenuItemConstructorOptions {
 interface MenuResource {
   ipcCallbacks: IPC_Callbacks
   openPageWindow: (page: import('../shared/pages').Page) => void
+  /** Same path as renderer-initiated quit: save, teardown engine, then exit. */
+  requestAppQuit: () => void
 }
 
 export default class MenuBuilder {
@@ -99,7 +101,7 @@ export default class MenuBuilder {
           label: 'Quit',
           accelerator: 'Command+Q',
           click: () => {
-            app.quit()
+            this.res.requestAppQuit()
           },
         },
       ],
@@ -231,7 +233,7 @@ export default class MenuBuilder {
         },
         { type: 'separator' },
         {
-          label: 'Open Lighting 3D Window',
+          label: 'Open Lighting 3D Window (Alpha)',
           click: () => {
             this.res.openPageWindow('Lighting3D')
           },
@@ -430,7 +432,7 @@ export default class MenuBuilder {
           },
           { type: 'separator' },
           {
-            label: 'Open Lighting 3D Window',
+            label: 'Open Lighting 3D Window (Alpha)',
             click: () => {
               this.res.openPageWindow('Lighting3D')
             },

@@ -56,6 +56,22 @@ export function formatSplitGroupsLabel(
     .join(', ')
 }
 
+/** True when this split targets exactly one included group (auto-managed / laser splits). */
+export function isDedicatedGroupSplit(
+  groups: SplitScene_t['groups'] | undefined,
+  group: string
+): boolean {
+  if (!groups) return false
+  const entries = Object.entries(groups).filter(
+    ([, included]) => included !== undefined
+  )
+  return (
+    entries.length === 1 &&
+    entries[0]![0] === group &&
+    entries[0]![1] === true
+  )
+}
+
 /** Split heading for UI, e.g. `Split 1 - all`, `Split 2 - not movers`. */
 export function splitDisplayName(
   splitIndex: number,

@@ -1,5 +1,7 @@
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import styled from 'styled-components'
+import ChevronLeft from '@mui/icons-material/ChevronLeft'
+import ChevronRight from '@mui/icons-material/ChevronRight'
 import { useDmxSelector, useTypedSelector } from '../redux/store'
 import FixtureCursor from './FixtureCursor'
 import useDragMapped, { MappedPos } from '../hooks/useDragMapped'
@@ -38,6 +40,16 @@ const AXIS_LABEL: { [key in Axis]: string } = {
   z: 'Z',
 }
 
+/** Stage dimension name for each world axis (matches `StageDimensions` *Ft fields). */
+const AXIS_STAGE_DIM: { [key in Axis]: string } = {
+  x: 'Width',
+  y: 'Height',
+  z: 'Depth',
+}
+
+/** Minimum width of the mapping plot strip before horizontal scroll appears. */
+const MAPPING_CONTENT_MIN_WIDTH = '20rem'
+
 function defaultAxisPos(axis: Axis): number {
   return axis === 'z' ? 1 : 0.5
 }
@@ -60,14 +72,27 @@ function padPhysicalAspectRatio(
   return w / h
 }
 
-function getGridStops(stage: StageDimensions, axis: Axis): number[] {
+const FIXTURE_SNAP_GRID_OPTIONS_FT = [0.25, 0.5, 1, 2, 4] as const
+
+function snapSpacingDisplayLabel(stage: StageDimensions, feet: number): string {
+  const displayLen = feet * (stage.unit === 'm' ? METERS_PER_FOOT : 1)
+  const decimals = displayLen < 1 ? 2 : 2
+  return `${Number(displayLen.toFixed(decimals))} ${stage.unit}`
+}
+
+function getGridStops(
+  stage: StageDimensions,
+  axis: Axis,
+  gridSpacingFeet: number
+): number[] {
+  const spacing = Math.max(0.01, gridSpacingFeet)
   const axisLengthFt = Math.max(0.01, stageAxisLengthFt(stage, axis))
-  const rawCount = Math.max(1, Math.floor(axisLengthFt / STAGE_SNAP_GRID_FEET))
+  const rawCount = Math.max(1, Math.floor(axisLengthFt / spacing))
   const stride = Math.max(1, Math.ceil(rawCount / 120))
   const stops: number[] = []
 
   for (let step = 0; step <= rawCount; step += stride) {
-    const feet = step * STAGE_SNAP_GRID_FEET
+    const feet = step * spacing
     stops.push(
       stageAxisFromDisplayValue(
         {
@@ -90,6 +115,7 @@ function Pad({
   horizontalAxis,
   verticalAxis,
   stage,
+  snapGridFeet,
   fixtureIndexes,
   onDrag,
 }: {
@@ -97,6 +123,7 @@ function Pad({
   horizontalAxis: Axis
   verticalAxis: Axis
   stage: StageDimensions
+  snapGridFeet: number
   fixtureIndexes: number[]
   onDrag: (
     horizontalAxis: Axis,
@@ -109,44 +136,50 @@ function Pad({
   const [dragContainer, onMouseDown] = useDragMapped((mapped, e, status) =>
     onDrag(horizontalAxis, verticalAxis, mapped, e, status)
   )
-  const horizontalStops = getGridStops(stage, horizontalAxis)
-  const verticalStops = getGridStops(stage, verticalAxis)
+  const horizontalStops = getGridStops(stage, horizontalAxis, snapGridFeet)
+  const verticalStops = getGridStops(stage, verticalAxis, snapGridFeet)
   const aspectRatio = padPhysicalAspectRatio(stage, horizontalAxis, verticalAxis)
+  const bottomLabel = `${AXIS_LABEL[horizontalAxis]} · ${AXIS_STAGE_DIM[horizontalAxis]}`
+  const leftLabel = `${AXIS_LABEL[verticalAxis]} · ${AXIS_STAGE_DIM[verticalAxis]}`
 
   return (
     <PadCard>
       <PadTitle>{title}</PadTitle>
-      <PadRoot
-        ref={dragContainer}
-        data-fixture-pad=""
-        onMouseDown={onMouseDown}
-        $aspectRatio={aspectRatio}
-      >
-        {horizontalStops.map((stop) => (
-          <GridLineV key={`v-${horizontalAxis}-${stop}`} style={{ left: `${stop * 100}%` }} />
-        ))}
-        {verticalStops.map((stop) => (
-          <GridLineH
-            key={`h-${verticalAxis}-${stop}`}
-            style={{ top: `${(1 - stop) * 100}%` }}
-          />
-        ))}
-        <CrossV />
-        <CrossH />
-        {fixtureIndexes.map((index) => (
-          <FixtureCursor
-            key={`${horizontalAxis}-${verticalAxis}-${index}`}
-            index={index}
-            horizontalAxis={horizontalAxis}
-            verticalAxis={verticalAxis}
-            showSubFixtures={false}
-          />
-        ))}
-      </PadRoot>
-      <AxisLabelRow>
-        <span>{AXIS_LABEL[horizontalAxis]} axis</span>
-        <span>{AXIS_LABEL[verticalAxis]} axis</span>
-      </AxisLabelRow>
+      <PadBodyRow>
+        <LeftAxisLabel aria-hidden>
+          <LeftAxisLabelText>{leftLabel}</LeftAxisLabelText>
+        </LeftAxisLabel>
+        <PadPlotColumn>
+          <PadRoot
+            ref={dragContainer}
+            data-fixture-pad=""
+            onMouseDown={onMouseDown}
+            $aspectRatio={aspectRatio}
+          >
+            {horizontalStops.map((stop) => (
+              <GridLineV key={`v-${horizontalAxis}-${stop}`} style={{ left: `${stop * 100}%` }} />
+            ))}
+            {verticalStops.map((stop) => (
+              <GridLineH
+                key={`h-${verticalAxis}-${stop}`}
+                style={{ top: `${(1 - stop) * 100}%` }}
+              />
+            ))}
+            <CrossV />
+            <CrossH />
+            {fixtureIndexes.map((index) => (
+              <FixtureCursor
+                key={`${horizontalAxis}-${verticalAxis}-${index}`}
+                index={index}
+                horizontalAxis={horizontalAxis}
+                verticalAxis={verticalAxis}
+                showSubFixtures={true}
+              />
+            ))}
+          </PadRoot>
+          <BottomAxisLabel>{bottomLabel}</BottomAxisLabel>
+        </PadPlotColumn>
+      </PadBodyRow>
     </PadCard>
   )
 }
@@ -198,6 +231,7 @@ export default function FixturePlacement() {
   )
   const dragFixtureIndexRef = useRef<number | null>(null)
   const dragHasMovedRef = useRef(false)
+  const [snapGridFeet, setSnapGridFeet] = useState(STAGE_SNAP_GRID_FEET)
 
   function ensureAxisEnabled(index: number, axis: Axis) {
     const fixtureWindow = fixtureWindowByIndex.get(index)
@@ -323,13 +357,13 @@ export default function FixturePlacement() {
       stage,
       horizontalAxis,
       mapped.x,
-      STAGE_SNAP_GRID_FEET
+      snapGridFeet
     )
     const nextVertical = snapStageAxisNormalized(
       stage,
       verticalAxis,
       mapped.y,
-      STAGE_SNAP_GRID_FEET
+      snapGridFeet
     )
 
     const payload: {
@@ -374,6 +408,18 @@ export default function FixturePlacement() {
   }
 
   const positionAxes: Axis[] = zDepthEnabled ? ['x', 'y', 'z'] : ['x', 'y']
+  const [mappingPage, setMappingPage] = useState(0)
+
+  useEffect(() => {
+    if (!zDepthEnabled) {
+      setMappingPage(0)
+    }
+  }, [zDepthEnabled])
+
+  const mappingPageTitle =
+    mappingPage === 0
+      ? 'XY · Front of house'
+      : 'XZ · Top down (stage toward top)'
 
   return (
     <Root>
@@ -390,35 +436,89 @@ export default function FixturePlacement() {
             />
             <span>Enable Z Depth</span>
           </DepthToggle>
+          <SnapGridControl>
+            <SnapGridLabel htmlFor="fixture-snap-grid">Snap grid</SnapGridLabel>
+            <SnapGridSelect
+              id="fixture-snap-grid"
+              value={snapGridFeet}
+              onChange={(ev) => setSnapGridFeet(Number(ev.target.value))}
+            >
+              {FIXTURE_SNAP_GRID_OPTIONS_FT.map((ft) => (
+                <option key={ft} value={ft}>
+                  {snapSpacingDisplayLabel(stage, ft)}
+                </option>
+              ))}
+            </SnapGridSelect>
+          </SnapGridControl>
           <StageScaleControls compact />
         </TopControls>
       </TopRow>
-      <BodyScroller>
-        <GridViewsScroller>
-          <GridViews $withDepth={zDepthEnabled}>
+
+      <MappingScrollRegion>
+        <MappingWidthFloor>
+          {!zDepthEnabled ? (
             <Pad
-              title="XY View (Front of House)"
+              title="XY · Front of house"
               horizontalAxis="x"
               verticalAxis="y"
               stage={stage}
+              snapGridFeet={snapGridFeet}
               fixtureIndexes={fixtureIndexes}
               onDrag={onPadDrag}
             />
-            {zDepthEnabled && (
-              <Pad
-                title="Top Down View (Stage At Top)"
-                horizontalAxis="x"
-                verticalAxis="z"
-                stage={stage}
-                fixtureIndexes={fixtureIndexes}
-                onDrag={onPadDrag}
-              />
-            )}
-          </GridViews>
-        </GridViewsScroller>
-        {activeFixture !== null && (
+          ) : mappingPage === 0 ? (
+            <Pad
+              title={mappingPageTitle}
+              horizontalAxis="x"
+              verticalAxis="y"
+              stage={stage}
+              snapGridFeet={snapGridFeet}
+              fixtureIndexes={fixtureIndexes}
+              onDrag={onPadDrag}
+            />
+          ) : (
+            <Pad
+              title={mappingPageTitle}
+              horizontalAxis="x"
+              verticalAxis="z"
+              stage={stage}
+              snapGridFeet={snapGridFeet}
+              fixtureIndexes={fixtureIndexes}
+              onDrag={onPadDrag}
+            />
+          )}
+          {zDepthEnabled ? (
+            <PagerBar>
+              <PagerArrow
+                type="button"
+                aria-label="Previous mapping page"
+                title="XY map"
+                disabled={mappingPage === 0}
+                onClick={() => setMappingPage(0)}
+              >
+                <ChevronLeft sx={{ fontSize: '1.1rem' }} />
+              </PagerArrow>
+              <PagerLabel>
+                Page {mappingPage + 1} of 2 · {mappingPage === 0 ? 'XY' : 'Z depth'}
+              </PagerLabel>
+              <PagerArrow
+                type="button"
+                aria-label="Next mapping page"
+                title="XZ map"
+                disabled={mappingPage === 1}
+                onClick={() => setMappingPage(1)}
+              >
+                <ChevronRight sx={{ fontSize: '1.1rem' }} />
+              </PagerArrow>
+            </PagerBar>
+          ) : null}
+        </MappingWidthFloor>
+      </MappingScrollRegion>
+
+      <BottomInspectorScroll>
+        {activeFixture !== null ? (
           <Inspector>
-            <InspectorTitle>Selected Fixture Position</InspectorTitle>
+            <InspectorTitle>Selected fixture · position</InspectorTitle>
             <InspectorRow>
               {positionAxes.map((axis) => {
                 const displayVal = stageAxisToDisplayValue(
@@ -445,27 +545,27 @@ export default function FixturePlacement() {
                     variant="outlined"
                     stageUnit={stage.unit}
                     onChange={(newVal) => setFixtureAxisFromInput(axis, newVal)}
-                    title={`Precise ${AXIS_LABEL[axis]} position (${stage.unit}). Snap grid is ${STAGE_SNAP_GRID_FEET} ft.`}
+                    title={`Precise ${AXIS_LABEL[axis]} position (${stage.unit}). Snap grid is ${snapSpacingDisplayLabel(stage, snapGridFeet)} per step.`}
                   />
                 )
               })}
             </InspectorRow>
             <InspectorHint>
-              Mouse drag uses snap increments of {STAGE_SNAP_GRID_FEET} ft. Drag the
-              white edge handles on the selected fixture to resize its motion window on
-              each visible axis; right-click/secondary drag also adjusts size.
+              Mouse drag uses snap increments of {snapSpacingDisplayLabel(stage, snapGridFeet)}. Drag the white edge
+              handles on the selected fixture to resize its motion window on each visible axis;
+              right-click/secondary drag also adjusts size.
             </InspectorHint>
             {!zDepthEnabled && (
               <InspectorHint>
-                Lighting scenes and LED color windows use the X/Y plane only (no Z
-                windowing). Movers keep their own pan/tilt space; Enable Z Depth for fixture
-                depth editing, Z windowing, and depth in the 3D preview.
+                Lighting scenes and LED color windows use the X/Y plane only (no Z windowing).
+                Movers keep their own pan/tilt space; Enable Z Depth for fixture depth editing, Z
+                windowing, and depth in the 3D preview.
               </InspectorHint>
             )}
             {!selectedFixtureIsMover && (
               <>
                 <InspectorTitle style={{ marginTop: '0.45rem' }}>
-                  Fixture Rotation
+                  Fixture rotation
                 </InspectorTitle>
                 <InspectorRow>
                   {(['x', 'y', 'z'] as Axis[]).map((axis) => (
@@ -485,8 +585,22 @@ export default function FixturePlacement() {
               </>
             )}
           </Inspector>
+        ) : (
+          <Inspector>
+            <InspectorTitle>No fixture selected</InspectorTitle>
+            <InspectorHint>
+              Select a fixture in the universe list above, then drag on the map to position it.
+              Snap grid is {snapSpacingDisplayLabel(stage, snapGridFeet)}.
+            </InspectorHint>
+            {!zDepthEnabled && (
+              <InspectorHint>
+                Enable Z Depth to edit the third axis, use the XZ top-down map, and drive depth in
+                the 3D preview.
+              </InspectorHint>
+            )}
+          </Inspector>
         )}
-      </BodyScroller>
+      </BottomInspectorScroll>
     </Root>
   )
 }
@@ -497,9 +611,11 @@ const Root = styled.div`
   padding: 0.5rem;
   flex: 1 1 0;
   min-height: 0;
+  width: 100%;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.45rem;
 `
 
 const TopRow = styled.div`
@@ -508,20 +624,100 @@ const TopRow = styled.div`
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
+  flex: 0 0 auto;
 `
 
-const BodyScroller = styled.div`
+const MappingScrollRegion = styled.div`
   flex: 1 1 auto;
   min-height: 0;
+  width: 100%;
+  overflow-x: auto;
   overflow-y: auto;
-  overflow-x: hidden;
-  padding-right: 0.15rem;
   scrollbar-width: thin;
   scrollbar-color: #7a7a7a99 #0000;
 
   &::-webkit-scrollbar {
     display: block !important;
     width: 10px;
+    height: 10px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #0000;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #7a7a7a99;
+    border-radius: 999px;
+  }
+`
+
+const MappingWidthFloor = styled.div`
+  width: 100%;
+  min-width: ${MAPPING_CONTENT_MIN_WIDTH};
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+`
+
+const PagerBar = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.2rem 0 0.15rem;
+  flex: 0 0 auto;
+`
+
+const PagerArrow = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.35rem;
+  border: 1px solid #ffffff38;
+  background: #0a0e18cc;
+  color: #e8ecf7;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  &:not(:disabled):hover {
+    border-color: #ffffff66;
+    background: #121826ee;
+  }
+`
+
+const PagerLabel = styled.div`
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: ${(props) => props.theme.colors.text.secondary};
+  min-width: 9rem;
+  text-align: center;
+`
+
+const BottomInspectorScroll = styled.div`
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: min(40vh, 20rem);
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: auto;
+  padding-top: 0.35rem;
+  margin-top: 0.1rem;
+  border-top: 1px solid #ffffff1a;
+  scrollbar-width: thin;
+  scrollbar-color: #7a7a7a99 #0000;
+
+  &::-webkit-scrollbar {
+    display: block !important;
+    width: 10px;
+    height: 10px;
   }
 
   &::-webkit-scrollbar-track {
@@ -556,35 +752,28 @@ const DepthToggle = styled.label`
   user-select: none;
 `
 
-const GridViewsScroller = styled.div`
-  width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding-bottom: 0.15rem;
-  scrollbar-width: thin;
-  scrollbar-color: #7a7a7a99 #0000;
-
-  &::-webkit-scrollbar {
-    display: block !important;
-    height: 10px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: #0000;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: #7a7a7a99;
-    border-radius: 999px;
-  }
+const SnapGridControl = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.74rem;
+  color: ${(props) => props.theme.colors.text.secondary};
+  user-select: none;
 `
 
-const GridViews = styled.div<{ $withDepth: boolean }>`
-  display: grid;
-  grid-template-columns: ${(props) => (props.$withDepth ? '1fr 1fr' : '1fr')};
-  gap: 0.7rem;
-  width: 100%;
-  align-items: start;
+const SnapGridLabel = styled.label`
+  white-space: nowrap;
+`
+
+const SnapGridSelect = styled.select`
+  font-size: 0.74rem;
+  color: ${(props) => props.theme.colors.text.primary};
+  background: ${(props) => props.theme.colors.bg.darker};
+  border: 1px solid ${(props) => props.theme.colors.divider};
+  border-radius: 0.25rem;
+  padding: 0.2rem 0.35rem;
+  min-width: 5.5rem;
+  cursor: pointer;
 `
 
 const PadCard = styled.div`
@@ -592,7 +781,7 @@ const PadCard = styled.div`
   border: 1px solid #ffffff22;
   border-radius: 0.35rem;
   background: #070a1299;
-  padding: 0.35rem;
+  padding: 0.35rem 0.35rem 0.4rem;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -601,18 +790,64 @@ const PadCard = styled.div`
 const PadTitle = styled.div`
   font-size: 0.74rem;
   color: ${(props) => props.theme.colors.text.secondary};
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.28rem;
+`
+
+const PadBodyRow = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0.28rem;
+  min-width: 0;
+`
+
+const LeftAxisLabel = styled.div`
+  flex: 0 0 1.5rem;
+  width: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+`
+
+const LeftAxisLabelText = styled.span`
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  text-orientation: mixed;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: ${(props) => props.theme.colors.text.secondary};
+  line-height: 1.2;
+  white-space: nowrap;
+`
+
+const PadPlotColumn = styled.div`
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.22rem;
+`
+
+const BottomAxisLabel = styled.div`
+  flex: 0 0 auto;
+  text-align: center;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: ${(props) => props.theme.colors.text.secondary};
+  padding: 0 0.25rem;
 `
 
 const PadRoot = styled.div<{ $aspectRatio: number }>`
   position: relative;
   width: 100%;
-  max-width: 100%;
+  box-sizing: border-box;
   aspect-ratio: ${(props) => props.$aspectRatio} / 1;
+  min-height: 11rem;
   flex: 0 0 auto;
-  min-height: 12rem;
-  max-height: min(52vh, 28rem);
-  margin-inline: auto;
   background: #000a;
   border: 1px solid #ffffff22;
   border-radius: 0.2rem;
@@ -655,20 +890,13 @@ const CrossH = styled.div`
   background: #ffffff33;
 `
 
-const AxisLabelRow = styled.div`
-  margin-top: 0.25rem;
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.66rem;
-  color: ${(props) => props.theme.colors.text.secondary};
-`
-
 const Inspector = styled.div`
   border: 1px solid #ffffff22;
   border-radius: 0.35rem;
   background: #070a1299;
   padding: 0.45rem;
-  margin-top: 0.45rem;
+  box-sizing: border-box;
+  min-width: min(100%, 16rem);
 `
 
 const InspectorTitle = styled.div`

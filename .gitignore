@@ -20,8 +20,12 @@ node_modules
 
 release/app/dist
 release/build
+release/build-*
 release/build-installer
 release/build-installer-*
+release/eb-pkg-*
+release/latest-windows-installer.json
+captivate-diagnostics.log*
 .erb/dll
 
 .idea
@@ -44,3 +48,6 @@ assets/ndi-runtime/
 
 # projectM native bridge (node-gyp / MSBuild output; rebuilt by prepare scripts)
 native/projectm-bridge/build/
+
+# Local-only terminal bootstrap (created from scripts/cursor-terminal-init.example.ps1 via npm run setup:local-cursor-node)
+scripts/cursor-terminal-init.ps1

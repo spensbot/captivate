@@ -1,7 +1,15 @@
 import styled from 'styled-components'
+import Tooltip from '@mui/material/Tooltip'
+import GestureIcon from '@mui/icons-material/Gesture'
+import ShowChartIcon from '@mui/icons-material/ShowChart'
+import PolylineIcon from '@mui/icons-material/Polyline'
+import TimelineIcon from '@mui/icons-material/Timeline'
+import ViewColumnIcon from '@mui/icons-material/ViewColumn'
+import LayersIcon from '@mui/icons-material/Layers'
+import type { ReactNode } from 'react'
 import useDragMapped, { MappedPos } from 'renderer/hooks/useDragMapped'
 import { useDispatch } from 'react-redux'
-import { useControlSelector, useDmxSelector } from 'renderer/redux/store'
+import { useControlSelector, useDmxSelector, useTypedSelector } from 'renderer/redux/store'
 import { distanceBetween, Point } from 'math/point'
 import {
   updateActiveLedFixture,
@@ -22,47 +30,83 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRealtimeSelector } from 'renderer/redux/realtimeStore'
 import { fromFeet, stageAxisLengthFt } from 'shared/stage'
 import { SplitScene_t } from 'shared/Scenes'
-import { fixtureGroupsMatchSceneGroups } from 'shared/sceneGroups'
+import { ledFixtureMatchesSceneGroups } from 'shared/sceneGroups'
+import {
+  applyLedRandomizerToColors,
+  buildLedRandomizerContext,
+  pickPrimarySplitLayerForLed,
+} from 'shared/splitRandomizer'
+import { flatten_fixtures } from 'shared/dmxUtil'
 
 type CanvasViewMode = 'xy' | 'xz'
 
 interface Props {}
 
-const SNAP_STEP = 0.02
 const CANVAS_MARGIN_PX = 18
 const FREEFORM_MIN_POINT_DISTANCE = 0.0035
 const DEFAULT_CURVE_HANDLE = 0.04
-const TOOL_OPTIONS: WLedStringDrawMode[] = [
-  'freeform',
-  'line',
-  'polyline',
-  'curve',
-]
 
-const TOOL_LABEL: Record<WLedStringDrawMode, string> = {
-  freeform: 'Free Hand',
-  line: 'Line',
-  polyline: 'Polyline',
-  curve: 'Curve',
+const LED_SNAP_STEPS = [0.005, 0.01, 0.02, 0.04, 0.1] as const
+
+function ledSnapOptionLabel(step: number): string {
+  const pct = step * 100
+  const text = Number.isInteger(pct) ? String(pct) : pct.toFixed(1)
+  return `${text}%`
 }
-
-type CurveHandleSide = 'in' | 'out'
 
 function clamp01(value: number) {
   if (!Number.isFinite(value)) return 0.5
   return Math.min(1, Math.max(0, value))
 }
 
-function snapToGrid(value: number) {
-  return clamp01(Math.round(value / SNAP_STEP) * SNAP_STEP)
+function snapToGrid(value: number, step: number) {
+  return clamp01(Math.round(value / step) * step)
 }
 
-function snapPoint(point: Point): Point {
+function snapPoint(point: Point, step: number): Point {
   return {
-    x: snapToGrid(point.x),
-    y: snapToGrid(point.y),
+    x: snapToGrid(point.x, step),
+    y: snapToGrid(point.y, step),
   }
 }
+
+const TOOL_RIBBON: Array<{
+  mode: WLedStringDrawMode
+  icon: ReactNode
+  label: string
+  tooltip: string
+}> = [
+  {
+    mode: 'freeform',
+    icon: <GestureIcon fontSize="small" />,
+    label: 'Free',
+    tooltip:
+      'Free hand — click and drag to paint a continuous path. No node handles; best for organic shapes.',
+  },
+  {
+    mode: 'line',
+    icon: <ShowChartIcon fontSize="small" />,
+    label: 'Line',
+    tooltip:
+      'Line — click to place endpoints. Right-click removes points; drag nodes to move.',
+  },
+  {
+    mode: 'polyline',
+    icon: <PolylineIcon fontSize="small" />,
+    label: 'Poly',
+    tooltip:
+      'Polyline — click to add corners. Right-click removes points; drag to adjust corners.',
+  },
+  {
+    mode: 'curve',
+    icon: <TimelineIcon fontSize="small" />,
+    label: 'Curve',
+    tooltip:
+      'Curve — polyline with Bézier-style handles. Drag the blue handles from each node to set curve tension.',
+  },
+]
+
+type CurveHandleSide = 'in' | 'out'
 
 function isSecondaryAction(e: MouseEvent) {
   // Support the documented right-click workflow, while keeping Ctrl/Cmd-click.
@@ -89,11 +133,13 @@ export default function LedFixturePlacement({}: Props) {
   const activeLedFixture = useDmxSelector((dmx) =>
     activeLedFixtureIndex === null ? null : dmx.led.ledFixtures[activeLedFixtureIndex]
   )
-  const stage = useDmxSelector((dmx) => dmx.stage)
+  const dmx = useDmxSelector((state) => state)
+  const stage = dmx.stage
   const activeLightScene = useControlSelector(
     (state) => state.light.byId[state.light.active]
   )
   const master = useControlSelector((state) => state.master)
+  const fxtrDepthOn = useTypedSelector((state) => state.gui.fxtrDepthOn)
   const splitStates = useRealtimeSelector((state) => state.splitStates)
   const dispatch = useDispatch()
 
@@ -104,6 +150,7 @@ export default function LedFixturePlacement({}: Props) {
   const [canvasViewportSize, setCanvasViewportSize] = useState({ width: 1, height: 1 })
   const [viewMode, setViewMode] = useState<CanvasViewMode>('xy')
   const [zoom, setZoom] = useState(1)
+  const [snapStep, setSnapStep] = useState(0.02)
 
   const horizontalAxisLengthFt = Math.max(0.1, stageAxisLengthFt(stage, 'x'))
   const verticalAxisLengthFt = Math.max(
@@ -145,9 +192,16 @@ export default function LedFixturePlacement({}: Props) {
     if (activeLedFixture === null) return undefined
 
     const fixture = normalizeLedFixtureForRuntime(activeLedFixture)
-    const splitIndex = resolveSplitIndexForFixture(
-      fixture.groups,
-      activeLightScene?.splitScenes ?? []
+    const splitScenes = activeLightScene?.splitScenes ?? []
+    const splitIndex = resolveSplitIndexForFixture(fixture.groups, splitScenes)
+    const primaryLayer = pickPrimarySplitLayerForLed(
+      splitScenes
+        .map((splitScene, splitIndex) => ({ splitIndex, splitScene }))
+        .filter(({ splitScene }) =>
+          ledFixtureMatchesSceneGroups(fixture.groups, splitScene.groups)
+        )
+        .map(({ splitIndex }) => ({ splitIndex })),
+      splitScenes
     )
     const params =
       splitStates[splitIndex]?.outputParams ?? splitStates[0]?.outputParams
@@ -155,12 +209,39 @@ export default function LedFixturePlacement({}: Props) {
       return undefined
     }
 
-    return getLedValues(params, fixture, master).map((color) =>
+    const placementDepth2DOnly = fxtrDepthOn !== true
+    let colors = getLedValues(params, fixture, master, placementDepth2DOnly)
+    if (primaryLayer !== null) {
+      const randomizerContext = buildLedRandomizerContext(
+        splitStates[primaryLayer.splitIndex],
+        splitScenes[primaryLayer.splitIndex],
+        dmx.led.ledFixtures,
+        flatten_fixtures(dmx.universe, dmx.fixtureTypesByID),
+        fixture.id
+      )
+      if (randomizerContext !== null) {
+        colors = applyLedRandomizerToColors(
+          colors,
+          randomizerContext.state,
+          randomizerContext.baseIndex,
+          randomizerContext.randomize
+        )
+      }
+    }
+
+    return colors.map((color) =>
       `rgb(${Math.round(color.red * 255)}, ${Math.round(color.green * 255)}, ${Math.round(
         color.blue * 255
       )})`
     )
-  }, [activeLedFixture, activeLightScene?.splitScenes, splitStates, master])
+  }, [
+    activeLedFixture,
+    activeLightScene?.splitScenes,
+    splitStates,
+    master,
+    fxtrDepthOn,
+    dmx,
+  ])
 
   const stringPlacementStats =
     activeLedFixture !== null && activeLedFixture.kind === 'string'
@@ -207,8 +288,8 @@ export default function LedFixturePlacement({}: Props) {
       ? usableViewportHeight
       : usableViewportWidth / fitAspect
 
-  const canvasWidthPx = Math.max(240, Math.round(baseWidthPx * zoom))
-  const canvasHeightPx = Math.max(240, Math.round(baseHeightPx * zoom))
+  const canvasWidthPx = Math.max(1, Math.round(baseWidthPx * zoom))
+  const canvasHeightPx = Math.max(1, Math.round(baseHeightPx * zoom))
   const canvasHostWidthPx = Math.max(
     canvasWidthPx + CANVAS_MARGIN_PX * 2,
     viewportWidth
@@ -225,6 +306,16 @@ export default function LedFixturePlacement({}: Props) {
     dragHandleRef.current = null
     freeformDrawingRef.current = false
   }, [activeLedFixture?.id, activeLedFixture?.kind, activeStringDrawMode])
+
+  useEffect(() => {
+    setZoom(1)
+  }, [activeLedFixture?.id])
+
+  useEffect(() => {
+    if (!fxtrDepthOn && viewMode === 'xz') {
+      setViewMode('xy')
+    }
+  }, [fxtrDepthOn, viewMode])
 
   function updateFixtureDrawMode(mode: WLedStringDrawMode) {
     if (activeLedFixture === null || activeLedFixture.kind !== 'string') {
@@ -253,7 +344,7 @@ export default function LedFixturePlacement({}: Props) {
     const rawPoint = { x: clamp01(pos.x), y: clamp01(pos.y) }
     const isFreeformTool =
       activeLedFixture.kind === 'string' && activeLedFixture.draw_mode === 'freeform'
-    const point = isFreeformTool ? rawPoint : snapPoint(rawPoint)
+    const point = isFreeformTool ? rawPoint : snapPoint(rawPoint, snapStep)
 
     if (activeLedFixture.kind === 'grid') {
       if (status === 'Start' || status === 'Moved') {
@@ -455,38 +546,74 @@ export default function LedFixturePlacement({}: Props) {
           <HintTitle>Pixel Layout Canvas</HintTitle>
           {activeLedFixture?.kind === 'string' && (
             <ToolButtonRow>
-              {TOOL_OPTIONS.map((mode) => (
-                <ToolButton
-                  key={mode}
-                  type="button"
-                  $active={activeLedFixture.draw_mode === mode}
-                  onClick={() => updateFixtureDrawMode(mode)}
-                  title={`Draw mode: ${mode}`}
-                >
-                  {TOOL_LABEL[mode]}
-                </ToolButton>
+              {TOOL_RIBBON.map(({ mode, icon, label, tooltip }) => (
+                <Tooltip key={mode} title={tooltip} placement="bottom" enterDelay={400}>
+                  <RibbonIconButton
+                    type="button"
+                    aria-label={tooltip}
+                    $active={activeLedFixture.draw_mode === mode}
+                    onClick={() => updateFixtureDrawMode(mode)}
+                  >
+                    {icon}
+                    <RibbonIconLabel>{label}</RibbonIconLabel>
+                  </RibbonIconButton>
+                </Tooltip>
               ))}
             </ToolButtonRow>
           )}
         </RibbonLeft>
         <RibbonRight>
+          {activeLedFixture !== null &&
+            (activeLedFixture.kind === 'string' ||
+              activeLedFixture.kind === 'grid') && (
+              <>
+                <ViewModeLabel>Snap</ViewModeLabel>
+                <LedSnapSelect
+                  aria-label="Pixel layout snap grid"
+                  value={snapStep}
+                  onChange={(ev) => setSnapStep(Number(ev.target.value))}
+                >
+                  {LED_SNAP_STEPS.map((s) => (
+                    <option key={s} value={s}>
+                      {ledSnapOptionLabel(s)}
+                    </option>
+                  ))}
+                </LedSnapSelect>
+              </>
+            )}
           <ViewModeLabel>View</ViewModeLabel>
-          <ViewToggleButton
-            type="button"
-            $active={viewMode === 'xy'}
-            onClick={() => setViewMode('xy')}
-            title="Front view: X/Y"
+          <Tooltip
+            title="Front view — stage X (horizontal) vs Y (depth into stage). Use for floor layouts."
+            placement="bottom"
+            enterDelay={400}
           >
-            XY
-          </ViewToggleButton>
-          <ViewToggleButton
-            type="button"
-            $active={viewMode === 'xz'}
-            onClick={() => setViewMode('xz')}
-            title="Top-down view: X/Z"
-          >
-            XZ
-          </ViewToggleButton>
+            <RibbonIconButton
+              type="button"
+              aria-label="XY front view"
+              $active={viewMode === 'xy'}
+              onClick={() => setViewMode('xy')}
+            >
+              <ViewColumnIcon fontSize="small" />
+              <RibbonIconLabel>XY</RibbonIconLabel>
+            </RibbonIconButton>
+          </Tooltip>
+          {fxtrDepthOn ? (
+            <Tooltip
+              title="Top-down view — stage X vs vertical Z (fixture height / rig depth)."
+              placement="bottom"
+              enterDelay={400}
+            >
+              <RibbonIconButton
+                type="button"
+                aria-label="XZ top view"
+                $active={viewMode === 'xz'}
+                onClick={() => setViewMode('xz')}
+              >
+                <LayersIcon fontSize="small" />
+                <RibbonIconLabel>XZ</RibbonIconLabel>
+              </RibbonIconButton>
+            </Tooltip>
+          ) : null}
         </RibbonRight>
       </ToolRibbon>
 
@@ -503,9 +630,9 @@ export default function LedFixturePlacement({}: Props) {
           <HintText>Select an LED fixture on the left to edit pixel mapping.</HintText>
         )}
         <HintText>
-          {`Scale: X ${horizontalAxisLengthFt.toFixed(1)} ft | ${verticalAxisLabel} ${verticalAxisLengthFt.toFixed(1)} ft | Snap ${Math.round(
-            SNAP_STEP * 100
-          )}%`}
+          {`Scale: X ${horizontalAxisLengthFt.toFixed(1)} ft | ${verticalAxisLabel} ${verticalAxisLengthFt.toFixed(1)} ft | Snap ${ledSnapOptionLabel(
+            snapStep
+          )}`}
         </HintText>
         {activeLedFixture !== null && (
           <Actions>
@@ -626,9 +753,9 @@ export default function LedFixturePlacement({}: Props) {
           <ZoomLabel>{`Zoom ${Math.round(zoom * 100)}%`}</ZoomLabel>
           <ZoomSlider
             type="range"
-            min={1}
+            min={0.2}
             max={4}
-            step={0.1}
+            step={0.05}
             value={zoom}
             onChange={(event) => setZoom(Number(event.target.value))}
           />
@@ -669,19 +796,49 @@ const RibbonRight = styled.div`
   gap: 0.35rem;
 `
 
+const LedSnapSelect = styled.select`
+  font-size: 0.72rem;
+  color: ${(props) => props.theme.colors.text.primary};
+  background: ${(props) => props.theme.colors.bg.darker};
+  border: 1px solid #ffffff33;
+  border-radius: 0.25rem;
+  padding: 0.18rem 0.32rem;
+  min-width: 4.25rem;
+  cursor: pointer;
+`
+
 const ViewModeLabel = styled.span`
   font-size: 0.72rem;
   color: ${(props) => props.theme.colors.text.secondary};
 `
 
-const ViewToggleButton = styled.button<{ $active: boolean }>`
+const RibbonIconButton = styled.button<{ $active: boolean }>`
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.06rem;
+  min-width: 2.5rem;
+  height: 2.55rem;
+  padding: 0.18rem 0.28rem 0.12rem;
+  border-radius: 0.3rem;
   border: 1px solid ${(props) => (props.$active ? '#7dd3fc' : '#ffffff33')};
   background: ${(props) => (props.$active ? '#0b3250' : '#0007')};
   color: #e8eefc;
-  border-radius: 0.25rem;
-  padding: 0.16rem 0.42rem;
-  font-size: 0.72rem;
   cursor: pointer;
+  line-height: 1;
+
+  &:hover {
+    border-color: #9dd8fc;
+    background: ${(props) => (props.$active ? '#0d3a5c' : '#0d1524')};
+  }
+`
+
+const RibbonIconLabel = styled.span`
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #c8d6ec;
 `
 
 const HintBar = styled.div`
@@ -706,16 +863,6 @@ const ToolButtonRow = styled.div`
   align-items: center;
   gap: 0.25rem;
   flex-wrap: wrap;
-`
-
-const ToolButton = styled.button<{ $active: boolean }>`
-  border: 1px solid ${(props) => (props.$active ? '#93c5fd' : '#ffffff33')};
-  background: ${(props) => (props.$active ? '#11294d' : '#0007')};
-  color: #e8eefc;
-  border-radius: 0.25rem;
-  padding: 0.14rem 0.42rem;
-  font-size: 0.72rem;
-  cursor: pointer;
 `
 
 const Actions = styled.div`
@@ -917,7 +1064,7 @@ function resolveSplitIndexForFixture(
   }
 
   for (let i = 0; i < splitScenes.length; i++) {
-    if (fixtureGroupsMatchSceneGroups(fixtureGroups, splitScenes[i].groups)) {
+    if (ledFixtureMatchesSceneGroups(fixtureGroups, splitScenes[i].groups)) {
       return i
     }
   }

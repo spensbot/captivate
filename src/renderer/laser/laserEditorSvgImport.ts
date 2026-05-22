@@ -14,6 +14,40 @@ interface RawStroke {
 const MAX_SVG_CHARS = 2_000_000
 const PATH_SAMPLES = 180
 
+/** Subtrees that must not contribute visible geometry to the laser import. */
+const SKIP_SUBTREE_TAGS = new Set([
+  'defs',
+  'clippath',
+  'mask',
+  'pattern',
+  'marker',
+  'lineargradient',
+  'radialgradient',
+  'meshgradient',
+  'filter',
+  /** Template content; instances come from `<use>` (not expanded in parsed DOM). */
+  'symbol',
+  'metadata',
+  'title',
+  'desc',
+  'style',
+  'script',
+  'foreignobject',
+])
+
+function elementSkipsWholeSubtree(el: Element): boolean {
+  const tag = el.tagName.toLowerCase()
+  if (SKIP_SUBTREE_TAGS.has(tag)) return true
+  const display = el.getAttribute('display')
+  if (display === 'none') return true
+  const vis = el.getAttribute('visibility')
+  if (vis === 'hidden' || vis === 'collapse') return true
+  const style = el.getAttribute('style') ?? ''
+  if (/\bdisplay\s*:\s*none\b/i.test(style)) return true
+  if (/\bvisibility\s*:\s*hidden\b/i.test(style)) return true
+  return false
+}
+
 function letterboxToUnit(pts: { x: number; y: number }[]): NormPoint[] {
   if (pts.length === 0) return []
   let minX = pts[0].x
@@ -101,11 +135,14 @@ function strokeFromLine(el: SVGLineElement, svg: SVGSVGElement): RawStroke {
   }
 }
 
-function strokeFromRect(el: SVGRectElement, svg: SVGSVGElement): RawStroke {
+function strokeFromRect(el: SVGRectElement, svg: SVGSVGElement): RawStroke | null {
   const x = Number(el.getAttribute('x') || 0)
   const y = Number(el.getAttribute('y') || 0)
   const w = Number(el.getAttribute('width') || 0)
   const h = Number(el.getAttribute('height') || 0)
+  if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) {
+    return null
+  }
   const pts = [
     localToSvgRoot(svg, el, x, y),
     localToSvgRoot(svg, el, x + w, y),
@@ -120,7 +157,7 @@ function strokeFromCircleLike(
   el: SVGCircleElement | SVGEllipseElement,
   svg: SVGSVGElement,
   samples: number
-): RawStroke {
+): RawStroke | null {
   const cx = Number(el.getAttribute('cx') || 0)
   const cy = Number(el.getAttribute('cy') || 0)
   let rx =
@@ -134,6 +171,9 @@ function strokeFromCircleLike(
   if (el instanceof SVGCircleElement) {
     ry = rx
   }
+  if (!Number.isFinite(rx) || !Number.isFinite(ry) || rx <= 0 || ry <= 0) {
+    return null
+  }
   const pts: { x: number; y: number }[] = []
   for (let i = 0; i <= samples; i++) {
     const t = (i / samples) * Math.PI * 2
@@ -142,6 +182,78 @@ function strokeFromCircleLike(
     )
   }
   return { points: pts, closed: true }
+}
+
+function bboxDiagonalForStrokes(strokes: RawStroke[]): number {
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  for (const s of strokes) {
+    for (const p of s.points) {
+      minX = Math.min(minX, p.x)
+      maxX = Math.max(maxX, p.x)
+      minY = Math.min(minY, p.y)
+      maxY = Math.max(maxY, p.y)
+    }
+  }
+  if (!Number.isFinite(minX) || !Number.isFinite(minY)) return 1
+  const w = maxX - minX
+  const h = maxY - minY
+  const d = Math.hypot(w, h)
+  return d > 1e-9 ? d : 1
+}
+
+/**
+ * Concatenate strokes for one import group. Strokes whose start is far from the
+ * current end start a new run (multiple layers for that top-level group when
+ * paths are visually separate). Nearby strokes keep short bridge segments like
+ * {@link mergeRawStrokes}.
+ */
+function mergeRawStrokesWithGapSplit(strokes: RawStroke[]): RawStroke[] {
+  if (strokes.length === 0) return []
+  const diag = bboxDiagonalForStrokes(strokes)
+  const gapCutoff = Math.max(diag * 0.014, 8)
+
+  const out: RawStroke[] = []
+  let cur: RawStroke | null = null
+
+  const pushStroke = (s: RawStroke) => {
+    if (s.points.length === 0) return
+    if (cur === null) {
+      cur = { points: s.points.slice(), closed: false }
+      return
+    }
+    const a = cur.points[cur.points.length - 1]!
+    const b = s.points[0]!
+    const d = Math.hypot(a.x - b.x, a.y - b.y)
+    if (d > gapCutoff) {
+      out.push(cur)
+      cur = { points: s.points.slice(), closed: false }
+      return
+    }
+    if (d > 1e-6) {
+      const steps = Math.min(12, Math.max(3, Math.ceil(d / 8)))
+      for (let k = 1; k < steps; k++) {
+        const t = k / steps
+        cur.points.push({
+          x: a.x + (b.x - a.x) * t,
+          y: a.y + (b.y - a.y) * t,
+        })
+      }
+    }
+    cur.points.push(...s.points)
+    if (s.closed && s.points.length > 1) {
+      cur.points.push(s.points[0]!)
+    }
+  }
+
+  for (const s of strokes) {
+    if (s.points.length === 0) continue
+    pushStroke(s)
+  }
+  if (cur !== null) out.push(cur)
+  return out
 }
 
 function mergeRawStrokes(strokes: RawStroke[]): RawStroke {
@@ -174,6 +286,9 @@ function mergeRawStrokes(strokes: RawStroke[]): RawStroke {
 function collectDrawableStrokes(root: Element, svg: SVGSVGElement): RawStroke[] {
   const out: RawStroke[] = []
   const walk = (node: Element) => {
+    if (elementSkipsWholeSubtree(node)) {
+      return
+    }
     if (node instanceof SVGPathElement) {
       const { points: pts, closed: pathClosed } = samplePath(node, svg)
       if (pts.length >= 2) {
@@ -193,11 +308,14 @@ function collectDrawableStrokes(root: Element, svg: SVGSVGElement): RawStroke[] 
       )
       if (pts.length >= 2) out.push({ points: pts, closed: true })
     } else if (node instanceof SVGRectElement) {
-      out.push(strokeFromRect(node, svg))
+      const r = strokeFromRect(node, svg)
+      if (r !== null) out.push(r)
     } else if (node instanceof SVGCircleElement) {
-      out.push(strokeFromCircleLike(node, svg, 48))
+      const c = strokeFromCircleLike(node, svg, 48)
+      if (c !== null) out.push(c)
     } else if (node instanceof SVGEllipseElement) {
-      out.push(strokeFromCircleLike(node, svg, 48))
+      const e = strokeFromCircleLike(node, svg, 48)
+      if (e !== null) out.push(e)
     }
     for (const ch of Array.from(node.children)) {
       walk(ch)
@@ -286,9 +404,11 @@ export function parseSvgToSubpaths(
       const out: SvgSubpath[] = []
       for (const g of groups) {
         if (g.length === 0) continue
-        const merged = mergeRawStrokes(g)
-        const sp = rawStrokeToSubpath(merged)
-        if (sp) out.push(sp)
+        const runs = mergeRawStrokesWithGapSplit(g)
+        for (const run of runs) {
+          const sp = rawStrokeToSubpath(run)
+          if (sp) out.push(sp)
+        }
       }
       return out
     }

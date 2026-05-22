@@ -10,6 +10,7 @@ export type DefaultParam =
   | 'width'
   | 'y'
   | 'height'
+  | 'positionFeather'
   | 'z'
   | 'depth'
   | 'intensity'
@@ -84,6 +85,7 @@ export function initParams(): { [key in DefaultParam]: number } {
     width: 1.0,
     y: 0.5,
     height: 1.0,
+    positionFeather: 0.0,
     z: 1.0,
     depth: 1.0,
     intensity: 1.0,
@@ -128,6 +130,7 @@ const defaultParams: { [key in DefaultParam]: number } = {
   width: 1.0,
   y: 0.5,
   height: 1.0,
+  positionFeather: 0.0,
   z: 1.0,
   depth: 1.0,
   intensity: 1.0,
@@ -202,6 +205,7 @@ export const defaultParamsList: DefaultParam[] = [
   'width',
   'y',
   'height',
+  'positionFeather',
   'z',
   'depth',
   'intensity',
@@ -235,6 +239,7 @@ const paramDisplayNames: { [key: string]: string } = {
   uv: 'UV',
   z: 'Z',
   depth: 'Depth',
+  positionFeather: 'Feather',
   xAxis: 'Pan',
   yAxis: 'Tilt',
   xMirror: 'Pan Mirror',
@@ -254,6 +259,11 @@ const paramDisplayNames: { [key: string]: string } = {
   visSlider7: 'Visual Slider 7',
   visSlider8: 'Visual Slider 8',
   visStageMapMix: 'Stage light map',
+  laserDotDensity: 'Dot density',
+  laserScanPath: 'Scan path',
+  laserPlaybackSpeed: 'Playback speed',
+  laserAnimProgress: 'Animation progress',
+  laserBeamHue: 'Beam color (solid)',
 }
 
 export function paramDisplayName(param: DefaultParam | string): string {

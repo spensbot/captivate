@@ -33,8 +33,11 @@ import {
   createBuiltinCameraEffect,
   createBuiltinEffect,
   createBuiltinLayer,
+  isMediaFileSourceType,
+  layerUsesVisBackdropLayout,
   normBuiltinVisCfg,
   proceduralLayerControlSupport,
+  type BuiltinMediaFitMode,
 } from '../../visualizer/threejs/layers/BuiltinVisualizer'
 import { visSplitIdx } from '../scenes/splitUiVisibility'
 import {
@@ -1080,12 +1083,12 @@ export default function BuiltinVisualizerEditor({ config, onChange }: Props) {
                       value={layer.mediaFit}
                       onChange={(event) =>
                         updateLayer(config, patch, index, {
-                          mediaFit: event.target.value as 'cover' | 'contain',
+                          mediaFit: event.target.value as BuiltinMediaFitMode,
                         })
                       }
                     >
-                      <option value="cover">Cover</option>
-                      <option value="contain">Contain</option>
+                      <option value="fill">Fill screen</option>
+                      <option value="object3d">3D object</option>
                     </Select>
                   </FieldRow>
                 )}
@@ -1294,10 +1297,20 @@ export default function BuiltinVisualizerEditor({ config, onChange }: Props) {
                         </LinkAssignButton>
                       </SliderRow>
                     )}
-                    {(layer.sourceType !== 'procedural' ||
-                      proceduralLayerControlSupport[layer.generator].scale) && (
+                    {(layer.sourceType === 'procedural'
+                      ? proceduralLayerControlSupport[layer.generator].scale
+                      : !layerUsesVisBackdropLayout(layer)) && (
                       <SliderRow>
-                        <MiniLabel>Scale</MiniLabel>
+                        <MiniLabel
+                          title={
+                            isMediaFileSourceType(layer.sourceType) &&
+                            layer.mediaFit === 'object3d'
+                              ? 'Scales the image/video in 3D space (minimum = very small, maximum = full viewport width at this depth)'
+                              : undefined
+                          }
+                        >
+                          Scale
+                        </MiniLabel>
                         <LinkedRange
                           min={0}
                           max={1}
@@ -1335,6 +1348,8 @@ export default function BuiltinVisualizerEditor({ config, onChange }: Props) {
                         </LinkAssignButton>
                       </SliderRow>
                     )}
+                    {!layerUsesVisBackdropLayout(layer) ? (
+                    <>
                     <SliderRow>
                       <MiniLabel>Depth</MiniLabel>
                       <LinkedRange
@@ -1525,6 +1540,8 @@ export default function BuiltinVisualizerEditor({ config, onChange }: Props) {
                         ...
                       </LinkAssignButton>
                     </SliderRow>
+                    </>
+                    ) : null}
                   </>
                 )}
                 <Toggle>
@@ -2084,9 +2101,13 @@ function updateLayer(
   next: Partial<BuiltinVisualizerConfig['layers'][number]>
 ) {
   const layers = [...config.layers]
+  const previous = layers[index]
+  const sourceTypeChanged =
+    next.sourceType !== undefined && next.sourceType !== previous.sourceType
   layers[index] = {
-    ...layers[index],
+    ...previous,
     ...next,
+    ...(sourceTypeChanged ? { source: '' } : {}),
   }
   patch({ layers })
 }

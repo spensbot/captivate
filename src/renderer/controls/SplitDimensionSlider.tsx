@@ -6,7 +6,7 @@ import SliderBase from '../base/SliderBase'
 import LiveSliderCursor from './LiveSliderCursor'
 import ManualSliderCursor from './ManualSliderCursor'
 
-type SplitDimParam = 'width' | 'height' | 'depth'
+type SplitDimParam = 'width' | 'height' | 'depth' | 'positionFeather'
 
 interface Props {
   param: SplitDimParam

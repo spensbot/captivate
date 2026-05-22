@@ -65,12 +65,33 @@ import {
   ingestStageLightMapFrame,
   getStageLightMapPreviewPayload,
 } from './stageLightMapRuntime'
+import {
+  laserDacConnect,
+  laserDacDisconnect,
+  laserDacStatus,
+  laserDacPushFrame,
+} from './laserDacSession'
+import type { LaserDacConnectResult } from '../../shared/laserDac'
+import { normalizeLaserDacConnectRequest } from '../../shared/laserDac'
 import path from 'path'
 import {
   AppAboutInfo,
   AboutDependencyInfo,
   AboutLinkInfo,
 } from '../../shared/about'
+import type { RemoteControlSettings } from '../../shared/remoteControl'
+import {
+  applyRemoteControlSettings,
+  getRemoteControlSettings,
+  getRemoteControlStatus,
+  initRemoteControlManager,
+  notifyRemoteControlState,
+  notifyRemoteDmxConnection,
+  notifyRemoteMidiConnection,
+  notifyRemoteTimeState,
+  regenerateRemotePin,
+  setRemoteControlIpcBridge,
+} from './remoteControl/remoteControlManager'
 
 interface Config {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -91,6 +112,7 @@ interface Config {
   on_request_app_quit: () => void
   on_open_page_window: (page: Page, options?: OpenPageWindowOptions) => void
   on_audio_engine_metrics: (metrics: AudioEngineMetrics) => void
+  get_control_state_snapshot?: () => CleanReduxState | null
   on_visualizer_stream_start: (
     config: VisualizerStreamConfig
   ) => VisualizerStreamState
@@ -614,6 +636,11 @@ function broadcast(channel: string, payload: any) {
       renderer.send(channel, payload)
     }
   })
+  if (channel === ipcChannels.dmx_connection_update) {
+    notifyRemoteDmxConnection(payload)
+  } else if (channel === ipcChannels.midi_connection_update) {
+    notifyRemoteMidiConnection(payload)
+  }
 }
 
 function broadcastExcept(channel: string, payload: any, sender: WebContents) {
@@ -641,6 +668,7 @@ export function ipcSetup(config: Config) {
       addRenderer(e.sender)
       _config.on_new_control_state(new_state, e.sender)
       broadcastExcept(ipcChannels.new_control_state, new_state, e.sender)
+      notifyRemoteControlState(new_state)
       scheduleLighting3dBootstrapFromControlState(new_state)
     }
   )
@@ -718,6 +746,11 @@ export function ipcSetup(config: Config) {
     }
   )
 
+  ipcMain.on(ipcChannels.laser_dac_push_frame, (_event, raw: unknown) => {
+    telemetryCounter('ipc', 'laser_dac_push_frame')
+    void laserDacPushFrame(raw)
+  })
+
   ipcMain.handle(ipcChannels.list_screen_displays, () => {
     telemetryCounter('ipc', 'list_screen_displays')
     return getScreenDisplayChoices()
@@ -741,6 +774,62 @@ export function ipcSetup(config: Config) {
   ipcMain.handle(ipcChannels.stage_light_map_preview_get, () => {
     telemetryCounter('ipc', 'stage_light_map_preview_get')
     return getStageLightMapPreviewPayload()
+  })
+
+  ipcMain.handle(ipcChannels.remote_control_get_status, async () => {
+    return getRemoteControlStatus()
+  })
+
+  ipcMain.handle(
+    ipcChannels.remote_control_apply_settings,
+    async (_event, raw: unknown) => {
+      const o =
+        raw !== null && typeof raw === 'object'
+          ? (raw as Partial<RemoteControlSettings>)
+          : {}
+      const current = getRemoteControlSettings()
+      const next: RemoteControlSettings = {
+        enabled: o.enabled === true,
+        port:
+          typeof o.port === 'number' && Number.isFinite(o.port)
+            ? o.port
+            : current.port,
+        pin:
+          typeof o.pin === 'string' && o.pin.trim().length >= 4
+            ? o.pin.trim()
+            : current.pin,
+      }
+      return applyRemoteControlSettings(next)
+    }
+  )
+
+  ipcMain.handle(ipcChannels.remote_control_regenerate_pin, async () => {
+    const pin = await regenerateRemotePin()
+    return { pin, status: getRemoteControlStatus() }
+  })
+
+  ipcMain.handle(ipcChannels.laser_dac_connect, async (_event, raw: unknown) => {
+    telemetryCounter('ipc', 'laser_dac_connect')
+    const req = normalizeLaserDacConnectRequest(raw)
+    if (req === null) {
+      const bad: LaserDacConnectResult = {
+        ok: false,
+        message: 'Invalid laser DAC connect payload.',
+      }
+      return bad
+    }
+    return await laserDacConnect(req)
+  })
+
+  ipcMain.handle(ipcChannels.laser_dac_disconnect, async () => {
+    telemetryCounter('ipc', 'laser_dac_disconnect')
+    await laserDacDisconnect()
+    return null
+  })
+
+  ipcMain.handle(ipcChannels.laser_dac_status, () => {
+    telemetryCounter('ipc', 'laser_dac_status')
+    return laserDacStatus()
   })
 
   ipcMain.handle(
@@ -877,7 +966,7 @@ export function ipcSetup(config: Config) {
     )
   })
 
-  return {
+  const callbacks = {
     register_renderer: (renderer: WebContents) => {
       addRenderer(renderer)
     },
@@ -895,6 +984,7 @@ export function ipcSetup(config: Config) {
         }
         renderer.send(ipcChannels.new_time_state, time_state)
       })
+      notifyRemoteTimeState(time_state)
       if (lighting3dPreviewTargets.size === 0) {
         return
       }
@@ -928,6 +1018,19 @@ export function ipcSetup(config: Config) {
       broadcast(ipcChannels.main_command, command)
     },
   }
+
+  setRemoteControlIpcBridge({
+    broadcastDispatch: (action) =>
+      callbacks.send_dispatch(action as PayloadAction<unknown>),
+    broadcastUserCommand: (command) => _config.on_user_command(command),
+    getControlState: () => _config.get_control_state_snapshot?.() ?? null,
+  })
+
+  return callbacks
+}
+
+export async function bootstrapRemoteControlIpc(): Promise<void> {
+  await initRemoteControlManager()
 }
 
 export type IPC_Callbacks = ReturnType<typeof ipcSetup>

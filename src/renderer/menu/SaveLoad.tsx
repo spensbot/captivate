@@ -87,6 +87,7 @@ async function save(config: SaveConfig) {
     device: config.device ? control.device : undefined,
     gui: config.gui ? guiProfile : undefined,
     mixer: config.mixer ? state.mixer : undefined,
+    laser: config.laser ? state.laser : undefined,
   }
 
   const serializedSaveState = JSON.stringify(
@@ -181,6 +182,7 @@ function Save() {
     device: true,
     gui: true,
     mixer: true,
+    laser: true,
   })
 
   const onSave = async () => {

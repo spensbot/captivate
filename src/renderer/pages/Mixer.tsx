@@ -54,7 +54,7 @@ function buildAssignedChannelIndices(
   return [...set].sort((a, b) => a - b)
 }
 
-export default function Mixer() {
+export default function Mixer({ hideStatusBar = false }: { hideStatusBar?: boolean }) {
   const activeUniverse = useTypedSelector((s) => s.mixer.activeUniverse)
   const showAllMixerChannels = useTypedSelector(
     (s) => s.mixer.showAllMixerChannels
@@ -99,7 +99,7 @@ export default function Mixer() {
 
   return (
     <Root>
-      <StatusBar />
+      {!hideStatusBar ? <StatusBar /> : null}
       <Header />
       <LabelledSliderWrapper ref={wrapperRef}>
         {dmxIndexes.map((channelIndex, gridIndex) => (

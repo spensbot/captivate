@@ -48,6 +48,16 @@ import type {
   TelemetrySnapshot,
 } from '../shared/telemetry'
 import { AppAboutInfo } from '../shared/about'
+import type {
+  LaserDacConnectRequest,
+  LaserDacConnectResult,
+  LaserDacPushFramePayload,
+  LaserDacStatus,
+} from '../shared/laserDac'
+import {
+  sendDispatchToHost,
+  sendUserCommandToHost,
+} from '../shared/hostTransport'
 
 const PROJECTM_PRESET_SCAN_IPC_TIMEOUT_MS = 12000
 
@@ -141,10 +151,10 @@ export function send_control_state(cleanState: CleanReduxState) {
   ipcRenderer.send(ipc_channels.new_control_state, cleanState)
 }
 export function send_dispatch_to_main(action: PayloadAction<any>) {
-  ipcRenderer.send(ipc_channels.dispatch_to_main, action)
+  sendDispatchToHost(action)
 }
 export function send_user_command(command: UserCommand) {
-  ipcRenderer.send(ipc_channels.user_command, command)
+  sendUserCommandToHost(command)
 }
 export function send_open_visualizer() {
   // Route legacy "open visualizer" actions to the dedicated visualizer page window.
@@ -160,6 +170,50 @@ export function send_open_page_window(
 export async function listScreenDisplays(): Promise<ScreenDisplayChoice[]> {
   const raw = await ipcRenderer.invoke(ipc_channels.list_screen_displays)
   return Array.isArray(raw) ? (raw as ScreenDisplayChoice[]) : []
+}
+
+export async function laserDacGetStatus(): Promise<LaserDacStatus | null> {
+  try {
+    return (await ipcRenderer.invoke(
+      ipc_channels.laser_dac_status
+    )) as LaserDacStatus
+  } catch {
+    return null
+  }
+}
+
+export async function laserDacConnectRequest(
+  req: LaserDacConnectRequest
+): Promise<LaserDacConnectResult> {
+  try {
+    return (await ipcRenderer.invoke(
+      ipc_channels.laser_dac_connect,
+      req
+    )) as LaserDacConnectResult
+  } catch (e) {
+    return {
+      ok: false,
+      message: e instanceof Error ? e.message : String(e),
+    }
+  }
+}
+
+export async function laserDacDisconnectRequest(
+  sessionId?: string
+): Promise<void> {
+  try {
+    await ipcRenderer.invoke(ipc_channels.laser_dac_disconnect, sessionId ?? null)
+  } catch {
+    /* non-Electron or IPC failure */
+  }
+}
+
+export function sendLaserDacPushFrame(payload: LaserDacPushFramePayload): void {
+  try {
+    ipcRenderer.send(ipc_channels.laser_dac_push_frame, payload)
+  } catch {
+    /* ignore */
+  }
 }
 
 /** Tell main to set `videoEnabled` from detached visualizer windows (e.g. after loading a project). */
@@ -445,4 +499,18 @@ async function invokeWithTimeout(
       clearTimeout(timer)
     }
   }
+}
+
+export async function remoteControlGetStatus() {
+  return ipcRenderer.invoke(ipc_channels.remote_control_get_status)
+}
+
+export async function remoteControlApplySettings(
+  settings: import('../shared/remoteControl').RemoteControlSettings
+) {
+  return ipcRenderer.invoke(ipc_channels.remote_control_apply_settings, settings)
+}
+
+export async function remoteControlRegeneratePin() {
+  return ipcRenderer.invoke(ipc_channels.remote_control_regenerate_pin)
 }

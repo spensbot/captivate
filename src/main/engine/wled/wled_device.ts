@@ -121,6 +121,10 @@ export default class WledDevice {
     }
   }
 
+  async enableLiveOverride(): Promise<void> {
+    await this.postJson('/json/state', { on: true, lor: 1 })
+  }
+
   async setPwmColor(
     segmentId: number | null,
     color: { red: number; green: number; blue: number; white: number }

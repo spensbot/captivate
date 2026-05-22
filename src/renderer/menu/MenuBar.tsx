@@ -16,6 +16,7 @@ import BlackoutButton from '../controls/BlackoutButton'
 import { send_open_page_window } from '../ipcHandler'
 import { listAtmosFxtrs } from '../../shared/atmosphericsMapping'
 import { universeHasMovers } from '../../shared/dmxFixtures'
+import { ButtonMidiOverlay } from '../base/MidiOverlay'
 
 const selectedBorder = 0.2 //rem
 type SidebarAccent =
@@ -110,15 +111,17 @@ export default function MenuBar() {
       ? `${p}rem ${p}rem ${p}rem ${p - selectedBorder}rem`
       : `${p}rem`
     return (
-      <Item
-        selected={activePage === page}
-        accent={accent}
-        style={{ padding: padding, fontSize: '1.7rem', margin: '0' }}
-        onClick={setPage(page)}
-        title={tooltipText}
-      >
-        {children}
-      </Item>
+      <ButtonMidiOverlay action={{ type: 'setActivePage', page }}>
+        <Item
+          selected={activePage === page}
+          accent={accent}
+          style={{ padding: padding, fontSize: '1.7rem', margin: '0' }}
+          onClick={setPage(page)}
+          title={tooltipText}
+        >
+          {children}
+        </Item>
+      </ButtonMidiOverlay>
     )
   }
 

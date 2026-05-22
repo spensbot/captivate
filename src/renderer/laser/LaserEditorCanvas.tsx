@@ -16,18 +16,22 @@ import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline'
 import FormatColorFillIcon from '@mui/icons-material/FormatColorFill'
 import GradientIcon from '@mui/icons-material/Gradient'
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
+import TextFieldsIcon from '@mui/icons-material/TextFields'
 import styled from 'styled-components'
+import { LASER_CANVAS_MIN_HEIGHT_REM } from './laserLayoutConstants'
 import type { ReactNode } from 'react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import type {
   BeamGradientStop,
+  LaserPresetLayerOverride,
   LaserRgbCapabilities,
   LaserShapeLayer,
   LaserTool,
   LayerBeamStroke,
   NormPoint,
 } from './laserEditorTypes'
-import { clampPoint, pickLayerAt } from './laserEditorGeometry'
+import { clampPoint, pickLayerAt, snapNormPoint } from './laserEditorGeometry'
+import { shiftShapeLayerPoints } from './laserAnimationPath'
 import {
   handleCentersForRender,
   hitTestVertexHandle,
@@ -35,7 +39,13 @@ import {
   type VertexHandleRef,
 } from './laserEditorVertexHandles'
 import { gateHexForLaser, gradientPreviewCss } from './laserBeamColor'
-import { layerStrokeSvgElements } from './laserLayerElements'
+import {
+  LASER_LAYER_STROKE_PT_NORMAL,
+  LASER_LAYER_STROKE_PT_SELECTED,
+  layerStrokeSvgElements,
+  type LayerStrokeRenderOpts,
+} from './laserLayerElements'
+import { ButtonMidiOverlay } from '../base/MidiOverlay'
 import {
   appendSplineSegment,
   initialSplineFourPoints,
@@ -63,6 +73,23 @@ export interface LaserEditorCanvasProps {
   rainbowCycles: number
   onRainbowCyclesChange: (n: number) => void
   onOpenBeamGradientModal: () => void
+  strokeRenderOpts?: LayerStrokeRenderOpts
+  /** Offset applied to rendered geometry. Stored layers stay in rest space. */
+  shapeMotionDelta?: NormPoint
+  /** Clip preview to a rounded “projection safe” aperture when enabled. */
+  projectionMaskEnabled?: boolean
+  /** When false, preview shows an audience-scan warning overlay. */
+  audienceScanGateEnabled?: boolean
+  /** When set, beams (not grid) are masked: black rectangle blanks inside rect (normalized 0–1). */
+  viewportMask?: { enabled: boolean; x: number; y: number; w: number; h: number } | null
+  textFontFamily: string
+  /**
+   * Preset scenes: geometry is procedural — only selection + beam styling apply;
+   * vertex editing, delete, reorder, and draw tools are disabled.
+   */
+  presetGeometryLocked?: boolean
+  /** When set (preset scenes), beam / solid color from the toolbar patch the selected layer id. */
+  toolbarTargetSelection?: (patch: LaserPresetLayerOverride) => void
 }
 
 const TOOLS: Array<{ id: LaserTool; label: string; icon: ReactNode }> = [
@@ -76,6 +103,11 @@ const TOOLS: Array<{ id: LaserTool; label: string; icon: ReactNode }> = [
     icon: <RadioButtonUncheckedIcon fontSize="small" />,
   },
   { id: 'poly', label: 'Polygon', icon: <PolylineIcon fontSize="small" /> },
+  {
+    id: 'text',
+    label: 'Text',
+    icon: <TextFieldsIcon fontSize="small" />,
+  },
   {
     id: 'spline',
     label: 'Spline (cubic)',
@@ -133,6 +165,8 @@ function nearSplineLastAnchor(pts: NormPoint[], p: NormPoint): boolean {
 
 const ERASE_RADIUS = 0.022
 
+const LASER_SNAP_PERCENT_OPTIONS = [0, 1, 2.5, 5, 10] as const
+
 export default function LaserEditorCanvas({
   layers,
   onLayersChange,
@@ -149,18 +183,56 @@ export default function LaserEditorCanvas({
   rainbowCycles,
   onRainbowCyclesChange,
   onOpenBeamGradientModal,
+  strokeRenderOpts,
+  shapeMotionDelta = { x: 0, y: 0 },
+  projectionMaskEnabled = true,
+  audienceScanGateEnabled = true,
+  viewportMask = null,
+  textFontFamily,
+  presetGeometryLocked = false,
+  toolbarTargetSelection,
 }: LaserEditorCanvasProps) {
+  const rid = useId().replace(/:/g, '')
   const svgRef = useRef<SVGSVGElement | null>(null)
   const layersRef = useRef(layers)
   layersRef.current = layers
+
+  const toRest = useCallback(
+    (p: NormPoint) =>
+      clampPoint({
+        x: p.x - shapeMotionDelta.x,
+        y: p.y - shapeMotionDelta.y,
+      }),
+    [shapeMotionDelta.x, shapeMotionDelta.y]
+  )
+
+  const layersDisplay = useMemo(
+    () =>
+      shapeMotionDelta.x === 0 && shapeMotionDelta.y === 0
+        ? layers
+        : layers.map((l) => shiftShapeLayerPoints(l, shapeMotionDelta)),
+    [layers, shapeMotionDelta.x, shapeMotionDelta.y]
+  )
+
+  const shiftPreview = useCallback(
+    (p: NormPoint) =>
+      clampPoint({
+        x: p.x + shapeMotionDelta.x,
+        y: p.y + shapeMotionDelta.y,
+      }),
+    [shapeMotionDelta.x, shapeMotionDelta.y]
+  )
 
   const [draft, setDraft] = useState<{
     kind: LaserTool
     points: NormPoint[]
   } | null>(null)
   const [dragEnd, setDragEnd] = useState<NormPoint | null>(null)
+  const [laserSnapPercent, setLaserSnapPercent] = useState<number>(5)
   const vertexDragRef = useRef<VertexHandleRef | null>(null)
   const eraserDownRef = useRef(false)
+
+  const laserSnapStep = laserSnapPercent / 100
 
   const shouldReplaceSelection =
     selectedLayerId !== null &&
@@ -172,11 +244,38 @@ export default function LaserEditorCanvas({
   const composeLayerBeam = useCallback((): LayerBeamStroke | undefined => {
     if (beamStrokeMode === 'solid') return undefined
     if (beamStrokeMode === 'rainbow') {
-      return { kind: 'rainbow', cycles: Math.max(0.15, rainbowCycles) }
+      const c = Number.isFinite(rainbowCycles) ? rainbowCycles : 1
+      return { kind: 'rainbow', cycles: Math.max(0.15, Math.min(16, c)) }
     }
     if (beamGradientStops.length < 2) return undefined
     return { kind: 'gradient', stops: beamGradientStops }
   }, [beamStrokeMode, beamGradientStops, rainbowCycles])
+
+  const applyToolbarBeamMode = useCallback(
+    (mode: 'solid' | 'gradient' | 'rainbow') => {
+      onBeamStrokeModeChange(mode)
+      if (!toolbarTargetSelection || !selectedLayerId) return
+      if (mode === 'solid') {
+        toolbarTargetSelection({ beam: null })
+      } else if (mode === 'gradient' && beamGradientStops.length >= 2) {
+        toolbarTargetSelection({
+          beam: { kind: 'gradient', stops: beamGradientStops },
+        })
+      } else if (mode === 'rainbow') {
+        const c = Number.isFinite(rainbowCycles) ? rainbowCycles : 1
+        toolbarTargetSelection({
+          beam: { kind: 'rainbow', cycles: Math.max(0.15, Math.min(16, c)) },
+        })
+      }
+    },
+    [
+      beamGradientStops,
+      onBeamStrokeModeChange,
+      rainbowCycles,
+      selectedLayerId,
+      toolbarTargetSelection,
+    ]
+  )
 
   const putShapeLayer = useCallback(
     (kind: LaserShapeLayer['kind'], points: NormPoint[]) => {
@@ -191,16 +290,23 @@ export default function LaserEditorCanvas({
       }
       if (shouldReplaceSelection && selectedLayerId) {
         onLayersChange(
-          cur.map((l) =>
-            l.id === selectedLayerId
-              ? applyBeam({
-                  ...l,
-                  kind,
-                  points,
-                  color: colorBase,
-                })
-              : l
-          )
+          cur.map((l) => {
+            if (l.id !== selectedLayerId) return l
+            const next: LaserShapeLayer = {
+              ...l,
+              kind,
+              points,
+              color: colorBase,
+            }
+            if (kind === 'text') {
+              next.text = l.kind === 'text' ? (l.text ?? 'Text') : 'Text'
+              next.fontFamily = textFontFamily
+            } else {
+              delete next.text
+              delete next.fontFamily
+            }
+            return applyBeam(next)
+          })
         )
         onSelectLayer(selectedLayerId)
       } else {
@@ -210,6 +316,9 @@ export default function LaserEditorCanvas({
           kind,
           color: colorBase,
           points,
+          ...(kind === 'text'
+            ? { text: 'Text', fontFamily: textFontFamily }
+            : {}),
         })
         onLayersChange([...cur, layer])
         onSelectLayer(id)
@@ -225,6 +334,7 @@ export default function LaserEditorCanvas({
       onSelectLayer,
       selectedLayerId,
       shouldReplaceSelection,
+      textFontFamily,
     ]
   )
 
@@ -233,11 +343,14 @@ export default function LaserEditorCanvas({
       if (e.key !== 'Enter' || tool !== 'poly' || draft?.kind !== 'poly') return
       if (draft.points.length < 3) return
       e.preventDefault()
-      putShapeLayer('poly', draft.points.map(clampPoint))
+      putShapeLayer(
+        'poly',
+        draft.points.map((pt) => snapNormPoint(pt, laserSnapStep))
+      )
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [tool, draft, putShapeLayer])
+  }, [tool, draft, putShapeLayer, laserSnapStep])
 
   const applyEraseAt = useCallback(
     (p: NormPoint) => {
@@ -266,7 +379,8 @@ export default function LaserEditorCanvas({
 
   const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
     if (!svgRef.current) return
-    const p = normFromEvent(svgRef.current, e.clientX, e.clientY)
+    const raw = normFromEvent(svgRef.current, e.clientX, e.clientY)
+    const snap = (pt: NormPoint) => snapNormPoint(pt, laserSnapStep)
 
     if (tool === 'pathAddVertex') {
       if (selectedLayerId === null) return
@@ -280,7 +394,7 @@ export default function LaserEditorCanvas({
       ) {
         return
       }
-      const next = insertVertexInLayer(sel, p)
+      const next = insertVertexInLayer(sel, snap(toRest(raw)))
       if (next) {
         onLayersChange(
           cur.map((l) => (l.id === selectedLayerId ? next : l))
@@ -299,14 +413,17 @@ export default function LaserEditorCanvas({
         const ax = splineAnchorIndices(sel.points)
         let bd = 0.03
         for (const i of ax) {
-          const d = Math.hypot(sel.points[i].x - p.x, sel.points[i].y - p.y)
+          const d = Math.hypot(
+            sel.points[i].x - toRest(raw).x,
+            sel.points[i].y - toRest(raw).y
+          )
           if (d < bd) {
             bd = d
             vx = i
           }
         }
       } else if (sel.kind === 'poly' || sel.kind === 'freehand') {
-        vx = findClosestVertexIndex(sel.points, p, 0.03)
+        vx = findClosestVertexIndex(sel.points, toRest(raw), 0.03)
       } else {
         return
       }
@@ -325,8 +442,8 @@ export default function LaserEditorCanvas({
         const sel = layersRef.current.find(
           (l) => l.id === selectedLayerId && l.kind === 'spline'
         )
-        if (sel && nearSplineLastAnchor(sel.points, p)) {
-          const nextPts = appendSplineSegment(sel.points, p)
+        if (sel && nearSplineLastAnchor(sel.points, toRest(raw))) {
+          const nextPts = appendSplineSegment(sel.points, snap(toRest(raw)))
           onLayersChange(
             layersRef.current.map((l) =>
               l.id === selectedLayerId ? { ...l, points: nextPts } : l
@@ -335,22 +452,25 @@ export default function LaserEditorCanvas({
           return
         }
       }
-      setDraft({ kind: 'spline', points: [p] })
-      setDragEnd(p)
+      setDraft({ kind: 'spline', points: [snap(toRest(raw))] })
+      setDragEnd(snap(toRest(raw)))
       return
     }
 
-    if (tool === 'select' && selectedLayerId) {
-      const sel = layersRef.current.find((l) => l.id === selectedLayerId)
-      if (sel) {
-        const h = hitTestVertexHandle(p, sel)
-        if (h) {
-          vertexDragRef.current = h
-          e.currentTarget.setPointerCapture(e.pointerId)
-          return
+    if (tool === 'select') {
+      if (selectedLayerId) {
+        const sel = layersRef.current.find((l) => l.id === selectedLayerId)
+        if (sel && !presetGeometryLocked) {
+          const disp = shiftShapeLayerPoints(sel, shapeMotionDelta)
+          const h = hitTestVertexHandle(raw, disp)
+          if (h) {
+            vertexDragRef.current = h
+            e.currentTarget.setPointerCapture(e.pointerId)
+            return
+          }
         }
       }
-      const hit = pickLayerAt(layersRef.current, p)
+      const hit = pickLayerAt(layersRef.current, toRest(raw))
       onSelectLayer(hit?.id ?? null)
       return
     }
@@ -361,55 +481,60 @@ export default function LaserEditorCanvas({
       if (!layer || layer.kind !== 'freehand') return
       eraserDownRef.current = true
       e.currentTarget.setPointerCapture(e.pointerId)
-      applyEraseAt(p)
+      applyEraseAt(toRest(raw))
       return
     }
 
     if (tool === 'poly') {
       if (draft?.kind === 'poly') {
-        setDraft({ kind: 'poly', points: [...draft.points, p] })
+        setDraft({ kind: 'poly', points: [...draft.points, snap(toRest(raw))] })
       } else {
-        setDraft({ kind: 'poly', points: [p] })
+        setDraft({ kind: 'poly', points: [snap(toRest(raw))] })
       }
       return
     }
 
     if (tool === 'freehand') {
-      setDraft({ kind: 'freehand', points: [p] })
+      setDraft({ kind: 'freehand', points: [clampPoint(toRest(raw))] })
       return
     }
 
-    setDraft({ kind: tool, points: [p] })
-    setDragEnd(p)
+    setDraft({ kind: tool, points: [snap(toRest(raw))] })
+    setDragEnd(snap(toRest(raw)))
   }
 
   const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
     if (!svgRef.current) return
-    const p = normFromEvent(svgRef.current, e.clientX, e.clientY)
+    const raw = normFromEvent(svgRef.current, e.clientX, e.clientY)
+    const snap = (pt: NormPoint) => snapNormPoint(pt, laserSnapStep)
 
-    if (vertexDragRef.current !== null && selectedLayerId) {
+    if (vertexDragRef.current !== null && selectedLayerId && !presetGeometryLocked) {
       const cur = layersRef.current
       const layer = cur.find((l) => l.id === selectedLayerId)
       if (!layer) return
-      const next = moveVertexHandle(layer, vertexDragRef.current, p)
+      const next = moveVertexHandle(
+        layer,
+        vertexDragRef.current,
+        snap(toRest(raw))
+      )
       onLayersChange(cur.map((l) => (l.id === selectedLayerId ? next : l)))
       return
     }
 
     if (eraserDownRef.current) {
-      applyEraseAt(p)
+      applyEraseAt(toRest(raw))
       return
     }
 
     if (draft === null) return
 
     if (draft.kind === 'poly') {
-      setDragEnd(clampPoint(p))
+      setDragEnd(snap(toRest(raw)))
       return
     }
     if (draft.kind === 'freehand') {
       setDraft((d) =>
-        d ? { ...d, points: [...d.points, clampPoint(p)] } : d
+        d ? { ...d, points: [...d.points, clampPoint(toRest(raw))] } : d
       )
       return
     }
@@ -417,9 +542,10 @@ export default function LaserEditorCanvas({
       draft.kind === 'line' ||
       draft.kind === 'rect' ||
       draft.kind === 'circle' ||
-      draft.kind === 'spline'
+      draft.kind === 'spline' ||
+      draft.kind === 'text'
     ) {
-      setDragEnd(clampPoint(p))
+      setDragEnd(snap(toRest(raw)))
     }
   }
 
@@ -427,8 +553,8 @@ export default function LaserEditorCanvas({
     if (!draft || draft.points.length < 1) return
     const start = draft.points[0]
     const end = dragEnd ?? start
-    const a = clampPoint(start)
-    const b = clampPoint(end)
+    const a = snapNormPoint(start, laserSnapStep)
+    const b = snapNormPoint(end, laserSnapStep)
     if (Math.hypot(a.x - b.x, a.y - b.y) < 0.004) {
       setDraft(null)
       setDragEnd(null)
@@ -444,6 +570,10 @@ export default function LaserEditorCanvas({
     }
     if (draft.kind === 'rect') {
       putShapeLayer('rect', [a, b])
+      return
+    }
+    if (draft.kind === 'text') {
+      putShapeLayer('text', [a, b])
       return
     }
     if (draft.kind === 'circle') {
@@ -480,7 +610,8 @@ export default function LaserEditorCanvas({
       (draft.kind === 'line' ||
         draft.kind === 'rect' ||
         draft.kind === 'circle' ||
-        draft.kind === 'spline')
+        draft.kind === 'spline' ||
+        draft.kind === 'text')
     ) {
       finishDragShape()
       return
@@ -492,20 +623,25 @@ export default function LaserEditorCanvas({
       return
     }
     e.preventDefault()
-    putShapeLayer('poly', draft.points.map(clampPoint))
+    putShapeLayer(
+      'poly',
+      draft.points.map((pt) => snapNormPoint(pt, laserSnapStep))
+    )
   }
 
   const draftPreview = () => {
     if (!draft) return null
+    const shPt = (p: NormPoint) => shiftPreview(p)
     if (draft.kind === 'poly') {
       if (draft.points.length === 0) return null
       const pts = [...draft.points]
       if (dragEnd && draft.points.length > 0) pts.push(dragEnd)
       if (pts.length < 2) {
+        const c0 = shPt(draft.points[0])
         return (
           <circle
-            cx={draft.points[0].x}
-            cy={draft.points[0].y}
+            cx={c0.x}
+            cy={c0.y}
             r={0.006}
             fill="#b8c4d8"
           />
@@ -515,10 +651,13 @@ export default function LaserEditorCanvas({
         <polyline
           fill="none"
           stroke="#b8c4d8"
-          strokeWidth={0.003}
+          strokeWidth={`${LASER_LAYER_STROKE_PT_NORMAL}pt`}
           strokeDasharray="0.012 0.008"
           vectorEffect="non-scaling-stroke"
-          points={pts.map((p) => `${p.x},${p.y}`).join(' ')}
+          points={pts.map((p) => {
+            const q = shPt(p)
+            return `${q.x},${q.y}`
+          }).join(' ')}
         />
       )
     }
@@ -526,7 +665,8 @@ export default function LaserEditorCanvas({
       (draft.kind === 'line' ||
         draft.kind === 'rect' ||
         draft.kind === 'circle' ||
-        draft.kind === 'spline') &&
+        draft.kind === 'spline' ||
+        draft.kind === 'text') &&
       dragEnd
     ) {
       const temp: LaserShapeLayer = {
@@ -538,24 +678,39 @@ export default function LaserEditorCanvas({
               ? 'rect'
               : draft.kind === 'circle'
                 ? 'circle'
-                : 'spline',
+                : draft.kind === 'text'
+                  ? 'text'
+                  : 'spline',
         color: '#8899aa',
         points:
           draft.kind === 'spline'
             ? initialSplineFourPoints(draft.points[0], dragEnd)
             : [draft.points[0], dragEnd],
+        ...(draft.kind === 'text'
+          ? { text: 'Text', fontFamily: textFontFamily }
+          : {}),
       }
-      return layerStrokeSvgElements(temp, laserCapabilities, 0.003)
+      return layerStrokeSvgElements(
+        shiftShapeLayerPoints(temp, shapeMotionDelta),
+        laserCapabilities,
+        LASER_LAYER_STROKE_PT_NORMAL,
+        strokeRenderOpts
+      )
     }
     if (draft.kind === 'freehand' && draft.points.length >= 2) {
       return (
         <polyline
           fill="none"
           stroke={lineColor}
-          strokeWidth={0.003}
+          strokeWidth={`${LASER_LAYER_STROKE_PT_NORMAL}pt`}
           opacity={0.65}
           vectorEffect="non-scaling-stroke"
-          points={draft.points.map((p) => `${p.x},${p.y}`).join(' ')}
+          points={draft.points
+            .map((p) => {
+              const q = shPt(p)
+              return `${q.x},${q.y}`
+            })
+            .join(' ')}
         />
       )
     }
@@ -569,6 +724,7 @@ export default function LaserEditorCanvas({
       : layers.findIndex((l) => l.id === selectedLayerId)
 
   const reorderLayer = (delta: -1 | 1) => {
+    if (presetGeometryLocked) return
     if (selectedIndex < 0) return
     const next = swapLayerWithNeighbor(layers, selectedIndex, delta)
     if (next) {
@@ -577,6 +733,7 @@ export default function LaserEditorCanvas({
   }
 
   const deleteSelectedLayer = () => {
+    if (presetGeometryLocked) return
     if (selectedLayerId === null || selectedIndex < 0) return
     const next = layers.filter((l) => l.id !== selectedLayerId)
     const pickId =
@@ -588,7 +745,11 @@ export default function LaserEditorCanvas({
   }
 
   const handleCenters =
-    tool === 'select' && selected ? handleCentersForRender(selected) : []
+    tool === 'select' && selected && !presetGeometryLocked
+      ? handleCentersForRender(
+          shiftShapeLayerPoints(selected, shapeMotionDelta)
+        )
+      : []
 
   const canvasHint = () => {
     if (tool === 'spline') {
@@ -608,7 +769,9 @@ export default function LaserEditorCanvas({
         : 'Click vertices, then double-click or press Enter to close.'
     }
     if (tool === 'select') {
-      return 'Click a shape to select. Drag handles to reshape.'
+      return presetGeometryLocked
+        ? 'Click a beam or shape to select it, then use the beam toolbar for solid color, gradient, or rainbow.'
+        : 'Click a shape to select. Drag handles to reshape.'
     }
     if (tool === 'eraser') {
       return 'Select a freehand layer, then scrub to remove points.'
@@ -625,23 +788,42 @@ export default function LaserEditorCanvas({
         {TOOLS.map((t) => (
           <Tooltip key={t.id} title={t.label} placement="bottom">
             <span>
-              <RibbonIconButton
-                type="button"
-                $active={tool === t.id}
-                onClick={() => onToolChange(t.id)}
-              >
-                {t.icon}
-              </RibbonIconButton>
+              <ButtonMidiOverlay action={{ type: 'laserTool', tool: t.id }}>
+                <RibbonIconButton
+                  type="button"
+                  $active={tool === t.id}
+                  disabled={presetGeometryLocked && t.id !== 'select'}
+                  onClick={() => onToolChange(t.id)}
+                >
+                  {t.icon}
+                </RibbonIconButton>
+              </ButtonMidiOverlay>
             </span>
           </Tooltip>
         ))}
+        <RibbonDivider />
+        <RibbonSnapWrap>
+          <RibbonLabel>Grid</RibbonLabel>
+          <RibbonSnapSelect
+            id="laser-grid-snap"
+            aria-label="Snap grid size"
+            value={laserSnapPercent}
+            onChange={(ev) => setLaserSnapPercent(Number(ev.target.value))}
+          >
+            {LASER_SNAP_PERCENT_OPTIONS.map((pct) => (
+              <option key={pct} value={pct}>
+                {pct === 0 ? 'Off' : `${pct}%`}
+              </option>
+            ))}
+          </RibbonSnapSelect>
+        </RibbonSnapWrap>
         <RibbonDivider />
         <Tooltip title="Send backward (under previous layer)" placement="bottom">
           <span>
             <RibbonIconButton
               type="button"
               $active={false}
-              disabled={selectedIndex <= 0}
+              disabled={presetGeometryLocked || selectedIndex <= 0}
               onClick={() => reorderLayer(-1)}
               aria-label="Send layer backward"
             >
@@ -655,7 +837,9 @@ export default function LaserEditorCanvas({
               type="button"
               $active={false}
               disabled={
-                selectedIndex < 0 || selectedIndex >= layers.length - 1
+                presetGeometryLocked ||
+                selectedIndex < 0 ||
+                selectedIndex >= layers.length - 1
               }
               onClick={() => reorderLayer(1)}
               aria-label="Bring layer forward"
@@ -669,7 +853,7 @@ export default function LaserEditorCanvas({
             <RibbonIconButton
               type="button"
               $active={false}
-              disabled={selectedLayerId === null}
+              disabled={presetGeometryLocked || selectedLayerId === null}
               onClick={deleteSelectedLayer}
               aria-label="Delete layer"
             >
@@ -685,7 +869,7 @@ export default function LaserEditorCanvas({
               <RibbonIconButton
                 type="button"
                 $active={beamStrokeMode === 'solid'}
-                onClick={() => onBeamStrokeModeChange('solid')}
+                onClick={() => applyToolbarBeamMode('solid')}
                 aria-label="Solid beam"
               >
                 <FormatColorFillIcon fontSize="small" />
@@ -697,7 +881,7 @@ export default function LaserEditorCanvas({
               <RibbonIconButton
                 type="button"
                 $active={beamStrokeMode === 'gradient'}
-                onClick={() => onBeamStrokeModeChange('gradient')}
+                onClick={() => applyToolbarBeamMode('gradient')}
                 aria-label="Gradient beam"
               >
                 <GradientIcon fontSize="small" />
@@ -709,7 +893,7 @@ export default function LaserEditorCanvas({
               <RibbonIconButton
                 type="button"
                 $active={beamStrokeMode === 'rainbow'}
-                onClick={() => onBeamStrokeModeChange('rainbow')}
+                onClick={() => applyToolbarBeamMode('rainbow')}
                 aria-label="Rainbow beam"
               >
                 <AutoAwesomeIcon fontSize="small" />
@@ -737,15 +921,35 @@ export default function LaserEditorCanvas({
               max={16}
               step={0.05}
               value={rainbowCycles}
-              onChange={(e) =>
-                onRainbowCyclesChange(Number(e.target.value) || 1)
-              }
+              onChange={(e) => {
+                const v = Number(e.target.value) || 1
+                onRainbowCyclesChange(v)
+                if (
+                  beamStrokeMode === 'rainbow' &&
+                  selectedLayerId &&
+                  toolbarTargetSelection
+                ) {
+                  toolbarTargetSelection({
+                    beam: { kind: 'rainbow', cycles: Math.max(0.15, Math.min(16, v)) },
+                  })
+                }
+              }}
             />
           )}
           <ColorInput
             type="color"
             value={lineColor}
-            onChange={(ev) => onLineColorChange(ev.target.value)}
+            onChange={(ev) => {
+              const v = ev.target.value
+              onLineColorChange(v)
+              if (
+                beamStrokeMode === 'solid' &&
+                selectedLayerId &&
+                toolbarTargetSelection
+              ) {
+                toolbarTargetSelection({ color: v })
+              }
+            }}
             title="Solid base color"
             disabled={beamStrokeMode !== 'solid'}
           />
@@ -762,36 +966,93 @@ export default function LaserEditorCanvas({
           onPointerLeave={onPointerUp}
           onDoubleClick={onDoubleClick}
         >
-          <GridPattern id="laserGrid" />
-          <rect width="1" height="1" fill="url(#laserGrid)" />
-          {layers.map((layer) => (
-            <g key={layer.id}>
-              {layerStrokeSvgElements(
-                layer,
-                laserCapabilities,
-                layer.id === selectedLayerId ? 0.0045 : 0.003
-              )}
+          <defs>
+            <clipPath id={`laserProjClip-${rid}`}>
+              <rect x="0.05" y="0.05" width="0.9" height="0.9" rx="0.035" />
+            </clipPath>
+            {viewportMask?.enabled &&
+            viewportMask.w > 1e-4 &&
+            viewportMask.h > 1e-4 ? (
+              <mask id={`laserBeamMask-${rid}`} maskUnits="userSpaceOnUse">
+                <rect width="1" height="1" fill="white" />
+                <rect
+                  x={viewportMask.x}
+                  y={viewportMask.y}
+                  width={viewportMask.w}
+                  height={viewportMask.h}
+                  fill="black"
+                />
+              </mask>
+            ) : null}
+          </defs>
+          <GridPattern
+            id={`laserGrid-${rid}`}
+            cellSize={laserSnapPercent > 0 ? laserSnapStep : 0.05}
+          />
+          <g
+            clipPath={
+              projectionMaskEnabled ? `url(#laserProjClip-${rid})` : undefined
+            }
+          >
+            <rect width="1" height="1" fill={`url(#laserGrid-${rid})`} />
+            <g
+              mask={
+                viewportMask?.enabled &&
+                viewportMask.w > 1e-4 &&
+                viewportMask.h > 1e-4
+                  ? `url(#laserBeamMask-${rid})`
+                  : undefined
+              }
+            >
+            {layersDisplay.map((layer) => (
+              <g key={layer.id}>
+                {layerStrokeSvgElements(
+                  layer,
+                  laserCapabilities,
+                  layer.id === selectedLayerId
+                    ? LASER_LAYER_STROKE_PT_SELECTED
+                    : LASER_LAYER_STROKE_PT_NORMAL,
+                  strokeRenderOpts
+                )}
+              </g>
+            ))}
+            {selected && (
+              <g fill="none" opacity={0.9}>
+                {outlineBounds(shiftShapeLayerPoints(selected, shapeMotionDelta))}
+              </g>
+            )}
+            {handleCenters.map((hp, i) => (
+              <circle
+                key={`h-${i}`}
+                cx={hp.x}
+                cy={hp.y}
+                r={0.014}
+                fill="#f2f6ff"
+                stroke="#1a2433"
+                strokeWidth="1pt"
+                vectorEffect="non-scaling-stroke"
+                style={{ pointerEvents: 'none' }}
+              />
+            ))}
+            {draftPreview()}
             </g>
-          ))}
-          {selected && (
-            <g stroke="#ffffffaa" strokeWidth={0.0015} fill="none" opacity={0.9}>
-              {outlineBounds(selected)}
+          </g>
+          {!audienceScanGateEnabled ? (
+            <g style={{ pointerEvents: 'none' }}>
+              <rect width="1" height="1" fill="rgba(200, 40, 40, 0.2)" />
+              <text
+                x="0.5"
+                y="0.52"
+                textAnchor="middle"
+                fill="#ffcccc"
+                fontSize="0.038"
+                fontWeight="800"
+                fontFamily="system-ui, sans-serif"
+              >
+                AUDIENCE SCAN GATE OFF
+              </text>
             </g>
-          )}
-          {handleCenters.map((hp, i) => (
-            <circle
-              key={`h-${i}`}
-              cx={hp.x}
-              cy={hp.y}
-              r={0.014}
-              fill="#f2f6ff"
-              stroke="#1a2433"
-              strokeWidth={0.0012}
-              vectorEffect="non-scaling-stroke"
-              style={{ pointerEvents: 'none' }}
-            />
-          ))}
-          {draftPreview()}
+          ) : null}
         </EditorSvg>
         <CanvasHint>{canvasHint()}</CanvasHint>
       </CanvasWrap>
@@ -832,26 +1093,36 @@ function outlineBounds(layer: LaserShapeLayer) {
       y={minY}
       width={maxX - minX}
       height={maxY - minY}
+      stroke="#ffffffaa"
+      strokeWidth="1.25pt"
+      vectorEffect="non-scaling-stroke"
       strokeDasharray="0.02 0.015"
     />
   )
 }
 
-function GridPattern({ id }: { id: string }) {
+function GridPattern({
+  id,
+  cellSize,
+}: {
+  id: string
+  cellSize: number
+}) {
+  const c = Math.max(0.005, cellSize)
   return (
     <defs>
       <pattern
         id={id}
-        width="0.05"
-        height="0.05"
+        width={c}
+        height={c}
         patternUnits="userSpaceOnUse"
         patternContentUnits="userSpaceOnUse"
       >
         <path
-          d="M 0.05 0 L 0 0 0 0.05"
+          d={`M ${c} 0 L 0 0 0 ${c}`}
           fill="none"
           stroke="#c8d0dc"
-          strokeWidth={0.0012}
+          strokeWidth={Math.max(0.0006, c * 0.024)}
           opacity={0.55}
         />
       </pattern>
@@ -862,8 +1133,9 @@ function GridPattern({ id }: { id: string }) {
 const Root = styled.div`
   display: flex;
   flex-direction: column;
-  min-height: 0;
-  flex: 1 1 auto;
+  flex: 1 1 0;
+  min-height: ${LASER_CANVAS_MIN_HEIGHT_REM}rem;
+  min-width: 0;
 `
 
 const Ribbon = styled.div`
@@ -922,6 +1194,24 @@ const RibbonLabel = styled.span`
   color: ${(p) => p.theme.colors.text.secondary};
 `
 
+const RibbonSnapWrap = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  margin-right: 0.05rem;
+`
+
+const RibbonSnapSelect = styled.select`
+  font-size: 0.68rem;
+  color: ${(p) => p.theme.colors.text.primary};
+  background: ${(p) => p.theme.colors.bg.darker};
+  border: 1px solid ${(p) => p.theme.colors.divider};
+  border-radius: 0.25rem;
+  padding: 0.15rem 0.3rem;
+  min-width: 4.5rem;
+  cursor: pointer;
+`
+
 const ColorInput = styled.input`
   width: 2.2rem;
   height: 1.75rem;
@@ -958,8 +1248,8 @@ const RainbowCyclesField = styled.input`
 
 const CanvasWrap = styled.div`
   position: relative;
-  flex: 1 1 auto;
-  min-height: 14rem;
+  flex: 1 1 0;
+  min-height: 0;
   margin: 0.48rem 0.52rem 0.35rem;
   border: 1px solid ${(p) => p.theme.colors.divider};
   border-radius: 0.4rem;

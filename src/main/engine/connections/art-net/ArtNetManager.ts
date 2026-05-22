@@ -8,6 +8,7 @@ import { EngineContext } from 'main/engine/engineContext'
 export class ArtNetManager {
   private client: dgram.Socket
   private intervalHandle: NodeJS.Timeout
+  private destroyed = false
 
   constructor(c: EngineContext) {
     this.client = dgram.createSocket('udp4')
@@ -54,6 +55,13 @@ export class ArtNetManager {
   }
 
   destroy() {
+    if (this.destroyed) return
+    this.destroyed = true
     clearInterval(this.intervalHandle)
+    try {
+      this.client.close()
+    } catch {
+      /* ignore */
+    }
   }
 }

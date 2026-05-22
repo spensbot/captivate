@@ -22,8 +22,9 @@
   "dependencies": {
     "ffmpeg-static": "^5.3.0",
     "koffi": "^2.8.0",
-    "serialport": "^10.4.0",
     "midi": "npm:@julusian/midi@^3.6.1",
-    "node-link": "file:node-link"
+    "node-link": "file:node-link",
+    "serialport": "^10.4.0",
+    "usb": "^2.17.0"
   }
 }

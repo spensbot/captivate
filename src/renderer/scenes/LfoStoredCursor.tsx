@@ -30,7 +30,7 @@ export default function LfoStoredCursor({
   const audio = useRealtimeSelector((state) => state.audio)
 
   const show = useActiveLightScene((scene) => {
-    const m = intermodPropsIncoming(scene, splitIx)
+    const m = intermodPropsIncoming(scene)
     return (m.get(index)?.size ?? 0) > 0
   })
 

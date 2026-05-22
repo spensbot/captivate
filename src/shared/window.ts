@@ -16,10 +16,9 @@ export type Window2D_t = {
 
 function normalizedWindow(window?: Window): Window {
   const pos = Number.isFinite(window?.pos) ? (window?.pos as number) : 0.5
-  const width =
-    Number.isFinite(window?.width) && (window?.width as number) > 0
-      ? (window?.width as number)
-      : 1
+  const width = Number.isFinite(window?.width)
+    ? Math.max(0, window!.width as number)
+    : 1
 
   return {
     pos,

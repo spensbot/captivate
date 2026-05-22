@@ -25,6 +25,7 @@ import MenuBuilder from './menu'
 import { resolveHtmlPath } from './util'
 import * as engine from './engine/engine'
 import {
+  bootstrapRemoteControlIpc,
   registerLighting3dPreviewPage,
   seedLighting3dBootstrapDedupe,
 } from './engine/ipcHandler'
@@ -224,6 +225,15 @@ function focusWindow(window: BrowserWindow) {
   window.show()
   window.focus()
 }
+
+function focusMainApplicationWindow() {
+  if (mainWindow !== null && !mainWindow.isDestroyed()) {
+    focusWindow(mainWindow)
+  }
+}
+
+/** Set when a second app launch arrives before the main window exists. */
+let focusMainOnReady = false
 
 function videoViewportPlacementOnDisplay(displayId: number): WindowPlacement | null {
   const target = screen.getAllDisplays().find((d) => d.id === displayId)
@@ -881,23 +891,36 @@ const createWindow = async () => {
     maximizeOnFirstShow: persistedWindowLayout.main === null,
   })
 
+  if (focusMainOnReady) {
+    focusMainOnReady = false
+    focusMainApplicationWindow()
+  }
+
+  const requestAppQuit = () => {
+    if (mainWindow !== null && !mainWindow.isDestroyed()) {
+      void requestMainWindowQuit(mainWindow)
+    } else {
+      isClosing = true
+      engine.stop()
+      app.quit()
+    }
+  }
+
   const ipcCallbacks = engine.start(
     mainWindow.webContents,
     visualizerContainer,
     (page, opts) => {
       openOrFocusDetachedPage(page, opts)
     },
-    () => {
-      if (mainWindow !== null) {
-        void requestMainWindowQuit(mainWindow)
-      }
-    },
+    requestAppQuit,
     syncVideoEnabledToDetachedVisualizerCount
   )
+  void bootstrapRemoteControlIpc()
 
   const menuBuilder = new MenuBuilder(mainWindow, {
     ipcCallbacks,
     openPageWindow: (page) => openOrFocusDetachedPage(page),
+    requestAppQuit,
   })
   menuBuilder.buildMenu()
   ipcMain.on(
@@ -942,53 +965,70 @@ const createWindow = async () => {
 //   }
 // })
 
-app
-  .whenReady()
-  .then(() => {
-    startMainTelemetry()
-    telemetryHealth('app', 'ok', 'App process initialized')
-    telemetryGauge('app', 'pid', process.pid, 'pid')
-    telemetryCounter('app', 'ready')
-    reportDiagnostic({
-      source: 'main',
-      area: 'app',
-      event: 'ready',
-      level: 'info',
-      data: {
-        appVersion: app.getVersion(),
-        isPackaged: app.isPackaged,
-      },
-    })
-    app.on('child-process-gone', (_event, details) => {
-      telemetryCounter('app', 'child_process_gone')
-      telemetryHealth('app', 'warn', 'Child process exited', details)
+const gotSingleInstanceLock = app.requestSingleInstanceLock()
+
+if (!gotSingleInstanceLock) {
+  console.info('Captivate is already running; exiting duplicate instance.')
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    telemetryCounter('app', 'second_instance')
+    if (mainWindow !== null && !mainWindow.isDestroyed()) {
+      focusMainApplicationWindow()
+    } else {
+      focusMainOnReady = true
+    }
+  })
+
+  app
+    .whenReady()
+    .then(() => {
+      startMainTelemetry()
+      telemetryHealth('app', 'ok', 'App process initialized')
+      telemetryGauge('app', 'pid', process.pid, 'pid')
+      telemetryCounter('app', 'ready')
       reportDiagnostic({
         source: 'main',
         area: 'app',
-        event: 'child-process-gone',
-        level: 'error',
-        data: details,
+        event: 'ready',
+        level: 'info',
+        data: {
+          appVersion: app.getVersion(),
+          isPackaged: app.isPackaged,
+        },
+      })
+      app.on('child-process-gone', (_event, details) => {
+        telemetryCounter('app', 'child_process_gone')
+        telemetryHealth('app', 'warn', 'Child process exited', details)
+        reportDiagnostic({
+          source: 'main',
+          area: 'app',
+          event: 'child-process-gone',
+          level: 'error',
+          data: details,
+        })
+      })
+      setupDesktopLoopbackCapture()
+      void primeFixtureLibraryCache()
+      createWindow()
+      app.on('activate', () => {
+        telemetryCounter('app', 'activate')
+        // On macOS it's common to re-create a window in the app when the
+        // dock icon is clicked and there are no other windows `open`.
+        if (mainWindow === null) createWindow()
       })
     })
-    setupDesktopLoopbackCapture()
-    void primeFixtureLibraryCache()
-    createWindow()
-    app.on('activate', () => {
-      telemetryCounter('app', 'activate')
-      // On macOS it's common to re-create a window in the app when the
-      // dock icon is clicked and there are no other windows `open`.
-      if (mainWindow === null) createWindow()
-    })
-  })
-  .catch(console.log)
+    .catch(console.log)
 
-app.on('will-quit', () => {
-  if (persistWindowLayoutTimer !== null) {
-    clearTimeout(persistWindowLayoutTimer)
-    persistWindowLayoutTimer = null
-  }
-  flushPersistedWindowLayout()
-  stopLighting3dUtilityWorker()
-  telemetryCounter('app', 'will_quit')
-  stopMainTelemetry()
-})
+  app.on('will-quit', () => {
+    if (persistWindowLayoutTimer !== null) {
+      clearTimeout(persistWindowLayoutTimer)
+      persistWindowLayoutTimer = null
+    }
+    flushPersistedWindowLayout()
+    engine.stop()
+    stopLighting3dUtilityWorker()
+    telemetryCounter('app', 'will_quit')
+    stopMainTelemetry()
+  })
+}

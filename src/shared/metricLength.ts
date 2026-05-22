@@ -59,3 +59,26 @@ export function formatMetricMetersForDraft(meters: number): string {
   const s = meters.toFixed(8).replace(/\.?0+$/, '')
   return s === '-0' ? '0' : s
 }
+
+/** Display meters as `m m cm` (centimeters rounded to 2 decimals when needed). */
+export function formatMetersAsMetersCm(meters: number): string {
+  if (!Number.isFinite(meters)) {
+    return ''
+  }
+  const sign = meters < 0 ? '-' : ''
+  const v = Math.abs(meters)
+  const wholeM = Math.floor(v + 1e-9)
+  const cmFloat = (v - wholeM) * 100
+  const cmRounded = Math.round(cmFloat * 100) / 100
+  if (cmRounded >= 100 - 1e-4) {
+    return formatMetersAsMetersCm((sign === '-' ? -1 : 1) * (wholeM + 1))
+  }
+  if (cmRounded < 0.005) {
+    return `${sign}${wholeM} m`
+  }
+  const cmStr =
+    Math.abs(cmRounded - Math.round(cmRounded)) < 1e-5
+      ? String(Math.round(cmRounded))
+      : cmRounded.toFixed(2).replace(/\.?0+$/, '')
+  return `${sign}${wholeM} m ${cmStr} cm`
+}

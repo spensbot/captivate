@@ -37,14 +37,14 @@ export default function SplitScenes() {
         ) : (
           indexes.map((index) => <SplitScene key={activeScene + index} index={index} />)
         )}
+        <AddSplitFooter>
+          <AddSplitDivider />
+          <AddSplitButton type="button" onClick={onAddSplitScene} title="Add split">
+            <AddIcon fontSize="small" />
+            <span>Add Split</span>
+          </AddSplitButton>
+        </AddSplitFooter>
       </SplitList>
-      <AddSplitFooter>
-        <AddSplitDivider />
-        <AddSplitButton type="button" onClick={onAddSplitScene} title="Add split">
-          <AddIcon fontSize="small" />
-          <span>Add Split</span>
-        </AddSplitButton>
-      </AddSplitFooter>
     </Root>
   )
 }
@@ -55,11 +55,13 @@ const Root = styled.div`
   gap: 0.55rem;
   min-width: 0;
   min-height: 0;
-  flex: 1 1 auto;
+  /* flex-basis 0 so this panel can shrink below the sum of its children; SplitList scrolls */
+  flex: 1 1 0;
   overflow: hidden;
 `
 
 const Title = styled.div`
+  flex-shrink: 0;
   font-size: ${(props) => props.theme.font.size.h1};
   color: ${(props) => props.theme.colors.text.primary};
 `
@@ -70,26 +72,35 @@ const SplitList = styled.div`
   gap: 0.55rem;
   min-width: 0;
   min-height: 0;
-  flex: 1 1 auto;
+  flex: 1 1 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-right: 0.18rem;
+  padding-right: 0.12rem;
   scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: #7a7a7a99 #0000;
+  scrollbar-width: auto;
+  scrollbar-color: rgba(155, 162, 182, 0.88) rgba(0, 0, 0, 0.32);
 
   &::-webkit-scrollbar {
-    display: block !important;
-    width: 10px;
+    width: 11px;
   }
 
   &::-webkit-scrollbar-track {
-    background: #0000;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 6px;
+    margin: 3px 0;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #7a7a7a99;
-    border-radius: 999px;
+    background: rgba(150, 158, 180, 0.62);
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(185, 192, 215, 0.78);
+    border: 2px solid transparent;
+    background-clip: padding-box;
   }
 `
 
@@ -119,11 +130,15 @@ const AddSplitButton = styled.button`
 `
 
 const AddSplitFooter = styled.div`
+  flex-shrink: 0;
+  flex-grow: 0;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 0.5rem;
   min-width: 0;
+  margin-top: 0.55rem;
+  padding-bottom: 0.35rem;
 `
 
 const AddSplitDivider = styled.div`
@@ -171,27 +186,36 @@ function SplitScene({ index }: Props) {
 
 const Root2 = styled.div`
   border-top: 1px solid ${(props) => props.theme.colors.divider};
-  margin-bottom: 1rem;
+  margin-bottom: 0;
   background-color: ${(props) => props.theme.colors.bg.darker};
   overflow-x: auto;
   overflow-y: hidden;
   width: 100%;
   padding-bottom: 0.35rem;
-  scrollbar-width: thin;
-  scrollbar-color: #7a7a7a99 #0000;
+  scrollbar-width: auto;
+  scrollbar-color: rgba(155, 162, 182, 0.88) rgba(0, 0, 0, 0.32);
 
   &::-webkit-scrollbar {
-    display: block !important;
-    height: 10px;
+    height: 11px;
   }
 
   &::-webkit-scrollbar-track {
-    background: #0000;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 6px;
+    margin: 0 3px;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #7a7a7a99;
-    border-radius: 999px;
+    background: rgba(150, 158, 180, 0.62);
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(185, 192, 215, 0.78);
+    border: 2px solid transparent;
+    background-clip: padding-box;
   }
 `
 

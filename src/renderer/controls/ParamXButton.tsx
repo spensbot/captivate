@@ -76,6 +76,6 @@ const Root = styled.button<{ $toolbar: boolean }>`
       : `
     position: absolute;
     top: 0.22rem;
-    right: 0.22rem;
+    right: calc(0.22rem - 10px);
   `}
 `

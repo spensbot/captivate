@@ -7,15 +7,17 @@ import {
 import { useSelector, TypedUseSelectorHook } from 'react-redux'
 import dmxReducer, { DmxState } from './dmxSlice'
 import guiReducer, { GuiState } from './guiSlice'
+import laserReducer from './laserSlice'
 import controlReducer, { ControlState } from './controlSlice'
 import { LightScene_t } from '../../shared/Scenes'
 import mixerReducer, { initMixerState } from './mixerSlice'
 import undoable, { StateWithHistory } from 'redux-undo'
-import { DeviceState } from './deviceState'
+import { DeviceState, initDeviceState } from './deviceState'
 import fixState, { fixDeviceState } from '../../shared/fixState'
 import { VisualScene_t, SceneType } from '../../shared/Scenes'
 import { DefaultParam, initBaseParams, Params } from '../../shared/params'
 import { SaveInfo } from 'shared/save'
+import { migrateLaserProjectState } from '../laser/laserProjectState'
 import { FixtureType } from 'shared/dmxFixtures'
 
 export interface UndoActionTypes {
@@ -36,6 +38,15 @@ export const undoActionTypes: { [key in UndoGroup]: UndoActionTypes } = {
   },
 } as const
 
+/** Detached popouts should follow main-window mapping mode, not keep stale local flags. */
+function shouldPreserveLocalDeviceLearnState(): boolean {
+  if (typeof window === 'undefined') {
+    return true
+  }
+  const page = new URLSearchParams(window.location.search).get('page')
+  return page !== 'Video' && page !== 'VideoViewport' && page !== 'Streaming'
+}
+
 const baseReducer = combineReducers({
   dmx: undoable(dmxReducer, {
     undoType: undoActionTypes.dmx.undo,
@@ -47,6 +58,7 @@ const baseReducer = combineReducers({
     redoType: undoActionTypes.control.redo,
   }),
   mixer: mixerReducer,
+  laser: laserReducer,
 })
 
 export type ReduxState = ReturnType<typeof baseReducer>
@@ -133,10 +145,27 @@ const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (
       gui: sanitizeGuiTransientState(cleanState.gui),
       control: initUndoState(cleanState.control),
       mixer: cleanState.mixer,
+      laser: cleanState.laser,
     }
   } else if (action.type === RESET_REMOTE_STATE) {
     const cleanState: CleanReduxState = action.payload
     fixState(cleanState)
+    const localDevice = state.control.present.device
+    if (
+      shouldPreserveLocalDeviceLearnState() &&
+      (localDevice.keyboardListening !== undefined ||
+        localDevice.listening !== undefined ||
+        localDevice.keyboardLearnMode === true ||
+        localDevice.isEditing === true)
+    ) {
+      cleanState.control.device = {
+        ...cleanState.control.device,
+        keyboardListening: localDevice.keyboardListening,
+        listening: localDevice.listening,
+        keyboardLearnMode: localDevice.keyboardLearnMode,
+        isEditing: localDevice.isEditing,
+      }
+    }
     const localGui = state.gui
     return {
       dmx: initUndoState(cleanState.dmx),
@@ -156,6 +185,7 @@ const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (
       },
       control: initUndoState(cleanState.control),
       mixer: cleanState.mixer,
+      laser: cleanState.laser,
     }
   } else if (action.type === RESET_UNIVERSE) {
     const us: DmxState = action.payload
@@ -236,6 +266,10 @@ const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (
         info.config.mixer && info.state.mixer
           ? { ...initMixerState(), ...info.state.mixer }
           : state.mixer,
+      laser:
+        info.config.laser && info.state.laser
+          ? migrateLaserProjectState(info.state.laser)
+          : state.laser,
     }
     // I HAVE NO IDEA WHY THE BELOW APPROACH DOESN"T WORK IF ANYBODY KNOWS PLEASE TELL ME!!!
     // let newState = {
@@ -278,6 +312,7 @@ export function getCleanReduxState(state: ReduxState) {
     gui: sanitizeGuiTransientState(state.gui),
     control: state.control.present,
     mixer: state.mixer,
+    laser: state.laser,
   }
 }
 
@@ -331,7 +366,13 @@ export function useActiveFixtureType<T>(
 }
 
 export function useDeviceSelector<T>(getVal: (midi: DeviceState) => T) {
-  return useTypedSelector((state) => getVal(state.control.present.device))
+  return useTypedSelector((state) => {
+    const device = state.control.present.device
+    if (!device) {
+      return getVal(initDeviceState())
+    }
+    return getVal(device)
+  })
 }
 
 export function useBaseParam(
@@ -357,6 +398,11 @@ export function useModParam(
   splitIndex: number
 ) {
   return useActiveLightScene((scene) => {
-    return scene.modulators[modIndex]?.splitModulations?.[splitIndex]?.[param]
+    const modulator = scene.modulators[modIndex]
+    if (modulator === undefined) return undefined
+    if (typeof param === 'string' && param.startsWith('intermod:lfo:')) {
+      return modulator.lfoInterModulation?.[param]
+    }
+    return modulator.splitModulations?.[splitIndex]?.[param]
   })
 }

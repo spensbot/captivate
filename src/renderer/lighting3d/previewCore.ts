@@ -14,6 +14,7 @@ import {
   emitterDiameterMToVisualSizeScale,
   EMITTER_DIAMETER_MIN_M,
   EMITTER_DIAMETER_REFERENCE_M,
+  fixtureEmitterFaceWidthScale,
   normalizeRectEmitterFaceDimensionsM,
   type FixtureBodyShape,
   type FixtureEmitterShape,
@@ -155,9 +156,11 @@ export const FALLBACK_WORLD_FLOOR_SIZE = 220
 export const DEFAULT_CAMERA_POSITION: [number, number, number] = [0, 6.9, 10.1]
 export const DEFAULT_CAMERA_TARGET: [number, number, number] = [0, 1.8, 0.8]
 export const CAMERA_STORAGE_KEY = 'captivate.lighting3d.camera.v1'
-export const VOLUMETRIC_FOG_MAX_LIGHTS = 10
-export const ENABLE_BEAM_CONE_MESHES = false
+export const VOLUMETRIC_FOG_MAX_LIGHTS = 16
+export const ENABLE_BEAM_CONE_MESHES = true
 export const ENABLE_RECT_AREA_FILL_LIGHTS = true
+/** Emissive gain for DMX emitter lenses (toneMapped: false on material). */
+export const EMITTER_EMISSIVE_GAIN = 2.1
 export const ENABLE_LED_PIXEL_LIGHTS = false
 export const ENABLE_LED_AGGREGATE_LIGHT = true
 export const ENABLE_SURFACE_SPLATS = false
@@ -167,6 +170,25 @@ export const LED_EMITTER_BASE_EMISSIVE = 8.4
 export const LED_AGGREGATE_LIGHT_GAIN = 11.2
 export const LED_AGGREGATE_FOG_GAIN = 0.85
 export const PREVIEW_SYNC_MIN_INTERVAL_MS = 16
+/** DMX/output level below this is treated as off (no beams, fog slots, or dynamic lights). */
+/** ~2.5/255 — ignore residual DMX noise when deciding preview is "on". */
+export const PREVIEW_EMITTER_OUTPUT_EPSILON = 0.01
+
+export function isEmitterOutputActive(
+  intensity: number,
+  color?: THREE.Color
+): boolean {
+  if (!Number.isFinite(intensity) || intensity < PREVIEW_EMITTER_OUTPUT_EPSILON) {
+    return false
+  }
+  if (color !== undefined) {
+    const colorPeak = Math.max(color.r, color.g, color.b)
+    if (!Number.isFinite(colorPeak) || colorPeak < PREVIEW_EMITTER_OUTPUT_EPSILON) {
+      return false
+    }
+  }
+  return true
+}
 export const MAX_VISUAL_CREATIONS_PER_SYNC = 4
 export const LOCAL_AXIS_Y = new THREE.Vector3(0, 1, 0)
 export const LOCAL_AXIS_Z = new THREE.Vector3(0, 0, 1)
@@ -175,7 +197,13 @@ export const LIGHTING3D_WARMUP_MIN_MS = 900
 export const LIGHTING3D_WARMUP_SETTLE_MS = 500
 export const LIGHTING3D_PERF_HUD_STORAGE_KEY = 'captivate.debug.lighting3dPerfHud'
 
-export function createLightingRenderer(heavyScene: boolean) {
+export type LightingRendererInit = {
+  renderer: THREE.WebGLRenderer
+  /** When false, volumetric haze is disabled (WebGL1 fallback). */
+  webgl2: boolean
+}
+
+export function createLightingRenderer(heavyScene: boolean): LightingRendererInit {
   const canvas = document.createElement('canvas')
   const contextAttributes: WebGLContextAttributes = {
     antialias: !heavyScene,
@@ -188,13 +216,21 @@ export function createLightingRenderer(heavyScene: boolean) {
   }
 
   const gl2Context = canvas.getContext('webgl2', contextAttributes)
-  if (gl2Context === null) {
-    throw new Error('Lighting 3D requires WebGL2 support for volumetric haze and projection lighting.')
+  const gl1Context =
+    gl2Context ??
+    canvas.getContext('webgl', contextAttributes) ??
+    canvas.getContext('experimental-webgl', contextAttributes)
+
+  if (gl1Context === null) {
+    throw new Error(
+      'Lighting 3D could not create a WebGL context. Check GPU drivers and hardware acceleration.'
+    )
   }
+
   const renderer = new THREE.WebGLRenderer({
     canvas,
     antialias: !heavyScene,
-    context: gl2Context,
+    context: gl1Context as WebGL2RenderingContext | WebGLRenderingContext,
     powerPreference: 'high-performance',
   })
 
@@ -207,9 +243,9 @@ export function createLightingRenderer(heavyScene: boolean) {
   renderer.shadowMap.type = heavyScene ? THREE.BasicShadowMap : THREE.PCFSoftShadowMap
   renderer.toneMapping = THREE.ACESFilmicToneMapping
   // Slightly lifted so dark fixture housings and room shells read against volumetric haze.
-  renderer.toneMappingExposure = 1.18
+  renderer.toneMappingExposure = 1.0
   renderer.outputColorSpace = THREE.SRGBColorSpace
-  return renderer
+  return { renderer, webgl2: gl2Context !== null }
 }
 
 export interface PersistedCameraState {
@@ -286,6 +322,12 @@ export function smoothToward(
   target: number,
   amount: number
 ): number {
+  if (!Number.isFinite(target) || target <= PREVIEW_EMITTER_OUTPUT_EPSILON) {
+    if (current === undefined || !Number.isFinite(current) || current <= PREVIEW_EMITTER_OUTPUT_EPSILON) {
+      return 0
+    }
+    return lerp(current, 0, clamp01(amount * 2.5))
+  }
   if (current === undefined || !Number.isFinite(current)) {
     return target
   }
@@ -572,8 +614,10 @@ export function readLiveBeamValuesForChannels(
   channelSet: BeamChannelSet,
   universeData: number[] | undefined,
   params: Params,
-  fallbackColor: THREE.Color
+  fallbackColor: THREE.Color,
+  masterScale = 1
 ): LiveBeamValues {
+  const outputScale = clamp01(masterScale)
   const [hsvR, hsvG, hsvB] = hsv2rgb(
     clamp01(getParam(params, 'hue')),
     clamp01(getParam(params, 'saturation')),
@@ -584,7 +628,7 @@ export function readLiveBeamValuesForChannels(
   if (universeData === undefined) {
     return {
       color: hsvFallbackColor,
-      intensity: clamp01(getParam(params, 'brightness')),
+      intensity: clamp01(getParam(params, 'brightness') * outputScale),
     }
   }
 
@@ -641,14 +685,12 @@ export function readLiveBeamValuesForChannels(
       }
     }
 
+    const mapLevel = estimateColorMapIntensity(rawValue, selected.max)
     const baseColor = colorFromChannelDefinition(selected)
-    combinedColor.r += baseColor.r
-    combinedColor.g += baseColor.g
-    combinedColor.b += baseColor.b
-    colorControlLevel = Math.max(
-      colorControlLevel,
-      estimateColorMapIntensity(rawValue, selected.max)
-    )
+    combinedColor.r += baseColor.r * mapLevel
+    combinedColor.g += baseColor.g * mapLevel
+    combinedColor.b += baseColor.b * mapLevel
+    colorControlLevel = Math.max(colorControlLevel, mapLevel)
   }
 
   const hasColorDefinitions =
@@ -666,13 +708,16 @@ export function readLiveBeamValuesForChannels(
       ? hsvFallbackColor
       : fallbackColor.clone()
 
-  const fallbackLevel = hasColorDefinitions
-    ? colorControlLevel
-    : clamp01(getParam(params, 'brightness'))
+  const hasMasterDimmer = channelSet.masterChannels.length > 0
+  const intensity = hasColorDefinitions
+    ? clamp01(colorControlLevel * masterLevel)
+    : hasMasterDimmer
+      ? clamp01(masterLevel)
+      : 0
 
   return {
     color: previewColor,
-    intensity: clamp01(fallbackLevel * masterLevel),
+    intensity: clamp01(intensity * outputScale),
   }
 }
 
@@ -1637,7 +1682,8 @@ export function buildTargets(
             },
             universeData,
             fallbackParams,
-            groupColor
+            groupColor,
+            master
           )
           const effectLevel = readLiveEffectLevelForChannels(
             emitterChannels.effectChannels,
@@ -1723,7 +1769,8 @@ export function buildTargets(
             },
             universeData,
             fallbackParams,
-            groupColor
+            groupColor,
+            master
           )
           const effectLevel = readLiveEffectLevelForChannels(
             emitterGroup.effectChannels,
@@ -1898,10 +1945,10 @@ export function buildTargets(
               })
             }
           } else {
-            const centerX =
-              (clamp01(emitterGroup.relativeX) - 0.5) *
-              modelWidth *
-              (isMoverModel ? 0.18 : 0.85)
+            const faceWidthScale = fixtureEmitterFaceWidthScale(modelKind)
+            const centerX = isMoverModel
+              ? (clamp01(emitterGroup.relativeX) - 0.5) * modelWidth * 0.18
+              : (clamp01(emitterGroup.relativeX) - 0.5) * modelWidth * faceWidthScale
             const centerY =
               (0.5 - clamp01(emitterGroup.relativeY)) * (isMoverModel ? 0.08 : 0.2)
             const centerZ =
@@ -2051,10 +2098,27 @@ export function shouldCreateDynamicEmitterLight(
   if (target.modelKind === 'atmosphericFxtr' && !target.hasAtmosLighting) {
     return false
   }
-  if (target.isMoverModel) {
+  // One steerable beam per mover head; ring/secondary emitters are lens markers only.
+  if (target.modelKind === 'moverSpot' || target.modelKind === 'moverWash') {
     return emitterIndex === 0
   }
   return emitterIndex < MAX_DYNAMIC_LIGHTS_PER_FIXTURE
+}
+
+/** Narrow spots for PARs and movers; broad fixtures use rect fill instead. */
+export function shouldCreateSpotEmitterLight(
+  target: PreviewTarget,
+  emitterIndex: number
+): boolean {
+  if (!shouldCreateDynamicEmitterLight(target, emitterIndex)) {
+    return false
+  }
+  return (
+    target.modelKind === 'parCan' ||
+    target.modelKind === 'moverSpot' ||
+    target.modelKind === 'washBar' ||
+    (target.modelKind === 'atmosphericFxtr' && target.hasAtmosLighting)
+  )
 }
 
 export function shouldCreateFillRectLight(
@@ -2069,7 +2133,6 @@ export function shouldCreateFillRectLight(
   }
   return (
     target.modelKind === 'moverWash' ||
-    target.modelKind === 'washBar' ||
     target.modelKind === 'uplight' ||
     (target.modelKind === 'atmosphericFxtr' && target.hasAtmosLighting)
   )
@@ -2147,9 +2210,9 @@ export function createEmitterMesh(
     new THREE.MeshStandardMaterial({
       color,
       emissive: color,
-      emissiveIntensity: 2.1,
-      metalness: 0.05,
-      roughness: 0.2,
+      emissiveIntensity: 1.4,
+      metalness: 0,
+      roughness: 0.62,
       toneMapped: false,
     })
   )
@@ -2581,15 +2644,15 @@ export function createVolumetricFogMaterial(
             coneFactor = pow(smoothstep(0.03, 0.985, forward), 2.0);
           }
 
-          float phase = phaseG(dot(-rayDir, -lightToPointDir), 0.62);
+          float phase = phaseG(dot(-rayDir, -lightToPointDir), 0.38);
           float scatterStrength = uLightParams[i].x * attenuation * coneFactor * phase;
           scatter += uLightColor[i] * scatterStrength * density;
         }
 
-        accumColor += scatter * stepLen * 2.0;
+        accumColor += scatter * stepLen * 0.72;
       }
 
-      float alpha = clamp(max(max(accumColor.r, accumColor.g), accumColor.b) * 0.85, 0.0, 0.92);
+      float alpha = clamp(max(max(accumColor.r, accumColor.g), accumColor.b) * 0.52, 0.0, 0.62);
       if (alpha < 0.001) {
         discard;
       }
@@ -2818,11 +2881,12 @@ export function createFixtureVisual(target: PreviewTarget): FixtureVisual {
         rectFace
       )
       const shouldCreateLight = shouldCreateDynamicEmitterLight(target, emitterIndex)
+      const shouldCreateSpot = shouldCreateSpotEmitterLight(target, emitterIndex)
       const shadowedSpot =
         target.modelKind === 'moverSpot' &&
         emitterIndex === 0 &&
         target.castPrimarySpotShadow !== false
-      const lightBundle = shouldCreateLight
+      const lightBundle = shouldCreateSpot
         ? createSpotEmitterLight(emitter.color, shadowedSpot)
         : null
       const beamMesh =
@@ -2931,10 +2995,11 @@ export function createFixtureVisual(target: PreviewTarget): FixtureVisual {
     const height = clamp(target.bodyHeight, 0.06, 1.8)
     const depth = clamp(target.bodyDepth, 0.06, 1.8)
     const diameter = clamp(target.bodyDiameter, 0.08, 2.2)
+    const faceWidthScale = fixtureEmitterFaceWidthScale(target.modelKind)
     const body =
       target.bodyShape === 'box'
         ? new THREE.Mesh(
-            new THREE.BoxGeometry(width * 0.7, height, depth),
+            new THREE.BoxGeometry(width * faceWidthScale, height, depth),
             bodyMaterial
           )
         : new THREE.Mesh(
@@ -2962,16 +3027,14 @@ export function createFixtureVisual(target: PreviewTarget): FixtureVisual {
       rectFaceNonMover
     )
     const shouldCreateLight = shouldCreateDynamicEmitterLight(target, emitterIndex)
-    /** Primary emitter on beam fixtures casts shadows for readable gobo / PAR / wash on surfaces. */
+    const shouldCreateSpot = shouldCreateSpotEmitterLight(target, emitterIndex)
+    /** Primary emitter on beam fixtures casts shadows for readable gobo / PAR on surfaces. */
     const shadowedSpot =
-      shouldCreateLight &&
+      shouldCreateSpot &&
       emitterIndex === 0 &&
-      (target.modelKind === 'moverSpot' ||
-        target.modelKind === 'parCan' ||
-        target.modelKind === 'moverWash' ||
-        target.modelKind === 'washBar') &&
+      (target.modelKind === 'moverSpot' || target.modelKind === 'parCan') &&
       target.castPrimarySpotShadow !== false
-    const lightBundle = shouldCreateLight
+    const lightBundle = shouldCreateSpot
       ? createSpotEmitterLight(emitter.color, shadowedSpot)
       : null
     const beamMesh =

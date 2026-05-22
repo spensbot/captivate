@@ -2,7 +2,13 @@ import { getLedValues, normalizeLedFixtureForRuntime } from '../../../shared/led
 import type { BaseColors } from '../../../shared/baseColors'
 import type { Params } from '../../../shared/params'
 import { SplitScene_t } from '../../../shared/Scenes'
-import { fixtureGroupsMatchSceneGroups } from '../../../shared/sceneGroups'
+import { ledFixtureMatchesSceneGroups } from '../../../shared/sceneGroups'
+import {
+  applyLedRandomizerToColors,
+  buildLedRandomizerContext,
+  pickPrimarySplitLayerForLed,
+} from '../../../shared/splitRandomizer'
+import { flatten_fixtures } from '../../../shared/dmxUtil'
 import { EngineContext } from '../engineContext'
 import WledDevice from './wled_device'
 import { WledPixelTransportFormat } from './udp_buffer'
@@ -13,11 +19,20 @@ import {
   telemetryHealth,
 } from '../../telemetry'
 
+type HostPixelSpan = {
+  minIndex: number
+  maxIndex: number
+  colors: Map<number, BaseColors>
+  format: WledPixelTransportFormat
+}
+
 type HostEntry = {
   host: string
   device: WledDevice
   lastPwmFramesByKey: Map<string, string>
   lastPwmPostedAtMs: number
+  lastPixelKeepalive: HostPixelSpan | null
+  liveOverrideRequested: boolean
 }
 
 type PendingPwmFrame = {
@@ -55,11 +70,15 @@ export default class WledManager {
       const activeLightScene = state.control.light.byId[state.control.light.active]
       const splitScenes = activeLightScene?.splitScenes ?? []
 
-      const hostPixelSparseFrame = new Map<string, Map<number, BaseColors>>()
-      const hostPixelFormat = new Map<string, WledPixelTransportFormat>()
+      const hostPixelBundles = new Map<string, HostPixelSpan>()
       const hostPwmFrames = new Map<string, PendingPwmFrame[]>()
+      const flattenedFixtures = flatten_fixtures(
+        state.dmx.universe,
+        state.dmx.fixtureTypesByID
+      )
+      const ledFixtures = state.dmx.led.ledFixtures
 
-      for (const rawFixture of state.dmx.led.ledFixtures) {
+      for (const rawFixture of ledFixtures) {
         const fixture = normalizeLedFixtureForRuntime(rawFixture)
         const host = fixture.mdns.trim()
         if (host.length <= 0) {
@@ -71,66 +90,110 @@ export default class WledManager {
           continue
         }
 
-        const paramsList = resolveSplitParamsForFixture(
-          fixture.groups,
-          splitScenes,
-          rtState.splitStates
-        )
-        if (paramsList.length === 0) {
-          continue
-        }
-
-        const placementDepth2DOnly = state.gui.fxtrDepthOn !== true
-        const layers = paramsList.map((params) =>
-          getLedValues(params, fixture, state.control.master, placementDepth2DOnly)
-        )
-        const combinedColors = combineLedLayers(layers)
-        if (combinedColors.length <= 0) {
-          continue
-        }
-
         const outputMode =
           fixture.controller.output_mode === 'auto'
             ? 'pixel'
             : fixture.controller.output_mode
 
+        const startIndex = Math.max(0, Math.round(fixture.controller.pixel_start))
+        const configuredPixelCount =
+          fixture.controller.pixel_count === null
+            ? null
+            : Math.max(1, Math.round(fixture.controller.pixel_count))
+
+        const splitLayers = resolveSplitLayersForFixture(
+          fixture.groups,
+          splitScenes,
+          rtState.splitStates
+        )
+
         if (outputMode === 'pixel') {
-          const hostFrame = hostPixelSparseFrame.get(host) ?? new Map<number, BaseColors>()
+          const bundle = hostPixelBundles.get(host) ?? createEmptyHostPixelSpan()
           const requestedFormat = (() => {
             const mode = fixture.controller.pixel_format
             if (mode === 'rgb' || mode === 'rgbw') return mode
             return 'rgbw'
           })()
-          const currentHostFormat = hostPixelFormat.get(host)
-          if (currentHostFormat === undefined) {
-            hostPixelFormat.set(host, requestedFormat)
-          } else if (requestedFormat === 'rgbw') {
-            hostPixelFormat.set(host, 'rgbw')
+          if (requestedFormat === 'rgbw') {
+            bundle.format = 'rgbw'
+          } else if (bundle.format !== 'rgbw') {
+            bundle.format = requestedFormat
           }
-          const startIndex = Math.max(0, Math.round(fixture.controller.pixel_start))
-          const requestedPixelCount =
-            fixture.controller.pixel_count === null
-              ? combinedColors.length
-              : Math.max(1, Math.round(fixture.controller.pixel_count))
-          const frameLength = Math.min(requestedPixelCount, combinedColors.length)
 
-          for (let i = 0; i < frameLength; i++) {
-            const targetIndex = startIndex + i
-            if (targetIndex < 0) continue
-            const source = combinedColors[i]
-            if (source === undefined) continue
-            const current = hostFrame.get(targetIndex) ?? {
-              red: 0,
-              green: 0,
-              blue: 0,
+          if (configuredPixelCount !== null) {
+            extendHostPixelSpan(bundle, startIndex, configuredPixelCount)
+          }
+
+          if (splitLayers.length > 0) {
+            const placementDepth2DOnly = state.gui.fxtrDepthOn !== true
+            const layers = splitLayers.map(({ params }) =>
+              getLedValues(
+                params,
+                fixture,
+                state.control.master,
+                placementDepth2DOnly
+              )
+            )
+            let combinedColors = combineLedLayers(layers)
+            const primaryLayer = pickPrimarySplitLayerForLed(
+              splitLayers,
+              splitScenes
+            )
+            if (primaryLayer !== null && combinedColors.length > 0) {
+              const randomizerContext = buildLedRandomizerContext(
+                rtState.splitStates[primaryLayer.splitIndex],
+                splitScenes[primaryLayer.splitIndex],
+                ledFixtures,
+                flattenedFixtures,
+                fixture.id
+              )
+              if (randomizerContext !== null) {
+                combinedColors = applyLedRandomizerToColors(
+                  combinedColors,
+                  randomizerContext.state,
+                  randomizerContext.baseIndex,
+                  randomizerContext.randomize
+                )
+              }
             }
-            current.red = Math.max(current.red, source.red)
-            current.green = Math.max(current.green, source.green)
-            current.blue = Math.max(current.blue, source.blue)
-            hostFrame.set(targetIndex, current)
+            if (combinedColors.length > 0) {
+              const requestedPixelCount =
+                configuredPixelCount ?? combinedColors.length
+              const frameLength = Math.min(requestedPixelCount, combinedColors.length)
+              extendHostPixelSpan(bundle, startIndex, frameLength)
+
+              for (let i = 0; i < frameLength; i++) {
+                const targetIndex = startIndex + i
+                if (targetIndex < 0) continue
+                const source = combinedColors[i]
+                if (source === undefined) continue
+                const current = bundle.colors.get(targetIndex) ?? {
+                  red: 0,
+                  green: 0,
+                  blue: 0,
+                }
+                current.red = Math.max(current.red, source.red)
+                current.green = Math.max(current.green, source.green)
+                current.blue = Math.max(current.blue, source.blue)
+                bundle.colors.set(targetIndex, current)
+              }
+            }
           }
 
-          hostPixelSparseFrame.set(host, hostFrame)
+          hostPixelBundles.set(host, bundle)
+          continue
+        }
+
+        if (splitLayers.length === 0) {
+          continue
+        }
+
+        const placementDepth2DOnly = state.gui.fxtrDepthOn !== true
+        const layers = splitLayers.map(({ params }) =>
+          getLedValues(params, fixture, state.control.master, placementDepth2DOnly)
+        )
+        const combinedColors = combineLedLayers(layers)
+        if (combinedColors.length <= 0) {
           continue
         }
 
@@ -152,18 +215,33 @@ export default class WledManager {
         hostPwmFrames.set(host, pending)
       }
 
-      for (const [host, sparseFrame] of hostPixelSparseFrame.entries()) {
+      for (const [host, bundle] of hostPixelBundles.entries()) {
         const entry = this.entriesByHost[host]
         if (entry === undefined) continue
-        const ranges = toContiguousRanges(sparseFrame)
-        for (const range of ranges) {
-          entry.device.broadcast(
-            range.colors,
-            range.startIndex,
-            hostPixelFormat.get(host) ?? 'auto'
-          )
-          telemetryCounter('wled', 'broadcast_packets')
+
+        const activeSpan = normalizeHostPixelSpan(bundle)
+        const spanToSend =
+          activeSpan ??
+          (entry.lastPixelKeepalive !== null
+            ? normalizeHostPixelSpan(entry.lastPixelKeepalive)
+            : null)
+        if (spanToSend === null) {
+          continue
         }
+
+        const denseColors = buildDensePixelFrame(spanToSend)
+        if (denseColors.length <= 0) {
+          continue
+        }
+
+        entry.device.broadcast(denseColors, spanToSend.minIndex, spanToSend.format)
+        entry.lastPixelKeepalive = {
+          minIndex: spanToSend.minIndex,
+          maxIndex: spanToSend.maxIndex,
+          colors: new Map(spanToSend.colors),
+          format: spanToSend.format,
+        }
+        telemetryCounter('wled', 'broadcast_packets')
       }
 
       const now = Date.now()
@@ -196,6 +274,14 @@ export default class WledManager {
     }, 1000 / 60)
   }
 
+  private requestLiveOverride(entry: HostEntry) {
+    if (entry.liveOverrideRequested) {
+      return
+    }
+    entry.liveOverrideRequested = true
+    void entry.device.enableLiveOverride()
+  }
+
   private updateDevices() {
     const state = this.c.controlState()
     if (state === null) return
@@ -213,16 +299,22 @@ export default class WledManager {
       const existing = this.entriesByHost[host]
       if (existing === undefined) {
         telemetryCounter('wled', 'device_added')
-        this.entriesByHost[host] = {
+        const device = new WledDevice(host)
+        const entry: HostEntry = {
           host,
-          device: new WledDevice(host),
+          device,
           lastPwmFramesByKey: new Map<string, string>(),
           lastPwmPostedAtMs: 0,
+          lastPixelKeepalive: null,
+          liveOverrideRequested: false,
         }
+        this.entriesByHost[host] = entry
+        void this.requestLiveOverride(entry)
         continue
       }
 
       existing.device.refresh()
+      void this.requestLiveOverride(existing)
     }
 
     for (const [host, entry] of Object.entries(this.entriesByHost)) {
@@ -250,23 +342,28 @@ export default class WledManager {
   }
 }
 
-function resolveSplitParamsForFixture(
+type SplitLayer = {
+  splitIndex: number
+  params: Params
+}
+
+function resolveSplitLayersForFixture(
   fixtureGroups: string[],
   splitScenes: SplitScene_t[],
   splitStates: Array<{ outputParams: Params } | undefined>
-): Params[] {
+): SplitLayer[] {
   if (splitScenes.length === 0 || splitStates.length === 0) {
     return []
   }
 
-  const matches: Params[] = []
+  const matches: SplitLayer[] = []
   for (let i = 0; i < splitScenes.length; i++) {
-    if (!fixtureGroupsMatchSceneGroups(fixtureGroups, splitScenes[i].groups)) {
+    if (!ledFixtureMatchesSceneGroups(fixtureGroups, splitScenes[i].groups)) {
       continue
     }
     const params = splitStates[i]?.outputParams
     if (params !== undefined) {
-      matches.push(params)
+      matches.push({ splitIndex: i, params })
     }
   }
 
@@ -275,7 +372,7 @@ function resolveSplitParamsForFixture(
   }
 
   const fallback = splitStates[0]?.outputParams
-  return fallback !== undefined ? [fallback] : []
+  return fallback !== undefined ? [{ splitIndex: 0, params: fallback }] : []
 }
 
 function combineLedLayers(layers: BaseColors[][]): BaseColors[] {
@@ -316,46 +413,55 @@ function getPeakColor(colors: BaseColors[]): BaseColors {
   return peak
 }
 
-function toContiguousRanges(
-  sparseFrame: Map<number, BaseColors>
-): Array<{ startIndex: number; colors: BaseColors[] }> {
-  if (sparseFrame.size <= 0) {
+function createEmptyHostPixelSpan(): HostPixelSpan {
+  return {
+    minIndex: Number.POSITIVE_INFINITY,
+    maxIndex: Number.NEGATIVE_INFINITY,
+    colors: new Map<number, BaseColors>(),
+    format: 'rgbw',
+  }
+}
+
+function extendHostPixelSpan(
+  bundle: HostPixelSpan,
+  startIndex: number,
+  pixelCount: number
+) {
+  if (pixelCount <= 0) return
+  bundle.minIndex = Math.min(bundle.minIndex, startIndex)
+  bundle.maxIndex = Math.max(bundle.maxIndex, startIndex + pixelCount - 1)
+}
+
+function normalizeHostPixelSpan(bundle: HostPixelSpan): HostPixelSpan | null {
+  if (
+    !Number.isFinite(bundle.minIndex) ||
+    !Number.isFinite(bundle.maxIndex) ||
+    bundle.maxIndex < bundle.minIndex
+  ) {
+    return null
+  }
+  return bundle
+}
+
+function buildDensePixelFrame(bundle: HostPixelSpan): BaseColors[] {
+  const length = bundle.maxIndex - bundle.minIndex + 1
+  if (length <= 0) {
     return []
   }
 
-  const indexes = Array.from(sparseFrame.keys()).sort((a, b) => a - b)
-  const firstIndex = indexes[0]
-  if (firstIndex === undefined) {
-    return []
-  }
-  const ranges: Array<{ startIndex: number; colors: BaseColors[] }> = []
-  let currentStart = firstIndex
-  let currentColors: BaseColors[] = []
-  let lastIndex = firstIndex - 1
+  const dense: BaseColors[] = Array.from({ length }, () => ({
+    red: 0,
+    green: 0,
+    blue: 0,
+  }))
 
-  for (const index of indexes) {
-    const color = sparseFrame.get(index)
-    if (color === undefined) continue
-
-    if (currentColors.length > 0 && index !== lastIndex + 1) {
-      ranges.push({
-        startIndex: currentStart,
-        colors: currentColors,
-      })
-      currentStart = index
-      currentColors = []
+  for (let i = 0; i < length; i++) {
+    const index = bundle.minIndex + i
+    const color = bundle.colors.get(index)
+    if (color !== undefined) {
+      dense[i] = color
     }
-
-    currentColors.push(color)
-    lastIndex = index
   }
 
-  if (currentColors.length > 0) {
-    ranges.push({
-      startIndex: currentStart,
-      colors: currentColors,
-    })
-  }
-
-  return ranges
+  return dense
 }

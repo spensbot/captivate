@@ -231,7 +231,7 @@ const Root = styled.div`
 const ParamToolbar = styled.div`
   position: absolute;
   top: -0.42rem;
-  right: -0.72rem;
+  right: calc(-0.72rem - 10px);
   left: auto;
   height: auto;
   display: flex;

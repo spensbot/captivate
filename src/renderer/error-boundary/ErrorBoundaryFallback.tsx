@@ -21,7 +21,7 @@ export default function ErrorBoundaryFallback({
 
   return (
     <Root>
-      <Title>An Error Occured :/</Title>
+      <Title>An Error Occurred :/</Title>
       <pre>{error.message}</pre>
       <Info>First, try loading a recent save</Info>
       <ButtonGroup variant="contained">

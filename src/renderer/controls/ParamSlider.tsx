@@ -136,7 +136,7 @@ const defaultWrapperStyle: CSSProperties = {
 const CornerRemoveButton = styled.button`
   position: absolute;
   top: -0.42rem;
-  right: -0.72rem;
+  right: calc(-0.72rem - 10px);
   z-index: 6;
   width: 1rem;
   height: 1rem;

@@ -23,10 +23,32 @@ const refInput = new Input()
 const inputs: Inputs = {}
 type Inputs = { [portName: string]: Input }
 
+let maintainInterval: ReturnType<typeof setInterval> | null = null
+
 export function maintain(config: Config) {
-  setInterval(() => {
+  if (maintainInterval !== null) {
+    clearInterval(maintainInterval)
+    maintainInterval = null
+  }
+  maintainInterval = setInterval(() => {
     updateInputs(config)
   }, config.update_ms)
+}
+
+/** Stop MIDI polling and close all opened input ports (app shutdown). */
+export function shutdownMidi(): void {
+  if (maintainInterval !== null) {
+    clearInterval(maintainInterval)
+    maintainInterval = null
+  }
+  for (const portName of Object.keys(inputs)) {
+    try {
+      inputs[portName]?.closePort()
+    } catch {
+      /* ignore */
+    }
+    delete inputs[portName]
+  }
 }
 
 function updateInputs(config: Config) {

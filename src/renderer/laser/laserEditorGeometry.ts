@@ -7,6 +7,16 @@ export function clampPoint(p: NormPoint): NormPoint {
   return { x: clamp01(p.x), y: clamp01(p.y) }
 }
 
+/** Snap both axes to a uniform grid in normalized 0–1 space; `step <= 0` skips snapping. */
+export function snapNormPoint(p: NormPoint, step: number): NormPoint {
+  if (!Number.isFinite(step) || step <= 0) {
+    return clampPoint(p)
+  }
+  const x = Math.round(p.x / step) * step
+  const y = Math.round(p.y / step) * step
+  return clampPoint({ x, y })
+}
+
 function distSq(a: NormPoint, b: NormPoint): number {
   const dx = a.x - b.x
   const dy = a.y - b.y
@@ -91,6 +101,24 @@ function layerEdgeDistance(layer: LaserShapeLayer, p: NormPoint): number {
     }
     case 'spline':
       return distancePointToSpline(p, pts)
+    case 'text': {
+      if (pts.length < 2) return 1e9
+      const x0 = Math.min(pts[0].x, pts[1].x)
+      const x1 = Math.max(pts[0].x, pts[1].x)
+      const y0 = Math.min(pts[0].y, pts[1].y)
+      const y1 = Math.max(pts[0].y, pts[1].y)
+      const inside = p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1
+      if (inside) {
+        const dx = Math.min(p.x - x0, x1 - p.x)
+        const dy = Math.min(p.y - y0, y1 - p.y)
+        return Math.min(dx, dy)
+      }
+      const cx = clamp01(p.x)
+      const cy = clamp01(p.y)
+      const nx = Math.max(x0, Math.min(x1, cx))
+      const ny = Math.max(y0, Math.min(y1, cy))
+      return Math.sqrt((p.x - nx) ** 2 + (p.y - ny) ** 2)
+    }
     default:
       return 1e9
   }
@@ -106,10 +134,10 @@ export function pickLayerAt(
     const layer = layers[i]
     const d = layerEdgeDistance(layer, p)
     if (d <= tolerance) return layer
-    if (layer.kind === 'rect' || layer.kind === 'poly') {
+    if (layer.kind === 'rect' || layer.kind === 'poly' || layer.kind === 'text') {
       const pts = layer.points
       if (
-        layer.kind === 'rect' &&
+        (layer.kind === 'rect' || layer.kind === 'text') &&
         pts.length >= 2 &&
         p.x >= Math.min(pts[0].x, pts[1].x) - tolerance &&
         p.x <= Math.max(pts[0].x, pts[1].x) + tolerance &&

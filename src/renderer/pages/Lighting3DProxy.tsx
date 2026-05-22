@@ -17,9 +17,13 @@ export default function Lighting3DProxy() {
   return (
     <Root>
       <Card>
-        <Title>Lighting 3D Runs In Its Own Window</Title>
+        <TitleRow>
+          <Title>Lighting 3D (Alpha)</Title>
+          <AlphaTag>Not fully ready</AlphaTag>
+        </TitleRow>
         <Body>
-          Lighting 3D is process-isolated to keep the main app responsive.
+          Lighting 3D is in alpha and runs in its own window to keep the main app
+          responsive. Expect incomplete behavior while we refine the preview.
         </Body>
         <OpenButton onClick={() => send_open_page_window('Lighting3D')}>
           <OpenInNewIcon fontSize="small" />
@@ -51,10 +55,27 @@ const Card = styled.div`
   gap: 0.6rem;
 `
 
+const TitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+`
+
 const Title = styled.div`
   font-size: 1rem;
   font-weight: 700;
   color: ${(props) => props.theme.colors.text.primary};
+`
+
+const AlphaTag = styled.div`
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  border: 1px solid ${(props) => props.theme.colors.divider};
+  border-radius: 999px;
+  padding: 0.1rem 0.42rem;
+  color: ${(props) => props.theme.colors.text.secondary};
 `
 
 const Body = styled.div`

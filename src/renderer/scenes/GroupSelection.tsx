@@ -83,23 +83,21 @@ export default function GroupSelection({ splitIndex }: Props) {
     )
     .sort((a, b) => (a > b ? 1 : -1))
 
+  const universeFixtureCount = dmx.universe.length
+  const noGroupsAvailable = availableGroups.length === 0
+
   const splitHeading = splitDisplayName(splitIndex, activeGroups)
 
   return (
     <Root>
-      {splitIndex > 0 && (
-        <IconButton
-          size="small"
-          sx={{ flexShrink: 0 }}
-          onClick={(e) => {
-            e.preventDefault()
-            dispatch(removeSplitSceneByIndex(splitIndex))
-          }}
-        >
-          <RemoveIcon />
-        </IconButton>
-      )}
       <GroupName title={splitHeading}>{splitHeading}</GroupName>
+      {noGroupsAvailable ? (
+        <NoGroupsCue title="Patch fixtures and define groups on fixture types to populate this list">
+          {universeFixtureCount === 0
+            ? 'No fixtures patched yet — nothing to group.'
+            : 'No groups available from the current rig yet.'}
+        </NoGroupsCue>
+      ) : null}
       <IconToolbar>
         <IconButton
           size="small"
@@ -111,6 +109,20 @@ export default function GroupSelection({ splitIndex }: Props) {
         >
           <EditIcon />
         </IconButton>
+        {splitIndex > 0 ? (
+          <IconButton
+            size="small"
+            sx={{ flexShrink: 0 }}
+            onClick={(e) => {
+              e.preventDefault()
+              dispatch(removeSplitSceneByIndex(splitIndex))
+            }}
+            aria-label="Remove split"
+            title="Remove split"
+          >
+            <RemoveIcon fontSize="small" />
+          </IconButton>
+        ) : null}
         <IconButton
           size="small"
           aria-label="Split modulation modifiers"
@@ -132,32 +144,54 @@ export default function GroupSelection({ splitIndex }: Props) {
       </IconToolbar>
       {isOpen && (
         <Popup title="Select Groups" onClose={() => setIsOpen(false)}>
-          {availableGroups.map((group) => {
-            const activeState = activeGroups[group]
-            return (
-              <AvailableGroup
-                activeState={activeState}
-                key={group}
-                onClick={() => {
-                  let next =
-                    activeState === undefined
-                      ? true
-                      : activeState === true
-                      ? false
-                      : undefined
-                  dispatch(
-                    setSceneGroup({
-                      index: splitIndex,
-                      group,
-                      val: next,
-                    })
-                  )
-                }}
-              >
-                {`${activeState === false ? 'not ' : ''}${group}`}
-              </AvailableGroup>
-            )
-          })}
+          {noGroupsAvailable ? (
+            <NoGroupsInPicker>
+              <NoGroupsInPickerTitle>No groups to assign yet</NoGroupsInPickerTitle>
+              <NoGroupsInPickerBody>
+                {universeFixtureCount === 0 ? (
+                  <>
+                    There are no fixtures patched in any universe address yet, so no fixture
+                    groups are available for splits. Patch fixtures under <strong>Patch</strong>{' '}
+                    (Universe), then return here to route them into lighting splits.
+                  </>
+                ) : (
+                  <>
+                    Fixtures are patched, but no groups were found from their definitions (and no
+                    LED or system groups apply yet). Assign groups on fixture types in{' '}
+                    <strong>Fixtures</strong>, or check LED strip group names, movers, and
+                    atmospherics so splits can target them.
+                  </>
+                )}
+              </NoGroupsInPickerBody>
+            </NoGroupsInPicker>
+          ) : (
+            availableGroups.map((group) => {
+              const activeState = activeGroups[group]
+              return (
+                <AvailableGroup
+                  activeState={activeState}
+                  key={group}
+                  onClick={() => {
+                    let next =
+                      activeState === undefined
+                        ? true
+                        : activeState === true
+                        ? false
+                        : undefined
+                    dispatch(
+                      setSceneGroup({
+                        index: splitIndex,
+                        group,
+                        val: next,
+                      })
+                    )
+                  }}
+                >
+                  {`${activeState === false ? 'not ' : ''}${group}`}
+                </AvailableGroup>
+              )
+            })
+          )}
         </Popup>
       )}
       {modShapingOpen && (
@@ -180,6 +214,8 @@ const Root = styled.div`
   position: relative;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  row-gap: 0.2rem;
   gap: 0.15rem;
   min-width: 0;
   width: 100%;
@@ -201,6 +237,34 @@ const GroupName = styled.div`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+`
+
+const NoGroupsCue = styled.div`
+  flex: 1 1 8rem;
+  min-width: 0;
+  font-size: 0.68rem;
+  line-height: 1.25;
+  color: ${(props) => props.theme.colors.text.secondary};
+  font-style: italic;
+  margin-right: 0.25rem;
+`
+
+const NoGroupsInPicker = styled.div`
+  padding: 0.15rem 0.1rem 0.35rem;
+  max-width: 22rem;
+`
+
+const NoGroupsInPickerTitle = styled.div`
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: ${(props) => props.theme.colors.text.primary};
+  margin-bottom: 0.45rem;
+`
+
+const NoGroupsInPickerBody = styled.div`
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: ${(props) => props.theme.colors.text.secondary};
 `
 
 const AvailableGroup = styled.div<{ activeState: boolean | undefined }>`

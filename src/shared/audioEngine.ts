@@ -164,6 +164,25 @@ export interface AudioBandConfig {
   gain: number
 }
 
+/** Cutoff slider bounds shown on Audio Band LFO shape controls (matches modulator UI). */
+export function getAudioBandCutoffSliderBounds(nyquistHz: number) {
+  const nyquistCapHz = Math.max(
+    AUDIO_MIN_BAND_HZ + 40,
+    Math.min(
+      AUDIO_MAX_BAND_HZ,
+      Number.isFinite(nyquistHz) ? Math.round(nyquistHz) : AUDIO_MAX_BAND_HZ
+    )
+  )
+  const lowCutMinHz = AUDIO_MIN_BAND_HZ
+  const lowCutMaxHz = Math.max(
+    lowCutMinHz + 20,
+    Math.min(12000, nyquistCapHz - 20)
+  )
+  const highCutMinHz = Math.max(40, AUDIO_MIN_BAND_HZ + 20)
+  const highCutMaxHz = nyquistCapHz
+  return { lowCutMinHz, lowCutMaxHz, highCutMinHz, highCutMaxHz }
+}
+
 export function initAudioBandConfig(): AudioBandConfig {
   return {
     lowHz: 120,

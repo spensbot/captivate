@@ -1,6 +1,8 @@
+import type { Page } from '../../shared/pages'
+import type { LaserTool } from '../laser/laserEditorTypes'
 import { PayloadAction } from '@reduxjs/toolkit'
 import { DefaultParam } from '../../shared/params'
-import { SceneType } from '.../../shared/Scenes'
+import { SceneType } from '../../shared/Scenes'
 import { ConnectionId } from '../../shared/connection'
 import { DMX_MAX_UNIVERSES } from '../../shared/dmxFixtures'
 import {
@@ -97,10 +99,26 @@ interface TriggerAtmosFixture {
   fixtureId: string
 }
 
+interface SetActivePageAction {
+  type: 'setActivePage'
+  page: Page
+}
+
+interface LaserToolAction {
+  type: 'laserTool'
+  tool: LaserTool
+}
+
 interface ConnectionSettings {
   openDmxRefreshRateHz: number
   universeCount: number
   dmxUniverseByDevice: { [connectionId: string]: number }
+  /**
+   * When true for a USB DMX `connectionId`, skip Enttec auto-probe and always use the
+   * USB Pro / widget-framed protocol (same wire format as Enttec DMX USB Pro and Euro Light USB Pro).
+   * Use for FTDI-based clones that output DMX with that framing but do not answer widget queries.
+   */
+  dmxUsbUseWidgetProtocolByDevice?: { [connectionId: string]: boolean }
   artNetIpByUniverse: { [universe: number]: string }
   audioInput: AudioInputSettings
   /** Follow MIDI timing clock (0xF8) from enabled MIDI inputs for master BPM. */
@@ -115,6 +133,8 @@ export const buttonMidiActionTypes: Set<MidiAction['type']> = new Set([
   'toggleBlackout',
   'toggleMoverFollowOverride',
   'triggerAtmosFixture',
+  'setActivePage',
+  'laserTool',
 ])
 
 export type MidiAction =
@@ -130,6 +150,8 @@ export type MidiAction =
   | SetMoverFollowOverridePan
   | SetMoverFollowOverrideTilt
   | TriggerAtmosFixture
+  | SetActivePageAction
+  | LaserToolAction
 
 export function getMidiSliderBounds(action: MidiAction): MidiSliderBounds {
   switch (action.type) {
@@ -219,7 +241,24 @@ export function getActionID(action: MidiAction) {
   if (action.type === 'toggleAutoScene') {
     return action.type + action.sceneType
   }
+  if (action.type === 'setActivePage') {
+    return action.type + action.page
+  }
+  if (action.type === 'laserTool') {
+    return action.type + action.tool
+  }
   return action.type
+}
+
+export function findKeyboardChordIdForAction(
+  shortcuts: DeviceState['keyboardShortcuts'],
+  action: MidiAction
+): string | null {
+  const id = getActionID(action)
+  for (const [cid, v] of Object.entries(shortcuts)) {
+    if (getActionID(v.action) === id) return cid
+  }
+  return null
 }
 
 export interface ButtonAction {
@@ -232,9 +271,17 @@ export interface SliderAction extends ButtonAction {
 
 // ActionID = setAutoSceneBombacity, setActiveSceneIndex0, etc.
 // InputID = note70, cc50, etc.
+export interface KeyboardShortcutBinding {
+  action: MidiAction
+}
+
 export interface DeviceState {
   listening?: MidiAction
   isEditing: boolean
+  /** When true, MIDI learn is off and overlays assign keyboard chords instead. */
+  keyboardLearnMode: boolean
+  keyboardListening?: MidiAction
+  keyboardShortcuts: { [chordId: string]: KeyboardShortcutBinding }
   connectable: {
     midi: ConnectionId[]
     dmx: ConnectionId[]
@@ -287,6 +334,8 @@ function clampArtNetRoutes(
 export function initDeviceState(): DeviceState {
   return {
     isEditing: false,
+    keyboardLearnMode: false,
+    keyboardShortcuts: {},
     buttonActions: {},
     sliderActions: {},
     connectable: {
@@ -298,6 +347,7 @@ export function initDeviceState(): DeviceState {
       openDmxRefreshRateHz: 30,
       universeCount: 1,
       dmxUniverseByDevice: {},
+      dmxUsbUseWidgetProtocolByDevice: {},
       artNetIpByUniverse: {},
       audioInput: initAudioInputSettings(),
       midiClockBpmEnabled: false,
@@ -396,13 +446,65 @@ export const midiActions = {
     const actionId = getActionID(payload)
     delete state.buttonActions[actionId]
     delete state.sliderActions[actionId]
+    for (const [cid, v] of Object.entries(state.keyboardShortcuts)) {
+      if (getActionID(v.action) === actionId) {
+        delete state.keyboardShortcuts[cid]
+      }
+    }
   },
   listen: (state: DeviceState, { payload }: PayloadAction<MidiAction>) => {
     state.listening = payload
+    state.keyboardLearnMode = false
+    delete state.keyboardListening
+  },
+  keyboardListen: (state: DeviceState, { payload }: PayloadAction<MidiAction>) => {
+    state.keyboardListening = payload
+    state.keyboardLearnMode = true
+    delete state.listening
+  },
+  clearKeyboardListening: (state: DeviceState) => {
+    delete state.keyboardListening
+  },
+  setKeyboardLearnMode: (state: DeviceState, { payload }: PayloadAction<boolean>) => {
+    state.keyboardLearnMode = payload === true
+    if (!state.keyboardLearnMode) {
+      delete state.keyboardListening
+    }
+    if (state.keyboardLearnMode) {
+      state.isEditing = false
+      delete state.listening
+    }
+  },
+  setKeyboardShortcut: (
+    state: DeviceState,
+    { payload }: PayloadAction<{ chordId: string; action: MidiAction }>
+  ) => {
+    const aid = getActionID(payload.action)
+    for (const [cid, v] of Object.entries(state.keyboardShortcuts)) {
+      if (getActionID(v.action) === aid) {
+        delete state.keyboardShortcuts[cid]
+      }
+    }
+    state.keyboardShortcuts[payload.chordId] = { action: payload.action }
+    delete state.keyboardListening
+  },
+  removeKeyboardChord: (state: DeviceState, { payload }: PayloadAction<string>) => {
+    delete state.keyboardShortcuts[payload]
+  },
+  clearButtonMapping: (state: DeviceState, { payload }: PayloadAction<MidiAction>) => {
+    const id = getActionID(payload)
+    delete state.buttonActions[id]
+    for (const [cid, v] of Object.entries(state.keyboardShortcuts)) {
+      if (getActionID(v.action) === id) {
+        delete state.keyboardShortcuts[cid]
+      }
+    }
   },
   setIsEditing: (state: DeviceState, { payload }: PayloadAction<boolean>) => {
     delete state.listening
     state.isEditing = payload
+    state.keyboardLearnMode = false
+    delete state.keyboardListening
   },
   setMidiConnectable: (
     state: DeviceState,
@@ -454,6 +556,22 @@ export const midiActions = {
         payload.universe,
         state.connectionSettings.universeCount
       )
+  },
+  setDmxUsbWidgetProtocol: (
+    state: DeviceState,
+    {
+      payload,
+    }: PayloadAction<{ connectionId: ConnectionId; useWidgetProtocol: boolean }>
+  ) => {
+    if (!state.connectionSettings.dmxUsbUseWidgetProtocolByDevice) {
+      state.connectionSettings.dmxUsbUseWidgetProtocolByDevice = {}
+    }
+    const m = state.connectionSettings.dmxUsbUseWidgetProtocolByDevice
+    if (payload.useWidgetProtocol) {
+      m[payload.connectionId] = true
+    } else {
+      delete m[payload.connectionId]
+    }
   },
   setArtNetUniverseRoute: (
     state: DeviceState,

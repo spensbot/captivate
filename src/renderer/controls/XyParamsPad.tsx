@@ -1,22 +1,38 @@
+import { useEffect } from 'react'
+import type { CSSProperties } from 'react'
 import useDragMapped from '../hooks/useDragMapped'
 import { useDispatch } from 'react-redux'
 import { setBaseParams, incrementBaseParams } from '../redux/controlSlice'
 import { XYCursorBase, XYCursorOutput } from './XYCursor'
 import styled from 'styled-components'
 import ParamXButton from './ParamXButton'
+import ParamSlider from './ParamSlider'
 import { useBaseParam } from 'renderer/redux/store'
 import MidiOverlay_xy from '../base/MidiOverlay_xy'
 import { paramBundles } from './ParamAddButton'
+import { initParams } from '../../shared/params'
 import { secondaryEnabled } from 'renderer/base/keyUtil'
-import { useOutputParam } from '../redux/realtimeStore'
+import { useOutputParam, useRealtimeSelector } from '../redux/realtimeStore'
 import Window2D from '../base/Window2D'
-import SplitDimensionSlider from './SplitDimensionSlider'
 
 interface Props {
   splitIndex: number
 }
 
 const XY_CENTER_DETENT_RADIUS = 0.04
+
+/** Match XY pad height; same spacing as white / amber / UV sliders. */
+const positionDimSliderStyle: CSSProperties = {
+  height: '180px',
+  minHeight: '180px',
+  marginRight: '0.35rem',
+}
+
+const positionDimSliderLastStyle: CSSProperties = {
+  height: '180px',
+  minHeight: '180px',
+  marginRight: '0.85rem',
+}
 
 function applyCenterDetent(value: number): number {
   return Math.abs(value - 0.5) <= XY_CENTER_DETENT_RADIUS ? 0.5 : value
@@ -57,13 +73,34 @@ export default function XyParamsPad({ splitIndex }: Props) {
   const yOut = useOutputParam('y', splitIndex)
   const widthOut = useOutputParam('width', splitIndex)
   const heightOut = useOutputParam('height', splitIndex)
+  const positionFeather = useBaseParam('positionFeather', splitIndex)
+  const featherOut = useRealtimeSelector((state) => {
+    const modulated = state.splitStates[splitIndex]?.outputParams?.positionFeather
+    if (modulated !== undefined) return modulated
+    return positionFeather ?? 0
+  })
 
-  if (
-    x === undefined ||
-    y === undefined ||
-    width === undefined ||
-    height === undefined
-  ) {
+  useEffect(() => {
+    if (x === undefined || y === undefined) {
+      return
+    }
+    const defaults = initParams()
+    const missing: Record<string, number> = {}
+    if (width === undefined) {
+      missing.width = defaults.width
+    }
+    if (height === undefined) {
+      missing.height = defaults.height
+    }
+    if (positionFeather === undefined) {
+      missing.positionFeather = defaults.positionFeather
+    }
+    if (Object.keys(missing).length > 0) {
+      dispatch(setBaseParams({ splitIndex, params: missing }))
+    }
+  }, [dispatch, height, positionFeather, splitIndex, width, x, y])
+
+  if (x === undefined || y === undefined) {
     return null
   }
 
@@ -76,46 +113,47 @@ export default function XyParamsPad({ splitIndex }: Props) {
           params={paramBundles.position}
         />
       </ParamToolbar>
-      <ParamBodyRow>
-        <PadColumn>
-          <PlotArea ref={dragContainer} onMouseDown={onMouseDown}>
-            <CenterMarker aria-hidden />
-            <XYCursorOutput splitIndex={splitIndex} />
-            <XYCursorBase splitIndex={splitIndex} />
-            <Window2D
-              window2D={{
-                x: {
-                  pos: xOut,
-                  width: widthOut,
-                },
-                y: {
-                  pos: yOut,
-                  width: heightOut,
-                },
-              }}
-            />
-          </PlotArea>
-        </PadColumn>
-        <SizeControls
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <SizeRack>
-            <SplitDimensionSlider
-              param="width"
-              splitIndex={splitIndex}
-              label="Width"
-              title="Width of X movement window"
-            />
-            <SplitDimensionSlider
-              param="height"
-              splitIndex={splitIndex}
-              label="Height"
-              title="Height of Y movement window"
-            />
-          </SizeRack>
-        </SizeControls>
-      </ParamBodyRow>
+      <PadRow>
+        <PlotArea ref={dragContainer} onMouseDown={onMouseDown}>
+          <CenterMarker aria-hidden />
+          <XYCursorOutput splitIndex={splitIndex} />
+          <XYCursorBase splitIndex={splitIndex} />
+          <Window2D
+            window2D={{
+              x: {
+                pos: xOut,
+                width: widthOut,
+              },
+              y: {
+                pos: yOut,
+                width: heightOut,
+              },
+            }}
+            feather={featherOut}
+          />
+        </PlotArea>
+        <ParamSlider
+          param="width"
+          splitIndex={splitIndex}
+          hideRemoveButton
+          label="Width"
+          wrapperStyle={positionDimSliderStyle}
+        />
+        <ParamSlider
+          param="height"
+          splitIndex={splitIndex}
+          hideRemoveButton
+          label="Height"
+          wrapperStyle={positionDimSliderStyle}
+        />
+        <ParamSlider
+          param="positionFeather"
+          splitIndex={splitIndex}
+          hideRemoveButton
+          label="Feather"
+          wrapperStyle={positionDimSliderLastStyle}
+        />
+      </PadRow>
     </Root>
   )
 
@@ -127,6 +165,7 @@ export default function XyParamsPad({ splitIndex }: Props) {
         { type: 'setBaseParam', paramKey: 'y' },
         { type: 'setBaseParam', paramKey: 'width' },
         { type: 'setBaseParam', paramKey: 'height' },
+        { type: 'setBaseParam', paramKey: 'positionFeather' },
       ]}
     >
       {content}
@@ -151,7 +190,7 @@ const Root = styled.div`
 const ParamToolbar = styled.div`
   position: absolute;
   top: -0.42rem;
-  right: -0.72rem;
+  right: calc(-0.72rem - 10px);
   left: auto;
   height: auto;
   display: flex;
@@ -162,25 +201,12 @@ const ParamToolbar = styled.div`
   pointer-events: auto;
 `
 
-const ParamBodyRow = styled.div`
+const PadRow = styled.div`
   flex: 1 1 auto;
   min-height: 0;
-  padding-top: 0;
-  box-sizing: border-box;
   display: flex;
   flex-direction: row;
   align-items: stretch;
-  gap: 0.42rem;
-`
-
-const PadColumn = styled.div`
-  position: relative;
-  width: 200px;
-  min-width: 200px;
-  flex: 1 1 auto;
-  min-height: 0;
-  height: 100%;
-  flex-shrink: 0;
 `
 
 const PlotArea = styled.div`
@@ -189,6 +215,7 @@ const PlotArea = styled.div`
   min-width: 200px;
   height: 100%;
   min-height: 0;
+  flex-shrink: 0;
   overflow: hidden;
   background: #000;
   border: 1px solid ${(props) => props.theme.colors.divider};
@@ -226,29 +253,4 @@ const CenterMarker = styled.div`
     width: 1.1rem;
     height: 0.04rem;
   }
-`
-
-const SizeControls = styled.div`
-  position: relative;
-  width: 3.9rem;
-  min-width: 3.9rem;
-  height: 100%;
-  min-height: 0;
-  padding: 0.1rem 0.2rem;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 0.3rem;
-  background: rgba(0, 0, 0, 0.62);
-  display: flex;
-  align-items: stretch;
-  justify-content: center;
-  z-index: 1;
-`
-
-const SizeRack = styled.div`
-  display: flex;
-  align-items: stretch;
-  justify-content: center;
-  gap: 0.2rem;
-  width: 100%;
-  height: 100%;
 `

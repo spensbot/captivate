@@ -12,6 +12,7 @@ import {
   initSubFixture,
   isMoverFixtureType,
   normalizeFixtureModelConfig,
+  syncCustomEmitterSubfixtureChannels,
   SubFixture,
   MoverBounds,
   MoverMountOrientation,
@@ -103,6 +104,10 @@ interface SetFixtureWindowPayload {
   x?: number
   y?: number
   z?: number
+  /** When set, updates stored span for that axis (normalized 0–1). */
+  xWidth?: number
+  yWidth?: number
+  zWidth?: number
 }
 
 interface IncrementFixtureWindowPayload {
@@ -724,6 +729,15 @@ export const dmxSlice = createSlice({
       if (window.z && payload.z !== undefined) {
         window.z.pos = clampNormalized(payload.z)
       }
+      if (window.x && payload.xWidth !== undefined) {
+        window.x.width = clampNormalized(payload.xWidth)
+      }
+      if (window.y && payload.yWidth !== undefined) {
+        window.y.width = clampNormalized(payload.yWidth)
+      }
+      if (window.z && payload.zWidth !== undefined) {
+        window.z.width = clampNormalized(payload.zWidth)
+      }
     },
     setFixtureWindowEnabled: (
       state,
@@ -977,7 +991,21 @@ export const dmxSlice = createSlice({
     },
     addSubFixture: (state, _: PayloadAction<undefined>) => {
       modifyActiveFixtureType(state, (ft) => {
-        ft.subFixtures.push(initSubFixture())
+        const assigned = new Set<number>()
+        for (const sf of ft.subFixtures) {
+          for (const ch of sf.channels) {
+            assigned.add(ch)
+          }
+        }
+        const available = ft.channels
+          .map((_, index) => index)
+          .filter((index) => !assigned.has(index))
+        const next: SubFixture = {
+          ...initSubFixture(),
+          name: `Subfixture ${ft.subFixtures.length + 1}`,
+          channels: available,
+        }
+        ft.subFixtures.push(next)
         state.activeSubFixture = ft.subFixtures.length - 1
       })
     },
@@ -1136,6 +1164,10 @@ export const dmxSlice = createSlice({
         }
 
         ft.subFixtures[subFixtureIndex].channels.push(channelIndex)
+        const syncedModel = syncCustomEmitterSubfixtureChannels(ft)
+        if (syncedModel !== undefined) {
+          ft.model = syncedModel
+        }
       })
     },
     removeChannelFromSubFixtures: (
@@ -1153,6 +1185,10 @@ export const dmxSlice = createSlice({
             subFixture.channels
           )
         }
+        const syncedModel = syncCustomEmitterSubfixtureChannels(ft)
+        if (syncedModel !== undefined) {
+          ft.model = syncedModel
+        }
       })
     },
     replaceActiveFixtureTypeSubFixture: (
@@ -1163,6 +1199,10 @@ export const dmxSlice = createSlice({
     ) => {
       modifyActiveFixtureType(state, (ft) => {
         ft.subFixtures[payload.subFixtureIndex] = payload.subFixture
+        const syncedModel = syncCustomEmitterSubfixtureChannels(ft)
+        if (syncedModel !== undefined) {
+          ft.model = syncedModel
+        }
       })
     },
     setActiveLedFixture: (state, { payload }: PayloadAction<number | null>) => {

@@ -60,7 +60,7 @@ export const BEAM_GRADIENT_PRESETS: { id: string; name: string; stops: BeamGradi
     },
   ]
 
-function hexToRgb(hex: string): [number, number, number] {
+export function hexToRgb(hex: string): [number, number, number] {
   const h = hex.replace('#', '').trim()
   const v =
     h.length === 3
@@ -155,6 +155,17 @@ export function gateHexForLaser(hex: string, caps: LaserRgbCapabilities): string
   return rgbToHex(g[0], g[1], g[2])
 }
 
+/** Editor preview: avoid invisible strokes on black when gating yields near-black. */
+export function editorStrokeForLaser(hex: string, caps: LaserRgbCapabilities): string {
+  const gated = gateHexForLaser(hex, caps)
+  const rgb = hexToRgb(gated)
+  const lum = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
+  if (lum < 0.08) {
+    return '#5ce0a8'
+  }
+  return gated
+}
+
 function normalizeStops(stops: BeamGradientStop[]): BeamGradientStop[] {
   const s = [...stops].sort((a, b) => a.offset - b.offset)
   return s.map((x) => ({
@@ -168,10 +179,12 @@ export function sampleGradientHex(
   t: number,
   caps: LaserRgbCapabilities
 ): string {
+  let u0 = t
+  if (!Number.isFinite(u0)) u0 = 0
   const s = normalizeStops(stops)
   if (s.length === 0) return '#ffffff'
   if (s.length === 1) return gateHexForLaser(s[0].color, caps)
-  const u = Math.min(1, Math.max(0, t))
+  const u = Math.min(1, Math.max(0, u0))
   let i = 0
   while (i < s.length - 1 && s[i + 1].offset < u) i++
   const a = s[i]
@@ -184,13 +197,24 @@ export function sampleGradientHex(
   return rgbToHex(...gateRgbForLaser(mx, caps))
 }
 
+export type SampleRainbowOpts = {
+  /** When true, snap cycle count to a whole number so hue matches at the path closure. */
+  closedStroke?: boolean
+}
+
 export function sampleRainbowHex(
   t: number,
   cycles: number,
-  caps: LaserRgbCapabilities
+  caps: LaserRgbCapabilities,
+  opts?: SampleRainbowOpts
 ): string {
-  const u = ((t * Math.max(0.1, cycles)) % 1 + 1) % 1
-  const h = u * 360
+  const t0 = Number.isFinite(t) ? t : 0
+  let cy = Number.isFinite(cycles) && cycles > 0 ? cycles : 1
+  if (opts?.closedStroke) {
+    cy = Math.max(1, Math.round(cy))
+  }
+  const u = ((t0 * Math.max(0.1, cy)) % 1 + 1) % 1
+  const h = ((u * 360) % 360 + 360) % 360
   const s = 0.95
   const l = 0.52
   const c = (1 - Math.abs(2 * l - 1)) * s

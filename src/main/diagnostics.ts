@@ -59,10 +59,18 @@ export function reportDiagnostic(event: DiagnosticsEvent) {
     console.log(`[diag:${normalized.area}:${normalized.event}]`, normalized.message ?? '')
   }
 
+  // File log is warn/error only (see docs/DEBUG_TELEMETRY.md). Info events must not
+  // touch the repo cwd — electronmon watches the project tree and reloads on *.log.
+  if (normalized.level !== 'warn' && normalized.level !== 'error') {
+    return
+  }
+
   const destinations = new Set<string>()
   const primaryLogDir = resolveLogDir()
   destinations.add(path.join(primaryLogDir, 'captivate-diagnostics.log'))
-  destinations.add(path.join(process.cwd(), 'captivate-diagnostics.log'))
+  if (process.env.NODE_ENV !== 'development') {
+    destinations.add(path.join(process.cwd(), 'captivate-diagnostics.log'))
+  }
   if (process.env.TEMP) {
     destinations.add(path.join(process.env.TEMP, 'captivate-diagnostics.log'))
   }

@@ -18,15 +18,19 @@ export class DmxConnectionUsb {
   private config: DmxUsbDeviceConfig
   private c: EngineContext
   private lastHz: number = 0
+  /** Whether this connection was opened with "force USB Pro / widget protocol" from settings. */
+  private readonly forcedWidgetProtocol: boolean
 
   private constructor(
     device: DmxDeviceUsb_t,
     serialConnection: SerialConnection,
-    c: EngineContext
+    c: EngineContext,
+    forcedWidgetProtocol: boolean
   ) {
     this.c = c
     this.device = device
     this.serialConnection = serialConnection
+    this.forcedWidgetProtocol = forcedWidgetProtocol
     this.config = configByDeviceType[device.type as DmxUsbDeviceType]
     this.lastHz = this.config.refreshHz(this.c)
     this.device.name = this.config.name
@@ -37,13 +41,21 @@ export class DmxConnectionUsb {
     device: DmxDeviceUsb_t,
     c: EngineContext
   ): Promise<DmxConnectionUsb> {
-    let serialConnection = await SerialConnection.connect(device.path)
+    const serialConnection = await SerialConnection.connect(device.path)
 
-    let isPro = await isDmxUsbPro(serialConnection)
+    const settings = c.controlState()?.control.device.connectionSettings
+    const forceWidget =
+      settings?.dmxUsbUseWidgetProtocolByDevice?.[device.connectionId] === true
+
+    const isPro = forceWidget || (await isDmxUsbPro(serialConnection))
 
     device.type = isPro ? 'DmxUsbPro' : 'OpenDmxUsb'
 
-    return new DmxConnectionUsb(device, serialConnection, c)
+    return new DmxConnectionUsb(device, serialConnection, c, forceWidget)
+  }
+
+  usesForcedWidgetProtocol(): boolean {
+    return this.forcedWidgetProtocol
   }
 
   beginInterval(): NodeJS.Timeout {

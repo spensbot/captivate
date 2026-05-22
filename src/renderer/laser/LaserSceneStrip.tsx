@@ -1,26 +1,41 @@
 import { nanoid } from 'nanoid'
+import { useEffect, useRef, useState } from 'react'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import AddIcon from '@mui/icons-material/Add'
-import styled from 'styled-components'
-import type { LaserScene } from './laserEditorTypes'
-import {
-  LASER_SCENES_PER_PAGE,
-  LASER_SCENE_GRID_COLS,
-} from './laserEditorTypes'
+import styled, { css, keyframes } from 'styled-components'
+import { DragDropContext, Draggable, Droppable, type DropResult } from '@hello-pangea/dnd'
+import type { LaserScene, LaserAutoScene } from './laserEditorTypes'
 import type { LaserShapeLayer } from './laserEditorTypes'
+import {
+  LASER_SCENE_THUMB_GAP_PX,
+  LASER_SCENE_THUMB_WIDTH_REM,
+} from './laserLayoutConstants'
+import {
+  measureLaserSceneGridLayout,
+  type LaserSceneGridLayout,
+} from './laserSceneGridLayout'
 import { sampleSplinePolyline } from './laserEditorSpline'
+import { sceneHasAnimatedContent } from './laserEditorSceneUtils'
+import { getLaserSceneDisplayLayers } from './laserSceneDisplay'
 
 export interface LaserSceneStripProps {
   scenes: LaserScene[]
   activeSceneId: string | null
+  /** Active scene (for auto-advance controls in the strip header). */
+  activeScene: LaserScene | null
+  onPatchActiveScene: (patch: Partial<LaserScene>) => void
+  /** Fired when the strip measures how many thumbnails fit per page. */
+  onGridLayout?: (layout: LaserSceneGridLayout) => void
   onSelectScene: (id: string) => void
   onAddScene: () => void
   page: number
   onPageChange: (page: number) => void
+  onReorderScenes?: (fromGlobalIndex: number, toGlobalIndex: number) => void
 }
 
-function ThumbnailSvg({ layers }: { layers: LaserShapeLayer[] }) {
+function ThumbnailSvg({ scene }: { scene: LaserScene }) {
+  const layers = getLaserSceneDisplayLayers(scene, undefined, 0.5)
   return (
     <ThumbSvg viewBox="0 0 1 1" preserveAspectRatio="xMidYMid meet">
       <rect width="1" height="1" fill="#0a0a0a" />
@@ -32,8 +47,9 @@ function ThumbnailSvg({ layers }: { layers: LaserShapeLayer[] }) {
 }
 
 function thumbLayer(layer: LaserShapeLayer) {
-  const { kind, color, points } = layer
+  const { kind, color, points, text } = layer
   const sw = 0.008
+  if (!points?.length) return null
   if (points.length < 2 && kind !== 'poly') return null
   switch (kind) {
     case 'line':
@@ -116,6 +132,25 @@ function thumbLayer(layer: LaserShapeLayer) {
         />
       )
     }
+    case 'text': {
+      if (points.length < 2) return null
+      const x0 = Math.min(points[0].x, points[1].x)
+      const y0 = Math.min(points[0].y, points[1].y)
+      const y1 = Math.max(points[0].y, points[1].y)
+      const fs = Math.max(0.02, Math.min(0.09, (y1 - y0) * 0.65))
+      const label = text ?? 'Text'
+      return (
+        <text
+          x={x0 + 0.01}
+          y={y0 + fs * 0.85}
+          fill={color}
+          fontSize={fs}
+          fontFamily="system-ui, sans-serif"
+        >
+          {label}
+        </text>
+      )
+    }
     default:
       return null
   }
@@ -124,19 +159,65 @@ function thumbLayer(layer: LaserShapeLayer) {
 export default function LaserSceneStrip({
   scenes,
   activeSceneId,
+  activeScene,
+  onPatchActiveScene,
+  onGridLayout,
   onSelectScene,
   onAddScene,
   page,
   onPageChange,
+  onReorderScenes,
 }: LaserSceneStripProps) {
+  const gridHostRef = useRef<HTMLDivElement | null>(null)
+  const [gridLayout, setGridLayout] = useState<LaserSceneGridLayout>(() =>
+    measureLaserSceneGridLayout(400, 120)
+  )
+
+  useEffect(() => {
+    const host = gridHostRef.current
+    if (!host) return
+
+    const update = () => {
+      const next = measureLaserSceneGridLayout(
+        host.clientWidth,
+        host.clientHeight
+      )
+      setGridLayout((prev) =>
+        prev.cols === next.cols &&
+        prev.rows === next.rows &&
+        prev.perPage === next.perPage
+          ? prev
+          : next
+      )
+    }
+
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(host)
+    return () => ro.disconnect()
+  }, [])
+
+  useEffect(() => {
+    onGridLayout?.(gridLayout)
+  }, [gridLayout, onGridLayout])
+
+  const { cols: gridCols, rows: gridRows, perPage: scenesPerPage } = gridLayout
+
   const pageCount = Math.max(
     1,
-    Math.ceil((scenes.length + 1) / LASER_SCENES_PER_PAGE)
+    Math.ceil((scenes.length + 1) / scenesPerPage)
   )
   const safePage = Math.min(Math.max(0, page), pageCount - 1)
-  const start = safePage * LASER_SCENES_PER_PAGE
 
-  const slots = Array.from({ length: LASER_SCENES_PER_PAGE }, (_, i) => {
+  useEffect(() => {
+    if (page > pageCount - 1) {
+      onPageChange(Math.max(0, pageCount - 1))
+    }
+  }, [page, pageCount, onPageChange])
+
+  const start = safePage * scenesPerPage
+
+  const slots = Array.from({ length: scenesPerPage }, (_, i) => {
     const idx = start + i
     if (idx < scenes.length) {
       return { type: 'scene' as const, scene: scenes[idx], idx }
@@ -150,60 +231,154 @@ export default function LaserSceneStrip({
   const goPrev = () => onPageChange(Math.max(0, safePage - 1))
   const goNext = () => onPageChange(Math.min(pageCount - 1, safePage + 1))
 
+  const auto = activeScene?.autoScene
+  const patchAuto = (part: Partial<LaserAutoScene>) => {
+    if (!activeScene) return
+    const cur = { enabled: false, periodBeats: 16, ...activeScene.autoScene, ...part }
+    onPatchActiveScene({ autoScene: cur })
+  }
+
+  const onDragEnd = (result: DropResult) => {
+    if (!onReorderScenes) return
+    if (!result.destination) return
+    const src = slots[result.source.index]
+    const dst = slots[result.destination.index]
+    if (src.type !== 'scene' || dst.type !== 'scene') return
+    if (src.idx === dst.idx) return
+    onReorderScenes(src.idx, dst.idx)
+  }
+
+  const gridBody = (
+    <Droppable droppableId="laserSceneStrip" direction="horizontal">
+      {(dropProvided) => (
+        <ThumbGrid
+          ref={dropProvided.innerRef}
+          {...dropProvided.droppableProps}
+          $cols={gridCols}
+          $rows={gridRows}
+        >
+          {slots.map((slot, gridIdx) => {
+            const dragId =
+              slot.type === 'scene'
+                ? slot.scene.id
+                : slot.type === 'add'
+                  ? `add-slot-${slot.idx}`
+                  : `pad-slot-${slot.idx}`
+            const dragDisabled = slot.type !== 'scene'
+            return (
+              <Draggable
+                key={dragId}
+                draggableId={dragId}
+                index={gridIdx}
+                isDragDisabled={dragDisabled}
+              >
+                {(dp) => {
+                  const dragStyle = dp.draggableProps.style
+                  if (slot.type === 'pad') {
+                    return (
+                      <PadCell
+                        ref={dp.innerRef}
+                        {...dp.draggableProps}
+                        style={dragStyle}
+                      />
+                    )
+                  }
+                  if (slot.type === 'add') {
+                    return (
+                      <EmptySlot
+                        ref={dp.innerRef}
+                        {...dp.draggableProps}
+                        style={dragStyle}
+                        type="button"
+                        onClick={onAddScene}
+                      >
+                        <AddIcon fontSize="small" />
+                        <EmptyLabel>New</EmptyLabel>
+                      </EmptySlot>
+                    )
+                  }
+                  const { scene } = slot
+                  const active = scene.id === activeSceneId
+                  const animated = sceneHasAnimatedContent(scene)
+                  return (
+                    <ThumbCell
+                      ref={dp.innerRef}
+                      {...dp.draggableProps}
+                      {...dp.dragHandleProps}
+                      style={dragStyle}
+                      type="button"
+                      $active={active}
+                      onClick={() => onSelectScene(scene.id)}
+                    >
+                      <ThumbName>{scene.name}</ThumbName>
+                      <ThumbFrame $animated={animated}>
+                        <ThumbnailSvg scene={scene} />
+                      </ThumbFrame>
+                    </ThumbCell>
+                  )
+                }}
+              </Draggable>
+            )
+          })}
+          {dropProvided.placeholder}
+        </ThumbGrid>
+      )}
+    </Droppable>
+  )
+
   return (
     <StripRoot>
       <StripHeader>
-        <PagePill>
-          <PageArrow type="button" onClick={goPrev} disabled={safePage <= 0}>
-            <ChevronLeftIcon fontSize="small" />
-          </PageArrow>
-          <PageLabel>
-            {safePage + 1} / {pageCount}
-          </PageLabel>
-          <PageArrow
-            type="button"
-            onClick={goNext}
-            disabled={safePage >= pageCount - 1}
-          >
-            <ChevronRightIcon fontSize="small" />
-          </PageArrow>
-        </PagePill>
+        <HeaderLeft>
+          <PagePill>
+            <PageArrow type="button" onClick={goPrev} disabled={safePage <= 0}>
+              <ChevronLeftIcon fontSize="small" />
+            </PageArrow>
+            <PageLabel>
+              {safePage + 1} / {pageCount}
+            </PageLabel>
+            <PageArrow
+              type="button"
+              onClick={goNext}
+              disabled={safePage >= pageCount - 1}
+            >
+              <ChevronRightIcon fontSize="small" />
+            </PageArrow>
+          </PagePill>
+          {activeScene ? (
+            <AutoCluster>
+              <AutoDivider aria-hidden />
+              <AutoLabel>Auto scene</AutoLabel>
+              <AutoToggle title="Cycle scenes on the beat bar">
+                <input
+                  type="checkbox"
+                  checked={auto?.enabled === true}
+                  onChange={(e) => patchAuto({ enabled: e.target.checked })}
+                />
+                <span>On beat</span>
+              </AutoToggle>
+              <AutoPeriod
+                type="number"
+                min={2}
+                max={256}
+                step={1}
+                title="Beats between random scene changes"
+                value={Math.round(auto?.periodBeats ?? 16)}
+                disabled={!auto?.enabled}
+                onChange={(e) =>
+                  patchAuto({
+                    periodBeats: Math.max(2, Math.min(256, Number(e.target.value) || 16)),
+                  })
+                }
+              />
+            </AutoCluster>
+          ) : null}
+        </HeaderLeft>
         <StripTitle>Scenes</StripTitle>
       </StripHeader>
-      <ThumbGrid $cols={LASER_SCENE_GRID_COLS}>
-        {slots.map((slot) => {
-          if (slot.type === 'pad') {
-            return <PadCell key={`pad-${slot.idx}`} />
-          }
-          if (slot.type === 'add') {
-            return (
-              <EmptySlot
-                key={`add-${slot.idx}`}
-                type="button"
-                onClick={onAddScene}
-              >
-                <AddIcon fontSize="small" />
-                <EmptyLabel>New</EmptyLabel>
-              </EmptySlot>
-            )
-          }
-          const { scene } = slot
-          const active = scene.id === activeSceneId
-          return (
-            <ThumbCell
-              key={scene.id}
-              type="button"
-              $active={active}
-              onClick={() => onSelectScene(scene.id)}
-            >
-              <ThumbName>{scene.name}</ThumbName>
-              <ThumbFrame>
-                <ThumbnailSvg layers={scene.layers} />
-              </ThumbFrame>
-            </ThumbCell>
-          )
-        })}
-      </ThumbGrid>
+      <GridHost ref={gridHostRef}>
+        <DragDropContext onDragEnd={onDragEnd}>{gridBody}</DragDropContext>
+      </GridHost>
     </StripRoot>
   )
 }
@@ -212,19 +387,31 @@ export function createEmptyLaserScene(name?: string): LaserScene {
   return {
     id: nanoid(),
     name: name ?? 'Scene',
+    contentMode: 'preset',
+    presetId: 'horizontal_wave',
+    presetUseSplitXY: true,
+    presetColor: '#40ffb8',
+    presetParams: {},
     layers: [],
+    viewportMask: { enabled: false, x: 0.35, y: 0.35, w: 0.22, h: 0.18 },
+    viewportMaskLinkSplit: false,
+    autoScene: { enabled: false, periodBeats: 16 },
+    presetLayerOverrides: {},
   }
 }
 
 const StripRoot = styled.div`
+  height: 100%;
+  min-height: 0;
   border: 1px solid ${(p) => p.theme.colors.divider};
   border-radius: 0.45rem;
   background: ${(p) => p.theme.colors.bg.darker};
   padding: 0.48rem 0.56rem 0.56rem;
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
-  flex: 0 0 auto;
+  gap: 0.3rem;
+  min-width: 0;
+  box-sizing: border-box;
 `
 
 const StripHeader = styled.div`
@@ -232,6 +419,57 @@ const StripHeader = styled.div`
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+  flex-wrap: wrap;
+`
+
+const HeaderLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  min-width: 0;
+`
+
+const AutoCluster = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  flex-wrap: wrap;
+  font-size: 0.62rem;
+  color: ${(p) => p.theme.colors.text.primary};
+`
+
+const AutoDivider = styled.span`
+  width: 1px;
+  height: 1.25rem;
+  background: ${(p) => p.theme.colors.divider};
+  margin: 0 0.05rem;
+`
+
+const AutoLabel = styled.span`
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: ${(p) => p.theme.colors.text.secondary};
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+`
+
+const AutoToggle = styled.label`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+  cursor: pointer;
+  user-select: none;
+`
+
+const AutoPeriod = styled.input`
+  width: 3.2rem;
+  font-size: 0.62rem;
+  padding: 0.12rem 0.22rem;
+  border-radius: 0.25rem;
+  border: 1px solid ${(p) => p.theme.colors.divider};
+  background: ${(p) => p.theme.colors.bg.primary};
+  color: ${(p) => p.theme.colors.text.primary};
 `
 
 const StripTitle = styled.div`
@@ -283,11 +521,32 @@ const PageLabel = styled.span`
   color: ${(p) => p.theme.colors.text.primary};
 `
 
-const ThumbGrid = styled.div<{ $cols: number }>`
+const GridHost = styled.div`
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+`
+
+const ThumbGrid = styled.div<{ $cols: number; $rows: number }>`
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  flex: 1 1 0;
+  min-height: 0;
   display: grid;
-  grid-template-columns: repeat(${(p) => p.$cols}, minmax(0, 1fr));
-  grid-template-rows: repeat(2, minmax(4.2rem, 1fr));
-  gap: 0.42rem;
+  grid-template-columns: repeat(
+    ${(p) => p.$cols},
+    ${LASER_SCENE_THUMB_WIDTH_REM}rem
+  );
+  grid-template-rows: repeat(${(p) => p.$rows}, minmax(0, 1fr));
+  column-gap: ${LASER_SCENE_THUMB_GAP_PX}px;
+  row-gap: ${LASER_SCENE_THUMB_GAP_PX}px;
+  justify-content: start;
+  align-content: start;
+  align-items: stretch;
 `
 
 const ThumbCell = styled.button<{ $active: boolean }>`
@@ -298,15 +557,26 @@ const ThumbCell = styled.button<{ $active: boolean }>`
   background: ${(p) =>
     p.$active ? 'rgba(45, 114, 168, 0.22)' : p.theme.colors.bg.primary};
   padding: 0;
-  cursor: pointer;
+  cursor: grab;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  min-height: 4.2rem;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+  max-width: ${LASER_SCENE_THUMB_WIDTH_REM}rem;
   text-align: left;
+  transition:
+    border-color 0.15s ease,
+    transform 0.18s ease;
+
+  &:active {
+    cursor: grabbing;
+  }
 
   &:hover {
     border-color: #8ac4f0;
+    transform: scale(1.02);
   }
 `
 
@@ -326,10 +596,28 @@ const ThumbName = styled.div`
   pointer-events: none;
 `
 
-const ThumbFrame = styled.div`
+const laserThumbHue = keyframes`
+  from {
+    filter: hue-rotate(0deg);
+  }
+  to {
+    filter: hue-rotate(360deg);
+  }
+`
+
+const ThumbFrame = styled.div<{ $animated?: boolean }>`
   flex: 1 1 auto;
   min-height: 0;
   background: #000;
+
+  ${(p) =>
+    p.$animated
+      ? css`
+          &:hover {
+            animation: ${laserThumbHue} 2.4s linear infinite;
+          }
+        `
+      : css``}
 `
 
 const ThumbSvg = styled.svg`
@@ -342,7 +630,10 @@ const EmptySlot = styled.button`
   border-radius: 0.35rem;
   border: 1px dashed ${(p) => p.theme.colors.divider};
   background: ${(p) => p.theme.colors.bg.primary};
-  min-height: 4.2rem;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+  max-width: ${LASER_SCENE_THUMB_WIDTH_REM}rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -364,6 +655,9 @@ const EmptyLabel = styled.span`
 const PadCell = styled.div`
   border-radius: 0.35rem;
   border: 1px solid transparent;
-  min-height: 4.2rem;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+  max-width: ${LASER_SCENE_THUMB_WIDTH_REM}rem;
   background: transparent;
 `

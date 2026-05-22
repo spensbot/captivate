@@ -1,7 +1,7 @@
 /**
  * Validates Node/npm against package.json `engines` before native Electron packaging.
  * Native modules (midi, serialport, projectm-bridge) require matching Node ABI headers
- * and must not be built with an editor-embedded Node (e.g. Cursor/VS Code).
+ * and must not be built with an editor-embedded Node (e.g. some IDE-bundled runtimes).
  */
 const fs = require('fs')
 const path = require('path')

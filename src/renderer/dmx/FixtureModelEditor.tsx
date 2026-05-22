@@ -31,6 +31,7 @@ import {
   fixtureModelKinds,
   inferFixtureModelKind,
   normalizeFixtureModelConfig,
+  buildAutoFittedDefaultCustomEmitters,
 } from '../../shared/dmxFixtures'
 import { FEET_PER_METER, METERS_PER_FOOT } from '../../shared/stage'
 import FixtureEmitterLayoutEditor from './FixtureEmitterLayoutEditor'
@@ -61,6 +62,21 @@ export default function FixtureModelEditor({ fixtureType }: Props) {
     model.washBarWarmWhiteCount
   const totalEmitters = effectiveSubFixtureCount * model.emittersPerSubFixture
   const isPar = effectiveKind === 'parCan'
+
+  function seedCustomEmittersIfEmpty(
+    base: ReturnType<typeof normalizeFixtureModelConfig>
+  ): ReturnType<typeof normalizeFixtureModelConfig> {
+    if (!base.useCustomEmitterLayout || base.customEmitters.length > 0) {
+      return base
+    }
+    const normalized = normalizeFixtureModelConfig(base, fixtureType)
+    const built = buildAutoFittedDefaultCustomEmitters(fixtureType, normalized)
+    if (built.length === 0) {
+      return base
+    }
+    return { ...base, customEmitters: built }
+  }
+
   const isParCylinder = isPar && model.bodyShape === 'cylinder'
   const isParBox = isPar && model.bodyShape === 'box'
   const widthUnitLabel = stageUnit === 'ft' ? 'ft' : 'm'
@@ -219,6 +235,7 @@ export default function FixtureModelEditor({ fixtureType }: Props) {
             numberType="float"
             label={isParBox ? `Face width (${widthUnitLabel})` : widthLabel}
             stageUnit={stageUnit}
+            lengthDraftDisplay="stageCanonical"
             onChange={(displayWidth) =>
               updateModel((current) => ({
                 ...current,
@@ -343,7 +360,7 @@ export default function FixtureModelEditor({ fixtureType }: Props) {
             )}
           </>
         )}
-        {!(isPar && isParCylinder) && (
+        {model.bodyShape === 'box' && (
           <StageLengthField
             val={Number(bodyHeightDisplay.toFixed(3))}
             min={bodyDimMinDisplay}
@@ -356,6 +373,7 @@ export default function FixtureModelEditor({ fixtureType }: Props) {
                 : `Body Height (${widthUnitLabel})`
             }
             stageUnit={stageUnit}
+            lengthDraftDisplay="stageCanonical"
             onChange={(displayHeight) =>
               updateModel((current) => ({
                 ...current,
@@ -376,6 +394,7 @@ export default function FixtureModelEditor({ fixtureType }: Props) {
           numberType="float"
           label={isPar ? `Depth (${widthUnitLabel})` : `Body Depth (${widthUnitLabel})`}
           stageUnit={stageUnit}
+          lengthDraftDisplay="stageCanonical"
           onChange={(displayDepth) =>
             updateModel((current) => ({
               ...current,
@@ -387,7 +406,7 @@ export default function FixtureModelEditor({ fixtureType }: Props) {
             }))
           }
         />
-        {!(isPar && isParBox) && (
+        {model.bodyShape === 'cylinder' && (
           <StageLengthField
             val={Number(bodyDiameterDisplay.toFixed(3))}
             min={bodyDimMinDisplay}
@@ -400,6 +419,7 @@ export default function FixtureModelEditor({ fixtureType }: Props) {
                 : `Body Diameter (${widthUnitLabel})`
             }
             stageUnit={stageUnit}
+            lengthDraftDisplay="stageCanonical"
             onChange={(displayDiameter) =>
               updateModel((current) => ({
                 ...current,
@@ -567,20 +587,29 @@ export default function FixtureModelEditor({ fixtureType }: Props) {
             type="checkbox"
             checked={model.useCustomEmitterLayout}
             onChange={(event) =>
-              updateModel((current) => ({
-                ...current,
-                useCustomEmitterLayout: event.target.checked,
-              }))
+              updateModel((current) => {
+                const next = {
+                  ...current,
+                  useCustomEmitterLayout: event.target.checked,
+                }
+                if (!event.target.checked) {
+                  return next
+                }
+                return seedCustomEmittersIfEmpty(next)
+              })
             }
           />
-          Use WYSIWYG custom emitter layout
+          Use WYSIWYG custom emitter layout (when off, emitters auto-fill the front face from dimensions and count)
         </ToggleLabel>
       </Row>
       {model.useCustomEmitterLayout && (
         <Row style={{ marginBottom: 0 }}>
           <LayoutEditorButton
             type="button"
-            onClick={() => setEmitterLayoutOpen(true)}
+            onClick={() => {
+              updateModel((current) => seedCustomEmittersIfEmpty(current))
+              setEmitterLayoutOpen(true)
+            }}
             title="Open the WYSIWYG emitter layout editor in a dedicated modal"
           >
             Open WYSIWYG Emitter Layout Editor

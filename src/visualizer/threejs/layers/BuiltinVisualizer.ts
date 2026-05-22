@@ -103,6 +103,8 @@ export type BuiltinLayerSourceType =
   | 'ndiStream'
   | 'projectM'
 
+export type BuiltinMediaFitMode = 'fill' | 'object3d'
+
 export interface BuiltinLayerItem {
   id: string
   generator: BuiltinGeneratorType
@@ -111,7 +113,8 @@ export interface BuiltinLayerItem {
   sourceType: BuiltinLayerSourceType
   source: string
   text: string
-  mediaFit: 'cover' | 'contain'
+  /** `fill` = fullscreen plate (projectM-style); `object3d` = positioned plane in the scene. */
+  mediaFit: BuiltinMediaFitMode
   enabled: boolean
   density: number
   densityLinkSource: BuiltinEffectLinkSource
@@ -399,7 +402,7 @@ export function createBuiltinLayer(
     sourceType: 'procedural',
     source: '',
     text: 'Captivate',
-    mediaFit: 'cover',
+    mediaFit: 'fill',
     enabled: true,
     density: 0.55,
     densityLinkSource: 'none',
@@ -947,7 +950,7 @@ export default class BuiltinVisualizer extends LayerBase {
         runtimeLayer.layer = manualLayer
         continue
       }
-      const visBackdrop = isVisBackdropSrc(layer.sourceType)
+      const visBackdrop = layerUsesVisBackdropLayout(layer)
 
       if (runtimeLayer.generator === 'importedModel') {
         void this.ensureImportedModelLoaded(runtimeLayer)
@@ -961,6 +964,12 @@ export default class BuiltinVisualizer extends LayerBase {
       }
       if (runtimeLayer.media?.projectM) {
         this.updateProjectMMediaBinding(runtimeLayer, res.audio)
+      }
+      if (
+        isMediaFileSourceType(layer.sourceType) &&
+        layer.mediaFit === 'object3d'
+      ) {
+        syncMediaObject3DPlaneScale(runtimeLayer, layer, this.camera)
       }
 
       const supportsReactiveInput = generatorSupportsReactiveInput(runtimeLayer)
@@ -1224,7 +1233,7 @@ export default class BuiltinVisualizer extends LayerBase {
     const hasFullscreenBackdropLayer = this.layers.some(
       (runtimeLayer) =>
         runtimeLayer.layer.enabled &&
-        isVisBackdropSrc(runtimeLayer.layer.sourceType) &&
+        layerUsesVisBackdropLayout(runtimeLayer.layer) &&
         runtimeLayer.media?.texture !== null
     )
     if (hasFullscreenBackdropLayer) {
@@ -1316,9 +1325,9 @@ export default class BuiltinVisualizer extends LayerBase {
       if (layer.generator === 'customModule') {
         built.customGenerator = this.compileCustomGeneratorModule(built)
       }
-      if (isVisBackdropSrc(layer.sourceType)) {
-        // Fullscreen stream layers (projectM / NDI / RTSP) stay out of `root` so they
-        // remain fixed to the view like a background plate.
+      if (layerUsesVisBackdropLayout(layer)) {
+        // Fullscreen plates (projectM / streams / fill-mode image & video) stay out of
+        // `root` so they remain fixed to the view like a background.
         this.scene.add(built.group)
       } else {
         this.root.add(built.group)
@@ -1897,7 +1906,17 @@ export default class BuiltinVisualizer extends LayerBase {
     if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
       return
     }
-    applyPlaneFit(media.plane, width / height, runtimeLayer.layer.mediaFit)
+    if (
+      isMediaFileSourceType(runtimeLayer.layer.sourceType) &&
+      runtimeLayer.layer.mediaFit === 'object3d'
+    ) {
+      media.plane.scale.set(1, 1, 1)
+      applyPlaneFit(media.plane, width / height, 'contain')
+      runtimeLayer.scratch.mediaObject3dFitScale = {
+        x: media.plane.scale.x,
+        y: media.plane.scale.y,
+      }
+    }
   }
 
   private async loadMjpegTexture(media: RuntimeMediaBinding, url: string) {
@@ -2056,7 +2075,7 @@ export default class BuiltinVisualizer extends LayerBase {
     for (const runtimeLayer of this.layers) {
       if (
         runtimeLayer.layer.enabled &&
-        isVisBackdropSrc(runtimeLayer.layer.sourceType) &&
+        layerUsesVisBackdropLayout(runtimeLayer.layer) &&
         runtimeLayer.media !== null
       ) {
         this.layoutVisBackdropPlane(runtimeLayer)
@@ -2605,6 +2624,89 @@ function isVisBackdropSrc(sourceType: BuiltinLayerSourceType) {
   )
 }
 
+export function isMediaFileSourceType(sourceType: BuiltinLayerSourceType) {
+  return sourceType === 'imageFile' || sourceType === 'videoFile'
+}
+
+export function layerUsesVisBackdropLayout(layer: {
+  sourceType: BuiltinLayerSourceType
+  mediaFit: BuiltinMediaFitMode
+}) {
+  if (isVisBackdropSrc(layer.sourceType)) {
+    return true
+  }
+  return isMediaFileSourceType(layer.sourceType) && layer.mediaFit === 'fill'
+}
+
+function normalizeMediaFitMode(
+  value: unknown,
+  fallback: BuiltinMediaFitMode
+): BuiltinMediaFitMode {
+  if (value === 'fill' || value === 'object3d') {
+    return value
+  }
+  if (value === 'cover') {
+    return 'fill'
+  }
+  if (value === 'contain') {
+    return 'object3d'
+  }
+  return fallback
+}
+
+const MEDIA_OBJECT3D_SCALE_MIN_WORLD = 0.025
+
+function frustumWidthAtDistance(
+  camera: THREE.PerspectiveCamera,
+  distance: number
+) {
+  const safeDistance = Math.max(0.35, distance)
+  const fovRad = THREE.MathUtils.degToRad(camera.fov)
+  const visibleHeight = 2 * Math.tan(fovRad * 0.5) * safeDistance
+  return visibleHeight * Math.max(camera.aspect, 0.0001)
+}
+
+function mediaObjectScaleNormToWorldWidth(norm: number, maxWidth: number) {
+  const t = clamp01(norm, 0)
+  const min = MEDIA_OBJECT3D_SCALE_MIN_WORLD
+  const max = Math.max(min, maxWidth)
+  if (t <= 0.00001) {
+    return min
+  }
+  return min * Math.pow(max / min, t)
+}
+
+function syncMediaObject3DPlaneScale(
+  runtimeLayer: RuntimeLayer,
+  layer: BuiltinLayerItem,
+  camera: THREE.PerspectiveCamera
+) {
+  if (!isMediaFileSourceType(layer.sourceType) || layer.mediaFit !== 'object3d') {
+    return
+  }
+  const media = runtimeLayer.media
+  if (media === null) {
+    return
+  }
+  const plane = media.plane
+  const fit = runtimeLayer.scratch.mediaObject3dFitScale as
+    | { x: number; y: number }
+    | undefined
+  const fitX = fit?.x ?? 1
+  const fitY = fit?.y ?? 1
+  const worldPos = new THREE.Vector3()
+  plane.getWorldPosition(worldPos)
+  const distance = camera.position.distanceTo(worldPos)
+  const targetWidth = mediaObjectScaleNormToWorldWidth(
+    layer.scale,
+    frustumWidthAtDistance(camera, distance)
+  )
+  const geometry = plane.geometry as THREE.PlaneGeometry
+  const baseWidth = Number(geometry.parameters?.width) || 1
+  const size = targetWidth / Math.max(baseWidth, 0.0001)
+  plane.scale.set(fitX * size, fitY * size, 1)
+}
+
 function normalizeLayerItem(source: unknown, index: number): BuiltinLayerItem {
   const fallback = createBuiltinLayer('spheres', index)
   const input = (source ?? {}) as Partial<BuiltinLayerItem>
@@ -2634,10 +2736,7 @@ function normalizeLayerItem(source: unknown, index: number): BuiltinLayerItem {
       typeof input.text === 'string' && input.text.trim().length > 0
         ? input.text
         : fallback.text,
-    mediaFit:
-      input.mediaFit === 'contain' || input.mediaFit === 'cover'
-        ? input.mediaFit
-        : fallback.mediaFit,
+    mediaFit: normalizeMediaFitMode(input.mediaFit, fallback.mediaFit),
     enabled: input.enabled !== false,
     density: clamp01(input.density, fallback.density),
     densityLinkSource: builtinEffectLinkSourceList.includes(
@@ -2823,9 +2922,11 @@ function buildLayerGeometry(layer: BuiltinLayerItem, index: number): RuntimeLaye
     })
 
   if (layer.sourceType !== 'procedural') {
-    const visBackdropLayer = isVisBackdropSrc(layer.sourceType)
-    const planeWidth = visBackdropLayer ? 1 : 2 + layer.scale * 4
-    const planeHeight = visBackdropLayer ? 1 : 1.2 + layer.scale * 2.4
+    const visBackdropLayer = layerUsesVisBackdropLayout(layer)
+    const object3dMedia =
+      isMediaFileSourceType(layer.sourceType) && layer.mediaFit === 'object3d'
+    const planeWidth = visBackdropLayer ? 1 : object3dMedia ? 1 : 2 + layer.scale * 4
+    const planeHeight = visBackdropLayer ? 1 : object3dMedia ? 1 : 1.2 + layer.scale * 2.4
     const geometry = new THREE.PlaneGeometry(planeWidth, planeHeight)
     const material = new THREE.MeshBasicMaterial({
       color: '#ffffff',

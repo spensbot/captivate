@@ -131,7 +131,7 @@ export default function LaserSvgImportDialog({
                 checked={mode === 'byGroup'}
                 onChange={() => setMode('byGroup')}
               />
-              One layer per top-level &lt;g&gt; (merge paths inside each group)
+              One layer per top-level &lt;g&gt; (merge nearby paths; split if far apart)
             </label>
             <label>
               <input

@@ -41,6 +41,12 @@ export function hitTestVertexHandle(
         if (dist(p, pts[0]) <= HIT) return { kind: 'rect', i: 0 }
       }
       return null
+    case 'text':
+      if (pts.length >= 2) {
+        if (dist(p, pts[1]) <= HIT) return { kind: 'rect', i: 1 }
+        if (dist(p, pts[0]) <= HIT) return { kind: 'rect', i: 0 }
+      }
+      return null
     case 'circle':
       if (pts.length >= 2) {
         if (dist(p, pts[1]) <= HIT) return { kind: 'circle', part: 'rim' }
@@ -111,6 +117,7 @@ export function handleCentersForRender(layer: LaserShapeLayer): NormPoint[] {
   switch (layer.kind) {
     case 'line':
     case 'rect':
+    case 'text':
       return pts.length >= 2 ? [pts[0], pts[1]] : []
     case 'circle':
       return pts.length >= 2 ? [pts[0], pts[1]] : []

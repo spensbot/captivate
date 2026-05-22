@@ -1,14 +1,24 @@
-import type { ReactNode } from 'react'
-import { useMemo } from 'react'
+import {
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+} from 'react'
 import styled from 'styled-components'
-import SliderBase from '../base/SliderBase'
-import SliderCursor from '../base/SliderCursor'
 import {
   effectiveLfosAtSplit,
   intermodPropsIncoming,
 } from '../../shared/modulation'
+import {
+  LFO_SHAPE_SLIDER_THUMB_DIAMETER_REM,
+  LFO_SHAPE_SLIDER_THUMB_RADIUS_REM,
+  LFO_SHAPE_SLIDER_TRACK_WIDTH_REM,
+  sliderValueToThumbNorm,
+} from '../../shared/lfoShapeSlider'
 import { useActiveLightScene } from '../redux/store'
 import { useRealtimeSelector } from '../redux/realtimeStore'
+import { LfoShapeVerticalRange } from './lfoShapeVerticalRange'
 
 function shapeSliderIdToInterModProp(id: string): string {
   const map: Record<string, string> = {
@@ -29,21 +39,6 @@ function shapeSliderIdToInterModProp(id: string): string {
   return map[id] ?? id
 }
 
-function clamp01n(v: number) {
-  if (!Number.isFinite(v)) return 0
-  return Math.min(1, Math.max(0, v))
-}
-
-function toNorm(value: number, min: number, max: number) {
-  if (max <= min) return 0.5
-  return clamp01n((value - min) / (max - min))
-}
-
-function applyCenterDetent01(value: number) {
-  const clamped = clamp01n(Number(value) || 0)
-  return Math.abs(clamped - 0.5) <= 0.03 ? 0.5 : clamped
-}
-
 type Spec = {
   id: string
   min: number
@@ -59,31 +54,80 @@ type Props = {
   modIndex: number
   splitIndex: number
   spec: Spec
-  nativeSlider: ReactNode
   centerDetent: boolean
 }
+
+type RailBox = {
+  width: number
+  height: number
+}
+
+/** Matches painted bounds of the rotated range input (post-transform). */
+const IntermodRailHost = styled.div<{ $w: number; $h: number }>`
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: ${(p) => p.$w}px;
+  height: ${(p) => p.$h}px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 1;
+`
+
+const IntermodRailTrack = styled.div`
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: ${LFO_SHAPE_SLIDER_TRACK_WIDTH_REM}rem;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: linear-gradient(to top, #5a5a5a, #9e9e9e);
+`
+
+const IntermodThumb = styled.div<{ $norm: number; $variant: 'live' | 'stored' }>`
+  position: absolute;
+  left: 50%;
+  top: calc(
+    ${LFO_SHAPE_SLIDER_THUMB_RADIUS_REM}rem +
+      (1 - ${(p) => p.$norm}) * (100% - ${LFO_SHAPE_SLIDER_THUMB_DIAMETER_REM}rem)
+  );
+  box-sizing: border-box;
+  width: ${LFO_SHAPE_SLIDER_THUMB_DIAMETER_REM}rem;
+  height: ${LFO_SHAPE_SLIDER_THUMB_DIAMETER_REM}rem;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.55);
+  background: ${(p) =>
+    p.$variant === 'live' ? 'rgba(52, 211, 153, 0.95)' : '#ffd896'};
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  z-index: ${(p) => (p.$variant === 'live' ? 1 : 2)};
+`
 
 export default function LfoShapeParamSlider({
   modIndex,
   splitIndex,
   spec,
-  nativeSlider,
-  centerDetent,
+  centerDetent: _centerDetent,
 }: Props) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [railBox, setRailBox] = useState<RailBox | null>(null)
+
   const lightScene = useActiveLightScene((s) => s)
   const time = useRealtimeSelector((s) => s.time)
   const audio = useRealtimeSelector((s) => s.audio)
 
   const intermodProp = shapeSliderIdToInterModProp(spec.id)
   const hasIncoming = useActiveLightScene((scene) => {
-    const m = intermodPropsIncoming(scene, splitIndex)
+    const m = intermodPropsIncoming(scene)
     return m.get(modIndex)?.has(intermodProp) === true
   })
 
-  const { manualNorm, liveNorm } = useMemo(() => {
-    const manualNorm = toNorm(spec.value, spec.min, spec.max)
+  const storedNorm = sliderValueToThumbNorm(spec.value, spec.min, spec.max)
+
+  const liveNorm = useMemo(() => {
     if (!hasIncoming) {
-      return { manualNorm, liveNorm: manualNorm }
+      return storedNorm
     }
     const lfos = effectiveLfosAtSplit(
       lightScene,
@@ -96,8 +140,7 @@ export default function LfoShapeParamSlider({
       eff !== undefined
         ? Number((eff as unknown as Record<string, number>)[intermodProp])
         : spec.value
-    const liveNorm = toNorm(raw, spec.min, spec.max)
-    return { manualNorm, liveNorm }
+    return sliderValueToThumbNorm(raw, spec.min, spec.max)
   }, [
     hasIncoming,
     lightScene,
@@ -109,71 +152,74 @@ export default function LfoShapeParamSlider({
     spec.value,
     spec.min,
     spec.max,
+    storedNorm,
   ])
 
-  if (!hasIncoming) {
-    return <>{nativeSlider}</>
+  useLayoutEffect(() => {
+    if (!hasIncoming) {
+      setRailBox(null)
+      return
+    }
+    const el = inputRef.current
+    if (el === null) {
+      return
+    }
+
+    const measure = () => {
+      const rect = el.getBoundingClientRect()
+      if (rect.width < 1 || rect.height < 1) {
+        return
+      }
+      setRailBox({
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+      })
+    }
+
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(el)
+    window.addEventListener('resize', measure)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [hasIncoming, spec.id, spec.min, spec.max])
+
+  const rangeProps = {
+    ref: inputRef,
+    type: 'range' as const,
+    min: spec.min,
+    max: spec.max,
+    step: spec.step,
+    value: spec.value,
+    title: spec.title,
+    onChange: (event: ChangeEvent<HTMLInputElement>) =>
+      spec.onChange(Number(event.target.value) || 0),
   }
 
-  const radius = 0.18
+  if (!hasIncoming) {
+    return <LfoShapeVerticalRange {...rangeProps} />
+  }
 
   return (
-    <DualShell $centerDetent={centerDetent}>
-      <SliderBase
-        orientation="vertical"
-        radius={radius}
-        verticalPadRem={0.08}
-        title={spec.title}
-        onChange={(y) => {
-          let v = spec.min + y * (spec.max - spec.min)
-          if (centerDetent && spec.min === 0 && spec.max === 1) {
-            v = applyCenterDetent01(v)
-          }
-          spec.onChange(v)
-        }}
-      >
-        <SliderCursor
-          orientation="vertical"
-          value={liveNorm}
-          radius={radius}
-          color="#7eb8ffcc"
-          pointerEvents="none"
-        />
-        <SliderCursor
-          orientation="vertical"
-          value={manualNorm}
-          radius={radius}
-          color="#fff"
-          border
-          pointerEvents="none"
-        />
-      </SliderBase>
-    </DualShell>
+    <>
+      {railBox !== null ? (
+        <IntermodRailHost $w={railBox.width} $h={railBox.height}>
+          <IntermodRailTrack />
+          <IntermodThumb
+            $variant="live"
+            $norm={liveNorm}
+            title="Live value (inter-modulation)"
+          />
+          <IntermodThumb
+            $variant="stored"
+            $norm={storedNorm}
+            title={spec.title}
+          />
+        </IntermodRailHost>
+      ) : null}
+      <LfoShapeVerticalRange {...rangeProps} $ghost />
+    </>
   )
 }
-
-const DualShell = styled.div<{ $centerDetent: boolean }>`
-  position: relative;
-  width: 0.92rem;
-  min-height: 0;
-  flex: 1 1 auto;
-  align-self: stretch;
-  height: 100%;
-  container-type: size;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  &::after {
-    content: '';
-    display: ${(p) => (p.$centerDetent ? 'block' : 'none')};
-    position: absolute;
-    left: 0.08rem;
-    right: 0.08rem;
-    top: 50%;
-    height: 1px;
-    background: rgba(255, 216, 150, 0.9);
-    pointer-events: none;
-    z-index: 1;
-  }
-`

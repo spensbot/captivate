@@ -14,10 +14,6 @@ import ModulationMatrix from './ModulationMatrix'
 import { useActiveLightScene } from '../redux/store'
 import { LfoShape } from '../../shared/oscillator'
 import { useRealtimeSelector } from '../redux/realtimeStore'
-import {
-  AUDIO_MAX_BAND_HZ,
-  AUDIO_MIN_BAND_HZ,
-} from '../../shared/audioEngine'
 import { setModulatorAudioConfig, setModulatorWaveConfig } from '../redux/controlSlice'
 import {
   intermodIncomingSources,
@@ -26,7 +22,8 @@ import {
 } from '../../shared/modulation'
 import { useModPreviewSplit } from './useModPreviewSplit'
 
-const AUDIO_BAND_MAX_LEVEL_UI = 0.65
+import { getAudioBandCutoffSliderBounds } from '../../shared/audioEngine'
+import { AUDIO_BAND_MAX_LEVEL_UI } from '../../shared/lfoShapeSlider'
 
 type Props = {
   index: number
@@ -52,26 +49,12 @@ export default function ModulatorControl({ index }: Props) {
   const audioMetrics = useRealtimeSelector((state) => state.audio)
   const splitIx = useModPreviewSplit()
   const intermodAccents = useActiveLightScene((scene) => ({
-    outgoingTargets: intermodOutgoingTargets(scene, splitIx, index),
-    incomingSources: intermodIncomingSources(scene, splitIx, index),
+    outgoingTargets: intermodOutgoingTargets(scene, index),
+    incomingSources: intermodIncomingSources(scene, index),
   }))
 
-  const nyquistCapHz = Math.max(
-    AUDIO_MIN_BAND_HZ + 40,
-    Math.min(
-      AUDIO_MAX_BAND_HZ,
-      Number.isFinite(audioMetrics.nyquistHz)
-        ? Math.round(audioMetrics.nyquistHz)
-        : AUDIO_MAX_BAND_HZ
-    )
-  )
-  const lowCutMinHz = AUDIO_MIN_BAND_HZ
-  const lowCutMaxHz = Math.max(
-    lowCutMinHz + 20,
-    Math.min(12000, nyquistCapHz - 20)
-  )
-  const highCutMinHz = Math.max(40, AUDIO_MIN_BAND_HZ + 20)
-  const highCutMaxHz = nyquistCapHz
+  const { lowCutMinHz, lowCutMaxHz, highCutMinHz, highCutMaxHz } =
+    getAudioBandCutoffSliderBounds(audioMetrics.nyquistHz)
 
   function withCenterDetent(value: number) {
     const clamped = Math.max(0, Math.min(1, Number(value) || 0))
@@ -411,19 +394,6 @@ export default function ModulatorControl({ index }: Props) {
                           splitIndex={splitIx}
                           centerDetent={spec.centerDetent === true}
                           spec={spec}
-                          nativeSlider={
-                            <VerticalSlider
-                              type="range"
-                              min={spec.min}
-                              max={spec.max}
-                              step={spec.step}
-                              value={spec.value}
-                              title={spec.title}
-                              onChange={(event) =>
-                                spec.onChange(Number(event.target.value) || 0)
-                              }
-                            />
-                          }
                         />
                       </VerticalSliderShell>
                     </VerticalControl>
@@ -688,60 +658,6 @@ const VerticalSliderShell = styled.div<{ $centerDetent: boolean }>`
     height: 1px;
     background: rgba(255, 216, 150, 0.9);
     pointer-events: none;
-  }
-`
-
-const VerticalSlider = styled.input`
-  -webkit-appearance: none;
-  appearance: none;
-  width: max(4.5rem, 100cqh);
-  height: 0.92rem;
-  margin: 0;
-  background: transparent;
-  cursor: pointer;
-  transform: rotate(-90deg);
-  transform-origin: center center;
-  outline: none;
-
-  &::-webkit-slider-runnable-track {
-    width: 100%;
-    height: 0.24rem;
-    border-radius: 999px;
-    background: linear-gradient(to top, #5a5a5a, #9e9e9e);
-  }
-
-  &::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 0.56rem;
-    height: 0.56rem;
-    margin-top: calc((0.24rem - 0.56rem) / 2);
-    border-radius: 999px;
-    border: 1px solid rgba(0, 0, 0, 0.55);
-    background: #ffd896;
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.3);
-  }
-
-  &::-moz-range-track {
-    width: 100%;
-    height: 0.24rem;
-    border: none;
-    border-radius: 999px;
-    background: linear-gradient(to top, #5a5a5a, #9e9e9e);
-  }
-
-  &::-moz-range-thumb {
-    width: 0.56rem;
-    height: 0.56rem;
-    border-radius: 999px;
-    border: 1px solid rgba(0, 0, 0, 0.55);
-    background: #ffd896;
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.3);
-  }
-
-  &::-moz-range-progress {
-    height: 0.24rem;
-    border-radius: 999px;
-    background: #8fb0ff;
   }
 `
 

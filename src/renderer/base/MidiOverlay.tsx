@@ -1,14 +1,23 @@
 import styled from 'styled-components'
-import { getActionID, getMidiSliderBounds, MidiAction } from '../redux/deviceState'
+import {
+  findKeyboardChordIdForAction,
+  getActionID,
+  getMidiSliderBounds,
+  type MidiAction,
+} from '../redux/deviceState'
 import {
   midiListen,
+  keyboardListen,
   midiSetSliderAction,
   removeMidiAction,
+  clearButtonMapping,
+  removeKeyboardChord,
 } from '../redux/controlSlice'
 import { useDeviceSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import DraggableNumber from './DraggableNumber'
 import Button from './Button'
+import { formatChordId } from '../input/keyboardChord'
 
 interface Props {
   children?: React.ReactNode
@@ -18,33 +27,92 @@ interface Props {
 
 export function ButtonMidiOverlay({ children, action, style }: Props) {
   const isEditing = useDeviceSelector((state) => state.isEditing)
+  const keyboardLearnMode = useDeviceSelector((state) => state.keyboardLearnMode)
+  const mappingVisible = isEditing || keyboardLearnMode
+
   const controlledAction = useDeviceSelector((state) => {
     return state.buttonActions[getActionID(action)] || null
   })
-  const isListening = useDeviceSelector((state) => {
+  const chordId = useDeviceSelector((state) =>
+    findKeyboardChordIdForAction(state.keyboardShortcuts, action)
+  )
+  const isListeningMidi = useDeviceSelector((state) => {
     if (!state.listening) return false
     return getActionID(state.listening) === getActionID(action)
   })
+  const isListeningKeyboard = useDeviceSelector((state) => {
+    if (!state.keyboardListening) return false
+    return getActionID(state.keyboardListening) === getActionID(action)
+  })
+  const isListening = isListeningMidi || isListeningKeyboard
   const dispatch = useDispatch()
 
   const onClick = () => {
-    dispatch(midiListen(action))
+    if (keyboardLearnMode && !isEditing) {
+      dispatch(keyboardListen(action))
+      window.focus()
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur()
+      }
+    } else {
+      dispatch(midiListen(action))
+    }
   }
 
   return (
     <Root style={style}>
       {children}
-      {isEditing && (
+      {mappingVisible && (
         <Overlay selected={isListening} onClick={onClick}>
-          {controlledAction && (
-            <>
-              {controlledAction.inputID}
-              <X action={action} />
-            </>
+          {(controlledAction || chordId) && (
+            <BindingRow>
+              {controlledAction ? (
+                <>
+                  <span>{controlledAction.inputID}</span>
+                  <ClearMappingsX action={action} />
+                </>
+              ) : null}
+              {chordId ? (
+                <span style={{ marginLeft: controlledAction ? '0.35rem' : 0 }}>
+                  {formatChordId(chordId)}
+                  <ClearKeyboardX chordId={chordId} />
+                </span>
+              ) : null}
+            </BindingRow>
           )}
         </Overlay>
       )}
     </Root>
+  )
+}
+
+function ClearMappingsX({ action }: { action: MidiAction }) {
+  const dispatch = useDispatch()
+  return (
+    <div
+      onClick={(e) => {
+        e.stopPropagation()
+        dispatch(clearButtonMapping(action))
+      }}
+      style={{ cursor: 'pointer', marginLeft: '0.5rem' }}
+    >
+      X
+    </div>
+  )
+}
+
+function ClearKeyboardX({ chordId }: { chordId: string }) {
+  const dispatch = useDispatch()
+  return (
+    <span
+      onClick={(e) => {
+        e.stopPropagation()
+        dispatch(removeKeyboardChord(chordId))
+      }}
+      style={{ cursor: 'pointer', marginLeft: '0.35rem' }}
+    >
+      ×
+    </span>
   )
 }
 
@@ -126,7 +194,6 @@ export function SliderMidiOverlay({ children, action, style }: Props) {
     )
   }
 
-  
   const minMaxStyle: React.CSSProperties = {
     padding: '0.1rem 0.2rem',
     margin: '0.2rem',
@@ -195,6 +262,15 @@ export function SliderMidiOverlay({ children, action, style }: Props) {
     </Root>
   )
 }
+
+const BindingRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  font-size: 0.72rem;
+`
 
 const Root = styled.div`
   position: relative;

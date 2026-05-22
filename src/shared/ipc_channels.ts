@@ -67,6 +67,15 @@ export default {
   visualizer_stage_light_map: 'visualizer_stage_light_map',
   /** Main renderer → main: fetch latest stage light map for split UI preview. */
   stage_light_map_preview_get: 'stage_light_map_preview_get',
+  /** Laser window → main: register / arm DAC session (ILDA or IDN). */
+  laser_dac_connect: 'laser_dac_connect',
+  laser_dac_disconnect: 'laser_dac_disconnect',
+  laser_dac_status: 'laser_dac_status',
+  /** Laser window → main: stream sampled frame (throttled in renderer). */
+  laser_dac_push_frame: 'laser_dac_push_frame',
+  remote_control_get_status: 'remote_control_get_status',
+  remote_control_apply_settings: 'remote_control_apply_settings',
+  remote_control_regenerate_pin: 'remote_control_regenerate_pin',
 } as const
 
 export interface SetLinkEnabled {

@@ -494,6 +494,25 @@ export const scenesSlice = createSlice({
             }
             return remapped
           })
+          const im = modulator.lfoInterModulation
+          if (im === undefined) return
+          const nextIm: Record<string, number> = {}
+          for (const [key, value] of Object.entries(im)) {
+            if (typeof value !== 'number' || !Number.isFinite(value)) continue
+            if (!key.startsWith(prefix)) continue
+            const remainder = key.slice(prefix.length)
+            const [targetRaw, prop] = remainder.split(':')
+            const targetIndex = Number(targetRaw)
+            if (!Number.isInteger(targetIndex) || !prop) continue
+            if (targetIndex === payload) continue
+            const newT = targetIndex > payload ? targetIndex - 1 : targetIndex
+            nextIm[`${prefix}${newT}:${prop}`] = value
+          }
+          if (Object.keys(nextIm).length > 0) {
+            modulator.lfoInterModulation = nextIm
+          } else {
+            delete modulator.lfoInterModulation
+          }
         })
       })
     },
@@ -554,6 +573,22 @@ export const scenesSlice = createSlice({
         const modulator = scene.modulators[modIndex]
         if (modulator === undefined) return
 
+        if (typeof param === 'string' && param.startsWith('intermod:lfo:')) {
+          if (modulator.lfoInterModulation === undefined) {
+            modulator.lfoInterModulation = {}
+          }
+          const im = modulator.lfoInterModulation
+          if (value === undefined) {
+            delete im[param]
+          } else {
+            im[param] = value
+          }
+          if (Object.keys(im).length === 0) {
+            delete modulator.lfoInterModulation
+          }
+          return
+        }
+
         while (modulator.splitModulations.length <= splitIndex) {
           modulator.splitModulations.push({})
         }
@@ -613,6 +648,13 @@ export const scenesSlice = createSlice({
             const modulation = modulator.splitModulations[splitIndex]
             if (modulation !== undefined) {
               delete modulation[param]
+            }
+            const im = modulator.lfoInterModulation
+            if (im !== undefined && param in im) {
+              delete im[param]
+              if (Object.keys(im).length === 0) {
+                delete modulator.lfoInterModulation
+              }
             }
           })
         })
@@ -732,6 +774,32 @@ export const scenesSlice = createSlice({
         })
       })
     },
+    removeDedicatedSplitSceneForGroup: (
+      state,
+      { payload }: PayloadAction<{ group: string }>
+    ) => {
+      modifyActiveLightScene(state, (scene) => {
+        const group = payload.group.trim()
+        if (group.length <= 0) return
+
+        const splitIndex = scene.splitScenes.findIndex((split) => {
+          const entries = Object.entries(split.groups).filter(
+            ([, included]) => included !== undefined
+          )
+          return (
+            entries.length === 1 &&
+            entries[0]![0] === group &&
+            entries[0]![1] === true
+          )
+        })
+        if (splitIndex < 0) return
+
+        scene.splitScenes.splice(splitIndex, 1)
+        scene.modulators.forEach((modulator) => {
+          modulator.splitModulations.splice(splitIndex, 1)
+        })
+      })
+    },
     restoreSplitSceneForGroup: (
       state,
       {
@@ -832,6 +900,18 @@ export const scenesSlice = createSlice({
 
     // =====================   MIDI   ===========================================
     midiListen: (state, action) => midiActions.listen(state.device, action),
+    keyboardListen: (state, action) =>
+      midiActions.keyboardListen(state.device, action),
+    clearKeyboardListening: (state) =>
+      midiActions.clearKeyboardListening(state.device),
+    midiSetKeyboardLearnMode: (state, action) =>
+      midiActions.setKeyboardLearnMode(state.device, action),
+    setKeyboardShortcut: (state, action) =>
+      midiActions.setKeyboardShortcut(state.device, action),
+    removeKeyboardChord: (state, action) =>
+      midiActions.removeKeyboardChord(state.device, action),
+    clearButtonMapping: (state, action) =>
+      midiActions.clearButtonMapping(state.device, action),
     midiSetButtonAction: (state, action) =>
       midiActions.setButtonAction(state.device, action),
     midiSetIsEditing: (state, action) =>
@@ -852,6 +932,8 @@ export const scenesSlice = createSlice({
       midiActions.setUniverseCount(state.device, action),
     setDmxDeviceUniverse: (state, action) =>
       midiActions.setDmxDeviceUniverse(state.device, action),
+    setDmxUsbWidgetProtocol: (state, action) =>
+      midiActions.setDmxUsbWidgetProtocol(state.device, action),
     setArtNetUniverseRoute: (state, action) =>
       midiActions.setArtNetUniverseRoute(state.device, action),
     setAudioInputEnabled: (state, action) =>
@@ -966,6 +1048,7 @@ export const {
   addSplitScene,
   ensureSplitSceneForGroup,
   removeSplitSceneByIndex,
+  removeDedicatedSplitSceneForGroup,
   restoreSplitSceneForGroup,
 
   setSceneGroup,
@@ -978,6 +1061,12 @@ export const {
 
   // MIDI
   midiListen,
+  keyboardListen,
+  clearKeyboardListening,
+  midiSetKeyboardLearnMode,
+  setKeyboardShortcut,
+  removeKeyboardChord,
+  clearButtonMapping,
   midiSetButtonAction,
   midiSetIsEditing,
   midiSetSliderAction,
@@ -988,6 +1077,7 @@ export const {
   setOpenDmxRefreshRateHz,
   setUniverseCount,
   setDmxDeviceUniverse,
+  setDmxUsbWidgetProtocol,
   setArtNetUniverseRoute,
   setAudioInputEnabled,
   setAudioInputDeviceId,

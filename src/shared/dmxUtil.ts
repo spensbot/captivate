@@ -161,24 +161,41 @@ function partitionFlattenedFixtureByChannelFamily(
   }
   return splitFixtures.length > 0 ? splitFixtures : [fixture]
 }
-export function getWindowMultiplier2D(
-  fixtureWindow: Window2D_t,
-  movingWindow: Window2D_t
-) {
-  return (
-    getWindowMultiplier(fixtureWindow.x, movingWindow.x) *
-    getWindowMultiplier(fixtureWindow.y, movingWindow.y) *
-    getWindowMultiplier(fixtureWindow.z, movingWindow.z)
-  )
+/** Overlap multiplier for one axis; `feather` softens the edge past the cyan box (0 = hard gate). */
+export function windowAxisOverlapMultiplier(
+  fixtureWindow: Window | undefined,
+  movingWindow: Window | undefined,
+  feather: Normalized = 0
+): number {
+  if (fixtureWindow && movingWindow) {
+    const centerDistance = Math.abs(fixtureWindow.pos - movingWindow.pos)
+    const combinedHalfSpan =
+      fixtureWindow.width / 2 + movingWindow.width / 2
+    if (combinedHalfSpan <= 0) {
+      return centerDistance <= 1e-9 ? 1.0 : 0.0
+    }
+    const overflow = centerDistance - combinedHalfSpan
+    if (overflow <= 0) return 1.0
+    const f = clampNormalized(feather)
+    if (f <= 0) return 0.0
+    const featherReach = f * Math.max(movingWindow.width, 0.02)
+    if (featherReach <= 0) return 0.0
+    return 1.0 - clampNormalized(overflow / featherReach)
+  }
+  return 1.0
 }
 
-function getWindowMultiplier(fixtureWindow?: Window, movingWindow?: Window) {
-  if (fixtureWindow && movingWindow) {
-    const distanceBetween = Math.abs(fixtureWindow.pos - movingWindow.pos) / 2
-    const reach = fixtureWindow.width / 2 + movingWindow.width / 2
-    return distanceBetween > reach ? 0.0 : 1.0 - distanceBetween / reach
-  }
-  return 1.0 // Don't affect light values if the moving window or fixture position haven't been assigned.
+export function getWindowMultiplier2D(
+  fixtureWindow: Window2D_t,
+  movingWindow: Window2D_t,
+  feather: Normalized = 0
+) {
+  const f = clampNormalized(feather)
+  return (
+    windowAxisOverlapMultiplier(fixtureWindow.x, movingWindow.x, f) *
+    windowAxisOverlapMultiplier(fixtureWindow.y, movingWindow.y, f) *
+    windowAxisOverlapMultiplier(fixtureWindow.z, movingWindow.z, f)
+  )
 }
 
 // Value and MirrorAmount should be normalized (0 - 1)
@@ -865,13 +882,17 @@ export function getDmxValue(
   }
 }
 
-function getWindowRandomizerLevel(
+export function getWindowRandomizerLevel(
   params: Params,
   randomizerLevel: Normalized,
   fixtureWindow: Window2D_t,
   movingWindow: Window2D_t
 ): Normalized {
-  const windowLevel = getWindowMultiplier2D(fixtureWindow, movingWindow)
+  const windowLevel = getWindowMultiplier2D(
+    fixtureWindow,
+    movingWindow,
+    getParam(params, 'positionFeather')
+  )
   return applyRandomization(
     windowLevel,
     randomizerLevel,

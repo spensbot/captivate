@@ -1,5 +1,6 @@
-# Prepends a Node install that satisfies .node-version to PATH so integrated
-# terminals (Cursor/VS Code) do not pick Cursor's bundled Node first.
+# Optional local helper (copy to cursor-terminal-init.ps1 via `npm run setup:local-cursor-node`).
+# Prepends a Node install that satisfies .node-version to PATH so integrated terminals
+# do not pick an editor-bundled Node first.
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $minFile = Join-Path $repoRoot '.node-version'

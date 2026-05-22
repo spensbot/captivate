@@ -18,6 +18,8 @@ contextBridge.exposeInMainWorld('electron', {
         'audio_engine_metrics',
         'diagnostics_event',
         'telemetry_mark',
+        'visualizer_stage_light_map',
+        'laser_dac_push_frame',
       ]
       if (validChannels.includes(channel)) {
         ipcRenderer.send(channel, ...args)
@@ -106,6 +108,9 @@ contextBridge.exposeInMainWorld('electron', {
         'telemetry_export_snapshot',
         'app_about_info',
         'stage_light_map_preview_get',
+        'laser_dac_connect',
+        'laser_dac_disconnect',
+        'laser_dac_status',
       ]
       if (validChannels.includes(channel)) {
         return ipcRenderer.invoke(channel, ...args)

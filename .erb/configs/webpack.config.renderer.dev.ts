@@ -185,6 +185,14 @@ const configuration: webpack.Configuration = {
           stdio: 'inherit',
         }
       )
+      console.log('Building main process (dev)...')
+      execSync('npm run build:main:dev', { stdio: 'inherit' })
+      console.log('Starting main process watch...')
+      const mainWatchProcess = spawn('npm', ['run', 'start:main:watch'], {
+        shell: true,
+        env: process.env,
+        stdio: 'inherit',
+      })
       console.log('Starting Main Process...')
       spawn('npm', ['run', 'start:main'], {
         shell: true,
@@ -193,6 +201,7 @@ const configuration: webpack.Configuration = {
         .on('close', (code: number) => {
           preloadProcess.kill()
           visualizer_dev_server_process.kill('SIGINT')
+          mainWatchProcess.kill('SIGINT')
           process.exit(code!)
         })
         .on('error', (spawnError) => console.error(spawnError))

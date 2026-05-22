@@ -3,6 +3,7 @@ import { ConnectionManager } from './connections/ConnectionManager'
 import * as MidiConnection from './midiConnection'
 import NodeLink from 'node-link'
 import { ipcSetup, IPC_Callbacks } from './ipcHandler'
+import { shutdownRemoteControl } from './remoteControl/remoteControlManager'
 import { CleanReduxState } from '../../renderer/redux/store'
 import {
   RealtimeState,
@@ -18,7 +19,7 @@ import {
 import { getOutputParams } from '../../shared/modulation'
 import { handleMessage } from './handleMidi'
 import { VisualizerContainer } from './createVisualizerWindow'
-import { calculateDmx } from './dmxEngine'
+import { calculateDmx, finalizeDmxUniverses } from './dmxEngine'
 import { handleAutoScene } from '../../shared/autoScene'
 import {
   setActiveScene,
@@ -26,7 +27,8 @@ import {
 } from '../../renderer/redux/controlSlice'
 import { normalizeAudioInputSettings } from '../../shared/audioEngine'
 import TapTempoEngine from './TapTempoEngine'
-import { flatten_fixtures, getFixturesInGroups } from '../../shared/dmxUtil'
+import { flatten_fixtures } from '../../shared/dmxUtil'
+import { countSplitRandomizerSlots } from '../../shared/splitRandomizer'
 import { ThrottleMap } from './midiConnection'
 import { MidiMessage, midiInputID } from '../../shared/midi'
 import { getAllParamKeys } from '../../renderer/redux/dmxSlice'
@@ -83,6 +85,9 @@ let _ipcCallbacks: IPC_Callbacks | null = null
 let _controlState: CleanReduxState | null = null
 let _realtimeState: RealtimeState = initRealtimeState()
 let _lastFrameTime = 0
+let _realtimeLoopHandle: ReturnType<typeof setInterval> | null = null
+let _dmxConnectionPollHandle: ReturnType<typeof setInterval> | null = null
+let _engineStopped = false
 const _tapTempoEngine = new TapTempoEngine()
 
 function shouldApplyTapTempoToNodeLink(control: CleanReduxState | null) {
@@ -291,12 +296,15 @@ export function start(
 ) {
   telemetryCounter('engine', 'start')
   telemetryHealth('engine', 'ok', 'Engine start requested')
+  _engineStopped = false
+  clearEngineLoopTimers()
   _visualizerStreamingSettings = getVisualizerStreamingSettings()
 
   _ipcCallbacks = ipcSetup({
     renderers: new Set([renderer]),
     visualizerContainer: visualizerContainer,
     on_reconcile_video_enabled: reconcileVideoEnabled,
+    get_control_state_snapshot: () => _controlState,
     on_new_control_state: (newState) => {
       _controlState = newState
       telemetryCounter('engine', 'control_state_updates')
@@ -458,7 +466,7 @@ export function start(
 
   // We're currently calculating the realtimeState 90x per second.
   // The renderer should have a new realtime state on each animation frame (assuming a refresh rate of 60 hz)
-  setInterval(() => {
+  _realtimeLoopHandle = setInterval(() => {
     const tickStartedAt = performance.now()
     try {
       const nextTimeState = getNextTimeState(_controlState)
@@ -515,43 +523,67 @@ export function start(
       }
     }
   }, 1000 / 90)
+
+  _dmxConnectionPollHandle = setInterval(async () => {
+    if (_controlState) {
+      const connectionStatus = await _connectionManager.updateConnections(
+        _controlState.control.device.connectable.dmx
+      )
+      _ipcCallbacks?.send_dmx_connection_update(connectionStatus)
+    }
+  }, 1000)
+
+  MidiConnection.maintain({
+    update_ms: 1000,
+    onUpdate: (activeDevices) => {
+      if (_ipcCallbacks !== null)
+        _ipcCallbacks.send_midi_connection_update(activeDevices)
+    },
+    onMessage: (message) => {
+      _midiThrottle.call(midiInputID(message), message)
+    },
+    onMidiSystemRealtime: (status) => {
+      handleMidiSystemRealtime(status)
+    },
+    getConnectable: () => {
+      return _controlState ? _controlState.control.device.connectable.midi : []
+    },
+  })
+
   return _ipcCallbacks
 }
 
+function clearEngineLoopTimers() {
+  if (_realtimeLoopHandle !== null) {
+    clearInterval(_realtimeLoopHandle)
+    _realtimeLoopHandle = null
+  }
+  if (_dmxConnectionPollHandle !== null) {
+    clearInterval(_dmxConnectionPollHandle)
+    _dmxConnectionPollHandle = null
+  }
+}
+
 export function stop() {
+  if (_engineStopped) {
+    return
+  }
+  _engineStopped = true
   telemetryCounter('engine', 'stop')
   telemetryHealth('engine', 'warn', 'Engine stopped')
+  clearEngineLoopTimers()
+  MidiConnection.shutdownMidi()
+  try {
+    _connectionManager.shutdown()
+  } catch {
+    /* ignore */
+  }
   _visualizerStreamOutputManager.stop()
   _visualizerInputRelayManager.stopAll()
   _projectMBridgeManager.shutdownAll()
+  void shutdownRemoteControl()
   _ipcCallbacks = null
 }
-
-setInterval(async () => {
-  if (_controlState) {
-    const connectionStatus = await _connectionManager.updateConnections(
-      _controlState.control.device.connectable.dmx
-    )
-    _ipcCallbacks?.send_dmx_connection_update(connectionStatus)
-  }
-}, 1000)
-
-MidiConnection.maintain({
-  update_ms: 1000,
-  onUpdate: (activeDevices) => {
-    if (_ipcCallbacks !== null)
-      _ipcCallbacks.send_midi_connection_update(activeDevices)
-  },
-  onMessage: (message) => {
-    _midiThrottle.call(midiInputID(message), message)
-  },
-  onMidiSystemRealtime: (status) => {
-    handleMidiSystemRealtime(status)
-  },
-  getConnectable: () => {
-    return _controlState ? _controlState.control.device.connectable.midi : []
-  },
-})
 
 function getBeatFollowDetectedBpm(controlState: CleanReduxState | null): number | null {
   const midiBpm = getMidiClockDetectedBpm(controlState)
@@ -1007,22 +1039,25 @@ function getNextRealtimeState(
         allParamKeys,
         _latestAudioMetrics
       )
-      let splitSceneFixtures = getFixturesInGroups(fixtures, splitScene.groups)
-      let splitSceneFixturesWithinEpicness = splitSceneFixtures.filter(
-        (fixture) => fixture.intensity <= (splitOutputParams.intensity ?? 1)
+      const intensityCeiling = splitOutputParams.intensity ?? 1
+      const randomizerSlotCount = countSplitRandomizerSlots(
+        fixtures,
+        dmx.led.ledFixtures,
+        splitScene.groups,
+        intensityCeiling
       )
 
       let newRandomizerState = resizeRandomizer(
         realtimeState.splitStates[splitIndex]?.randomizer ??
           initRandomizerState(),
-        splitSceneFixturesWithinEpicness.length
+        randomizerSlotCount
       )
 
       newRandomizerState = updateIndexes(
         realtimeState.time.beats,
         newRandomizerState,
         nextTimeState,
-        indexArray(splitSceneFixturesWithinEpicness.length),
+        indexArray(randomizerSlotCount),
         splitScene.randomizer
       )
 
@@ -1042,6 +1077,7 @@ function getNextRealtimeState(
     _latestAudioMetrics,
     dmxOutByUniverse
   )
+  finalizeDmxUniverses(controlState, dmxOutByUniverse)
   const dmxMs = performance.now() - dmxStartedAt
   telemetryDuration('engine.dmx', 'calculate_ms', dmxMs)
   telemetryGauge('engine.dmx', 'calculate_last_ms', dmxMs, 'ms')

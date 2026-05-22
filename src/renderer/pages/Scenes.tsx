@@ -30,7 +30,9 @@ export default function Scenes() {
         </Pane>
         <Pane>
           <Column>
-            <Modulators />
+            <ModulatorsHost>
+              <Modulators />
+            </ModulatorsHost>
             <Sp />
             <SplitScenes />
           </Column>
@@ -65,6 +67,13 @@ const Column = styled.div`
   overflow: hidden;
 `
 
+const ModulatorsHost = styled.div`
+  flex-shrink: 0;
+  min-width: 0;
+  width: 100%;
+`
+
 const Sp = styled.div`
+  flex-shrink: 0;
   height: 1rem;
 `

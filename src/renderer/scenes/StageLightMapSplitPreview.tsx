@@ -4,6 +4,27 @@ import { getStageLightMapPreview } from '../ipcHandler'
 
 const POLL_MS = 140
 
+/** readRenderTargetPixels is WebGL bottom-origin; ImageData / canvas are top-origin. */
+function rgbaBottomOriginToTopOrigin(
+  src: Uint8Array | number[],
+  width: number,
+  height: number
+): Uint8ClampedArray {
+  const stride = width * 4
+  const out = new Uint8ClampedArray(width * height * 4)
+  for (let row = 0; row < height; row++) {
+    const srcRow = height - 1 - row
+    for (let c = 0; c < stride; c++) {
+      out[row * stride + c] = src[srcRow * stride + c] ?? 0
+    }
+  }
+  // Composite may carry premultiplied / partial alpha; preview reads clearer opaque.
+  for (let i = 3; i < out.length; i += 4) {
+    out[i] = 255
+  }
+  return out
+}
+
 export default function StageLightMapSplitPreview() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
@@ -24,8 +45,13 @@ export default function StageLightMapSplitPreview() {
           canvas.width = snap.width
           canvas.height = snap.height
         }
+        const rgba = rgbaBottomOriginToTopOrigin(
+          snap.data,
+          snap.width,
+          snap.height
+        )
         const img = new ImageData(
-          new Uint8ClampedArray(snap.data),
+          new Uint8ClampedArray(rgba),
           snap.width,
           snap.height
         )

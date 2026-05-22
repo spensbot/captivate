@@ -1,5 +1,6 @@
 import { EngineContext } from 'main/engine/engineContext'
 import { DmxUsbDeviceConfig } from './DmxUsbDeviceConfig'
+import { DMX_MAX_VALUE, DMX_MIN_VALUE, DMX_NUM_CHANNELS } from 'shared/dmxFixtures'
 
 const cfg: DmxUsbDeviceConfig = {
   refreshHz: (c: EngineContext) => {
@@ -11,7 +12,13 @@ const cfg: DmxUsbDeviceConfig = {
   sendUniverse: async (universe, connection) => {
     const universeBuffer = Buffer.alloc(513, 0)
 
-    universe.forEach((value, index) => (universeBuffer[index + 1] = value))
+    for (let index = 0; index < DMX_NUM_CHANNELS; index++) {
+      const raw = universe[index]
+      const value = Number.isFinite(raw)
+        ? Math.max(DMX_MIN_VALUE, Math.min(DMX_MAX_VALUE, Math.round(raw)))
+        : 0
+      universeBuffer[index + 1] = value
+    }
 
     let buffer = universeBuffer
 

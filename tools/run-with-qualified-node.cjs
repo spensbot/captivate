@@ -1,6 +1,6 @@
 /**
  * Re-invokes a command with a Node install that satisfies `.node-version` / `engines.node`
- * when the current `node` is too old (e.g. Cursor Agent shell vs integrated terminal).
+ * when the current `node` is too old (e.g. some IDE or automation shells).
  *
  * Usage: node tools/run-with-qualified-node.cjs -- <argv...>
  * Example: node tools/run-with-qualified-node.cjs -- npm run package:bundle:inner
@@ -164,7 +164,7 @@ function main() {
         `[captivate] Node ${process.version} is too old and no Node ${minVer.join('.')}+ install was found.`
       )
       console.error(
-        '[captivate] Install Node (see .node-version), set CAPTIVATE_NODE_BIN to the folder containing node.exe, or use scripts/cursor-terminal-init.ps1 in an integrated terminal.'
+        '[captivate] Install Node (see .node-version), set CAPTIVATE_NODE_BIN to the folder containing node.exe, or run packaging from a shell where `node -v` is 25.9+.'
       )
       process.exit(1)
     }

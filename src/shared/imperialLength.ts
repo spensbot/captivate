@@ -7,7 +7,8 @@ const INCHES_PER_FOOT = 12
  * - `10`, `10.25` (decimal feet)
  * - `5'` (feet only)
  * - `1' - 10"`, `1'-10"`, `1' 10"` (feet + inches)
- * - `10"` (inches only → feet)
+ * - `10 1/2`, `10-1/2` (mixed number feet, no quote marks)
+ * - `1/2`, `15/16` (fraction of a foot)
  */
 export function parseImperialLengthToDecimalFeet(raw: string): number | null {
   let s = raw.trim()
@@ -20,6 +21,34 @@ export function parseImperialLengthToDecimalFeet(raw: string): number | null {
   if (!/['"]/.test(s) && /^-?\d+(\.\d+)?$/.test(s.trim())) {
     const n = Number(s.trim())
     return Number.isFinite(n) ? n : null
+  }
+
+  // Mixed number in feet (no ft/inch marks): 10 1/2, 10-1/2 → 10.5 ft
+  const wholePlusFootFrac = s.match(
+    /^(-?\d+)\s*(?:[-–—]\s*)?(\d+)\s*\/\s*(\d+)\s*$/i
+  )
+  if (wholePlusFootFrac && !/['"]/.test(s)) {
+    const whole = Number(wholePlusFootFrac[1])
+    const num = Number(wholePlusFootFrac[2])
+    const den = Number(wholePlusFootFrac[3])
+    if (
+      Number.isFinite(whole) &&
+      Number.isFinite(num) &&
+      Number.isFinite(den) &&
+      den !== 0
+    ) {
+      return whole + num / den
+    }
+  }
+
+  // Pure foot fraction: 1/2, 15/16
+  const footFracOnly = s.match(/^(-?\d+)\s*\/\s*(\d+)\s*$/)
+  if (footFracOnly && !/['"]/.test(s)) {
+    const num = Number(footFracOnly[1])
+    const den = Number(footFracOnly[2])
+    if (Number.isFinite(num) && Number.isFinite(den) && den !== 0) {
+      return num / den
+    }
   }
 
   // Inches-only: 10", 10 in
@@ -68,4 +97,35 @@ export function clampImperialFeet(
   if (min !== undefined) v = Math.max(min, v)
   if (max !== undefined) v = Math.min(max, v)
   return v
+}
+
+/** Display decimal feet as `ft' in"` (inches rounded to nearest 1/16). */
+export function formatDecimalFeetAsFtIn(decimalFeet: number): string {
+  if (!Number.isFinite(decimalFeet)) {
+    return ''
+  }
+  const sign = decimalFeet < 0 ? '-' : ''
+  const v = Math.abs(decimalFeet)
+  const wholeFt = Math.floor(v + 1e-9)
+  const totalInches = (v - wholeFt) * INCHES_PER_FOOT
+  const totalInchesR = Math.round(totalInches * 16) / 16
+  if (totalInchesR >= 12 - 1e-4) {
+    return formatDecimalFeetAsFtIn((sign === '-' ? -1 : 1) * (wholeFt + 1))
+  }
+  if (totalInchesR <= 1 / 32) {
+    return `${sign}${wholeFt}'`
+  }
+  if (Math.abs(totalInchesR - Math.round(totalInchesR)) < 1e-5) {
+    return `${sign}${wholeFt}' ${Math.round(totalInchesR)}"`
+  }
+  const inchWhole = Math.floor(totalInchesR + 1e-9)
+  const frac16 = Math.round((totalInchesR - inchWhole) * 16)
+  const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b))
+  const g = gcd(frac16, 16)
+  const n = frac16 / g
+  const d = 16 / g
+  if (inchWhole <= 0) {
+    return `${sign}${wholeFt}' ${n}/${d}"`
+  }
+  return `${sign}${wholeFt}' ${inchWhole} ${n}/${d}"`
 }

@@ -20,7 +20,11 @@ export async function probeWledControllerCapabilities(
 
   const info = await requestWledJson(host, '/json/info')
   const state = await requestWledJson(host, '/json/state')
-  const cfg = await requestWledJson(host, '/json/cfg')
+  let cfg = await requestWledJson(host, '/json/cfg')
+  const ip = readInfoIp(info)
+  if (cfg === null && ip !== null && ip !== host) {
+    cfg = await requestWledJson(ip, '/json/cfg')
+  }
 
   if (info === null && state === null && cfg === null) {
     return initProbeResult(host, null, [
@@ -29,13 +33,19 @@ export async function probeWledControllerCapabilities(
   }
 
   const ledInfo = asRecord(info?.leds)
-  const ledCfg = asRecord(cfg?.led)
+  const ledCfg = parseLedConfig(cfg)
   const buses = parseBusInfo(ledCfg)
   const segments = parseSegments(state)
 
   const infoLedCount = toInt(ledInfo?.count, 0)
+  const segmentLedSpan = segments.reduce(
+    (max, segment) => Math.max(max, segment.stop, segment.start + segment.length),
+    0
+  )
   const supportsPixel =
-    infoLedCount > 0 || buses.some((bus) => bus.isPixel && bus.length > 0)
+    infoLedCount > 0 ||
+    segmentLedSpan > 0 ||
+    buses.some((bus) => bus.isPixel && bus.length > 0)
   const supportsPixelRgbw =
     supportsPixel &&
     (readTruthyBoolean(ledInfo?.rgbw) || readTruthyBoolean(ledInfo?.w))
@@ -60,7 +70,12 @@ export async function probeWledControllerCapabilities(
       'WLED output type could not be identified. Defaulting to pixel streaming.'
     )
   }
-  if (supportsPixel && infoLedCount <= 0) {
+  const pixelInferredFromBusesOnly =
+    supportsPixel &&
+    infoLedCount <= 0 &&
+    segmentLedSpan <= 0 &&
+    buses.some((bus) => bus.isPixel && bus.length > 0)
+  if (pixelInferredFromBusesOnly) {
     warnings.push('Pixel output inferred from bus config; reported LED count is zero.')
   }
 
@@ -70,7 +85,6 @@ export async function probeWledControllerCapabilities(
     supportsPwm4,
   })
 
-  const ip = readInfoIp(info)
   const firmware = readFirmware(info)
   const supportsRealtimeUdp = supportsPixel
 
@@ -81,6 +95,7 @@ export async function probeWledControllerCapabilities(
     firmware,
     ledCount: Math.max(
       infoLedCount,
+      segmentLedSpan,
       ...buses.filter((bus) => bus.isPixel).map((bus) => bus.start + bus.length),
       0
     ),
@@ -206,6 +221,18 @@ function toInt(value: unknown, fallback: number): number {
   return Math.max(0, Math.round(numeric))
 }
 
+function parseLedConfig(cfg: JsonRecord | null): JsonRecord | null {
+  if (cfg === null) {
+    return null
+  }
+  const hw = asRecord(cfg.hw)
+  const fromHw = asRecord(hw?.led)
+  if (fromHw !== null) {
+    return fromHw
+  }
+  return asRecord(cfg.led)
+}
+
 function parseBusInfo(ledCfg: JsonRecord | null): WledControllerBusInfo[] {
   const rawIns = ledCfg?.ins
   const ins = Array.isArray(rawIns) ? rawIns : []
@@ -282,7 +309,20 @@ function parseSegments(state: JsonRecord | null): WledControllerSegmentInfo[] {
 
     const id = toInt(seg.id, index)
     const start = toInt(seg.start, 0)
-    const stop = toInt(seg.stop, start)
+    const lenField = toInt(seg.len, -1)
+    const stopField = toInt(seg.stop, -1)
+    let stop = start
+    let length = 0
+    if (lenField > 0) {
+      length = lenField
+      stop = start + lenField
+    } else if (stopField > start) {
+      stop = stopField
+      length = stopField - start
+    } else if (stopField === start && start > 0) {
+      stop = stopField
+      length = 0
+    }
     const active = seg.on !== false
     const nameRaw = typeof seg.n === 'string' ? seg.n.trim() : ''
     output.push({
@@ -290,7 +330,7 @@ function parseSegments(state: JsonRecord | null): WledControllerSegmentInfo[] {
       name: nameRaw.length > 0 ? nameRaw : `Segment ${id + 1}`,
       start,
       stop: Math.max(start, stop),
-      length: Math.max(0, stop - start),
+      length,
       active,
     })
   })

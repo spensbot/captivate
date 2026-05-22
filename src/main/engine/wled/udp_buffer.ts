@@ -1,7 +1,8 @@
 import { BaseColors } from '../../../shared/baseColors'
 
 const MAX_VAL = 255
-const TIMEOUT_SECONDS = 2
+// WLED exits realtime when no packet arrives for this many seconds; keep generous.
+const TIMEOUT_SECONDS = 15
 const DRGB_MAX_LEDS = 490
 const DRGBW_MAX_LEDS = 367
 const DNRGB_MAX_LEDS = 489

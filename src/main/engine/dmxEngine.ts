@@ -3,8 +3,10 @@ import {
   DMX_MIN_VALUE,
   DMX_NUM_CHANNELS,
   FlattenedFixture,
+  normalizeDmxUniverseChannels,
   universeHasMovers,
   MoverBounds,
+  zeroUnpatchedDmxChannels,
 } from '../../shared/dmxFixtures'
 import { CleanReduxState } from '../../renderer/redux/store'
 import {
@@ -48,6 +50,17 @@ const MOVER_PATH_MAX_DT_SEC = 0.12
 const MOVER_PATH_MIN_DT_SEC = 1 / 240
 const MOVER_PATH_MAX_PAN_DMX_PER_SEC = 360
 const MOVER_PATH_MAX_TILT_DMX_PER_SEC = 320
+
+function readDmxChannel(channels: number[], channelIdx: number): number {
+  if (channelIdx < 0 || channelIdx >= DMX_NUM_CHANNELS) return 0
+  const v = channels[channelIdx]
+  return Number.isFinite(v) ? v : 0
+}
+
+function writeDmxChannel(channels: number[], channelIdx: number, value: number): void {
+  if (channelIdx < 0 || channelIdx >= DMX_NUM_CHANNELS) return
+  channels[channelIdx] = value
+}
 const MOVER_PATH_MAX_PAN_ACCEL_DMX_PER_SEC2 = 1700
 const MOVER_PATH_MAX_TILT_ACCEL_DMX_PER_SEC2 = 1400
 const MOVER_PATH_STATE_STALE_MS = 15000
@@ -1200,7 +1213,7 @@ function calculateDmxForUniverse(
 
   // Set each channel to its default value first.
   forEachChannel(all_fixtures, (_fixtureIdx, _fixture, channelIdx, channel) => {
-    channels[channelIdx] = getDefaultDmxValue(channel)
+    writeDmxChannel(channels, channelIdx, getDefaultDmxValue(channel))
   })
 
   if (axisOnlyOverrideMode && moverCalibrationOverride !== null) {
@@ -1214,11 +1227,11 @@ function calculateDmxForUniverse(
           : moverCalibrationOverride.tiltDmx
 
       if (channel.isFine) {
-        channels[channelIdx] = channel.min
+        writeDmxChannel(channels, channelIdx, channel.min)
         return
       }
 
-      channels[channelIdx] = clampDmxValue(overrideDmx, channel.min)
+      writeDmxChannel(channels, channelIdx, clampDmxValue(overrideDmx, channel.min))
     })
   } else if (colorMapOnlyOverrideMode && colorMapCalibrationOverride !== null) {
     // While stopped, keep output simple so wheel tuning is immediate.
@@ -1227,7 +1240,7 @@ function calculateDmxForUniverse(
         fixture.fixtureTypeId === colorMapCalibrationOverride.fixtureTypeId &&
         channel.type === 'master'
       ) {
-        channels[channelIdx] = channel.max
+        writeDmxChannel(channels, channelIdx, channel.max)
         return
       }
 
@@ -1237,7 +1250,7 @@ function calculateDmxForUniverse(
           : undefined
 
       if (colorMapOverrideValue !== undefined) {
-        channels[channelIdx] = colorMapOverrideValue
+        writeDmxChannel(channels, channelIdx, colorMapOverrideValue)
       }
     })
   } else {
@@ -1396,9 +1409,13 @@ function calculateDmxForUniverse(
 
           if (channel.type === 'axis') {
             // Axis channels should use the exact computed DMX value.
-            channels[channelIdx] = nextValue
+            writeDmxChannel(channels, channelIdx, nextValue)
           } else {
-            channels[channelIdx] = Math.max(channels[channelIdx], nextValue)
+            writeDmxChannel(
+              channels,
+              channelIdx,
+              Math.max(readDmxChannel(channels, channelIdx), nextValue)
+            )
           }
         }
       )
@@ -1414,7 +1431,61 @@ function calculateDmxForUniverse(
     }
   })
 
-  return channels
+  zeroUnpatchedDmxChannels(
+    universeFixtures,
+    state.dmx.fixtureTypesByID,
+    channels
+  )
+
+  return normalizeDmxUniverseChannels(channels)
+}
+
+function zeroAllDmxUniverseBuffers(
+  state: CleanReduxState,
+  dmxOutByUniverse: number[][]
+): void {
+  for (let index = 0; index < dmxOutByUniverse.length; index++) {
+    dmxOutByUniverse[index] = Array(DMX_NUM_CHANNELS).fill(0)
+  }
+
+  const universeCount = getUniverseCount(state)
+  for (let universeIndex = 1; universeIndex <= universeCount; universeIndex++) {
+    const idx = universeIndex - 1
+    while (dmxOutByUniverse.length <= idx) {
+      dmxOutByUniverse.push(Array(DMX_NUM_CHANNELS).fill(0))
+    }
+    dmxOutByUniverse[idx] = Array(DMX_NUM_CHANNELS).fill(0)
+  }
+}
+
+/** Keep unpatched addresses at 0 after any post-process (e.g. atmospherics) mutates universe buffers. */
+export function finalizeDmxUniverses(
+  state: CleanReduxState,
+  dmxOutByUniverse: number[][]
+): void {
+  if (state.gui.blackout === true) {
+    zeroAllDmxUniverseBuffers(state, dmxOutByUniverse)
+    return
+  }
+
+  const universeCount = getUniverseCount(state)
+  const types = state.dmx.fixtureTypesByID
+
+  for (let universeIndex = 1; universeIndex <= universeCount; universeIndex++) {
+    const idx = universeIndex - 1
+    while (dmxOutByUniverse.length <= idx) {
+      dmxOutByUniverse.push(Array(DMX_NUM_CHANNELS).fill(0))
+    }
+
+    const universeFixtures = state.dmx.universe.filter(
+      (fixture) => (fixture.universe ?? 1) === universeIndex
+    )
+    const normalized = normalizeDmxUniverseChannels(
+      dmxOutByUniverse[idx] ?? Array(DMX_NUM_CHANNELS).fill(0)
+    )
+    zeroUnpatchedDmxChannels(universeFixtures, types, normalized)
+    dmxOutByUniverse[idx] = normalized
+  }
 }
 
 export function calculateDmx(

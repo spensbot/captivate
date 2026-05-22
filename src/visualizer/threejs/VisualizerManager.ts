@@ -673,9 +673,10 @@ export default class VisualizerManager {
       posterize: number
     },
     beatTime: number,
-    stageLightMapStrength: number,
+    _stageLightMapStrength: number,
     stageLightMapGrid: { width: number; height: number }
   ) {
+    void _stageLightMapStrength
     this.compositeMaterial.uniforms.fromTex.value = fromTexture
     this.compositeMaterial.uniforms.toTex.value = toTexture
     this.compositeMaterial.uniforms.mixAmount.value = progress
@@ -698,16 +699,12 @@ export default class VisualizerManager {
     this.renderer.setRenderTarget(null)
     this.renderer.clear()
     this.renderer.render(this.compositeScene, this.compositeCamera)
-    if (stageLightMapStrength > 0.001) {
-      this.captureStageLightMapFrame(stageLightMapStrength, stageLightMapGrid)
-    }
+    // Always capture the downsampled composite for UI preview + DMX sampling cache.
+    // (DMX still gates *application* by stage light map effect strength × visStageMapMix.)
+    this.captureStageLightMapFrame(stageLightMapGrid)
   }
 
-  private captureStageLightMapFrame(
-    strength: number,
-    grid: { width: number; height: number }
-  ) {
-    if (strength <= 0.001) return
+  private captureStageLightMapFrame(grid: { width: number; height: number }) {
     if (++this.lightMapFrameTick % 2 !== 0) return
     const w = grid.width
     const h = grid.height
@@ -740,7 +737,7 @@ export default class VisualizerManager {
     sendStageLightMapFrame({
       width: w,
       height: h,
-      data: this.lightMapReadBuffer,
+      data: this.lightMapReadBuffer.slice(),
     })
   }
 
