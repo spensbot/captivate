@@ -21,7 +21,11 @@ const configuration: webpack.Configuration = {
     path: webpackPaths.distRemotePath,
     publicPath: './',
     filename: 'remote.js',
+    // Do not inherit commonjs2 from webpack.config.base — browser <script> must self-execute.
+    library: undefined,
   },
+  // Bundle app deps for the browser; baseConfig externals are for Electron main/renderer.
+  externals: {},
   module: {
     rules: [
       {
@@ -62,6 +66,9 @@ const configuration: webpack.Configuration = {
   optimization: {
     minimize: true,
     minimizer: [new TerserPlugin({ parallel: true }), new CssMinimizerPlugin()],
+    splitChunks: {
+      chunks: 'async',
+    },
   },
   plugins: [
     new webpack.EnvironmentPlugin({
@@ -75,7 +82,6 @@ const configuration: webpack.Configuration = {
       template: path.join(webpackPaths.srcRemotePath, 'index.ejs'),
       minify: {
         collapseWhitespace: true,
-        removeAttributeQuotes: true,
         removeComments: true,
       },
       isBrowser: true,
@@ -89,4 +95,8 @@ const configuration: webpack.Configuration = {
   },
 }
 
-export default merge(baseConfig, configuration)
+const merged = merge(baseConfig, configuration)
+if (merged.output && 'library' in merged.output) {
+  delete merged.output.library
+}
+export default merged

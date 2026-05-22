@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import styled from 'styled-components'
 import { TextField, IconButton, Tooltip } from '@mui/material'
 import InfoOutlined from '@mui/icons-material/InfoOutlined'
@@ -56,11 +56,13 @@ export default function RemoteControlSection() {
   const [pin, setPin] = useState('')
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState('')
+  const enabledRef = useRef(false)
 
   const refresh = useCallback(async () => {
     const s = await remoteControlGetStatus()
     setStatus(s)
     setEnabled(s.enabled)
+    enabledRef.current = s.enabled
     setPort(String(s.port))
     setPin(s.pin)
   }, [])
@@ -70,6 +72,7 @@ export default function RemoteControlSection() {
   }, [refresh])
 
   const apply = async (nextEnabled: boolean) => {
+    enabledRef.current = nextEnabled
     setBusy(true)
     setNote('')
     try {
@@ -80,6 +83,7 @@ export default function RemoteControlSection() {
       })
       setStatus(s)
       setEnabled(s.enabled)
+      enabledRef.current = s.enabled
       setPort(String(s.port))
       setPin(s.pin)
       if (s.lastError) {
@@ -88,6 +92,8 @@ export default function RemoteControlSection() {
         setNote('')
       } else if (nextEnabled) {
         setNote('Could not start remote server. See message above or build logs.')
+      } else {
+        setNote('')
       }
     } catch (e) {
       setNote(e instanceof Error ? e.message : String(e))
@@ -96,13 +102,23 @@ export default function RemoteControlSection() {
     }
   }
 
+  const applyIfEnabled = () => {
+    if (!enabledRef.current) {
+      return
+    }
+    void apply(true)
+  }
+
   const regenPin = async () => {
     setBusy(true)
+    setNote('')
     try {
       const res = await remoteControlRegeneratePin()
       setPin(res.pin)
       setStatus(res.status)
       setNote('PIN changed — reconnect remote browsers.')
+    } catch (e) {
+      setNote(e instanceof Error ? e.message : String(e))
     } finally {
       setBusy(false)
     }
@@ -143,6 +159,7 @@ export default function RemoteControlSection() {
               checked={enabled}
               disabled={busy}
               onChange={(v) => {
+                enabledRef.current = v
                 setEnabled(v)
                 void apply(v)
               }}
@@ -158,7 +175,7 @@ export default function RemoteControlSection() {
                 value={port}
                 disabled={busy}
                 onChange={(e) => setPort(e.target.value)}
-                onBlur={() => void apply(true)}
+                onBlur={applyIfEnabled}
                 inputProps={{ inputMode: 'numeric' }}
                 fullWidth
               />
@@ -171,7 +188,7 @@ export default function RemoteControlSection() {
                   value={pin}
                   disabled={busy}
                   onChange={(e) => setPin(e.target.value)}
-                  onBlur={() => void apply(true)}
+                  onBlur={applyIfEnabled}
                   fullWidth
                 />
                 <Tooltip title="Generate a new PIN">

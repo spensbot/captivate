@@ -231,6 +231,18 @@ function CaptivateSlider({
   )
 }
 
+const isRemoteClient = process.env.CAPTIVATE_REMOTE_CLIENT === 'true'
+
+function remoteInputDeviceLabel(deviceId: string): string {
+  if (deviceId === AUDIO_INPUT_DEVICE_DESKTOP) {
+    return 'Desktop Audio (Loopback)'
+  }
+  if (deviceId.trim().length === 0) {
+    return 'Default input (show computer)'
+  }
+  return 'Audio input on show computer'
+}
+
 export default function AudioInputMenu() {
   const dispatch = useDispatch()
   const [open, setOpen] = useState(false)
@@ -275,7 +287,7 @@ export default function AudioInputMenu() {
   }, [])
 
   useEffect(() => {
-    if (!open) {
+    if (!open || isRemoteClient) {
       return
     }
     void refreshDevices()
@@ -323,6 +335,12 @@ export default function AudioInputMenu() {
       </Tooltip>
       {open && (
         <Popup title="Audio Input" onClose={() => setOpen(false)}>
+          {isRemoteClient ? (
+            <RemoteHint>
+              Audio is captured on the show computer. Meters and settings below apply
+              there and sync to this remote session.
+            </RemoteHint>
+          ) : null}
           <ToggleRow
             label="Audio Mode"
             checked={settings.enabled}
@@ -376,36 +394,42 @@ export default function AudioInputMenu() {
               <Label>Input Device</Label>
               <InfoHint content={INPUT_DEVICE_INFO} ariaLabel="About input device" />
             </LabelRow>
-            <Tooltip
-              title={
-                loading
-                  ? 'Refreshing audio device list…'
-                  : 'Capture source for audio analysis'
-              }
-              placement="top"
-              enterDelay={400}
-            >
-              <DeviceSelectWrap>
-                <DeviceSelect
-                  value={selectedDeviceId}
-                  disabled={loading}
-                  onChange={(event) =>
-                    dispatch(setAudioInputDeviceId(event.target.value))
-                  }
-                >
-                  {devices.length === 0 && (
-                    <option value="">
-                      {loading ? 'Loading audio devices...' : 'No audio inputs'}
-                    </option>
-                  )}
-                  {devices.map((device) => (
-                    <option key={device.deviceId} value={device.deviceId}>
-                      {device.label}
-                    </option>
-                  ))}
-                </DeviceSelect>
-              </DeviceSelectWrap>
-            </Tooltip>
+            {isRemoteClient ? (
+              <RemoteDeviceLabel title="Selected on the show computer">
+                {remoteInputDeviceLabel(selectedDeviceId)}
+              </RemoteDeviceLabel>
+            ) : (
+              <Tooltip
+                title={
+                  loading
+                    ? 'Refreshing audio device list…'
+                    : 'Capture source for audio analysis'
+                }
+                placement="top"
+                enterDelay={400}
+              >
+                <DeviceSelectWrap>
+                  <DeviceSelect
+                    value={selectedDeviceId}
+                    disabled={loading}
+                    onChange={(event) =>
+                      dispatch(setAudioInputDeviceId(event.target.value))
+                    }
+                  >
+                    {devices.length === 0 && (
+                      <option value="">
+                        {loading ? 'Loading audio devices...' : 'No audio inputs'}
+                      </option>
+                    )}
+                    {devices.map((device) => (
+                      <option key={device.deviceId} value={device.deviceId}>
+                        {device.label}
+                      </option>
+                    ))}
+                  </DeviceSelect>
+                </DeviceSelectWrap>
+              </Tooltip>
+            )}
           </Field>
 
           <Field>
@@ -794,4 +818,20 @@ const SmallButton = styled.button`
     border-color: #7ed6a5;
     color: #dfffe8;
   }
+`
+
+const RemoteHint = styled.p`
+  margin: 0 0 0.5rem;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: ${(props) => props.theme.colors.text.secondary};
+`
+
+const RemoteDeviceLabel = styled.div`
+  font-size: 0.72rem;
+  padding: 0.35rem 0.45rem;
+  border-radius: 0.28rem;
+  border: 1px solid ${(props) => props.theme.colors.divider};
+  background: ${(props) => props.theme.colors.bg.primary};
+  color: ${(props) => props.theme.colors.text.secondary};
 `

@@ -13,8 +13,10 @@ export default function Window2D({ window2D, feather = 0 }: Props) {
   const height = window2D.y?.width || 0
 
   const f = Math.max(0, Math.min(1, feather))
-  const fadeXPct = f * 50
-  const fadeYPct = f * 50
+  // Match DMX feather curve: wider soft edge at high values (≈65% inset at f=1).
+  const fadeInsetPct = f * (40 + 60 * f)
+  const fadeXPct = fadeInsetPct
+  const fadeYPct = fadeInsetPct
   const useFeather = f > 0.001
 
   const maskImage = useFeather

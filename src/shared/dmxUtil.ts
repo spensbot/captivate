@@ -161,6 +161,23 @@ function partitionFlattenedFixtureByChannelFamily(
   }
   return splitFixtures.length > 0 ? splitFixtures : [fixture]
 }
+/**
+ * How far past the hard overlap edge the soft fade extends, in units of the moving
+ * window width. Quadratic tail so high feather values add noticeably more reach.
+ */
+function positionFeatherReachWidths(feather: Normalized): number {
+  const f = clampNormalized(feather)
+  if (f <= 0) return 0
+  // f=1 → 2.25× moving window width (was 1×); low values stay close to linear.
+  return f * (1 + f * 1.25)
+}
+
+/** Smooth falloff 1 at hard edge → 0 at outer feather limit (perceptually softer than linear). */
+function positionFeatherFalloff01(overflow01: number): number {
+  const t = clampNormalized(overflow01)
+  return 1 - t * t * (3 - 2 * t)
+}
+
 /** Overlap multiplier for one axis; `feather` softens the edge past the cyan box (0 = hard gate). */
 export function windowAxisOverlapMultiplier(
   fixtureWindow: Window | undefined,
@@ -178,9 +195,10 @@ export function windowAxisOverlapMultiplier(
     if (overflow <= 0) return 1.0
     const f = clampNormalized(feather)
     if (f <= 0) return 0.0
-    const featherReach = f * Math.max(movingWindow.width, 0.02)
+    const featherReach =
+      positionFeatherReachWidths(f) * Math.max(movingWindow.width, 0.02)
     if (featherReach <= 0) return 0.0
-    return 1.0 - clampNormalized(overflow / featherReach)
+    return positionFeatherFalloff01(overflow / featherReach)
   }
   return 1.0
 }
@@ -191,11 +209,18 @@ export function getWindowMultiplier2D(
   feather: Normalized = 0
 ) {
   const f = clampNormalized(feather)
-  return (
-    windowAxisOverlapMultiplier(fixtureWindow.x, movingWindow.x, f) *
-    windowAxisOverlapMultiplier(fixtureWindow.y, movingWindow.y, f) *
-    windowAxisOverlapMultiplier(fixtureWindow.z, movingWindow.z, f)
-  )
+  const axes: number[] = [
+    windowAxisOverlapMultiplier(fixtureWindow.x, movingWindow.x, f),
+    windowAxisOverlapMultiplier(fixtureWindow.y, movingWindow.y, f),
+  ]
+  if (fixtureWindow.z !== undefined && movingWindow.z !== undefined) {
+    axes.push(
+      windowAxisOverlapMultiplier(fixtureWindow.z, movingWindow.z, f)
+    )
+  }
+  // Geometric mean: corners stay brighter than raw X×Y×Z product at high feather.
+  const product = axes.reduce((acc, v) => acc * v, 1)
+  return Math.pow(product, 1 / axes.length)
 }
 
 // Value and MirrorAmount should be normalized (0 - 1)

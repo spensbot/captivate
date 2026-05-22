@@ -67,6 +67,7 @@ export async function applyRemoteControlSettings(
   settings = await saveRemoteControlSettings(next)
   if (!settings.enabled) {
     await stopRemoteControlServer()
+    server = null
     return getRemoteControlStatus()
   }
   if (!server) {

@@ -2,6 +2,7 @@ import http from 'http'
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
+import { app } from 'electron'
 import { WebSocketServer, WebSocket } from 'ws'
 import type { PayloadAction } from '@reduxjs/toolkit'
 import type { CleanReduxState } from '../../../renderer/redux/store'
@@ -55,10 +56,12 @@ function listLanUrls(port: number): string[] {
 }
 
 function resolveStaticRoot(): string {
-  if (process.env.NODE_ENV === 'development') {
-    return path.join(process.cwd(), 'release/app/dist/remote')
+  const devRoot = path.join(process.cwd(), 'release/app/dist/remote')
+  if (!app.isPackaged) {
+    return devRoot
   }
-  return path.join(__dirname, '../../remote')
+  // Packaged app: webpack remote build lives at dist/remote inside app.asar.
+  return path.join(app.getAppPath(), 'dist', 'remote')
 }
 
 function safeStaticPath(root: string, urlPath: string): string | null {

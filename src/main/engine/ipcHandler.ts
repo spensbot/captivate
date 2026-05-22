@@ -789,7 +789,8 @@ export function ipcSetup(config: Config) {
           : {}
       const current = getRemoteControlSettings()
       const next: RemoteControlSettings = {
-        enabled: o.enabled === true,
+        enabled:
+          typeof o.enabled === 'boolean' ? o.enabled : current.enabled,
         port:
           typeof o.port === 'number' && Number.isFinite(o.port)
             ? o.port

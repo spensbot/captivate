@@ -98,8 +98,24 @@ export function getAutoSaveRestoreStatus() {
   return lastRestoreStatus
 }
 
-// @ts-ignore: Typescript doesn't recognize the globals set in "src/main/preload.js"
-const ipcRenderer = window.electron.ipcRenderer
+type FileIpcRenderer = {
+  invoke: (channel: string, ...args: unknown[]) => Promise<unknown>
+}
+
+const maybeWindow =
+  typeof window !== 'undefined'
+    ? (window as Window & { electron?: { ipcRenderer?: FileIpcRenderer } })
+    : undefined
+
+function getFileIpcRenderer(): FileIpcRenderer {
+  const ipcRenderer = maybeWindow?.electron?.ipcRenderer
+  if (!ipcRenderer) {
+    throw new Error(
+      'File dialogs are unavailable outside the Captivate desktop app.'
+    )
+  }
+  return ipcRenderer
+}
 
 export const captivateFileFilters = {
   captivate: { name: 'Captivate 2', extensions: ['captivate'] },
@@ -118,7 +134,11 @@ export async function loadFile(
   title: string,
   fileFilters: Electron.FileFilter[]
 ): Promise<string | null> {
-  return ipcRenderer.invoke(ipcChannels.load_file, title, fileFilters)
+  return getFileIpcRenderer().invoke(
+    ipcChannels.load_file,
+    title,
+    fileFilters
+  ) as Promise<string | null>
 }
 
 /** Resolves to `null` when the user dismisses the save dialog (not an error). */
@@ -127,24 +147,33 @@ export async function saveFile(
   data: string,
   fileFilters: Electron.FileFilter[]
 ): Promise<void | null> {
-  return ipcRenderer.invoke(ipcChannels.save_file, title, data, fileFilters)
+  return getFileIpcRenderer().invoke(
+    ipcChannels.save_file,
+    title,
+    data,
+    fileFilters
+  ) as Promise<void | null>
 }
 
 export async function loadFixtureLibraryFromDefaultPath(): Promise<string | null> {
-  return ipcRenderer.invoke(ipcChannels.load_fixture_library_default)
+  return getFileIpcRenderer().invoke(
+    ipcChannels.load_fixture_library_default
+  ) as Promise<string | null>
 }
 
 export async function saveFixtureLibraryToDefaultPath(
   serializedFixtureLibrary: string
 ): Promise<string> {
-  return ipcRenderer.invoke(
+  return getFileIpcRenderer().invoke(
     ipcChannels.save_fixture_library_default,
     serializedFixtureLibrary
-  )
+  ) as Promise<string>
 }
 
 export async function getDefaultFixtureLibraryPath(): Promise<string> {
-  return ipcRenderer.invoke(ipcChannels.get_fixture_library_default_path)
+  return getFileIpcRenderer().invoke(
+    ipcChannels.get_fixture_library_default_path
+  ) as Promise<string>
 }
 
 function createVersionedAutoSaveState(

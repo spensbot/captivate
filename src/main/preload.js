@@ -111,6 +111,9 @@ contextBridge.exposeInMainWorld('electron', {
         'laser_dac_connect',
         'laser_dac_disconnect',
         'laser_dac_status',
+        'remote_control_get_status',
+        'remote_control_apply_settings',
+        'remote_control_regenerate_pin',
       ]
       if (validChannels.includes(channel)) {
         return ipcRenderer.invoke(channel, ...args)

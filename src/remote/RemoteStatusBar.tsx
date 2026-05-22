@@ -9,11 +9,48 @@ import TapTempo from '../renderer/menu/TapTempo'
 import StartStopButton from '../renderer/menu/StartStopButton'
 import Bpm from '../renderer/menu/Bpm'
 import ConnectionStatus from '../renderer/menu/ConnectionStatus'
-import RemoteAudioPanel from './RemoteAudioPanel'
+import AudioInputMenu from '../renderer/menu/AudioInputMenu'
+import RemoteUiModeToggle from './RemoteUiModeToggle'
+import { useRemoteUiMode } from './RemoteUiModeContext'
 
 export default function RemoteStatusBar() {
   const dispatch = useDispatch()
   const connectionMenu = useTypedSelector((state) => state.gui.connectionMenu)
+  const { isMobile } = useRemoteUiMode()
+
+  if (isMobile) {
+    return (
+      <MobileRoot>
+        <MobilePrimaryRow>
+          <TransportCluster>
+            <StartStopWrap>
+              <StartStopButton />
+            </StartStopWrap>
+            <TapTempo />
+            <Bpm />
+            <Counter2 />
+          </TransportCluster>
+        </MobilePrimaryRow>
+        <MobileSecondaryRow>
+          <AudioInputMenu />
+          <RemoteUiModeToggle />
+          <IconButton
+            title="Connections (DMX, MIDI, Link)"
+            onClick={() => dispatch(setConnectionsMenu(!connectionMenu))}
+            size="medium"
+            sx={{ color: 'text.secondary' }}
+          >
+            <SettingsEthernetIcon />
+          </IconButton>
+          <Connections>
+            <ConnectionStatus type="midi" />
+            <ConnectionStatus type="dmx" />
+            <ConnectionStatus type="link" />
+          </Connections>
+        </MobileSecondaryRow>
+      </MobileRoot>
+    )
+  }
 
   return (
     <Root>
@@ -25,7 +62,8 @@ export default function RemoteStatusBar() {
       <Sp />
       <Counter2 />
       <div style={{ flex: '1 0 0' }} />
-      <RemoteAudioPanel />
+      <AudioInputMenu />
+      <RemoteUiModeToggle />
       <IconButton
         title="Connections (DMX, MIDI, Link)"
         onClick={() => dispatch(setConnectionsMenu(!connectionMenu))}
@@ -54,12 +92,55 @@ const Root = styled.div`
   background: ${(p) => p.theme.colors.bg.darker};
 `
 
+const MobileRoot = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.55rem 0.65rem;
+  border-bottom: 1px solid ${(p) => p.theme.colors.divider};
+  background: ${(p) => p.theme.colors.bg.darker};
+  flex-shrink: 0;
+`
+
+const MobilePrimaryRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`
+
+const MobileSecondaryRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+`
+
+const TransportCluster = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+`
+
+const StartStopWrap = styled.div`
+  & > div {
+    width: 3.1rem;
+    height: 3.1rem;
+  }
+
+  & svg {
+    font-size: 2rem;
+  }
+`
+
 const Sp = styled.div`
   width: 0.35rem;
 `
 
 const Connections = styled.div`
   display: flex;
-  gap: 0.25rem;
+  gap: 0.35rem;
   align-items: center;
 `

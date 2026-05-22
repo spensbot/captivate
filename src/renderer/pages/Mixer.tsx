@@ -18,8 +18,15 @@ import {
 } from '../redux/mixerSlice'
 import type { DmxState } from '../redux/dmxSlice'
 import { useRealtimeSelector } from '../redux/realtimeStore'
-import StatusBar from '../menu/StatusBar'
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import React, {
+  lazy,
+  Suspense,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import useHover from 'renderer/hooks/useHover'
 import {
   DMX_NUM_CHANNELS,
@@ -29,6 +36,8 @@ import {
 import zIndexes from 'renderer/zIndexes'
 import useMousePosition from 'renderer/hooks/useMousePosition'
 import { getCustomColorChannelName } from 'shared/dmxColors'
+
+const StatusBar = lazy(() => import('../menu/StatusBar'))
 
 function buildAssignedChannelIndices(
   dmx: DmxState,
@@ -99,7 +108,11 @@ export default function Mixer({ hideStatusBar = false }: { hideStatusBar?: boole
 
   return (
     <Root>
-      {!hideStatusBar ? <StatusBar /> : null}
+      {!hideStatusBar ? (
+        <Suspense fallback={null}>
+          <StatusBar />
+        </Suspense>
+      ) : null}
       <Header />
       <LabelledSliderWrapper ref={wrapperRef}>
         {dmxIndexes.map((channelIndex, gridIndex) => (
@@ -504,6 +517,12 @@ const Col = styled.div`
   align-items: center;
   position: relative;
   margin-bottom: 1rem;
+
+  [data-remote-ui-mode='mobile'] & {
+    --mixer-col-width: 3.5rem;
+    height: 17rem;
+    margin-bottom: 1.25rem;
+  }
 `
 
 const SliderRow = styled.div`

@@ -140,7 +140,7 @@ export default function Devices({ embedded = false }: Props) {
           />
           <AbletonLinkConnections />
         </ConnectionSection>
-        <RemoteControlSection />
+        {!embedded ? <RemoteControlSection /> : null}
       </ConnectionsGrid>
       <DmxTroubleShoot />
     </>

@@ -7,8 +7,10 @@ import { Provider } from 'react-redux'
 import {
   store,
   resetRemoteState,
+  resetState,
   type CleanReduxState,
 } from '../renderer/redux/store'
+import initState from '../renderer/redux/initState'
 import { setDmx, setMidi } from '../renderer/redux/guiSlice'
 import {
   realtimeStore,
@@ -23,7 +25,10 @@ import {
 } from '../shared/hostTransport'
 import { bindRemoteSync } from './remoteIpc'
 import { buildRemoteWebSocketUrl, RemoteSync } from './remoteSync'
-import RemoteApp, { RemoteAppShell } from './RemoteApp'
+import { RemoteAppShell } from './RemoteAppShell'
+import RemoteErrorBoundary from './RemoteErrorBoundary'
+import { RemoteUiModeProvider } from './RemoteUiModeContext'
+import RemoteMobileGlobalStyle from './RemoteMobileGlobalStyle'
 import { isRemoteDispatchAllowed } from '../shared/remoteControl'
 import type { PayloadAction } from '@reduxjs/toolkit'
 
@@ -124,9 +129,7 @@ function RemoteRoot() {
       authenticated={authenticated}
       authError={authError}
       onRequestConnect={handleConnect}
-    >
-      <RemoteApp />
-    </RemoteAppShell>
+    />
   )
 }
 
@@ -135,15 +138,23 @@ if (appRoot === null) {
   throw new Error('Remote root element (#root) was not found.')
 }
 
+// Seed Redux before first paint (remote has no main-process bootstrap snapshot yet).
+store.dispatch(resetState(initState()))
+
 createRoot(appRoot).render(
-  <Provider store={store}>
-    <Provider store={realtimeStore} context={realtimeContext}>
-      <ThemeProvider theme={theme}>
-        <MuiThemeProvider theme={muiTheme}>
-          <GlobalStyle />
-          <RemoteRoot />
-        </MuiThemeProvider>
-      </ThemeProvider>
+  <RemoteErrorBoundary>
+    <Provider store={store}>
+      <Provider store={realtimeStore} context={realtimeContext}>
+        <ThemeProvider theme={theme}>
+          <MuiThemeProvider theme={muiTheme}>
+            <RemoteUiModeProvider>
+              <GlobalStyle />
+              <RemoteMobileGlobalStyle />
+              <RemoteRoot />
+            </RemoteUiModeProvider>
+          </MuiThemeProvider>
+        </ThemeProvider>
+      </Provider>
     </Provider>
-  </Provider>
+  </RemoteErrorBoundary>
 )
