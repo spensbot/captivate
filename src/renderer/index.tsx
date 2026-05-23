@@ -44,8 +44,8 @@ import { registerHostTransport } from '../shared/hostTransport'
 import ipc_channels from '../shared/ipc_channels'
 import { lighting3dPreviewRuntimeManager } from './lighting3d/Lighting3dPreviewRuntimeManager'
 import { ThemeProvider as MuiThemeProvider } from '@emotion/react'
-import { createTheme } from '@mui/material/styles'
-import { autoSave } from './autosave'
+import { muiTheme } from './muiTheme'
+import { autoSave, type AutoSaveRestoreStatus } from './autosave'
 import { loadFixtureLibraryFromDefaultPath, getDefaultFixtureLibraryPath } from './autosave'
 import { getUndoGroup, undoAction, redoAction } from './controls/UndoRedo'
 import { load } from './menu/SaveLoad'
@@ -65,71 +65,6 @@ import {
 } from './overlays/appDialogService'
 
 const theme = themes.dark()
-const muiTheme = createTheme({
-  palette: {
-    mode: 'dark',
-  },
-  zIndex: {
-    tooltip: 20001,
-  },
-  components: {
-    MuiOutlinedInput: {
-      styleOverrides: {
-        root: {
-          backgroundColor: '#000000',
-        },
-        input: {
-          color: '#ffffff',
-          '&::placeholder': {
-            color: 'rgba(255,255,255,0.45)',
-            opacity: 1,
-          },
-        },
-        notchedOutline: {
-          borderColor: 'rgba(255,255,255,0.28)',
-        },
-      },
-    },
-    MuiInputBase: {
-      styleOverrides: {
-        root: {
-          '&.Mui-disabled': {
-            backgroundColor: '#0a0a0a',
-          },
-        },
-        input: {
-          '&.Mui-disabled': {
-            color: 'rgba(255,255,255,0.38)',
-            WebkitTextFillColor: 'rgba(255,255,255,0.38)',
-          },
-        },
-      },
-    },
-    MuiFilledInput: {
-      styleOverrides: {
-        root: {
-          backgroundColor: '#000000',
-          '&:hover': {
-            backgroundColor: '#0a0a0a',
-          },
-          '&.Mui-focused': {
-            backgroundColor: '#000000',
-          },
-        },
-        input: {
-          color: '#ffffff',
-        },
-      },
-    },
-    MuiInputLabel: {
-      styleOverrides: {
-        root: {
-          color: 'rgba(255,255,255,0.7)',
-        },
-      },
-    },
-  },
-})
 let _frequentlyUpdatedRealtimeState = initRealtimeState()
 let _isApplyingRemoteState = false
 let _isApplyingRemoteDispatch = false
@@ -278,7 +213,13 @@ function isIncompatibleSaveError(message: string) {
   )
 }
 
-const autoSaveRestoreStatus = autoSave(store)
+let autoSaveRestoreStatus: AutoSaveRestoreStatus = 'empty'
+try {
+  autoSaveRestoreStatus = autoSave(store)
+} catch (err) {
+  console.warn('Autosave restore failed; starting from defaults.', err)
+  store.dispatch(resetState(defaultState()))
+}
 
 const _telemetry = new RendererTelemetry(
   pageFromLocation !== null ? 'renderer-page' : 'renderer-main'
@@ -376,6 +317,11 @@ ipc_setup({
     }
   },
   on_dispatch: (action) => {
+    // Detached mirrors receive full state via new_control_state; applying broadcast
+    // dispatches here would duplicate scene/control mutations on the host.
+    if (isDetachedPageWindow) {
+      return
+    }
     _isApplyingRemoteDispatch = true
     try {
       store.dispatch(action)

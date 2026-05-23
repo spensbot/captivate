@@ -9,6 +9,7 @@ import ParamXButton from './ParamXButton'
 import ParamSlider from './ParamSlider'
 import { useBaseParam } from 'renderer/redux/store'
 import MidiOverlay_xy from '../base/MidiOverlay_xy'
+import { makeSetBaseParamAction } from '../redux/deviceState'
 import { paramBundles } from './ParamAddButton'
 import { initParams } from '../../shared/params'
 import { secondaryEnabled } from 'renderer/base/keyUtil'
@@ -114,24 +115,34 @@ export default function XyParamsPad({ splitIndex }: Props) {
         />
       </ParamToolbar>
       <PadRow>
-        <PlotArea ref={dragContainer} onMouseDown={onMouseDown}>
-          <CenterMarker aria-hidden />
-          <XYCursorOutput splitIndex={splitIndex} />
-          <XYCursorBase splitIndex={splitIndex} />
-          <Window2D
-            window2D={{
-              x: {
-                pos: xOut,
-                width: widthOut,
-              },
-              y: {
-                pos: yOut,
-                width: heightOut,
-              },
-            }}
-            feather={featherOut}
-          />
-        </PlotArea>
+        <MidiOverlay_xy
+          splitIndex={splitIndex}
+          labels={['X', 'Y']}
+          style={{ width: '200px', minWidth: '200px', height: '100%', flexShrink: 0 }}
+          actions={[
+            makeSetBaseParamAction(splitIndex, 'x'),
+            makeSetBaseParamAction(splitIndex, 'y'),
+          ]}
+        >
+          <PlotArea ref={dragContainer} onMouseDown={onMouseDown}>
+            <CenterMarker aria-hidden />
+            <XYCursorOutput splitIndex={splitIndex} />
+            <XYCursorBase splitIndex={splitIndex} />
+            <Window2D
+              window2D={{
+                x: {
+                  pos: xOut,
+                  width: widthOut,
+                },
+                y: {
+                  pos: yOut,
+                  width: heightOut,
+                },
+              }}
+              feather={featherOut}
+            />
+          </PlotArea>
+        </MidiOverlay_xy>
         <ParamSlider
           param="width"
           splitIndex={splitIndex}
@@ -157,22 +168,7 @@ export default function XyParamsPad({ splitIndex }: Props) {
     </Root>
   )
 
-  return splitIndex === 0 ? (
-    <MidiOverlay_xy
-      style={{ marginRight: '1rem' }}
-      actions={[
-        { type: 'setBaseParam', paramKey: 'x' },
-        { type: 'setBaseParam', paramKey: 'y' },
-        { type: 'setBaseParam', paramKey: 'width' },
-        { type: 'setBaseParam', paramKey: 'height' },
-        { type: 'setBaseParam', paramKey: 'positionFeather' },
-      ]}
-    >
-      {content}
-    </MidiOverlay_xy>
-  ) : (
-    content
-  )
+  return content
 }
 
 const Root = styled.div`

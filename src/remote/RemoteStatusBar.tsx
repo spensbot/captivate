@@ -4,13 +4,14 @@ import IconButton from '@mui/material/IconButton'
 import { useDispatch } from 'react-redux'
 import { setConnectionsMenu } from '../renderer/redux/guiSlice'
 import { useTypedSelector } from '../renderer/redux/store'
-import Counter2 from '../renderer/menu/Counter2'
 import TapTempo from '../renderer/menu/TapTempo'
 import StartStopButton from '../renderer/menu/StartStopButton'
 import Bpm from '../renderer/menu/Bpm'
+import Counter2 from '../renderer/menu/Counter2'
 import ConnectionStatus from '../renderer/menu/ConnectionStatus'
 import AudioInputMenu from '../renderer/menu/AudioInputMenu'
 import RemoteUiModeToggle from './RemoteUiModeToggle'
+import RemoteMobileTransportControls from './RemoteMobileTransportControls'
 import { useRemoteUiMode } from './RemoteUiModeContext'
 
 export default function RemoteStatusBar() {
@@ -21,18 +22,9 @@ export default function RemoteStatusBar() {
   if (isMobile) {
     return (
       <MobileRoot>
-        <MobilePrimaryRow>
-          <TransportCluster>
-            <StartStopWrap>
-              <StartStopButton />
-            </StartStopWrap>
-            <TapTempo />
-            <Bpm />
-            <Counter2 />
-          </TransportCluster>
-        </MobilePrimaryRow>
+        <RemoteMobileTransportControls />
         <MobileSecondaryRow>
-          <AudioInputMenu />
+          <AudioInputMenu remoteClient />
           <RemoteUiModeToggle />
           <IconButton
             title="Connections (DMX, MIDI, Link)"
@@ -62,7 +54,7 @@ export default function RemoteStatusBar() {
       <Sp />
       <Counter2 />
       <div style={{ flex: '1 0 0' }} />
-      <AudioInputMenu />
+      <AudioInputMenu remoteClient />
       <RemoteUiModeToggle />
       <IconButton
         title="Connections (DMX, MIDI, Link)"
@@ -102,37 +94,12 @@ const MobileRoot = styled.div`
   flex-shrink: 0;
 `
 
-const MobilePrimaryRow = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`
-
 const MobileSecondaryRow = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
   gap: 0.35rem;
-`
-
-const TransportCluster = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-`
-
-const StartStopWrap = styled.div`
-  & > div {
-    width: 3.1rem;
-    height: 3.1rem;
-  }
-
-  & svg {
-    font-size: 2rem;
-  }
 `
 
 const Sp = styled.div`

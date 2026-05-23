@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import styled from 'styled-components'
 import { useDispatch } from 'react-redux'
 import ChevronLeft from '@mui/icons-material/ChevronLeft'
@@ -320,6 +320,25 @@ export default function ModulatorControl({ index }: Props) {
   }
 
   const hasShapeSliders = sliderSpecs.length > 0
+  const graphAreaRef = useRef<HTMLDivElement>(null)
+  const [graphSize, setGraphSize] = useState({ width: 200, height: 150 })
+
+  useLayoutEffect(() => {
+    const el = graphAreaRef.current
+    if (el === null) {
+      return
+    }
+    const sync = () => {
+      setGraphSize({
+        width: Math.max(1, el.clientWidth),
+        height: Math.max(1, el.clientHeight),
+      })
+    }
+    sync()
+    const observer = new ResizeObserver(sync)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
 
   return (
     <Root>
@@ -348,10 +367,10 @@ export default function ModulatorControl({ index }: Props) {
       ) : null}
       <LfoMenu index={index} />
       <TopRow>
-        <GraphArea>
+        <GraphArea ref={graphAreaRef}>
           <LfoVisualizer
-            width={200}
-            height={150}
+            width={graphSize.width}
+            height={graphSize.height}
             padding={0.05}
             index={index}
           />
@@ -374,9 +393,9 @@ export default function ModulatorControl({ index }: Props) {
               onMouseDown={(e) => e.stopPropagation()}
             >
               {shapeSlidersOpen ? (
-                <ChevronLeft sx={{ fontSize: '0.62rem', display: 'block' }} />
+                <ChevronLeft sx={{ fontSize: 'var(--remote-mod-chevron, 0.62rem)', display: 'block' }} />
               ) : (
-                <ChevronRight sx={{ fontSize: '0.62rem', display: 'block' }} />
+                <ChevronRight sx={{ fontSize: 'var(--remote-mod-chevron, 0.62rem)', display: 'block' }} />
               )}
             </SideRail>
             {shapeSlidersOpen ? (
@@ -423,9 +442,9 @@ export default function ModulatorControl({ index }: Props) {
           onMouseDown={(e) => e.stopPropagation()}
         >
           {modMatrixOpen ? (
-            <ExpandLess sx={{ fontSize: '0.58rem', display: 'block' }} />
+            <ExpandLess sx={{ fontSize: 'var(--remote-mod-chevron, 0.58rem)', display: 'block' }} />
           ) : (
-            <ExpandMore sx={{ fontSize: '0.58rem', display: 'block' }} />
+            <ExpandMore sx={{ fontSize: 'var(--remote-mod-chevron, 0.58rem)', display: 'block' }} />
           )}
         </MatrixCollapseBar>
         {modMatrixOpen ? (
@@ -441,7 +460,7 @@ export default function ModulatorControl({ index }: Props) {
 const Root = styled.div`
   position: relative;
   border: 1px solid ${(props) => props.theme.colors.divider};
-  margin-right: 1rem;
+  margin-right: var(--remote-mod-card-gap, 1rem);
   flex: 0 0 auto;
 `
 
@@ -482,6 +501,7 @@ const MatrixCollapseBar = styled.button`
   width: 100%;
   box-sizing: border-box;
   margin: 0;
+  min-height: var(--remote-mod-matrix-bar-min-h, 0);
   padding: 0.055rem 0.17rem 0.08rem;
   border: none;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -576,7 +596,7 @@ const ControlPanel = styled.div`
   min-width: 0;
   max-width: none;
   flex: 0 0 auto;
-  height: 150px;
+  height: var(--remote-mod-panel-h, 150px);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 0.28rem;
   background: linear-gradient(to bottom, rgba(0, 0, 0, 0.76), rgba(0, 0, 0, 0.9));
@@ -613,13 +633,13 @@ const ControlRack = styled.div`
 `
 
 const VerticalControl = styled.div`
-  width: 1.7rem;
-  min-width: 1.7rem;
+  width: var(--remote-mod-vertical-control-w, 1.7rem);
+  min-width: var(--remote-mod-vertical-control-w, 1.7rem);
   min-height: 0;
   display: flex;
   align-items: stretch;
   justify-content: center;
-  gap: 0.18rem;
+  gap: 0.22rem;
 `
 
 const VerticalLabel = styled.div`
@@ -628,7 +648,7 @@ const VerticalLabel = styled.div`
   writing-mode: vertical-rl;
   transform: rotate(180deg);
   text-orientation: mixed;
-  font-size: 0.56rem;
+  font-size: var(--remote-mod-vertical-label-font, 0.56rem);
   font-weight: 700;
   color: #d7dff0;
   letter-spacing: 0.01rem;
@@ -638,7 +658,7 @@ const VerticalLabel = styled.div`
 
 const VerticalSliderShell = styled.div<{ $centerDetent: boolean }>`
   position: relative;
-  width: 0.92rem;
+  width: var(--remote-mod-vertical-slider-w, 0.92rem);
   min-height: 0;
   flex: 1 1 auto;
   align-self: stretch;

@@ -24,7 +24,6 @@ export default function ToggleButton(props: Props) {
       type="button"
       enabled={props.isEnabled}
       onClick={props.onClick}
-      title={inferredTitle}
       aria-label={inferredTitle}
     >
       {props.children}

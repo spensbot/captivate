@@ -19,14 +19,13 @@ import {
 import type { DmxState } from '../redux/dmxSlice'
 import { useRealtimeSelector } from '../redux/realtimeStore'
 import React, {
-  lazy,
-  Suspense,
   useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from 'react'
+import StatusBar from '../menu/StatusBar'
 import useHover from 'renderer/hooks/useHover'
 import {
   DMX_NUM_CHANNELS,
@@ -36,8 +35,6 @@ import {
 import zIndexes from 'renderer/zIndexes'
 import useMousePosition from 'renderer/hooks/useMousePosition'
 import { getCustomColorChannelName } from 'shared/dmxColors'
-
-const StatusBar = lazy(() => import('../menu/StatusBar'))
 
 function buildAssignedChannelIndices(
   dmx: DmxState,
@@ -108,11 +105,7 @@ export default function Mixer({ hideStatusBar = false }: { hideStatusBar?: boole
 
   return (
     <Root>
-      {!hideStatusBar ? (
-        <Suspense fallback={null}>
-          <StatusBar />
-        </Suspense>
-      ) : null}
+      {!hideStatusBar ? <StatusBar /> : null}
       <Header />
       <LabelledSliderWrapper ref={wrapperRef}>
         {dmxIndexes.map((channelIndex, gridIndex) => (

@@ -2,14 +2,28 @@ name: Build
 
 on:
   push:
+    branches:
+      - Main
+      - main
+    tags:
+      - 'v*'
   pull_request:
   workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Upload installers to a new GitHub Release (uses package version)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: ${{ matrix.os }}
 
     strategy:
+      fail-fast: false
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
 
@@ -22,54 +36,115 @@ jobs:
         run: git lfs pull
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
-        run: sudo apt-get update -y && sudo apt-get install -y libasound2-dev libx11-dev libgl1-mesa-dev
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            libasound2-dev \
+            libx11-dev \
+            libgl1-mesa-dev \
+            libglu1-mesa-dev \
+            libudev-dev \
+            libusb-1.0-0-dev \
+            pkg-config \
+            build-essential
+      - name: Configure Windows native build (MSVC)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
       - name: Install Node.js and NPM
         uses: actions/setup-node@v4
         with:
           node-version: 25.9.0
           cache: npm
-      - uses: actions/setup-python@v4 # https://github.com/nodejs/node-gyp/issues/2869
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - name: npm install
-        run: |
-          npm install
+        run: npm install
       - name: Typecheck
-        run: |
-          npm run typecheck:all
+        run: npm run typecheck:all
       - name: Package application
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CI: true
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+          CAPTIVATE_EBUILDER_OUTPUT: release/build
+          CAPTIVATE_BUILD_PROJECTM_BRIDGE: true
+          GYP_MSVS_VERSION: '2022'
+          JOBS: '1'
+        run: npm run package
+      - name: Collect installer artifacts
+        shell: bash
         run: |
-          npm run package
+          mkdir -p release/artifacts
+          shopt -s nullglob
+          for f in release/build/*.exe release/build/*.dmg release/build/*.AppImage release/build/*.deb release/build/*.rpm; do
+            cp -v "$f" release/artifacts/
+          done
+          ls -la release/artifacts/
+          if [ -z "$(ls -A release/artifacts)" ]; then
+            echo "No installer artifacts found under release/build"
+            ls -laR release/build || true
+            exit 1
+          fi
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Captivate-${{ runner.os }}
-          path: |
-            release/build/*.AppImage
-            release/build/*.dmg
-            release/build/*.exe
+          path: release/artifacts/*
+          if-no-files-found: error
+
   release:
-    if: github.ref == 'refs/heads/fwcd'
+    if: >-
+      startsWith(github.ref, 'refs/tags/v') ||
+      (github.event_name == 'workflow_dispatch' && inputs.create_release)
     runs-on: ubuntu-latest
     needs: [build]
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: '0' # to compute the monotonic version correctly
+      - name: Resolve release tag
+        id: meta
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            tag="${GITHUB_REF#refs/tags/}"
+          else
+            version="$(jq -r .version release/app/package.json)"
+            tag="v${version}"
+          fi
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "Release tag: ${tag}"
       - name: Download artifacts for all builds
         uses: actions/download-artifact@v4
         with:
-          path: release/build
-      - name: Create a release
+          path: release/artifacts
+          merge-multiple: true
+      - name: List release files
+        run: ls -la release/artifacts/
+      - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          version="$(jq -r .version release/app/package.json)"
-          count="$(git rev-list --count HEAD)"
-          sha="$(git rev-parse --short HEAD)"
-          tag="v$version.c$count.r$sha"
-          gh release create --title "$tag" "$tag" || true
-          gh release upload "$tag" release/build/**/* || true
+          tag="${{ steps.meta.outputs.tag }}"
+          version="${tag#v}"
+          notes_file="$(mktemp)"
+          cat > "$notes_file" <<EOF
+          ## Captivate 2 ${version}
+
+          Cross-platform installers built from [\`${GITHUB_SHA:0:7}\`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}).
+
+          ### Downloads
+          - **Windows** — \`.exe\` NSIS installer
+          - **macOS** — \`.dmg\` disk image (Apple Silicon + Intel)
+          - **Linux** — \`.AppImage\`
+
+          End users only need the installer for their operating system.
+          EOF
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists; uploading assets"
+          else
+            gh release create "$tag" \
+              --title "Captivate 2 ${version}" \
+              --notes-file "$notes_file"
+          fi
+          gh release upload "$tag" release/artifacts/* --clobber

@@ -29,14 +29,20 @@ import DraggableNumber from 'renderer/base/DraggableNumber'
 import ToggleSwitch from 'renderer/base/ToggleSwitch'
 import InfoOutlined from '@mui/icons-material/InfoOutlined'
 import LinkButton from '../menu/LinkButton'
+import { APP_TOOLTIP_SLOT_PROPS } from '../base/appTooltip'
 import StartStopSyncButton from '../menu/StartStopSyncButton'
 import { useRealtimeSelector } from '../redux/realtimeStore'
 
 interface Props {
   embedded?: boolean
+  /** Hide LAN remote server UI (browser remote clients only). */
+  hideRemoteControl?: boolean
 }
 
-export default function Devices({ embedded = false }: Props) {
+export default function Devices({
+  embedded = false,
+  hideRemoteControl = false,
+}: Props) {
   const dispatch = useDispatch()
 
   const deviceSetup = useControlSelector((state) => state.device)
@@ -140,7 +146,7 @@ export default function Devices({ embedded = false }: Props) {
           />
           <AbletonLinkConnections />
         </ConnectionSection>
-        {!embedded ? <RemoteControlSection /> : null}
+        {!hideRemoteControl ? <RemoteControlSection /> : null}
       </ConnectionsGrid>
       <DmxTroubleShoot />
     </>
@@ -232,13 +238,6 @@ const SectionTitle = styled.h2`
   letter-spacing: 0.02em;
 `
 
-const TOOLTIP_BODY_SX = {
-  maxWidth: '22rem',
-  py: 1,
-  px: 1.15,
-  lineHeight: 1.45,
-} as const
-
 function SectionHeader({
   title,
   tooltip,
@@ -256,9 +255,7 @@ function SectionHeader({
           title={tooltip}
           placement="top"
           enterDelay={350}
-          slotProps={{
-            tooltip: { sx: TOOLTIP_BODY_SX },
-          }}
+          slotProps={APP_TOOLTIP_SLOT_PROPS}
         >
           <IconButton
             size="small"
@@ -372,11 +369,7 @@ function MidiClockBpmControl({ midiConnected }: { midiConnected: boolean }) {
             title={MIDI_CLOCK_TOOLTIP}
             placement="right-start"
             enterDelay={350}
-            slotProps={{
-              tooltip: {
-                sx: TOOLTIP_BODY_SX,
-              },
-            }}
+            slotProps={APP_TOOLTIP_SLOT_PROPS}
           >
             <IconButton
               size="small"
@@ -428,16 +421,36 @@ const MidiClockLabel = styled.div`
   color: ${(p) => p.theme.colors.text.primary};
 `
 
-const SyncTransportBlock = styled.div`
-  display: flex;
+const LinkControlsGrid = styled.div<{ $linkOn: boolean }>`
+  display: grid;
+  grid-template-columns: ${(p) => (p.$linkOn ? '1fr 1fr' : '1fr')};
+  gap: 0.75rem 1rem;
   align-items: center;
-  gap: 0.65rem;
-  margin-top: 0.35rem;
+  width: 100%;
+  margin-top: 0.15rem;
 `
 
-const SyncTransportInner = styled.div`
+const LinkControlCol = styled.div`
   display: flex;
   align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+`
+
+const SyncControlCol = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+`
+
+const SyncTransportRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  width: 100%;
+  min-width: 0;
 `
 
 const SyncTransportText = styled.div`
@@ -465,27 +478,29 @@ function AbletonLinkConnections() {
   )
 
   return (
-    <>
-      <LinkButton />
-      {linkEnabled && (
-        <SyncTransportBlock>
+    <LinkControlsGrid $linkOn={linkEnabled}>
+      <LinkControlCol>
+        <LinkButton layout="connections" />
+      </LinkControlCol>
+      {linkEnabled ? (
+        <SyncControlCol>
           <Tooltip
             title="When supported, play and stop follow other Link apps in the session. Click the icon to turn sync on or off."
-            placement="right"
+            placement="top"
           >
-            <SyncTransportInner>
+            <SyncTransportRow>
               <StartStopSyncButton mode="menu" />
-            </SyncTransportInner>
+              <SyncTransportText>
+                <SyncTransportTitle>Start/stop sync</SyncTransportTitle>
+                <SyncTransportState>
+                  {startStopSyncEnabled ? 'On — follows Link transport' : 'Off'}
+                </SyncTransportState>
+              </SyncTransportText>
+            </SyncTransportRow>
           </Tooltip>
-          <SyncTransportText>
-            <SyncTransportTitle>Start/stop sync</SyncTransportTitle>
-            <SyncTransportState>
-              {startStopSyncEnabled ? 'On — follows Link transport' : 'Off'}
-            </SyncTransportState>
-          </SyncTransportText>
-        </SyncTransportBlock>
-      )}
-    </>
+        </SyncControlCol>
+      ) : null}
+    </LinkControlsGrid>
   )
 }
 
@@ -618,8 +633,19 @@ function DmxDevice({ device, connected, connectable }: Props2<DmxDevice_t>) {
         <DeviceRoot
           {...status}
           onClick={onClick}
-          title="Click to enable or disable this DMX adapter"
+          title={
+            status.isConnected
+              ? 'DMX adapter connected and sending'
+              : status.isConnectable
+                ? 'Enabled — waiting for USB port (check cable, drivers, or port in use)'
+                : 'Click to enable this DMX adapter'
+          }
         >
+          <DeviceStatusDot
+            $connected={status.isConnected}
+            $enabled={status.isConnectable}
+            aria-hidden
+          />
           {device.name}
         </DeviceRoot>
         <Tooltip title="Universe this DMX adapter outputs">
@@ -727,6 +753,9 @@ const WidgetProtoLabel = styled.span`
 const DeviceRoot = styled.div<Status>`
   padding: 0.5rem;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
   color: ${(props) =>
     props.isConnected
       ? props.theme.colors.text.primary
@@ -739,6 +768,16 @@ const DeviceRoot = styled.div<Status>`
   :hover {
     text-decoration: underline;
   }
+`
+
+const DeviceStatusDot = styled.span<{ $connected: boolean; $enabled: boolean }>`
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  flex-shrink: 0;
+  background: ${(props) =>
+    props.$connected ? '#0f0' : props.$enabled ? '#e8a020' : '#f00'};
+  box-shadow: 0 0 0 1px #0008;
 `
 
 function NoneFound() {

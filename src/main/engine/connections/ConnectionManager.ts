@@ -102,15 +102,20 @@ export class ConnectionManager {
       )
     }
 
-    const newConnections = await Promise.all(
+    const connectAttempts = await Promise.allSettled(
       availableDevices
         .filter((device) => shouldConnect(device))
         .map((device) => createDmxConnection(device, this.c))
     )
 
-    for (const connection of newConnections) {
-      console.log(`Connection made ${connection.device.connectionId}`)
-      this.dmxConnections[connection.device.connectionId] = connection
+    for (const attempt of connectAttempts) {
+      if (attempt.status === 'fulfilled') {
+        const connection = attempt.value
+        console.log(`Connection made ${connection.device.connectionId}`)
+        this.dmxConnections[connection.device.connectionId] = connection
+      } else {
+        console.error('DMX USB connection failed:', attempt.reason)
+      }
     }
   }
 

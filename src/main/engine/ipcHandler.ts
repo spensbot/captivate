@@ -3,6 +3,7 @@ import ipcChannels, {
   UserCommand,
   MainCommand,
 } from '../../shared/ipc_channels'
+import { CAPTIVATE_GITHUB_REPO_URL } from '../../shared/githubRepo'
 import {
   initLighting3dUtilityWorker,
   postLighting3dTickViaUtilityWorker,
@@ -74,6 +75,7 @@ import {
 import type { LaserDacConnectResult } from '../../shared/laserDac'
 import { normalizeLaserDacConnectRequest } from '../../shared/laserDac'
 import path from 'path'
+import os from 'os'
 import {
   AppAboutInfo,
   AboutDependencyInfo,
@@ -255,6 +257,14 @@ type PackageJsonShape = {
   version?: string
   description?: string
   homepage?: string
+  license?: string
+  author?:
+    | string
+    | {
+        name?: string
+        email?: string
+        url?: string
+      }
   repository?:
     | string
     | {
@@ -262,6 +272,7 @@ type PackageJsonShape = {
         url?: string
       }
   dependencies?: Record<string, string>
+  devDependencies?: Record<string, string>
 }
 
 const OSS_DEPENDENCY_CATALOG: Array<{
@@ -371,7 +382,10 @@ function buildDependencyCredits(
     return []
   }
   return OSS_DEPENDENCY_CATALOG.map((item) => {
-    const version = dependencies[item.key]
+    let version = dependencies[item.key]
+    if (item.key === 'electron' && process.versions.electron) {
+      version = process.versions.electron
+    }
     if (version === undefined) {
       return null
     }
@@ -384,10 +398,50 @@ function buildDependencyCredits(
   }).filter((item): item is AboutDependencyInfo => item !== null)
 }
 
+function resolvePackageAuthor(pkg: PackageJsonShape | null): string {
+  const author = pkg?.author
+  if (typeof author === 'string' && author.trim().length > 0) {
+    return author.trim()
+  }
+  if (author && typeof author === 'object' && typeof author.name === 'string') {
+    return author.name.trim()
+  }
+  return 'Spenser Saling'
+}
+
+function mergeDependencyVersions(
+  appPkg: PackageJsonShape | null,
+  rootPkg: PackageJsonShape | null
+): Record<string, string> {
+  return {
+    ...(rootPkg?.dependencies ?? {}),
+    ...(rootPkg?.devDependencies ?? {}),
+    ...(appPkg?.dependencies ?? {}),
+  }
+}
+
+async function readRootPackageJson(): Promise<PackageJsonShape | null> {
+  const candidatePaths = [
+    path.resolve(__dirname, '../../../../package.json'),
+    path.join(process.cwd(), 'package.json'),
+  ]
+
+  for (const packagePath of candidatePaths) {
+    try {
+      const serialized = await promises.readFile(packagePath, 'utf8')
+      return JSON.parse(serialized) as PackageJsonShape
+    } catch (_error) {
+      // Keep trying fallback paths.
+    }
+  }
+
+  return null
+}
+
 function buildAboutLinks(pkg: PackageJsonShape): AboutLinkInfo[] {
   const home = typeof pkg.homepage === 'string' ? pkg.homepage : ''
   const repo = sanitizeRepoUrl(normalizeRepoUrl(pkg.repository))
-  const fallbackRepo = 'https://github.com/spensbot/captivate'
+  const fallbackRepo = CAPTIVATE_GITHUB_REPO_URL
   const repoUrl = repo.length > 0 ? repo : fallbackRepo
 
   return [
@@ -412,25 +466,49 @@ function buildAboutLinks(pkg: PackageJsonShape): AboutLinkInfo[] {
 
 async function getAppAboutInfo(): Promise<AppAboutInfo> {
   const pkg = await readPackageJson()
-  const appName = app.getName()
-  const description = pkg?.description ?? 'Lighting and Visual Synth'
-  const dependencies = buildDependencyCredits(pkg?.dependencies)
+  const rootPkg = await readRootPackageJson()
+  const dependencies = buildDependencyCredits(
+    mergeDependencyVersions(pkg, rootPkg)
+  )
+  const author = resolvePackageAuthor(pkg ?? rootPkg)
+  const license =
+    typeof pkg?.license === 'string' && pkg.license.length > 0
+      ? pkg.license
+      : typeof rootPkg?.license === 'string' && rootPkg.license.length > 0
+        ? rootPkg.license
+        : 'MIT'
+  const year = new Date().getFullYear()
 
   return {
-    appName,
+    appName: 'Captivate 2',
     appVersion: app.getVersion(),
-    description,
+    tagline: 'Visual & Lighting Synth',
+    description:
+      pkg?.description ??
+      'Live DMX lighting, visuals, and laser control synchronized to music.',
+    copyright: `© ${year} ${author}`,
+    license,
+    author,
     runtime: {
       electron: process.versions.electron ?? 'unknown',
       chrome: process.versions.chrome ?? 'unknown',
       node: process.versions.node ?? 'unknown',
       v8: process.versions.v8 ?? 'unknown',
     },
-    links: buildAboutLinks(pkg ?? {}),
+    platform: {
+      os: `${os.type()} ${os.release()}`,
+      arch: process.arch,
+    },
+    links: buildAboutLinks(pkg ?? rootPkg ?? {}),
     dependencies,
     credits: {
-      originalCreator: 'Spenser Saling',
-      contributors: ['Nick'],
+      originalCreator: 'Spenser Saling (Captivate)',
+      contributors: ['Nick (Captivate 2)'],
+      acknowledgements: [
+        'fwcd — Captivate fork and foundation work',
+        'Ableton Link — tempo sync',
+        'ProjectM — milkdrop-style visuals',
+      ],
     },
   }
 }

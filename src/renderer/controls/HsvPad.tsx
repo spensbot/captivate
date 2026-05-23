@@ -2,6 +2,7 @@ import SVpad from './SVpad'
 import Hue from './Hue'
 import MidiOverlay_xy from '../base/MidiOverlay_xy'
 import { SliderMidiOverlay } from '../base/MidiOverlay'
+import { makeSetBaseParamAction } from '../redux/deviceState'
 import styled from 'styled-components'
 
 interface Props {
@@ -9,24 +10,23 @@ interface Props {
 }
 
 export default function HsvPad({ splitIndex }: Props) {
-  return splitIndex === 0 ? (
+  return (
     <Root>
       <MidiOverlay_xy
+        splitIndex={splitIndex}
+        labels={['S', 'V']}
         actions={[
-          { type: 'setBaseParam', paramKey: 'saturation' },
-          { type: 'setBaseParam', paramKey: 'brightness' },
+          makeSetBaseParamAction(splitIndex, 'saturation'),
+          makeSetBaseParamAction(splitIndex, 'brightness'),
         ]}
       >
         <SVpad splitIndex={splitIndex} />
       </MidiOverlay_xy>
-      <SliderMidiOverlay action={{ type: 'setBaseParam', paramKey: 'hue' }}>
+      <SliderMidiOverlay
+        action={makeSetBaseParamAction(splitIndex, 'hue')}
+      >
         <Hue splitIndex={splitIndex} />
       </SliderMidiOverlay>
-    </Root>
-  ) : (
-    <Root>
-      <SVpad splitIndex={splitIndex} />
-      <Hue splitIndex={splitIndex} />
     </Root>
   )
 }
@@ -36,4 +36,3 @@ const Root = styled.div`
   border: 1px solid ${(props) => props.theme.colors.divider};
   margin-right: 1rem;
 `
-

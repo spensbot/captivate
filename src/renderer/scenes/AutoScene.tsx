@@ -1,20 +1,36 @@
 import Slider from '../base/Slider'
 import styled from 'styled-components'
 import { useDispatch } from 'react-redux'
-import { useControlSelector } from '../redux/store'
+import { useControlSelector, useDeviceSelector } from '../redux/store'
+import { useRealtimeSelector } from '../redux/realtimeStore'
 import {
   setAutoSceneEnabled,
   setAutoSceneBombacity,
   setAutoScenePeriod,
+  setAutoSceneMatchAudioEnergy,
+  setAutoSceneEnergyMatchEnabled,
 } from '../redux/controlSlice'
 import { SceneType } from '../../shared/Scenes'
 import DraggableNumber from '../base/DraggableNumber'
 import { ButtonMidiOverlay, SliderMidiOverlay } from 'renderer/base/MidiOverlay'
+import { normalizeAudioInputSettings } from '../../shared/audioEngine'
 
 export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
   const dispatch = useDispatch()
-  const { enabled, epicness, period } = useControlSelector(
-    (control) => control[sceneType].auto
+  const { enabled, epicness, period, energyMatchEnabled, matchAudioEnergy } =
+    useControlSelector((control) => control[sceneType].auto)
+  const audioSettings = useDeviceSelector((device) =>
+    normalizeAudioInputSettings(device.connectionSettings.audioInput)
+  )
+  const audioMetrics = useRealtimeSelector((state) => state.audio)
+  const audioInputOn = audioSettings.enabled === true
+  const showEnergyControls = sceneType === 'light' && energyMatchEnabled === true
+  const showAudioMatchOption = showEnergyControls && audioInputOn
+  const showLiveEnergyMeter = showAudioMatchOption && matchAudioEnergy === true
+
+  const liveEnergy = Math.min(
+    1,
+    Math.max(0, Number(audioMetrics.energyLevel) || 0)
   )
 
   const onBombacityChange = (newVal: number) => {
@@ -44,7 +60,7 @@ export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
         }}
       >
         <Button
-          title="Enable/disable automatic scene changes"
+          title="Enable/disable automatic scene changes on the beat period"
           style={{
             backgroundColor: enabled ? '#3d5a' : '#fff3',
             color: enabled ? '#eee' : '#fff9',
@@ -73,19 +89,70 @@ export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
         }}
       />
       {sceneType === 'light' && (
-        <SliderMidiOverlay
-          action={{ type: 'setAutoSceneBombacity' }}
-          style={{ flex: '1 0 auto', marginLeft: '0.5rem', padding: '0.5rem' }}
+        <EnergyModeToggle
+          type="button"
+          title={
+            energyMatchEnabled
+              ? 'Match scenes by energy level on each period'
+              : 'Random scene on each period (classic auto)'
+          }
+          $active={energyMatchEnabled}
+          onClick={() =>
+            dispatch(
+              setAutoSceneEnergyMatchEnabled({
+                sceneType,
+                val: !energyMatchEnabled,
+              })
+            )
+          }
         >
-          <Slider
-            value={epicness}
-            radius={enabled ? 0.5 : 0.4}
-            orientation="horizontal"
-            onChange={onBombacityChange}
-            color={enabled ? '#3d5e' : undefined}
-          />
-        </SliderMidiOverlay>
+          energy
+        </EnergyModeToggle>
       )}
+      {showAudioMatchOption && (
+        <AudioMatchToggle
+          type="button"
+          title={
+            matchAudioEnergy
+              ? 'Use live audio energy for matching'
+              : 'Use manual energy slider for matching'
+          }
+          $active={matchAudioEnergy}
+          onClick={() =>
+            dispatch(
+              setAutoSceneMatchAudioEnergy({
+                sceneType,
+                val: !matchAudioEnergy,
+              })
+            )
+          }
+        >
+          audio
+        </AudioMatchToggle>
+      )}
+      {showEnergyControls &&
+        (showLiveEnergyMeter ? (
+          <EnergyMeterHost title="Live audio energy used for scene matching">
+            <EnergyMeterTrack>
+              <EnergyMeterFill $level={liveEnergy} />
+            </EnergyMeterTrack>
+            <EnergyMeterValue>{Math.round(liveEnergy * 100)}%</EnergyMeterValue>
+          </EnergyMeterHost>
+        ) : (
+          <SliderMidiOverlay
+            action={{ type: 'setAutoSceneBombacity' }}
+            style={{ flex: '1 0 auto', marginLeft: '0.15rem', padding: '0.5rem' }}
+          >
+            <Slider
+              value={epicness}
+              radius={enabled ? 0.5 : 0.4}
+              orientation="horizontal"
+              onChange={onBombacityChange}
+              color={enabled ? '#3d5e' : undefined}
+              title="Manual energy target for scene matching"
+            />
+          </SliderMidiOverlay>
+        ))}
     </Root>
   )
 }
@@ -94,6 +161,8 @@ const Root = styled.div`
   display: flex;
   align-items: center;
   margin-bottom: 0.5rem;
+  gap: 0.35rem;
+  min-width: 0;
 `
 
 const Button = styled.div`
@@ -101,5 +170,65 @@ const Button = styled.div`
   padding: 0.1rem 0.3rem;
   cursor: pointer;
   font-size: 0.9rem;
-  margin-right: 0.5rem;
+  flex-shrink: 0;
+`
+
+const EnergyModeToggle = styled.button<{ $active: boolean }>`
+  flex-shrink: 0;
+  border-radius: 0.3rem;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.72rem;
+  cursor: pointer;
+  border: 1px solid
+    ${(p) => (p.$active ? '#7dff9d' : p.theme.colors.divider)};
+  background: ${(p) => (p.$active ? '#7dff9d22' : '#0005')};
+  color: ${(p) => (p.$active ? '#b8ffc8' : p.theme.colors.text.secondary)};
+  white-space: nowrap;
+`
+
+const AudioMatchToggle = styled.button<{ $active: boolean }>`
+  flex-shrink: 0;
+  border-radius: 0.3rem;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.72rem;
+  cursor: pointer;
+  border: 1px solid
+    ${(p) => (p.$active ? '#ffd36f' : p.theme.colors.divider)};
+  background: ${(p) => (p.$active ? '#ffd36f33' : '#0005')};
+  color: ${(p) => (p.$active ? '#ffe9a8' : p.theme.colors.text.secondary)};
+  white-space: nowrap;
+`
+
+const EnergyMeterHost = styled.div`
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-left: 0.15rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.5rem;
+`
+
+const EnergyMeterTrack = styled.div`
+  flex: 1 1 auto;
+  height: 0.45rem;
+  border: 1px solid ${(p) => p.theme.colors.divider};
+  border-radius: 999px;
+  overflow: hidden;
+  background: ${(p) => p.theme.colors.bg.primary};
+`
+
+const EnergyMeterFill = styled.div<{ $level: number }>`
+  height: 100%;
+  width: ${(p) => `${Math.round(Math.min(1, Math.max(0, p.$level)) * 100)}%`};
+  background: #ffd36f;
+  transition: width 80ms linear;
+`
+
+const EnergyMeterValue = styled.div`
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  color: ${(p) => p.theme.colors.text.secondary};
+  width: 2.5rem;
+  text-align: right;
 `

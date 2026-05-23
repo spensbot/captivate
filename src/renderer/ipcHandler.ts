@@ -75,6 +75,7 @@ interface Config {
 }
 
 let _config: Config
+let _ipcListenersRegistered = false
 
 const maybeWindow = typeof window !== 'undefined' ? (window as any) : undefined
 // @ts-ignore: Typescript doesn't recognize the globals set in "src/main/preload.js"
@@ -94,6 +95,10 @@ const ipcRenderer =
 
 export function ipc_setup(config: Config) {
   _config = config
+  if (_ipcListenersRegistered) {
+    return
+  }
+  _ipcListenersRegistered = true
 
   ipcRenderer.on(
     ipc_channels.dmx_connection_update,

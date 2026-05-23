@@ -6,6 +6,7 @@ import { deleteBaseParams, setBaseParams } from '../redux/controlSlice'
 import LiveSliderCursor from './LiveSliderCursor'
 import ManualSliderCursor from './ManualSliderCursor'
 import { SliderMidiOverlay } from '../base/MidiOverlay'
+import { makeSetBaseParamAction } from '../redux/deviceState'
 import type { CSSProperties } from 'react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import styled from 'styled-components'
@@ -121,15 +122,13 @@ const defaultWrapperStyle: CSSProperties = {
     ...wrapperStyle,
   }
 
-  return splitIndex === 0 ? (
+  return (
     <SliderMidiOverlay
-      action={{ type: 'setBaseParam', paramKey: param }}
+      action={makeSetBaseParamAction(splitIndex, param)}
       style={mergedWrapperStyle}
     >
       {content}
     </SliderMidiOverlay>
-  ) : (
-    <div style={mergedWrapperStyle}>{content}</div>
   )
 }
 

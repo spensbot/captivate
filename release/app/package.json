@@ -1,17 +1,17 @@
 {
   "name": "captivate2",
   "version": "1.0.0",
-  "description": "Lighting and Visual Synth",
+  "description": "Visual & Lighting Synth — live DMX, visuals, and laser control synchronized to music.",
   "homepage": "https://captivatesynth.com/",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/spensbot/captivate.git"
+    "url": "git+https://github.com/NicholasTracy/captivate-2.git"
   },
   "license": "MIT",
   "author": {
     "name": "Spenser Saling",
     "email": "spenser0saling@gmail.com",
-    "url": "https://electron-react-boilerplate.js.org"
+    "url": "https://captivatesynth.com/"
   },
   "main": "./dist/main/main.js",
   "scripts": {

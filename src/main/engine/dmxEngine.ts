@@ -1258,10 +1258,11 @@ function calculateDmxForUniverse(
     const activeScene = scenes.byId[scenes.active]
     const plannerNamespace = `u${universeIndex}`
 
-    for (const [{ outputParams, randomizer }, splitScene] of zip(
-      splitStates,
-      activeScene.splitScenes
-    )) {
+    if (activeScene?.splitScenes) {
+      for (const [{ outputParams, randomizer }, splitScene] of zip(
+        splitStates,
+        activeScene.splitScenes
+      )) {
       const splitGroups = splitScene.groups
       const splitHasAxisBundle =
         splitScene.baseParams.xAxis !== undefined ||
@@ -1419,6 +1420,7 @@ function calculateDmxForUniverse(
           }
         }
       )
+    }
     }
   }
 

@@ -4,6 +4,7 @@ import { RealtimeState } from '../../renderer/redux/realtimeStore'
 import {
   buttonMidiActionTypes,
   getActionID,
+  getSetBaseParamSplitIndex,
   SliderAction,
   SliderControlOptions,
   MidiAction,
@@ -168,9 +169,11 @@ export function handleMessage(
     } else if (action.type === 'setBpm') {
       return rt_state.time.bpm
     } else if (action.type === 'setBaseParam') {
+      const splitIndex = getSetBaseParamSplitIndex(action)
       return (
-        state.control.light.byId[state.control.light.active]?.splitScenes[0]
-          .baseParams[action.paramKey] ?? 0.5
+        state.control.light.byId[state.control.light.active]?.splitScenes[
+          splitIndex
+        ]?.baseParams[action.paramKey] ?? 0.5
       )
     } else if (action.type === 'setMaster') {
       return state.control.master
@@ -198,7 +201,7 @@ export function handleMessage(
     } else if (action.type === 'setBaseParam') {
       dispatch(
         setBaseParams({
-          splitIndex: 0,
+          splitIndex: getSetBaseParamSplitIndex(action),
           params: {
             [action.paramKey]: bounded,
           },

@@ -15,6 +15,8 @@ import {
   initAudioEngineMetrics,
   normalizeAudioEngineMetrics,
   normalizeAudioInputSettings,
+  computePerceivedEnergyLevel,
+  resolveEnergyTempoBpm,
 } from '../../shared/audioEngine'
 
 function clamp01(value: number) {
@@ -839,11 +841,18 @@ export default class AudioInputEngine {
     }
 
     const sessionBpm = Number(realtimeStore.getState().time.bpm)
-    const bpmForEnergy = Number.isFinite(sessionBpm)
-      ? Math.max(60, Math.min(190, sessionBpm))
-      : this.bpmEstimate !== null && Number.isFinite(this.bpmEstimate)
-      ? Math.max(60, Math.min(190, this.bpmEstimate))
-      : 120
+    const linkEnabled = realtimeStore.getState().time.isEnabled === true
+    const tempoConfidence = clamp01(
+      this.bpmConfidenceEma * 0.5 +
+        this.autocorrTempoConfidence * 0.28 +
+        this.plpTempoConfidence * 0.22
+    )
+    const bpmForEnergy = resolveEnergyTempoBpm(
+      this.bpmEstimate,
+      tempoConfidence,
+      Number.isFinite(sessionBpm) ? sessionBpm : null,
+      linkEnabled
+    )
     const beatSec = 60 / bpmForEnergy
     const barSec = beatSec * 4
     const twoBarsSec = barSec * 2
@@ -927,7 +936,16 @@ export default class AudioInputEngine {
     const normSpan = Math.max(fastBreakdown ? 0.14 : 0.19, autoCeiling - autoFloor)
     const normalizedEnergy = clamp01((compositeEnergy - autoFloor) / normSpan)
 
-    const deltaEnergy = normalizedEnergy - this.energyLevelEma
+    const perceivedEnergy = computePerceivedEnergyLevel({
+      spectralEnergy: normalizedEnergy,
+      bpm: bpmForEnergy,
+      bpmConfidence: tempoConfidence,
+      rhythmShare: highRhythmShare,
+      beatPulse: this.beatPulse,
+      fastBreakdown,
+    })
+
+    const deltaEnergy = perceivedEnergy - this.energyLevelEma
     const jitterDeadband = 0.002
     const changeMagnitude = Math.abs(this.energyShortEma - this.energyTrendEma)
     const changeBoost = clamp01((changeMagnitude - 0.012) / 0.16)
@@ -935,7 +953,7 @@ export default class AudioInputEngine {
     const beatBoost = beatDetected ? 0.07 : 0
     const baseAlpha = alphaFromTau(dtSec, Math.max(0.38, barSec * 3.2))
     const dropFollow =
-      normalizedEnergy < this.energyLevelEma
+      perceivedEnergy < this.energyLevelEma
         ? 1 + changeBoost * 0.28 + edgeBoost * 0.32 + (fastBreakdown ? 0.45 : 0)
         : 1
     const alpha = Math.min(
@@ -946,7 +964,7 @@ export default class AudioInputEngine {
     )
 
     if (Math.abs(deltaEnergy) > jitterDeadband) {
-      this.energyLevelEma += (normalizedEnergy - this.energyLevelEma) * alpha
+      this.energyLevelEma += (perceivedEnergy - this.energyLevelEma) * alpha
     }
     const energyLevel = clamp01(this.energyLevelEma)
 

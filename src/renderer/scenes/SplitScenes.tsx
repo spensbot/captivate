@@ -1,4 +1,6 @@
+import { useMemo } from 'react'
 import ParamsControl from 'renderer/controls/ParamsControl'
+import { collectLaserLightingGroupNames } from 'renderer/laser/laserSplitLink'
 import {
   useActiveLightScene,
   useControlSelector,
@@ -7,6 +9,7 @@ import {
 } from 'renderer/redux/store'
 import {
   hideMoversSplitUi,
+  hideLaserSplitUi,
   hideVisSplitUi,
 } from './splitUiVisibility'
 import { universeHasMovers } from 'shared/dmxFixtures'
@@ -79,6 +82,11 @@ const SplitList = styled.div`
   scrollbar-gutter: stable;
   scrollbar-width: auto;
   scrollbar-color: rgba(155, 162, 182, 0.88) rgba(0, 0, 0, 0.32);
+  align-content: flex-start;
+
+  > * {
+    flex-shrink: 0;
+  }
 
   &::-webkit-scrollbar {
     width: 11px;
@@ -162,6 +170,12 @@ interface Props {
 
 function SplitScene({ index }: Props) {
   const videoEnabled = useTypedSelector((state) => state.gui.videoEnabled)
+  const laserWindowOpen = useTypedSelector((state) => state.gui.laserWindowOpen)
+  const laser = useTypedSelector((state) => state.laser)
+  const laserGroupNames = useMemo(
+    () => new Set(collectLaserLightingGroupNames(laser)),
+    [laser.groupSlots, laser.units]
+  )
   const hasMoverFixtures = useDmxSelector((dmx) =>
     universeHasMovers(dmx.universe, dmx.fixtureTypesByID)
   )
@@ -172,6 +186,9 @@ function SplitScene({ index }: Props) {
     return null
   }
   if (hideMoversSplitUi(hasMoverFixtures, groups)) {
+    return null
+  }
+  if (hideLaserSplitUi(laserWindowOpen, groups, laserGroupNames)) {
     return null
   }
   return (
@@ -185,11 +202,13 @@ function SplitScene({ index }: Props) {
 }
 
 const Root2 = styled.div`
+  flex: 0 0 auto;
+  min-height: min-content;
   border-top: 1px solid ${(props) => props.theme.colors.divider};
   margin-bottom: 0;
   background-color: ${(props) => props.theme.colors.bg.darker};
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: visible;
   width: 100%;
   padding-bottom: 0.35rem;
   scrollbar-width: auto;

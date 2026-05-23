@@ -239,6 +239,8 @@ export class RemoteControlServer {
       if (snapshot) {
         this.send(client, { type: 'control_state', state: snapshot })
       }
+      // Push updated client count to this peer and refresh host UI listeners.
+      this.send(client, { type: 'status', status: this.getStatus() })
       this.broadcastStatus()
       return
     }

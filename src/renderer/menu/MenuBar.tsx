@@ -17,6 +17,7 @@ import { send_open_page_window } from '../ipcHandler'
 import { listAtmosFxtrs } from '../../shared/atmosphericsMapping'
 import { universeHasMovers } from '../../shared/dmxFixtures'
 import { ButtonMidiOverlay } from '../base/MidiOverlay'
+import Tooltip from '@mui/material/Tooltip'
 
 const selectedBorder = 0.2 //rem
 type SidebarAccent =
@@ -111,17 +112,20 @@ export default function MenuBar() {
       ? `${p}rem ${p}rem ${p}rem ${p - selectedBorder}rem`
       : `${p}rem`
     return (
-      <ButtonMidiOverlay action={{ type: 'setActivePage', page }}>
-        <Item
-          selected={activePage === page}
-          accent={accent}
-          style={{ padding: padding, fontSize: '1.7rem', margin: '0' }}
-          onClick={setPage(page)}
-          title={tooltipText}
-        >
-          {children}
-        </Item>
-      </ButtonMidiOverlay>
+      <Tooltip title={tooltipText} placement="right">
+        <span>
+          <ButtonMidiOverlay action={{ type: 'setActivePage', page }}>
+            <Item
+              selected={activePage === page}
+              accent={accent}
+              style={{ padding: padding, fontSize: '1.7rem', margin: '0' }}
+              onClick={setPage(page)}
+            >
+              {children}
+            </Item>
+          </ButtonMidiOverlay>
+        </span>
+      </Tooltip>
     )
   }
 
@@ -143,18 +147,21 @@ export default function MenuBar() {
       <MenuItem page="Modulation" tooltipText="Scene Editor" accent="modulation">
         <LightingIcon fontSize="inherit" />
       </MenuItem>
-      <Item
-        selected={false}
-        accent="visualizer"
-        style={{ padding: '0.5rem', fontSize: '1.7rem', margin: '0' }}
-        onClick={() => send_open_page_window('Video')}
-        title="Open Visualizer window"
-      >
-        <img
-          src={VisualsIcon}
-          style={{ width: '2.3rem', height: '2.3rem', margin: '0' }}
-        />
-      </Item>
+      <Tooltip title="Open Visualizer window" placement="right">
+        <span>
+          <Item
+            selected={false}
+            accent="visualizer"
+            style={{ padding: '0.5rem', fontSize: '1.7rem', margin: '0' }}
+            onClick={() => send_open_page_window('Video')}
+          >
+            <img
+              src={VisualsIcon}
+              style={{ width: '2.3rem', height: '2.3rem', margin: '0' }}
+            />
+          </Item>
+        </span>
+      </Tooltip>
       <MenuItem page="Mixer" tooltipText="DMX Mixer" accent="mixer">
         <MixerIcon fontSize="inherit" />
       </MenuItem>
@@ -177,13 +184,22 @@ export default function MenuBar() {
   )
 }
 
+const sidebarInset = '0.5rem'
+
 const Root = styled.div`
   z-index: ${zIndexes.leftMenu};
   display: flex;
   flex-direction: column;
   flex: 0 0 auto;
-  background-color: ${(props) => props.theme.colors.bg.lighter};
-  align-items: center;
+  background: linear-gradient(
+    180deg,
+    ${(props) => props.theme.colors.bg.lighter} 0%,
+    ${(props) => props.theme.colors.bg.panel} 55%,
+    ${(props) => props.theme.colors.bg.darker} 100%
+  );
+  border-right: 1px solid ${(props) => props.theme.colors.divider};
+  box-shadow: ${(props) => props.theme.elevation.shadowSidebar};
+  align-items: stretch;
   height: 100%;
   max-height: 100%;
   min-height: 0;
@@ -194,8 +210,11 @@ const Root = styled.div`
 `
 
 const Item = styled.div<{ selected: boolean; accent: SidebarAccent }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  opacity: ${(props) => (props.selected ? 1 : 0.82)};
+  opacity: ${(props) => (props.selected ? 1 : 0.88)};
   color: #fff;
   background: ${(props) =>
     props.selected
@@ -203,16 +222,21 @@ const Item = styled.div<{ selected: boolean; accent: SidebarAccent }>`
       : accentColors(props.accent).base};
   border-left: ${(props) =>
     props.selected ? `0.2rem solid ${accentColors(props.accent).border}` : '0.2rem solid #0000'};
-  border-top: 1px solid #ffffff0f;
-  border-bottom: 1px solid #00000040;
-  box-shadow: inset 0 0 0 1px #ffffff10;
+  border-top: 1px solid #ffffff14;
+  border-bottom: 1px solid #00000055;
+  box-shadow:
+    ${(props) => props.theme.elevation.insetHighlight},
+    ${(props) => props.theme.elevation.shadowSm};
   transition:
     opacity 120ms ease,
     background 120ms ease,
-    box-shadow 120ms ease;
+    box-shadow 120ms ease,
+    transform 120ms ease;
   :hover {
     opacity: 1;
-    box-shadow: inset 0 0 0 1px #ffffff3a;
+    box-shadow:
+      ${(props) => props.theme.elevation.insetHighlight},
+      ${(props) => props.theme.elevation.shadowMd};
     background: ${(props) => accentColors(props.accent).active};
   }
 `
@@ -222,22 +246,35 @@ const ControlArea = styled.div`
   flex: 1 1 auto;
   min-height: 0;
   width: 100%;
+  box-sizing: border-box;
   display: flex;
   align-items: flex-end;
-  justify-content: center;
-  padding: 0.45rem 0 0.8rem;
+  justify-content: stretch;
+  padding: 0.45rem ${sidebarInset} 0.8rem;
 `
 
 const ControlCluster = styled.div`
-  width: 72%;
+  width: 100%;
   min-height: 0;
   max-height: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   justify-content: flex-end;
   gap: 0.55rem;
+  padding: 0.4rem;
+  box-sizing: border-box;
+  border-radius: 0.45rem;
+  border: 1px solid ${(props) => props.theme.colors.divider};
+  background: linear-gradient(
+    180deg,
+    ${(props) => props.theme.colors.bg.panel} 0%,
+    ${(props) => props.theme.colors.bg.darker} 100%
+  );
+  box-shadow:
+    ${(props) => props.theme.elevation.insetDepth},
+    ${(props) => props.theme.elevation.shadowSm};
 `
 
 const MasterSlot = styled.div`

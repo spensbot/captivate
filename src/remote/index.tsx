@@ -18,7 +18,7 @@ import {
   update as updateRealtimeStore,
 } from '../renderer/redux/realtimeStore'
 import { ThemeProvider as MuiThemeProvider } from '@emotion/react'
-import { createTheme } from '@mui/material/styles'
+import { muiTheme } from '../renderer/muiTheme'
 import {
   clearHostTransport,
   registerHostTransport,
@@ -33,7 +33,6 @@ import { isRemoteDispatchAllowed } from '../shared/remoteControl'
 import type { PayloadAction } from '@reduxjs/toolkit'
 
 const theme = themes.dark()
-const muiTheme = createTheme({ palette: { mode: 'dark' } })
 
 let _isApplyingRemoteState = false
 let _isApplyingRemoteDispatch = false
@@ -99,23 +98,25 @@ function RemoteRoot() {
   ;(store as { dispatch: typeof store.dispatch }).dispatch = ((
     action: unknown
   ) => {
-    const result = rawDispatch(action as PayloadAction<unknown>)
     if (
       !_isApplyingRemoteDispatch &&
       !_isApplyingRemoteState &&
       isRemoteDispatchAllowed(action)
     ) {
+      // Host is authoritative — apply only via control_state to avoid duplicate scenes/actions.
       sync.sendDispatch(action as PayloadAction<unknown>)
+      return action as ReturnType<typeof rawDispatch>
     }
-    return result
+    return rawDispatch(action as PayloadAction<unknown>)
   }) as typeof store.dispatch
 
   const handleConnect = useCallback(
-    (url: string, pin: string) => {
+    (pin: string) => {
       setAuthError('')
       setAuthenticated(false)
       try {
-        const wsUrl = buildRemoteWebSocketUrl(url)
+        const pageUrl = `${window.location.protocol}//${window.location.host}`
+        const wsUrl = buildRemoteWebSocketUrl(pageUrl)
         sync.connect(wsUrl, pin)
       } catch (e) {
         setAuthError(e instanceof Error ? e.message : String(e))

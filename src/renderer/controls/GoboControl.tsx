@@ -8,6 +8,7 @@ import SliderBase from '../base/SliderBase'
 import SliderCursor from '../base/SliderCursor'
 import ManualSliderCursor from './ManualSliderCursor'
 import { SliderMidiOverlay } from '../base/MidiOverlay'
+import { makeSetBaseParamAction } from '../redux/deviceState'
 import { indexArray } from '../../shared/util'
 import ParamXButton from './ParamXButton'
 
@@ -126,15 +127,13 @@ export default function GoboControl({ splitIndex }: Props) {
     </>
   )
 
-  return splitIndex === 0 ? (
+  return (
     <SliderMidiOverlay
-      action={{ type: 'setBaseParam', paramKey: 'gobo' }}
+      action={makeSetBaseParamAction(splitIndex, 'gobo')}
       style={wrapperStyle}
     >
       {content}
     </SliderMidiOverlay>
-  ) : (
-    <div style={wrapperStyle}>{content}</div>
   )
 }
 

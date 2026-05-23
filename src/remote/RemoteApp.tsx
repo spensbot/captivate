@@ -2,13 +2,13 @@ import { lazy, Suspense, useState } from 'react'
 import styled from 'styled-components'
 import { useDispatch } from 'react-redux'
 import RemoteModulationPage from './RemoteModulationPage'
-
-const Mixer = lazy(() => import('../renderer/pages/Mixer'))
 import RemoteStatusBar from './RemoteStatusBar'
 import Devices from '../renderer/overlays/Devices'
 import { setConnectionsMenu } from '../renderer/redux/guiSlice'
 import { useTypedSelector } from '../renderer/redux/store'
 import { useRemoteUiMode } from './RemoteUiModeContext'
+
+const Mixer = lazy(() => import('../renderer/pages/Mixer'))
 
 export type RemoteTab = 'modulation' | 'mixer'
 
@@ -51,7 +51,7 @@ export default function RemoteApp() {
       {connectionMenu ? (
         <OverlayBackdrop onClick={() => dispatch(setConnectionsMenu(false))}>
           <OverlayPanel $mobile={isMobile} onClick={(e) => e.stopPropagation()}>
-            <Devices embedded />
+            <Devices embedded hideRemoteControl />
           </OverlayPanel>
         </OverlayBackdrop>
       ) : null}

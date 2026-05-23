@@ -11,6 +11,8 @@ import Cursor from '../base/Cursor'
 import ParamXButton from './ParamXButton'
 import { paramBundles } from './ParamAddButton'
 import SplitDimensionSlider from './SplitDimensionSlider'
+import { SliderMidiOverlay } from '../base/MidiOverlay'
+import { makeSetBaseParamAction } from '../redux/deviceState'
 
 interface Props {
   splitIndex: number
@@ -148,7 +150,11 @@ export default function ZParamsPad({ splitIndex }: Props) {
       </ParamToolbar>
       <ParamBodyRow>
         <PadColumn>
-          <PadRoot ref={dragContainer} onMouseDown={onMouseDown}>
+          <SliderMidiOverlay
+            action={makeSetBaseParamAction(splitIndex, 'z')}
+            style={{ position: 'relative', flex: '1 1 auto', minHeight: 0 }}
+          >
+            <PadRoot ref={dragContainer} onMouseDown={onMouseDown}>
             <ZWindow z={outputZ} depth={outputDepth} centerMode={centerMode} />
             <Cursor x={outputZ} y={0.5} color="#f2c66daa" withVertical />
             <Cursor x={baseZ} y={0.5} color="#fff" withVertical />
@@ -196,6 +202,7 @@ export default function ZParamsPad({ splitIndex }: Props) {
             )}
             <PadCaption>Z Depth Axis</PadCaption>
           </PadRoot>
+          </SliderMidiOverlay>
         </PadColumn>
 
         <DepthControls

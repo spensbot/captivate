@@ -28,18 +28,12 @@ import {
   AUDIO_MIN_BPM_SMOOTHING,
   normalizeAudioInputSettings,
 } from '../../shared/audioEngine'
+import { APP_TOOLTIP_SLOT_PROPS } from '../base/appTooltip'
 
 interface AudioInputDeviceOption {
   deviceId: string
   label: string
 }
-
-const TOOLTIP_BODY_SX = {
-  maxWidth: '22rem',
-  py: 1,
-  px: 1.15,
-  lineHeight: 1.45,
-} as const
 
 const AUDIO_MODE_INFO = (
   <>
@@ -144,9 +138,7 @@ function InfoHint({
       title={content}
       placement="top"
       enterDelay={350}
-      slotProps={{
-        tooltip: { sx: TOOLTIP_BODY_SX },
-      }}
+      slotProps={APP_TOOLTIP_SLOT_PROPS}
     >
       <InfoButton
         type="button"
@@ -231,8 +223,6 @@ function CaptivateSlider({
   )
 }
 
-const isRemoteClient = process.env.CAPTIVATE_REMOTE_CLIENT === 'true'
-
 function remoteInputDeviceLabel(deviceId: string): string {
   if (deviceId === AUDIO_INPUT_DEVICE_DESKTOP) {
     return 'Desktop Audio (Loopback)'
@@ -243,7 +233,12 @@ function remoteInputDeviceLabel(deviceId: string): string {
   return 'Audio input on show computer'
 }
 
-export default function AudioInputMenu() {
+export default function AudioInputMenu({
+  remoteClient = false,
+}: {
+  /** True in the browser remote UI (no local device enumeration). */
+  remoteClient?: boolean
+}) {
   const dispatch = useDispatch()
   const [open, setOpen] = useState(false)
   const [showAdvanced, setShowAdvanced] = useState(false)
@@ -287,7 +282,7 @@ export default function AudioInputMenu() {
   }, [])
 
   useEffect(() => {
-    if (!open || isRemoteClient) {
+    if (!open || remoteClient) {
       return
     }
     void refreshDevices()
@@ -335,7 +330,7 @@ export default function AudioInputMenu() {
       </Tooltip>
       {open && (
         <Popup title="Audio Input" onClose={() => setOpen(false)}>
-          {isRemoteClient ? (
+          {remoteClient ? (
             <RemoteHint>
               Audio is captured on the show computer. Meters and settings below apply
               there and sync to this remote session.
@@ -394,7 +389,7 @@ export default function AudioInputMenu() {
               <Label>Input Device</Label>
               <InfoHint content={INPUT_DEVICE_INFO} ariaLabel="About input device" />
             </LabelRow>
-            {isRemoteClient ? (
+            {remoteClient ? (
               <RemoteDeviceLabel title="Selected on the show computer">
                 {remoteInputDeviceLabel(selectedDeviceId)}
               </RemoteDeviceLabel>

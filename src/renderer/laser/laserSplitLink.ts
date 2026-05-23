@@ -3,6 +3,7 @@ import { ensureSplitSceneForGroup, setBaseParams } from '../redux/controlSlice'
 import type { LightScene_t } from '../../shared/Scenes'
 import { initParams } from '../../shared/params'
 import { isDedicatedGroupSplit } from '../scenes/splitUiVisibility'
+import type { LaserProjectState } from './laserProjectState'
 
 /** Params owned by the laser engine when linked to a lighting split. */
 export const LASER_SPLIT_PARAM_KEYS = [
@@ -99,6 +100,22 @@ const LASER_KEEP = new Set<string>(LASER_SPLIT_PARAM_KEYS)
 const STRIP_FROM_LASER_SPLIT = Object.keys(initParams()).filter(
   (k) => !LASER_KEEP.has(k)
 )
+
+/** Lighting group names used by the laser engine (fixtures + group slots). */
+export function collectLaserLightingGroupNames(
+  laser: Pick<LaserProjectState, 'units' | 'groupSlots'>
+): string[] {
+  const names = new Set<string>()
+  for (const unit of laser.units) {
+    const g = unit.group?.trim()
+    if (g) names.add(g)
+  }
+  for (const g of Object.keys(laser.groupSlots)) {
+    const t = g.trim()
+    if (t) names.add(t)
+  }
+  return [...names]
+}
 
 export function findLaserGroupSplitIndex(
   scene: LightScene_t | undefined,

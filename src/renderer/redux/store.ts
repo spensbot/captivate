@@ -9,12 +9,11 @@ import dmxReducer, { DmxState } from './dmxSlice'
 import guiReducer, { GuiState } from './guiSlice'
 import laserReducer from './laserSlice'
 import controlReducer, { ControlState } from './controlSlice'
-import { LightScene_t } from '../../shared/Scenes'
+import { LightScene_t, VisualScene_t, SceneType, initLightScene } from '../../shared/Scenes'
 import mixerReducer, { initMixerState } from './mixerSlice'
 import undoable, { StateWithHistory } from 'redux-undo'
 import { DeviceState, initDeviceState } from './deviceState'
 import fixState, { fixDeviceState } from '../../shared/fixState'
-import { VisualScene_t, SceneType } from '../../shared/Scenes'
 import { DefaultParam, initBaseParams, Params } from '../../shared/params'
 import { SaveInfo } from 'shared/save'
 import { migrateLaserProjectState } from '../laser/laserProjectState'
@@ -171,6 +170,9 @@ const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (
       dmx: initUndoState(cleanState.dmx),
       gui: {
         ...sanitizeGuiTransientState(cleanState.gui),
+        // Connection lists are owned by the main process (IPC), not peer renderers.
+        dmx: localGui.dmx,
+        midi: localGui.midi,
         activePage: localGui.activePage,
         connectionMenu: localGui.connectionMenu,
         saving: localGui.saving,
@@ -336,9 +338,14 @@ export function useActiveScene<T>(
 }
 
 export function useActiveLightScene<T>(getVal: (scene: LightScene_t) => T) {
-  return useTypedSelector((state) =>
-    getVal(state.control.present.light.byId[state.control.present.light.active])
-  )
+  return useTypedSelector((state) => {
+    const scene =
+      state.control.present.light.byId[state.control.present.light.active]
+    if (scene === undefined) {
+      return getVal(initLightScene())
+    }
+    return getVal(scene)
+  })
 }
 
 export function useActiveVisualScene<T>(getVal: (scene: VisualScene_t) => T) {

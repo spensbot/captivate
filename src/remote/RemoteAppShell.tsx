@@ -11,7 +11,7 @@ export function RemoteAppShell({
 }: {
   authenticated: boolean
   authError: string
-  onRequestConnect: (url: string, pin: string) => void
+  onRequestConnect: (pin: string) => void
 }) {
   if (!authenticated) {
     return <RemoteLogin error={authError} onConnect={onRequestConnect} />

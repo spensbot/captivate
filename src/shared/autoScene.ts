@@ -1,26 +1,173 @@
 import { randomElementExcludeCurrent } from './util'
-import { AutoScene_t } from './Scenes'
+import { AutoScene_t, LightScenes_t } from './Scenes'
 import { TimeState, isNewPeriod } from './TimeState'
 import { CleanReduxState } from '../renderer/redux/store'
 import { RealtimeState } from '../renderer/redux/realtimeStore'
+import type { AudioEngineMetrics } from './audioEngine'
 
 type OnNewScene = (id: string) => void
 
-interface UserModified {
+interface SceneAutoTracker {
   beats: number
   scene: string
+  /** Scene id auto dispatched but not yet reflected in active. */
+  pendingAutoScene: string | null
 }
 
-function initUserModified(): UserModified {
+function initSceneAutoTracker(): SceneAutoTracker {
   return {
     beats: 0,
     scene: '',
+    pendingAutoScene: null,
   }
 }
 
-const _lastUserModified = {
-  light: initUserModified(),
-  visual: initUserModified(),
+const _trackers = {
+  light: initSceneAutoTracker(),
+  visual: initSceneAutoTracker(),
+}
+
+function clamp01(value: number): number {
+  if (!Number.isFinite(value)) return 0
+  return Math.min(1, Math.max(0, value))
+}
+
+/** Closest epicness match; random among ties (still may pick current if only tie). */
+export function pickSceneByClosestEnergy(
+  candidateIds: string[],
+  currentId: string,
+  targetEnergy: number,
+  getEpicness: (id: string) => number | undefined
+): string {
+  if (candidateIds.length === 0) {
+    return currentId
+  }
+
+  const target = clamp01(targetEnergy)
+  let bestDistance = Infinity
+  const tied: string[] = []
+
+  for (const id of candidateIds) {
+    const epicness = getEpicness(id)
+    if (epicness === undefined || !Number.isFinite(epicness)) {
+      continue
+    }
+    const distance = Math.abs(clamp01(epicness) - target)
+    if (distance < bestDistance - 1e-9) {
+      bestDistance = distance
+      tied.length = 0
+      tied.push(id)
+    } else if (Math.abs(distance - bestDistance) < 1e-9) {
+      tied.push(id)
+    }
+  }
+
+  if (tied.length === 0) {
+    return currentId
+  }
+  return randomElementExcludeCurrent(tied, currentId)
+}
+
+function pickLightAutoScene(
+  auto: AutoScene_t,
+  candidateIds: string[],
+  currentId: string,
+  audio: AudioEngineMetrics,
+  getEpicness: (id: string) => number | undefined
+): string {
+  if (auto.energyMatchEnabled !== true) {
+    return randomElementExcludeCurrent(candidateIds, currentId)
+  }
+  const targetEnergy = getAutoSceneTargetEnergy(auto, audio)
+  return pickSceneByClosestEnergy(
+    candidateIds,
+    currentId,
+    targetEnergy,
+    getEpicness
+  )
+}
+
+export function getAutoSceneTargetEnergy(
+  auto: AutoScene_t,
+  audio: AudioEngineMetrics
+): number {
+  if (auto.matchAudioEnergy === true && audio.enabled === true) {
+    return clamp01(audio.energyLevel)
+  }
+  return clamp01(auto.epicness)
+}
+
+/** Next light scene auto would pick at the current energy (for UI cue highlight). */
+export function resolveLightAutoSceneCueId(
+  light: LightScenes_t,
+  targetEnergy: number
+): string | null {
+  if (!light.auto.enabled || light.auto.energyMatchEnabled !== true) {
+    return null
+  }
+  const candidates = light.ids.filter((id) => light.byId[id]?.autoEnabled === true)
+  if (candidates.length === 0) {
+    return null
+  }
+  const cue = pickSceneByClosestEnergy(
+    candidates,
+    light.active,
+    targetEnergy,
+    (id) => light.byId[id]?.epicness
+  )
+  return cue === light.active ? null : cue
+}
+
+/** Sync tracker when active scene changes; distinguish user picks from pending auto dispatch. */
+function syncSceneTracker(
+  activeScene: string,
+  nextTimeState: TimeState,
+  tracker: SceneAutoTracker
+) {
+  if (tracker.pendingAutoScene !== null) {
+    if (activeScene === tracker.pendingAutoScene) {
+      tracker.scene = activeScene
+      tracker.pendingAutoScene = null
+    }
+    return
+  }
+  if (activeScene !== tracker.scene) {
+    tracker.scene = activeScene
+    tracker.beats = nextTimeState.beats
+    tracker.pendingAutoScene = null
+  }
+}
+
+function shouldAdvanceAutoScene(
+  beatsLast: number,
+  nextTimeState: TimeState,
+  auto: AutoScene_t,
+  tracker: SceneAutoTracker
+): boolean {
+  if (!auto.enabled || tracker.pendingAutoScene !== null) {
+    return false
+  }
+  const beatsPerScene = nextTimeState.quantum * auto.period
+  if (!isNewPeriod(beatsLast, nextTimeState.beats, beatsPerScene)) {
+    return false
+  }
+  return nextTimeState.beats - tracker.beats >= beatsPerScene
+}
+
+function applyAutoSceneSwitch(
+  activeScene: string,
+  nextTimeState: TimeState,
+  tracker: SceneAutoTracker,
+  newScene: string,
+  onNewScene: OnNewScene
+) {
+  tracker.beats = nextTimeState.beats
+  if (newScene !== activeScene) {
+    tracker.pendingAutoScene = newScene
+    onNewScene(newScene)
+  } else {
+    tracker.scene = activeScene
+  }
 }
 
 export function handleAutoScene(
@@ -31,32 +178,41 @@ export function handleAutoScene(
   onNewVisualScene: OnNewScene
 ) {
   const { light, visual } = controlState.control
+  const audio = lastRtState.audio
+  const lightTracker = _trackers.light
+  const visualTracker = _trackers.visual
 
-  let possibleLightIds = light.ids.filter((id) => {
-    const lightScene = light.byId[id]
-    if (lightScene) {
-      return (
-        lightScene.autoEnabled &&
-        Math.abs(lightScene.epicness - light.auto.epicness) < 0.5
-      )
-    }
-    return false
-  })
+  syncSceneTracker(light.active, nextTimeState, lightTracker)
+
+  const possibleLightIds = light.ids.filter((id) => light.byId[id]?.autoEnabled === true)
+
   if (
-    isNewScene(
-      light.active,
+    shouldAdvanceAutoScene(
       lastRtState.time.beats,
       nextTimeState,
       light.auto,
-      _lastUserModified.light
+      lightTracker
     )
   ) {
-    const newScene = randomElementExcludeCurrent(possibleLightIds, light.active)
-    _lastUserModified.light.scene = newScene
-    onNewLightScene(newScene)
+    const newScene = pickLightAutoScene(
+      light.auto,
+      possibleLightIds,
+      light.active,
+      audio,
+      (id) => light.byId[id]?.epicness
+    )
+    applyAutoSceneSwitch(
+      light.active,
+      nextTimeState,
+      lightTracker,
+      newScene,
+      onNewLightScene
+    )
   }
 
-  let possibleVisualIds = visual.ids.filter((id) => {
+  syncSceneTracker(visual.active, nextTimeState, visualTracker)
+
+  const possibleVisualIds = visual.ids.filter((id) => {
     const visualScene = visual.byId[id]
     if (visualScene) {
       return visualScene.autoEnabled
@@ -64,42 +220,33 @@ export function handleAutoScene(
     return false
   })
   if (
-    isNewScene(
-      visual.active,
+    shouldAdvanceAutoScene(
       lastRtState.time.beats,
       nextTimeState,
       visual.auto,
-      _lastUserModified.visual
+      visualTracker
     )
   ) {
     const newScene = randomElementExcludeCurrent(
       possibleVisualIds,
       visual.active
     )
-    _lastUserModified.visual.scene = newScene
-    onNewVisualScene(newScene)
+    applyAutoSceneSwitch(
+      visual.active,
+      nextTimeState,
+      visualTracker,
+      newScene,
+      onNewVisualScene
+    )
   }
 }
 
-function isNewScene(
-  activeScene: string,
-  beatsLast: number,
-  nextTimeState: TimeState,
-  auto: AutoScene_t,
-  lastUserModified: UserModified
-): boolean {
-  const beatsPerScene = nextTimeState.quantum * auto.period
-  if (activeScene !== lastUserModified.scene) {
-    lastUserModified.scene = activeScene
-    lastUserModified.beats = nextTimeState.beats
-  }
-  if (auto.enabled) {
-    if (isNewPeriod(beatsLast, nextTimeState.beats, beatsPerScene)) {
-      if (nextTimeState.beats - lastUserModified.beats > beatsPerScene) {
-        return true
-      } else {
-      }
-    }
-  }
-  return false
+/** @internal Test helpers */
+export function __resetAutoSceneTrackersForTest() {
+  _trackers.light = initSceneAutoTracker()
+  _trackers.visual = initSceneAutoTracker()
+}
+
+export function __getAutoSceneTrackerForTest(sceneType: 'light' | 'visual') {
+  return _trackers[sceneType]
 }

@@ -45,9 +45,12 @@ import { normalizeStageDimensions } from './stage'
 import { LfoShape, normalizeLfoShape } from './oscillator'
 import { nanoid } from 'nanoid'
 import {
+  AutoScene_t,
   LightScenes_t,
   VisualScenes_t,
   VisualSceneTransitionConfig,
+  initLightScene,
+  initSplitScene,
 } from './Scenes'
 import {
   normLayerCfg,
@@ -346,6 +349,24 @@ function fixGuiState(gui: CleanReduxState['gui']) {
   }
 }
 
+function fixScenesAuto(auto: AutoScene_t): void {
+  auto.enabled = auto.enabled === true
+  if (!Number.isFinite(auto.epicness)) {
+    auto.epicness = 0
+  } else {
+    auto.epicness = Math.min(1, Math.max(0, auto.epicness))
+  }
+  if (!Number.isFinite(auto.period) || auto.period < 1) {
+    auto.period = 1
+  }
+  // Older saves used matchAudioEnergy as the sole energy-mode flag.
+  if (auto.energyMatchEnabled !== true && auto.matchAudioEnergy === true) {
+    auto.energyMatchEnabled = true
+  }
+  auto.energyMatchEnabled = auto.energyMatchEnabled === true
+  auto.matchAudioEnergy = auto.matchAudioEnergy === true
+}
+
 export default function fixState(state: CleanReduxState): CleanReduxState {
   if (state.control.device === undefined || state.control.device === null) {
     state.control.device = initDeviceState()
@@ -353,6 +374,8 @@ export default function fixState(state: CleanReduxState): CleanReduxState {
   fixGuiState(state.gui)
   fixLightScenes(state.control.light)
   fixVisualScenes(state.control.visual)
+  fixScenesAuto(state.control.light.auto)
+  fixScenesAuto(state.control.visual.auto)
   fixDmxState(state.dmx)
   fixDeviceState(state.control.device)
   fixMixerState(state.mixer)
@@ -379,6 +402,25 @@ export default function fixState(state: CleanReduxState): CleanReduxState {
 }
 
 export function fixLightScenes(light: LightScenes_t) {
+  if (light.ids.length === 0) {
+    const id = nanoid()
+    light.ids = [id]
+    light.byId[id] = initLightScene()
+    light.active = id
+  } else if (!light.active || light.byId[light.active] === undefined) {
+    light.active = light.ids[0]
+  }
+
+  for (const id of light.ids) {
+    const scene = light.byId[id]
+    if (scene === undefined) {
+      continue
+    }
+    if (!Array.isArray(scene.splitScenes) || scene.splitScenes.length === 0) {
+      scene.splitScenes = [initSplitScene()]
+    }
+  }
+
   for (const modulator of modulators(light)) {
     const lfo = modulator.lfo as {
       shape?: unknown

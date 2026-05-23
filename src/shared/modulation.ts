@@ -106,7 +106,9 @@ interface ModSnapshot {
 }
 
 const INTER_MOD_PREFIX = 'intermod:lfo:'
-const INTER_MOD_PROPS = new Set([
+
+/** LFO wave/shape parameters that can be inter-modulated (must match modulator UI). */
+export const INTER_MOD_TARGET_PROPS = [
   'period',
   'phaseShift',
   'flip',
@@ -124,7 +126,55 @@ const INTER_MOD_PROPS = new Set([
   'audioDecay',
   'audioEnergySmoothing',
   'audioBandSmoothing',
-])
+] as const
+
+export type InterModTargetProp = (typeof INTER_MOD_TARGET_PROPS)[number]
+
+const INTER_MOD_PROPS = new Set<string>(INTER_MOD_TARGET_PROPS)
+
+const WAVE_INTER_MOD_PROPS: InterModTargetProp[] = [
+  'period',
+  'phaseShift',
+  'flip',
+  'skew',
+]
+
+/** Inter-mod params exposed for a target LFO shape (matches ModulatorControl shape sliders + wave controls). */
+export function interModPropsForShape(shape: LfoShape): InterModTargetProp[] {
+  switch (shape) {
+    case LfoShape.Sin:
+      return [...WAVE_INTER_MOD_PROPS, 'sinePeakWidth']
+    case LfoShape.Ramp:
+      return [...WAVE_INTER_MOD_PROPS, 'rampCurve']
+    case LfoShape.Square:
+      return [...WAVE_INTER_MOD_PROPS, 'squareDuty']
+    case LfoShape.Saw:
+      return [...WAVE_INTER_MOD_PROPS, 'sawFlatten']
+    case LfoShape.Noise:
+      return [...WAVE_INTER_MOD_PROPS, 'noiseSeed']
+    case LfoShape.AudioBand:
+      return [
+        'audioBandLowHz',
+        'audioBandHighHz',
+        'audioThreshold',
+        'audioMax',
+        'audioAttack',
+        'audioDecay',
+        'audioBandSmoothing',
+      ]
+    case LfoShape.AudioEnergy:
+      return ['audioThreshold', 'audioMax', 'audioEnergySmoothing']
+    default:
+      return WAVE_INTER_MOD_PROPS
+  }
+}
+
+export function isInterModPropValidForShape(
+  shape: LfoShape,
+  prop: string
+): prop is InterModTargetProp {
+  return interModPropsForShape(shape).includes(prop as InterModTargetProp)
+}
 
 type InterModTarget = {
   targetIndex: number
@@ -390,6 +440,9 @@ export function effectiveLfosAtSplit(
         ((amountNorm - 0.5) * 2 * ((sourceLfoVal - 0.5) * 2)) / 2
       const targetLfo = effectiveLfos[target.targetIndex]
       const targetShape = scene.modulators[target.targetIndex]?.lfo.shape ?? LfoShape.Sin
+      if (!isInterModPropValidForShape(targetShape, target.prop)) {
+        continue
+      }
       applyInterModToLfoProp(targetLfo, targetShape, target.prop, delta, bandBounds)
     }
   })

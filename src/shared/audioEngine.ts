@@ -17,6 +17,108 @@ function clamp01(value: number) {
   return clamp(value, 0, 1)
 }
 
+function lerpValue(from: number, to: number, t: number) {
+  return from + (to - from) * clamp01(t)
+}
+
+/**
+ * Maps tempo to an energy contribution (0–1).
+ * ~70 ballad/ambient → low, ~120 pop/house → mid, ~140+ techno/DnB → high.
+ */
+export function bpmToEnergyContribution(bpm: number): number {
+  const clamped = clamp(bpm, 55, 200)
+  const normalized =
+    Math.log(clamped / 55) / Math.log(200 / 55)
+  return clamp01(0.04 + Math.pow(clamp01(normalized), 0.82) * 0.9)
+}
+
+export interface PerceivedEnergyInput {
+  /** Loudness / spectral envelope after adaptive normalization (0–1). */
+  spectralEnergy: number
+  bpm: number | null
+  bpmConfidence: number
+  /** Mid+high onset share — dance, rock, and pop vs sustained bass/drone. */
+  rhythmShare: number
+  beatPulse: number
+  fastBreakdown?: boolean
+}
+
+/**
+ * Combines loudness, tempo, and rhythmic activity for scene matching and meters.
+ * Tuned so slow/quiet material reads lower than equally loud but faster, percussive tracks.
+ */
+export function computePerceivedEnergyLevel(input: PerceivedEnergyInput): number {
+  const spectral = clamp01(input.spectralEnergy)
+  const conf = clamp01(input.bpmConfidence)
+  const rhythmShare = clamp01(input.rhythmShare)
+  const beatPulse = clamp01(input.beatPulse)
+  const fastBreakdown = input.fastBreakdown === true
+
+  const rawBpm =
+    input.bpm !== null && Number.isFinite(input.bpm) && input.bpm > 0
+      ? input.bpm
+      : null
+  const bpmContribution =
+    rawBpm === null ? 0.42 : bpmToEnergyContribution(rawBpm)
+  const bpmFactor = lerpValue(0.42, bpmContribution, conf)
+
+  const rhythmFactor = clamp01(rhythmShare * 0.68 + beatPulse * 0.32)
+  const activityGate = clamp01((spectral - 0.035) / 0.2)
+  const genreActivity =
+    clamp01(rhythmShare * 0.55 + spectral * 0.45) * activityGate
+
+  let bpmWeight = lerpValue(0.12, 0.28, conf)
+  let rhythmWeight = 0.12 + genreActivity * 0.1
+  if (fastBreakdown) {
+    bpmWeight *= 0.35
+    rhythmWeight *= 0.45
+  }
+
+  const spectralWeight = Math.max(
+    0.48,
+    1 - bpmWeight * activityGate - rhythmWeight * activityGate
+  )
+
+  return clamp01(
+    spectral * spectralWeight +
+      bpmFactor * bpmWeight * activityGate +
+      rhythmFactor * rhythmWeight * activityGate
+  )
+}
+
+/** Tempo used for energy: detected when confident, otherwise Link/session BPM. */
+export function resolveEnergyTempoBpm(
+  detectedBpm: number | null,
+  detectedConfidence: number,
+  linkBpm: number | null,
+  linkEnabled: boolean
+): number {
+  const conf = clamp01(detectedConfidence)
+  if (
+    detectedBpm !== null &&
+    Number.isFinite(detectedBpm) &&
+    detectedBpm >= 45 &&
+    conf >= 0.28
+  ) {
+    return clamp(detectedBpm, 55, 200)
+  }
+  if (
+    linkEnabled &&
+    linkBpm !== null &&
+    Number.isFinite(linkBpm) &&
+    linkBpm >= 45
+  ) {
+    return clamp(linkBpm, 55, 200)
+  }
+  if (detectedBpm !== null && Number.isFinite(detectedBpm) && detectedBpm >= 45) {
+    return clamp(detectedBpm, 55, 200)
+  }
+  if (linkBpm !== null && Number.isFinite(linkBpm) && linkBpm >= 45) {
+    return clamp(linkBpm, 55, 200)
+  }
+  return 120
+}
+
 export interface AudioInputSettings {
   enabled: boolean
   deviceId: string

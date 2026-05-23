@@ -12,6 +12,7 @@
     "postinstall": "ts-node .erb/scripts/check-native-dep.js && electron-builder install-app-deps && patch-package && cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.renderer.dev.dll.ts",
     "prepare:node-link": "node tools/prepare_node_link_runtime.js",
     "check:build-env": "node tools/check-build-environment.js",
+    "generate:default-save": "node scripts/generate-default-save.mjs",
     "package:bundle": "node tools/run-with-qualified-node.cjs -- npm run package:bundle:inner",
     "package:bundle:inner": "node tools/run-with-qualified-node.cjs -- npm run __package:bundle:inner",
     "__package:bundle:inner": "node tools/check-build-environment.js && ts-node ./.erb/scripts/clean.js dist && npm run prepare:projectm-bridge && npm run prepare:node-link && npm run rebuild && npm run build",
@@ -208,8 +209,8 @@
     ],
     "publish": {
       "provider": "github",
-      "owner": "spensbot",
-      "repo": "captivate",
+      "owner": "NicholasTracy",
+      "repo": "captivate-2",
       "vPrefixedTagName": true
     }
   },

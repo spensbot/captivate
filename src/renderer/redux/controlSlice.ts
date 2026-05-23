@@ -215,6 +215,18 @@ export const scenesSlice = createSlice({
     ) => {
       state[sceneType].auto.period = val
     },
+    setAutoSceneMatchAudioEnergy: (
+      state,
+      { payload: { sceneType, val } }: ScopedAction<boolean>
+    ) => {
+      state[sceneType].auto.matchAudioEnergy = val
+    },
+    setAutoSceneEnergyMatchEnabled: (
+      state,
+      { payload: { sceneType, val } }: ScopedAction<boolean>
+    ) => {
+      state[sceneType].auto.energyMatchEnabled = val
+    },
     newScene: (state, { payload }: PayloadAction<SceneType>) => {
       const scenes = state[payload]
       const id = nanoid()
@@ -868,6 +880,16 @@ export const scenesSlice = createSlice({
         }
       })
     },
+    /** Drop Visualizer include/exclude from every split (e.g. visualizer window closed). */
+    clearVisualizerGroupFiltersFromSplits: (state) => {
+      modifyActiveLightScene(state, (scene) => {
+        for (const split of scene.splitScenes) {
+          if (split.groups.Visualizer !== undefined) {
+            delete split.groups.Visualizer
+          }
+        }
+      })
+    },
     // =====================   VISUAL SCENES ONLY   ===========================
     resetVisualScenes: (state, { payload }: PayloadAction<VisualScenes_t>) => {
       state.visual = payload
@@ -1015,6 +1037,8 @@ export const {
   setAutoSceneEnabled,
   setAutoSceneBombacity,
   setAutoScenePeriod,
+  setAutoSceneMatchAudioEnergy,
+  setAutoSceneEnergyMatchEnabled,
   newScene,
   removeScene,
   setActiveScene,
@@ -1052,6 +1076,7 @@ export const {
   restoreSplitSceneForGroup,
 
   setSceneGroup,
+  clearVisualizerGroupFiltersFromSplits,
 
   // VISUAL SCENES
   resetVisualScenes,

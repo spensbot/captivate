@@ -36,7 +36,7 @@ export default function SceneSelection({
             >
               <span>
                 <IconButton
-                  title="Sort scenes by energy level"
+                  aria-label="Sort scenes by energy level"
                   disabled={!canReweightScenes}
                   onClick={() => dispatch(sortScenesByBombacity(sceneType))}
                 >
@@ -53,7 +53,7 @@ export default function SceneSelection({
             >
               <span>
                 <IconButton
-                  title="Auto-distribute scene energy"
+                  aria-label="Auto-distribute scene energy"
                   disabled={!canReweightScenes}
                   onClick={() => dispatch(autoBombacity(sceneType))}
                 >

@@ -7,6 +7,8 @@ import XYAxisCursor from './XYAxisCursor'
 import Select from '../base/Select'
 import { useBaseParam, useDmxSelector } from 'renderer/redux/store'
 import { isMoverFixtureType } from '../../shared/dmxFixtures'
+import MidiOverlay_xy from '../base/MidiOverlay_xy'
+import { makeSetBaseParamAction } from '../redux/deviceState'
 
 interface Props {
   splitIndex: number
@@ -132,10 +134,20 @@ export default function XYAxispad({ splitIndex }: Props) {
 
   return (
     <Root>
-      <PadSurface ref={dragContainer} onMouseDown={onMouseDown}>
-        <CenterMarker aria-hidden />
-        <XYAxisCursor splitIndex={splitIndex} />
-      </PadSurface>
+      <MidiOverlay_xy
+        splitIndex={splitIndex}
+        labels={['Pan', 'Tilt']}
+        style={{ width: '200px', minWidth: '200px', height: '180px', flexShrink: 0 }}
+        actions={[
+          makeSetBaseParamAction(splitIndex, 'xAxis'),
+          makeSetBaseParamAction(splitIndex, 'yAxis'),
+        ]}
+      >
+        <PadSurface ref={dragContainer} onMouseDown={onMouseDown}>
+          <CenterMarker aria-hidden />
+          <XYAxisCursor splitIndex={splitIndex} />
+        </PadSurface>
+      </MidiOverlay_xy>
 
       <MoverControls
         onClick={(e) => e.stopPropagation()}

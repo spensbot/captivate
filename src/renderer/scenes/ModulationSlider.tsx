@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { DefaultParam, paramDisplayName } from '../../shared/params'
 import { LfoShape } from '../../shared/oscillator'
+import { interModPropsForShape } from '../../shared/modulation'
 import {
   useActiveLightScene,
   useBaseParams,
@@ -9,7 +10,12 @@ import {
   useModParam,
   useTypedSelector,
 } from '../redux/store'
-import { hideVisSplitUi, splitDisplayName } from './splitUiVisibility'
+import { collectLaserLightingGroupNames } from '../laser/laserSplitLink'
+import {
+  hideLaserSplitUi,
+  hideVisSplitUi,
+  splitDisplayName,
+} from './splitUiVisibility'
 import { setModulation } from '../redux/controlSlice'
 import useDragMapped from '../hooks/useDragMapped'
 import styled from 'styled-components'
@@ -29,27 +35,8 @@ interface Props {
 }
 
 const INTER_MOD_PREFIX = 'intermod:lfo:'
-const INTER_MOD_TARGET_PROPS = [
-  'period',
-  'phaseShift',
-  'flip',
-  'skew',
-  'sinePeakWidth',
-  'rampCurve',
-  'squareDuty',
-  'sawFlatten',
-  'noiseSeed',
-  'audioBandLowHz',
-  'audioBandHighHz',
-  'audioThreshold',
-  'audioMax',
-  'audioAttack',
-  'audioDecay',
-  'audioEnergySmoothing',
-  'audioBandSmoothing',
-] as const
 
-function makeInterModParam(targetIndex: number, prop: (typeof INTER_MOD_TARGET_PROPS)[number]) {
+function makeInterModParam(targetIndex: number, prop: string) {
   return `${INTER_MOD_PREFIX}${targetIndex}:${prop}`
 }
 
@@ -132,37 +119,6 @@ function interModLabel(param: string): string {
   return `LFO ${parsed.targetIndex + 1} ${propLabel}`
 }
 
-function interModPropsForShape(shape: LfoShape): (typeof INTER_MOD_TARGET_PROPS)[number][] {
-  const common: (typeof INTER_MOD_TARGET_PROPS)[number][] = [
-    'period',
-    'phaseShift',
-    'flip',
-    'skew',
-  ]
-
-  if (shape === LfoShape.Sin) return [...common, 'sinePeakWidth']
-  if (shape === LfoShape.Ramp) return [...common, 'rampCurve']
-  if (shape === LfoShape.Square) return [...common, 'squareDuty']
-  if (shape === LfoShape.Saw) return [...common, 'sawFlatten']
-  if (shape === LfoShape.Noise) return [...common, 'noiseSeed']
-  if (shape === LfoShape.AudioBand) {
-    return [
-      ...common,
-      'audioBandLowHz',
-      'audioBandHighHz',
-      'audioThreshold',
-      'audioMax',
-      'audioAttack',
-      'audioDecay',
-      'audioBandSmoothing',
-    ]
-  }
-  if (shape === LfoShape.AudioEnergy) {
-    return [...common, 'audioThreshold', 'audioMax', 'audioEnergySmoothing']
-  }
-  return common
-}
-
 export default function ModulationSlider({
   splitIndex,
   modIndex,
@@ -212,7 +168,7 @@ export function AddModulationButton({ modIndex }: { modIndex: number }) {
   const [open, setOpen] = useState(false)
 
   return (
-    <Root
+    <AddModRoot
       style={{ cursor: 'pointer' }}
       onClick={(e) => {
         if (!e.defaultPrevented) {
@@ -231,13 +187,19 @@ export function AddModulationButton({ modIndex }: { modIndex: number }) {
           <AddModulation modIndex={modIndex} />
         </Popup>
       )}
-    </Root>
+    </AddModRoot>
   )
 }
 
 function AddModulation({ modIndex }: { modIndex: number }) {
   const numSplits = useActiveLightScene((scene) => scene.splitScenes.length)
   const videoEnabled = useTypedSelector((state) => state.gui.videoEnabled)
+  const laserWindowOpen = useTypedSelector((state) => state.gui.laserWindowOpen)
+  const laser = useTypedSelector((state) => state.laser)
+  const laserGroupNames = useMemo(
+    () => new Set(collectLaserLightingGroupNames(laser)),
+    [laser.groupSlots, laser.units]
+  )
   const splitGroupsByIndex = useActiveLightScene((scene) =>
     scene.splitScenes.map((s) => s.groups)
   )
@@ -246,12 +208,11 @@ function AddModulation({ modIndex }: { modIndex: number }) {
     <AddModLayout>
       <AddModSplitsScroll>
         {indexArray(numSplits).map((splitIndex) => {
-          if (
-            hideVisSplitUi(
-              videoEnabled,
-              splitGroupsByIndex[splitIndex]
-            )
-          ) {
+          const groups = splitGroupsByIndex[splitIndex]
+          if (hideVisSplitUi(videoEnabled, groups)) {
+            return null
+          }
+          if (hideLaserSplitUi(laserWindowOpen, groups, laserGroupNames)) {
             return null
           }
           return (
@@ -466,17 +427,29 @@ const Root = styled.div`
   background-color: #ffffff08;
   border-bottom: 1px solid #fff1;
   color: #fff7;
-  font-size: 0.8rem;
+  font-size: var(--remote-mod-strip-font, 0.8rem);
+  min-height: var(--remote-mod-strip-min-h, 0);
   cursor: ew-resize;
+`
+
+const AddModRoot = styled(Root)`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--remote-mod-add-icon-size, 1.35rem);
+  font-weight: 700;
+  line-height: 1;
+  border-bottom: none;
+  background-color: #ffffff12;
 `
 
 const StripHeader = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.06rem;
-  padding: 0.1rem 0.25rem 0.06rem;
-  line-height: 1.15;
+  gap: 0.12rem;
+  padding: var(--remote-mod-strip-pad-y, 0.1rem) 0.35rem 0.12rem;
+  line-height: 1.2;
   position: relative;
   z-index: 1;
 `
@@ -495,13 +468,13 @@ const Item = styled.button<{ $active: boolean }>`
     ${(props) => (props.$active ? '#7ba4ff99' : props.theme.colors.divider)};
   background: ${(props) => (props.$active ? '#3357b922' : props.theme.colors.bg.primary)};
   border-radius: 0.32rem;
-  min-height: 2rem;
-  padding: 0.32rem 0.45rem;
+  min-height: var(--remote-mod-strip-min-h, 2rem);
+  padding: 0.38rem 0.55rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.4rem;
-  font-size: 0.74rem;
+  gap: 0.45rem;
+  font-size: var(--remote-mod-strip-font, 0.74rem);
   text-align: left;
 
   :hover {

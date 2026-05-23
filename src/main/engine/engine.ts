@@ -525,11 +525,22 @@ export function start(
   }, 1000 / 90)
 
   _dmxConnectionPollHandle = setInterval(async () => {
-    if (_controlState) {
+    if (!_controlState) return
+    try {
       const connectionStatus = await _connectionManager.updateConnections(
         _controlState.control.device.connectable.dmx
       )
       _ipcCallbacks?.send_dmx_connection_update(connectionStatus)
+    } catch (error) {
+      const err = error as Error
+      console.error('DMX connection poll failed:', err)
+      telemetryEvent(
+        'engine.connections',
+        'dmx-poll-error',
+        'error',
+        err?.message ?? String(error),
+        { stack: err?.stack }
+      )
     }
   }, 1000)
 
@@ -937,6 +948,10 @@ function maybeReportMoverRuntimeStall(
   _moverDebugLastSampleAtMs = now
 
   const activeScene = controlState.control.light.byId[controlState.control.light.active]
+  if (!activeScene?.splitScenes) {
+    return
+  }
+
   const moverSplitIndex = activeScene.splitScenes.findIndex(
     (split) => split.groups?.Movers === true
   )
@@ -1029,6 +1044,25 @@ function getNextRealtimeState(
   )
 
   const fixtures = flatten_fixtures(dmx.universe, dmx.fixtureTypesByID)
+
+  if (!scene?.splitScenes) {
+    const dmxOutByUniverse = calculateDmx(controlState, [], nextTimeState)
+    finalizeDmxUniverses(controlState, dmxOutByUniverse)
+    return {
+      time: nextTimeState,
+      dmxOutByUniverse,
+      dmxOut: dmxOutByUniverse[0] ?? Array(512).fill(0),
+      splitStates: [],
+      audio: _latestAudioMetrics,
+      atmos: _atmosphericsOutputManager.apply(
+        controlState,
+        [],
+        nextTimeState,
+        _latestAudioMetrics,
+        dmxOutByUniverse
+      ),
+    }
+  }
 
   const splitStates: SplitState[] = scene.splitScenes.map(
     (splitScene, splitIndex) => {

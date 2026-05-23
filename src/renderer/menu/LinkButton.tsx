@@ -3,7 +3,12 @@ import styled from 'styled-components'
 import { useRealtimeSelector } from '../redux/realtimeStore'
 import { send_user_command } from '../ipcHandler'
 
-export default function LinkButton() {
+export default function LinkButton({
+  layout = 'default',
+}: {
+  /** Wider layout for Connections panel grid column. */
+  layout?: 'default' | 'connections'
+}) {
   const numPeers = useRealtimeSelector((state) => state.time.numPeers)
   const isEnabled = useRealtimeSelector((state) => state.time.isEnabled)
 
@@ -54,6 +59,7 @@ export default function LinkButton() {
       <Root
         type="button"
         $active={isEnabled}
+        $layout={layout}
         aria-pressed={isEnabled}
         aria-label={ariaLabel}
         onClick={() => {
@@ -88,12 +94,14 @@ const TooltipP = styled.p`
   margin: 0.5rem 0 0;
 `
 
-const Root = styled.button<{ $active: boolean }>`
+const Root = styled.button<{ $active: boolean; $layout: 'default' | 'connections' }>`
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
   margin: 0;
-  align-self: flex-start;
+  align-self: ${(p) => (p.$layout === 'connections' ? 'stretch' : 'flex-start')};
+  width: ${(p) => (p.$layout === 'connections' ? '100%' : 'auto')};
+  max-width: ${(p) => (p.$layout === 'connections' ? 'none' : '100%')};
   padding: 0.32rem 0.55rem 0.34rem 0.48rem;
   cursor: pointer;
   border-radius: 0.28rem;
@@ -102,7 +110,9 @@ const Root = styled.button<{ $active: boolean }>`
   color: ${(p) => (p.$active ? '#f0f6ff' : '#ffffffcc')};
   font: inherit;
   text-align: left;
-  min-width: 4.6rem;
+  min-width: ${(p) => (p.$layout === 'connections' ? '0' : '4.6rem')};
+  justify-content: ${(p) => (p.$layout === 'connections' ? 'center' : 'flex-start')};
+  box-sizing: border-box;
   transition:
     border-color 0.12s ease,
     background 0.12s ease;

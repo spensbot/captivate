@@ -5,6 +5,7 @@ import { AppAboutInfo } from '../../shared/about'
 import { getAppAboutInfo } from '../ipcHandler'
 import { useTypedSelector } from '../redux/store'
 import type { StatusMessage } from '../redux/guiSlice'
+import captivateLogo from '../images/Thick.png'
 
 interface Props {
   open: boolean
@@ -85,27 +86,45 @@ export default function AboutModal({ open, onClose }: Props) {
 
     return (
       <Body>
-        {copyStatus !== null && (
-          <StatusNotice>{copyStatus}</StatusNotice>
-        )}
+        <Hero>
+          <Logo src={captivateLogo} alt="Captivate logo" />
+          <HeroText>
+            <ProductName>Captivate 2</ProductName>
+            <VersionLine>Version {info.appVersion}</VersionLine>
+            <Tagline>{info.tagline}</Tagline>
+            <Blurb>{info.description}</Blurb>
+            <CopyrightLine>
+              {info.copyright} · {info.license} License
+            </CopyrightLine>
+          </HeroText>
+        </Hero>
+
+        {copyStatus !== null && <StatusNotice>{copyStatus}</StatusNotice>}
+
         <Section>
           <SectionTitle>Software</SectionTitle>
           <Row>
-            <Label>App</Label>
+            <Label>Application</Label>
             <Value>
-              {info.appName} v{info.appVersion}
+              {info.appName} {info.appVersion}
             </Value>
           </Row>
           <Row>
-            <Label>Description</Label>
-            <Value>{info.description}</Value>
+            <Label>Author</Label>
+            <Value>{info.author}</Value>
+          </Row>
+          <Row>
+            <Label>Platform</Label>
+            <Value>
+              {info.platform.os} ({info.platform.arch})
+            </Value>
           </Row>
           <Row>
             <Label>Electron</Label>
             <Value>{info.runtime.electron}</Value>
           </Row>
           <Row>
-            <Label>Chrome</Label>
+            <Label>Chromium</Label>
             <Value>{info.runtime.chrome}</Value>
           </Row>
           <Row>
@@ -119,7 +138,7 @@ export default function AboutModal({ open, onClose }: Props) {
         </Section>
 
         <Section>
-          <SectionTitle>GitHub & Links</SectionTitle>
+          <SectionTitle>Links</SectionTitle>
           {info.links.map((link) => (
             <Row key={link.url}>
               <Label>{link.label}</Label>
@@ -142,6 +161,9 @@ export default function AboutModal({ open, onClose }: Props) {
             <Label>Contributors</Label>
             <Value>{info.credits.contributors.join(', ')}</Value>
           </Row>
+          {info.credits.acknowledgements.map((line) => (
+            <AckRow key={line}>{line}</AckRow>
+          ))}
         </Section>
 
         <Section>
@@ -171,6 +193,8 @@ export default function AboutModal({ open, onClose }: Props) {
       open={open}
       title="About Captivate 2"
       onClose={onClose}
+      maxWidth="44rem"
+      maxHeight="min(88vh, 52rem)"
       actions={[
         {
           label: 'Copy System Info',
@@ -192,8 +216,13 @@ export default function AboutModal({ open, onClose }: Props) {
 function buildSystemInfoText(info: AppAboutInfo, recentIssues: StatusMessage[]) {
   const softwareLines = [
     `${info.appName} v${info.appVersion}`,
+    info.tagline,
+    info.description,
+    `${info.copyright} · ${info.license} License`,
+    `Author: ${info.author}`,
+    `Platform: ${info.platform.os} (${info.platform.arch})`,
     `Electron: ${info.runtime.electron}`,
-    `Chrome: ${info.runtime.chrome}`,
+    `Chromium: ${info.runtime.chrome}`,
     `Node.js: ${info.runtime.node}`,
     `V8: ${info.runtime.v8}`,
   ]
@@ -247,6 +276,71 @@ const Body = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 0.1rem;
+`
+
+const Hero = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid #ffffff24;
+  border-radius: 0.45rem;
+  background: linear-gradient(
+    135deg,
+    rgba(76, 145, 255, 0.12) 0%,
+    rgba(161, 110, 255, 0.08) 55%,
+    rgba(255, 84, 155, 0.06) 100%
+  );
+`
+
+const Logo = styled.img`
+  width: 4.6rem;
+  height: 4.6rem;
+  flex: 0 0 auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0 0.45rem rgba(255, 255, 255, 0.12));
+`
+
+const HeroText = styled.div`
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+`
+
+const ProductName = styled.div`
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: ${(props) => props.theme.colors.text.primary};
+  line-height: 1.1;
+`
+
+const VersionLine = styled.div`
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: ${(props) => props.theme.colors.text.secondary};
+`
+
+const Tagline = styled.div`
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #b8d4ff;
+`
+
+const Blurb = styled.div`
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: ${(props) => props.theme.colors.text.secondary};
+`
+
+const CopyrightLine = styled.div`
+  margin-top: 0.12rem;
+  font-size: 0.72rem;
+  color: ${(props) => props.theme.colors.text.secondary};
 `
 
 const Section = styled.div`
@@ -271,6 +365,13 @@ const Row = styled.div`
   gap: 0.45rem;
   align-items: baseline;
   font-size: 0.79rem;
+`
+
+const AckRow = styled.div`
+  font-size: 0.76rem;
+  line-height: 1.35;
+  color: ${(props) => props.theme.colors.text.secondary};
+  padding-left: 0.15rem;
 `
 
 const Label = styled.div`

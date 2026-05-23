@@ -5,6 +5,8 @@ import styled from 'styled-components'
 import SliderBase from '../base/SliderBase'
 import LiveSliderCursor from './LiveSliderCursor'
 import ManualSliderCursor from './ManualSliderCursor'
+import { SliderMidiOverlay } from '../base/MidiOverlay'
+import { makeSetBaseParamAction } from '../redux/deviceState'
 
 type SplitDimParam = 'width' | 'height' | 'depth' | 'positionFeather'
 
@@ -39,36 +41,41 @@ export default function SplitDimensionSlider({
   }
 
   return (
-    <VerticalControl>
-      <VerticalLabel title={title}>{label}</VerticalLabel>
-      <VerticalSliderShell>
-        <SliderBase
-          orientation="vertical"
-          radius={RADIUS}
-          verticalPadRem={0.1}
-          onChange={onChange}
-          title={title}
-          ariaLabel={title}
-        >
-          <LiveSliderCursor
+    <SliderMidiOverlay
+      action={makeSetBaseParamAction(splitIndex, param)}
+      style={{ display: 'flex', alignSelf: 'stretch', minHeight: 0 }}
+    >
+      <VerticalControl>
+        <VerticalLabel title={title}>{label}</VerticalLabel>
+        <VerticalSliderShell>
+          <SliderBase
             orientation="vertical"
-            param={param}
             radius={RADIUS}
-            splitIndex={splitIndex}
-            color="#7fb7ff99"
-          />
-          <ManualSliderCursor
-            orientation="vertical"
-            param={param}
-            splitIndex={splitIndex}
-            value={value}
-            radius={RADIUS}
-            color="#fff"
-            border
-          />
-        </SliderBase>
-      </VerticalSliderShell>
-    </VerticalControl>
+            verticalPadRem={0.1}
+            onChange={onChange}
+            title={title}
+            ariaLabel={title}
+          >
+            <LiveSliderCursor
+              orientation="vertical"
+              param={param}
+              radius={RADIUS}
+              splitIndex={splitIndex}
+              color="#7fb7ff99"
+            />
+            <ManualSliderCursor
+              orientation="vertical"
+              param={param}
+              splitIndex={splitIndex}
+              value={value}
+              radius={RADIUS}
+              color="#fff"
+              border
+            />
+          </SliderBase>
+        </VerticalSliderShell>
+      </VerticalControl>
+    </SliderMidiOverlay>
   )
 }
 

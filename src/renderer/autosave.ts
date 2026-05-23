@@ -70,7 +70,14 @@ function restoreLastState(
   store: ReduxStore,
   asv: AutoSavedVal<VersionedAutoSaveState>
 ): AutoSaveRestoreStatus {
-  let latest = asv.loadLatest()
+  let latest: VersionedAutoSaveState | null = null
+  try {
+    latest = asv.loadLatest()
+  } catch (err) {
+    console.warn('Ignoring corrupt autosave snapshot.', err)
+    store.dispatch(resetState(defaultState()))
+    return 'incompatible'
+  }
   if (latest === null) {
     store.dispatch(resetState(defaultState()))
     return 'empty'

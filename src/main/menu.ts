@@ -9,6 +9,11 @@ import {
 import { IPC_Callbacks } from './engine/ipcHandler'
 import { SerialPort } from 'serialport'
 import { exportTelemetrySnapshot } from './telemetry'
+import {
+  CAPTIVATE_GITHUB_DISCUSSIONS_URL,
+  CAPTIVATE_GITHUB_ISSUES_URL,
+  CAPTIVATE_GITHUB_REPO_URL,
+} from '../shared/githubRepo'
 
 interface DarwinMenuItemConstructorOptions extends MenuItemConstructorOptions {
   selector?: string
@@ -278,13 +283,13 @@ export default class MenuBuilder {
         {
           label: 'GitHub Repository',
           click() {
-            shell.openExternal('https://github.com/spensbot/captivate')
+            shell.openExternal(CAPTIVATE_GITHUB_REPO_URL)
           },
         },
         {
           label: 'GitHub Issues',
           click() {
-            shell.openExternal('https://github.com/spensbot/captivate/issues')
+            shell.openExternal(CAPTIVATE_GITHUB_ISSUES_URL)
           },
         },
         {
@@ -296,9 +301,7 @@ export default class MenuBuilder {
         {
           label: 'Discussion',
           click() {
-            shell.openExternal(
-              'https://github.com/spensbot/captivate/discussions'
-            )
+            shell.openExternal(CAPTIVATE_GITHUB_DISCUSSIONS_URL)
           },
         },
         {
@@ -464,19 +467,19 @@ export default class MenuBuilder {
           {
             label: 'GitHub Repository',
             click() {
-              shell.openExternal('https://github.com/spensbot/captivate')
+              shell.openExternal(CAPTIVATE_GITHUB_REPO_URL)
             },
           },
           {
             label: 'GitHub Issues',
             click() {
-              shell.openExternal('https://github.com/spensbot/captivate/issues')
+              shell.openExternal(CAPTIVATE_GITHUB_ISSUES_URL)
             },
           },
           {
             label: 'GitHub Discussions',
             click() {
-              shell.openExternal('https://github.com/spensbot/captivate/discussions')
+              shell.openExternal(CAPTIVATE_GITHUB_DISCUSSIONS_URL)
             },
           },
           {

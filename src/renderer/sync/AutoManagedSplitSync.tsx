@@ -7,6 +7,7 @@ import {
   useTypedSelector,
 } from 'renderer/redux/store'
 import {
+  clearVisualizerGroupFiltersFromSplits,
   ensureSplitSceneForGroup,
   removeSplitSceneByIndex,
   restoreSplitSceneForGroup,
@@ -15,6 +16,16 @@ import { universeHasMovers } from '../../shared/dmxFixtures'
 import { listAtmosFxtrs } from '../../shared/atmosphericsMapping'
 import { LightScene_t, SplitScene_t } from '../../shared/Scenes'
 import { isDedicatedGroupSplit } from '../scenes/splitUiVisibility'
+import { collectLaserLightingGroupNames } from '../laser/laserSplitLink'
+
+type AutoManagedGroupState = {
+  group: string
+  present: boolean
+  defaultParams?: { [key: string]: number }
+  removeParams?: string[]
+  /** When false, closing the window removes the split but reopening does not auto-create it. */
+  autoCreate?: boolean
+}
 
 interface CachedAutoSplit {
   splitScene: SplitScene_t
@@ -55,6 +66,12 @@ export default function AutoManagedSplitSync() {
   const activeScene = useControlSelector((scenes) => scenes.light.active)
   const activeLightScene = useActiveLightScene((scene) => scene)
   const videoEnabled = useTypedSelector((state) => state.gui.videoEnabled)
+  const laserWindowOpen = useTypedSelector((state) => state.gui.laserWindowOpen)
+  const laser = useTypedSelector((state) => state.laser)
+  const laserGroupNames = useMemo(
+    () => new Set(collectLaserLightingGroupNames(laser)),
+    [laser.groupSlots, laser.units]
+  )
   const dmx = useDmxSelector((state) => state)
   const hasMovers = useMemo(
     () => universeHasMovers(dmx.universe, dmx.fixtureTypesByID),
@@ -69,8 +86,15 @@ export default function AutoManagedSplitSync() {
     [dmx.led.ledFixtures.length]
   )
 
-  const autoManagedGroupStates = useMemo(
-    () => [
+  const autoManagedGroupStates = useMemo((): AutoManagedGroupState[] => {
+    const laserGroups: AutoManagedGroupState[] = [...laserGroupNames].map(
+      (group) => ({
+        group,
+        present: laserWindowOpen,
+        autoCreate: false,
+      })
+    )
+    return [
       {
         group: 'Movers',
         present: hasMovers,
@@ -82,7 +106,7 @@ export default function AutoManagedSplitSync() {
           moverMirrorX: 0,
           moverMirrorY: 0,
           moverMode: 0,
-        } as const,
+        },
       },
       {
         group: 'Atmosphere',
@@ -90,7 +114,7 @@ export default function AutoManagedSplitSync() {
         defaultParams: {
           atmosFxtrOnOff: 0.5,
           atmosFxtrLevel: 1,
-        } as const,
+        },
       },
       {
         group: 'LEDs',
@@ -100,16 +124,23 @@ export default function AutoManagedSplitSync() {
           saturation: 0.5,
           brightness: 0.5,
           white: 0,
-        } as const,
+        },
         removeParams: ['warmWhite', 'amber', 'uv'],
       },
       {
         group: 'Visualizer',
         present: videoEnabled,
       },
-    ],
-    [hasAtmospherics, hasLedFixtures, hasMovers, videoEnabled]
-  )
+      ...laserGroups,
+    ]
+  }, [
+    hasAtmospherics,
+    hasLedFixtures,
+    hasMovers,
+    laserGroupNames,
+    laserWindowOpen,
+    videoEnabled,
+  ])
 
   useEffect(() => {
     const scene = activeLightScene
@@ -127,22 +158,24 @@ export default function AutoManagedSplitSync() {
       if (groupState.present) {
         const cached = cacheByGroup[groupState.group]
         if (cached !== undefined && splitIndex < 0) {
-          dispatch(
-            restoreSplitSceneForGroup({
-              group: groupState.group,
-              splitScene: cached.splitScene,
-              splitModulations: cached.splitModulations,
-            })
-          )
+          if (groupState.autoCreate !== false) {
+            dispatch(
+              restoreSplitSceneForGroup({
+                group: groupState.group,
+                splitScene: cached.splitScene,
+                splitModulations: cached.splitModulations,
+              })
+            )
+            didMutate = true
+            break
+          }
           delete cacheByGroup[groupState.group]
-          didMutate = true
-          break
         }
         if (cached !== undefined && splitIndex >= 0) {
           delete cacheByGroup[groupState.group]
         }
 
-        if (splitIndex < 0) {
+        if (splitIndex < 0 && groupState.autoCreate !== false) {
           dispatch(
             ensureSplitSceneForGroup({
               group: groupState.group,
@@ -181,7 +214,16 @@ export default function AutoManagedSplitSync() {
     if (didMutate) {
       return
     }
-  }, [activeLightScene, activeScene, autoManagedGroupStates, dispatch])
+
+    if (!videoEnabled) {
+      const hasVisualizerFilter = scene.splitScenes.some(
+        (split) => split.groups?.Visualizer !== undefined
+      )
+      if (hasVisualizerFilter) {
+        dispatch(clearVisualizerGroupFiltersFromSplits())
+      }
+    }
+  }, [activeLightScene, activeScene, autoManagedGroupStates, dispatch, videoEnabled])
 
   return null
 }

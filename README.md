@@ -1,6 +1,6 @@
 # Captivate 2
 
-<img src="https://github.com/spensbot/captivate/blob/main/design/readme/Thick.png" alt="Captivate Icon" width="150"/>
+<img src="https://github.com/NicholasTracy/captivate-2/blob/main/design/readme/Thick.png" alt="Captivate Icon" width="150"/>
 
 ## Visual & Lighting Synth
 
@@ -27,7 +27,7 @@ Tell Captivate which fixtures you have, and where they are located in space.
 
 Add fixtures seamlessly, without the need to update scenes.
 
-![Captivate DMX Configurator](https://github.com/spensbot/captivate/blob/main/design/readme/screenshot_1_dmx_config.jpg)
+![Captivate DMX Configurator](https://github.com/NicholasTracy/captivate-2/blob/main/design/readme/screenshot_1_dmx_config.jpg)
 
 ## Breathtaking Lighting
 
@@ -37,7 +37,7 @@ Take control of these parameters live with MIDI mapping or your keyboard and mou
 
 Light groups allow you to add complexity as needed
 
-![Captivate DMX Configurator](https://github.com/spensbot/captivate/blob/main/design/readme/screenshot_2_light_scenes.jpg)
+![Captivate DMX Configurator](https://github.com/NicholasTracy/captivate-2/blob/main/design/readme/screenshot_2_light_scenes.jpg)
 
 ## Stunning Visuals
 
@@ -47,13 +47,13 @@ Add your own videos and photos to create something truly unique
 
 Visualizers and effects listen to the parameters from the active light scene so lighing and visuals are automatically synchronized.
 
-![Captivate DMX Configurator](https://github.com/spensbot/captivate/blob/main/design/readme/screenshot_3_visual_scenes.jpg)
+![Captivate DMX Configurator](https://github.com/NicholasTracy/captivate-2/blob/main/design/readme/screenshot_3_visual_scenes.jpg)
 
 ## Streamlined Complexity
 
 With Captivate 2, you'll forget there are 512 DMX channels and up to 16 universes running behind the scenes
 
-![Captivate DMX Configurator](https://github.com/spensbot/captivate/blob/main/design/readme/screenshot_4_dmx_console.jpg)
+![Captivate DMX Configurator](https://github.com/NicholasTracy/captivate-2/blob/main/design/readme/screenshot_4_dmx_console.jpg)
 
 ## Always Synchronized
 
@@ -71,7 +71,7 @@ Since all dmx channels boil down to the same parameters, captivate scenes can pl
 
 ## Community
 
-Join us on [Discord](https://discord.gg/96DVPcMUUv) or on the [Github Discussion Board](https://github.com/NicholasTracy/captivate/discussions)!
+Join us on [Discord](https://discord.gg/96DVPcMUUv) or on the [Github Discussion Board](https://github.com/NicholasTracy/captivate-2/discussions)!
 
 ## Developers
 
@@ -93,7 +93,7 @@ Captivate 2 is an **Electron** app (see `package.json` / lockfile for the resolv
 
 - **macOS:** [Xcode Command Line Tools](https://developer.apple.com/xcode/resources/) (`xcode-select --install`).
 - **Windows:** **Visual Studio 2022** with the **Desktop development with C++** workload (MSVC, Windows SDK). `node-gyp` is overridden in-repo to prefer **`MSBuild\Current\Bin\amd64\MSBuild.exe`** on x64; the non-architecture `Bin\MSBuild.exe` can crash during native builds.
-- **Linux (Debian/Ubuntu-style):** packages used in CI include `libasound2-dev`, `libx11-dev`, and `libgl1-mesa-dev` (see the **Install Linux dependencies** step in `build.yml`).
+- **Linux (Debian/Ubuntu-style):** packages used in CI include `libasound2-dev`, `libx11-dev`, `libgl1-mesa-dev`, `libglu1-mesa-dev`, `libudev-dev`, and `libusb-1.0-0-dev` (see the **Install Linux dependencies** step in `build.yml`).
 
 ### Windows: paths, parallelism, and editors
 
@@ -113,8 +113,8 @@ The repo defines a workspace terminal profile **`Captivate local Node`** (see `.
 ### Clone and run (development)
 
 ```bash
-git clone https://github.com/NicholasTracy/captivate.git
-cd captivate
+git clone https://github.com/NicholasTracy/captivate-2.git
+cd captivate-2
 git submodule update --init --recursive
 git lfs pull
 npm install
@@ -153,4 +153,4 @@ Optional tablet/phone UI for scenes, modulation, and DMX mixer: [docs/remote-con
 
 Thanks to [electron-react-boilerplate](https://github.com/electron-react-boilerplate/electron-react-boilerplate) for the app boilerplate
 
-[MIT License](https://github.com/spensbot/Captivate2/blob/master/LICENSE)
+[MIT License](https://github.com/NicholasTracy/captivate-2/blob/main/LICENSE)

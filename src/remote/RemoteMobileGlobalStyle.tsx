@@ -62,5 +62,31 @@ export default createGlobalStyle`
     width: 1.35rem;
     height: 1.35rem;
   }
+
+  /* LFO modulator cards + modulation strips (mobile remote only) */
+  [data-remote-ui-mode='mobile'] [data-remote-mobile-modulation] input[type='range'] {
+    min-height: 2.75rem;
+  }
+
+  [data-remote-ui-mode='mobile'] [data-remote-mobile-modulation] input[type='range']::-webkit-slider-thumb {
+    width: 1.55rem;
+    height: 1.55rem;
+  }
+
+  [data-remote-ui-mode='mobile'] [data-remote-mobile-modulation] input[type='range']::-moz-range-thumb {
+    width: 1.55rem;
+    height: 1.55rem;
+  }
+
+  [data-remote-ui-mode='mobile'] [data-remote-mobile-modulation] .MuiSelect-select {
+    min-height: 2.65rem;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+  }
+
+  [data-remote-ui-mode='mobile'] [data-remote-mobile-modulation] .MuiInputBase-root {
+    font-size: 1rem;
+  }
 `
 

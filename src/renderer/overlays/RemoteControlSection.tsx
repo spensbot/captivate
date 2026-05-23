@@ -11,6 +11,7 @@ import {
 } from '../ipcHandler'
 import type { RemoteControlRuntimeStatus } from '../../shared/remoteControl'
 import { REMOTE_CONTROL_DEFAULT_PORT } from '../../shared/remoteControl'
+import { APP_TOOLTIP_SLOT_PROPS } from '../base/appTooltip'
 
 const REMOTE_CONTROL_TOOLTIP = (
   <>
@@ -42,13 +43,6 @@ const REMOTE_CONTROL_TOOLTIP = (
   </>
 )
 
-const TOOLTIP_BODY_SX = {
-  maxWidth: '22rem',
-  py: 1,
-  px: 1.15,
-  lineHeight: 1.45,
-} as const
-
 export default function RemoteControlSection() {
   const [status, setStatus] = useState<RemoteControlRuntimeStatus | null>(null)
   const [enabled, setEnabled] = useState(false)
@@ -70,6 +64,16 @@ export default function RemoteControlSection() {
   useEffect(() => {
     void refresh()
   }, [refresh])
+
+  useEffect(() => {
+    if (status?.running !== true) {
+      return
+    }
+    const poll = window.setInterval(() => {
+      void refresh()
+    }, 1500)
+    return () => clearInterval(poll)
+  }, [status?.running, refresh])
 
   const apply = async (nextEnabled: boolean) => {
     enabledRef.current = nextEnabled
@@ -134,7 +138,7 @@ export default function RemoteControlSection() {
           title={REMOTE_CONTROL_TOOLTIP}
           placement="top-start"
           enterDelay={350}
-          slotProps={{ tooltip: { sx: TOOLTIP_BODY_SX } }}
+          slotProps={APP_TOOLTIP_SLOT_PROPS}
         >
           <IconButton
             size="small"

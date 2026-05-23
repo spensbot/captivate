@@ -51,6 +51,8 @@ export interface GuiState {
   newProjectDialog: boolean
   ledEnabled: boolean
   videoEnabled: boolean
+  /** True while the detached Laser window is open (synced from main). */
+  laserWindowOpen: boolean
   moverCalibrationOverride: MoverCalibrationOverride | null
   moverFollowOverrideEnabled: boolean
   moverFollowOverridePan: number
@@ -82,6 +84,7 @@ export function initGuiState(): GuiState {
     newProjectDialog: false,
     ledEnabled: true,
     videoEnabled: false,
+    laserWindowOpen: false,
     moverCalibrationOverride: null,
     moverFollowOverrideEnabled: false,
     moverFollowOverridePan: 0.5,
@@ -136,6 +139,9 @@ export const guiSlice = createSlice({
     },
     setVideoEnabled: (state, { payload }: PayloadAction<boolean>) => {
       state.videoEnabled = payload === true
+    },
+    setLaserWindowOpen: (state, { payload }: PayloadAction<boolean>) => {
+      state.laserWindowOpen = payload === true
     },
     setMoverCalibrationOverride: (
       state,
@@ -316,6 +322,7 @@ export const {
   toggleLedEnabled,
   toggleVideoEnabled,
   setVideoEnabled,
+  setLaserWindowOpen,
   setMoverCalibrationOverride,
   clearMoverCalibrationOverride,
   setMoverFollowOverrideEnabled,

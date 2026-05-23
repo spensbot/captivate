@@ -1,7 +1,7 @@
-import styled from 'styled-components'
+import styled, { css, keyframes } from 'styled-components'
 import { useControlSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import {
   newScene,
   removeScene,
@@ -25,6 +25,7 @@ import {
   cancelQuantizedActiveScene,
   scheduleQuantizedSetActiveScene,
 } from './sceneBeatActivation'
+import { useLightAutoSceneCueId } from './useLightAutoSceneCue'
 
 function getColor(epicness: number) {
   const hueStart = 250
@@ -43,6 +44,9 @@ export function Scene({ sceneType, index, id }: Props) {
   const isActive = useControlSelector(
     (control) => control[sceneType].active === id
   )
+  const lightAutoCueId = useLightAutoSceneCueId()
+  const isCued =
+    sceneType === 'light' && !isActive && lightAutoCueId !== null && lightAutoCueId === id
   const dispatch = useDispatch()
 
   useEffect(() => {
@@ -97,13 +101,9 @@ export function Scene({ sceneType, index, id }: Props) {
     )
   }
 
-  let style: React.CSSProperties = {
+  const rootStyle: React.CSSProperties = {
     backgroundColor: sceneType === 'light' ? getColor(epicness) : undefined,
-  }
-
-  if (isActive) {
-    style.border = '2px solid'
-    style.color = '#fffc'
+    color: isActive ? '#fffc' : undefined,
   }
 
   return (
@@ -118,7 +118,9 @@ export function Scene({ sceneType, index, id }: Props) {
             }}
           >
             <Root
-              style={style}
+              style={rootStyle}
+              $isActive={isActive}
+              $isCued={isCued}
               onClick={() => {
                 if (isActive) {
                   return
@@ -188,7 +190,13 @@ export function Scene({ sceneType, index, id }: Props) {
 
 export function NewScene({ sceneType }: { sceneType: SceneType }) {
   const dispatch = useDispatch()
+  const lastAddAtRef = useRef(0)
   const onNew = () => {
+    const now = Date.now()
+    if (now - lastAddAtRef.current < 400) {
+      return
+    }
+    lastAddAtRef.current = now
     dispatch(newScene(sceneType))
   }
   const onCopy = () => {
@@ -196,18 +204,18 @@ export function NewScene({ sceneType }: { sceneType: SceneType }) {
   }
 
   return (
-    <Root>
+    <NewSceneRoot>
       <IconButton onClick={onNew}>
         <AddIcon />
       </IconButton>
       <IconButton onClick={onCopy}>
         <CopyIcon />
       </IconButton>
-    </Root>
+    </NewSceneRoot>
   )
 }
 
-const Root = styled.div`
+const NewSceneRoot = styled.div`
   padding: 0.5rem;
   margin-bottom: 0.3rem;
   display: flex;
@@ -218,6 +226,45 @@ const Root = styled.div`
   border: 1px solid #7777;
   background-color: ${(props) => props.theme.colors.bg.lighter};
   height: 3.4rem;
+`
+
+const cueFlash = keyframes`
+  0%,
+  100% {
+    border-color: #ffeb3b66;
+    box-shadow: 0 0 0 0 #ffeb3b00;
+  }
+  50% {
+    border-color: #ffeb3b;
+    box-shadow: 0 0 10px 1px #ffeb3b55;
+  }
+`
+
+const Root = styled.div<{ $isActive?: boolean; $isCued?: boolean }>`
+  padding: 0.5rem;
+  margin-bottom: 0.3rem;
+  display: flex;
+  align-items: center;
+  color: #fffa;
+  border-radius: 7px;
+  box-sizing: border-box;
+  border: 1px solid #7777;
+  background-color: ${(props) => props.theme.colors.bg.lighter};
+  height: 3.4rem;
+
+  ${(p) =>
+    p.$isActive &&
+    css`
+      border: 2px solid ${p.theme.colors.text.primary};
+    `}
+
+  ${(p) =>
+    p.$isCued &&
+    css`
+      border: 2px solid #ffeb3b;
+      animation: ${cueFlash} 1.1s ease-in-out infinite;
+    `}
+
   :hover {
     border: 1px solid;
     cursor: pointer;

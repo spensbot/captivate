@@ -38,6 +38,17 @@ function iconNameFallback(el: HTMLElement): string {
     .trim()
 }
 
+function hasManagedTooltip(el: HTMLElement): boolean {
+  if (el.getAttribute('data-tooltip-skip') === 'true') {
+    return true
+  }
+  // MUI Tooltip manages its own popper; native title would duplicate it.
+  if (el.closest('.MuiTooltip-root')) {
+    return true
+  }
+  return false
+}
+
 function inferTooltip(el: HTMLElement): string {
   const explicit = normalizeText(el.getAttribute('data-tooltip'))
   if (explicit) return explicit
@@ -77,7 +88,7 @@ function applyTooltips(scope: ParentNode) {
 }
 
 function applyTooltipIfMissing(control: HTMLElement | null) {
-  if (!control || control.getAttribute('data-tooltip-skip') === 'true') {
+  if (!control || hasManagedTooltip(control)) {
     return
   }
   const currentTitle = normalizeText(control.getAttribute('title'))

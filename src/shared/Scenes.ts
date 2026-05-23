@@ -123,14 +123,21 @@ export function initVisualScenesState(): VisualScenes_t {
       enabled: false,
       epicness: 0,
       period: 1,
+      energyMatchEnabled: false,
+      matchAudioEnergy: false,
     },
   }
 }
 
 export interface AutoScene_t {
   enabled: boolean
+  /** Manual energy target when energy matching uses the slider (not live audio). */
   epicness: number
   period: number
+  /** When true, auto picks by closest scene energy on each period instead of random. */
+  energyMatchEnabled: boolean
+  /** When energy matching is on and audio input is active: use live audio energy. */
+  matchAudioEnergy: boolean
 }
 
 type SceneID = string
@@ -164,6 +171,8 @@ export function initScenesState<T>(defaultScene: T): ScenesState<T> {
       enabled: false,
       epicness: 0,
       period: 1,
+      energyMatchEnabled: false,
+      matchAudioEnergy: false,
     },
   }
 }

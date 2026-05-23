@@ -60,7 +60,11 @@ import {
   writeWindowLayout,
   readWindowLayout,
 } from './windowStateStorage'
-import { setActivePage, setVideoEnabled } from '../renderer/redux/guiSlice'
+import {
+  setActivePage,
+  setLaserWindowOpen,
+  setVideoEnabled,
+} from '../renderer/redux/guiSlice'
 
 // Monkey-patch showErrorBox to avoid error modals at runtime
 // See https://stackoverflow.com/questions/35620764/how-to-disable-alert-dialogs-when-errors-occur-in-atom-electron
@@ -215,6 +219,31 @@ function syncVideoEnabledToDetachedVisualizerCount() {
   engine.getIpcCallbacks()?.send_dispatch(
     setVideoEnabled(countDetachedVisualizerWindows() > 0)
   )
+}
+
+function countDetachedLaserWindows(): number {
+  let n = 0
+  for (const w of detachedWindows) {
+    if (w.isDestroyed()) continue
+    if (detachedWindowPagesById.get(w.webContents.id) === 'Laser') {
+      n += 1
+    }
+  }
+  return n
+}
+
+function syncLaserWindowOpenToDetachedCount() {
+  if (isClosing) {
+    return
+  }
+  engine.getIpcCallbacks()?.send_dispatch(
+    setLaserWindowOpen(countDetachedLaserWindows() > 0)
+  )
+}
+
+function reconcileDetachedGuiFlags() {
+  syncVideoEnabledToDetachedVisualizerCount()
+  syncLaserWindowOpenToDetachedCount()
 }
 
 function focusWindow(window: BrowserWindow) {
@@ -741,6 +770,9 @@ function createAppWindow({
     if (isVisualizerDetachedPage(defaultPage)) {
       syncVideoEnabledToDetachedVisualizerCount()
     }
+    if (defaultPage === 'Laser') {
+      syncLaserWindowOpenToDetachedCount()
+    }
     window.on('close', (event) => {
       if (isClosing) {
         detachedCloseApprovedWebContentsIds.delete(webContentsId)
@@ -760,6 +792,7 @@ function createAppWindow({
     window.on('closed', () => {
       telemetryCounter('window.detached', 'closed')
       const wasVisualizerDetached = isVisualizerDetachedPage(defaultPage)
+      const wasLaserDetached = defaultPage === 'Laser'
       detachedWindows.delete(window)
       detachedCloseApprovedWebContentsIds.delete(webContentsId)
       detachedWindowPagesById.delete(webContentsId)
@@ -769,6 +802,9 @@ function createAppWindow({
       syncDetachedWindowLayoutSnapshot()
       if (wasVisualizerDetached) {
         syncVideoEnabledToDetachedVisualizerCount()
+      }
+      if (wasLaserDetached) {
+        syncLaserWindowOpenToDetachedCount()
       }
     })
   }
@@ -913,7 +949,7 @@ const createWindow = async () => {
       openOrFocusDetachedPage(page, opts)
     },
     requestAppQuit,
-    syncVideoEnabledToDetachedVisualizerCount
+    reconcileDetachedGuiFlags
   )
   void bootstrapRemoteControlIpc()
 
@@ -944,7 +980,7 @@ const createWindow = async () => {
       initialPlacement: detachedState,
     })
   }
-  syncVideoEnabledToDetachedVisualizerCount()
+  reconcileDetachedGuiFlags()
 
   // Remove this if your app does not use auto updates
   // eslint-disable-next-line

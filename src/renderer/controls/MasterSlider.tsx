@@ -53,21 +53,21 @@ const Root = styled.div`
 `
 
 const Card = styled.div`
-  width: min(2.1rem, 100%);
+  width: 100%;
   height: min(100%, 36rem);
   min-height: 8rem;
   max-height: 36rem;
   border-radius: 0.4rem;
-  border: 1px solid #d6ebff88;
-  background: linear-gradient(180deg, #0f1724 0%, #090f18 100%);
+  border: 1px solid #d6ebff66;
+  background: linear-gradient(180deg, #1a2433 0%, #0c121c 55%, #070b12 100%);
   box-shadow:
-    0 0 0 1px #ffffff14 inset,
-    0 0.4rem 1rem #0008;
+    ${(props) => props.theme.elevation.insetHighlight},
+    ${(props) => props.theme.elevation.shadowMd};
   display: flex;
   flex-direction: column;
   align-items: stretch;
   justify-content: space-between;
-  padding: 0.28rem 0.18rem 0.3rem;
+  padding: 0.32rem 0.28rem 0.34rem;
   box-sizing: border-box;
 `
 

@@ -33,25 +33,28 @@ const flash = keyframes`
 `
 
 const Root = styled.button<{ $active: boolean }>`
-  width: min(2.1rem, 100%);
+  width: 100%;
   height: 5.6rem;
   max-height: 6.4rem;
   min-height: 4.8rem;
-  padding: 0.3rem 0.18rem;
+  padding: 0.3rem 0.28rem;
   box-sizing: border-box;
   border-radius: 0.35rem;
-  border: 1px solid ${(props) => (props.$active ? '#ffaaaa' : '#ffe08a')};
+  border: 1px solid ${(props) => (props.$active ? '#ffaaaa' : '#c9b06a')};
   color: #f4f4f4;
   cursor: pointer;
-  background: ${(props) => (props.$active ? '#7a1111' : '#30353f')};
+  background: ${(props) =>
+    props.$active
+      ? 'linear-gradient(180deg, #9a1818 0%, #5c0c0c 100%)'
+      : 'linear-gradient(180deg, #3d4554 0%, #252b36 100%)'};
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
   gap: 0.22rem;
   box-shadow:
-    0 0 0 1px #0007 inset,
-    0 0.35rem 0.95rem #0008;
+    ${(props) => props.theme.elevation.insetHighlight},
+    ${(props) => props.theme.elevation.shadowMd};
 
   ${(props) =>
     props.$active &&

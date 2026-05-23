@@ -71,6 +71,19 @@ interface SetBpm {
 interface SetBaseParam {
   type: 'setBaseParam'
   paramKey: DefaultParam | string
+  /** Omit or 0 for split 0 (legacy MIDI action IDs omit the index). */
+  splitIndex?: number
+}
+
+export function makeSetBaseParamAction(
+  splitIndex: number,
+  paramKey: DefaultParam | string
+): SetBaseParam {
+  return { type: 'setBaseParam', splitIndex, paramKey }
+}
+
+export function getSetBaseParamSplitIndex(action: SetBaseParam): number {
+  return action.splitIndex ?? 0
 }
 
 interface TapTempo {
@@ -233,7 +246,11 @@ export function getActionID(action: MidiAction) {
     return action.type + action.sceneType + action.index.toString()
   }
   if (action.type === 'setBaseParam') {
-    return action.type + action.paramKey
+    const splitIndex = getSetBaseParamSplitIndex(action)
+    if (splitIndex === 0) {
+      return action.type + action.paramKey
+    }
+    return `${action.type}${splitIndex}:${action.paramKey}`
   }
   if (action.type === 'triggerAtmosFixture') {
     return action.type + action.fixtureId
