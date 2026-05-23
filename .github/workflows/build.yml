@@ -60,6 +60,12 @@ jobs:
           python-version: '3.11'
       - name: npm install
         run: npm install
+      - name: Ensure Node.js types resolve for node-link
+        shell: bash
+        run: |
+          test -d node_modules/@types/node || (echo "Missing @types/node at repo root" && exit 1)
+          mkdir -p release/app/node-link/node_modules/@types
+          cp -R node_modules/@types/node release/app/node-link/node_modules/@types/node
       - name: Typecheck
         run: npm run typecheck:all
       - name: Package application
