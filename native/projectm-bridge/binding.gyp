@@ -11,7 +11,7 @@
         [
           "OS!='win'",
           {
-            "cflags_cc": [ "-std=c++17" ]
+            "cflags_cc": [ "-std=c++17", "-fexceptions" ]
           }
         ],
         [
@@ -42,7 +42,7 @@
           "OS=='mac'",
           {
             "xcode_settings": {
-              "OTHER_CPLUSPLUSFLAGS": [ "-std=c++17" ]
+              "OTHER_CPLUSPLUSFLAGS": [ "-std=c++17", "-fexceptions" ]
             },
             "link_settings": {
               "libraries": [ "-framework OpenGL", "-framework Cocoa", "-ldl" ]
