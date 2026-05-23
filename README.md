@@ -21,6 +21,10 @@ Captivate 2 builds on the original [Captivate](https://github.com/spensbot/capti
 
 Configure fixtures once; scenes stay portable when you add gear or change venues.
 
+## Documentation
+
+**[Wiki](https://github.com/NicholasTracy/captivate-2/wiki)** — setup and how-to guides: DMX, connections, light scenes & splits, modulation, MIDI mapping, mixer, remote control, and troubleshooting.
+
 ## Download
 
 Installers for Windows, macOS, and Linux are on the [Releases](https://github.com/NicholasTracy/captivate-2/releases/latest) page.
@@ -31,6 +35,7 @@ Installers for Windows, macOS, and Linux are on the [Releases](https://github.co
 
 ## Community
 
+- [Wiki](https://github.com/NicholasTracy/captivate-2/wiki)
 - [Discord](https://discord.gg/96DVPcMUUv)
 - [GitHub Discussions](https://github.com/NicholasTracy/captivate-2/discussions)
 
@@ -77,6 +82,7 @@ CI builds all three platforms on push and publishes assets when you push a versi
 
 ### More docs
 
+- **[Wiki](https://github.com/NicholasTracy/captivate-2/wiki)** — user guides and troubleshooting
 - [Remote control (LAN)](docs/remote-control.md)
 - [Laser FB4 / Pangolin BEYOND](docs/laser-fb4-beyond.md)
 - **Streaming:** bundled FFmpeg via `ffmpeg-static`; optional NDI via system runtime or `assets/ndi-runtime/`
