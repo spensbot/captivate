@@ -14,6 +14,9 @@ Optional **web UI** for phones and tablets on the same network. The show compute
 1. Join the same Wi‑Fi / LAN as the show computer.
 2. In Chrome (or any modern browser), open the URL shown (e.g. `http://192.168.1.42:8765`).
 3. Enter the **PIN** from Connections.
+
+![Remote control sign-in](screenshots/Captivate_Remote_Login.png)
+
 4. Use **Scenes & modulation** or **DMX mixer** tabs; open **Connections** from the status bar for DMX/MIDI/Link settings.
 
 ## Security

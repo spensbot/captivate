@@ -21,6 +21,25 @@ Captivate 2 builds on the original [Captivate](https://github.com/spensbot/capti
 
 Configure fixtures once; scenes stay portable when you add gear or change venues.
 
+## In the app
+
+<p align="center">
+  <img src="docs/screenshots/Captivate_Lighting_Scenes.png" alt="Light scenes and modulation in Captivate 2" width="720" />
+</p>
+
+<p align="center">
+  <em>Light scenes, splits, and modulation — build looks, then perform them live.</em>
+</p>
+
+| | |
+|:---:|:---:|
+| <img src="docs/screenshots/Captivate_Connections_Dialog.png" alt="Connections dialog" width="400" /><br />**Connections** — DMX, Art-Net, MIDI, Link | <img src="docs/screenshots/Captivate_Connections_With_Devices.png" alt="Connections with devices enabled" width="400" /><br />**Devices** — enable adapters and set universes |
+| <img src="docs/screenshots/Captivate_DMX_Settings.png" alt="DMX settings" width="400" /><br />**DMX settings** — universes and output options | <img src="docs/screenshots/Captivate_DMX_Mixer.png" alt="DMX mixer" width="400" /><br />**Mixer** — per-channel live control |
+| <img src="docs/screenshots/Captivate_Visualizer.png" alt="Visualizer" width="400" /><br />**Visualizer** — audio-reactive visuals | <img src="docs/screenshots/Captivate_Visualizer_Streaming.png" alt="Visualizer streaming" width="400" /><br />**Streaming** — output to NDI or other targets |
+| <img src="docs/screenshots/Captivate_WLED.png" alt="WLED controllers" width="400" /><br />**WLED** — network LED controllers | <img src="docs/screenshots/Captivate_Remote_Login.png" alt="Remote control login" width="400" /><br />**Remote** — phone or tablet on the same network |
+
+More walkthroughs: **[Wiki](https://github.com/NicholasTracy/captivate-2/wiki)**.
+
 ## Documentation
 
 **[Wiki](https://github.com/NicholasTracy/captivate-2/wiki)** — setup and how-to guides: DMX, connections, light scenes & splits, modulation, MIDI mapping, mixer, remote control, and troubleshooting.
