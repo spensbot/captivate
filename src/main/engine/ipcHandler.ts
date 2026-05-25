@@ -30,7 +30,7 @@ import {
 import {
   submitFixtureToCommunityLibrary,
 } from '../fixtureLibraryCommunitySubmit'
-import type { FixtureLibrarySubmitInput } from '../shared/fixtureLibrarySubmitTypes'
+import type { FixtureLibrarySubmitInput } from '../../shared/fixtureLibrarySubmitTypes'
 import {
   VisualizerNdiRuntimeDetection,
   NdiSourceList,

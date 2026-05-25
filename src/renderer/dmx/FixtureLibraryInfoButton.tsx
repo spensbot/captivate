@@ -46,7 +46,7 @@ function HelpList({ children }: { children: ReactNode }) {
   return <HelpListRoot>{children}</HelpListRoot>
 }
 
-function HelpBody({ topic, relativePath, searchSource }: Props) {
+function HelpBody({ topic, searchSource }: Props) {
   if (topic === 'fixtures-panel') {
     return (
       <>
@@ -230,17 +230,6 @@ const HelpListRoot = styled.ul`
 
   li + li {
     margin-top: 0.35rem;
-  }
-`
-
-const PathLine = styled.div`
-  margin-top: 0.5rem;
-  font-size: 0.76rem;
-  color: ${(p) => p.theme.colors.text.secondary};
-
-  code {
-    font-family: ui-monospace, monospace;
-    font-size: 0.72rem;
   }
 `
 
