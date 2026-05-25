@@ -24,19 +24,19 @@ Configure fixtures once; scenes stay portable when you add gear or change venues
 ## In the app
 
 <p align="center">
-  <img src="docs/screenshots/Captivate_Lighting_Scenes.png" alt="Light scenes and modulation in Captivate 2" width="720" />
+  <img src="docs/screenshots/Captivate_Lighting_Scenes.png" alt="Light scenes and modulation" width="720" /><br />
+  <em>Light scenes, splits, and modulation</em>
 </p>
 
 <p align="center">
-  <em>Light scenes, splits, and modulation — build looks, then perform them live.</em>
+  <img src="docs/screenshots/Captivate_Visualizer.png" alt="Visualizer" width="720" /><br />
+  <em>Audio-reactive visuals synced to your lighting</em>
 </p>
 
-| | |
-|:---:|:---:|
-| <img src="docs/screenshots/Captivate_Connections_Dialog.png" alt="Connections dialog" width="400" /><br />**Connections** — DMX, Art-Net, MIDI, Link | <img src="docs/screenshots/Captivate_Connections_With_Devices.png" alt="Connections with devices enabled" width="400" /><br />**Devices** — enable adapters and set universes |
-| <img src="docs/screenshots/Captivate_DMX_Settings.png" alt="DMX settings" width="400" /><br />**DMX settings** — universes and output options | <img src="docs/screenshots/Captivate_DMX_Mixer.png" alt="DMX mixer" width="400" /><br />**Mixer** — per-channel live control |
-| <img src="docs/screenshots/Captivate_Visualizer.png" alt="Visualizer" width="400" /><br />**Visualizer** — audio-reactive visuals | <img src="docs/screenshots/Captivate_Visualizer_Streaming.png" alt="Visualizer streaming" width="400" /><br />**Streaming** — output to NDI or other targets |
-| <img src="docs/screenshots/Captivate_WLED.png" alt="WLED controllers" width="400" /><br />**WLED** — network LED controllers | <img src="docs/screenshots/Captivate_Remote_Login.png" alt="Remote control login" width="400" /><br />**Remote** — phone or tablet on the same network |
+<p align="center">
+  <img src="docs/screenshots/Captivate_DMX_Mixer.png" alt="DMX mixer" width="720" /><br />
+  <em>DMX mixer for live channel control</em>
+</p>
 
 More walkthroughs: **[Wiki](https://github.com/NicholasTracy/captivate-2/wiki)**.
 
