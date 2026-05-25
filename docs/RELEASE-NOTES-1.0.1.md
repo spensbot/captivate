@@ -8,7 +8,7 @@ This update adds the **Captivate Community Fixture Library** and a few quality-o
 - **Share your work** — On any fixture, use **Share to Library…** to send it to the community. Sign in once in your browser (paste the sign-in code from your clipboard when GitHub asks). Captivate handles the rest; the library adds your fixture automatically when it passes a quick check.
 - **Clear guidance** — The share dialog walks you through each step so you always know what is happening.
 
-More detail: [Community fixture library](CAPTIVATE-FIXTURE-LIBRARY.md)
+More detail: [Community fixture library](https://github.com/NicholasTracy/captivate-2/blob/Main/docs/CAPTIVATE-FIXTURE-LIBRARY.md)
 
 ### Fixtures UI
 
