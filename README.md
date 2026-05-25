@@ -107,7 +107,7 @@ CI builds all three platforms on push and publishes assets when you push a versi
 - [Community fixture library](docs/CAPTIVATE-FIXTURE-LIBRARY.md)
 - [Remote control (LAN)](docs/remote-control.md)
 - [Laser FB4 / Pangolin BEYOND](docs/laser-fb4-beyond.md)
-- **Streaming:** bundled FFmpeg via `ffmpeg-static`; optional NDI via system runtime or `assets/ndi-runtime/`
+- [Visualizer streaming (RTSP / NDI)](docs/visualizer-streaming.md)
 
 ---
 
