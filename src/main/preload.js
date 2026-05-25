@@ -44,17 +44,19 @@ contextBridge.exposeInMainWorld('electron', {
         'main_command',
         'app_close_prompt',
         'detached_window_close_prompt',
+        'fixture_library_submit_progress',
       ]
       if (validChannels.includes(channel)) {
         // Deliberately strip event as it includes `sender`
-        ipcRenderer.on(channel, (event, ...args) => {
-          func(...args)
-        })
+        const subscription = (event, ...args) => func(...args)
+        ipcRenderer.on(channel, subscription)
+        return () => ipcRenderer.removeListener(channel, subscription)
       } else {
         console.error(
           `Tried to recieve ipc through an invalid channel: ${channel}`
         )
       }
+      return () => {}
     },
     once(channel, func) {
       const validChannels = ['ipc-example']
@@ -114,6 +116,7 @@ contextBridge.exposeInMainWorld('electron', {
         'remote_control_get_status',
         'remote_control_apply_settings',
         'remote_control_regenerate_pin',
+        'submit_fixture_to_community_library',
       ]
       if (validChannels.includes(channel)) {
         return ipcRenderer.invoke(channel, ...args)

@@ -28,6 +28,10 @@ import {
   saveDefaultFixtureLibrary,
 } from '../fixtureLibraryStorage'
 import {
+  submitFixtureToCommunityLibrary,
+} from '../fixtureLibraryCommunitySubmit'
+import type { FixtureLibrarySubmitInput } from '../shared/fixtureLibrarySubmitTypes'
+import {
   VisualizerNdiRuntimeDetection,
   NdiSourceList,
   VisualizerStreamConfig,
@@ -627,6 +631,14 @@ function ensureStaticIpcHandlersRegistered() {
     telemetryCounter('ipc', 'get_fixture_library_default_path')
     return getDefaultFixtureLibraryPath()
   })
+
+  ipcMain.handle(
+    ipcChannels.submit_fixture_to_community_library,
+    async (event, input: FixtureLibrarySubmitInput) => {
+      telemetryCounter('ipc', 'submit_fixture_to_community_library')
+      return submitFixtureToCommunityLibrary(input, event.sender)
+    }
+  )
 
   ipcMain.handle(ipcChannels.get_desktop_audio_source_id, async () => {
     telemetryCounter('ipc', 'get_desktop_audio_source_id')

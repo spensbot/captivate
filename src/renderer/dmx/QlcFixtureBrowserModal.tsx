@@ -24,6 +24,12 @@ import {
 } from '@mui/material'
 import { FixtureType } from '../../shared/dmxFixtures'
 import { parseFixtureLibrary } from '../../shared/fixtureLibrary'
+import FixtureLibraryInfoButton from './FixtureLibraryInfoButton'
+import {
+  captivateFixtureLibraryContentsApiUrl,
+  CAPTIVATE_FIXTURE_LIBRARY_DEFAULT_BRANCH,
+  fixtureFileDisplayName,
+} from '../../shared/captivateFixtureLibraryRemote'
 
 interface Props {
   open: boolean
@@ -43,7 +49,7 @@ type GitHubFixtureFileItem = GitHubContentItem & {
   download_url: string
 }
 
-type FixtureSourceId = 'qlc' | 'ofl'
+type FixtureSourceId = 'captivate' | 'qlc' | 'ofl'
 
 type ManufacturerOption = {
   key: string
@@ -62,8 +68,10 @@ const OFL_FIXTURES_API_URL =
   'https://api.github.com/repos/OpenLightingProject/open-fixture-library/contents/fixtures'
 const OFL_MANUFACTURERS_URL =
   'https://raw.githubusercontent.com/OpenLightingProject/open-fixture-library/master/fixtures/manufacturers.json'
+const CAPTIVATE_FIXTURES_API_URL = captivateFixtureLibraryContentsApiUrl('fixtures')
 
 const fixtureSources: { id: FixtureSourceId; label: string }[] = [
+  { id: 'captivate', label: 'Captivate Community Library' },
   { id: 'qlc', label: 'QLC+ Fixture Library' },
   { id: 'ofl', label: 'Open Fixture Library' },
 ]
@@ -103,7 +111,7 @@ export default function QlcFixtureBrowserModal({
   onClose,
   onImportFixtures,
 }: Props) {
-  const [source, setSource] = useState<FixtureSourceId>('qlc')
+  const [source, setSource] = useState<FixtureSourceId>('captivate')
   const [manufacturersBySource, setManufacturersBySource] = useState<
     Partial<Record<FixtureSourceId, ManufacturerOption[]>>
   >({})
@@ -150,10 +158,22 @@ export default function QlcFixtureBrowserModal({
   const filteredFixtures = useMemo(() => {
     const query = fixtureSearch.trim().toLowerCase()
     if (query.length === 0) return fixturesForSelectedManufacturer
-    return fixturesForSelectedManufacturer.filter((fixture) =>
-      fixture.name.toLowerCase().includes(query)
-    )
-  }, [fixtureSearch, fixturesForSelectedManufacturer])
+    return fixturesForSelectedManufacturer.filter((fixture) => {
+      const displayName =
+        source === 'captivate'
+          ? fixtureFileDisplayName(fixture.name)
+          : fixture.name
+      return (
+        displayName.toLowerCase().includes(query) ||
+        fixture.name.toLowerCase().includes(query) ||
+        fixture.path.toLowerCase().includes(query)
+      )
+    })
+  }, [fixtureSearch, fixturesForSelectedManufacturer, source])
+
+  const fixtureListLabel = source === 'captivate' ? 'Model' : 'Fixture File'
+  const fixtureFilterPlaceholder =
+    source === 'captivate' ? 'Filter by model name' : 'Filter fixture files'
 
   useEffect(() => {
     if (!open || manufacturers.length > 0 || isLoadingManufacturers) {
@@ -189,6 +209,15 @@ export default function QlcFixtureBrowserModal({
           .map((entry) => ({
             key: entry.name,
             label: entry.name,
+          }))
+          .sort((left, right) => left.label.localeCompare(right.label))
+      } else if (sourceId === 'captivate') {
+        const content = await fetchGitHubContents(CAPTIVATE_FIXTURES_API_URL)
+        nextManufacturers = content
+          .filter((entry) => entry.type === 'dir')
+          .map((entry) => ({
+            key: entry.name,
+            label: entry.name.replace(/-/g, ' '),
           }))
           .sort((left, right) => left.label.localeCompare(right.label))
       } else {
@@ -253,11 +282,20 @@ export default function QlcFixtureBrowserModal({
     try {
       const encodedManufacturer = encodeURIComponent(manufacturer)
       const baseUrl =
-        sourceId === 'qlc' ? QLC_FIXTURES_API_URL : OFL_FIXTURES_API_URL
+        sourceId === 'qlc'
+          ? QLC_FIXTURES_API_URL
+          : sourceId === 'captivate'
+            ? CAPTIVATE_FIXTURES_API_URL
+            : OFL_FIXTURES_API_URL
+      const ref =
+        sourceId === 'captivate'
+          ? CAPTIVATE_FIXTURE_LIBRARY_DEFAULT_BRANCH
+          : 'master'
       const content = await fetchGitHubContents(
-        `${baseUrl}/${encodedManufacturer}?ref=master`
+        `${baseUrl}/${encodedManufacturer}?ref=${ref}`
       )
-      const extension = sourceId === 'qlc' ? '.qxf' : '.json'
+      const extension =
+        sourceId === 'qlc' ? '.qxf' : '.json'
 
       const fixtureFiles = content
         .filter(
@@ -393,6 +431,7 @@ export default function QlcFixtureBrowserModal({
           <Typography variant="h6" sx={{ flex: 1 }}>
             Search For Fixture Online
           </Typography>
+          <FixtureLibraryInfoButton topic="search-online" searchSource={source} />
           <IconButton edge="end" onClick={onClose} aria-label="close">
             <CloseIcon />
           </IconButton>
@@ -417,10 +456,6 @@ export default function QlcFixtureBrowserModal({
             ))}
           </Select>
         </FormControl>
-
-        <Typography variant="body2" color="text.secondary">
-          Select a source, then choose a manufacturer and fixture file.
-        </Typography>
 
         {message.length > 0 && (
           <Typography color="error" variant="body2">
@@ -488,12 +523,12 @@ export default function QlcFixtureBrowserModal({
               <TextField
                 fullWidth
                 size="small"
-                label="Fixture File"
+                label={fixtureListLabel}
                 value={fixtureSearch}
                 onChange={(event) => {
                   setFixtureSearch(event.target.value)
                 }}
-                placeholder="Filter fixture files"
+                placeholder={fixtureFilterPlaceholder}
                 disabled={selectedManufacturer.length === 0}
               />
             </Box>
@@ -513,7 +548,11 @@ export default function QlcFixtureBrowserModal({
                     }}
                   >
                     <ListItemText
-                      primary={fixtureFile.name}
+                      primary={
+                        source === 'captivate'
+                          ? fixtureFileDisplayName(fixtureFile.name)
+                          : fixtureFile.name
+                      }
                       secondary={fixtureFile.path}
                     />
                   </ListItemButton>

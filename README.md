@@ -12,7 +12,7 @@ Captivate 2 builds on the original [Captivate](https://github.com/spensbot/capti
 
 ## Highlights
 
-- **DMX lighting** — fixture library, import/export, multi-universe USB and Art-Net, spatial fixture layout
+- **DMX lighting** — fixture library, community online fixtures (QLC+, Open Fixture Library, Captivate library), import/export, multi-universe USB and Art-Net, spatial fixture layout
 - **Synth-style control** — LFOs, modulation, pads, randomizers, MIDI and keyboard mapping
 - **Visuals** — built-in visualizers and effects, synced to the active light scene
 - **Multi-window UI** — detached pages for mixer, laser, 3D lighting preview, and more
@@ -24,6 +24,8 @@ Configure fixtures once; scenes stay portable when you add gear or change venues
 ## Documentation
 
 **[Wiki](https://github.com/NicholasTracy/captivate-2/wiki)** — setup and how-to guides: DMX, connections, light scenes & splits, modulation, MIDI mapping, mixer, remote control, and troubleshooting.
+
+**[Community fixture library](docs/CAPTIVATE-FIXTURE-LIBRARY.md)** — browse and share Captivate fixture definitions (no git required to contribute).
 
 ## Download
 
@@ -83,6 +85,7 @@ CI builds all three platforms on push and publishes assets when you push a versi
 ### More docs
 
 - **[Wiki](https://github.com/NicholasTracy/captivate-2/wiki)** — user guides and troubleshooting
+- [Community fixture library](docs/CAPTIVATE-FIXTURE-LIBRARY.md)
 - [Remote control (LAN)](docs/remote-control.md)
 - [Laser FB4 / Pangolin BEYOND](docs/laser-fb4-beyond.md)
 - **Streaming:** bundled FFmpeg via `ffmpeg-static`; optional NDI via system runtime or `assets/ndi-runtime/`

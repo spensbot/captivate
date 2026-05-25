@@ -253,3 +253,8 @@ export function toFixtureLibrary(fixtures: FixtureType[]): FixtureLibrary {
 export function serializeFixtureLibrary(fixtures: FixtureType[]): string {
   return JSON.stringify(toFixtureLibrary(fixtures), null, 2)
 }
+
+/** One fixture in Captivate library JSON format (for export / community contributions). */
+export function serializeSingleFixtureForLibrary(fixture: FixtureType): string {
+  return serializeFixtureLibrary([fixture])
+}

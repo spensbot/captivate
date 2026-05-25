@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { IconButton } from '@mui/material'
 import { useDmxSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
@@ -17,12 +17,14 @@ import Subfixtures from './Subfixtures'
 import FixtureModelEditor from './FixtureModelEditor'
 import { captivateFileFilters, saveFile } from '../autosave'
 import { serializeFixtureLibrary } from '../../shared/fixtureLibrary'
+import ShareFixtureToLibraryDialog from './ShareFixtureToLibraryDialog'
 
 type Props = {
   id: string
+  index: number
 }
 
-export default function MyFixture({ id }: Props) {
+export default function MyFixture({ id, index }: Props) {
   const ft = useDmxSelector((state) => state.fixtureTypesByID[id])
   const isEditing = useDmxSelector((state) => state.activeFixtureType === id)
   const dispatch = useDispatch()
@@ -47,6 +49,7 @@ export default function MyFixture({ id }: Props) {
 
   return (
     <Root
+      $striped={index % 2 === 1}
       style={
         isEditing
           ? {
@@ -76,13 +79,15 @@ export default function MyFixture({ id }: Props) {
   )
 }
 
-const Root = styled.div`
-  margin-bottom: 0.5rem;
+const Root = styled.div<{ $striped: boolean }>`
+  margin-bottom: 0.15rem;
   border-radius: 5px;
   border: 1px solid #0000;
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
+  background-color: ${(p) =>
+    p.$striped ? 'rgba(255, 255, 255, 0.045)' : 'rgba(0, 0, 0, 0.12)'};
   :hover {
     border: 1px solid ${(props) => props.theme.colors.divider};
   }
@@ -110,6 +115,7 @@ function ActiveFixtureType() {
       state.universe.find((fixture) => fixture.type === ft.id) !== undefined
   )
   const dispatch = useDispatch()
+  const [shareOpen, setShareOpen] = useState(false)
 
   async function exportFixture() {
     if (ft === null) return
@@ -184,6 +190,15 @@ function ActiveFixtureType() {
         <Sp3 />
         <Button
           size="small"
+          variant="outlined"
+          onClick={() => setShareOpen(true)}
+          title="Submit this fixture to the Captivate Community Library"
+        >
+          Share to Library…
+        </Button>
+        <Sp3 />
+        <Button
+          size="small"
           disabled={isInUse}
           variant="contained"
           onClick={() => dispatch(deleteFixtureType(ft.id))}
@@ -194,6 +209,11 @@ function ActiveFixtureType() {
         <div style={{ flex: '1 0 1rem' }} />
         <EditGroups />
       </Row>
+      <ShareFixtureToLibraryDialog
+        open={shareOpen}
+        fixture={ft}
+        onClose={() => setShareOpen(false)}
+      />
     </>
   )
 }

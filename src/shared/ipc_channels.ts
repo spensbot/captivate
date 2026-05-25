@@ -76,6 +76,8 @@ export default {
   remote_control_get_status: 'remote_control_get_status',
   remote_control_apply_settings: 'remote_control_apply_settings',
   remote_control_regenerate_pin: 'remote_control_regenerate_pin',
+  submit_fixture_to_community_library: 'submit_fixture_to_community_library',
+  fixture_library_submit_progress: 'fixture_library_submit_progress',
 } as const
 
 export interface SetLinkEnabled {

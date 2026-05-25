@@ -7,9 +7,13 @@ import { fromFeet, toFeet } from '../../shared/stage'
 
 interface Props {
   compact?: boolean
+  showDepth?: boolean
 }
 
-export default function StageScaleControls({ compact = false }: Props) {
+export default function StageScaleControls({
+  compact = false,
+  showDepth = true,
+}: Props) {
   const stage = useDmxSelector((state) => state.stage)
   const dispatch = useDispatch()
 
@@ -22,7 +26,7 @@ export default function StageScaleControls({ compact = false }: Props) {
   return (
     <Root compact={compact}>
       <Label>Stage</Label>
-      <Fields compact={compact}>
+      <Fields compact={compact} showDepth={showDepth}>
         <StageLengthField
           val={Number(width.toFixed(3))}
           numberType="float"
@@ -55,22 +59,24 @@ export default function StageScaleControls({ compact = false }: Props) {
             )
           }
         />
-        <StageLengthField
-          val={Number(depth.toFixed(3))}
-          numberType="float"
-          step={0.01}
-          min={0.1}
-          label={`D (${unitLabel})`}
-          variant="outlined"
-          stageUnit={stage.unit}
-          onChange={(newValue) =>
-            dispatch(
-              setStageDimensions({
-                depthFt: toFeet(newValue, stage.unit),
-              })
-            )
-          }
-        />
+        {showDepth ? (
+          <StageLengthField
+            val={Number(depth.toFixed(3))}
+            numberType="float"
+            step={0.01}
+            min={0.1}
+            label={`D (${unitLabel})`}
+            variant="outlined"
+            stageUnit={stage.unit}
+            onChange={(newValue) =>
+              dispatch(
+                setStageDimensions({
+                  depthFt: toFeet(newValue, stage.unit),
+                })
+              )
+            }
+          />
+        ) : null}
         <UnitToggleRow>
           <UnitToggle
             type="button"
@@ -106,11 +112,17 @@ const Label = styled.div`
   color: ${(props) => props.theme.colors.text.secondary};
 `
 
-const Fields = styled.div<{ compact: boolean }>`
+const Fields = styled.div<{ compact: boolean; showDepth: boolean }>`
   display: grid;
   gap: 0.35rem;
   grid-template-columns: ${(props) =>
-    props.compact ? 'repeat(4, minmax(5rem, 6.7rem))' : 'repeat(2, minmax(5rem, 1fr))'};
+    props.compact
+      ? props.showDepth
+        ? 'repeat(4, minmax(5rem, 6.7rem))'
+        : 'repeat(3, minmax(5rem, 6.7rem))'
+      : props.showDepth
+        ? 'repeat(2, minmax(5rem, 1fr))'
+        : 'repeat(2, minmax(5rem, 1fr))'};
 `
 
 const UnitToggleRow = styled.div`

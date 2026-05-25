@@ -2,6 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import styled from 'styled-components'
 import ChevronLeft from '@mui/icons-material/ChevronLeft'
 import ChevronRight from '@mui/icons-material/ChevronRight'
+import InfoOutlined from '@mui/icons-material/InfoOutlined'
+import IconButton from '@mui/material/IconButton'
+import Popover from '@mui/material/Popover'
 import { useDmxSelector, useTypedSelector } from '../redux/store'
 import FixtureCursor from './FixtureCursor'
 import useDragMapped, { MappedPos } from '../hooks/useDragMapped'
@@ -26,6 +29,7 @@ import {
   stageAxisToDisplayValue,
 } from '../../shared/stage'
 import StageScaleControls from './StageScaleControls'
+import ToggleSwitch from '../base/ToggleSwitch'
 import NumberField from '../base/NumberField'
 import StageLengthField from '../base/StageLengthField'
 import { Window2D_t } from '../../shared/window'
@@ -78,6 +82,89 @@ function snapSpacingDisplayLabel(stage: StageDimensions, feet: number): string {
   const displayLen = feet * (stage.unit === 'm' ? METERS_PER_FOOT : 1)
   const decimals = displayLen < 1 ? 2 : 2
   return `${Number(displayLen.toFixed(decimals))} ${stage.unit}`
+}
+
+function snapGridDisplayStep(stage: StageDimensions, snapGridFeet: number): number {
+  const displayLen = snapGridFeet * (stage.unit === 'm' ? METERS_PER_FOOT : 1)
+  return Number(displayLen.toFixed(3))
+}
+
+function MappingHelpButton({
+  stage,
+  snapGridFeet,
+  zDepthEnabled,
+}: {
+  stage: StageDimensions
+  snapGridFeet: number
+  zDepthEnabled: boolean
+}) {
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null)
+  const open = anchor !== null
+  const snapLabel = snapSpacingDisplayLabel(stage, snapGridFeet)
+
+  return (
+    <>
+      <IconButton
+        size="small"
+        aria-label="Fixture mapping help"
+        onClick={(e) => setAnchor(e.currentTarget)}
+        sx={{
+          padding: '0.12rem',
+          color: 'text.secondary',
+          '&:hover': { color: 'text.primary' },
+        }}
+      >
+        <InfoOutlined sx={{ fontSize: '1rem' }} />
+      </IconButton>
+      <Popover
+        open={open}
+        anchorEl={anchor}
+        onClose={() => setAnchor(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        slotProps={{
+          paper: {
+            sx: {
+              maxWidth: '22rem',
+              p: 1.25,
+              lineHeight: 1.45,
+              fontSize: '0.78rem',
+            },
+          },
+        }}
+      >
+        <HelpTitle>Fixture mapping</HelpTitle>
+        <HelpList>
+          <li>
+            Select a fixture in the universe list or click it on the map.
+          </li>
+          <li>
+            <strong>Drag</strong> to move — snaps to <strong>{snapLabel}</strong>{' '}
+            (matches the <strong>Snap grid</strong> setting and pad grid lines).
+          </li>
+          <li>
+            Type exact coordinates in the position fields below (no snap on
+            manual entry).
+          </li>
+          <li>
+            <strong>Ctrl + drag</strong> (Cmd on Mac) or the white edge handles resize
+            the motion window on the visible axes.
+          </li>
+          {zDepthEnabled ? (
+            <li>
+              <strong>Enable Z Depth</strong> is on — use the pager for XY (front)
+              and XZ (top-down); Z appears in the 3D preview.
+            </li>
+          ) : (
+            <li>
+              Light scenes use <strong>X/Y</strong> only until you enable Z Depth;
+              movers still use their pan/tilt controls.
+            </li>
+          )}
+        </HelpList>
+      </Popover>
+    </>
+  )
 }
 
 function getGridStops(
@@ -408,6 +495,7 @@ export default function FixturePlacement() {
   }
 
   const positionAxes: Axis[] = zDepthEnabled ? ['x', 'y', 'z'] : ['x', 'y']
+  const rotationAxes: Axis[] = zDepthEnabled ? ['x', 'y', 'z'] : ['x', 'y']
   const [mappingPage, setMappingPage] = useState(0)
 
   useEffect(() => {
@@ -421,20 +509,27 @@ export default function FixturePlacement() {
       ? 'XY · Front of house'
       : 'XZ · Top down (stage toward top)'
 
+  const snapStepDisplay = snapGridDisplayStep(stage, snapGridFeet)
+
   return (
     <Root>
       <TopRow>
-        <SectionTitle>Fixture Mapping</SectionTitle>
+        <TitleCluster>
+          <SectionTitle>Fixture Mapping</SectionTitle>
+          <MappingHelpButton
+            stage={stage}
+            snapGridFeet={snapGridFeet}
+            zDepthEnabled={zDepthEnabled}
+          />
+        </TitleCluster>
         <TopControls>
           <DepthToggle>
-            <input
-              type="checkbox"
+            <DepthToggleLabel>Enable Z Depth</DepthToggleLabel>
+            <ToggleSwitch
               checked={zDepthEnabled}
-              onChange={(event) => {
-                dispatch(setFxtrDepthOn(event.target.checked))
-              }}
+              onChange={(next) => dispatch(setFxtrDepthOn(next))}
+              aria-label="Enable Z Depth"
             />
-            <span>Enable Z Depth</span>
           </DepthToggle>
           <SnapGridControl>
             <SnapGridLabel htmlFor="fixture-snap-grid">Snap grid</SnapGridLabel>
@@ -450,7 +545,7 @@ export default function FixturePlacement() {
               ))}
             </SnapGridSelect>
           </SnapGridControl>
-          <StageScaleControls compact />
+          <StageScaleControls compact showDepth={zDepthEnabled} />
         </TopControls>
       </TopRow>
 
@@ -518,8 +613,11 @@ export default function FixturePlacement() {
       <BottomInspectorScroll>
         {activeFixture !== null ? (
           <Inspector>
-            <InspectorTitle>Selected fixture · position</InspectorTitle>
-            <InspectorRow>
+            <InspectorTitle>
+              Selected fixture · position
+              {!selectedFixtureIsMover ? ' & rotation' : ''}
+            </InspectorTitle>
+            <InspectorCompactRow>
               {positionAxes.map((axis) => {
                 const displayVal = stageAxisToDisplayValue(
                   stage,
@@ -536,68 +634,40 @@ export default function FixturePlacement() {
                 return (
                   <StageLengthField
                     key={axis}
-                    val={Number(displayVal.toFixed(3))}
+                    val={Number(displayVal.toFixed(2))}
                     label={`${AXIS_LABEL[axis]} (${stage.unit})`}
                     numberType="float"
-                    step={0.01}
+                    step={snapStepDisplay}
                     min={0}
                     max={axisMaxDisplay}
                     variant="outlined"
                     stageUnit={stage.unit}
                     onChange={(newVal) => setFixtureAxisFromInput(axis, newVal)}
-                    title={`Precise ${AXIS_LABEL[axis]} position (${stage.unit}). Snap grid is ${snapSpacingDisplayLabel(stage, snapGridFeet)} per step.`}
+                    title={`${AXIS_LABEL[axis]} position (${stage.unit})`}
+                    sx={inspectorCompactFieldSx}
                   />
                 )
               })}
-            </InspectorRow>
-            <InspectorHint>
-              Mouse drag uses snap increments of {snapSpacingDisplayLabel(stage, snapGridFeet)}. Drag the white edge
-              handles on the selected fixture to resize its motion window on each visible axis;
-              right-click/secondary drag also adjusts size.
-            </InspectorHint>
-            {!zDepthEnabled && (
-              <InspectorHint>
-                Lighting scenes and LED color windows use the X/Y plane only (no Z windowing).
-                Movers keep their own pan/tilt space; Enable Z Depth for fixture depth editing, Z
-                windowing, and depth in the 3D preview.
-              </InspectorHint>
-            )}
-            {!selectedFixtureIsMover && (
-              <>
-                <InspectorTitle style={{ marginTop: '0.45rem' }}>
-                  Fixture rotation
-                </InspectorTitle>
-                <InspectorRow>
-                  {(['x', 'y', 'z'] as Axis[]).map((axis) => (
-                    <NumberField
-                      key={`rotation-${axis}`}
-                      val={Number(rotationAngle(axis).toFixed(3))}
-                      label={`Rot ${AXIS_LABEL[axis]} (deg)`}
-                      numberType="float"
-                      step={0.1}
-                      min={-360}
-                      max={360}
-                      variant="outlined"
-                      onChange={(newVal) => setFixtureRotationAxis(axis, newVal)}
-                    />
-                  ))}
-                </InspectorRow>
-              </>
-            )}
+              {!selectedFixtureIsMover &&
+                rotationAxes.map((axis) => (
+                  <NumberField
+                    key={`rotation-${axis}`}
+                    val={Number(rotationAngle(axis).toFixed(1))}
+                    label={`Rot ${AXIS_LABEL[axis]} (°)`}
+                    numberType="float"
+                    step={0.1}
+                    min={-360}
+                    max={360}
+                    variant="outlined"
+                    onChange={(newVal) => setFixtureRotationAxis(axis, newVal)}
+                    sx={inspectorCompactFieldSx}
+                  />
+                ))}
+            </InspectorCompactRow>
           </Inspector>
         ) : (
           <Inspector>
             <InspectorTitle>No fixture selected</InspectorTitle>
-            <InspectorHint>
-              Select a fixture in the universe list above, then drag on the map to position it.
-              Snap grid is {snapSpacingDisplayLabel(stage, snapGridFeet)}.
-            </InspectorHint>
-            {!zDepthEnabled && (
-              <InspectorHint>
-                Enable Z Depth to edit the third axis, use the XZ top-down map, and drive depth in
-                the 3D preview.
-              </InspectorHint>
-            )}
           </Inspector>
         )}
       </BottomInspectorScroll>
@@ -730,9 +800,32 @@ const BottomInspectorScroll = styled.div`
   }
 `
 
+const TitleCluster = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+`
+
 const SectionTitle = styled.div`
   font-size: 0.95rem;
   color: ${(props) => props.theme.colors.text.primary};
+`
+
+const HelpTitle = styled.div`
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 0.45rem;
+  color: ${(props) => props.theme.colors.text.primary};
+`
+
+const HelpList = styled.ul`
+  margin: 0;
+  padding-left: 1.1rem;
+  color: ${(props) => props.theme.colors.text.secondary};
+
+  li + li {
+    margin-top: 0.35rem;
+  }
 `
 
 const TopControls = styled.div`
@@ -743,13 +836,17 @@ const TopControls = styled.div`
   gap: 0.75rem;
 `
 
-const DepthToggle = styled.label`
+const DepthToggle = styled.div`
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.45rem;
+  user-select: none;
+`
+
+const DepthToggleLabel = styled.span`
   font-size: 0.74rem;
   color: ${(props) => props.theme.colors.text.secondary};
-  user-select: none;
+  white-space: nowrap;
 `
 
 const SnapGridControl = styled.div`
@@ -905,14 +1002,24 @@ const InspectorTitle = styled.div`
   margin-bottom: 0.35rem;
 `
 
-const InspectorRow = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(8.75rem, 1fr));
+/** Narrow numeric fields (~3 digits) for fixture position / rotation in one row. */
+const InspectorCompactRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
   gap: 0.4rem;
 `
 
-const InspectorHint = styled.div`
-  margin-top: 0.35rem;
-  font-size: 0.66rem;
-  color: ${(props) => props.theme.colors.text.secondary};
-`
+const inspectorCompactFieldSx = {
+  width: '5.1rem',
+  maxWidth: '5.1rem',
+  flex: '0 0 auto',
+  '& .MuiInputBase-input': {
+    padding: '5px 6px',
+    fontSize: '0.8rem',
+    textAlign: 'right',
+  },
+  '& .MuiInputLabel-root': {
+    fontSize: '0.7rem',
+  },
+} as const
