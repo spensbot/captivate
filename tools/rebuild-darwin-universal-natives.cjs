@@ -42,6 +42,14 @@ function resolveElectronVersion() {
   return match ? match[1] : null
 }
 
+function isDarwinNativeNodeBinary(filePath, rootDir) {
+  const rel = path.relative(rootDir, filePath).replace(/\\/g, '/')
+  if (!rel.includes('/prebuilds/')) {
+    return true
+  }
+  return /\/prebuilds\/darwin-(arm64|x64)\//.test(rel)
+}
+
 function collectNodeBinaries(rootDir) {
   const results = []
   if (!fs.existsSync(rootDir)) {
@@ -59,7 +67,11 @@ function collectNodeBinaries(rootDir) {
         stack.push(full)
         continue
       }
-      if (entry.isFile() && entry.name.endsWith('.node')) {
+      if (
+        entry.isFile() &&
+        entry.name.endsWith('.node') &&
+        isDarwinNativeNodeBinary(full, rootDir)
+      ) {
         results.push(full)
       }
     }
