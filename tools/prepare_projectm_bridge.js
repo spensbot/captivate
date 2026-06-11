@@ -51,10 +51,18 @@ const buildDarwinUniversal =
     process.env.CI === 'true')
 
 if (buildDarwinUniversal) {
+  const stagingRoot = path.join(repoRoot, '.captivate-projectm-universal-staging')
+  fs.rmSync(stagingRoot, { recursive: true, force: true })
+  fs.mkdirSync(stagingRoot, { recursive: true })
+
   const arm64Node = buildProjectmForArch(nodeGypBin, electronVersion, 'arm64')
   if (!arm64Node) {
     handleBuildFailure('arm64 projectM bridge build produced no .node output')
   }
+  const stagedArm64Node = path.join(stagingRoot, 'arm64', 'projectm_bridge.node')
+  fs.mkdirSync(path.dirname(stagedArm64Node), { recursive: true })
+  fs.copyFileSync(arm64Node, stagedArm64Node)
+
   const x64Node = buildProjectmForArch(nodeGypBin, electronVersion, 'x64')
   if (!x64Node) {
     handleBuildFailure('x64 projectM bridge build produced no .node output')
@@ -64,9 +72,10 @@ if (buildDarwinUniversal) {
   fs.mkdirSync(destinationDir, { recursive: true })
   const lipo = spawnSync(
     'lipo',
-    ['-create', arm64Node, x64Node, '-output', destinationPath],
+    ['-create', stagedArm64Node, x64Node, '-output', destinationPath],
     { encoding: 'utf8' }
   )
+  fs.rmSync(stagingRoot, { recursive: true, force: true })
   if (lipo.status !== 0) {
     handleBuildFailure(
       `lipo projectM bridge failed: ${lipo.stderr || lipo.stdout || lipo.status}`
