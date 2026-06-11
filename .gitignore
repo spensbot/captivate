@@ -31,6 +31,9 @@ release/latest-windows-installer.json
 captivate-diagnostics.log*
 .erb/dll
 
+# Local clone of the community fixture library template repo (not a submodule)
+tools/captivate-fixture-library-template/
+
 .idea
 npm-debug.log.*
 *.css.d.ts
