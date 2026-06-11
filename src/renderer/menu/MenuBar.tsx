@@ -18,6 +18,7 @@ import { listAtmosFxtrs } from '../../shared/atmosphericsMapping'
 import { universeHasMovers } from '../../shared/dmxFixtures'
 import { ButtonMidiOverlay } from '../base/MidiOverlay'
 import Tooltip from '@mui/material/Tooltip'
+import { SIDEBAR_STRIP_WIDTH } from './sidebarUi'
 
 const selectedBorder = 0.2 //rem
 type SidebarAccent =
@@ -131,23 +132,23 @@ export default function MenuBar() {
 
   return (
     <Root>
-      <MenuItem page="Universe" tooltipText="DMX Setup" accent="universe">
+      <MenuItem page="Universe" tooltipText="Patch fixtures, groups & DMX addresses" accent="universe">
         <UniverseIcon fontSize="inherit" />
       </MenuItem>
       {hasMoverFixtures && (
-        <MenuItem page="Movers" tooltipText="Mover Calibration" accent="movers">
+        <MenuItem page="Movers" tooltipText="Calibrate movers, groups & floor bounds" accent="movers">
           <MoversIcon fontSize="inherit" />
         </MenuItem>
       )}
       {ledSidebarEnabled && (
-        <MenuItem page="Led" tooltipText="Led Editor" accent="led">
+        <MenuItem page="Led" tooltipText="Edit LED strip layouts" accent="led">
           <WbIncandescentIcon fontSize="inherit" />
         </MenuItem>
       )}
-      <MenuItem page="Modulation" tooltipText="Scene Editor" accent="modulation">
+      <MenuItem page="Modulation" tooltipText="Scenes, LFOs & modulation" accent="modulation">
         <LightingIcon fontSize="inherit" />
       </MenuItem>
-      <Tooltip title="Open Visualizer window" placement="right">
+      <Tooltip title="Open visualizer in a separate window" placement="right">
         <span>
           <Item
             selected={false}
@@ -162,11 +163,11 @@ export default function MenuBar() {
           </Item>
         </span>
       </Tooltip>
-      <MenuItem page="Mixer" tooltipText="DMX Mixer" accent="mixer">
+      <MenuItem page="Mixer" tooltipText="Live DMX channel overrides" accent="mixer">
         <MixerIcon fontSize="inherit" />
       </MenuItem>
       {hasAtmosphericsFixtures && (
-        <MenuItem page="Atmospherics" tooltipText="Atmospherics + FX" accent="atmos">
+        <MenuItem page="Atmospherics" tooltipText="Atmosphere & FX triggers" accent="atmos">
           <AirIcon fontSize="inherit" />
         </MenuItem>
       )}
@@ -184,13 +185,15 @@ export default function MenuBar() {
   )
 }
 
-const sidebarInset = '0.5rem'
 
 const Root = styled.div`
   z-index: ${zIndexes.leftMenu};
   display: flex;
   flex-direction: column;
-  flex: 0 0 auto;
+  flex: 0 0 ${SIDEBAR_STRIP_WIDTH};
+  width: ${SIDEBAR_STRIP_WIDTH};
+  min-width: ${SIDEBAR_STRIP_WIDTH};
+  max-width: ${SIDEBAR_STRIP_WIDTH};
   background: linear-gradient(
     180deg,
     ${(props) => props.theme.colors.bg.lighter} 0%,
@@ -250,7 +253,7 @@ const ControlArea = styled.div`
   display: flex;
   align-items: flex-end;
   justify-content: stretch;
-  padding: 0.45rem ${sidebarInset} 0.8rem;
+  padding: 0.45rem 0 0.8rem;
 `
 
 const ControlCluster = styled.div`
@@ -263,10 +266,11 @@ const ControlCluster = styled.div`
   align-items: stretch;
   justify-content: flex-end;
   gap: 0.55rem;
-  padding: 0.4rem;
+  padding: 0.4rem 0;
   box-sizing: border-box;
-  border-radius: 0.45rem;
-  border: 1px solid ${(props) => props.theme.colors.divider};
+  border-radius: 0;
+  border-top: 1px solid ${(props) => props.theme.colors.divider};
+  border-bottom: 1px solid ${(props) => props.theme.colors.divider};
   background: linear-gradient(
     180deg,
     ${(props) => props.theme.colors.bg.panel} 0%,

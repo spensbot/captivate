@@ -137,7 +137,6 @@ export default function ParamsControl({ splitIndex }: Params) {
 
       const groupedFixture = new Set(
         fixture.groups
-          .concat(fixtureType.groups)
           .map((group) => group.trim())
           .filter((group) => group.length > 0)
       )
@@ -311,7 +310,7 @@ export default function ParamsControl({ splitIndex }: Params) {
         params: {
           xAxis: baseParams.xAxis ?? 0.5,
           yAxis: baseParams.yAxis ?? 0.5,
-          moverFloorLock: baseParams.moverFloorLock ?? 1,
+          moverFloorLock: baseParams.moverFloorLock ?? 0,
           moverSpread: baseParams.moverSpread ?? 0,
           moverMirrorX: baseParams.moverMirrorX ?? 0,
           moverMirrorY: baseParams.moverMirrorY ?? 0,

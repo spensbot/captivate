@@ -11,6 +11,7 @@ import {
   SplitState,
 } from '../../renderer/redux/realtimeStore'
 import { TimeState } from '../../shared/TimeState'
+import { timeStatesVisuallyEqual } from '../../shared/timeExtrapolation'
 import {
   initRandomizerState,
   resizeRandomizer,
@@ -19,7 +20,15 @@ import {
 import { getOutputParams } from '../../shared/modulation'
 import { handleMessage } from './handleMidi'
 import { VisualizerContainer } from './createVisualizerWindow'
-import { calculateDmx, finalizeDmxUniverses } from './dmxEngine'
+import {
+  calculateDmx,
+  finalizeDmxUniverses,
+  getDmxComputeIntervalMs,
+} from './dmxEngine'
+import {
+  reuseUnchangedDmxOutByUniverse,
+  reuseUnchangedSplitStates,
+} from './realtimeStateSharing'
 import { handleAutoScene } from '../../shared/autoScene'
 import {
   setActiveScene,
@@ -72,22 +81,56 @@ import { reportDiagnostic } from '../diagnostics'
 import {
   telemetryCounter,
   telemetryDuration,
+  telemetryDurationSampled,
   telemetryEvent,
   telemetryGauge,
+  telemetryGaugeSampled,
   telemetryHealth,
+  telemetryHealthSampled,
 } from '../telemetry'
 
 let _nodeLink = new NodeLink()
 _nodeLink.setIsPlaying(true)
-_nodeLink.enableStartStopSync(true)
-_nodeLink.enable(true)
+_nodeLink.enable(false)
+_nodeLink.enableStartStopSync(false)
+let _lastSyncedLinkEnabled: boolean | null = null
+let _lastSyncedLinkStartStopSync: boolean | null = null
+
+function syncNodeLinkFromControlState(controlState: CleanReduxState | null) {
+  const linkEnabled =
+    controlState?.control.device.connectionSettings.linkEnabled === true
+  const startStopSync =
+    controlState?.control.device.connectionSettings.linkStartStopSyncEnabled ===
+    true
+  if (_lastSyncedLinkEnabled !== linkEnabled) {
+    _lastSyncedLinkEnabled = linkEnabled
+    _nodeLink.enable(linkEnabled)
+  }
+  if (_lastSyncedLinkStartStopSync !== startStopSync) {
+    _lastSyncedLinkStartStopSync = startStopSync
+    _nodeLink.enableStartStopSync(startStopSync)
+  }
+}
 let _ipcCallbacks: IPC_Callbacks | null = null
 let _controlState: CleanReduxState | null = null
 let _realtimeState: RealtimeState = initRealtimeState()
 let _lastFrameTime = 0
-let _realtimeLoopHandle: ReturnType<typeof setInterval> | null = null
+const ENGINE_REALTIME_TICK_MS = 1000 / 90
+let _realtimeLoopHandle: ReturnType<typeof setTimeout> | null = null
+let _realtimeNextTickAtMs = 0
 let _dmxConnectionPollHandle: ReturnType<typeof setInterval> | null = null
+let _lastDmxComputeAtMs = 0
+let _dmxDeferredScheduled = false
+/** Authoritative beat/LFO position while transport is stopped. */
+let _frozenTransportTime: TimeState | null = null
+let _liveOutputFlushScheduled = false
+let _visualizerContainer: VisualizerContainer | null = null
 let _engineStopped = false
+
+function isVisualizerWindowOpen(): boolean {
+  const visualizer = _visualizerContainer?.visualizer
+  return visualizer !== null && visualizer !== undefined && !visualizer.isDestroyed()
+}
 const _tapTempoEngine = new TapTempoEngine()
 
 function shouldApplyTapTempoToNodeLink(control: CleanReduxState | null) {
@@ -287,6 +330,209 @@ export function getControlStateSnapshot(): CleanReduxState | null {
   return _controlState
 }
 
+function controlStateAffectsLiveDmxOutput(
+  prev: CleanReduxState | null,
+  next: CleanReduxState
+): boolean {
+  if (prev === null) {
+    return false
+  }
+  if (prev.control !== next.control) {
+    return true
+  }
+  if (prev.mixer !== next.mixer) {
+    return true
+  }
+  if (prev.gui.blackout !== next.gui.blackout) {
+    return true
+  }
+  if (prev.gui.moverCalibrationOverride !== next.gui.moverCalibrationOverride) {
+    return true
+  }
+  if (prev.gui.colorMapCalibrationOverride !== next.gui.colorMapCalibrationOverride) {
+    return true
+  }
+  return false
+}
+
+function applyLiveOutputFlush() {
+  if (_engineStopped || _ipcCallbacks === null || _controlState === null) {
+    return
+  }
+
+  const ipcCallbacks = _ipcCallbacks
+  const controlState = _controlState
+  const timeState = _realtimeState.time
+  const playing = timeState.isPlaying === true
+
+  if (!playing) {
+    _realtimeState = getNextRealtimeState(
+      _realtimeState,
+      timeState,
+      ipcCallbacks,
+      controlState,
+      { recomputeDmx: true, dmxOnly: true, dmxDtMs: 0 }
+    )
+  } else {
+    _realtimeState = getNextRealtimeState(
+      _realtimeState,
+      timeState,
+      ipcCallbacks,
+      controlState,
+      { recomputeDmx: false }
+    )
+    _realtimeState = getNextRealtimeState(
+      _realtimeState,
+      timeState,
+      ipcCallbacks,
+      controlState,
+      { recomputeDmx: true, dmxOnly: true, dmxDtMs: 0 }
+    )
+  }
+  _lastDmxComputeAtMs = performance.now()
+}
+
+function scheduleLiveOutputFlush() {
+  if (_liveOutputFlushScheduled) {
+    return
+  }
+  _liveOutputFlushScheduled = true
+  setImmediate(() => {
+    _liveOutputFlushScheduled = false
+    applyLiveOutputFlush()
+  })
+}
+
+function runRealtimeLoopTick() {
+  const tickStartedAt = performance.now()
+  try {
+    const nextTimeState = getNextTimeState(_controlState)
+    if (_ipcCallbacks !== null && _controlState !== null) {
+      const dmxComputeIntervalMs = getDmxComputeIntervalMs(_controlState)
+      const shouldRecomputeDmx =
+        _lastDmxComputeAtMs === 0 ||
+        tickStartedAt - _lastDmxComputeAtMs >= dmxComputeIntervalMs
+      const dmxDtMs =
+        _lastDmxComputeAtMs === 0
+          ? nextTimeState.dt
+          : Math.max(nextTimeState.dt, tickStartedAt - _lastDmxComputeAtMs)
+
+      // Fast path: modulation + transport first so UI IPC is not blocked by DMX.
+      _realtimeState = getNextRealtimeState(
+        _realtimeState,
+        nextTimeState,
+        _ipcCallbacks,
+        _controlState,
+        { recomputeDmx: false }
+      )
+      maybeReportMoverRuntimeStall(_controlState, _realtimeState)
+      _ipcCallbacks.send_time_state(
+        _realtimeState,
+        _controlState.control.master
+      )
+
+      if (shouldRecomputeDmx) {
+        _lastDmxComputeAtMs = tickStartedAt
+        if (!_dmxDeferredScheduled) {
+          _dmxDeferredScheduled = true
+          const ipcCallbacks = _ipcCallbacks
+          const controlState = _controlState
+          const deferredDmxDtMs = dmxDtMs
+          setImmediate(() => {
+            _dmxDeferredScheduled = false
+            if (
+              _engineStopped ||
+              ipcCallbacks === null ||
+              controlState === null
+            ) {
+              return
+            }
+            const latestTimeState = _realtimeState.time
+            _realtimeState = getNextRealtimeState(
+              _realtimeState,
+              latestTimeState,
+              ipcCallbacks,
+              controlState,
+              { recomputeDmx: true, dmxOnly: true, dmxDtMs: deferredDmxDtMs }
+            )
+          })
+        }
+      } else {
+        telemetryCounter('engine.dmx', 'compute_skipped_ticks')
+      }
+
+      if (isVisualizerWindowOpen()) {
+        _ipcCallbacks.send_visualizer_state({
+          rt: _realtimeState,
+          state: _controlState,
+        })
+      }
+    }
+    telemetryHealthSampled('engine.realtime', 'ok')
+  } catch (error) {
+    const err = error as Error
+    telemetryCounter('engine.realtime', 'errors')
+    telemetryHealth(
+      'engine.realtime',
+      'error',
+      err?.message ?? String(error)
+    )
+    reportDiagnostic({
+      source: 'main',
+      area: 'engine',
+      event: 'realtime-loop-error',
+      level: 'error',
+      message: err?.message ?? String(error),
+      data: {
+        stack: err?.stack,
+      },
+    })
+  } finally {
+    const tickMs = performance.now() - tickStartedAt
+    telemetryCounter('engine.realtime', 'ticks')
+    telemetryDurationSampled('engine.realtime', 'tick_ms', tickMs)
+    telemetryGaugeSampled('engine.realtime', 'last_tick_ms', tickMs, 'ms')
+    if (tickMs > 18 && Date.now() - _lastRealtimeLoopWarnAtMs > 2000) {
+      _lastRealtimeLoopWarnAtMs = Date.now()
+      telemetryEvent(
+        'engine.realtime',
+        'tick-overrun',
+        'warn',
+        'Realtime loop tick exceeded budget',
+        { tickMs }
+      )
+    }
+  }
+}
+
+function scheduleRealtimeLoopTick() {
+  if (_engineStopped) {
+    return
+  }
+
+  const now = performance.now()
+  if (_realtimeNextTickAtMs === 0) {
+    _realtimeNextTickAtMs = now
+  }
+  _realtimeNextTickAtMs += ENGINE_REALTIME_TICK_MS
+
+  let delayMs = _realtimeNextTickAtMs - performance.now()
+  if (delayMs < 0) {
+    if (delayMs < -ENGINE_REALTIME_TICK_MS * 2) {
+      _realtimeNextTickAtMs = performance.now() + ENGINE_REALTIME_TICK_MS
+      delayMs = ENGINE_REALTIME_TICK_MS
+    } else {
+      delayMs = 0
+    }
+  }
+
+  _realtimeLoopHandle = setTimeout(() => {
+    _realtimeLoopHandle = null
+    runRealtimeLoopTick()
+    scheduleRealtimeLoopTick()
+  }, delayMs)
+}
+
 export function start(
   renderer: WebContents,
   visualizerContainer: VisualizerContainer,
@@ -297,6 +543,7 @@ export function start(
   telemetryCounter('engine', 'start')
   telemetryHealth('engine', 'ok', 'Engine start requested')
   _engineStopped = false
+  _visualizerContainer = visualizerContainer
   clearEngineLoopTimers()
   _visualizerStreamingSettings = getVisualizerStreamingSettings()
 
@@ -306,7 +553,10 @@ export function start(
     on_reconcile_video_enabled: reconcileVideoEnabled,
     get_control_state_snapshot: () => _controlState,
     on_new_control_state: (newState) => {
+      const prevState = _controlState
+      const liveOutputChanged = controlStateAffectsLiveDmxOutput(prevState, newState)
       _controlState = newState
+      syncNodeLinkFromControlState(newState)
       telemetryCounter('engine', 'control_state_updates')
       telemetryGauge(
         'engine',
@@ -314,16 +564,38 @@ export function start(
         newState.control.light.byId[newState.control.light.active]?.splitScenes
           ?.length ?? 0
       )
+      if (liveOutputChanged) {
+        scheduleLiveOutputFlush()
+      }
     },
     on_user_command: (command) => {
       if (command.type === 'IncrementTempo') {
         _nodeLink.setTempo(_realtimeState.time.bpm + command.amount)
       } else if (command.type === 'SetLinkEnabled') {
+        if (_controlState !== null) {
+          _controlState.control.device.connectionSettings.linkEnabled =
+            command.isEnabled
+        }
+        _lastSyncedLinkEnabled = command.isEnabled
         _nodeLink.enable(command.isEnabled)
       } else if (command.type === 'EnableStartStopSync') {
+        if (_controlState !== null) {
+          _controlState.control.device.connectionSettings.linkStartStopSyncEnabled =
+            command.isEnabled
+        }
+        _lastSyncedLinkStartStopSync = command.isEnabled
         _nodeLink.enableStartStopSync(command.isEnabled)
       } else if (command.type === 'SetIsPlaying') {
-        _nodeLink.setIsPlaying(command.isPlaying)
+        if (command.isPlaying) {
+          if (_frozenTransportTime !== null) {
+            _nodeLink.forceBeat(_frozenTransportTime.beats)
+            _frozenTransportTime = null
+          }
+          _nodeLink.setIsPlaying(true)
+        } else {
+          _frozenTransportTime = freezeTransportTime(_realtimeState.time)
+          _nodeLink.setIsPlaying(false)
+        }
       } else if (command.type === 'SetBPM') {
         _nodeLink.setTempo(command.bpm)
       } else if (command.type === 'TapTempo') {
@@ -464,65 +736,11 @@ export function start(
       _projectMBridgeManager.shutdownSession(sessionId),
   })
 
-  // We're currently calculating the realtimeState 90x per second.
-  // The renderer should have a new realtime state on each animation frame (assuming a refresh rate of 60 hz)
-  _realtimeLoopHandle = setInterval(() => {
-    const tickStartedAt = performance.now()
-    try {
-      const nextTimeState = getNextTimeState(_controlState)
-      if (_ipcCallbacks !== null && _controlState !== null) {
-        _realtimeState = getNextRealtimeState(
-          _realtimeState,
-          nextTimeState,
-          _ipcCallbacks,
-          _controlState
-        )
-        maybeReportMoverRuntimeStall(_controlState, _realtimeState)
-        _ipcCallbacks.send_time_state(
-          _realtimeState,
-          _controlState.control.master
-        )
-        _ipcCallbacks.send_visualizer_state({
-          rt: _realtimeState,
-          state: _controlState,
-        })
-      }
-      telemetryHealth('engine.realtime', 'ok')
-    } catch (error) {
-      const err = error as Error
-      telemetryCounter('engine.realtime', 'errors')
-      telemetryHealth(
-        'engine.realtime',
-        'error',
-        err?.message ?? String(error)
-      )
-      reportDiagnostic({
-        source: 'main',
-        area: 'engine',
-        event: 'realtime-loop-error',
-        level: 'error',
-        message: err?.message ?? String(error),
-        data: {
-          stack: err?.stack,
-        },
-      })
-    } finally {
-      const tickMs = performance.now() - tickStartedAt
-      telemetryCounter('engine.realtime', 'ticks')
-      telemetryDuration('engine.realtime', 'tick_ms', tickMs)
-      telemetryGauge('engine.realtime', 'last_tick_ms', tickMs, 'ms')
-      if (tickMs > 18 && Date.now() - _lastRealtimeLoopWarnAtMs > 2000) {
-        _lastRealtimeLoopWarnAtMs = Date.now()
-        telemetryEvent(
-          'engine.realtime',
-          'tick-overrun',
-          'warn',
-          'Realtime loop tick exceeded budget',
-          { tickMs }
-        )
-      }
-    }
-  }, 1000 / 90)
+  // Transport / modulation run at 90 Hz; DMX output is recomputed at the configured
+  // device refresh rate (Art-Net ~44 Hz, USB Pro 40 Hz, Open DMX 30 Hz by default).
+  _lastDmxComputeAtMs = 0
+  _realtimeNextTickAtMs = 0
+  scheduleRealtimeLoopTick()
 
   _dmxConnectionPollHandle = setInterval(async () => {
     if (!_controlState) return
@@ -566,13 +784,17 @@ export function start(
 
 function clearEngineLoopTimers() {
   if (_realtimeLoopHandle !== null) {
-    clearInterval(_realtimeLoopHandle)
+    clearTimeout(_realtimeLoopHandle)
     _realtimeLoopHandle = null
   }
+  _realtimeNextTickAtMs = 0
   if (_dmxConnectionPollHandle !== null) {
     clearInterval(_dmxConnectionPollHandle)
     _dmxConnectionPollHandle = null
   }
+  _lastDmxComputeAtMs = 0
+  _dmxDeferredScheduled = false
+  _visualizerContainer = null
 }
 
 export function stop() {
@@ -715,19 +937,75 @@ function getAudioBeatClockDetectedBpm(
   return detectedBpm
 }
 
+const REALTIME_TICK_MS = 1000 / 90
+const REALTIME_MAX_DT_MS = REALTIME_TICK_MS * 3
+
+function freezeTransportTime(source: TimeState): TimeState {
+  return {
+    ...source,
+    isPlaying: false,
+    dt: 0,
+  }
+}
+
+function getFrozenAuthoritativeTimeState(
+  sessionInfo: ReturnType<typeof _nodeLink.getSessionInfoCurrent>
+): TimeState {
+  if (_frozenTransportTime === null) {
+    return freezeTransportTime(_realtimeState.time)
+  }
+  return {
+    ..._frozenTransportTime,
+    numPeers: sessionInfo.numPeers,
+    isEnabled: sessionInfo.isEnabled,
+    isStartStopSyncEnabled: sessionInfo.isStartStopSyncEnabled,
+    isPlaying: false,
+    dt: 0,
+  }
+}
+
+function syncFrozenTransportFromSession(
+  sessionInfo: ReturnType<typeof _nodeLink.getSessionInfoCurrent>
+) {
+  if (sessionInfo.isPlaying !== true) {
+    if (_frozenTransportTime === null && _realtimeState.time.isPlaying === true) {
+      _frozenTransportTime = freezeTransportTime(_realtimeState.time)
+    }
+    return
+  }
+
+  if (_frozenTransportTime !== null) {
+    _nodeLink.forceBeat(_frozenTransportTime.beats)
+    _frozenTransportTime = null
+  }
+}
+
 // Todo: Desimate dt in this context
 function getNextTimeState(controlState: CleanReduxState | null): TimeState {
   const startedAt = performance.now()
+  const sessionInfo = _nodeLink.getSessionInfoCurrent()
+  syncFrozenTransportFromSession(sessionInfo)
+
+  if (_frozenTransportTime !== null) {
+    telemetryDurationSampled(
+      'engine',
+      'get_next_time_state_ms',
+      performance.now() - startedAt
+    )
+    return getFrozenAuthoritativeTimeState(sessionInfo)
+  }
+
   applyAudioBeatClock(controlState)
 
   let currentTime = Date.now()
   let dt = currentTime - _lastFrameTime
   if (!Number.isFinite(dt) || dt <= 0 || _lastFrameTime === 0) {
-    dt = 1000 / 90
+    dt = REALTIME_TICK_MS
+  } else {
+    dt = Math.min(dt, REALTIME_MAX_DT_MS)
   }
 
   _lastFrameTime = currentTime
-  const sessionInfo = _nodeLink.getSessionInfoCurrent()
   const sessionBpm = Number(sessionInfo.bpm)
   const sessionBeats = Number(sessionInfo.beats)
   const sessionPhase = Number(sessionInfo.phase)
@@ -862,10 +1140,14 @@ function getNextTimeState(controlState: CleanReduxState | null): TimeState {
     ? sessionPhase
     : safePhase
 
-  telemetryDuration('engine', 'get_next_time_state_ms', performance.now() - startedAt)
-  telemetryGauge('engine', 'time_dt_ms', dt, 'ms')
-  telemetryGauge('engine', 'time_bpm', safeBpm, 'bpm')
-  telemetryGauge('engine', 'time_phase', safePhase)
+  telemetryDurationSampled(
+    'engine',
+    'get_next_time_state_ms',
+    performance.now() - startedAt
+  )
+  telemetryGaugeSampled('engine', 'time_dt_ms', dt, 'ms')
+  telemetryGaugeSampled('engine', 'time_bpm', safeBpm, 'bpm')
+  telemetryGaugeSampled('engine', 'time_phase', safePhase)
 
   return {
     ...sessionInfo,
@@ -1009,16 +1291,179 @@ function maybeReportMoverRuntimeStall(
   }
 }
 
+interface GetNextRealtimeStateOptions {
+  recomputeDmx: boolean
+  /** Re-run DMX/atmos only (split states already computed on the fast path). */
+  dmxOnly?: boolean
+  dmxDtMs?: number
+}
+
+function getFrozenRealtimeState(
+  realtimeState: RealtimeState,
+  nextTimeState: TimeState
+): RealtimeState {
+  const frozenTime: TimeState = {
+    ...nextTimeState,
+    dt: 0,
+  }
+  const liveAudio = _latestAudioMetrics
+  if (
+    realtimeState.time.isPlaying !== true &&
+    timeStatesVisuallyEqual(realtimeState.time, frozenTime) &&
+    realtimeState.audio === liveAudio
+  ) {
+    return realtimeState
+  }
+  return {
+    time: frozenTime,
+    dmxOutByUniverse: realtimeState.dmxOutByUniverse,
+    dmxOut: realtimeState.dmxOut,
+    splitStates: realtimeState.splitStates,
+    audio: liveAudio,
+    atmos: realtimeState.atmos,
+  }
+}
+
+function recomputeFrozenTransportDmx(
+  realtimeState: RealtimeState,
+  nextTimeState: TimeState,
+  controlState: CleanReduxState
+): RealtimeState {
+  const frozenTimeState: TimeState = {
+    ...nextTimeState,
+    dt: 0,
+  }
+  const scene =
+    controlState.control.light.byId[controlState.control.light.active]
+
+  if (!scene?.splitScenes) {
+    const computedDmxOutByUniverse = calculateDmx(
+      controlState,
+      [],
+      frozenTimeState
+    )
+    finalizeDmxUniverses(controlState, computedDmxOutByUniverse)
+    const dmxOutByUniverse = reuseUnchangedDmxOutByUniverse(
+      realtimeState.dmxOutByUniverse,
+      computedDmxOutByUniverse
+    )
+    return {
+      time: frozenTimeState,
+      dmxOutByUniverse,
+      dmxOut: dmxOutByUniverse[0] ?? realtimeState.dmxOut,
+      splitStates: [],
+      audio: _latestAudioMetrics,
+      atmos: realtimeState.atmos,
+    }
+  }
+
+  const splitStates = realtimeState.splitStates
+  const computedDmxOutByUniverse = calculateDmx(
+    controlState,
+    splitStates,
+    frozenTimeState
+  )
+  finalizeDmxUniverses(controlState, computedDmxOutByUniverse)
+  const dmxOutByUniverse = reuseUnchangedDmxOutByUniverse(
+    realtimeState.dmxOutByUniverse,
+    computedDmxOutByUniverse
+  )
+  return {
+    time: frozenTimeState,
+    dmxOutByUniverse,
+    dmxOut: dmxOutByUniverse[0] ?? realtimeState.dmxOut,
+    splitStates,
+    audio: _latestAudioMetrics,
+    atmos: realtimeState.atmos,
+  }
+}
+
 function getNextRealtimeState(
   realtimeState: RealtimeState,
   nextTimeState: TimeState,
   ipcCallbacks: IPC_Callbacks,
-  controlState: CleanReduxState
+  controlState: CleanReduxState,
+  options: GetNextRealtimeStateOptions = { recomputeDmx: true }
 ): RealtimeState {
+  const dmxTimeState =
+    options.dmxDtMs !== undefined
+      ? { ...nextTimeState, dt: options.dmxDtMs }
+      : nextTimeState
   const startedAt = performance.now()
+  if (nextTimeState.isPlaying !== true) {
+    if (options.dmxOnly === true && options.recomputeDmx) {
+      return recomputeFrozenTransportDmx(
+        realtimeState,
+        nextTimeState,
+        controlState
+      )
+    }
+    return getFrozenRealtimeState(realtimeState, nextTimeState)
+  }
   const scene =
     controlState.control.light.byId[controlState.control.light.active]
   const dmx = controlState.dmx
+
+  if (options.dmxOnly === true) {
+    if (!options.recomputeDmx) {
+      return realtimeState
+    }
+
+    if (!scene?.splitScenes) {
+      const computedDmxOutByUniverse = calculateDmx(controlState, [], dmxTimeState)
+      finalizeDmxUniverses(controlState, computedDmxOutByUniverse)
+      const dmxOutByUniverse = reuseUnchangedDmxOutByUniverse(
+        realtimeState.dmxOutByUniverse,
+        computedDmxOutByUniverse
+      )
+      return {
+        time: nextTimeState,
+        dmxOutByUniverse,
+        dmxOut: dmxOutByUniverse[0] ?? realtimeState.dmxOut,
+        splitStates: [],
+        audio: _latestAudioMetrics,
+        atmos: _atmosphericsOutputManager.apply(
+          controlState,
+          [],
+          dmxTimeState,
+          _latestAudioMetrics,
+          dmxOutByUniverse
+        ),
+      }
+    }
+
+    const splitStates = realtimeState.splitStates
+    const dmxStartedAt = performance.now()
+    const computedDmxOutByUniverse = calculateDmx(
+      controlState,
+      splitStates,
+      dmxTimeState
+    )
+    const atmos = _atmosphericsOutputManager.apply(
+      controlState,
+      splitStates,
+      dmxTimeState,
+      _latestAudioMetrics,
+      computedDmxOutByUniverse
+    )
+    finalizeDmxUniverses(controlState, computedDmxOutByUniverse)
+    const dmxOutByUniverse = reuseUnchangedDmxOutByUniverse(
+      realtimeState.dmxOutByUniverse,
+      computedDmxOutByUniverse
+    )
+    const dmxMs = performance.now() - dmxStartedAt
+    telemetryDuration('engine.dmx', 'calculate_ms', dmxMs)
+    telemetryGauge('engine.dmx', 'calculate_last_ms', dmxMs, 'ms')
+    return {
+      time: nextTimeState,
+      dmxOutByUniverse,
+      dmxOut: dmxOutByUniverse[0] ?? realtimeState.dmxOut,
+      splitStates,
+      audio: _latestAudioMetrics,
+      atmos,
+    }
+  }
+
   const allParamKeys = getAllParamKeys(dmx)
 
   handleAutoScene(
@@ -1046,25 +1491,40 @@ function getNextRealtimeState(
   const fixtures = flatten_fixtures(dmx.universe, dmx.fixtureTypesByID)
 
   if (!scene?.splitScenes) {
-    const dmxOutByUniverse = calculateDmx(controlState, [], nextTimeState)
-    finalizeDmxUniverses(controlState, dmxOutByUniverse)
+    if (!options.recomputeDmx) {
+      return {
+        time: nextTimeState,
+        dmxOutByUniverse: realtimeState.dmxOutByUniverse,
+        dmxOut: realtimeState.dmxOut,
+        splitStates: [],
+        audio: _latestAudioMetrics,
+        atmos: realtimeState.atmos,
+      }
+    }
+
+    const computedDmxOutByUniverse = calculateDmx(controlState, [], dmxTimeState)
+    finalizeDmxUniverses(controlState, computedDmxOutByUniverse)
+    const dmxOutByUniverse = reuseUnchangedDmxOutByUniverse(
+      realtimeState.dmxOutByUniverse,
+      computedDmxOutByUniverse
+    )
     return {
       time: nextTimeState,
       dmxOutByUniverse,
-      dmxOut: dmxOutByUniverse[0] ?? Array(512).fill(0),
+      dmxOut: dmxOutByUniverse[0] ?? realtimeState.dmxOut,
       splitStates: [],
       audio: _latestAudioMetrics,
       atmos: _atmosphericsOutputManager.apply(
         controlState,
         [],
-        nextTimeState,
+        dmxTimeState,
         _latestAudioMetrics,
         dmxOutByUniverse
       ),
     }
   }
 
-  const splitStates: SplitState[] = scene.splitScenes.map(
+  const computedSplitStates: SplitState[] = scene.splitScenes.map(
     (splitScene, splitIndex) => {
       const splitOutputParams = getOutputParams(
         nextTimeState.beats,
@@ -1101,38 +1561,56 @@ function getNextRealtimeState(
       }
     }
   )
-
-  const dmxStartedAt = performance.now()
-  const dmxOutByUniverse = calculateDmx(controlState, splitStates, nextTimeState)
-  const atmos = _atmosphericsOutputManager.apply(
-    controlState,
-    splitStates,
-    nextTimeState,
-    _latestAudioMetrics,
-    dmxOutByUniverse
+  const splitStates = reuseUnchangedSplitStates(
+    realtimeState.splitStates,
+    computedSplitStates
   )
-  finalizeDmxUniverses(controlState, dmxOutByUniverse)
-  const dmxMs = performance.now() - dmxStartedAt
-  telemetryDuration('engine.dmx', 'calculate_ms', dmxMs)
-  telemetryGauge('engine.dmx', 'calculate_last_ms', dmxMs, 'ms')
-  telemetryGauge('engine.dmx', 'active_splits', splitStates.length)
-  telemetryGauge('engine.dmx', 'fixture_count', fixtures.length)
-  if (dmxMs > 14 && Date.now() - _lastDmxCalcWarnAtMs > 2000) {
-    _lastDmxCalcWarnAtMs = Date.now()
-    telemetryEvent(
-      'engine.dmx',
-      'calculate-overrun',
-      'warn',
-      'DMX calculation exceeded frame budget',
-      {
-        dmxMs,
-        splitCount: splitStates.length,
-        fixtureCount: fixtures.length,
-      }
+
+  let dmxOutByUniverse = realtimeState.dmxOutByUniverse
+  let atmos = realtimeState.atmos
+  if (options.recomputeDmx) {
+    const dmxStartedAt = performance.now()
+    const computedDmxOutByUniverse = calculateDmx(
+      controlState,
+      splitStates,
+      dmxTimeState
     )
+    atmos = _atmosphericsOutputManager.apply(
+      controlState,
+      splitStates,
+      dmxTimeState,
+      _latestAudioMetrics,
+      computedDmxOutByUniverse
+    )
+    finalizeDmxUniverses(controlState, computedDmxOutByUniverse)
+    dmxOutByUniverse = reuseUnchangedDmxOutByUniverse(
+      realtimeState.dmxOutByUniverse,
+      computedDmxOutByUniverse
+    )
+    const dmxMs = performance.now() - dmxStartedAt
+    telemetryDuration('engine.dmx', 'calculate_ms', dmxMs)
+    telemetryGauge('engine.dmx', 'calculate_last_ms', dmxMs, 'ms')
+    telemetryGauge('engine.dmx', 'active_splits', splitStates.length)
+    telemetryGauge('engine.dmx', 'fixture_count', fixtures.length)
+    if (dmxMs > 14 && Date.now() - _lastDmxCalcWarnAtMs > 2000) {
+      _lastDmxCalcWarnAtMs = Date.now()
+      telemetryEvent(
+        'engine.dmx',
+        'calculate-overrun',
+        'warn',
+        'DMX calculation exceeded frame budget',
+        {
+          dmxMs,
+          splitCount: splitStates.length,
+          fixtureCount: fixtures.length,
+        }
+      )
+    }
+  } else {
+    telemetryCounter('engine.dmx', 'calculate_skipped')
   }
 
-  telemetryDuration(
+  telemetryDurationSampled(
     'engine',
     'get_next_realtime_state_ms',
     performance.now() - startedAt
@@ -1141,7 +1619,7 @@ function getNextRealtimeState(
   return {
     time: nextTimeState,
     dmxOutByUniverse,
-    dmxOut: dmxOutByUniverse[0] ?? Array(512).fill(0),
+    dmxOut: dmxOutByUniverse[0] ?? realtimeState.dmxOut,
     splitStates,
     audio: _latestAudioMetrics,
     atmos,

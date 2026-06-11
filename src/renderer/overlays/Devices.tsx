@@ -27,11 +27,15 @@ import RemoteControlSection from './RemoteControlSection'
 import Input from 'renderer/base/Input'
 import DraggableNumber from 'renderer/base/DraggableNumber'
 import ToggleSwitch from 'renderer/base/ToggleSwitch'
-import InfoOutlined from '@mui/icons-material/InfoOutlined'
 import LinkButton from '../menu/LinkButton'
-import { APP_TOOLTIP_SLOT_PROPS } from '../base/appTooltip'
 import StartStopSyncButton from '../menu/StartStopSyncButton'
 import { useRealtimeSelector } from '../redux/realtimeStore'
+import SectionHelpButton, {
+  FieldHelpButton,
+  HelpIntro,
+  HelpList,
+  HelpTitle,
+} from '../base/SectionHelpPopover'
 
 interface Props {
   embedded?: boolean
@@ -67,11 +71,34 @@ export default function Devices({
       )}
       <ConnectionsGrid>
         <ConnectionSection>
-          <SectionHeader
-            title="DMX"
-            tooltip={DMX_SECTION_TOOLTIP}
-            tooltipAriaLabel="About DMX output"
-          />
+          <SectionHeader title="DMX" helpAriaLabel="How to set up DMX output">
+            <HelpTitle>How to set up DMX output</HelpTitle>
+            <HelpIntro>
+              Turn on the USB adapters that should send DMX from this computer,
+              then assign each one to a universe.
+            </HelpIntro>
+            <HelpList>
+              <li>
+                To enable or disable an adapter, click it in the list below.
+              </li>
+              <li>
+                Set <strong>Universe Count</strong> to how many universes your
+                show uses (shared with Art-Net routing).
+              </li>
+              <li>
+                Assign each enabled adapter the universe number it should drive.
+              </li>
+              <li>
+                If <strong>Open DMX USB</strong> hardware is present, set its
+                refresh rate when the control appears.
+              </li>
+              <li>
+                If an FTDI adapter is not detected correctly, switch that device
+                to <strong>USB Pro protocol</strong> so output matches Enttec /
+                Euro Light USB Pro framing.
+              </li>
+            </HelpList>
+          </SectionHeader>
           <SettingRow>
             <SettingLabel>Universe Count</SettingLabel>
             <Tooltip title="Total universes available for DMX and Art-Net routing">
@@ -114,19 +141,40 @@ export default function Devices({
           )}
         </ConnectionSection>
         <ConnectionSection>
-          <SectionHeader
-            title="Art-Net"
-            tooltip={ART_NET_SECTION_TOOLTIP}
-            tooltipAriaLabel="About Art-Net routing"
-          />
+          <SectionHeader title="Art-Net" helpAriaLabel="How to route Art-Net">
+            <HelpTitle>How to route Art-Net</HelpTitle>
+            <HelpIntro>
+              Send each universe to a destination on your network. Leave an IP
+              blank to turn off output on that universe.
+            </HelpIntro>
+            <HelpList>
+              <li>
+                Enter the destination IP for each universe you want to transmit.
+              </li>
+              <li>
+                Clear the field for a universe you are not using over Art-Net.
+              </li>
+            </HelpList>
+          </SectionHeader>
           <ArtNetDevices />
         </ConnectionSection>
         <ConnectionSection>
-          <SectionHeader
-            title="MIDI"
-            tooltip={MIDI_SECTION_TOOLTIP}
-            tooltipAriaLabel="About MIDI inputs"
-          />
+          <SectionHeader title="MIDI" helpAriaLabel="How to set up MIDI input">
+            <HelpTitle>How to set up MIDI input</HelpTitle>
+            <HelpIntro>
+              Enable MIDI ports you want Captivate to listen to for control and
+              optional tempo sync.
+            </HelpIntro>
+            <HelpList>
+              <li>
+                To enable or disable a port, click it in the list below.
+              </li>
+              <li>
+                When at least one input is on, you can optionally drive master
+                BPM from MIDI clock using the toggle below.
+              </li>
+            </HelpList>
+          </SectionHeader>
           {midi.available.map((device) => (
             <MidiDevice
               key={device.name}
@@ -139,11 +187,23 @@ export default function Devices({
           <MidiClockBpmControl midiConnected={midi.connected.length > 0} />
         </ConnectionSection>
         <ConnectionSection>
-          <SectionHeader
-            title="Ableton Link"
-            tooltip={ABLETON_LINK_SECTION_TOOLTIP}
-            tooltipAriaLabel="About Ableton Link"
-          />
+          <SectionHeader title="Ableton Link" helpAriaLabel="How to use Ableton Link">
+            <HelpTitle>How to use Ableton Link</HelpTitle>
+            <HelpIntro>
+              Sync tempo with Ableton Live and other Link-enabled apps on this
+              computer and the same network. This uses the network, not a MIDI
+              cable.
+            </HelpIntro>
+            <HelpList>
+              <li>
+                Turn Link on to join a shared tempo with compatible apps nearby.
+              </li>
+              <li>
+                When Link is enabled, you can optionally sync master play/stop
+                with the control in this section.
+              </li>
+            </HelpList>
+          </SectionHeader>
           <AbletonLinkConnections />
         </ConnectionSection>
         {!hideRemoteControl ? <RemoteControlSection /> : null}
@@ -240,37 +300,17 @@ const SectionTitle = styled.h2`
 
 function SectionHeader({
   title,
-  tooltip,
-  tooltipAriaLabel,
+  helpAriaLabel,
+  children,
 }: {
   title: string
-  tooltip?: ReactNode
-  tooltipAriaLabel?: string
+  helpAriaLabel: string
+  children: ReactNode
 }) {
   return (
     <SectionHeaderRow>
       <SectionTitle>{title}</SectionTitle>
-      {tooltip !== undefined && (
-        <Tooltip
-          title={tooltip}
-          placement="top"
-          enterDelay={350}
-          slotProps={APP_TOOLTIP_SLOT_PROPS}
-        >
-          <IconButton
-            size="small"
-            aria-label={tooltipAriaLabel ?? `About ${title}`}
-            onMouseDown={(e) => e.stopPropagation()}
-            sx={{
-              padding: '0.12rem',
-              color: 'text.secondary',
-              '&:hover': { color: 'text.primary' },
-            }}
-          >
-            <InfoOutlined sx={{ fontSize: '1rem' }} />
-          </IconButton>
-        </Tooltip>
-      )}
+      <SectionHelpButton ariaLabel={helpAriaLabel}>{children}</SectionHelpButton>
     </SectionHeaderRow>
   )
 }
@@ -291,65 +331,6 @@ const Title = styled.div`
   font-size: 1.4rem;
 `
 
-const DMX_SECTION_TOOLTIP = (
-  <>
-    USB DMX adapters detected on this computer appear here. Click a device to enable or
-    disable it for DMX output.
-    <br />
-    <br />
-    Universe count sets how many universes are available for DMX and Art-Net together.
-    Assign each adapter the universe it should drive.     If you use Open DMX USB hardware, a
-    refresh rate control appears when that device is present.
-    <br />
-    <br />
-    Some FTDI-based adapters speak the Enttec DMX USB Pro (widget) wire format but do not
-    answer auto-detection; use &quot;USB Pro protocol&quot; on that device so output matches
-    Euro Light USB Pro / Enttec-style framing.
-  </>
-)
-
-const MIDI_SECTION_TOOLTIP = (
-  <>
-    MIDI input ports appear here. Click a device to enable or disable it for use in
-    Captivate.
-    <br />
-    <br />
-    When at least one input is enabled, you can optionally drive master BPM from MIDI timing
-    clock using the toggle below (see the info icon there for details).
-  </>
-)
-
-const ART_NET_SECTION_TOOLTIP = (
-  <>
-    Set destination IP per universe. Leave blank to disable output on that universe.
-  </>
-)
-
-const ABLETON_LINK_SECTION_TOOLTIP = (
-  <>
-    Sync tempo (BPM) with Ableton Live and other Link-enabled apps on this computer and the
-    same network. This is separate from MIDI — it uses the network for timing, not a MIDI
-    cable.
-    <br />
-    <br />
-    When Link is enabled, you can optionally sync master play/stop with compatible apps
-    using the start/stop control in this section (when supported by the session).
-  </>
-)
-
-const MIDI_CLOCK_TOOLTIP = (
-  <>
-    When enabled, master BPM follows MIDI timing clock (24 pulses per quarter note) from any
-    enabled MIDI input above. Your DAW or hardware must send MIDI clock on that port. This
-    disables audio beat detection as the tempo source (only one external BPM source at a
-    time).
-    <br />
-    <br />
-    Requires a device that transmits 0xF8 clock messages (common in Ableton Live, Reaper,
-    and hardware sequencers).
-  </>
-)
-
 function MidiClockBpmControl({ midiConnected }: { midiConnected: boolean }) {
   const dispatch = useDispatch()
   const enabled = useControlSelector(
@@ -365,26 +346,13 @@ function MidiClockBpmControl({ midiConnected }: { midiConnected: boolean }) {
       <MidiClockRow>
         <MidiClockLabelGroup>
           <MidiClockLabel>Drive BPM from MIDI clock</MidiClockLabel>
-          <Tooltip
-            title={MIDI_CLOCK_TOOLTIP}
-            placement="right-start"
-            enterDelay={350}
-            slotProps={APP_TOOLTIP_SLOT_PROPS}
-          >
-            <IconButton
-              size="small"
-              aria-label="About MIDI clock tempo"
-              onMouseDown={(e) => e.stopPropagation()}
-              sx={{
-                padding: '0.12rem',
-                marginLeft: '0.08rem',
-                color: 'text.secondary',
-                '&:hover': { color: 'text.primary' },
-              }}
-            >
-              <InfoOutlined sx={{ fontSize: '1rem' }} />
-            </IconButton>
-          </Tooltip>
+          <FieldHelpButton ariaLabel="How MIDI clock tempo works">
+            When this is on, master BPM follows MIDI timing clock (24 pulses per
+            quarter note) from any enabled MIDI input above. Your DAW or hardware
+            must send clock on that port. Only one external BPM source can be active
+            at a time — this disables audio beat clock as the tempo source. Common
+            in Ableton Live, Reaper, and hardware sequencers (0xF8 clock messages).
+          </FieldHelpButton>
         </MidiClockLabelGroup>
         <ToggleSwitch
           checked={enabled}

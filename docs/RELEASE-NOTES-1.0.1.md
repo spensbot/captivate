@@ -19,3 +19,14 @@ More detail: [Community fixture library](https://github.com/NicholasTracy/captiv
 ### Installing
 
 Download the installer for your operating system below. You can install over Captivate 2.0.0; your projects and settings are kept.
+
+#### macOS first-launch note
+
+Captivate is not notarized yet because this project currently does not have an Apple Developer account or Apple hardware for full Apple signing/notarization. macOS may warn on first launch.
+
+If macOS blocks launch:
+
+1. Drag **Captivate 2.app** to **Applications**.
+2. In **Applications**, right-click **Captivate 2.app** and choose **Open**.
+3. Click **Open** in the warning dialog.
+4. If still blocked, go to **System Settings -> Privacy & Security** and click **Open Anyway**.

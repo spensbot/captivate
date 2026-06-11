@@ -14,6 +14,7 @@ import { SceneType } from '../../shared/Scenes'
 import DraggableNumber from '../base/DraggableNumber'
 import { ButtonMidiOverlay, SliderMidiOverlay } from 'renderer/base/MidiOverlay'
 import { normalizeAudioInputSettings } from '../../shared/audioEngine'
+import { AutoSceneHelpButton, EnergyMatchHelpButton } from './sceneHelpButtons'
 
 export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
   const dispatch = useDispatch()
@@ -24,8 +25,11 @@ export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
   )
   const audioMetrics = useRealtimeSelector((state) => state.audio)
   const audioInputOn = audioSettings.enabled === true
-  const showEnergyControls = sceneType === 'light' && energyMatchEnabled === true
-  const showAudioMatchOption = showEnergyControls && audioInputOn
+
+  const autoOn = enabled === true
+  const showEnergyMode = autoOn && sceneType === 'light'
+  const showEnergyPicker = showEnergyMode && energyMatchEnabled === true
+  const showAudioMatchOption = showEnergyPicker && audioInputOn
   const showLiveEnergyMeter = showAudioMatchOption && matchAudioEnergy === true
 
   const liveEnergy = Math.min(
@@ -53,6 +57,7 @@ export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
 
   return (
     <Root>
+      <AutoSceneHelpButton />
       <ButtonMidiOverlay
         action={{
           type: 'toggleAutoScene',
@@ -60,7 +65,7 @@ export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
         }}
       >
         <Button
-          title="Enable/disable automatic scene changes on the beat period"
+          title="Turn on to change scenes automatically on the beat"
           style={{
             backgroundColor: enabled ? '#3d5a' : '#fff3',
             color: enabled ? '#eee' : '#fff9',
@@ -82,40 +87,43 @@ export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
         min={1}
         max={64}
         onChange={onPeriodChange}
-        title="Auto-scene period in beats"
+        title="Beats to wait before switching to the next scene"
         style={{
           backgroundColor: '#0005',
           color: enabled ? '#fff' : '#fff5',
         }}
       />
-      {sceneType === 'light' && (
-        <EnergyModeToggle
-          type="button"
-          title={
-            energyMatchEnabled
-              ? 'Match scenes by energy level on each period'
-              : 'Random scene on each period (classic auto)'
-          }
-          $active={energyMatchEnabled}
-          onClick={() =>
-            dispatch(
-              setAutoSceneEnergyMatchEnabled({
-                sceneType,
-                val: !energyMatchEnabled,
-              })
-            )
-          }
-        >
-          energy
-        </EnergyModeToggle>
+      {showEnergyMode && (
+        <>
+          <EnergyModeToggle
+            type="button"
+            title={
+              energyMatchEnabled
+                ? 'Pick the scene closest in energy (by color bar)'
+                : 'Pick a random scene each time'
+            }
+            $active={energyMatchEnabled}
+            onClick={() =>
+              dispatch(
+                setAutoSceneEnergyMatchEnabled({
+                  sceneType,
+                  val: !energyMatchEnabled,
+                })
+              )
+            }
+          >
+            energy
+          </EnergyModeToggle>
+          <EnergyMatchHelpButton />
+        </>
       )}
       {showAudioMatchOption && (
         <AudioMatchToggle
           type="button"
           title={
             matchAudioEnergy
-              ? 'Use live audio energy for matching'
-              : 'Use manual energy slider for matching'
+              ? 'Use how loud the music is to pick scenes'
+              : 'Use the energy slider instead of the music'
           }
           $active={matchAudioEnergy}
           onClick={() =>
@@ -130,9 +138,9 @@ export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
           audio
         </AudioMatchToggle>
       )}
-      {showEnergyControls &&
+      {showEnergyPicker &&
         (showLiveEnergyMeter ? (
-          <EnergyMeterHost title="Live audio energy used for scene matching">
+          <EnergyMeterHost title="Loudness of your music right now — used to pick scenes">
             <EnergyMeterTrack>
               <EnergyMeterFill $level={liveEnergy} />
             </EnergyMeterTrack>
@@ -149,7 +157,7 @@ export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
               orientation="horizontal"
               onChange={onBombacityChange}
               color={enabled ? '#3d5e' : undefined}
-              title="Manual energy target for scene matching"
+              title="Calm (left) to intense (right) — picks the closest scene color"
             />
           </SliderMidiOverlay>
         ))}

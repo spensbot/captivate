@@ -27,6 +27,7 @@ import {
   auxColorParamAllowed,
   getSplitAuxColorGates,
 } from '../../shared/splitAuxColorGates'
+import { AddModulationHelpButton } from './sceneHelpButtons'
 
 interface Props {
   splitIndex: number
@@ -60,6 +61,7 @@ const INTER_MOD_PROP_LABELS: Record<string, string> = {
   squareDuty: 'Pulse Width',
   sawFlatten: 'Saw Flatten',
   noiseSeed: 'Noise Seed',
+  noiseSmoothing: 'Noise Smoothing',
   audioBandLowHz: 'Audio Low Cutoff',
   audioBandHighHz: 'Audio High Cutoff',
   audioThreshold: 'Audio Threshold',
@@ -150,7 +152,11 @@ export default function ModulationSlider({
   const left = modVal > 0.5 ? 0.5 : modVal
 
   return (
-    <Root ref={dragContainer} onMouseDown={onMouseDown}>
+    <Root
+      ref={dragContainer}
+      onMouseDown={onMouseDown}
+      title="Drag sideways: middle = off, farther = stronger up or down"
+    >
       <StripHeader>
         <span>{stripTitle}</span>
       </StripHeader>
@@ -179,7 +185,12 @@ export function AddModulationButton({ modIndex }: { modIndex: number }) {
       +
       {open && (
         <Popup
-          title="Add Modulation"
+          title={
+            <AddModPopupTitle>
+              <span>Add Modulation</span>
+              <AddModulationHelpButton />
+            </AddModPopupTitle>
+          }
           onClose={() => setOpen(false)}
           cardWidth="min(72rem, calc(100vw - 2rem))"
           cardMaxHeight="calc(100vh - 3rem)"
@@ -430,6 +441,13 @@ const Root = styled.div`
   font-size: var(--remote-mod-strip-font, 0.8rem);
   min-height: var(--remote-mod-strip-min-h, 0);
   cursor: ew-resize;
+`
+
+const AddModPopupTitle = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 1;
 `
 
 const AddModRoot = styled(Root)`

@@ -4,10 +4,7 @@ import ipcChannels, {
   MainCommand,
 } from '../../shared/ipc_channels'
 import { CAPTIVATE_GITHUB_REPO_URL } from '../../shared/githubRepo'
-import {
-  initLighting3dUtilityWorker,
-  postLighting3dTickViaUtilityWorker,
-} from './lighting3dUtilityWorkerHost'
+import { buildLighting3dRealtimeTick } from './buildLighting3dRealtimeTick'
 import ipcChannelsVisualizer from '../../visualizer/ipcChannels'
 import { CleanReduxState } from '../../renderer/redux/store'
 import { RealtimeState } from '../../renderer/redux/realtimeStore'
@@ -61,6 +58,7 @@ import type { DiagnosticsEvent } from '../../shared/diagnostics'
 import { reportDiagnostic } from '../diagnostics'
 import type { TelemetryMark } from '../../shared/telemetry'
 import {
+  exportDebugLog,
   exportTelemetrySnapshot,
   getTelemetrySnapshot,
   telemetryCounter,
@@ -161,23 +159,58 @@ let _staticHandlersRegistered = false
 const lighting3dPreviewTargets = new Set<WebContents>()
 let lighting3dRealtimeSeq = 0
 let lighting3dLastTickSentMs = 0
-/** Min interval between Lighting 3D preview IPC ticks (~60/s max). Lower = snappier beams, more CPU. */
-const LIGHTING3D_TICK_MIN_MS = 17
+/** Min interval between Lighting 3D preview IPC ticks; scaled by fixture count. */
+let lighting3dTickMinMs = 17
+let visualizerLastStateSentMs = 0
+const VISUALIZER_STATE_MIN_MS = 17
+
+function countLighting3dFixtures(snapshot: CleanReduxState): number {
+  const patched = snapshot.dmx?.universe?.length ?? 0
+  const led = snapshot.dmx?.led?.ledFixtures?.length ?? 0
+  return patched + led
+}
+
+function syncLighting3dTickBudget(snapshot: CleanReduxState) {
+  const fixtureCount = countLighting3dFixtures(snapshot)
+  lighting3dTickMinMs =
+    fixtureCount <= 6 ? 25 : fixtureCount <= 14 ? 50 : 66
+}
 let lighting3dLastBootstrapFingerprint = ''
 let lighting3dBootstrapDebounceTimer: ReturnType<typeof setTimeout> | null =
   null
 let lighting3dBootstrapPending: CleanReduxState | null = null
 
 function lighting3dStructureFingerprint(snapshot: CleanReduxState): string {
-  try {
-    return JSON.stringify({
-      dmx: snapshot.dmx,
-      light: snapshot.control.light,
-      mixer: snapshot.mixer,
-    })
-  } catch {
-    return String(Math.random())
+  const dmx = snapshot.dmx
+  const parts: string[] = []
+  for (const fixture of dmx?.universe ?? []) {
+    parts.push(
+      String(fixture.id ?? ''),
+      String(fixture.ch),
+      String(fixture.universe),
+      String(fixture.window?.x?.pos ?? ''),
+      String(fixture.window?.y?.pos ?? ''),
+      String(fixture.window?.z?.pos ?? ''),
+      String(fixture.rotation?.x ?? ''),
+      String(fixture.rotation?.y ?? ''),
+      String(fixture.rotation?.z ?? '')
+    )
   }
+  for (const ledFixture of dmx?.led?.ledFixtures ?? []) {
+    parts.push(
+      `led:${ledFixture.id}`,
+      String(ledFixture.position?.x ?? ''),
+      String(ledFixture.position?.y ?? ''),
+      String(ledFixture.position?.z ?? ''),
+      String(ledFixture.rotation?.x ?? ''),
+      String(ledFixture.rotation?.y ?? ''),
+      String(ledFixture.rotation?.z ?? '')
+    )
+  }
+  parts.push(String(dmx?.fixtureTypes?.length ?? 0))
+  parts.push((dmx?.fixtureTypes ?? []).join(','))
+  parts.push(String(snapshot.control?.light?.active ?? ''))
+  return parts.join('|')
 }
 
 function broadcastLighting3dOnly(channel: string, payload: unknown) {
@@ -196,6 +229,7 @@ function broadcastLighting3dOnly(channel: string, payload: unknown) {
 /** Call after sending an initial bootstrap so debounced updates do not immediately duplicate. */
 export function seedLighting3dBootstrapDedupe(snapshot: CleanReduxState) {
   lighting3dLastBootstrapFingerprint = lighting3dStructureFingerprint(snapshot)
+  syncLighting3dTickBudget(snapshot)
 }
 
 export function registerLighting3dPreviewPage(wc: WebContents) {
@@ -232,6 +266,10 @@ function scheduleLighting3dBootstrapFromControlState(snapshot: CleanReduxState) 
   if (lighting3dPreviewTargets.size === 0) {
     return
   }
+  const fp = lighting3dStructureFingerprint(snapshot)
+  if (fp === lighting3dLastBootstrapFingerprint) {
+    return
+  }
   lighting3dBootstrapPending = snapshot
   if (lighting3dBootstrapDebounceTimer !== null) {
     return
@@ -248,6 +286,7 @@ function scheduleLighting3dBootstrapFromControlState(snapshot: CleanReduxState) 
       return
     }
     lighting3dLastBootstrapFingerprint = fp
+    syncLighting3dTickBudget(pending)
     broadcastLighting3dOnly(
       ipcChannels.lighting3d_preview_bootstrap,
       pending
@@ -533,15 +572,25 @@ function ensureStaticIpcHandlersRegistered() {
 
   ipcMain.handle(
     ipcChannels.load_file,
-    async (_event, title: string, fileFilters: Electron.FileFilter[]) => {
+    async (
+      _event,
+      title: string,
+      fileFilters: Electron.FileFilter[],
+      options?: { defaultPath?: string }
+    ) => {
       telemetryCounter('ipc', 'load_file')
       const dialogResult = await dialog.showOpenDialog({
         title: title,
         filters: fileFilters,
         properties: ['openFile'],
+        ...(options?.defaultPath !== undefined
+          ? { defaultPath: options.defaultPath }
+          : {}),
       })
       if (!dialogResult.canceled && dialogResult.filePaths.length > 0) {
-        return await promises.readFile(dialogResult.filePaths[0], 'utf8')
+        const filePath = dialogResult.filePaths[0]!
+        const content = await promises.readFile(filePath, 'utf8')
+        return { filePath, content }
       }
       return null
     }
@@ -553,17 +602,21 @@ function ensureStaticIpcHandlersRegistered() {
       _event,
       title: string,
       data: string,
-      fileFilters: Electron.FileFilter[]
+      fileFilters: Electron.FileFilter[],
+      options?: { defaultPath?: string }
     ) => {
       telemetryCounter('ipc', 'save_file')
       const dialogResult = await dialog.showSaveDialog({
         title: title,
         filters: fileFilters,
         properties: ['createDirectory'],
+        ...(options?.defaultPath !== undefined
+          ? { defaultPath: options.defaultPath }
+          : {}),
       })
       if (!dialogResult.canceled && dialogResult.filePath !== undefined) {
         await promises.writeFile(dialogResult.filePath, data)
-        return
+        return dialogResult.filePath
       }
       return null
     }
@@ -577,6 +630,22 @@ function ensureStaticIpcHandlersRegistered() {
         throw new Error('Invalid file path')
       }
       return await promises.readFile(filePath, 'utf8')
+    }
+  )
+
+  ipcMain.handle(
+    ipcChannels.write_text_file,
+    async (_event, filePath: string, data: string) => {
+      telemetryCounter('ipc', 'write_text_file')
+      if (typeof filePath !== 'string' || filePath.trim().length === 0) {
+        throw new Error('Invalid file path')
+      }
+      if (typeof data !== 'string') {
+        throw new Error('Invalid file content')
+      }
+      await promises.mkdir(path.dirname(filePath), { recursive: true })
+      await promises.writeFile(filePath, data, 'utf8')
+      return filePath
     }
   )
 
@@ -856,6 +925,11 @@ export function ipcSetup(config: Config) {
     return await exportTelemetrySnapshot()
   })
 
+  ipcMain.handle(ipcChannels.telemetry_export_debug_log, async () => {
+    telemetryCounter('ipc', 'telemetry_export_debug_log')
+    return await exportDebugLog()
+  })
+
   ipcMain.handle(ipcChannels.app_about_info, async () => {
     telemetryCounter('ipc', 'app_about_info')
     return await getAppAboutInfo()
@@ -1050,13 +1124,6 @@ export function ipcSetup(config: Config) {
     }
   )
 
-  initLighting3dUtilityWorker((tick) => {
-    broadcastLighting3dOnly(
-      ipcChannels.lighting3d_realtime_tick,
-      tick
-    )
-  })
-
   const callbacks = {
     register_renderer: (renderer: WebContents) => {
       addRenderer(renderer)
@@ -1080,15 +1147,16 @@ export function ipcSetup(config: Config) {
         return
       }
       const now = performance.now()
-      if (now - lighting3dLastTickSentMs < LIGHTING3D_TICK_MIN_MS) {
+      if (now - lighting3dLastTickSentMs < lighting3dTickMinMs) {
         return
       }
       lighting3dLastTickSentMs = now
-      postLighting3dTickViaUtilityWorker(
+      const tick = buildLighting3dRealtimeTick(
         time_state,
         master,
         ++lighting3dRealtimeSeq
       )
+      broadcastLighting3dOnly(ipcChannels.lighting3d_realtime_tick, tick)
     },
     send_dispatch: (action: PayloadAction<any>) =>
       broadcast(ipcChannels.dispatch, action),
@@ -1098,6 +1166,12 @@ export function ipcSetup(config: Config) {
 
       const webContents = visualizer.webContents
       if (webContents.isDestroyed()) return
+
+      const now = performance.now()
+      if (now - visualizerLastStateSentMs < VISUALIZER_STATE_MIN_MS) {
+        return
+      }
+      visualizerLastStateSentMs = now
 
       try {
         webContents.send(ipcChannelsVisualizer.new_visualizer_state, payload)

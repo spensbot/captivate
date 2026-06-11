@@ -15,8 +15,16 @@ import StartStopButton from './StartStopButton'
 import SaveLoad from './SaveLoad'
 import Bpm from './Bpm'
 import AudioInputMenu from './AudioInputMenu'
+import AudioLevelMeterBar from './AudioLevelMeterBar'
 import { send_open_page_window } from '../ipcHandler'
 import KeyboardShortcutMenuButton from '../overlays/KeyboardShortcutEditorDialog'
+import { normalizeAudioInputSettings } from '../../shared/audioEngine'
+import {
+  StatusBarCluster,
+  StatusBarTransportCluster,
+  STATUS_BAR_CONTROL_HEIGHT,
+  statusBarMuiIconButtonSx,
+} from './statusBarUi'
 
 export default function StatusBar() {
   const isEditing = useDeviceSelector((state) => state.isEditing)
@@ -35,80 +43,116 @@ export default function StatusBar() {
     dispatch(midiSetIsEditing(!isEditing))
   }
   const canPopOutActivePage = activePage !== 'Atmospherics'
+  const audioModeEnabled = useDeviceSelector(
+    (state) =>
+      normalizeAudioInputSettings(state.connectionSettings.audioInput).enabled ===
+      true
+  )
 
   return (
     <Root>
-      <StartStopButton />
-      <Sp />
-      <TapTempo />
-      <Sp />
-      <Bpm />
-      <Sp />
-      <Counter2 />
-      <UndoRedo />
-      <div style={{ flex: '1 0 0' }} />
-      {canPopOutActivePage && (
-        <IconButton
-          title={`Open ${activePage} in a detached window`}
-          onClick={() => send_open_page_window(activePage)}
-          size="small"
-          sx={{ color: 'text.secondary' }}
-        >
-          <OpenInNewIcon fontSize="small" />
-        </IconButton>
-      )}
-      <KeyboardShortcutMenuButton />
-      <IconButton
-        title={
-          midiConnected
-            ? isEditing
-              ? 'Exit MIDI mapping mode'
-              : 'Enter MIDI mapping mode'
-            : 'No MIDI device connected. Open Connections to set up MIDI.'
-        }
-        onClick={handleMidiAssignClick}
-        size="small"
-        sx={{
-          color: isEditing ? 'success.main' : 'text.secondary',
-          opacity: midiConnected ? 1 : 0.55,
-        }}
-      >
-        <PianoIcon fontSize="small" />
-      </IconButton>
-      <AudioInputMenu />
-      <IconButton
-        title="Open connection settings"
-        onClick={() => dispatch(setConnectionsMenu(!connectionMenu))}
-        size="small"
-        sx={{ color: 'text.secondary' }}
-      >
-        <SettingsEthernetIcon fontSize="small" />
-      </IconButton>
-      <SaveLoad />
-      <Connections>
-        <ConnectionStatus type={'midi'} />
-        <ConnectionStatus type={'dmx'} />
-        <ConnectionStatus type={'link'} />
-      </Connections>
+      <LeftSection>
+        <StatusBarCluster>
+          <SaveLoad />
+          <UndoRedo />
+        </StatusBarCluster>
+      </LeftSection>
+      <CenterSection>
+        <StatusBarTransportCluster>
+          <StartStopButton />
+          <TapTempo />
+          <Bpm />
+          <Counter2 />
+        </StatusBarTransportCluster>
+      </CenterSection>
+      <RightSection>
+        <StatusBarCluster>
+          {audioModeEnabled ? <AudioLevelMeterBar /> : null}
+          {canPopOutActivePage && (
+            <IconButton
+              title={`Pop ${activePage} out to its own window`}
+              onClick={() => send_open_page_window(activePage)}
+              size="small"
+              sx={statusBarMuiIconButtonSx}
+            >
+              <OpenInNewIcon fontSize="small" />
+            </IconButton>
+          )}
+          <KeyboardShortcutMenuButton />
+          <IconButton
+            title={
+              midiConnected
+                ? isEditing
+                  ? 'Exit MIDI learn / mapping mode'
+                  : 'Enter MIDI learn / mapping mode'
+                : 'No MIDI device — open Connections to set up'
+            }
+            onClick={handleMidiAssignClick}
+            size="small"
+            sx={{
+              ...statusBarMuiIconButtonSx,
+              color: isEditing ? 'success.main' : 'text.secondary',
+              opacity: midiConnected ? 1 : 0.55,
+            }}
+          >
+            <PianoIcon fontSize="small" />
+          </IconButton>
+          <AudioInputMenu />
+          <IconButton
+            title="Devices & output settings (DMX, Art-Net, MIDI, audio)"
+            onClick={() => dispatch(setConnectionsMenu(!connectionMenu))}
+            size="small"
+            sx={statusBarMuiIconButtonSx}
+          >
+            <SettingsEthernetIcon fontSize="small" />
+          </IconButton>
+          <Connections>
+            <ConnectionStatus type={'midi'} />
+            <ConnectionStatus type={'dmx'} />
+            <ConnectionStatus type={'link'} />
+          </Connections>
+        </StatusBarCluster>
+      </RightSection>
     </Root>
   )
 }
 
 const Root = styled.div`
-  display: flex;
-  justify-content: right;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  flex: 0 0 3.2rem;
+  gap: 0.35rem;
+  flex: 0 0 auto;
   width: 100%;
-  height: 3.2rem;
   min-height: 3.2rem;
-  max-height: 3.2rem;
   min-width: 0;
-  font-size: 1.2rem;
-  padding: 0 1rem 0 0.5rem;
+  padding: 0.2rem 0.65rem 0.2rem 0.45rem;
   box-sizing: border-box;
   border-bottom: 1px solid ${(props) => props.theme.colors.divider};
   background-color: ${(props) => props.theme.colors.bg.primary};
+  overflow: hidden;
+`
+
+const LeftSection = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  overflow: hidden;
+`
+
+const CenterSection = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+`
+
+const RightSection = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: thin;
@@ -118,8 +162,9 @@ const Connections = styled.div`
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-`
-
-const Sp = styled.div`
-  width: 0.8rem;
+  justify-content: center;
+  gap: 0.08rem;
+  height: ${STATUS_BAR_CONTROL_HEIGHT};
+  padding: 0 0.1rem;
+  flex: 0 0 auto;
 `

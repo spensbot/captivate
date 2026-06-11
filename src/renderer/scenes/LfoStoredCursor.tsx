@@ -1,5 +1,5 @@
-import { useMemo } from 'react'
-import { useRealtimeSelector } from '../redux/realtimeStore'
+import { memo, useMemo } from 'react'
+import { useLfoAudioMetrics, useLfoBeats } from '../redux/realtimeSelectors'
 import Cursor from '../base/Cursor'
 import { GetPhase, LfoShape } from '../../shared/oscillator'
 import { useActiveLightScene } from '../redux/store'
@@ -14,7 +14,7 @@ import { useModPreviewSplit } from './useModPreviewSplit'
  * Manual / stored LFO phase & output (ring) when this LFO receives inter-mod, so it can be
  * compared to {@link LfoCursor} (live effective).
  */
-export default function LfoStoredCursor({
+function LfoStoredCursor({
   index,
   padding,
 }: {
@@ -26,8 +26,8 @@ export default function LfoStoredCursor({
   )
   const lightScene = useActiveLightScene((s) => s)
   const splitIx = useModPreviewSplit()
-  const time = useRealtimeSelector((state) => state.time)
-  const audio = useRealtimeSelector((state) => state.audio)
+  const beats = useLfoBeats()
+  const audio = useLfoAudioMetrics()
 
   const show = useActiveLightScene((scene) => {
     const m = intermodPropsIncoming(scene)
@@ -38,11 +38,11 @@ export default function LfoStoredCursor({
     const lfos = effectiveLfosAtSplit(
       lightScene,
       splitIx,
-      time.beats,
+      beats,
       audio
     )
     return lfos[index] ?? lfo
-  }, [lightScene, splitIx, time.beats, audio, index, lfo])
+  }, [lightScene, splitIx, beats, audio, index, lfo])
 
   const isAudioShape =
     lfo.shape === LfoShape.AudioBand || lfo.shape === LfoShape.AudioEnergy
@@ -51,10 +51,10 @@ export default function LfoStoredCursor({
     return null
   }
 
-  const phaseStored = GetPhase(lfo, time.beats)
-  const valueStored = getModulatorLfoValue(lfo, time.beats, audio, index)
-  const phaseEff = GetPhase(effectiveLfo, time.beats)
-  const valueEff = getModulatorLfoValue(effectiveLfo, time.beats, audio, index)
+  const phaseStored = GetPhase(lfo, beats)
+  const valueStored = getModulatorLfoValue(lfo, beats, audio, index)
+  const phaseEff = GetPhase(effectiveLfo, beats)
+  const valueEff = getModulatorLfoValue(effectiveLfo, beats, audio, index)
   const sameSpot =
     Math.abs(phaseStored - phaseEff) < 0.004 &&
     Math.abs(valueStored - valueEff) < 0.004
@@ -85,3 +85,5 @@ export default function LfoStoredCursor({
     </span>
   )
 }
+
+export default memo(LfoStoredCursor)

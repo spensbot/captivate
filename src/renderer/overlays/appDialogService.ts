@@ -73,6 +73,7 @@ export function openAppConfirm(options: {
   confirmLabel?: string
   cancelLabel?: string
   danger?: boolean
+  critical?: boolean
 }) {
   return openDialog({
     title: options.title,
@@ -80,6 +81,7 @@ export function openAppConfirm(options: {
     confirmLabel: options.confirmLabel ?? 'OK',
     cancelLabel: options.cancelLabel ?? 'Cancel',
     danger: options.danger === true,
+    critical: options.critical === true,
   })
 }
 

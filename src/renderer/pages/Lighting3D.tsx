@@ -32,13 +32,26 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib'
-import { realtimeStore } from '../redux/realtimeStore'
+import { realtimeStore, type RealtimeState } from '../redux/realtimeStore'
+import { lighting3dPreviewRuntimeManager } from '../lighting3d/Lighting3dPreviewRuntimeManager'
+import WebglFallbackBanner from '../lighting3d/WebglFallbackBanner'
+import {
+  readWebgl1BannerDismissed,
+  WEBGL1_FALLBACK_STATUS_MESSAGE,
+} from '../lighting3d/webglFallback'
 import { type Params } from '../../shared/params'
 import { type LightScene_t } from '../../shared/Scenes'
 import {
   defaultMoverBeamAngleForModelKind,
   type MoverMountOrientation,
 } from '../../shared/dmxFixtures'
+import {
+  Lighting3DBoundsHelpButton,
+  Lighting3DCurtainHelpButton,
+  Lighting3DPageHelpButton,
+  Lighting3DRoomHelpButton,
+  Lighting3DRoomSizeHelpButton,
+} from './lighting3DHelpButtons'
 import { mapRowsToPreviewFixtures } from './lightingPreviewFixtures'
 import { selectLedPreviewFixtures, selectLightingPreviewRows } from './lightingPreviewSelectors'
 import type { MoverPreviewFixture } from './lightingPreviewTypes'
@@ -51,8 +64,13 @@ import type {
   VolumetricFogLightSample,
 } from '../lighting3d/previewCore'
 import {
+  applyLiveValuesToPreviewTargets,
+  buildPreviewGroupColorMap,
   buildTargets,
   clamp,
+  estimatePreviewEmitterCount,
+  lighting3dPerformanceProfile,
+  previewFixturesStructureKey,
   clamp01,
   computeFloorSpecFromStage,
   createFixtureVisual,
@@ -63,14 +81,18 @@ import {
   DEFAULT_CAMERA_TARGET,
   directionFromYawPitch,
   disposeVisual,
+  applyEmitterRootPlacement,
   DANCE_FLOOR_Y,
   FALLBACK_WORLD_FLOOR_SIZE,
   feetToWorld,
+  fixtureBodyCenterInRoot,
+  fixturePlacementContextFromTarget,
   fixtureUniversePositionFromWorld,
   fixtureVisualSignature,
   focusWidthScale,
   goboTextureForIndex,
   isCloudModelKind,
+  isRectPreviewEmitterShape,
   isEmitterOutputActive,
   isFiniteColor,
   isFiniteVector3,
@@ -87,11 +109,12 @@ import {
   LOCAL_AXIS_Z,
   MAX_VISUAL_CREATIONS_PER_SYNC,
   nearestSurfaceHit,
-  nonMoverEmitterBaseY,
   normalizeOrFallback,
   normalizeRotationDeg,
   PREVIEW_EMITTER_OUTPUT_EPSILON,
+  PREVIEW_ESSENTIALS_MODE,
   PREVIEW_SYNC_MIN_INTERVAL_MS,
+  suppressFixtureSecondaryVisuals,
   readPersistedCameraState,
   releaseLighting3DGlobalTextureCaches,
   ROOM_HEIGHT,
@@ -99,6 +122,7 @@ import {
   setGoboLabelText,
   smoothToward,
   stageHeightFromStage,
+  syncGroupedBeamCones,
   VOLUMETRIC_FOG_MAX_LIGHTS,
   writePersistedCameraState,
 } from '../lighting3d/previewCore'
@@ -346,26 +370,22 @@ export default function Lighting3DPage({
   const viewportContent =
     externalViewport ? (
       <ExternalViewportCard>
-        <ExternalViewportTitle>
-          Lighting 3D Viewport (Alpha) Runs In A Detached Window
-        </ExternalViewportTitle>
+        <ExternalViewportTitle>3D preview in a separate window</ExternalViewportTitle>
         <ExternalViewportBody>
-          Alpha preview — not fully ready. This page keeps all Lighting 3D controls; the
-          live viewport runs in a dedicated renderer window for smoother performance.
+          Controls stay here; the live view runs in its own window for smoother playback.
         </ExternalViewportBody>
         <ExternalViewportButton
           type="button"
           onClick={() => send_open_page_window('Lighting3D')}
         >
-          Open / Focus Lighting 3D Viewport
+          Open preview window
         </ExternalViewportButton>
       </ExternalViewportCard>
     ) : (
       <>
         {previewFixtures.length === 0 && (
-          <EmptyState>
-            No fixtures yet. The room and stage still render — add fixtures in DMX
-            Setup to populate the preview.
+          <EmptyState title="Add fixtures in DMX Setup to see them here.">
+            No lights in the preview yet.
           </EmptyState>
         )}
         <Lighting3DViewport
@@ -381,87 +401,79 @@ export default function Lighting3DPage({
           onSetFixtureMountOrientation={setFixtureMountOrientation}
           showCurtain={lighting3d.showCurtain}
           showBoundsOverlay={lighting3d.showBoundsOverlay}
-          hazeAmount={lighting3d.environmentFog}
           room={roomConfig}
         />
       </>
     )
 
-  const hazePct = Math.round(lighting3d.environmentFog * 100)
 
   const pageContent = (
     <Content>
       <PanelHeader>
         <PanelTitle>Lighting 3D Preview</PanelTitle>
-        <AlphaTag>Alpha</AlphaTag>
+        <Lighting3DPageHelpButton />
       </PanelHeader>
-      <PanelHint>
-        Alpha — not fully ready. Live 3D preview for all DMX fixtures using current scene
-        output. Use this window to program lighting without a connected rig.
-      </PanelHint>
-      <Controls>
-        <ToggleRow>
-          <ToggleLabel>Curtain</ToggleLabel>
-          <ToggleSwitch
-            checked={lighting3d.showCurtain}
-            onChange={(next) =>
-              dispatch(setLighting3DSettings({ showCurtain: next }))
-            }
-            aria-label="Show curtain"
-          />
-        </ToggleRow>
-        <ToggleRow>
-          <ToggleLabel>Bounds overlay</ToggleLabel>
-          <ToggleSwitch
-            checked={lighting3d.showBoundsOverlay}
-            onChange={(next) =>
-              dispatch(setLighting3DSettings({ showBoundsOverlay: next }))
-            }
-            aria-label="Show bounds overlay"
-          />
-        </ToggleRow>
-        <ToggleRow>
-          <ToggleLabel>Room</ToggleLabel>
-          <ToggleSwitch
-            checked={lighting3d.roomEnabled}
-            onChange={(next) =>
-              dispatch(setLighting3DSettings({ roomEnabled: next }))
-            }
-            aria-label="Show room"
-          />
-        </ToggleRow>
-        <HazeControlItem>
-          <HazeLabelRow>
-            <ToggleLabel>Haze</ToggleLabel>
-            <HazeValue>{hazePct}%</HazeValue>
-          </HazeLabelRow>
-          <SliderShell>
-            <SliderRail>
-              <SliderFill style={{ width: `${hazePct}%` }} />
-            </SliderRail>
-            <CaptivateRange
-              type="range"
-              min={0}
-              max={1}
-              step={0.01}
-              value={lighting3d.environmentFog}
-              onChange={(event) =>
-                dispatch(
-                  setLighting3DSettings({
-                    environmentFog: Number(event.target.value),
-                  })
-                )
+      <ControlsBar>
+        <TogglesGroup>
+          <ToggleItem>
+            <ToggleLabelRow>
+              <ToggleLabel title="Show or hide the stage curtain">Curtain</ToggleLabel>
+              <Lighting3DCurtainHelpButton />
+            </ToggleLabelRow>
+            <ToggleSwitch
+              checked={lighting3d.showCurtain}
+              onChange={(next) =>
+                dispatch(setLighting3DSettings({ showCurtain: next }))
               }
-              aria-label="Haze amount"
-              title={`Haze ${hazePct}%`}
+              title={lighting3d.showCurtain ? 'Hide curtain' : 'Show curtain'}
+              aria-label="Show curtain"
             />
-          </SliderShell>
-        </HazeControlItem>
-        <DimensionsBlock $disabled={!lighting3d.roomEnabled}>
-          <DimensionsLegend>Room ({unitLabel})</DimensionsLegend>
+          </ToggleItem>
+          <ToggleItem>
+            <ToggleLabelRow>
+              <ToggleLabel title="Show or hide the dance floor outline">
+                Floor outline
+              </ToggleLabel>
+              <Lighting3DBoundsHelpButton />
+            </ToggleLabelRow>
+            <ToggleSwitch
+              checked={lighting3d.showBoundsOverlay}
+              onChange={(next) =>
+                dispatch(setLighting3DSettings({ showBoundsOverlay: next }))
+              }
+              title={
+                lighting3d.showBoundsOverlay
+                  ? 'Hide floor outline'
+                  : 'Show floor outline'
+              }
+              aria-label="Show floor outline"
+            />
+          </ToggleItem>
+          <ToggleItem>
+            <ToggleLabelRow>
+              <ToggleLabel title="Show or hide room walls">Room</ToggleLabel>
+              <Lighting3DRoomHelpButton />
+            </ToggleLabelRow>
+            <ToggleSwitch
+              checked={lighting3d.roomEnabled}
+              onChange={(next) =>
+                dispatch(setLighting3DSettings({ roomEnabled: next }))
+              }
+              title={lighting3d.roomEnabled ? 'Hide room walls' : 'Show room walls'}
+              aria-label="Show room"
+            />
+          </ToggleItem>
+        </TogglesGroup>
+        <DimensionsGroup $disabled={!lighting3d.roomEnabled}>
+          <DimensionsHeader>
+            <DimensionsLegend title={`Room size in ${unitLabel}`}>
+              Room ({unitLabel})
+            </DimensionsLegend>
+            <Lighting3DRoomSizeHelpButton />
+          </DimensionsHeader>
           <DimensionsRow>
             <DimensionField>
-              <DimensionLabel>W</DimensionLabel>
+              <DimensionLabel title="Width">W</DimensionLabel>
               <DimensionInput
                 type="text"
                 inputMode="decimal"
@@ -477,7 +489,7 @@ export default function Lighting3DPage({
               />
             </DimensionField>
             <DimensionField>
-              <DimensionLabel>D</DimensionLabel>
+              <DimensionLabel title="Depth">D</DimensionLabel>
               <DimensionInput
                 type="text"
                 inputMode="decimal"
@@ -493,7 +505,7 @@ export default function Lighting3DPage({
               />
             </DimensionField>
             <DimensionField>
-              <DimensionLabel>H</DimensionLabel>
+              <DimensionLabel title="Height">H</DimensionLabel>
               <DimensionInput
                 type="text"
                 inputMode="decimal"
@@ -509,9 +521,9 @@ export default function Lighting3DPage({
               />
             </DimensionField>
           </DimensionsRow>
-        </DimensionsBlock>
-      </Controls>
-      {viewportContent}
+        </DimensionsGroup>
+      </ControlsBar>
+      <ViewportRegion>{viewportContent}</ViewportRegion>
     </Content>
   )
 
@@ -556,7 +568,7 @@ const Content = styled.div`
 const PanelHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.35rem;
   flex-wrap: wrap;
 `
 
@@ -564,157 +576,81 @@ const PanelTitle = styled.div`
   font-size: ${(props) => props.theme.font.size.h1};
 `
 
-const AlphaTag = styled.div`
-  font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  border: 1px solid ${(props) => props.theme.colors.divider};
-  border-radius: 999px;
-  padding: 0.1rem 0.42rem;
-  color: ${(props) => props.theme.colors.text.secondary};
-`
-
-const PanelHint = styled.div`
-  font-size: 0.8rem;
-  color: ${(props) => props.theme.colors.text.secondary};
-`
-
-const Controls = styled.div`
+const ControlsBar = styled.div`
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 0.42rem 0.65rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
   border: 1px solid ${(props) => props.theme.colors.divider};
   border-radius: 0.35rem;
   padding: 0.42rem 0.56rem;
   background: ${(props) => props.theme.colors.bg.primary};
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
 `
 
-const ToggleRow = styled.div`
+const TogglesGroup = styled.div`
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  min-width: 8.5rem;
+  gap: 0.55rem 1.35rem;
+`
+
+const ToggleItem = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+`
+
+const ToggleLabelRow = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.08rem;
 `
 
 const ToggleLabel = styled.div`
   font-size: 0.74rem;
   font-weight: 600;
   color: ${(props) => props.theme.colors.text.primary};
+  user-select: none;
 `
 
-const HazeControlItem = styled.div`
+const DimensionsGroup = styled.div<{ $disabled: boolean }>`
   display: flex;
   flex-direction: column;
-  gap: 0.22rem;
-  flex: 1 1 10rem;
-  min-width: 9rem;
-`
-
-const HazeLabelRow = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.35rem;
-`
-
-const HazeValue = styled.div`
-  font-size: 0.68rem;
-  color: ${(props) => props.theme.colors.text.secondary};
-`
-
-const SliderShell = styled.div`
-  position: relative;
-  width: 100%;
-  height: 1.15rem;
-`
-
-const CaptivateRange = styled.input`
-  width: 100%;
-  height: 1.15rem;
-  margin: 0;
-  background: transparent;
-  -webkit-appearance: none;
-  appearance: none;
-  position: relative;
-  z-index: 2;
-  cursor: pointer;
-
-  &:focus-visible {
-    outline: 2px solid #8eb2ff;
-    outline-offset: 2px;
-  }
-
-  &::-webkit-slider-runnable-track {
-    height: 0.28rem;
-    background: transparent;
-    border: none;
-  }
-
-  &::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 0.95rem;
-    height: 0.95rem;
-    border-radius: 999px;
-    background: transparent;
-    border: none;
-    margin-top: -0.34rem;
-  }
-
-  &::-moz-range-track {
-    height: 0.28rem;
-    background: transparent;
-    border: none;
-  }
-
-  &::-moz-range-thumb {
-    width: 0.95rem;
-    height: 0.95rem;
-    border-radius: 999px;
-    background: transparent;
-    border: none;
-  }
-`
-
-const SliderRail = styled.div`
-  position: absolute;
-  left: 0.2rem;
-  right: 0.2rem;
-  top: 50%;
-  height: 0.28rem;
-  transform: translateY(-50%);
-  border-radius: 999px;
-  background: #0007;
-  border: 1px solid ${(props) => props.theme.colors.divider};
-  pointer-events: none;
-  overflow: hidden;
-`
-
-const SliderFill = styled.div`
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, rgba(70, 150, 210, 0.85), rgba(110, 190, 130, 0.9));
-  pointer-events: none;
-`
-
-const DimensionsBlock = styled.div<{ $disabled: boolean }>`
-  display: flex;
-  flex-direction: column;
+  align-items: flex-end;
   gap: 0.2rem;
+  margin-left: auto;
   opacity: ${(p) => (p.$disabled ? 0.45 : 1)};
+`
+
+const DimensionsHeader = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.08rem;
+`
+
+const ViewportRegion = styled.div`
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
 `
 
 const DimensionsLegend = styled.div`
   font-size: 0.68rem;
   color: ${(props) => props.theme.colors.text.secondary};
+  text-align: right;
 `
 
 const DimensionsRow = styled.div`
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.38rem;
 `
 
@@ -752,14 +688,14 @@ const EmptyState = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: 1 1 auto;
-  min-height: 12rem;
+  flex: 0 0 auto;
+  min-height: 4rem;
   border: 1px solid ${(props) => props.theme.colors.divider};
   border-radius: 0.35rem;
   color: ${(props) => props.theme.colors.text.secondary};
   font-size: 0.9rem;
   text-align: center;
-  padding: 0.8rem;
+  padding: 0.55rem 0.8rem;
 `
 
 interface Lighting3DViewportProps {
@@ -806,7 +742,6 @@ interface Lighting3DViewportProps {
   ) => void
   showCurtain?: boolean
   showBoundsOverlay?: boolean
-  hazeAmount?: number
   room?: {
     enabled: boolean
     widthFt: number
@@ -828,7 +763,6 @@ function Lighting3DViewport({
   onSetFixtureMountOrientation,
   showCurtain = true,
   showBoundsOverlay = true,
-  hazeAmount = 0,
   room = {
     enabled: false,
     widthFt: 36,
@@ -843,16 +777,29 @@ function Lighting3DViewport({
   )
   const fixturesRef = useRef(fixtures)
   fixturesRef.current = fixtures
+  const masterRef = useRef(0)
   const splitStatesRef = useRef(realtimeStore.getState().splitStates)
   const dmxOutByUniverseRef = useRef(realtimeStore.getState().dmxOutByUniverse)
   useEffect(() => {
-    const pushRealtime = () => {
-      const next = realtimeStore.getState()
-      splitStatesRef.current = next.splitStates
-      dmxOutByUniverseRef.current = next.dmxOutByUniverse
-    }
-    pushRealtime()
-    return realtimeStore.subscribe(pushRealtime)
+    return lighting3dPreviewRuntimeManager.registerTickSink((tick) => {
+      masterRef.current = tick.master
+      const prevSplits = splitStatesRef.current
+      splitStatesRef.current = tick.splitStates.map((incoming, index) => {
+        if (incoming === undefined) {
+          return prevSplits[index]
+        }
+        const existing = prevSplits[index]
+        if (existing === undefined) {
+          return incoming as NonNullable<RealtimeState['splitStates'][number]>
+        }
+        return {
+          ...existing,
+          outputParams: incoming.outputParams,
+          randomizer: incoming.randomizer,
+        }
+      }) as RealtimeState['splitStates']
+      dmxOutByUniverseRef.current = tick.dmxOutByUniverse
+    })
   }, [])
   const mountRef = useRef<HTMLDivElement | null>(null)
   const sceneRef = useRef<THREE.Scene | null>(null)
@@ -861,6 +808,7 @@ function Lighting3DViewport({
   const controlsRef = useRef<OrbitControls | null>(null)
   const transformControlsRef = useRef<TransformControls | null>(null)
   const transformControlsHelperRef = useRef<THREE.Object3D | null>(null)
+  const gizmoProxyRef = useRef<THREE.Object3D | null>(null)
   const fixtureVisualsRef = useRef<Map<string, FixtureVisual>>(new Map())
   const raycasterRef = useRef(new THREE.Raycaster())
   const pointerNdcRef = useRef(new THREE.Vector2())
@@ -871,7 +819,23 @@ function Lighting3DViewport({
   } | null>(null)
   const transformDraggingRef = useRef(false)
   const fixtureByIdRef = useRef<Map<string, MoverPreviewFixture>>(new Map())
-  const heavySceneRef = useRef(fixtures.length > 45)
+  const webgl1FallbackRef = useRef(false)
+  const heavySceneRef = useRef(fixtures.length > 8)
+  const heavySceneRenderPhaseRef = useRef(0)
+  const previewSyncMinMsRef = useRef(PREVIEW_SYNC_MIN_INTERVAL_MS)
+  const previewStructureKeyRef = useRef('')
+  const previewGroupColorsRef = useRef(new Map<string, THREE.Color>())
+  const previewPerformanceRef = useRef(
+    lighting3dPerformanceProfile(
+      fixtures.length,
+      estimatePreviewEmitterCount(fixtures),
+      false
+    )
+  )
+  const [webgl1FallbackActive, setWebgl1FallbackActive] = useState(false)
+  const [webgl1BannerDismissed, setWebgl1BannerDismissed] = useState(() =>
+    readWebgl1BannerDismissed()
+  )
   const onSelectFixtureRef = useRef(onSelectFixture)
   const onSelectLedFixtureRef = useRef(onSelectLedFixture)
   const transformModeRef = useRef<'translate' | 'rotate'>('translate')
@@ -985,7 +949,6 @@ function Lighting3DViewport({
     shift: false,
   })
   const roomEnabledRef = useRef(room.enabled)
-  const hazeAmountRef = useRef(clamp01(hazeAmount))
   const centerMarkerRef = useRef<THREE.Mesh | null>(null)
   const cameraPersistElapsedRef = useRef(0)
   const cameraPersistCacheRef = useRef<string>('')
@@ -1020,14 +983,25 @@ function Lighting3DViewport({
   const stageHeight = useMemo(() => stageHeightFromStage(stage), [stage])
 
   const activeLightSceneRef = useRef<LightScene_t | null>(null)
-  const masterRef = useRef(0)
   const previewLightingSuppressedRef = useRef(false)
+  useLayoutEffect(() => {
+    const emitterCount = estimatePreviewEmitterCount(fixtures)
+    const profile = lighting3dPerformanceProfile(
+      fixtures.length,
+      emitterCount,
+      webgl1FallbackRef.current
+    )
+    previewPerformanceRef.current = profile
+    heavySceneRef.current = profile.heavyScene
+    previewSyncMinMsRef.current = profile.previewSyncMinMs
+    volumetricFogMaxLightsRef.current = profile.maxFogLights
+  }, [fixtures])
+
   useLayoutEffect(() => {
     const syncControlRefs = () => {
       const state = store.getState()
       const light = state.control.present.light
       activeLightSceneRef.current = light.byId[light.active] ?? null
-      masterRef.current = state.control.present.master
       previewLightingSuppressedRef.current =
         state.gui.blackout === true ||
         state.control.present.device.connectionSettings.atmos?.emergencyStop ===
@@ -1109,10 +1083,6 @@ function Lighting3DViewport({
   useEffect(() => {
     roomEnabledRef.current = room.enabled
   }, [room.enabled])
-
-  useEffect(() => {
-    hazeAmountRef.current = clamp01(hazeAmount)
-  }, [hazeAmount])
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -1274,6 +1244,38 @@ function Lighting3DViewport({
     [fixtureIdFromObject]
   )
 
+  const bakeGizmoProxyToVisualRoot = useCallback((visual: FixtureVisual, target: PreviewTarget) => {
+    const proxy = gizmoProxyRef.current
+    if (proxy === null) {
+      return
+    }
+    const offset = fixtureBodyCenterInRoot(fixturePlacementContextFromTarget(target))
+    const offsetWorld = offset.clone().applyQuaternion(proxy.quaternion)
+    visual.root.position.copy(proxy.position).sub(offsetWorld)
+    visual.root.quaternion.copy(proxy.quaternion)
+  }, [])
+
+  const syncGizmoProxyFromVisual = useCallback((visual: FixtureVisual, target: PreviewTarget) => {
+    const proxy = gizmoProxyRef.current
+    if (proxy === null) {
+      return
+    }
+    const offset = fixtureBodyCenterInRoot(fixturePlacementContextFromTarget(target))
+    visual.root.updateWorldMatrix(true, false)
+    proxy.position.copy(visual.root.localToWorld(offset.clone()))
+    proxy.quaternion.copy(visual.root.quaternion)
+    proxy.scale.set(1, 1, 1)
+  }, [])
+
+  const bakeGizmoProxyToVisualRootRef = useRef(bakeGizmoProxyToVisualRoot)
+  const syncGizmoProxyFromVisualRef = useRef(syncGizmoProxyFromVisual)
+  useEffect(() => {
+    bakeGizmoProxyToVisualRootRef.current = bakeGizmoProxyToVisualRoot
+  }, [bakeGizmoProxyToVisualRoot])
+  useEffect(() => {
+    syncGizmoProxyFromVisualRef.current = syncGizmoProxyFromVisual
+  }, [syncGizmoProxyFromVisual])
+
   const applySelectedTransformToStore = useCallback(() => {
     const fixtureId = gizmoFixtureIdRef.current
     if (fixtureId === null) {
@@ -1281,9 +1283,12 @@ function Lighting3DViewport({
     }
     const fixture = fixtureById.get(fixtureId)
     const visual = fixtureVisualsRef.current.get(fixtureId)
-    if (fixture === undefined || visual === undefined) {
+    const target = previewTargetsRef.current.find((entry) => entry.fixtureId === fixtureId)
+    if (fixture === undefined || visual === undefined || target === undefined) {
       return
     }
+
+    bakeGizmoProxyToVisualRoot(visual, target)
 
     const world = visual.root.position
     const normalized = fixtureUniversePositionFromWorld(
@@ -1364,6 +1369,7 @@ function Lighting3DViewport({
       }
     }
   }, [
+    bakeGizmoProxyToVisualRoot,
     fixtureById,
     floorSpec,
     onUpdateLedFixturePosition,
@@ -1502,15 +1508,28 @@ function Lighting3DViewport({
     try {
       const init = createLightingRenderer(heavyScene)
       renderer = init.renderer
-      volumetricFogEnabledRef.current = init.webgl2
+      webgl1FallbackRef.current = init.capabilities.webgl1Fallback
+      setWebgl1FallbackActive(init.capabilities.webgl1Fallback)
+      volumetricFogEnabledRef.current = init.capabilities.volumetricFog
+      if (init.capabilities.webgl1Fallback) {
+        const emitterCount = estimatePreviewEmitterCount(fixturesRef.current)
+        const profile = lighting3dPerformanceProfile(
+          fixturesRef.current.length,
+          emitterCount,
+          true
+        )
+        previewPerformanceRef.current = profile
+        heavySceneRef.current = profile.heavyScene
+        previewSyncMinMsRef.current = profile.previewSyncMinMs
+        volumetricFogMaxLightsRef.current = profile.maxFogLights
+      }
       setRendererInitError(null)
-      if (!init.webgl2) {
+      if (init.capabilities.webgl1Fallback) {
         dispatch(
           pushStatusMessage({
             level: 'warn',
             source: 'Lighting3D',
-            message:
-              'WebGL2 unavailable — preview runs without volumetric haze. Update GPU drivers if possible.',
+            message: WEBGL1_FALLBACK_STATUS_MESSAGE,
           })
         )
       }
@@ -1564,6 +1583,11 @@ function Lighting3DViewport({
     controls.update()
     controlsRef.current = controls
 
+    const gizmoProxy = new THREE.Object3D()
+    gizmoProxy.name = 'FixtureGizmoProxy'
+    scene.add(gizmoProxy)
+    gizmoProxyRef.current = gizmoProxy
+
     const transformControls = new TransformControls(camera, renderer.domElement)
     transformControls.size = 0.9
     transformControls.setSpace('world')
@@ -1581,6 +1605,20 @@ function Lighting3DViewport({
       }
     })
     transformControls.addEventListener('objectChange', () => {
+      if (transformDraggingRef.current) {
+        const fixtureId = gizmoFixtureIdRef.current
+        if (fixtureId === null) {
+          return
+        }
+        const visual = fixtureVisualsRef.current.get(fixtureId)
+        const target = previewTargetsRef.current.find(
+          (entry) => entry.fixtureId === fixtureId
+        )
+        if (visual !== undefined && target !== undefined) {
+          bakeGizmoProxyToVisualRootRef.current(visual, target)
+        }
+        return
+      }
       applyTransformRef.current()
     })
 
@@ -1880,11 +1918,12 @@ function Lighting3DViewport({
     roomFogVolumeRef.current = roomFogVolume
     volumetricFogMaterialRef.current = roomFogMaterial as THREE.ShaderMaterial
     roomFogVolume.visible = false
-    roomLeftWall.receiveShadow = true
-    roomRightWall.receiveShadow = true
-    roomBackWall.receiveShadow = true
-    roomFrontWall.receiveShadow = true
-    roomCeiling.receiveShadow = true
+    const allowShadowReceiving = !webgl1FallbackRef.current
+    roomLeftWall.receiveShadow = allowShadowReceiving
+    roomRightWall.receiveShadow = allowShadowReceiving
+    roomBackWall.receiveShadow = allowShadowReceiving
+    roomFrontWall.receiveShadow = allowShadowReceiving
+    roomCeiling.receiveShadow = allowShadowReceiving
 
     const centerMarker = new THREE.Mesh(
       new THREE.RingGeometry(0.18, 0.24, 24),
@@ -1958,7 +1997,7 @@ function Lighting3DViewport({
         const syncNow = performance.now()
         if (
           syncNow - lastPreviewSyncAtRef.current >=
-          PREVIEW_SYNC_MIN_INTERVAL_MS
+          previewSyncMinMsRef.current
         ) {
           lastPreviewSyncAtRef.current = syncNow
           previewSyncPassRef.current()
@@ -2038,7 +2077,14 @@ function Lighting3DViewport({
           cameraPersistElapsedRef.current = 0
           persistCamera(camera, controls)
         }
-        renderer.render(scene, camera)
+        let didRender = true
+        if (heavySceneRef.current) {
+          heavySceneRenderPhaseRef.current += 1
+          didRender = heavySceneRenderPhaseRef.current % 2 === 0
+        }
+        if (didRender) {
+          renderer.render(scene, camera)
+        }
         frameCountRef.current += 1
         lastFrameAtRef.current = performance.now()
         const frameMs = performance.now() - frameStartedAt
@@ -2085,59 +2131,61 @@ function Lighting3DViewport({
                 `Geometries: ${info.memory.geometries}  textures: ${info.memory.textures}`,
                 heapLine,
                 `Canvas: ${rendererHud.domElement.width}x${rendererHud.domElement.height}  DPR: ${rendererHud.getPixelRatio()}`,
-                `Stall flag: ${freezeReportedRef.current ? 'yes' : 'no'}  volumetric fog: ${volumetricFogEnabledRef.current ? 'on' : 'off'}`,
+                `WebGL: ${webgl1FallbackRef.current ? '1 (fallback)' : '2'}  stall: ${freezeReportedRef.current ? 'yes' : 'no'}  essentials: ${PREVIEW_ESSENTIALS_MODE ? 'on' : 'off'}`,
               ].join('\n')
             }
           }
-          sendTelemetryMark({
-            source: telemetrySource,
-            subsystem: 'lighting3d.render',
-            metric: 'frame_ms_avg',
-            type: 'gauge',
-            value: avgFrameMs,
-            unit: 'ms',
-          })
-          sendTelemetryMark({
-            source: telemetrySource,
-            subsystem: 'lighting3d.render',
-            metric: 'fps',
-            type: 'gauge',
-            value: Math.max(1, Math.round(1 / Math.max(1e-3, delta))),
-            unit: 'fps',
-          })
-          sendTelemetryMark({
-            source: telemetrySource,
-            subsystem: 'lighting3d.render',
-            metric: 'fps_1s',
-            type: 'gauge',
-            value: fps1s,
-            unit: 'fps',
-          })
-          sendTelemetryMark({
-            source: telemetrySource,
-            subsystem: 'lighting3d.render',
-            metric: 'frame_ms_max_1s',
-            type: 'gauge',
-            value: maxFrameMs1s,
-            unit: 'ms',
-          })
-          sendTelemetryMark({
-            source: telemetrySource,
-            subsystem: 'lighting3d.render',
-            metric: 'active_fixture_count',
-            type: 'gauge',
-            value: previewTargetsRef.current.length,
-          })
-          sendTelemetryMark({
-            source: telemetrySource,
-            subsystem: 'lighting3d',
-            metric: 'health',
-            type: 'health',
-            status: freezeReportedRef.current ? 'warn' : 'ok',
-            message: freezeReportedRef.current
-              ? 'Lighting3D recovering from stall'
-              : 'Lighting3D render healthy',
-          })
+          if (perfHudOpenRef.current) {
+            sendTelemetryMark({
+              source: telemetrySource,
+              subsystem: 'lighting3d.render',
+              metric: 'frame_ms_avg',
+              type: 'gauge',
+              value: avgFrameMs,
+              unit: 'ms',
+            })
+            sendTelemetryMark({
+              source: telemetrySource,
+              subsystem: 'lighting3d.render',
+              metric: 'fps',
+              type: 'gauge',
+              value: Math.max(1, Math.round(1 / Math.max(1e-3, delta))),
+              unit: 'fps',
+            })
+            sendTelemetryMark({
+              source: telemetrySource,
+              subsystem: 'lighting3d.render',
+              metric: 'fps_1s',
+              type: 'gauge',
+              value: fps1s,
+              unit: 'fps',
+            })
+            sendTelemetryMark({
+              source: telemetrySource,
+              subsystem: 'lighting3d.render',
+              metric: 'frame_ms_max_1s',
+              type: 'gauge',
+              value: maxFrameMs1s,
+              unit: 'ms',
+            })
+            sendTelemetryMark({
+              source: telemetrySource,
+              subsystem: 'lighting3d.render',
+              metric: 'active_fixture_count',
+              type: 'gauge',
+              value: previewTargetsRef.current.length,
+            })
+            sendTelemetryMark({
+              source: telemetrySource,
+              subsystem: 'lighting3d',
+              metric: 'health',
+              type: 'health',
+              status: freezeReportedRef.current ? 'warn' : 'ok',
+              message: freezeReportedRef.current
+                ? 'Lighting3D recovering from stall'
+                : 'Lighting3D render healthy',
+            })
+          }
         }
       } catch (error) {
         frameErrorCount += 1
@@ -2243,6 +2291,9 @@ function Lighting3DViewport({
       if (transformControlsHelperRef.current !== null) {
         scene.remove(transformControlsHelperRef.current)
       }
+      if (gizmoProxyRef.current !== null) {
+        scene.remove(gizmoProxyRef.current)
+      }
 
       // Free GPU-side renderer caches and force WebGL context teardown on close.
       renderer.renderLists.dispose()
@@ -2263,6 +2314,7 @@ function Lighting3DViewport({
       controlsRef.current = null
       transformControlsRef.current = null
       transformControlsHelperRef.current = null
+      gizmoProxyRef.current = null
       worldFloorRef.current = null
       danceFloorRef.current = null
       danceGridRef.current = null
@@ -2321,8 +2373,16 @@ function Lighting3DViewport({
       return
     }
 
+    const gizmoProxy = gizmoProxyRef.current
+    if (gizmoProxy === null) {
+      return
+    }
+
     const visual = fixtureVisualsRef.current.get(gizmoFixtureId)
-    if (visual === undefined) {
+    const target = previewTargetsRef.current.find(
+      (entry) => entry.fixtureId === gizmoFixtureId
+    )
+    if (visual === undefined || target === undefined) {
       transformControls.detach()
       if (transformControlsHelperRef.current !== null) {
         transformControlsHelperRef.current.visible = false
@@ -2330,11 +2390,12 @@ function Lighting3DViewport({
       return
     }
 
-    transformControls.attach(visual.root)
+    syncGizmoProxyFromVisual(visual, target)
+    transformControls.attach(gizmoProxy)
     if (transformControlsHelperRef.current !== null) {
       transformControlsHelperRef.current.visible = true
     }
-  }, [gizmoFixtureId])
+  }, [gizmoFixtureId, syncGizmoProxyFromVisual])
 
   useEffect(() => {
     const transformControls = transformControlsRef.current
@@ -2532,7 +2593,7 @@ function Lighting3DViewport({
       densityUniform.value = 0
     }
     roomFogVolume.visible = false
-  }, [hazeAmount, room.enabled])
+  }, [room.enabled])
 
   useEffect(() => {
     let cancelled = false
@@ -2548,18 +2609,48 @@ function Lighting3DViewport({
         activeLightSceneRef.current?.splitScenes[0]?.baseParams ??
         ({} as Params)
       const splitScenes = activeLightSceneRef.current?.splitScenes ?? []
-      previewTargetsRef.current = buildTargets(
-        fixturesRef.current,
-        previewParams,
-        splitStatesRef.current,
-        splitScenes,
-        dmxOutByUniverseRef.current,
-        floorSpecRef.current,
-        stageHeightRef.current,
-        masterRef.current,
-        fxtrDepthOnRef.current
-      )
+      masterRef.current = lighting3dPreviewRuntimeManager.master
+      const structureKey = previewFixturesStructureKey(fixturesRef.current)
+      if (
+        structureKey !== previewStructureKeyRef.current ||
+        previewTargetsRef.current.length === 0
+      ) {
+        previewStructureKeyRef.current = structureKey
+        previewGroupColorsRef.current = buildPreviewGroupColorMap(
+          fixturesRef.current
+        )
+        previewTargetsRef.current = buildTargets(
+          fixturesRef.current,
+          previewParams,
+          splitStatesRef.current,
+          splitScenes,
+          dmxOutByUniverseRef.current,
+          floorSpecRef.current,
+          stageHeightRef.current,
+          masterRef.current,
+          fxtrDepthOnRef.current
+        )
+      } else {
+        applyLiveValuesToPreviewTargets(
+          previewTargetsRef.current,
+          fixtureByIdRef.current,
+          previewParams,
+          splitStatesRef.current,
+          splitScenes,
+          dmxOutByUniverseRef.current,
+          floorSpecRef.current,
+          stageHeightRef.current,
+          masterRef.current,
+          fxtrDepthOnRef.current,
+          previewGroupColorsRef.current
+        )
+      }
       const previewTargets = previewTargetsRef.current
+      if (webgl1FallbackRef.current) {
+        for (const target of previewTargets) {
+          target.castPrimarySpotShadow = false
+        }
+      }
 
       const visuals = fixtureVisualsRef.current
     const targetIds = new Set(previewTargets.map((target) => target.fixtureId))
@@ -2567,11 +2658,16 @@ function Lighting3DViewport({
     const resolveEmitterIntensity = (rawIntensity: number) =>
       previewLightingSuppressed ? 0 : clamp01(rawIntensity)
     const collectFogLights =
+      !PREVIEW_ESSENTIALS_MODE &&
       !previewLightingSuppressed &&
+      previewPerformanceRef.current.volumetricFogAllowed &&
       volumetricFogEnabledRef.current &&
-      hazeAmountRef.current > 0.0005 &&
       startupReadyRef.current
     const fogLightSamples: VolumetricFogLightSample[] = []
+    const physicalEmitterLightsEnabled =
+      !PREVIEW_ESSENTIALS_MODE &&
+      !heavySceneRef.current &&
+      !webgl1FallbackRef.current
     let anyActiveEmitterOutput = false
     const pushFogLightSample = (sample: VolumetricFogLightSample, fallbackDir: THREE.Vector3) => {
       if (!Number.isFinite(sample.intensity) || !Number.isFinite(sample.range)) {
@@ -2644,8 +2740,11 @@ function Lighting3DViewport({
         const emitterMeshes = new Set(visual.emitters)
         visual.root.traverse((object) => {
           if (object instanceof THREE.Mesh) {
-            object.castShadow = !emitterMeshes.has(object)
-            object.receiveShadow = false
+            object.castShadow =
+              !PREVIEW_ESSENTIALS_MODE &&
+              !webgl1FallbackRef.current &&
+              !emitterMeshes.has(object)
+            object.receiveShadow = !webgl1FallbackRef.current
           }
         })
         visuals.set(target.fixtureId, visual)
@@ -2656,12 +2755,17 @@ function Lighting3DViewport({
       }
       const fixtureVisual = visual
 
-      fixtureVisual.root.position.set(target.fixtureX, target.fixtureY, target.fixtureZ)
-      fixtureVisual.root.rotation.set(
-        THREE.MathUtils.degToRad(target.rotation.x),
-        THREE.MathUtils.degToRad(target.rotation.y),
-        THREE.MathUtils.degToRad(target.rotation.z)
-      )
+      const skipTransformReset =
+        gizmoFixtureIdRef.current === target.fixtureId &&
+        transformDraggingRef.current
+      if (!skipTransformReset) {
+        fixtureVisual.root.position.set(target.fixtureX, target.fixtureY, target.fixtureZ)
+        fixtureVisual.root.rotation.set(
+          THREE.MathUtils.degToRad(target.rotation.x),
+          THREE.MathUtils.degToRad(target.rotation.y),
+          THREE.MathUtils.degToRad(target.rotation.z)
+        )
+      }
       if (fixtureVisual.mountGroup) {
         fixtureVisual.mountGroup.rotation.z = target.mountInverted ? Math.PI : 0
       }
@@ -2734,6 +2838,14 @@ function Lighting3DViewport({
       let ledPosY = 0
       let ledPosZ = 0
       fixtureVisual.root.updateWorldMatrix(true, true)
+      if (PREVIEW_ESSENTIALS_MODE) {
+        suppressFixtureSecondaryVisuals(fixtureVisual)
+      }
+
+      const usesGroupedBeamCones =
+        !PREVIEW_ESSENTIALS_MODE &&
+        fixtureVisual.beamConeGroups !== undefined &&
+        fixtureVisual.beamConeGroups.length > 0
 
       target.emitters.forEach((emitterTarget, emitterIndex) => {
         const emitterMesh = fixtureVisual.emitters[emitterIndex]
@@ -2799,10 +2911,13 @@ function Lighting3DViewport({
           ) {
             glowShell.material.color.copy(emitterTarget.color)
             glowShell.material.opacity = clamp(
-              Math.pow(visualIntensity, 0.68) * (0.22 + hazeAmountRef.current * 0.18),
+              Math.pow(visualIntensity, 0.68) * 0.35,
               0,
               0.75
             )
+          }
+          if (PREVIEW_ESSENTIALS_MODE) {
+            return
           }
           const ledWeight = outputActive ? emitterIntensity : 0
           if (outputActive) {
@@ -2847,33 +2962,19 @@ function Lighting3DViewport({
           return
         }
 
-        const isMoverEmitter = target.isMoverModel
-        const emitterX = emitterTarget.localX
-        const emitterY = isMoverEmitter
-          ? emitterTarget.localY
-          : nonMoverEmitterBaseY(target.modelKind) + emitterTarget.localY
-        const emitterAttachOffset = 0.0025
-        const emitterZ =
-          target.modelKind === 'uplight'
-            ? emitterTarget.localZ
-            : emitterTarget.localZ + emitterAttachOffset
+        if (PREVIEW_ESSENTIALS_MODE) {
+          applyEmitterRootPlacement(emitterMesh, target, emitterTarget)
+          return
+        }
 
         const atmosphericUp =
           target.modelKind === 'atmosphericFxtr' &&
           target.atmosphereNozzleDirection === 'up'
-        emitterMesh.position.set(
-          emitterX,
-          target.modelKind === 'uplight' ? emitterY + emitterAttachOffset : emitterY,
-          emitterZ
-        )
+        applyEmitterRootPlacement(emitterMesh, target, emitterTarget)
         const localBeamDirection =
           target.modelKind === 'uplight' || atmosphericUp
             ? new THREE.Vector3(0, 1, 0)
             : new THREE.Vector3(0, 0, 1)
-        emitterMesh.quaternion.setFromUnitVectors(
-          LOCAL_AXIS_Y,
-          localBeamDirection
-        )
         const emitterParent = emitterMesh.parent
         let beamDirection = localBeamDirection.clone()
         if (emitterParent !== null) {
@@ -2943,16 +3044,20 @@ function Lighting3DViewport({
           defaultReach
         )
 
-        if (beamMesh !== undefined) {
+        if (beamMesh !== undefined && !usesGroupedBeamCones) {
           const beamMaterial = beamMesh.material as THREE.MeshBasicMaterial
           if (!outputActive) {
             beamMaterial.opacity = 0
             beamMesh.visible = false
             beamMesh.scale.set(0, 0, 0)
           } else {
-            const haze = hazeAmountRef.current
-            const hazeMix = clamp(haze, 0, 1)
-            if (hazeMix <= 0.0005) {
+            const hazeMix = 0
+            const rectEmitter = isRectPreviewEmitterShape(emitterTarget.shape)
+            const beamHazeMix =
+              rectEmitter && outputActive
+                ? Math.max(hazeMix, 0.07)
+                : hazeMix
+            if (beamHazeMix <= 0.0005) {
               beamMaterial.opacity = 0
               beamMesh.visible = false
               beamMesh.scale.set(0, 0, 0)
@@ -2967,7 +3072,7 @@ function Lighting3DViewport({
               beamMaterial.color.copy(emitterTarget.color)
               const beamStrength =
                 Math.pow(emitterIntensity, target.modelKind === 'moverSpot' ? 1.1 : 0.95) *
-                hazeMix
+                beamHazeMix
               beamMaterial.opacity = clamp(
                 beamStrength *
                   (target.modelKind === 'moverSpot' ? 0.72 : 0.58),
@@ -3011,7 +3116,16 @@ function Lighting3DViewport({
           }
         }
 
-        if (emitterLight instanceof THREE.SpotLight) {
+        if (!physicalEmitterLightsEnabled) {
+          if (emitterLight instanceof THREE.SpotLight) {
+            emitterLight.intensity = 0
+            emitterLight.visible = false
+          }
+          if (emitterFillRect instanceof THREE.RectAreaLight) {
+            emitterFillRect.intensity = 0
+            emitterFillRect.visible = false
+          }
+        } else if (emitterLight instanceof THREE.SpotLight) {
           const horizontalSurfaceBoost = 1
           emitterLight.position.copy(emitterMesh.position)
           emitterLight.color.copy(emitterTarget.color)
@@ -3188,7 +3302,7 @@ function Lighting3DViewport({
             pointsMaterial.opacity > 0.003
         }
 
-        if (emitterFillRect instanceof THREE.RectAreaLight) {
+        if (physicalEmitterLightsEnabled && emitterFillRect instanceof THREE.RectAreaLight) {
           const horizontalSurfaceBoost = 1
           emitterFillRect.position.copy(emitterMesh.position)
           emitterFillRect.quaternion.setFromUnitVectors(
@@ -3221,8 +3335,20 @@ function Lighting3DViewport({
           ;(emitterFillRect.userData as { smoothIntensity?: number }).smoothIntensity =
             smoothedFillIntensity
           emitterFillRect.intensity = smoothedFillIntensity
-          emitterFillRect.width = target.modelKind === 'washBar' ? 0.38 : 0.24
-          emitterFillRect.height = target.modelKind === 'washBar' ? 0.24 : 0.16
+          const fillWidthM =
+            emitterTarget.rectWidthM !== undefined
+              ? Math.max(0.04, emitterTarget.rectWidthM)
+              : target.modelKind === 'washBar'
+              ? 0.38
+              : 0.24
+          const fillHeightM =
+            emitterTarget.rectHeightM !== undefined
+              ? Math.max(0.04, emitterTarget.rectHeightM)
+              : target.modelKind === 'washBar'
+              ? 0.24
+              : 0.16
+          emitterFillRect.width = fillWidthM
+          emitterFillRect.height = fillHeightM
           emitterFillRect.visible = outputActive
           if (collectFogLights && outputActive) {
             const fillWorldPos = emitterFillRect.getWorldPosition(new THREE.Vector3())
@@ -3253,7 +3379,27 @@ function Lighting3DViewport({
         return
       })
 
-      if (target.isLedFixture && fixtureVisual.ledAggregateLight !== undefined) {
+      if (
+        !PREVIEW_ESSENTIALS_MODE &&
+        usesGroupedBeamCones &&
+        fixtureVisual.beamConeGroups !== undefined
+      ) {
+        syncGroupedBeamCones({
+          groups: fixtureVisual.beamConeGroups,
+          target,
+          emitters: fixtureVisual.emitters,
+          surfaceSpec: surfaceSpecRef.current,
+          hazeAmount: 0,
+          previewLightingSuppressed,
+          resolveEmitterIntensity,
+        })
+      }
+
+      if (
+        !PREVIEW_ESSENTIALS_MODE &&
+        target.isLedFixture &&
+        fixtureVisual.ledAggregateLight !== undefined
+      ) {
         const aggregateLight = fixtureVisual.ledAggregateLight
         const aggregateTarget = fixtureVisual.ledAggregateTarget
         const ledAggregateColor = new THREE.Color(
@@ -3452,7 +3598,7 @@ function Lighting3DViewport({
             paramsUniform.value[index]?.set(0, feetToWorld(3), -1, 0)
           }
         }
-        const haze = clamp01(hazeAmountRef.current)
+        const haze = 0
         const densityUniform = fogMaterial.uniforms.uDensity as
           | { value: number }
           | undefined
@@ -3496,10 +3642,17 @@ function Lighting3DViewport({
 
             const blendedDir = prevDir.clone().lerp(sample.direction, 0.42)
             prevDir.copy(normalizeOrFallback(blendedDir, sample.direction))
-            prevColor.lerp(
-              new THREE.Vector3(sample.color.r, sample.color.g, sample.color.b),
-              0.42
+            const targetFogColor = new THREE.Vector3(
+              sample.color.r,
+              sample.color.g,
+              sample.color.b
             )
+            const fogColorDelta = prevColor.distanceTo(targetFogColor)
+            if (fogColorDelta > 0.35) {
+              prevColor.copy(targetFogColor)
+            } else {
+              prevColor.lerp(targetFogColor, 0.42)
+            }
             const targetFogIntensity = isEmitterOutputActive(
               sample.intensity,
               sample.color
@@ -3537,10 +3690,20 @@ function Lighting3DViewport({
 
       const gizmoId = gizmoFixtureIdRef.current
       const transformControls = transformControlsRef.current
-      if (gizmoId !== null && transformControls !== null) {
+      const gizmoProxy = gizmoProxyRef.current
+      if (gizmoId !== null && transformControls !== null && gizmoProxy !== null) {
         const visual = fixtureVisualsRef.current.get(gizmoId)
-        if (visual !== undefined && transformControls.object !== visual.root) {
-          transformControls.attach(visual.root)
+        const gizmoTarget = previewTargets.find((entry) => entry.fixtureId === gizmoId)
+        if (visual !== undefined && gizmoTarget !== undefined) {
+          if (transformControls.object !== gizmoProxy) {
+            syncGizmoProxyFromVisualRef.current(visual, gizmoTarget)
+            transformControls.attach(gizmoProxy)
+            if (transformControlsHelperRef.current !== null) {
+              transformControlsHelperRef.current.visible = true
+            }
+          } else if (!transformDraggingRef.current) {
+            syncGizmoProxyFromVisualRef.current(visual, gizmoTarget)
+          }
         }
       }
     }
@@ -3556,13 +3719,6 @@ function Lighting3DViewport({
 
   return (
     <Root>
-      <Hint>
-        Left click selects fixtures. Right click a fixture to show and toggle
-        Move/Rotate gizmo mode (movers are move-only). Left or right click away
-        from fixtures hides the gizmo. Keyboard: `W/A/S/D` walk, `Shift` speed,
-        `Q` move gizmo, `E` rotate gizmo. Alt+Shift+H toggles a live performance HUD
-        (FPS, frame ms, draw calls, heap).
-      </Hint>
       <CanvasShell>
         <ModeBadge>
           Gizmo:{' '}
@@ -3592,7 +3748,7 @@ function Lighting3DViewport({
         )}
         <HomeButton
           type="button"
-          title="Reset camera to default view"
+          title="Reset camera to the default view"
           onClick={resetView}
         >
           Home
@@ -3673,6 +3829,11 @@ function Lighting3DViewport({
           </FixtureTooltip>
       )}
         <CanvasHost ref={mountRef} />
+        {webgl1FallbackActive && !webgl1BannerDismissed ? (
+          <WebglFallbackBanner
+            onDismiss={() => setWebgl1BannerDismissed(true)}
+          />
+        ) : null}
         {rendererInitError !== null && (
           <RendererErrorBanner role="alert">{rendererInitError}</RendererErrorBanner>
         )}
@@ -3694,8 +3855,8 @@ function Lighting3DViewport({
 const Root = styled.div`
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
   min-height: 0;
-  height: 100%;
 `
 
 const ExternalViewportCard = styled.div`
@@ -3730,12 +3891,6 @@ const ExternalViewportButton = styled.button`
   border-radius: 0.3rem;
   padding: 0.35rem 0.55rem;
   cursor: pointer;
-`
-
-const Hint = styled.div`
-  font-size: 0.78rem;
-  color: ${(props) => props.theme.colors.text.secondary};
-  margin-bottom: 0.5rem;
 `
 
 const CanvasShell = styled.div`

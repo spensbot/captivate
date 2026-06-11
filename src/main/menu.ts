@@ -8,12 +8,16 @@ import {
 } from 'electron'
 import { IPC_Callbacks } from './engine/ipcHandler'
 import { SerialPort } from 'serialport'
-import { exportTelemetrySnapshot } from './telemetry'
+import { exportDebugLog } from './telemetry'
 import {
   CAPTIVATE_GITHUB_DISCUSSIONS_URL,
   CAPTIVATE_GITHUB_ISSUES_URL,
   CAPTIVATE_GITHUB_REPO_URL,
 } from '../shared/githubRepo'
+import {
+  formatRecentProjectMenuLabel,
+  type RecentProjectEntry,
+} from '../shared/recentProjects'
 
 interface DarwinMenuItemConstructorOptions extends MenuItemConstructorOptions {
   selector?: string
@@ -32,6 +36,8 @@ export default class MenuBuilder {
   res: MenuResource
   /** Mirrored from renderer: WLED sidebar feature on (`true` = show “Disable…”, off = show “Enable…”). */
   ledSidebarMenuChecked = false
+  autosaveMenuChecked = true
+  recentProjects: RecentProjectEntry[] = []
 
   constructor(mainWindow: BrowserWindow, res: MenuResource) {
     this.mainWindow = mainWindow
@@ -42,17 +48,153 @@ export default class MenuBuilder {
     this.ledSidebarMenuChecked = checked
   }
 
-  private async exportTelemetryFromMenu() {
+  setAutosaveMenuChecked(checked: boolean) {
+    this.autosaveMenuChecked = checked
+  }
+
+  setRecentProjects(entries: RecentProjectEntry[]) {
+    this.recentProjects = entries
+  }
+
+  private buildRecentProjectMenuItems(): MenuItemConstructorOptions[] {
+    const items: MenuItemConstructorOptions[] = [{ type: 'separator' }]
+    if (this.recentProjects.length === 0) {
+      items.push({
+        label: 'Recent Projects',
+        enabled: false,
+      })
+      items.push({
+        label: '(none)',
+        enabled: false,
+      })
+      return items
+    }
+    items.push({
+      label: 'Recent Projects',
+      submenu: this.recentProjects.map((entry) => ({
+        label: formatRecentProjectMenuLabel(entry),
+        toolTip: entry.path,
+        click: () => {
+          this.res.ipcCallbacks.send_main_command({
+            type: 'load-recent-project',
+            path: entry.path,
+          })
+        },
+      })),
+    })
+    items.push({
+      label: 'Clear Recent Projects',
+      click: () => {
+        this.res.ipcCallbacks.send_main_command({ type: 'clear-recent-projects' })
+      },
+    })
+    return items
+  }
+
+  private buildSettingsMenu(): MenuItemConstructorOptions {
+    return {
+      label: 'Settings',
+      submenu: [
+        {
+          label: 'Preferences…',
+          accelerator: process.platform === 'darwin' ? 'Command+,' : 'Ctrl+,',
+          click: () => {
+            this.res.ipcCallbacks.send_main_command({ type: 'open-settings' })
+          },
+        },
+      ],
+    }
+  }
+
+  private buildFileSubmenu(
+    accelerators: {
+      newProject: string
+      save: string
+      saveAs: string
+      load: string
+    }
+  ): MenuItemConstructorOptions[] {
+    return [
+      {
+        label: 'New Project',
+        accelerator: accelerators.newProject,
+        click: () => {
+          this.res.ipcCallbacks.send_main_command({ type: 'new-project' })
+        },
+      },
+      { type: 'separator' },
+      {
+        label: 'Save Project',
+        accelerator: accelerators.save,
+        click: () => {
+          this.res.ipcCallbacks.send_main_command({ type: 'save' })
+        },
+      },
+      {
+        label: 'Save Project As…',
+        accelerator: accelerators.saveAs,
+        click: () => {
+          this.res.ipcCallbacks.send_main_command({ type: 'save-as' })
+        },
+      },
+      {
+        label: 'Load Project…',
+        accelerator: accelerators.load,
+        click: () => {
+          this.res.ipcCallbacks.send_main_command({ type: 'load' })
+        },
+      },
+      {
+        label: 'Autosave',
+        type: 'checkbox',
+        checked: this.autosaveMenuChecked,
+        click: () => {
+          this.res.ipcCallbacks.send_main_command({ type: 'toggle-autosave' })
+        },
+      },
+      { type: 'separator' },
+      {
+        label: 'Save Fixture Database',
+        click: () => {
+          this.res.ipcCallbacks.send_main_command({ type: 'save-fixture-database' })
+        },
+      },
+      {
+        label: 'Save Fixture Database As…',
+        click: () => {
+          this.res.ipcCallbacks.send_main_command({
+            type: 'save-fixture-database-as',
+          })
+        },
+      },
+      {
+        label: 'Load Fixture Database…',
+        click: () => {
+          this.res.ipcCallbacks.send_main_command({ type: 'load-fixture-database' })
+        },
+      },
+      ...this.buildRecentProjectMenuItems(),
+    ]
+  }
+
+  private async exportDebugLogFromMenu() {
     try {
-      const result = await exportTelemetrySnapshot()
+      const result = await exportDebugLog(this.mainWindow)
       await dialog.showMessageBox(this.mainWindow, {
-        title: 'Telemetry Exported',
-        message: `Telemetry snapshot saved to:\n${result.filePath}`,
+        title: 'Debug Log Exported',
+        message:
+          `Debug log saved to:\n${result.filePath}\n\n` +
+          `${result.lineCount} lines (${result.bytesWritten} bytes).\n\n` +
+          'Attach this file when reporting issues on GitHub.',
       })
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      if (message.includes('cancelled')) {
+        return
+      }
       await dialog.showMessageBox(this.mainWindow, {
-        title: 'Telemetry Export Failed',
-        message: error instanceof Error ? error.message : String(error),
+        title: 'Debug Log Export Failed',
+        message,
       })
     }
   }
@@ -113,39 +255,12 @@ export default class MenuBuilder {
     }
     const subMenuFile: DarwinMenuItemConstructorOptions = {
       label: 'File',
-      submenu: [
-        {
-          label: 'New Project',
-          accelerator: 'Command+N',
-          click: () => {
-            this.res.ipcCallbacks.send_main_command({ type: 'new-project' })
-          },
-        },
-        {
-          label: 'Save',
-          accelerator: 'Command+S',
-          click: () => {
-            this.res.ipcCallbacks.send_main_command({ type: 'save' })
-          },
-        },
-        // {
-        //   label: 'Save Selective',
-        //   accelerator: 'Shift+Command+S',
-        //   click: () => {},
-        // },
-        {
-          label: 'Load',
-          accelerator: 'Command+O',
-          click: () => {
-            this.res.ipcCallbacks.send_main_command({ type: 'load' })
-          },
-        },
-        // {
-        //   label: 'Load Selective',
-        //   accelerator: 'Shift+Command+O',
-        //   click: () => {},
-        // },
-      ],
+      submenu: this.buildFileSubmenu({
+        newProject: 'Command+N',
+        save: 'Command+S',
+        saveAs: 'Command+Shift+S',
+        load: 'Command+O',
+      }),
     }
     const subMenuEdit: DarwinMenuItemConstructorOptions = {
       label: 'Edit',
@@ -317,9 +432,9 @@ export default class MenuBuilder {
           },
         },
         {
-          label: 'Export Telemetry Snapshot',
+          label: 'Export Debug Log…',
           click: () => {
-            void this.exportTelemetryFromMenu()
+            void this.exportDebugLogFromMenu()
           },
         },
       ],
@@ -337,6 +452,7 @@ export default class MenuBuilder {
       subMenuEdit,
       subMenuWindow,
       subMenuView,
+      this.buildSettingsMenu(),
       subMenuExtras,
       subMenuHelp,
     ]
@@ -346,29 +462,12 @@ export default class MenuBuilder {
     const templateDefault: MenuItemConstructorOptions[] = [
       {
         label: '&File',
-        submenu: [
-          {
-            label: 'New Project',
-            accelerator: 'Ctrl+N',
-            click: () => {
-              this.res.ipcCallbacks.send_main_command({ type: 'new-project' })
-            },
-          },
-          {
-            label: 'Save',
-            accelerator: 'Ctrl+S',
-            click: () => {
-              this.res.ipcCallbacks.send_main_command({ type: 'save' })
-            },
-          },
-          {
-            label: 'Load',
-            accelerator: 'Ctrl+O',
-            click: () => {
-              this.res.ipcCallbacks.send_main_command({ type: 'load' })
-            },
-          },
-        ],
+        submenu: this.buildFileSubmenu({
+          newProject: 'Ctrl+N',
+          save: 'Ctrl+S',
+          saveAs: 'Ctrl+Shift+S',
+          load: 'Ctrl+O',
+        }),
       },
       {
         label: '&View',
@@ -419,6 +518,7 @@ export default class MenuBuilder {
                 },
               ],
       },
+      this.buildSettingsMenu(),
       {
         label: 'Extras',
         submenu: [
@@ -483,9 +583,9 @@ export default class MenuBuilder {
             },
           },
           {
-            label: 'Export Telemetry Snapshot',
+            label: 'Export Debug Log…',
             click: () => {
-              void this.exportTelemetryFromMenu()
+              void this.exportDebugLogFromMenu()
             },
           },
         ],

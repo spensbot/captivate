@@ -10,6 +10,7 @@ import {
 } from 'renderer/redux/store'
 import styled from 'styled-components'
 import Popup from '../base/Popup'
+import { PopupTitleRow } from '../base/SectionHelpPopover'
 import { useDispatch } from 'react-redux'
 import {
   removeSplitSceneByIndex,
@@ -20,6 +21,7 @@ import { getSortedGroupsFromPlacedFixtures } from 'shared/dmxUtil'
 import { listAtmosFxtrs } from 'shared/atmosphericsMapping'
 import { showVisGroupUi, splitDisplayName } from './splitUiVisibility'
 import SplitModShapingModal from './SplitModShapingModal'
+import { SplitGroupsHelpButton, SplitModShapingHelpButton } from './sceneHelpButtons'
 
 interface Props {
   splitIndex: number
@@ -92,16 +94,19 @@ export default function GroupSelection({ splitIndex }: Props) {
     <Root>
       <GroupName title={splitHeading}>{splitHeading}</GroupName>
       {noGroupsAvailable ? (
-        <NoGroupsCue title="Patch fixtures and define groups on fixture types to populate this list">
+        <NoGroupsCue title="Patch fixtures on the universe to populate fixture-type groups">
           {universeFixtureCount === 0
             ? 'No fixtures patched yet — nothing to group.'
             : 'No groups available from the current rig yet.'}
         </NoGroupsCue>
       ) : null}
       <IconToolbar>
+        <SplitGroupsHelpButton />
         <IconButton
           size="small"
           sx={{ flexShrink: 0 }}
+          title="Choose which fixture groups this split includes or excludes"
+          aria-label="Edit split groups"
           onClick={(e) => {
             e.preventDefault()
             setIsOpen(true)
@@ -118,7 +123,7 @@ export default function GroupSelection({ splitIndex }: Props) {
               dispatch(removeSplitSceneByIndex(splitIndex))
             }}
             aria-label="Remove split"
-            title="Remove split"
+            title="Remove this split (split 0 cannot be removed)"
           >
             <RemoveIcon fontSize="small" />
           </IconButton>
@@ -126,7 +131,7 @@ export default function GroupSelection({ splitIndex }: Props) {
         <IconButton
           size="small"
           aria-label="Split modulation modifiers"
-          title="Modulation for this split only: invert, phase offset, stair-step"
+          title="Per-split invert, phase shift, or stair-step quantize"
           onClick={(e) => {
             e.preventDefault()
             setModShapingOpen(true)
@@ -152,7 +157,7 @@ export default function GroupSelection({ splitIndex }: Props) {
                   <>
                     There are no fixtures patched in any universe address yet, so no fixture
                     groups are available for splits. Patch fixtures under <strong>Patch</strong>{' '}
-                    (Universe), then return here to route them into lighting splits.
+                    (Patching), then return here to route them into lighting splits.
                   </>
                 ) : (
                   <>
@@ -196,7 +201,12 @@ export default function GroupSelection({ splitIndex }: Props) {
       )}
       {modShapingOpen && (
         <Popup
-          title={`${splitHeading} — modulation modifiers`}
+          title={
+            <PopupTitleRow>
+              <span>{`${splitHeading} — modulation modifiers`}</span>
+              <SplitModShapingHelpButton />
+            </PopupTitleRow>
+          }
           onClose={() => setModShapingOpen(false)}
           cardWidth="min(28rem, calc(100vw - 2rem))"
         >

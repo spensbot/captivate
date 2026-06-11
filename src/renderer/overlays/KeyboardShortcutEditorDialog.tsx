@@ -1,6 +1,7 @@
 import { useMemo, useState, type MouseEvent } from 'react'
 import KeyboardAltOutlinedIcon from '@mui/icons-material/KeyboardAltOutlined'
 import IconButton from '@mui/material/IconButton'
+import { statusBarMuiIconButtonSx } from '../menu/statusBarUi'
 import Menu from '@mui/material/Menu'
 import MenuItem from '@mui/material/MenuItem'
 import {
@@ -131,6 +132,7 @@ export default function KeyboardShortcutMenuButton() {
         onClick={handleButtonClick}
         size="small"
         sx={{
+          ...statusBarMuiIconButtonSx,
           color: keyboardLearnMode ? 'success.main' : 'text.secondary',
         }}
       >

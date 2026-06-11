@@ -3,6 +3,7 @@ import {
   FixtureType,
   normalizeFixtureModelConfig,
   migrateLegacyFixtureChannelDiscriminators,
+  migrateLegacySubFixtureGroupLabelsOnFixtureType,
 } from './dmxFixtures'
 import {
   looksLikeQlcFixtureDefinition,
@@ -114,6 +115,8 @@ function normalizeFixtureType(input: unknown): FixtureType | null {
     (rootFixture as { model?: unknown }).model,
     normalizedFixtureType
   )
+
+  migrateLegacySubFixtureGroupLabelsOnFixtureType(normalizedFixtureType)
 
   return normalizedFixtureType
 }

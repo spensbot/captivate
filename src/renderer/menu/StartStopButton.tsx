@@ -1,34 +1,28 @@
+import { memo } from 'react'
 import StartIcon from '@mui/icons-material/PlayArrow'
 import StopIcon from '@mui/icons-material/Stop'
-import styled from 'styled-components'
 import { send_user_command } from '../ipcHandler'
 import { useRealtimeSelector } from 'renderer/redux/realtimeStore'
+import { StatusBarPlayStopButton } from './statusBarUi'
 
-export default function StartStopButton() {
-  const time = useRealtimeSelector((rtState) => rtState.time)
+function StartStopButton() {
+  const isPlaying = useRealtimeSelector((rtState) => rtState.time.isPlaying)
 
   return (
-    <Root
+    <StatusBarPlayStopButton
+      type="button"
+      $playing={isPlaying}
+      title={isPlaying ? 'Stop show clock' : 'Start show clock'}
       onClick={() =>
         send_user_command({
           type: 'SetIsPlaying',
-          isPlaying: !time.isPlaying,
+          isPlaying: !isPlaying,
         })
       }
     >
-      {time.isPlaying ? <StopIcon /> : <StartIcon />}
-    </Root>
+      {isPlaying ? <StopIcon fontSize="inherit" /> : <StartIcon fontSize="inherit" />}
+    </StatusBarPlayStopButton>
   )
 }
 
-const Root = styled.div`
-  /* border: 2px solid #fff5; */
-  border-radius: 10rem;
-  background-color: #3d5a;
-  width: 2.3rem;
-  height: 2.3rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-`
+export default memo(StartStopButton)

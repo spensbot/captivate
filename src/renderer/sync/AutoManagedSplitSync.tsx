@@ -101,7 +101,7 @@ export default function AutoManagedSplitSync() {
         defaultParams: {
           xAxis: 0.5,
           yAxis: 0.5,
-          moverFloorLock: 1,
+          moverFloorLock: 0,
           moverSpread: 0,
           moverMirrorX: 0,
           moverMirrorY: 0,

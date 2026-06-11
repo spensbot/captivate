@@ -9,6 +9,7 @@ import { useDispatch } from 'react-redux'
 import UndoIcon from '@mui/icons-material/Undo'
 import RedoIcon from '@mui/icons-material/Redo'
 import IconButton from '@mui/material/IconButton'
+import { statusBarMuiIconButtonSx } from '../menu/statusBarUi'
 
 export function undoAction(group: UndoGroup) {
   return {
@@ -51,17 +52,19 @@ export default function UndoRedo() {
 
   return (
     <Root>
-      <IconButton disabled={!canUndo} onClick={onUndo(group)}>
-        <UndoIcon />
+      <IconButton disabled={!canUndo} onClick={onUndo(group)} size="small" sx={statusBarMuiIconButtonSx}>
+        <UndoIcon fontSize="small" />
       </IconButton>
-      <IconButton disabled={!canRedo} onClick={onRedo(group)}>
-        <RedoIcon />
+      <IconButton disabled={!canRedo} onClick={onRedo(group)} size="small" sx={statusBarMuiIconButtonSx}>
+        <RedoIcon fontSize="small" />
       </IconButton>
     </Root>
   )
 }
 
 const Root = styled.div`
-  margin: -0.5rem 0 -0.5rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
 `
 

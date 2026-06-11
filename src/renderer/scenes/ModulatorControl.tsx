@@ -13,7 +13,7 @@ import LfoShapeParamSlider from './LfoShapeParamSlider'
 import ModulationMatrix from './ModulationMatrix'
 import { useActiveLightScene } from '../redux/store'
 import { LfoShape } from '../../shared/oscillator'
-import { useRealtimeSelector } from '../redux/realtimeStore'
+import { useAudioNyquistHz } from '../redux/realtimeSelectors'
 import { setModulatorAudioConfig, setModulatorWaveConfig } from '../redux/controlSlice'
 import {
   intermodIncomingSources,
@@ -21,6 +21,9 @@ import {
   intermodSourceAccentColor,
 } from '../../shared/modulation'
 import { useModPreviewSplit } from './useModPreviewSplit'
+import {
+  ModulationMatrixHelpButton,
+} from './sceneHelpButtons'
 
 import { getAudioBandCutoffSliderBounds } from '../../shared/audioEngine'
 import { AUDIO_BAND_MAX_LEVEL_UI } from '../../shared/lfoShapeSlider'
@@ -46,7 +49,7 @@ export default function ModulatorControl({ index }: Props) {
   const [shapeSlidersOpen, setShapeSlidersOpen] = useState(true)
   const [modMatrixOpen, setModMatrixOpen] = useState(true)
   const lfo = useActiveLightScene((activeScene) => activeScene.modulators[index].lfo)
-  const audioMetrics = useRealtimeSelector((state) => state.audio)
+  const nyquistHz = useAudioNyquistHz()
   const splitIx = useModPreviewSplit()
   const intermodAccents = useActiveLightScene((scene) => ({
     outgoingTargets: intermodOutgoingTargets(scene, index),
@@ -54,7 +57,7 @@ export default function ModulatorControl({ index }: Props) {
   }))
 
   const { lowCutMinHz, lowCutMaxHz, highCutMinHz, highCutMaxHz } =
-    getAudioBandCutoffSliderBounds(audioMetrics.nyquistHz)
+    getAudioBandCutoffSliderBounds(nyquistHz)
 
   function withCenterDetent(value: number) {
     const clamped = Math.max(0, Math.min(1, Number(value) || 0))
@@ -67,7 +70,7 @@ export default function ModulatorControl({ index }: Props) {
       {
         id: 'low',
         label: 'Low Cutoff',
-        title: 'Audio band low cutoff (Hz)',
+        title: 'Low band edge (Hz)',
         min: lowCutMinHz,
         max: lowCutMaxHz,
         step: 1,
@@ -83,7 +86,7 @@ export default function ModulatorControl({ index }: Props) {
       {
         id: 'high',
         label: 'High Cutoff',
-        title: 'Audio band high cutoff (Hz)',
+        title: 'High band edge (Hz)',
         min: highCutMinHz,
         max: highCutMaxHz,
         step: 1,
@@ -99,7 +102,7 @@ export default function ModulatorControl({ index }: Props) {
       {
         id: 'attack',
         label: 'Attack',
-        title: 'Audio band attack response',
+        title: 'How fast band level rises',
         min: 0,
         max: 1,
         step: 0.01,
@@ -115,7 +118,7 @@ export default function ModulatorControl({ index }: Props) {
       {
         id: 'decay',
         label: 'Decay',
-        title: 'Audio band decay response',
+        title: 'How fast band level falls',
         min: 0,
         max: 1,
         step: 0.01,
@@ -131,7 +134,7 @@ export default function ModulatorControl({ index }: Props) {
       {
         id: 'bandSmoothing',
         label: 'Smoothing',
-        title: 'Extra smoothing after attack/decay (audio band)',
+        title: 'Extra smoothing after attack/decay',
         min: 0,
         max: 1,
         step: 0.01,
@@ -147,7 +150,7 @@ export default function ModulatorControl({ index }: Props) {
       {
         id: 'threshold',
         label: 'Threshold',
-        title: 'Audio threshold (below this maps to zero)',
+        title: 'Input below this reads as zero',
         min: 0,
         max: 0.99,
         step: 0.01,
@@ -163,7 +166,7 @@ export default function ModulatorControl({ index }: Props) {
       {
         id: 'max',
         label: 'Max Level',
-        title: 'Audio max level (maps to full-scale output)',
+        title: 'Input at/above this reads as full scale',
         min: 0.01,
         max: AUDIO_BAND_MAX_LEVEL_UI,
         step: 0.01,
@@ -182,7 +185,7 @@ export default function ModulatorControl({ index }: Props) {
       {
         id: 'threshold',
         label: 'Threshold',
-        title: 'Energy threshold (below this maps to zero)',
+        title: 'Energy below this reads as zero',
         min: 0,
         max: 0.99,
         step: 0.01,
@@ -198,7 +201,7 @@ export default function ModulatorControl({ index }: Props) {
       {
         id: 'max',
         label: 'Max Level',
-        title: 'Energy max level (maps to full-scale output)',
+        title: 'Energy at/above this reads as full scale',
         min: 0.01,
         max: 1,
         step: 0.01,
@@ -214,7 +217,7 @@ export default function ModulatorControl({ index }: Props) {
       {
         id: 'smoothing',
         label: 'Smoothing',
-        title: 'Audio energy smoothing amount',
+        title: 'Smoothing on overall energy level',
         min: 0,
         max: 1,
         step: 0.01,
@@ -232,7 +235,7 @@ export default function ModulatorControl({ index }: Props) {
     sliderSpecs.push({
       id: 'sinePeakWidth',
       label: 'Peak Width',
-      title: 'Adjusts how wide or narrow sine peaks are',
+      title: 'Sine peak width — center is default',
       min: 0,
       max: 1,
       step: 0.01,
@@ -250,7 +253,7 @@ export default function ModulatorControl({ index }: Props) {
     sliderSpecs.push({
       id: 'rampCurve',
       label: 'Curve',
-      title: 'Center is linear; move lower/higher for reverse/forward curve',
+      title: 'Skew ramp — center is linear',
       min: 0,
       max: 1,
       step: 0.01,
@@ -268,7 +271,7 @@ export default function ModulatorControl({ index }: Props) {
     sliderSpecs.push({
       id: 'squareDuty',
       label: 'Pulse Width',
-      title: 'Pulse width (duty cycle) from 50/50 toward either side',
+      title: 'Pulse duty — center is 50/50',
       min: 0,
       max: 1,
       step: 0.01,
@@ -286,7 +289,7 @@ export default function ModulatorControl({ index }: Props) {
     sliderSpecs.push({
       id: 'sawFlatten',
       label: 'Flatten',
-      title: 'Flattens triangle peaks toward a flat line',
+      title: 'Flatten triangle peaks toward flat',
       min: 0,
       max: 1,
       step: 0.01,
@@ -303,7 +306,7 @@ export default function ModulatorControl({ index }: Props) {
     sliderSpecs.push({
       id: 'noiseSeed',
       label: 'Noise Seed',
-      title: 'Changes the pseudo-random noise seed/pattern',
+      title: 'Random pattern seed — center is default',
       min: 0,
       max: 1,
       step: 0.01,
@@ -317,7 +320,41 @@ export default function ModulatorControl({ index }: Props) {
           })
         ),
     })
+    sliderSpecs.push({
+      id: 'noiseSmoothing',
+      label: 'Smoothing',
+      title: 'Smooth noise steps — 0 = stepped holds',
+      min: 0,
+      max: 1,
+      step: 0.01,
+      value: lfo.noiseSmoothing ?? 0,
+      onChange: (value) =>
+        dispatch(
+          setModulatorWaveConfig({
+            index,
+            noiseSmoothing: value,
+          })
+        ),
+    })
   }
+
+  sliderSpecs.push({
+    id: 'skew',
+    label: 'Skew',
+    title: 'Warp the wave — center is even (Ctrl/Cmd+drag up/down on the graph)',
+    min: 0,
+    max: 1,
+    step: 0.01,
+    value: lfo.skew,
+    centerDetent: true,
+    onChange: (value) =>
+      dispatch(
+        setModulatorWaveConfig({
+          index,
+          skew: withCenterDetent(value),
+        })
+      ),
+  })
 
   const hasShapeSliders = sliderSpecs.length > 0
   const graphAreaRef = useRef<HTMLDivElement>(null)
@@ -360,7 +397,7 @@ export default function ModulatorControl({ index }: Props) {
             <IntermodAccentStripe
               key={`im-in-${srcIdx}-to-${index}`}
               $color={intermodSourceAccentColor(srcIdx)}
-              title={`LFO ${srcIdx + 1} modulates this LFO (same color on that LFO’s left edge)`}
+              title={`Motion effect ${srcIdx + 1} drives this one (same stripe color on its card)`}
             />
           ))}
         </IntermodAccentRail>
@@ -429,24 +466,31 @@ export default function ModulatorControl({ index }: Props) {
         )}
       </TopRow>
       <MatrixSection>
-        <MatrixCollapseBar
-          type="button"
-          aria-expanded={modMatrixOpen}
-          aria-label={
-            modMatrixOpen
-              ? 'Collapse LFO modulation list'
-              : 'Expand LFO modulation list'
-          }
-          title={modMatrixOpen ? 'Hide modulation targets' : 'Show modulation targets'}
-          onClick={() => setModMatrixOpen((open) => !open)}
-          onMouseDown={(e) => e.stopPropagation()}
-        >
-          {modMatrixOpen ? (
-            <ExpandLess sx={{ fontSize: 'var(--remote-mod-chevron, 0.58rem)', display: 'block' }} />
-          ) : (
-            <ExpandMore sx={{ fontSize: 'var(--remote-mod-chevron, 0.58rem)', display: 'block' }} />
-          )}
-        </MatrixCollapseBar>
+        <MatrixCollapseRow>
+          <MatrixCollapseBar
+            type="button"
+            aria-expanded={modMatrixOpen}
+            aria-label={
+              modMatrixOpen
+                ? 'Collapse LFO modulation list'
+                : 'Expand LFO modulation list'
+            }
+            title={
+              modMatrixOpen
+                ? 'Hide modulation targets for this LFO'
+                : 'Show modulation targets for this LFO'
+            }
+            onClick={() => setModMatrixOpen((open) => !open)}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            {modMatrixOpen ? (
+              <ExpandLess sx={{ fontSize: 'var(--remote-mod-chevron, 0.58rem)', display: 'block' }} />
+            ) : (
+              <ExpandMore sx={{ fontSize: 'var(--remote-mod-chevron, 0.58rem)', display: 'block' }} />
+            )}
+          </MatrixCollapseBar>
+          <ModulationMatrixHelpButton />
+        </MatrixCollapseRow>
         {modMatrixOpen ? (
           <MatrixBody>
             <ModulationMatrix index={index} />
@@ -494,12 +538,21 @@ const MatrixSection = styled.div`
   flex-direction: column;
 `
 
+const MatrixCollapseRow = styled.div`
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+`
+
 const MatrixCollapseBar = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
   box-sizing: border-box;
+  position: relative;
   margin: 0;
   min-height: var(--remote-mod-matrix-bar-min-h, 0);
   padding: 0.055rem 0.17rem 0.08rem;

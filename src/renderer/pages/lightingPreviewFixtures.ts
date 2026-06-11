@@ -11,6 +11,7 @@ import {
   emittersForSubfixtureIndex,
   mergeSubRelativeWindowWithEmitterCentroid,
   normalizeFixtureModelConfig,
+  resolveEmitterSubFixtureIndex,
 } from '../../shared/dmxFixtures'
 import {
   LedFixture,
@@ -83,19 +84,47 @@ function getGroupName(
     firstNonEmpty([
       dmx.moverGroupByFixtureId[fixtureId],
       fixture.groups[0],
-      fixtureType.groups[0],
       fixtureType.name,
     ]) ?? 'Fixture Group'
   )
 }
 
+function previewEmitterChannelIndexes(
+  fixtureType: FixtureType,
+  emitter: {
+    channelIndexes: number[]
+    subFixtureIndex?: number
+  }
+): number[] {
+  if (fixtureType.subFixtures.length === 0) {
+    return [...emitter.channelIndexes]
+  }
+  const subIndex = resolveEmitterSubFixtureIndex(
+    fixtureType,
+    emitter as Parameters<typeof resolveEmitterSubFixtureIndex>[1]
+  )
+  if (subIndex === null) {
+    return [...emitter.channelIndexes]
+  }
+  const sub = fixtureType.subFixtures[subIndex]
+  if (sub === undefined) {
+    return [...emitter.channelIndexes]
+  }
+  const allowed = new Set(sub.channels)
+  const filtered = emitter.channelIndexes.filter((channelIndex) =>
+    allowed.has(channelIndex)
+  )
+  if (filtered.length > 0) {
+    return filtered
+  }
+  // If the emitter is assigned to a subfixture but has no explicit channels,
+  // preview the full subfixture bundle so sequence follows subfixture mapping.
+  return [...sub.channels]
+}
+
 function getFixtureGroups(fixture: Fixture, fixtureType: FixtureType): string[] {
   const set = new Set<string>()
   for (const group of fixture.groups) {
-    const trimmed = group.trim()
-    if (trimmed.length > 0) set.add(trimmed)
-  }
-  for (const group of fixtureType.groups) {
     const trimmed = group.trim()
     if (trimmed.length > 0) set.add(trimmed)
   }
@@ -367,8 +396,8 @@ export function mapRowsToPreviewFixtures(
               : subFixtureIndex / fallbackDenominator),
           relativeY: effectiveRelative?.y?.pos ?? 0.5,
           relativeZ: depthEnabled
-            ? effectiveRelative?.z?.pos ?? 0.5
-            : 0.5,
+            ? effectiveRelative?.z?.pos ?? 1
+            : 1,
           colorChannels: subColorChannels,
           colorMapChannels: subColorMapChannels,
           masterChannels: subMasterChannels,
@@ -381,7 +410,7 @@ export function mapRowsToPreviewFixtures(
         emitterCount: model.emittersPerSubFixture,
         relativeX: 0.5,
         relativeY: 0.5,
-        relativeZ: 0.5,
+        relativeZ: 1,
         colorChannels,
         colorMapChannels,
         masterChannels,
@@ -444,7 +473,7 @@ export function mapRowsToPreviewFixtures(
               rectHeightM: emitter.rectHeightM,
             }
           : {}),
-        channelIndexes: [...emitter.channelIndexes],
+        channelIndexes: previewEmitterChannelIndexes(row.fixtureType, emitter),
       })),
       ledPixels: undefined,
       ledWireEdges: undefined,

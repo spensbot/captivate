@@ -1,98 +1,87 @@
 # Captivate Telemetry And Debugging
 
-## What Is Captured
+## Unified verbose log (recommended)
 
-Captivate now records:
+Captivate maintains **one always-on verbose log** for support and GitHub issues:
 
-- Main process health:
-  - CPU %
-  - memory usage
-  - event loop lag
-- Engine timing:
-  - realtime tick duration
-  - DMX calculation duration
-  - NodeLink fallback activations/recoveries
-- Renderer health:
-  - uncaught errors
-  - unhandled promise rejections
-  - event loop lag
-  - RAF FPS heartbeat
-- Lighting 3D health:
-  - frame stalls and recoveries
-  - average frame time and FPS
-  - **fps_1s** (frames completed in the last second while the viewport is visible)
-  - **frame_ms_max_1s** (worst single-frame time in that second)
-  - frame render errors
-- Audio engine telemetry:
-  - input/energy levels
-  - detected BPM
-  - analysis timing
-- Streaming telemetry:
-  - NDI/RTSP start/stop/errors
-  - frame pipeline timing
-  - ffmpeg lifecycle events
-- WLED telemetry:
-  - discovery warnings/errors
-  - device add/remove/rebind
-  - UDP send errors and broadcast tick timing
-- IPC usage counters across core commands.
+- **Live file:** `%APPDATA%\captivate2\logs\captivate-verbose.ndjson` (Windows)
+- **Format:** NDJSON — one JSON object per line
+- **Rotation:** 10 MB per file, up to 3 rotated backups (`.1`, `.2`, `.3`)
 
-## How To Export A Snapshot
+No environment variables are required. The log records:
 
-Use:
+- **Diagnostics** — all levels (`info`, `warn`, `error`) from main, renderer, engine, Lighting 3D, audio, streaming, WLED, etc.
+- **Telemetry marks** — events, counters, durations, health; high-frequency gauges (e.g. FPS) are sampled at most once per second per metric
+- **Session metadata** — app version, platform, session id on startup
 
-- `Help -> Export Telemetry Snapshot`
+### Export for GitHub issues
 
-This writes a JSON snapshot to the app log directory and shows the file path.
+**Help → Export Debug Log…**
 
-## Diagnostics Log Locations (Windows)
+This saves an NDJSON file you can attach to a GitHub issue. The export includes:
 
-- `%APPDATA%\\captivate2\\logs\\captivate-diagnostics.log`
-- `%TEMP%\\captivate-diagnostics.log`
-- `C:\\Users\\<user>\\AppData\\Local\\Programs\\captivate2\\captivate-diagnostics.log`
+1. Rotated verbose log history from the current session
+2. A final **`telemetry_snapshot`** line with aggregated counters, gauges, timers, and recent events
 
-Log rotation is enabled automatically when a log exceeds 10 MB.
-
-## Lighting 3D live HUD (while the app is running)
-
-In the Lighting 3D viewport (embedded or detached window):
-
-- Press **Alt+Shift+H** to toggle an on-screen overlay with **FPS (1s)**, **avg / max / last frame ms**, **draw calls**, **triangle count**, **geometry/texture counts**, **JS heap** (Chromium), **canvas size / DPR**, fixture counts, and stall / volumetric-fog flags.
-- The choice is persisted in `localStorage` under key **`captivate.debug.lighting3dPerfHud`** (`1` = show on next load).
-
-Telemetry from the detached Lighting 3D window is tagged **`renderer-page`**; the main window uses **`renderer-main`**, so snapshots can tell which process produced each mark.
-
-### Live NDJSON stream (agent / terminal friendly)
-
-1. Set environment variable **`CAPTIVATE_TELEMETRY_LIVE_LOG=1`** and start Captivate (main process must pick this up).
-2. Main process appends every `lighting3d*` **`TelemetryMark`** as one JSON line to:
-   - **`%TEMP%\captivate-telemetry-lighting3d-live.ndjson`**
-3. From PowerShell (repo root):
+### Live tail (developers / support)
 
 ```powershell
-.\tools\tail-lighting3d-telemetry-live.ps1
+.\tools\tail-captivate-verbose-log.ps1
 ```
 
-Or: `Get-Content $env:TEMP\captivate-telemetry-lighting3d-live.ndjson -Tail 50 -Wait`
+Or:
 
-**Note:** `captivate-diagnostics.log` only receives **warn/error** diagnostics (e.g. renderer event-loop lag). Gauges such as `lighting3d.render.frame_ms_avg` use the NDJSON stream or **Help → Export Telemetry Snapshot**.
+```powershell
+Get-Content "$env:APPDATA\captivate2\logs\captivate-verbose.ndjson" -Tail 50 -Wait
+```
 
-## Recommended Debug Workflow
+### NDJSON line kinds
 
-1. Start app fresh.
-2. Reproduce issue.
-3. Export telemetry snapshot from Help menu.
-4. Collect:
-   - latest telemetry JSON
-   - latest diagnostics log
-5. Compare timestamps around the issue window.
+| `kind` | Contents |
+| --- | --- |
+| `session_start` | App version, platform, session id |
+| `diagnostic` | Structured diagnostic event (`area`, `event`, `level`, `message`, `data`) |
+| `mark` | Telemetry mark (`subsystem`, `metric`, `type`, values) |
+| `telemetry_snapshot` | Export footer only — aggregated session telemetry |
 
-## Key Signals To Check
+### Project save / load tracing
 
-- `lighting3d.frame_stall_detected`
-- `lighting3d.render.fps_1s` vs `lighting3d.render.frame_ms_avg` / `frame_ms_max_1s`
-- `engine.realtime.tick_ms` p95
-- `engine.dmx.calculate_ms` p95
-- `process.event_loop_lag_ms`
-- `audio.detected_bpm`
-- `stream.output.*` error counters
+Project persistence uses area **`project-persistence`** and subsystem **`project.persistence`**. Search the verbose log for phases such as:
+
+- `project_save_complete`, `project_load_parse_complete`, `project_load_apply_complete`
+- `project_load_content_mismatch`, `project_load_empty_file`
+- `autosave_restore_complete`, `autosave_write`
+
+Each line includes **before/after content counts** (scenes, fixtures, types) when relevant.
+
+## What else is captured
+
+- Main process health (CPU, memory, event loop lag)
+- Engine timing (realtime tick, DMX calculate)
+- Renderer health (uncaught errors, RAF FPS heartbeat)
+- Lighting 3D (stalls, frame times, render errors)
+- Audio engine (BPM, analysis timing)
+- Streaming (NDI/RTSP, ffmpeg lifecycle)
+- WLED (discovery, UDP errors)
+- IPC usage counters (in telemetry snapshot footer)
+
+## Legacy / advanced
+
+**Help → Export Debug Log…** replaces the old separate env-var log files (`CAPTIVATE_TELEMETRY_LIVE_LOG`, `CAPTIVATE_PROJECT_PERSISTENCE_LOG`). Those env vars are no longer needed.
+
+**Export Telemetry Snapshot** (JSON aggregates only) remains available via IPC for tooling; the debug log export is the user-facing path for issue reports.
+
+## Recommended debug workflow
+
+1. Reproduce the issue in Captivate (verbose log records automatically).
+2. **Help → Export Debug Log…**
+3. Attach the exported `.ndjson` file to your GitHub issue.
+4. Note what you were doing and when (timestamps are ISO8601 on each line).
+
+## Key signals to search for
+
+- `project_load_content_mismatch` — save file had content but Redux counts differ after load
+- `lighting3d` + `frame_stall_detected`
+- `renderer` + `uncaught-error`
+- `engine.realtime.tick_ms` (in snapshot timers)
+- `stream.output` errors (in diagnostics or snapshot)

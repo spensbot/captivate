@@ -16,6 +16,7 @@ import {
   forEachChannel,
   getDefaultDmxValue,
   getMovingWindow,
+  mapNormalizedToAxisPhysicalDmx,
   type MoverAxisOverrides,
 } from '../../shared/dmxUtil'
 import { indexArray, zip } from '../../shared/util'
@@ -153,15 +154,20 @@ function getUniverseCount(state: CleanReduxState): number {
   return Math.max(1, configuredUniverseCount, maxFixtureUniverse)
 }
 
+import {
+  getConfiguredDmxOutputRateHz as getConfiguredDmxOutputRateHzFromDevice,
+} from '../../shared/dmxOutputRate'
+
+export function getConfiguredDmxOutputRateHz(state: CleanReduxState): number {
+  return getConfiguredDmxOutputRateHzFromDevice(state.control.device)
+}
+
+export function getDmxComputeIntervalMs(state: CleanReduxState): number {
+  return 1000 / getConfiguredDmxOutputRateHz(state)
+}
+
 function getSyntheticStrobeFrameRateHz(state: CleanReduxState): number {
-  const configuredRefreshHz =
-    state.control.device.connectionSettings.openDmxRefreshRateHz ?? 30
-
-  if (!Number.isFinite(configuredRefreshHz)) {
-    return 30
-  }
-
-  return Math.max(1, configuredRefreshHz)
+  return getConfiguredDmxOutputRateHz(state)
 }
 
 function clampDmxValue(value: number, fallback: number = 128): number {
@@ -717,19 +723,32 @@ function mapMoverPointToFixtureAxisTarget(
 ): MoverAxisOverrides {
   const normalizedX = clampNormalized(x)
   const normalizedY = clampNormalized(y)
-  const usableBounds =
-    useFloorBoundsLock && !isLikelyUncalibratedMoverBounds(fixture.moverBounds)
-      ? fixture.moverBounds
-      : undefined
-  // Keep split XY pad motion center-focused and deterministic.
-  // Bounds/triangulation mapping is only used for follow-style targets
-  // (group override), where floor calibration is intended to drive the look
-  // point in world-space.
-  const mappedBounds = useFloorBoundsLock
-    ? mapPointToBounds(usableBounds, normalizedX, normalizedY)
+
+  if (!useFloorBoundsLock) {
+    const targetPanDmx = mapNormalizedToAxisPhysicalDmx(
+      normalizedX,
+      fixture.moverCalibration?.pan
+    )
+    const targetTiltDmx = mapTiltNormalizedToDmx(
+      normalizedY,
+      fixture.moverMountOrientation === 'inverted' ? 'inverted' : 'upright',
+      fixture.moverCalibration?.tilt
+    )
+
+    return resolveMoverAxisTargetWithPathing(
+      clampAxisToCalibrationRange(targetPanDmx, fixture.moverCalibration?.pan),
+      clampAxisToCalibrationRange(targetTiltDmx, fixture.moverCalibration?.tilt),
+      undefined,
+      timeState
+    )
+  }
+
+  const usableBounds = !isLikelyUncalibratedMoverBounds(fixture.moverBounds)
+    ? fixture.moverBounds
     : undefined
+  const mappedBounds = mapPointToBounds(usableBounds, normalizedX, normalizedY)
   const fallbackPlacementTarget =
-    useFloorBoundsLock && mappedBounds === undefined
+    mappedBounds === undefined
       ? mapPointToFixturePlacementFallback(fixture, normalizedX, normalizedY)
       : undefined
 
@@ -746,10 +765,7 @@ function mapMoverPointToFixtureAxisTarget(
     mapTiltNormalizedToDmx(
       fallbackPlacementTarget?.tiltNorm ?? normalizedY,
       fixture.moverMountOrientation === 'inverted' ? 'inverted' : 'upright',
-      fixture.moverCalibration?.tilt,
-      {
-        centerOnDown: !useFloorBoundsLock,
-      }
+      fixture.moverCalibration?.tilt
     )
 
   return resolveMoverAxisTargetWithPathing(
@@ -960,6 +976,9 @@ function buildMoverAxisOverridesForSplit(
     pan: number
     tilt: number
     groupNames?: string[]
+  },
+  options?: {
+    advancedControl?: boolean
   }
 ): { [fixtureIdx: number]: MoverAxisOverrides } {
   const axisOverridesByFixtureIdx: { [fixtureIdx: number]: MoverAxisOverrides } = {}
@@ -967,6 +986,31 @@ function buildMoverAxisOverridesForSplit(
     ...baseParams,
     ...outputParams,
   }
+  const advancedControl = options?.advancedControl === true
+
+  if (!advancedControl) {
+    const baseX = clampNormalized(Number(resolvedAxisParams.xAxis ?? 0.5))
+    const baseY = clampNormalized(Number(resolvedAxisParams.yAxis ?? 0.5))
+
+    splitSceneFixtures.forEach((fixture, fixtureIdx) => {
+      if (!hasMoverAxisChannels(fixture)) {
+        return
+      }
+
+      const plannerKey = getMoverPlannerKey(fixture, plannerNamespace)
+      axisOverridesByFixtureIdx[fixtureIdx] = mapMoverPointToFixtureAxisTarget(
+        fixture,
+        baseX,
+        baseY,
+        false,
+        plannerKey,
+        timeState
+      )
+    })
+
+    return axisOverridesByFixtureIdx
+  }
+
   const overrideEnabled = override?.enabled === true
   const overrideX = clampNormalized(Number(override?.pan ?? 0.5))
   const overrideY = clampNormalized(Number(override?.tilt ?? 0.5))
@@ -1204,7 +1248,10 @@ function calculateDmxForUniverse(
 
   const moverCalibrationOverride = state.gui.moverCalibrationOverride
   const colorMapCalibrationOverride = state.gui.colorMapCalibrationOverride
-  const axisOnlyOverrideMode = !timeState.isPlaying && moverCalibrationOverride !== null
+  const axisOnlyOverrideMode =
+    !timeState.isPlaying &&
+    state.gui.moverAdvancedControlEnabled === true &&
+    moverCalibrationOverride !== null
   const colorMapOnlyOverrideMode =
     !timeState.isPlaying && colorMapCalibrationOverride !== null
 
@@ -1298,10 +1345,15 @@ function calculateDmxForUniverse(
               timeState,
               plannerNamespace,
               {
-                enabled: state.gui.moverFollowOverrideEnabled === true,
+                enabled:
+                  state.gui.moverAdvancedControlEnabled === true &&
+                  state.gui.moverFollowOverrideEnabled === true,
                 pan: state.gui.moverFollowOverridePan,
                 tilt: state.gui.moverFollowOverrideTilt,
                 groupNames: followOverrideGroupNames,
+              },
+              {
+                advancedControl: state.gui.moverAdvancedControlEnabled === true,
               }
             )
           : {}

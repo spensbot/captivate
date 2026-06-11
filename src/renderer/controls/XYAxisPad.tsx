@@ -5,10 +5,14 @@ import useDragMapped from '../hooks/useDragMapped'
 import { setBaseParams } from '../redux/controlSlice'
 import XYAxisCursor from './XYAxisCursor'
 import Select from '../base/Select'
-import { useBaseParam, useDmxSelector } from 'renderer/redux/store'
+import { useBaseParam, useDmxSelector, useTypedSelector } from 'renderer/redux/store'
 import { isMoverFixtureType } from '../../shared/dmxFixtures'
 import MidiOverlay_xy from '../base/MidiOverlay_xy'
 import { makeSetBaseParamAction } from '../redux/deviceState'
+import {
+  MoverFloorBoundsHelpButton,
+  MoverPatternHelpButton,
+} from '../pages/moverHelpButtons'
 
 interface Props {
   splitIndex: number
@@ -55,6 +59,9 @@ function moverModeOptionLabel(option: MoverModeOption) {
 
 export default function XYAxispad({ splitIndex }: Props) {
   const dispatch = useDispatch()
+  const moverAdvancedControlEnabled = useTypedSelector(
+    (state) => state.gui.moverAdvancedControlEnabled
+  )
   const hasAnyMover = useDmxSelector((state) => {
     return state.universe.some((fixture) => {
       const fixtureType = state.fixtureTypesByID[fixture.type]
@@ -88,7 +95,7 @@ export default function XYAxispad({ splitIndex }: Props) {
     }
 
     const nextParams: { [key: string]: number } = {}
-    if (moverFloorLock === undefined) nextParams.moverFloorLock = 1
+    if (moverFloorLock === undefined) nextParams.moverFloorLock = 0
     if (moverSpread === undefined) nextParams.moverSpread = 0
     if (moverMirrorX === undefined) nextParams.moverMirrorX = 0
     if (moverMirrorY === undefined) nextParams.moverMirrorY = 0
@@ -153,14 +160,19 @@ export default function XYAxispad({ splitIndex }: Props) {
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <ControlLabel>Floor Bounds</ControlLabel>
+        {moverAdvancedControlEnabled ? (
+          <>
+        <ControlLabelRow>
+          <ControlLabel>Floor Bounds</ControlLabel>
+          <MoverFloorBoundsHelpButton />
+        </ControlLabelRow>
         <SingleToggleButton
           type="button"
           $active={floorLockEnabled}
           title={
             floorLockEnabled
-              ? 'Locked: pan/tilt pad targets dance-floor positions.'
-              : 'Free Aim: pan/tilt pad maps directly to fixture physical limits.'
+              ? 'Locked: pad targets calibrated floor positions'
+              : 'Free aim: pad maps to fixture physical limits'
           }
           onClick={() => {
             dispatch(
@@ -174,7 +186,10 @@ export default function XYAxispad({ splitIndex }: Props) {
           {floorLockEnabled ? 'Bounds Locked' : 'Free Aim'}
         </SingleToggleButton>
 
-        <ControlLabel>Mover Pattern</ControlLabel>
+        <ControlLabelRow>
+          <ControlLabel>Mover Pattern</ControlLabel>
+          <MoverPatternHelpButton />
+        </ControlLabelRow>
         <SelectRow>
           <Select
             label="Mover Pattern"
@@ -216,7 +231,7 @@ export default function XYAxispad({ splitIndex }: Props) {
             <ControlLabel>Tandem Distance</ControlLabel>
             <SpreadInput
               type="range"
-              title="Controls mover spacing in tandem mode"
+              title="Spacing between movers in tandem mode"
               min={0}
               max={TANDEM_SPREAD_MAX}
               step={0.01}
@@ -247,7 +262,7 @@ export default function XYAxispad({ splitIndex }: Props) {
               <RadioButton
                 type="button"
                 $active={mirrorXEnabled}
-                title="Mirror movers on left/right sides of the group"
+                title="Mirror on left/right axis"
                 onClick={() => {
                   const nextX = mirrorXEnabled ? 0 : 1
                   // Keep at least one axis active in mirror mode.
@@ -268,7 +283,7 @@ export default function XYAxispad({ splitIndex }: Props) {
               <RadioButton
                 type="button"
                 $active={mirrorYEnabled}
-                title="Mirror movers on top/bottom sides of the group"
+                title="Mirror on top/bottom axis"
                 onClick={() => {
                   const nextY = mirrorYEnabled ? 0 : 1
                   // Keep at least one axis active in mirror mode.
@@ -289,6 +304,8 @@ export default function XYAxispad({ splitIndex }: Props) {
             </RadioGroup>
           </>
         )}
+          </>
+        ) : null}
       </MoverControls>
     </Root>
   )
@@ -372,6 +389,12 @@ const MoverControls = styled.div`
     background: #7a7a7a99;
     border-radius: 999px;
   }
+`
+
+const ControlLabelRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
 `
 
 const ControlLabel = styled.div`

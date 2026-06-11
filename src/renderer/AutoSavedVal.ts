@@ -1,8 +1,9 @@
 import { indexArray } from 'shared/util'
+import { logProjectPersistence } from './telemetry/projectPersistenceTelemetry'
 
 const FACTOR = 2
 const SLOT_COUNT = 12
-const INTERVAL_MS = 1000
+const INTERVAL_MS = 5000
 
 interface DatedSave<T> {
   dateStamp: number
@@ -25,21 +26,45 @@ export function printTimePassed(datedSave: DatedSave<any>) {
 
 export default class AutoSavedVal<T> {
   readonly id: string
-  private interval: NodeJS.Timeout
+  private interval: ReturnType<typeof setInterval> | null = null
   private getCurrent: () => T
+  private lastSerializedSnapshot: string | null = null
+  private paused = false
 
   constructor(id: string, getCurrent: () => T) {
     this.id = id
     this.getCurrent = getCurrent
-    this.interval = setInterval(() => this.updateSaves(), INTERVAL_MS)
+    this.start()
   }
 
   stop() {
-    clearInterval(this.interval)
+    this.paused = true
+    if (this.interval !== null) {
+      clearInterval(this.interval)
+      this.interval = null
+    }
   }
 
   start() {
+    if (!this.paused && this.interval !== null) {
+      return
+    }
+    this.paused = false
+    if (this.interval !== null) {
+      clearInterval(this.interval)
+    }
     this.interval = setInterval(() => this.updateSaves(), INTERVAL_MS)
+  }
+
+  /** Pause periodic localStorage snapshots while file autosave owns persistence. */
+  pausePeriodicWrites() {
+    this.stop()
+    this.paused = true
+  }
+
+  resumePeriodicWrites() {
+    this.paused = false
+    this.start()
   }
 
   loadAll(): DatedSave<T>[] {
@@ -64,23 +89,61 @@ export default class AutoSavedVal<T> {
   }
 
   private updateSaves() {
-    let saveCount = getSaveCount(this.id)
+    const run = () => {
+      let saveCount = getSaveCount(this.id)
 
-    saveSlots()
-      .slice(1)
-      .reverse()
-      .forEach((slot) => {
-        if (saveCount % updateEvery(slot) === 0) {
-          let previousSlotString = localStorage.getItem(this.key(slot - 1))
-          if (previousSlotString !== null) {
-            localStorage.setItem(this.key(slot), previousSlotString)
+      saveSlots()
+        .slice(1)
+        .reverse()
+        .forEach((slot) => {
+          if (saveCount % updateEvery(slot) === 0) {
+            let previousSlotString = localStorage.getItem(this.key(slot - 1))
+            if (previousSlotString !== null) {
+              localStorage.setItem(this.key(slot), previousSlotString)
+            }
           }
-        }
+        })
+
+      this.writeLatest(this.getCurrent())
+
+      setSaveCount(this.id, saveCount + 1)
+    }
+
+    if (typeof requestIdleCallback === 'function') {
+      requestIdleCallback(() => run(), { timeout: 2000 })
+      return
+    }
+    run()
+  }
+
+  /** Persist the current snapshot immediately (e.g. after manual save/load). */
+  flush() {
+    this.lastSerializedSnapshot = null
+    this.writeLatest(this.getCurrent())
+  }
+
+  private writeLatest(data: T) {
+    try {
+      const serialized = serializeDated(data)
+      if (serialized === this.lastSerializedSnapshot) {
+        return
+      }
+      this.lastSerializedSnapshot = serialized
+      localStorage.setItem(this.key(0), serialized)
+      logProjectPersistence({
+        phase: 'autosave_write',
+        serializedBytes: serialized.length,
+        extra: { slot: 0, autosaveId: this.id },
       })
-
-    localStorage.setItem(this.key(0), serializeDated(this.getCurrent()))
-
-    setSaveCount(this.id, saveCount + 1)
+    } catch (err) {
+      console.warn('Autosave write failed.', err)
+      logProjectPersistence({
+        phase: 'autosave_write_failed',
+        level: 'error',
+        error: err,
+        extra: { slot: 0, autosaveId: this.id },
+      })
+    }
   }
 }
 

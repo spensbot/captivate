@@ -177,10 +177,6 @@ export default function SplitModShapingModal({
 
   return (
     <ModalBody>
-      <Hint>
-        Only this split: invert combined LFO depth, shift phase in beats of the clock, or
-        stair-step (quantize) the modulation driver for a stepped / bit-crushed effect.
-      </Hint>
       <FieldRow>
         <FormControlLabel
           sx={{ marginLeft: 0, marginRight: 0, gap: 0.65, alignItems: 'center' }}
@@ -197,7 +193,7 @@ export default function SplitModShapingModal({
       </FieldRow>
       <FieldRow>
         <SliderRowHeader>
-          <SliderLabel title="Positive delays phase; negative advances. Uses master beat clock.">
+          <SliderLabel title="Shift later (right) or earlier (left) on the beat">
             Phase offset (beats)
           </SliderLabel>
           <ValueReadout>{formatPhase(phaseBeats)}</ValueReadout>
@@ -236,7 +232,7 @@ export default function SplitModShapingModal({
       </FieldRow>
       <FieldRow>
         <SliderRowHeader>
-          <SliderLabel title="2 or more quantizes the shaped LFO to that many levels; left end is off.">
+          <SliderLabel title="2 or more makes the wave step in chunks; all the way left is smooth">
             Quantize (stair-step)
           </SliderLabel>
           <ValueReadout>{quantLabel}</ValueReadout>
@@ -291,13 +287,6 @@ const ModalBody = styled.div`
   gap: 0.75rem;
   min-width: min(22rem, 92vw);
   padding: 0.15rem 0.05rem 0;
-`
-
-const Hint = styled.p`
-  margin: 0;
-  font-size: 0.74rem;
-  line-height: 1.35;
-  color: ${(props) => props.theme.colors.text.secondary};
 `
 
 const FieldRow = styled.div`

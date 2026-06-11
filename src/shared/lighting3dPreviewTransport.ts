@@ -36,14 +36,7 @@ export function buildLighting3dPreviewTick(
     seq,
     time: slice.time,
     dmxOutByUniverse: slice.dmxOutByUniverse.map((u) => u.slice()),
-    splitStates: slice.splitStates.map((s) =>
-      s === undefined
-        ? undefined
-        : {
-            outputParams: { ...s.outputParams },
-            randomizer: s.randomizer,
-          }
-    ),
+    splitStates: slice.splitStates,
     master,
   }
 }

@@ -406,16 +406,16 @@ export default function BuiltinVisualizerEditor({ config, onChange }: Props) {
       message: 'Importing visualizer scene...',
     })
     try {
-      const raw = await loadFile('Import Visualizer Scene', [
+      const loaded = await loadFile('Import Visualizer Scene', [
         {
           name: 'Captivate Visualizer Scene',
           extensions: ['captivate-visscene', 'json'],
         },
       ])
-      if (raw === null) {
+      if (loaded === null) {
         return
       }
-      const parsed = JSON.parse(raw) as
+      const parsed = JSON.parse(loaded.content) as
         | {
             schema?: unknown
             version?: unknown

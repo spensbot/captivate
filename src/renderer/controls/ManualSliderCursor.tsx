@@ -7,6 +7,7 @@ import type { ModManualAnchor } from '../../shared/modulation'
 import { setModManualAnchor } from '../redux/controlSlice'
 import { useActiveLightScene } from '../redux/store'
 import SliderCursor from '../base/SliderCursor'
+import { ManualAnchorHelpButton } from '../scenes/sceneHelpButtons'
 
 interface Props {
   param: DefaultParam | string
@@ -22,17 +23,17 @@ const ANCHOR_OPTIONS: Array<{ id: ModManualAnchor; label: string; hint: string }
   {
     id: 'center',
     label: 'Center anchor',
-    hint: 'Modulation swings around the manual set-point (default).',
+    hint: 'LFO swings around your manual value.',
   },
   {
     id: 'bottom',
     label: 'Bottom anchor',
-    hint: 'Manual is the floor (e.g. Audio Energy 0 = manual, louder pushes up).',
+    hint: 'Manual is the floor; modulation pushes up.',
   },
   {
     id: 'top',
     label: 'Top anchor',
-    hint: 'Manual is the ceiling (LFO / energy pulls down from the set-point).',
+    hint: 'Manual is the ceiling; modulation pulls down.',
   },
 ]
 
@@ -106,7 +107,10 @@ export default function ManualSliderCursor({
             style={{ left: menu.x, top: menu.y }}
             onContextMenu={(e) => e.preventDefault()}
           >
-            <MenuTitle>Modulation manual anchor</MenuTitle>
+            <MenuTitleRow>
+              <MenuTitle>Modulation manual anchor</MenuTitle>
+              <ManualAnchorHelpButton />
+            </MenuTitleRow>
             {ANCHOR_OPTIONS.map((opt) => (
               <MenuButton
                 key={opt.id}
@@ -130,7 +134,7 @@ export default function ManualSliderCursor({
 
   return (
     <>
-      <ManualCursorFrame>
+      <ManualCursorFrame title="Right-click: choose how motion effects combine with this slider value">
         <SliderCursor
           orientation={orientation}
           value={value}
@@ -170,15 +174,22 @@ const MenuPanel = styled.div`
   transform: translate(-4px, 4px);
 `
 
+const MenuTitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.2rem 0.55rem 0.45rem 0.55rem;
+  border-bottom: 1px solid ${(p) => p.theme.colors.divider};
+  margin-bottom: 0.2rem;
+`
+
 const MenuTitle = styled.div`
+  flex: 1 1 auto;
   font-size: 0.68rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: ${(p) => p.theme.colors.text.secondary};
-  padding: 0.2rem 0.75rem 0.45rem;
-  border-bottom: 1px solid ${(p) => p.theme.colors.divider};
-  margin-bottom: 0.2rem;
 `
 
 const MenuButton = styled.button<{ $active: boolean }>`

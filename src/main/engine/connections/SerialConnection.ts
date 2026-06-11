@@ -9,14 +9,14 @@ export interface SetOptions {
 }
 
 export class SerialConnection {
-  private readyToWrite = true
+  private writeInFlight = false
+  private pendingWrite: Buffer | null = null
   private connection: SerialPort
   private onData: (data: Buffer) => void = () => {}
 
   private constructor(connection: SerialPort) {
     this.connection = connection
     this.connection.on('data', (data) => this.onData(data))
-    // These don't really need to be used if we check if it's open
     connection.on('disconnect', (_d) => {
       console.log('Serial Disconnect')
     })
@@ -65,17 +65,28 @@ export class SerialConnection {
   }
 
   write(buffer: Buffer) {
-    if (
-      this.connection.isOpen &&
-      this.connection.writable &&
-      this.readyToWrite
-    ) {
-      this.readyToWrite = false
-      this.connection.write(buffer)
-      this.connection.drain(() => {
-        this.readyToWrite = true
-      })
+    this.pendingWrite = buffer
+    this.flushPendingWrite()
+  }
+
+  private flushPendingWrite() {
+    if (this.writeInFlight || this.pendingWrite === null) {
+      return
     }
+    if (!this.connection.isOpen || !this.connection.writable) {
+      return
+    }
+
+    const buffer = this.pendingWrite
+    this.pendingWrite = null
+    this.writeInFlight = true
+    this.connection.write(buffer)
+    this.connection.drain(() => {
+      this.writeInFlight = false
+      if (this.pendingWrite !== null) {
+        this.flushPendingWrite()
+      }
+    })
   }
 
   writeAndAwaitReply(buffer: Buffer, timeoutMs = 500): Promise<Buffer | null> {

@@ -2,6 +2,7 @@ import styled from 'styled-components'
 import IconButton from '@mui/material/IconButton'
 import CloseIcon from '@mui/icons-material/Close'
 import zIndexes from '../zIndexes'
+import OverlayPortal from '../overlays/OverlayPortal'
 
 interface Props {
   title: React.ReactNode
@@ -21,13 +22,14 @@ export default function Popup({
   cardMaxHeight,
 }: Props) {
   return (
-    <Root
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
-          onClose()
-        }
-      }}
-    >
+    <OverlayPortal>
+      <Root
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget) {
+            onClose()
+          }
+        }}
+      >
       <Card
         $cardWidth={cardWidth}
         $cardMaxWidth={cardMaxWidth}
@@ -46,14 +48,15 @@ export default function Popup({
         </Title>
         {children}
       </Card>
-    </Root>
+      </Root>
+    </OverlayPortal>
   )
 }
 
 const Root = styled.div`
   position: fixed;
   inset: 0;
-  z-index: ${zIndexes.popups};
+  z-index: ${zIndexes.overlay.popup};
   background-color: #000a;
   display: flex;
   align-items: center;

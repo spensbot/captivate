@@ -13,6 +13,7 @@ import type {
   TelemetryTimerSnapshot,
 } from '../../shared/telemetry'
 import { reportDiagnostic } from '../diagnostics'
+import { appendUnifiedVerboseDiagnostic } from './unifiedVerboseLog'
 
 const MAX_TIMER_SAMPLES = 240
 const MAX_RECENT_EVENTS = 400
@@ -213,7 +214,17 @@ export default class TelemetryHub {
     if (this.recentEvents.length > MAX_RECENT_EVENTS) {
       this.recentEvents.shift()
     }
-    if (level !== 'info') {
+    if (level === 'info') {
+      appendUnifiedVerboseDiagnostic({
+        source: this.source,
+        area: subsystem,
+        event,
+        level,
+        message,
+        data,
+        ts: safeNow(),
+      })
+    } else {
       reportDiagnostic({
         source: this.source,
         area: subsystem,

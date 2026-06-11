@@ -142,7 +142,14 @@ export function Scene({ sceneType, index, id }: Props) {
                       checked={autoEnabled}
                       onChange={(e) => onAutoEnabledChange(e.target.checked)}
                     /> */}
-                    <Disable onClick={() => onAutoEnabledChange(!autoEnabled)}>
+                    <Disable
+              title={
+                autoEnabled
+                  ? 'Auto mode can use this scene — click to skip it'
+                  : 'Skipped by auto mode — click to include again'
+              }
+                      onClick={() => onAutoEnabledChange(!autoEnabled)}
+                    >
                       <DisableIcon
                         fontSize="small"
                         style={{ opacity: autoEnabled ? 0.3 : 1 }}
@@ -157,6 +164,7 @@ export function Scene({ sceneType, index, id }: Props) {
                         radius={0.3}
                         orientation="horizontal"
                         onChange={onBombacityChange}
+                        title="Energy for this scene — color bar and auto matching"
                       />
                     </>
                   )}
@@ -169,8 +177,9 @@ export function Scene({ sceneType, index, id }: Props) {
                   <div style={{ flex: '1 0 0' }} />
                   {!autoEnabled && <DisableIcon fontSize="small" />}
                   <IconButton
-                    aria-label="delete scene"
+                    aria-label="Delete scene"
                     size="small"
+                    title="Remove this scene from the list"
                     onClick={onRemoveScene}
                   >
                     <CloseIcon />
@@ -205,10 +214,10 @@ export function NewScene({ sceneType }: { sceneType: SceneType }) {
 
   return (
     <NewSceneRoot>
-      <IconButton onClick={onNew}>
+      <IconButton onClick={onNew} title="Add a new blank light scene">
         <AddIcon />
       </IconButton>
-      <IconButton onClick={onCopy}>
+      <IconButton onClick={onCopy} title="Duplicate the currently active scene">
         <CopyIcon />
       </IconButton>
     </NewSceneRoot>

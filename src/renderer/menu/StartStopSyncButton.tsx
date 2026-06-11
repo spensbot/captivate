@@ -1,5 +1,7 @@
 import styled from 'styled-components'
+import { useDispatch } from 'react-redux'
 import { useRealtimeSelector } from '../redux/realtimeStore'
+import { setLinkStartStopSyncEnabled } from '../redux/controlSlice'
 import { send_user_command } from '../ipcHandler'
 
 interface Props {
@@ -11,10 +13,20 @@ interface Props {
 }
 
 export default function StartStopSyncButton({ mode = 'toolbar' }: Props) {
+  const dispatch = useDispatch()
   const linkEnabled = useRealtimeSelector((state) => state.time.isEnabled)
   const startStopSyncEnabled = useRealtimeSelector(
     (state) => state.time.isStartStopSyncEnabled
   )
+
+  const toggleStartStopSync = () => {
+    const next = !startStopSyncEnabled
+    dispatch(setLinkStartStopSyncEnabled(next))
+    send_user_command({
+      type: 'EnableStartStopSync',
+      isEnabled: next,
+    })
+  }
 
   const color = startStopSyncEnabled ? '#fff7' : '#fff3'
   const compact = mode === 'menu'
@@ -33,19 +45,11 @@ export default function StartStopSyncButton({ mode = 'toolbar' }: Props) {
           ? 'Start/stop sync is on — click to turn off'
           : 'Click to sync play/stop with other Link apps when supported'
       }
-      onClick={() =>
-        send_user_command({
-          type: 'EnableStartStopSync',
-          isEnabled: !startStopSyncEnabled,
-        })
-      }
+      onClick={toggleStartStopSync}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault()
-          send_user_command({
-            type: 'EnableStartStopSync',
-            isEnabled: !startStopSyncEnabled,
-          })
+          toggleStartStopSync()
         }
       }}
     >

@@ -1,21 +1,15 @@
-import { useState, type ReactNode } from 'react'
-import InfoOutlined from '@mui/icons-material/InfoOutlined'
-import IconButton from '@mui/material/IconButton'
 import Link from '@mui/material/Link'
-import Popover from '@mui/material/Popover'
 import Typography from '@mui/material/Typography'
 import styled from 'styled-components'
 import {
   captivateFixtureLibraryContributeUrl,
   captivateFixtureLibraryRepoUrl,
 } from '../../shared/captivateFixtureLibraryRemote'
-
-const POPOVER_PAPER_SX = {
-  maxWidth: '24rem',
-  p: 1.25,
-  lineHeight: 1.45,
-  fontSize: '0.78rem',
-} as const
+import SectionHelpButton, {
+  HelpIntro,
+  HelpList,
+  HelpTitle,
+} from './SectionHelpPopover'
 
 export type FixtureLibraryHelpTopic =
   | 'fixtures-panel'
@@ -31,39 +25,34 @@ type Props = {
   ariaLabel?: string
 }
 
-function HelpTitle({ children }: { children: ReactNode }) {
-  return (
-    <Typography
-      component="div"
-      sx={{ fontSize: '0.82rem', fontWeight: 600, mb: 0.5 }}
-    >
-      {children}
-    </Typography>
-  )
-}
-
-function HelpList({ children }: { children: ReactNode }) {
-  return <HelpListRoot>{children}</HelpListRoot>
-}
-
 function HelpBody({ topic, searchSource }: Props) {
   if (topic === 'fixtures-panel') {
     return (
       <>
-        <HelpTitle>Fixtures</HelpTitle>
+        <HelpTitle>How to manage fixtures</HelpTitle>
+        <HelpIntro>
+          Fixture types describe your lights — channels, segments, and how they
+          look in preview. Define them here before patching addresses on the
+          right.
+        </HelpIntro>
         <HelpList>
           <li>
-            <strong>Load DB</strong> / <strong>Save DB</strong> — import or
-            export all fixture types in this project to your local library file.
+            To add a fixture type, click <strong>+</strong> and choose create,
+            import, or search online.
           </li>
           <li>
-            <strong>Add</strong> (+) — create a fixture, import from disk, or{' '}
-            <strong>Search For Fixture Online</strong> (Captivate Community
-            Library, QLC+, Open Fixture Library).
+            To edit channels, segments, or the 3D model, click a fixture in
+            this list and use the editor that opens.
           </li>
           <li>
-            Edit a fixture → <strong>Share to Library…</strong> to submit to
-            the community (see help on that dialog).
+            To back up or restore your whole library, use{' '}
+            <strong>Load DB</strong> and <strong>Save DB</strong> at the bottom
+            of the list.
+          </li>
+          <li>
+            To share a fixture you built with the community, open it for editing
+            and choose <strong>Share to Library…</strong> (see help on that
+            dialog).
           </li>
         </HelpList>
         <HelpLinks />
@@ -74,18 +63,26 @@ function HelpBody({ topic, searchSource }: Props) {
   if (topic === 'add-fixture') {
     return (
       <>
-        <HelpTitle>Add fixture</HelpTitle>
+        <HelpTitle>How to add a fixture type</HelpTitle>
+        <HelpIntro>
+          Pick the path that matches how you want to get started. You can always
+          edit the definition afterward.
+        </HelpIntro>
         <HelpList>
           <li>
-            <strong>Create New</strong> — blank Captivate fixture type.
+            To build one from scratch, choose <strong>Create New</strong> and
+            follow the wizard for channels and layout. You can set up the 3D
+            model when you finish.
           </li>
           <li>
-            <strong>Import From File</strong> — Captivate library JSON, or
-            converted QLC+ / Open Fixture Library files.
+            To load a file you already have, choose{' '}
+            <strong>Import From File</strong> (Captivate, QLC+, or Open Fixture
+            Library formats).
           </li>
           <li>
-            <strong>Search For Fixture Online</strong> — browse by manufacturer
-            and model; default source is Captivate Community Library.
+            To browse published definitions, choose{' '}
+            <strong>Search For Fixture Online</strong>, pick manufacturer and
+            model, then import.
           </li>
         </HelpList>
       </>
@@ -95,24 +92,23 @@ function HelpBody({ topic, searchSource }: Props) {
   if (topic === 'share-to-library') {
     return (
       <>
-        <HelpTitle>Share to community library</HelpTitle>
+        <HelpTitle>How to share to the community library</HelpTitle>
+        <HelpIntro>
+          Share a fixture you built so others can import it from the online
+          browser. You need a manufacturer and fixture name filled in first.
+        </HelpIntro>
         <HelpList>
           <li>
-            You need <strong>Manufacturer</strong> and <strong>Fixture Name</strong>{' '}
-            on this fixture.
+            To publish through Captivate, choose <strong>Share to Library</strong>.
+            A GitHub sign-in page opens — Captivate copies a code to your
+            clipboard; paste it when GitHub asks.
           </li>
           <li>
-            <strong>Share to Library</strong> — sign in on the GitHub page that
-            opens. Captivate puts a sign-in code on your clipboard; paste it when
-            GitHub asks. The library adds your fixture for everyone automatically.
+            If sign-in does not work, try again or use <strong>Save a copy…</strong>{' '}
+            and submit through the website link below.
           </li>
           <li>
-            If sign-in fails, try again or use <strong>Save a copy…</strong> and
-            the website link below.
-          </li>
-          <li>
-            <strong>Save a copy…</strong> — keep a backup on your computer or use
-            it with the web form.
+            To keep a local backup either way, use <strong>Save a copy…</strong>.
           </li>
         </HelpList>
         <HelpLinks />
@@ -122,21 +118,27 @@ function HelpBody({ topic, searchSource }: Props) {
 
   return (
     <>
-      <HelpTitle>Search for fixture online</HelpTitle>
+      <HelpTitle>How to search for fixtures online</HelpTitle>
+      <HelpIntro>
+        Import a published definition instead of building one by hand. You can
+        adjust channels after import if needed.
+      </HelpIntro>
       <HelpList>
         <li>
-          Pick a <strong>Source</strong>, then a <strong>manufacturer</strong>{' '}
-          and <strong>model</strong>, then <strong>Import</strong>.
+          Choose a <strong>Source</strong>, then pick <strong>manufacturer</strong>{' '}
+          and <strong>model</strong>, and click <strong>Import</strong>.
         </li>
         <li>
-          <strong>Captivate Community Library</strong> — native definitions
-          (channels, emitters, mover calibration, 3D preview).
+          For the best preview and mover support, prefer the{' '}
+          <strong>Captivate Community Library</strong>.
         </li>
         <li>
-          <strong>QLC+</strong> and <strong>Open Fixture Library</strong> —
-          converted on import; you may need to tweak channels afterward.
+          <strong>QLC+</strong> and <strong>Open Fixture Library</strong> files
+          are converted on import — review channels afterward.
         </li>
-        <li>Use <strong>Refresh</strong> if the list looks stale.</li>
+        <li>
+          If the list looks out of date, click <strong>Refresh</strong>.
+        </li>
       </HelpList>
       {searchSource === 'captivate' && (
         <Typography variant="body2" sx={{ mt: 0.75, opacity: 0.9 }}>
@@ -179,59 +181,25 @@ export default function FixtureLibraryInfoButton({
   searchSource,
   ariaLabel,
 }: Props) {
-  const [anchor, setAnchor] = useState<HTMLElement | null>(null)
-  const open = anchor !== null
-
   const defaultAria =
     topic === 'share-to-library'
       ? 'How to share to the community fixture library'
       : topic === 'search-online'
         ? 'How to search for fixtures online'
         : topic === 'add-fixture'
-          ? 'How to add a fixture'
-          : 'About fixtures and the library'
+          ? 'How to add a fixture type'
+          : 'How to manage fixtures'
 
   return (
-    <>
-      <IconButton
-        size="small"
-        aria-label={ariaLabel ?? defaultAria}
-        onClick={(e) => setAnchor(e.currentTarget)}
-        sx={{
-          padding: '0.12rem',
-          color: 'text.secondary',
-          '&:hover': { color: 'text.primary' },
-        }}
-      >
-        <InfoOutlined sx={{ fontSize: '1rem' }} />
-      </IconButton>
-      <Popover
-        open={open}
-        anchorEl={anchor}
-        onClose={() => setAnchor(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-        slotProps={{ paper: { sx: POPOVER_PAPER_SX } }}
-      >
-        <HelpBody
-          topic={topic}
-          relativePath={relativePath}
-          searchSource={searchSource}
-        />
-      </Popover>
-    </>
+    <SectionHelpButton ariaLabel={ariaLabel ?? defaultAria}>
+      <HelpBody
+        topic={topic}
+        relativePath={relativePath}
+        searchSource={searchSource}
+      />
+    </SectionHelpButton>
   )
 }
-
-const HelpListRoot = styled.ul`
-  margin: 0;
-  padding-left: 1.1rem;
-  color: ${(p) => p.theme.colors.text.secondary};
-
-  li + li {
-    margin-top: 0.35rem;
-  }
-`
 
 const LinksRow = styled.div`
   margin-top: 0.65rem;

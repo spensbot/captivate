@@ -7,6 +7,7 @@ import {
 } from 'react-redux'
 import React from 'react'
 import { initTimeState, TimeState } from '../../shared/TimeState'
+import { timeStatesVisuallyEqual } from '../../shared/timeExtrapolation'
 import {
   defaultOutputParams,
   defaultParamsList,
@@ -61,12 +62,28 @@ export function update(newRealtimeStore: RealtimeState) {
   }
 }
 
+export function updateTime(time: TimeState) {
+  return {
+    type: 'updateTime',
+    payload: time,
+  }
+}
+
 function realtimeStoreReducer(
   state = initRealtimeState(),
   action: PayloadAction<any>
 ) {
   if (action.type === 'update') {
     return action.payload
+  }
+  if (action.type === 'updateTime') {
+    if (timeStatesVisuallyEqual(state.time, action.payload)) {
+      return state
+    }
+    return {
+      ...state,
+      time: action.payload,
+    }
   }
   return state
 }

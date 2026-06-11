@@ -118,6 +118,7 @@ export const INTER_MOD_TARGET_PROPS = [
   'squareDuty',
   'sawFlatten',
   'noiseSeed',
+  'noiseSmoothing',
   'audioBandLowHz',
   'audioBandHighHz',
   'audioThreshold',
@@ -151,9 +152,10 @@ export function interModPropsForShape(shape: LfoShape): InterModTargetProp[] {
     case LfoShape.Saw:
       return [...WAVE_INTER_MOD_PROPS, 'sawFlatten']
     case LfoShape.Noise:
-      return [...WAVE_INTER_MOD_PROPS, 'noiseSeed']
+      return [...WAVE_INTER_MOD_PROPS, 'noiseSeed', 'noiseSmoothing']
     case LfoShape.AudioBand:
       return [
+        'skew',
         'audioBandLowHz',
         'audioBandHighHz',
         'audioThreshold',
@@ -163,7 +165,7 @@ export function interModPropsForShape(shape: LfoShape): InterModTargetProp[] {
         'audioBandSmoothing',
       ]
     case LfoShape.AudioEnergy:
-      return ['audioThreshold', 'audioMax', 'audioEnergySmoothing']
+      return ['skew', 'audioThreshold', 'audioMax', 'audioEnergySmoothing']
     default:
       return WAVE_INTER_MOD_PROPS
   }
@@ -378,7 +380,7 @@ function clampOutputParamValue(param: DefaultParam | string, value: number): num
     return Math.max(0, Math.min(2, value))
   }
   if (param === 'moverFloorLock') {
-    if (!Number.isFinite(value)) return 1
+    if (!Number.isFinite(value)) return 0
     return value >= 0.5 ? 1 : 0
   }
 

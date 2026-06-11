@@ -9,6 +9,8 @@ interface Props {
   ariaLabel?: string
   /** When vertical, top/bottom inset inside the control (defaults to `radius`). */
   verticalPadRem?: number
+  /** Replaces default track fill (`#0006`) when set — e.g. aux color vertical gradients. */
+  trackBackground?: string
 }
 
 // SliderBase displays the track and handles dragging
@@ -20,6 +22,7 @@ export default function SliderBase({
   title,
   ariaLabel,
   verticalPadRem,
+  trackBackground,
 }: Props) {
   const r = `${radius}rem`
   const d = `${radius * 2}rem`
@@ -54,6 +57,9 @@ export default function SliderBase({
       left: v ? 0 : `-${r}`,
       borderRadius: r,
       backgroundColor: '#0006',
+      backgroundImage: trackBackground,
+      backgroundRepeat: 'no-repeat',
+      backgroundSize: '100% 100%',
     },
   }
 
@@ -62,7 +68,7 @@ export default function SliderBase({
       style={styles.root}
       role="slider"
       aria-label={ariaLabel ?? title ?? 'Adjust value'}
-      title={title ?? ariaLabel ?? 'Adjust value'}
+      title={title ?? ariaLabel ?? 'Drag to adjust'}
     >
       <div
         style={styles.dragArea}

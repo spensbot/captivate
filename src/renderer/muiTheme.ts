@@ -1,14 +1,24 @@
 import { createTheme } from '@mui/material/styles'
 import { APP_TOOLTIP_SX } from './base/appTooltip'
+import { overlayZIndex } from './zIndexes'
 
 export const muiTheme = createTheme({
   palette: {
     mode: 'dark',
   },
   zIndex: {
-    tooltip: 20001,
+    modal: overlayZIndex.muiDialog,
+    snackbar: overlayZIndex.muiDialog + 1,
+    tooltip: overlayZIndex.tooltip,
   },
   components: {
+    MuiPopover: {
+      styleOverrides: {
+        root: {
+          zIndex: overlayZIndex.muiMenu,
+        },
+      },
+    },
     MuiTooltip: {
       defaultProps: {
         enterDelay: 400,

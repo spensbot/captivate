@@ -50,6 +50,19 @@ More walkthroughs: **[Wiki](https://github.com/NicholasTracy/captivate-2/wiki)**
 
 Installers for Windows, macOS, and Linux are on the [Releases](https://github.com/NicholasTracy/captivate-2/releases/latest) page.
 
+### macOS install help (if Apple blocks launch)
+
+Because I do not currently have an Apple Developer account or Apple hardware, Captivate's macOS build is not notarized yet. macOS may show a warning like "Apple cannot verify this app is free from malware" the first time you open it.
+
+If that appears:
+
+1. Drag **Captivate 2.app** to **Applications** from the DMG.
+2. In **Applications**, right-click **Captivate 2.app** and choose **Open**.
+3. Click **Open** in the warning dialog.
+4. If you still see a block, open **System Settings -> Privacy & Security**, scroll down, and click **Open Anyway** for Captivate.
+
+After this one-time approval, Captivate should open normally.
+
 ## Video
 
 [Introduction on YouTube](https://www.youtube.com/watch?v=6ZwQ97sySq0)

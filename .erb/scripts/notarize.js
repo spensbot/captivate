@@ -19,6 +19,13 @@ exports.default = async function notarizeMacos(context) {
     return
   }
 
+  if (process.env.CSC_IDENTITY === '-') {
+    console.warn(
+      'Skipping notarizing step. Ad-hoc CSC_IDENTITY ("-") cannot be notarized; use a Developer ID certificate (CSC_LINK / CSC_NAME) in CI for distribution builds.'
+    )
+    return
+  }
+
   const appName = context.packager.appInfo.productFilename
 
   await notarize({

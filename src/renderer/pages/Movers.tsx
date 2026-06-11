@@ -45,11 +45,32 @@ import {
   setMoverFollowOverrideUseAllGroups,
   toggleMoverFollowOverrideGroup,
   toggleMoverFollowOverrideEnabled,
+  toggleMoverAdvancedControl,
 } from '../redux/guiSlice'
 import {
   buildMoverPreviewRows,
   type LightingPreviewFixtureRow,
 } from './lightingPreviewFixtures'
+import {
+  buildMoverAxisChannelPlans,
+  moverAxisSnapshotsEqual,
+  selectMoverAxisSnapshots,
+  type LiveAxisReadout,
+  type MoverAxisChannelPlan,
+  type MoverAxisSnapshot,
+} from './moverAxisChannels'
+import { PopupTitleRow } from '../base/SectionHelpPopover'
+import {
+  BoundCornersHelpButton,
+  DanceFloorMapHelpButton,
+  FollowOverrideHelpButton,
+  LivePanTiltGridHelpButton,
+  MountOrientationHelpButton,
+  MoverCalibrationDialogHelpButton,
+  MoverGroupsHelpButton,
+  PanCalibrationHelpButton,
+  TiltCalibrationHelpButton,
+} from './moverHelpButtons'
 
 type MoverFixtureRow = LightingPreviewFixtureRow
 
@@ -63,11 +84,13 @@ interface BoundsPreview {
   tiltDmx: number
 }
 
-interface LiveAxisReadout {
-  panRaw: number
-  tiltRaw: number
-  panNorm: number
-  tiltNorm: number
+function useMoverAxisSnapshots(
+  plans: Array<MoverAxisChannelPlan | null>
+): MoverAxisSnapshot[] {
+  return useRealtimeSelector<MoverAxisSnapshot[]>(
+    (state) => selectMoverAxisSnapshots(plans, state.dmxOutByUniverse),
+    moverAxisSnapshotsEqual
+  )
 }
 
 interface MoverLiveView {
@@ -99,89 +122,6 @@ function fixtureColor(fixtureId: string): string {
   }
   const hue = hash % 360
   return `hsl(${hue}, 78%, 64%)`
-}
-
-function normalizeAxisValue(value: number, min: number, max: number): number {
-  const minValue = Number.isFinite(min) ? min : 0
-  const maxValue = Number.isFinite(max) ? max : 255
-
-  if (Math.abs(maxValue - minValue) < 0.0001) {
-    return clamp01(value / 255)
-  }
-
-  if (maxValue > minValue) {
-    return clamp01((value - minValue) / (maxValue - minValue))
-  }
-
-  return clamp01((minValue - value) / (minValue - maxValue))
-}
-
-function readLiveAxis(
-  row: MoverFixtureRow,
-  dmxOutByUniverse: number[][]
-): LiveAxisReadout | null {
-  const universeIndex = Math.max(1, Math.round(row.fixture.universe ?? 1)) - 1
-  const universeData = dmxOutByUniverse[universeIndex]
-  if (universeData === undefined) {
-    return null
-  }
-
-  let panCoarseChannel: number | null = null
-  let panFineChannel: number | null = null
-  let tiltCoarseChannel: number | null = null
-  let tiltFineChannel: number | null = null
-  let panMin = DMX_MIN_VALUE
-  let panMax = DMX_MAX_VALUE
-  let tiltMin = DMX_MIN_VALUE
-  let tiltMax = DMX_MAX_VALUE
-
-  row.fixtureType.channels.forEach((channel, channelIndex) => {
-    if (channel.type !== 'axis') return
-    const absoluteChannel = row.fixture.ch + channelIndex - 1
-
-    if (channel.dir === 'x') {
-      if (channel.isFine) {
-        panFineChannel = absoluteChannel
-      } else {
-        panCoarseChannel = absoluteChannel
-        panMin = channel.min
-        panMax = channel.max
-      }
-      return
-    }
-
-    if (channel.isFine) {
-      tiltFineChannel = absoluteChannel
-    } else {
-      tiltCoarseChannel = absoluteChannel
-      tiltMin = channel.min
-      tiltMax = channel.max
-    }
-  })
-
-  if (panCoarseChannel === null || tiltCoarseChannel === null) {
-    return null
-  }
-
-  const panCoarse = universeData[panCoarseChannel]
-  const tiltCoarse = universeData[tiltCoarseChannel]
-  if (!Number.isFinite(panCoarse) || !Number.isFinite(tiltCoarse)) {
-    return null
-  }
-
-  const panFine = panFineChannel !== null ? universeData[panFineChannel] ?? 0 : 0
-  const tiltFine =
-    tiltFineChannel !== null ? universeData[tiltFineChannel] ?? 0 : 0
-
-  const panRaw = Number(panCoarse) + Number(panFine) / 256
-  const tiltRaw = Number(tiltCoarse) + Number(tiltFine) / 256
-
-  return {
-    panRaw,
-    tiltRaw,
-    panNorm: normalizeAxisValue(panRaw, panMin, panMax),
-    tiltNorm: normalizeAxisValue(tiltRaw, tiltMin, tiltMax),
-  }
 }
 
 function getMoverBoundValue(
@@ -274,7 +214,11 @@ export default function MoversPage() {
 
   const moverFixtures = useDmxSelector(buildMoverPreviewRows)
   const stage = useDmxSelector((state) => state.stage)
-  const dmxOutByUniverse = useRealtimeSelector((state) => state.dmxOutByUniverse)
+  const moverAxisChannelPlans = useMemo(
+    () => buildMoverAxisChannelPlans(moverFixtures),
+    [moverFixtures]
+  )
+  const moverAxisSnapshots = useMoverAxisSnapshots(moverAxisChannelPlans)
   const moverFollowOverrideEnabled = useTypedSelector(
     (state) => state.gui.moverFollowOverrideEnabled
   )
@@ -289,6 +233,9 @@ export default function MoversPage() {
   )
   const moverFollowOverrideGroups = useTypedSelector(
     (state) => state.gui.moverFollowOverrideGroups
+  )
+  const moverAdvancedControlEnabled = useTypedSelector(
+    (state) => state.gui.moverAdvancedControlEnabled
   )
 
   const moverGroupNames = useMemo(() => {
@@ -336,6 +283,14 @@ export default function MoversPage() {
     moverGroupNames,
   ])
 
+  useEffect(() => {
+    if (!moverAdvancedControlEnabled && calibrationFixtureId !== null) {
+      setCalibrationFixtureId(null)
+      setCalibrationFixtureLabel('')
+      dispatch(clearMoverCalibrationOverride())
+    }
+  }, [calibrationFixtureId, dispatch, moverAdvancedControlEnabled])
+
   const calibrationFixtureRow = useMemo(() => {
     if (calibrationFixtureId === null) {
       return null
@@ -349,8 +304,8 @@ export default function MoversPage() {
 
   const calibrationFixtureType = calibrationFixtureRow?.fixtureType ?? null
   const liveMovers = useMemo<MoverLiveView[]>(() => {
-    return moverFixtures.map((row) => {
-      const axis = readLiveAxis(row, dmxOutByUniverse)
+    return moverFixtures.map((row, index) => {
+      const axis = moverAxisSnapshots[index] ?? null
       const hasCustomBounds = row.fixture.moverBounds !== undefined
       const bounds = row.fixture.moverBounds ?? initMoverBounds()
       const fixtureNormX = clamp01(row.fixture.window?.x?.pos ?? 0.5)
@@ -390,7 +345,7 @@ export default function MoversPage() {
         color,
       }
     })
-  }, [dmxOutByUniverse, moverFixtures])
+  }, [moverAxisSnapshots, moverFixtures])
   const moversWithBoundsTargets = useMemo(
     () =>
       liveMovers.filter(
@@ -509,12 +464,23 @@ export default function MoversPage() {
       <StatusBar />
       <Content>
         <Panel>
-          <PanelTitle>Mover Groups</PanelTitle>
+          <PanelTitleRow>
+            <PanelTitle>Movers</PanelTitle>
+            <TitleSp />
+            <Button
+              size="small"
+              variant={moverAdvancedControlEnabled ? 'contained' : 'outlined'}
+              onClick={() => dispatch(toggleMoverAdvancedControl())}
+              title="Show calibration, bounds, and follow override tools"
+            >
+              Advanced
+            </Button>
+            {moverAdvancedControlEnabled ? <MoverGroupsHelpButton /> : null}
+          </PanelTitleRow>
           <PanelHint>
-            Movers are auto-grouped by fixture groups/type name. Click a fixture row
-            to open calibration, and rename groups to split or merge fixtures.
-            Orientation is appended automatically (`Upright`/`Hung`) so movement
-            patterns stay separated by mount type.
+            {moverAdvancedControlEnabled
+              ? 'Rename groups to split or merge. Click a row to calibrate pan/tilt and floor bounds.'
+              : 'Pan/tilt pads aim each mover directly. Set Upright or Hung to match how fixtures are rigged.'}
           </PanelHint>
 
           <PanelScroll>
@@ -525,8 +491,17 @@ export default function MoversPage() {
             {moverFixtures.map((row) => (
               <FixtureRow
                 key={row.fixtureId}
-                onClick={() => openCalibration(row)}
-                title="Open mover calibration"
+                onClick={
+                  moverAdvancedControlEnabled
+                    ? () => openCalibration(row)
+                    : undefined
+                }
+                $clickable={moverAdvancedControlEnabled}
+                title={
+                  moverAdvancedControlEnabled
+                    ? 'Open calibration for this fixture'
+                    : undefined
+                }
               >
                 <FixtureMeta>
                   <FixtureName>{row.fixtureLabel}</FixtureName>
@@ -539,19 +514,13 @@ export default function MoversPage() {
                   onClick={(event) => event.stopPropagation()}
                   onMouseDown={(event) => event.stopPropagation()}
                 >
-                  <Input
-                    value={row.groupName}
-                    onChange={(newName) => setMoverGroup(row.fixtureId, newName)}
-                    placeholder="Mover group"
-                  />
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={() => setMoverGroup(row.fixtureId, '')}
-                    title="Reset to automatic mover group"
-                  >
-                    Auto
-                  </Button>
+                  {moverAdvancedControlEnabled ? (
+                    <Input
+                      value={row.groupName}
+                      onChange={(newName) => setMoverGroup(row.fixtureId, newName)}
+                      placeholder="Mover group"
+                    />
+                  ) : null}
                   <Button
                     size="small"
                     variant={
@@ -567,7 +536,7 @@ export default function MoversPage() {
                           : 'inverted'
                       )
                     }
-                    title="Toggle fixture mount orientation"
+                    title="Toggle upright vs hung/inverted mount"
                   >
                     {row.moverMountOrientation === 'inverted' ? 'Hung' : 'Upright'}
                   </Button>
@@ -577,11 +546,16 @@ export default function MoversPage() {
           </PanelScroll>
         </Panel>
 
+        {moverAdvancedControlEnabled ? (
         <RightColumn>
           <Panel>
-            <PanelTitle>Follow Override</PanelTitle>
+            <PanelTitleRow>
+              <PanelTitle>Follow Override</PanelTitle>
+              <FollowOverrideHelpButton />
+            </PanelTitleRow>
             <PanelHint>
-              Midi assignable pan and tilt follow spot override. All selected mover groups follow a single target point.
+              MIDI-assignable floor target that overrides scene pan/tilt for selected
+              groups.
             </PanelHint>
             <PanelScroll>
               <OverrideRow>
@@ -594,7 +568,7 @@ export default function MoversPage() {
                       type="button"
                       $active={moverFollowOverrideEnabled}
                       onClick={() => dispatch(toggleMoverFollowOverrideEnabled())}
-                      title="Enable or disable follow override"
+                      title="Turn follow override on or off"
                     >
                       {moverFollowOverrideEnabled ? 'Override On' : 'Override Off'}
                     </OverrideToggleButton>
@@ -631,7 +605,7 @@ export default function MoversPage() {
                               )
                             )
                           }
-                          title="Follow override X"
+                          title="Follow override X (0–1 floor position)"
                         />
                       </KnobDial>
                     </KnobControl>
@@ -666,7 +640,7 @@ export default function MoversPage() {
                               )
                             )
                           }
-                          title="Follow override Y"
+                          title="Follow override Y (0–1 floor position)"
                         />
                       </KnobDial>
                     </KnobControl>
@@ -679,7 +653,7 @@ export default function MoversPage() {
                       type="button"
                       $active={moverFollowOverrideUseAllGroups}
                       onClick={() => dispatch(setMoverFollowOverrideUseAllGroups(true))}
-                      title="Apply follow override to all mover groups"
+                      title="Apply override to every mover group"
                     >
                       All Groups
                     </GroupScopeToggle>
@@ -692,7 +666,7 @@ export default function MoversPage() {
                           dispatch(setMoverFollowOverrideGroups(moverGroupNames))
                         }
                       }}
-                      title="Apply follow override only to selected groups"
+                      title="Apply override only to checked groups"
                     >
                       Selected
                     </GroupScopeToggle>
@@ -729,10 +703,12 @@ export default function MoversPage() {
           </Panel>
 
           <Panel>
-            <PanelTitle>Live Pan/Tilt Grid</PanelTitle>
+            <PanelTitleRow>
+              <PanelTitle>Live Pan/Tilt Grid</PanelTitle>
+              <LivePanTiltGridHelpButton />
+            </PanelTitleRow>
             <PanelHint>
-              Each mover tile shows live pan/tilt position from DMX output. Layout is
-              left-to-right, top-to-bottom.
+              Live normalized pan/tilt from DMX. Click a card to calibrate.
             </PanelHint>
             <PanelScroll>
               <MoverPadGrid>
@@ -740,7 +716,7 @@ export default function MoversPage() {
                   <MoverPadCard
                     key={`pad-${entry.row.fixtureId}`}
                     onClick={() => openCalibration(entry.row)}
-                    title="Open mover calibration"
+                    title="Open calibration for this fixture"
                     $selected={calibrationFixtureId === entry.row.fixtureId}
                   >
                     <MoverPadLabel>{entry.row.fixtureName}</MoverPadLabel>
@@ -768,10 +744,12 @@ export default function MoversPage() {
           </Panel>
 
           <Panel>
-            <PanelTitle>Dance Floor Target Map</PanelTitle>
+            <PanelTitleRow>
+              <PanelTitle>Dance Floor Target Map</PanelTitle>
+              <DanceFloorMapHelpButton />
+            </PanelTitleRow>
             <PanelHint>
-              Shows mover locations and target points. Bounds-calibrated mapping is
-              preferred; fixture-placement fallback is used when bounds are unavailable.
+              Fixture position vs estimated floor target from calibration.
             </PanelHint>
             <PanelScroll>
               <FloorMapWrap>
@@ -842,8 +820,10 @@ export default function MoversPage() {
             </PanelScroll>
           </Panel>
         </RightColumn>
+        ) : null}
       </Content>
 
+      {moverAdvancedControlEnabled ? (
       <Dialog
         open={calibrationFixtureType !== null}
         onClose={closeCalibration}
@@ -851,20 +831,25 @@ export default function MoversPage() {
         maxWidth="md"
       >
         <DialogTitle>
-          Mover Calibration: {calibrationFixtureType?.name ?? ''}
+          <PopupTitleRow>
+            <span>
+              Mover Calibration: {calibrationFixtureType?.name ?? ''}
+            </span>
+            <MoverCalibrationDialogHelpButton />
+          </PopupTitleRow>
         </DialogTitle>
         <DialogContent dividers>
           <DialogHint>
-            Fixture: {calibrationFixtureLabel || 'Selected mover fixture'}
-            <br />
-            Anchor calibration values are DMX units (`0-255`). Pan/Tilt range is
-            physical degrees and drives aiming math.
-            Bounds below apply only to this selected fixture.
+            Fixture: {calibrationFixtureLabel || 'Selected mover fixture'}. Focus a
+            field to preview that DMX value on the selected head.
           </DialogHint>
 
           {calibrationFixtureRow !== null && (
             <MountRow>
-              <MountLabel>Mount Orientation</MountLabel>
+              <MountLabelRow>
+                <MountLabel>Mount Orientation</MountLabel>
+                <MountOrientationHelpButton />
+              </MountLabelRow>
               <Button
                 size="small"
                 variant={
@@ -880,7 +865,7 @@ export default function MoversPage() {
                       : 'inverted'
                   )
                 }
-                title="Set whether this fixture is hung upside-down or right-side up"
+                title="Upright vs hung/inverted — affects tilt anchors"
               >
                 {calibrationFixtureRow.moverMountOrientation === 'inverted'
                   ? 'Hung / Inverted'
@@ -939,6 +924,7 @@ export default function MoversPage() {
           </Button>
         </DialogActions>
       </Dialog>
+      ) : null}
     </Root>
   )
 }
@@ -1016,7 +1002,10 @@ function CalibrationEditor({
   return (
     <>
       <CalibrationSection>
-        <SectionTitle>Pan Calibration</SectionTitle>
+        <SectionTitleRow>
+          <SectionTitle>Pan Calibration</SectionTitle>
+          <PanCalibrationHelpButton />
+        </SectionTitleRow>
         <FieldGrid>
           <NumberField
             val={calibration.pan.min}
@@ -1100,10 +1089,13 @@ function CalibrationEditor({
       </CalibrationSection>
 
       <CalibrationSection>
-        <SectionTitle>Tilt Calibration</SectionTitle>
+        <SectionTitleRow>
+          <SectionTitle>Tilt Calibration</SectionTitle>
+          <TiltCalibrationHelpButton />
+        </SectionTitleRow>
         <DialogHint>
-          Use two tilt anchors: Forward plus one vertical anchor. Upright uses Toward
-          Ceiling, and Hung/Inverted uses Toward Floor.
+          Forward plus one vertical anchor — Toward Ceiling (upright) or Toward Floor
+          (hung).
         </DialogHint>
         <FieldGrid>
           <NumberField
@@ -1238,7 +1230,10 @@ function BoundsEditor({
   return (
     <CalibrationSection>
       <SectionHeader>
-        <SectionTitle>Bound Area Corners</SectionTitle>
+        <SectionTitleRow>
+          <SectionTitle>Bound Area Corners</SectionTitle>
+          <BoundCornersHelpButton />
+        </SectionTitleRow>
         <Button
           size="small"
           variant="outlined"
@@ -1250,8 +1245,7 @@ function BoundsEditor({
       </SectionHeader>
 
       <DialogHint>
-        Corner values map split Pan/Tilt (`0-1`) to this fixture as DMX values
-        (`0-255`).
+        Corner DMX maps scene pad 0–1 to this fixture&apos;s floor rectangle.
       </DialogHint>
 
       <BoundsGrid>
@@ -1303,6 +1297,12 @@ const MountRow = styled.div`
   justify-content: space-between;
   gap: 0.75rem;
   margin-bottom: 0.8rem;
+`
+
+const MountLabelRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
 `
 
 const MountLabel = styled.div`
@@ -1363,9 +1363,20 @@ const PanelScroll = styled.div`
   }
 `
 
+const PanelTitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.4rem;
+`
+
+const TitleSp = styled.div`
+  flex: 1 1 auto;
+  min-width: 0.35rem;
+`
+
 const PanelTitle = styled.div`
   font-size: ${(props) => props.theme.font.size.h1};
-  margin-bottom: 0.4rem;
 `
 
 const PanelHint = styled.div`
@@ -1379,17 +1390,18 @@ const Empty = styled.div`
   color: ${(props) => props.theme.colors.text.secondary};
 `
 
-const FixtureRow = styled.div`
+const FixtureRow = styled.div<{ $clickable?: boolean }>`
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0.5rem 0.6rem;
   border-top: 1px solid ${(props) => props.theme.colors.divider};
   gap: 0.7rem;
-  cursor: pointer;
+  cursor: ${(props) => (props.$clickable ? 'pointer' : 'default')};
 
   &:hover {
-    background: ${(props) => props.theme.colors.bg.lighter};
+    background: ${(props) =>
+      props.$clickable ? props.theme.colors.bg.lighter : 'transparent'};
   }
 `
 
@@ -1761,9 +1773,15 @@ const CalibrationSection = styled.div`
   margin-bottom: 1rem;
 `
 
+const SectionTitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-bottom: 0.5rem;
+`
+
 const SectionTitle = styled.div`
   font-size: 0.9rem;
-  margin-bottom: 0.5rem;
 `
 
 const SectionHeader = styled.div`

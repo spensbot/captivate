@@ -7,6 +7,7 @@ import { TextField, Tooltip } from '@mui/material'
 import { useDispatch } from 'react-redux'
 import { setActiveUniverse } from '../redux/dmxSlice'
 import { Slot_t } from './UniverseSlotTypes'
+import PatchingHelpButton from './PatchingHelpButton'
 
 interface FixtureWithIndex {
   fixture: Fixture
@@ -101,8 +102,11 @@ export default function MyUniverse() {
   return (
     <Root>
       <HeaderRow>
-        <Header>Universe</Header>
-        <Tooltip title="Universe shown in fixture patch and XY placement map">
+        <TitleCluster>
+          <Header>Patching</Header>
+          <PatchingHelpButton />
+        </TitleCluster>
+        <Tooltip title="DMX universe shown in the patch list and placement map">
           <TextField
             value={activeUniverse.toString()}
             size="small"
@@ -133,6 +137,12 @@ const HeaderRow = styled.div`
   margin: 0 0 0.5rem;
 `
 
+const TitleCluster = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+`
+
 const Header = styled.div`
   font-size: ${(props) => props.theme.font.size.h1};
 `
@@ -153,7 +163,7 @@ const Slots = styled.div`
   align-items: start;
   flex-wrap: wrap;
   flex: 0 0 auto;
-  max-height: clamp(7.5rem, 32vh, 16rem);
+  max-height: clamp(5.5rem, 24vh, 12rem);
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;

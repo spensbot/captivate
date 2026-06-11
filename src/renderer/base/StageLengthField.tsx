@@ -5,14 +5,16 @@ import type { StageUnit } from '../../shared/stage'
 import {
   clampImperialFeet,
   formatDecimalFeetAsFtIn,
-  parseImperialLengthToDecimalFeet,
 } from '../../shared/imperialLength'
 import {
   clampMetricMeters,
   formatMetersAsMetersCm,
   formatMetricMetersForDraft,
-  parseMetricLengthToMeters,
 } from '../../shared/metricLength'
+import {
+  parseStageLengthInput,
+  STAGE_LENGTH_INPUT_HINT,
+} from '../../shared/stageLengthInput'
 
 type Props = {
   val: number
@@ -26,7 +28,7 @@ type Props = {
   disabled?: boolean
   title?: string
   highlightOnFocus?: boolean
-  /** `ft`: decimal feet and feet-inches. `m`: meters, cm, mm, or plain meters. */
+  /** `ft`: stored/displayed as decimal feet. `m`: meters. Input accepts either system. */
   stageUnit: StageUnit
   /** When set, show committed values as ft′ in″ or whole m + cm instead of plain decimals. */
   lengthDraftDisplay?: 'decimal' | 'stageCanonical'
@@ -87,38 +89,29 @@ export default function StageLengthField({
     ...(Array.isArray(sxProp) ? sxProp : sxProp ? [sxProp] : []),
   ]
 
-  const defaultTitle =
-    lengthDraftDisplay === 'stageCanonical'
-      ? stageUnit === 'ft'
-        ? `Decimal feet, 1' - 10", 6", 10 1/2 (mixed feet), or 3/4 (feet fraction)`
-        : `Meters (2.4), 240 cm, 2400 mm, or 2 m 40 cm style`
-      : stageUnit === 'ft'
-        ? `Decimal feet (e.g. 10.5) or feet-inches (e.g. 1' - 10", 2'6")`
-        : `Meters (e.g. 2.4), or 240 cm, 2400 mm, 2.5 m`
-
   function commitFromDraft() {
     focusedRef.current = false
-    if (stageUnit === 'ft') {
-      const parsed = parseImperialLengthToDecimalFeet(draft)
-      if (parsed === null) {
-        setDraft(formatDraft(val, stageUnit, lengthDraftDisplay))
-        return
-      }
-      const clamped = clampImperialFeet(parsed, min, max)
-      onChange(numberType === 'int' ? Math.round(clamped) : clamped)
-      setDraft(formatDraft(clamped, stageUnit, lengthDraftDisplay))
-      return
-    }
-
-    const parsed = parseMetricLengthToMeters(draft)
+    const parsed = parseStageLengthInput(draft, stageUnit)
     if (parsed === null) {
       setDraft(formatDraft(val, stageUnit, lengthDraftDisplay))
       return
     }
-    const clamped = clampMetricMeters(parsed, min, max)
+
+    const clamped =
+      stageUnit === 'ft'
+        ? clampImperialFeet(parsed, min, max)
+        : clampMetricMeters(parsed, min, max)
     const next = numberType === 'int' ? Math.round(clamped) : clamped
     onChange(next)
     setDraft(formatDraft(next, stageUnit, lengthDraftDisplay))
+  }
+
+  function onKeyDown(event: React.KeyboardEvent) {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      commitFromDraft()
+      ;(event.target as HTMLInputElement).blur()
+    }
   }
 
   return (
@@ -133,9 +126,10 @@ export default function StageLengthField({
       }}
       onChange={(e) => setDraft(e.target.value)}
       onBlur={commitFromDraft}
+      onKeyDown={onKeyDown}
       type="text"
       inputMode="decimal"
-      title={title ?? defaultTitle}
+      title={title ?? STAGE_LENGTH_INPUT_HINT}
       sx={mergedSx}
     />
   )

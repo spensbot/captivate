@@ -1,6 +1,8 @@
 import Tooltip from '@mui/material/Tooltip'
 import styled from 'styled-components'
+import { useDispatch } from 'react-redux'
 import { useRealtimeSelector } from '../redux/realtimeStore'
+import { setLinkEnabled } from '../redux/controlSlice'
 import { send_user_command } from '../ipcHandler'
 
 export default function LinkButton({
@@ -9,6 +11,7 @@ export default function LinkButton({
   /** Wider layout for Connections panel grid column. */
   layout?: 'default' | 'connections'
 }) {
+  const dispatch = useDispatch()
   const numPeers = useRealtimeSelector((state) => state.time.numPeers)
   const isEnabled = useRealtimeSelector((state) => state.time.isEnabled)
 
@@ -63,7 +66,9 @@ export default function LinkButton({
         aria-pressed={isEnabled}
         aria-label={ariaLabel}
         onClick={() => {
-          send_user_command({ type: 'SetLinkEnabled', isEnabled: !isEnabled })
+          const next = !isEnabled
+          dispatch(setLinkEnabled(next))
+          send_user_command({ type: 'SetLinkEnabled', isEnabled: next })
         }}
       >
         <StatusDot $active={isEnabled} aria-hidden />

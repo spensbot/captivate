@@ -7,7 +7,7 @@ export default function NewModulator() {
   const dispatch = useDispatch()
 
   return (
-    <Root onClick={() => dispatch(addModulator())} title="Add LFO modulator">
+    <Root onClick={() => dispatch(addModulator())} title="Add another motion effect to this scene">
       <AddIcon sx={{ fontSize: 'var(--remote-mod-add-icon-size, 1.75rem)' }} />
     </Root>
   )

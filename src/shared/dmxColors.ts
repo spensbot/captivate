@@ -247,3 +247,21 @@ export function getColorPreview(channel: ColorChannel): string {
     channel.saturation
   )}%)`
 }
+
+/** Vertical split slider track: black at bottom (0%), fixture color at top (100%). */
+export function auxColorParamTrackGradient(
+  param: string
+): string | undefined {
+  switch (param) {
+    case 'white':
+      return 'linear-gradient(to top, #000000 0%, #f0f0f0 100%)'
+    case 'warmWhite':
+      return 'linear-gradient(to top, #000000 0%, #ffe0b2 100%)'
+    case 'amber':
+      return 'linear-gradient(to top, #000000 0%, #ffb300 100%)'
+    case 'uv':
+      return 'linear-gradient(to top, #000000 0%, #7f39fb 100%)'
+    default:
+      return undefined
+  }
+}

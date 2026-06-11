@@ -1,36 +1,58 @@
-import { getUniverseBuffer, nullTerminatedStringPadded } from '../util'
+import { DMX_MAX_VALUE, DMX_MIN_VALUE, DMX_NUM_CHANNELS } from 'shared/dmxFixtures'
+import { nullTerminatedStringPadded } from '../util'
 import * as ipUtil from '../ipUtil'
 import * as c from './constants'
 
-// Low-byte first
-const OP_POLL = Buffer.from([0x00, 0x20]) // 0x2000
-const OP_POLL_REPLY = Buffer.from([0x00, 0x21]) // 0x2100
-const OP_DMX = Buffer.from([0x00, 0x50]) // 0x5000
+const ARTNET_HEADER_LEN = 18
+const ARTNET_PACKET_LEN = ARTNET_HEADER_LEN + DMX_NUM_CHANNELS
 
-const PROTOCOL = Buffer.from([0, 14])
 const UDP_ID = Buffer.from('Art-Net\0', 'ascii')
+const OP_DMX = Buffer.from([0x00, 0x50])
+const OP_POLL = Buffer.from([0x00, 0x20])
+const OP_POLL_REPLY = Buffer.from([0x00, 0x21])
+const PROTOCOL = Buffer.from([0, 14])
 
-// const STYLE_NODE = 0x01
 const STYLE_CONTROLLER = 0x01
+
+export function createArtDmxPacketBuffer(universeIndex: number): Buffer {
+  const packet = Buffer.alloc(ARTNET_PACKET_LEN)
+  UDP_ID.copy(packet, 0)
+  OP_DMX.copy(packet, 8)
+  PROTOCOL.copy(packet, 10)
+  packet[13] = 0x00 // Physical port
+  packet[14] = universeIndex & 0xff // SubUni
+  packet[15] = 0x00 // Net
+  packet[16] = 0x02 // DMX length hi (512)
+  packet[17] = 0x00 // DMX length lo
+  return packet
+}
+
+export function writeArtDmxPacket(
+  packet: Buffer,
+  universe: number[],
+  sequence: number
+): void {
+  packet[12] = sequence & 0xff
+  const offset = ARTNET_HEADER_LEN
+  const count = Math.min(DMX_NUM_CHANNELS, universe.length)
+  for (let index = 0; index < count; index++) {
+    const raw = universe[index]
+    packet[offset + index] = Number.isFinite(raw)
+      ? Math.max(DMX_MIN_VALUE, Math.min(DMX_MAX_VALUE, Math.round(raw)))
+      : 0
+  }
+  if (count < DMX_NUM_CHANNELS) {
+    packet.fill(0, offset + count, offset + DMX_NUM_CHANNELS)
+  }
+}
 
 export function artDmxBuffer(
   universe: number[],
   universeIndex: number
 ): Buffer {
-  return Buffer.concat([
-    UDP_ID,
-    OP_DMX,
-    PROTOCOL,
-    Buffer.from([
-      0x00, //Sequence: 0x01 to 0xff for ordering. 0x00 to disable
-      0x00, // Physical: Physical port input id
-      universeIndex, // SubUni: The low byte of the 15 bit Port-Address to which this packet is destined.
-      0x00, // Net: The top 7 bits of the 15 bit Port-Address to which this packet is destined.
-      0x02, // Hi - Length of the DMX512 data array. 0x200 == 512
-      0x00, // Low -
-    ]),
-    getUniverseBuffer(universe),
-  ])
+  const packet = createArtDmxPacketBuffer(universeIndex)
+  writeArtDmxPacket(packet, universe, 0)
+  return packet
 }
 
 export function artPollBuffer(): Buffer {
@@ -42,7 +64,6 @@ export function artPollBuffer(): Buffer {
       0b00000000, // Flags:
       0x00, // Diagnostic Priority
     ]),
-    // All other fields are not required
   ])
 }
 
@@ -76,7 +97,7 @@ export function artPollReplyBuffer(): Buffer | null {
     portName,
     nodeName,
     nodeReport,
-    Buffer.alloc(2 + 4 + 4 + 4 + 4 + 4), // Port info. Unnecessary for a controller like captivate with no ports,
+    Buffer.alloc(2 + 4 + 4 + 4 + 4 + 4),
     Buffer.from([
       0, // AcnPriority
       0, // SwMacro
@@ -85,5 +106,4 @@ export function artPollReplyBuffer(): Buffer | null {
     Buffer.alloc(3), // Spares
     Buffer.from([STYLE_CONTROLLER]),
   ])
-  // All other fields not required
 }

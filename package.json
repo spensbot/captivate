@@ -15,12 +15,12 @@
     "generate:default-save": "node scripts/generate-default-save.mjs",
     "package:bundle": "node tools/run-with-qualified-node.cjs -- npm run package:bundle:inner",
     "package:bundle:inner": "node tools/run-with-qualified-node.cjs -- npm run __package:bundle:inner",
-    "__package:bundle:inner": "node tools/check-build-environment.js && ts-node ./.erb/scripts/clean.js dist && npm run prepare:projectm-bridge && npm run prepare:node-link && npm run rebuild && npm run build",
+    "__package:bundle:inner": "node tools/check-build-environment.js && ts-node ./.erb/scripts/clean.js dist && npm run prepare:projectm-bridge && npm run prepare:node-link && npm run rebuild && node tools/rebuild-darwin-universal-natives.cjs && npm run build",
     "package": "npm run package:bundle && node tools/run-with-qualified-node.cjs -- node tools/run-electron-builder-installer.cjs",
     "package:installer-only": "node tools/run-with-qualified-node.cjs -- node tools/run-electron-builder-installer.cjs --win",
     "package:win": "npm run package:bundle && node tools/run-with-qualified-node.cjs -- node tools/run-electron-builder-installer.cjs --win",
     "package:linux": "npm run package:bundle && electron-builder build --linux --publish never",
-    "package:mac": "npm run package:bundle && electron-builder build --mac --publish never",
+    "package:mac": "cross-env CAPTIVATE_DARWIN_UNIVERSAL_NATIVE=1 npm run package:bundle && electron-builder build --mac --publish never",
     "rebuild": "node -r ts-node/register/transpile-only ./.erb/scripts/electron-rebuild.js",
     "start": "ts-node ./.erb/scripts/check-port-in-use.js && npm run start:renderer",
     "start:main": "cross-env NODE_ENV=development electronmon .",
@@ -192,6 +192,13 @@
         "nsis"
       ]
     },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": "always",
+      "include": "build/installer/nsis/custom.nsh"
+    },
     "linux": {
       "target": [
         "AppImage"
@@ -203,7 +210,7 @@
       "buildResources": "assets",
       "output": "release/build"
     },
-    "npmRebuild": false,
+    "npmRebuild": true,
     "extraResources": [
       "./assets/**"
     ],

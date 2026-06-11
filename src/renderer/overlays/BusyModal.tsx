@@ -1,5 +1,6 @@
 import styled, { keyframes } from 'styled-components'
 import zIndexes from '../zIndexes'
+import OverlayPortal from './OverlayPortal'
 
 interface Props {
   open: boolean
@@ -22,8 +23,9 @@ export default function BusyModal({ open, title, message, progress }: Props) {
   const progressNorm = hasProgress ? clamp01(progress as number) : 0
 
   return (
-    <Root>
-      <Card>
+    <OverlayPortal>
+      <Root>
+        <Card>
         <Title>{title}</Title>
         {message !== undefined && message.length > 0 && <Message>{message}</Message>}
         <ProgressTrack>
@@ -34,8 +36,9 @@ export default function BusyModal({ open, title, message, progress }: Props) {
           )}
         </ProgressTrack>
         {hasProgress && <Percent>{Math.round(progressNorm * 100)}%</Percent>}
-      </Card>
-    </Root>
+        </Card>
+      </Root>
+    </OverlayPortal>
   )
 }
 
@@ -51,7 +54,7 @@ const slide = keyframes`
 const Root = styled.div`
   position: fixed;
   inset: 0;
-  z-index: ${zIndexes.fullscreenOverlay + 1};
+  z-index: ${zIndexes.overlay.busy};
   background: #0008;
   display: flex;
   align-items: center;

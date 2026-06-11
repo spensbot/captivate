@@ -12,9 +12,8 @@ import styled from 'styled-components'
 import FixtureChannels from './FixtureChannels'
 import { Button } from '@mui/material'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
-import EditGroups from './EditGroups'
 import Subfixtures from './Subfixtures'
-import FixtureModelEditor from './FixtureModelEditor'
+import FixtureModelSummary from './FixtureModelSummary'
 import { captivateFileFilters, saveFile } from '../autosave'
 import { serializeFixtureLibrary } from '../../shared/fixtureLibrary'
 import ShareFixtureToLibraryDialog from './ShareFixtureToLibraryDialog'
@@ -135,6 +134,7 @@ function ActiveFixtureType() {
     <>
       <Row>
         <IconButton
+          title="Collapse fixture editor"
           onClick={() => {
             dispatch(setEditedFixture(null))
           }}
@@ -174,9 +174,9 @@ function ActiveFixtureType() {
 
       <FixtureChannels fixtureID={ft.id} isInUse={isInUse} />
       <Sp />
-      <FixtureModelEditor fixtureType={ft} />
-      <Sp />
       <Subfixtures />
+      <Sp />
+      <FixtureModelSummary fixtureType={ft} />
       <Sp />
       <Row>
         <Button
@@ -207,7 +207,6 @@ function ActiveFixtureType() {
           Delete Fixture
         </Button>
         <div style={{ flex: '1 0 1rem' }} />
-        <EditGroups />
       </Row>
       <ShareFixtureToLibraryDialog
         open={shareOpen}

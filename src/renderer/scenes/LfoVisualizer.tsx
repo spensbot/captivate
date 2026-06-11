@@ -1,14 +1,20 @@
-import { useMemo, useRef } from 'react'
-import { GetValueFromPhase } from '../../shared/oscillator'
+import { memo, useLayoutEffect, useMemo, useRef } from 'react'
 import { useDispatch } from 'react-redux'
 import useDragBasic from '../hooks/useDragBasic'
 import { incrementModulator } from '../redux/controlSlice'
 import { useActiveLightScene } from '../redux/store'
 import { secondaryEnabled } from 'renderer/base/keyUtil'
-import { useRealtimeSelector } from '../redux/realtimeStore'
+import { useLfoAudioMetrics, useLfoBeats } from '../redux/realtimeSelectors'
 import { effectiveLfosAtSplit, getModulatorLfoValue } from '../../shared/modulation'
 import { LfoShape } from '../../shared/oscillator'
 import { useModPreviewSplit } from './useModPreviewSplit'
+import {
+  buildWaveSamples,
+  LFO_VIS_BACKGROUND,
+  type AudioHistorySample,
+  paintLfoVisualizerFrame,
+  prepareCanvas,
+} from './lfoVisualizerCanvas'
 
 type Props = {
   index: number
@@ -17,20 +23,7 @@ type Props = {
   padding: number
 }
 
-const stepSize = 2
-const lineWidth = 2
-const backgroundColor = '#000000'
-const lineColor = '#3333ff'
-const audioWaveColor = '#ffd77a'
-const audioGridColor = '#ffffff22'
-const AUDIO_HISTORY_BEATS = 16
-
-function clamp01(value: number) {
-  if (!Number.isFinite(value)) return 0
-  return Math.min(1, Math.max(0, value))
-}
-
-export default function LfoVisualizer({
+function LfoVisualizer({
   index,
   width,
   height,
@@ -38,10 +31,12 @@ export default function LfoVisualizer({
 }: Props) {
   const xPadding = width * padding
   const yPadding = height * padding
-  const width_ = width - xPadding * 2
-  const height_ = height - yPadding * 2
+  const plotWidth = width - xPadding * 2
+  const plotHeight = height - yPadding * 2
 
   const dispatch = useDispatch()
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const audioHistoryRef = useRef<AudioHistorySample[]>([])
 
   const [dragContainer, onMouseDown] = useDragBasic((e) => {
     const dx = -e.movementX / width
@@ -63,137 +58,97 @@ export default function LfoVisualizer({
   )
   const lightScene = useActiveLightScene((s) => s)
   const splitIx = useModPreviewSplit()
-  const time = useRealtimeSelector((state) => state.time)
-  const audio = useRealtimeSelector((state) => state.audio)
+  const beats = useLfoBeats()
+  const audio = useLfoAudioMetrics()
   const effectiveLfo = useMemo(() => {
     const lfos = effectiveLfosAtSplit(
       lightScene,
       splitIx,
-      time.beats,
+      beats,
       audio
     )
     return lfos[index] ?? modulator.lfo
-  }, [lightScene, splitIx, time.beats, audio, index, modulator.lfo])
+  }, [lightScene, splitIx, beats, audio, index, modulator.lfo])
   const isAudioShape =
     modulator.lfo.shape === LfoShape.AudioBand ||
     modulator.lfo.shape === LfoShape.AudioEnergy
-  const audioValue = getModulatorLfoValue(effectiveLfo, time.beats, audio, index)
-  const audioHistoryRef = useRef<Array<{ beat: number; value: number }>>([])
+  const audioValue = getModulatorLfoValue(effectiveLfo, beats, audio, index)
 
-  function GetPoints() {
-    const zeros = Array(width_ / stepSize + 1).fill(0)
+  const waveSamples = useMemo(() => {
+    if (isAudioShape || plotWidth <= 0 || plotHeight <= 0) {
+      return null
+    }
+    return buildWaveSamples(effectiveLfo, plotWidth)
+  }, [effectiveLfo, isAudioShape, plotWidth, plotHeight])
 
-    const pointsArray = zeros.map((_, i) => {
-      const x = (i * stepSize) / width_
-      const y = 1 - GetValueFromPhase(effectiveLfo, x)
-      return [x * width_ + xPadding, y * height_ + yPadding]
-    })
-
-    const points = pointsArray.reduce((accum, point) => {
-      return accum + `${point[0]},${point[1]}` + ' '
-    }, '')
-
-    return points
-  }
-
-  const audioWavePoints = useMemo(() => {
+  useLayoutEffect(() => {
     if (!isAudioShape) {
       audioHistoryRef.current = []
-      return ''
+    }
+  }, [isAudioShape])
+
+  useLayoutEffect(() => {
+    const canvas = canvasRef.current
+    if (canvas === null) {
+      return
     }
 
-    const history = audioHistoryRef.current
-    const currentBeat = Number.isFinite(time.beats) ? time.beats : 0
-    const lastSample = history[history.length - 1]
-    if (lastSample !== undefined && currentBeat < lastSample.beat - 0.001) {
-      history.length = 0
+    const ctx = prepareCanvas(canvas, width, height)
+    if (ctx === null) {
+      return
     }
-    history.push({
-      beat: currentBeat,
-      value: clamp01(audioValue),
+
+    paintLfoVisualizerFrame({
+      ctx,
+      width,
+      height,
+      xPadding,
+      yPadding,
+      plotWidth,
+      plotHeight,
+      isAudioShape,
+      waveSamples,
+      beats,
+      audioValue,
+      audioHistory: audioHistoryRef.current,
     })
-
-    const minBeat = currentBeat - AUDIO_HISTORY_BEATS
-    while (history.length > 0 && history[0].beat < minBeat) {
-      history.shift()
-    }
-
-    if (history.length <= 1) {
-      return ''
-    }
-
-    return history
-      .map((sample) => {
-        const phase = clamp01((sample.beat - minBeat) / AUDIO_HISTORY_BEATS)
-        const x = xPadding + phase * width_
-        const y = yPadding + (1 - sample.value) * height_
-        return `${x},${y}`
-      })
-      .join(' ')
-  }, [audioValue, height_, isAudioShape, time.beats, width_, xPadding, yPadding])
+  }, [
+    audioValue,
+    beats,
+    height,
+    isAudioShape,
+    plotHeight,
+    plotWidth,
+    waveSamples,
+    width,
+    xPadding,
+    yPadding,
+  ])
 
   return (
     <div
       ref={dragContainer}
       onMouseDown={onMouseDown}
+      title="Drag: sideways = timing, up/down = flip. Ctrl/Cmd+drag = skew (or use the Skew slider)."
       style={{
         width: width,
         height: height,
-        backgroundColor: backgroundColor,
+        backgroundColor: LFO_VIS_BACKGROUND,
         position: 'relative',
       }}
     >
-      <svg height={height} width={width}>
-        {isAudioShape && (
-          <>
-            <line
-              x1={xPadding}
-              y1={yPadding + height_ * 0.25}
-              x2={width - xPadding}
-              y2={yPadding + height_ * 0.25}
-              stroke={audioGridColor}
-              strokeWidth={1}
-            />
-            <line
-              x1={xPadding}
-              y1={yPadding + height_ * 0.5}
-              x2={width - xPadding}
-              y2={yPadding + height_ * 0.5}
-              stroke={audioGridColor}
-              strokeWidth={1}
-            />
-            <line
-              x1={xPadding}
-              y1={yPadding + height_ * 0.75}
-              x2={width - xPadding}
-              y2={yPadding + height_ * 0.75}
-              stroke={audioGridColor}
-              strokeWidth={1}
-            />
-          </>
-        )}
-        <polyline
-          points={
-            isAudioShape
-              ? audioWavePoints
-              : GetPoints()
-          }
-          style={{
-            fill: 'none',
-            stroke: isAudioShape ? audioWaveColor : lineColor,
-            strokeWidth: lineWidth,
-          }}
-        />
-        {isAudioShape && (
-          <rect
-            x={xPadding}
-            y={(1 - audioValue) * height_ + yPadding}
-            width={width_}
-            height={height - ((1 - audioValue) * height_ + yPadding)}
-            fill="#ffcf6633"
-          />
-        )}
-      </svg>
+      <canvas
+        ref={canvasRef}
+        aria-hidden="true"
+        style={{
+          display: 'block',
+          width: '100%',
+          height: '100%',
+          pointerEvents: 'none',
+        }}
+      />
     </div>
   )
 }
+
+export default memo(LfoVisualizer)

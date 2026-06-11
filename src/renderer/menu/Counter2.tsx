@@ -1,29 +1,42 @@
+import { memo, useEffect, useRef } from 'react'
 import { useRealtimeSelector } from '../redux/realtimeStore'
+import { StatusBarMeterSegment, StatusBarMeterTrack } from './statusBarUi'
+import { registerBeatMeterUpdater } from './beatMeterDisplay'
 
-export default function Counter2() {
-  const time = useRealtimeSelector((state) => state.time)
+function Counter2() {
+  const quantum = useRealtimeSelector((state) => state.time.quantum)
+  const segmentRefs = useRef<(HTMLDivElement | null)[]>([])
 
-  const beats = Array(time.quantum).fill(0)
-  beats[Math.floor(time.phase)] = 1 - (time.phase % 1.0)
+  useEffect(() => {
+    segmentRefs.current.length = quantum
+    return registerBeatMeterUpdater((phase, segmentCount) => {
+      const activeIndex = Math.floor(phase)
+      const activeFill = 1 - (phase % 1)
+      for (let index = 0; index < segmentCount; index++) {
+        const element = segmentRefs.current[index]
+        if (element === null) {
+          continue
+        }
+        const opacity =
+          index === activeIndex ? Math.min(1, Math.max(0, activeFill)) : 0
+        element.style.opacity = `${opacity}`
+      }
+    }, quantum)
+  }, [quantum])
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'row',
-        height: 10,
-        width: 200,
-        backgroundColor: '#0008',
-      }}
-    >
-      {beats.map((beat, index) => {
-        return (
-          <div
-            key={index}
-            style={{ flex: '1 0 0', backgroundColor: '#fff', opacity: beat }}
-          />
-        )
-      })}
-    </div>
+    <StatusBarMeterTrack title="Beat position in the current bar">
+      {Array.from({ length: quantum }, (_, index) => (
+        <StatusBarMeterSegment
+          key={index}
+          ref={(element) => {
+            segmentRefs.current[index] = element
+          }}
+          $active={0}
+        />
+      ))}
+    </StatusBarMeterTrack>
   )
 }
+
+export default memo(Counter2)

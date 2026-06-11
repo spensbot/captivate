@@ -123,6 +123,8 @@ export interface AudioInputSettings {
   enabled: boolean
   deviceId: string
   inputGain: number
+  /** Software AGC on top of manual input gain (pre-gain level tracking). */
+  autoGainControl: boolean
   useBeatClock: boolean
   beatSensitivity: number
   beatMinIntervalMs: number
@@ -138,6 +140,7 @@ export function initAudioInputSettings(): AudioInputSettings {
     enabled: false,
     deviceId: '',
     inputGain: 1,
+    autoGainControl: false,
     useBeatClock: false,
     beatSensitivity: 0.45,
     beatMinIntervalMs: 260,
@@ -160,6 +163,7 @@ export function normalizeAudioInputSettings(
       AUDIO_MIN_GAIN,
       AUDIO_MAX_GAIN
     ),
+    autoGainControl: source.autoGainControl === true,
     useBeatClock: source.useBeatClock === true,
     beatSensitivity: clamp01(
       Number.isFinite(source.beatSensitivity)

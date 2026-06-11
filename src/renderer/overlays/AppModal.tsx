@@ -1,5 +1,6 @@
 import styled from 'styled-components'
-import zIndexes from '../zIndexes'
+import zIndexes, { type AppModalStack } from '../zIndexes'
+import OverlayPortal from './OverlayPortal'
 
 export type AppModalTone = 'default' | 'danger'
 
@@ -20,6 +21,18 @@ interface Props {
   /** When set, gives the dialog a taller footprint (e.g. editor modals). */
   minHeight?: string
   maxHeight?: string
+  /**
+   * Fixed width/height from viewport (content scrolls inside; card does not
+   * resize with children).
+   */
+  fillViewport?: boolean
+  width?: string
+  height?: string
+  /**
+   * `nestedModal` when this dialog opens on top of a wizard or another AppModal
+   * (e.g. WYSIWYG emitter editor inside the model wizard).
+   */
+  stack?: AppModalStack
 }
 
 export default function AppModal({
@@ -32,27 +45,36 @@ export default function AppModal({
   maxWidth,
   minHeight,
   maxHeight,
+  fillViewport = false,
+  width,
+  height,
+  stack = 'appModal',
 }: Props) {
   if (!open) {
     return null
   }
 
   return (
-    <Root
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget && onClose !== undefined) {
-          onClose()
-        }
-      }}
-    >
+    <OverlayPortal>
+      <Root
+        $stack={stack}
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget && onClose !== undefined) {
+            onClose()
+          }
+        }}
+      >
       <Card
         $maxWidth={maxWidth}
         $minHeight={minHeight}
         $maxHeight={maxHeight}
+        $fillViewport={fillViewport}
+        $width={width}
+        $height={height}
       >
         <Title>{title}</Title>
         {message !== undefined && message.length > 0 && <Message>{message}</Message>}
-        {children}
+        {children !== undefined && children !== null && <Body>{children}</Body>}
         <Actions>
           {actions.map((action, index) => (
             <ActionButton
@@ -66,14 +88,15 @@ export default function AppModal({
           ))}
         </Actions>
       </Card>
-    </Root>
+      </Root>
+    </OverlayPortal>
   )
 }
 
-const Root = styled.div`
+const Root = styled.div<{ $stack: AppModalStack }>`
   position: fixed;
   inset: 0;
-  z-index: ${zIndexes.fullscreenOverlay + 2};
+  z-index: ${(p) => zIndexes.overlay[p.$stack]};
   background: #0008;
   display: flex;
   align-items: center;
@@ -86,12 +109,22 @@ const Card = styled.div<{
   $maxWidth?: string
   $minHeight?: string
   $maxHeight?: string
+  $fillViewport?: boolean
+  $width?: string
+  $height?: string
 }>`
   width: ${(props) =>
-    `min(${props.$maxWidth ?? '34rem'}, calc(100vw - 2rem))`};
-  min-height: ${(props) => props.$minHeight ?? 'auto'};
-  max-height: ${(props) => props.$maxHeight ?? 'calc(100vh - 2rem)'};
-  overflow: auto;
+    props.$fillViewport && props.$width !== undefined
+      ? props.$width
+      : `min(${props.$maxWidth ?? '34rem'}, calc(100vw - 2rem))`};
+  height: ${(props) =>
+    props.$fillViewport && props.$height !== undefined ? props.$height : 'auto'};
+  min-height: ${(props) =>
+    props.$fillViewport && props.$height !== undefined
+      ? props.$height
+      : props.$minHeight ?? 'auto'};
+  max-height: ${(props) => props.$maxHeight ?? 'calc(100dvh - 2rem)'};
+  overflow: hidden;
   border: 1px solid #ffffff2d;
   border-radius: 0.5rem;
   background: ${(props) => props.theme.colors.bg.primary};
@@ -100,6 +133,16 @@ const Card = styled.div<{
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
+  box-sizing: border-box;
+`
+
+const Body = styled.div`
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
 `
 
 const Title = styled.div`
@@ -119,6 +162,7 @@ const Actions = styled.div`
   justify-content: flex-end;
   gap: 0.5rem;
   margin-top: 0.2rem;
+  flex-shrink: 0;
 `
 
 const ActionButton = styled.button<{ $tone: AppModalTone }>`

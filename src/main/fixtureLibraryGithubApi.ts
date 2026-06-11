@@ -9,6 +9,12 @@ const API = 'https://api.github.com'
 
 type GitHubError = { message?: string }
 
+type GitHubContentFile = {
+  type: 'file'
+  sha: string
+  content: string
+}
+
 async function githubFetch<T>(
   path: string,
   token: string,
@@ -80,6 +86,97 @@ function libraryJsonForSubmit(serialized: string): string {
   throw new Error('Fixture JSON must include a fixtures array.')
 }
 
+function libraryQualityScore(jsonText: string): number {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(jsonText)
+  } catch {
+    return 0
+  }
+  const root = parsed as {
+    fixtures?: Array<{
+      channels?: unknown[]
+      subFixtures?: unknown[]
+      model?: {
+        useCustomEmitterLayout?: unknown
+        customEmitters?: unknown[]
+        kind?: unknown
+      }
+      modes?: unknown[]
+      capabilities?: unknown[]
+    }>
+  }
+  const fixtures = Array.isArray(root.fixtures) ? root.fixtures : []
+  if (fixtures.length === 0) {
+    return 0
+  }
+
+  let score = 0
+  for (const fixture of fixtures) {
+    const channels = Array.isArray(fixture.channels) ? fixture.channels.length : 0
+    const subFixtures = Array.isArray(fixture.subFixtures)
+      ? fixture.subFixtures.length
+      : 0
+    const modes = Array.isArray(fixture.modes) ? fixture.modes.length : 0
+    const capabilities = Array.isArray(fixture.capabilities)
+      ? fixture.capabilities.length
+      : 0
+    const customEmitters = Array.isArray(fixture.model?.customEmitters)
+      ? fixture.model?.customEmitters.length
+      : 0
+    const customLayout = fixture.model?.useCustomEmitterLayout === true ? 1 : 0
+    const explicitModelKind =
+      typeof fixture.model?.kind === 'string' && fixture.model.kind !== 'auto'
+        ? 1
+        : 0
+
+    score += channels * 8
+    score += subFixtures * 14
+    score += modes * 4
+    score += capabilities * 3
+    score += customEmitters * 2
+    score += customLayout * 18
+    score += explicitModelKind * 8
+  }
+  return score
+}
+
+function archivePathForDuplicate(filePath: string): string {
+  const match = filePath.match(/^fixtures\/([^/]+)\/(.+)\.json$/)
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-')
+  if (match === null) {
+    return `fixtures/_archive/replaced-${stamp}.json`
+  }
+  const manufacturer = match[1]
+  const model = match[2]
+  return `fixtures/_archive/${manufacturer}/${model}/${stamp}.json`
+}
+
+async function getContentIfExists(
+  token: string,
+  owner: string,
+  repo: string,
+  path: string,
+  ref: string
+): Promise<GitHubContentFile | null> {
+  try {
+    const content = await githubFetch<GitHubContentFile | GitHubError>(
+      `/repos/${owner}/${repo}/contents/${path}?ref=${encodeURIComponent(ref)}`,
+      token
+    )
+    if ((content as GitHubContentFile).type === 'file') {
+      return content as GitHubContentFile
+    }
+    return null
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    if (message.includes('GitHub API 404')) {
+      return null
+    }
+    throw err
+  }
+}
+
 export async function createPullRequestForFixture(
   token: string,
   input: FixtureLibrarySubmitInput
@@ -112,14 +209,45 @@ export async function createPullRequestForFixture(
     }
   )
 
+  const existing = await getContentIfExists(token, owner, repo, filePath, base)
+  if (existing !== null) {
+    const existingText = Buffer.from(existing.content, 'base64').toString('utf8')
+    const incomingScore = libraryQualityScore(content)
+    const existingScore = libraryQualityScore(existingText)
+    if (incomingScore <= existingScore) {
+      throw new Error(
+        'A fixture with this manufacturer/model already exists in the community library and this submission does not appear to improve it.'
+      )
+    }
+
+    const archivePath = archivePathForDuplicate(filePath)
+    const archiveContentBase64 = Buffer.from(existingText, 'utf8').toString('base64')
+    await githubFetch(
+      `/repos/${owner}/${repo}/contents/${archivePath}`,
+      token,
+      {
+        method: 'PUT',
+        body: JSON.stringify({
+          message: `Archive replaced fixture: ${input.manufacturer} — ${input.model}`,
+          content: archiveContentBase64,
+          branch,
+        }),
+      }
+    )
+  }
+
   await githubFetch(
     `/repos/${owner}/${repo}/contents/${filePath}`,
     token,
     {
       method: 'PUT',
       body: JSON.stringify({
-        message: `Add fixture: ${input.manufacturer} — ${input.model}`,
+        message:
+          existing === null
+            ? `Add fixture: ${input.manufacturer} — ${input.model}`
+            : `Replace fixture with improved version: ${input.manufacturer} — ${input.model}`,
         content: contentBase64,
+        sha: existing?.sha,
         branch,
       }),
     }
@@ -140,6 +268,9 @@ export async function createPullRequestForFixture(
           'GitHub Actions will validate this file and merge the pull request automatically (no manual approval).',
           '',
           `**File:** \`${filePath}\``,
+          ...(existing === null
+            ? []
+            : ['**Duplicate handling:** existing file was archived and replaced by this improved submission.']),
         ].join('\n'),
       }),
     }

@@ -36,16 +36,28 @@ import {
 import { FEET_PER_METER, METERS_PER_FOOT } from '../../shared/stage'
 import FixtureEmitterLayoutEditor from './FixtureEmitterLayoutEditor'
 import AppModal from '../overlays/AppModal'
+import { FixtureModelHelpButton } from './fixtureEditorHelpButtons'
 
 interface Props {
   fixtureType: FixtureType
+  /** Hide title and intro (e.g. inside the model layout wizard). */
+  hideHeader?: boolean
+  /** Omit outer panel chrome when nested in another container. */
+  bare?: boolean
 }
 
-export default function FixtureModelEditor({ fixtureType }: Props) {
+export default function FixtureModelEditor({
+  fixtureType,
+  hideHeader = false,
+  bare = false,
+}: Props) {
   const dispatch = useDispatch()
   const [emitterLayoutOpen, setEmitterLayoutOpen] = useState(false)
   const stageUnit = useDmxSelector((state) => state.stage.unit)
-  const model = normalizeFixtureModelConfig(fixtureType.model, fixtureType)
+  const model = normalizeFixtureModelConfig(fixtureType.model, fixtureType, {
+    preserveCustomEmitterLayout:
+      fixtureType.model?.useCustomEmitterLayout === true,
+  })
   const effectiveKind = model.kind === 'auto' ? inferFixtureModelKind(fixtureType) : model.kind
   const hasFocusChannel = fixtureTypeHasFocusChannel(fixtureType)
   const showMoverBeamAngleField =
@@ -116,7 +128,9 @@ export default function FixtureModelEditor({ fixtureType }: Props) {
     dispatch(
       updateFixtureType({
         ...fixtureType,
-        model: normalizeFixtureModelConfig(nextModel, fixtureType),
+        model: normalizeFixtureModelConfig(nextModel, fixtureType, {
+          preserveCustomEmitterLayout: true,
+        }),
       })
     )
   }
@@ -127,13 +141,22 @@ export default function FixtureModelEditor({ fixtureType }: Props) {
     }
   }, [emitterLayoutOpen, model.useCustomEmitterLayout])
 
+  const Shell = bare ? BareRoot : Root
+
   return (
-    <Root>
-      <Header>Fixture Model</Header>
-      <Hint>
-        Choose a generic model and map emitters. Emitters are generated per
-        subfixture when subfixtures exist.
-      </Hint>
+    <Shell>
+      {!hideHeader && (
+        <>
+          <HeaderRow>
+            <Header>Fixture Model</Header>
+            <FixtureModelHelpButton />
+          </HeaderRow>
+          <Hint>
+            Choose a generic model and map emitters. Emitters are generated per
+            subfixture when subfixtures exist.
+          </Hint>
+        </>
+      )}
       <Row>
         <Label>Type</Label>
         <RowControl>
@@ -617,11 +640,14 @@ export default function FixtureModelEditor({ fixtureType }: Props) {
         </Row>
       )}
       <AppModal
+        stack="nestedModal"
         open={model.useCustomEmitterLayout && emitterLayoutOpen}
         title="WYSIWYG Emitter Layout Editor"
-        maxWidth="min(1680px, calc(100vw - 1.5rem))"
-        minHeight="min(900px, calc(100vh - 3rem))"
-        maxHeight="calc(100vh - 1.5rem)"
+        fillViewport
+        width="min(1680px, calc(100vw - 2rem))"
+        height="calc(100dvh - 2rem)"
+        maxWidth="min(1680px, calc(100vw - 2rem))"
+        maxHeight="calc(100dvh - 2rem)"
         onClose={() => setEmitterLayoutOpen(false)}
         actions={[
           {
@@ -631,6 +657,7 @@ export default function FixtureModelEditor({ fixtureType }: Props) {
         ]}
       >
         <FixtureEmitterLayoutEditor
+          inModal
           fixtureType={fixtureType}
           model={model}
           onChange={(nextModel) =>
@@ -640,9 +667,15 @@ export default function FixtureModelEditor({ fixtureType }: Props) {
           }
         />
       </AppModal>
-    </Root>
+    </Shell>
   )
 }
+
+const BareRoot = styled.div`
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+`
 
 const Root = styled.div`
   background-color: ${(props) => props.theme.colors.bg.darker};
@@ -654,9 +687,15 @@ const Root = styled.div`
   box-sizing: border-box;
 `
 
+const HeaderRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-bottom: 0.3rem;
+`
+
 const Header = styled.div`
   font-size: 1rem;
-  margin-bottom: 0.3rem;
 `
 
 const Hint = styled.div`

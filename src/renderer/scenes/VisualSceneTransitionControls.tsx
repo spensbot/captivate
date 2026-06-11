@@ -3,6 +3,7 @@ import styled from 'styled-components'
 import { useControlSelector } from '../redux/store'
 import { setActiveVisualSceneTransition } from '../redux/controlSlice'
 import { VisualSceneTransitionType } from '../../shared/Scenes'
+import { VisualSceneTransitionHelpButton } from './sceneHelpButtons'
 
 const transitionOptions: VisualSceneTransitionType[] = [
   'cut',
@@ -19,7 +20,10 @@ export default function VisualSceneTransitionControls() {
 
   return (
     <Root>
-      <Header>Scene Transition</Header>
+      <HeaderRow>
+        <Header>Scene Transition</Header>
+        <VisualSceneTransitionHelpButton />
+      </HeaderRow>
       <Row>
         <Label>Blend</Label>
         <Select
@@ -77,6 +81,12 @@ const Root = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+`
+
+const HeaderRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
 `
 
 const Header = styled.div`

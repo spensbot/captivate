@@ -19,6 +19,7 @@ import GroupSelection from './GroupSelection'
 import AddIcon from '@mui/icons-material/Add'
 import { useDispatch } from 'react-redux'
 import { addSplitScene } from 'renderer/redux/controlSlice'
+import { SplitScenesHelpButton } from './sceneHelpButtons'
 
 export default function SplitScenes() {
   const dispatch = useDispatch()
@@ -33,7 +34,10 @@ export default function SplitScenes() {
 
   return (
     <Root>
-      <Title>Splits</Title>
+      <TitleRow>
+        <Title>Splits</Title>
+        <SplitScenesHelpButton />
+      </TitleRow>
       <SplitList>
         {splitSceneCount < 1 ? (
           <EmptyState>No splits yet. Add a split to start mapping groups and params.</EmptyState>
@@ -42,7 +46,11 @@ export default function SplitScenes() {
         )}
         <AddSplitFooter>
           <AddSplitDivider />
-          <AddSplitButton type="button" onClick={onAddSplitScene} title="Add split">
+          <AddSplitButton
+            type="button"
+            onClick={onAddSplitScene}
+            title="Add another section for a different group of lights"
+          >
             <AddIcon fontSize="small" />
             <span>Add Split</span>
           </AddSplitButton>
@@ -63,8 +71,14 @@ const Root = styled.div`
   overflow: hidden;
 `
 
-const Title = styled.div`
+const TitleRow = styled.div`
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+`
+
+const Title = styled.div`
   font-size: ${(props) => props.theme.font.size.h1};
   color: ${(props) => props.theme.colors.text.primary};
 `

@@ -11,6 +11,7 @@ import {
 } from 'renderer/redux/store'
 import styled from 'styled-components'
 import Popup from '../base/Popup'
+import { PopupTitleRow } from '../base/SectionHelpPopover'
 import { useDispatch } from 'react-redux'
 import {
   DefaultParam,
@@ -39,6 +40,7 @@ import { sumAtmosSliders } from '../atmospherics/atmosSliderAssignments'
 import { visSplitIdx } from '../scenes/splitUiVisibility'
 import { getSplitAuxColorGates } from '../../shared/splitAuxColorGates'
 import type { AuxColorGates } from '../../shared/splitAuxColorGates'
+import { AddParamsHelpButton } from '../scenes/sceneHelpButtons'
 
 interface Props {
   splitIndex: number
@@ -337,7 +339,6 @@ export default function ParamAddButton({ splitIndex }: Props) {
 
       const groupedFixture = new Set(
         fixture.groups
-          .concat(fixtureType.groups)
           .map((group) => group.trim())
           .filter((group) => group.length > 0)
       )
@@ -445,6 +446,7 @@ export default function ParamAddButton({ splitIndex }: Props) {
     <Root>
       <IconButton
         size="small"
+        title="Add base parameters to this split"
         onClick={(e) => {
           e.preventDefault()
           setIsOpen(true)
@@ -453,7 +455,15 @@ export default function ParamAddButton({ splitIndex }: Props) {
         <AddIcon />
       </IconButton>
       {isOpen && (
-        <Popup title="Add Params" onClose={() => setIsOpen(false)}>
+        <Popup
+          title={
+            <PopupTitleRow>
+              <span>Add Params</span>
+              <AddParamsHelpButton />
+            </PopupTitleRow>
+          }
+          onClose={() => setIsOpen(false)}
+        >
           {options.map((option) => {
             const icon = icons[option]
             return (

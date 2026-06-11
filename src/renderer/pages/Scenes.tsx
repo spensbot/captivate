@@ -5,6 +5,7 @@ import SceneSelection from '../scenes/SceneSelection'
 import SplitPane from '../base/SplitPane'
 import styled from 'styled-components'
 import SplitScenes from 'renderer/scenes/SplitScenes'
+import { LfoModulatorsHelpButton } from '../scenes/sceneHelpButtons'
 
 export default function Scenes() {
   const splitPaneStyle: React.CSSProperties = {
@@ -30,6 +31,10 @@ export default function Scenes() {
         </Pane>
         <Pane>
           <Column>
+            <ModulatorsHeader>
+              <ModulatorsTitle>LFO Modulators</ModulatorsTitle>
+              <LfoModulatorsHelpButton />
+            </ModulatorsHeader>
             <ModulatorsHost>
               <Modulators />
             </ModulatorsHost>
@@ -74,6 +79,19 @@ const ModulatorsHost = styled.div`
   flex-shrink: 0;
   min-width: 0;
   width: 100%;
+`
+
+const ModulatorsHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex-shrink: 0;
+  margin-bottom: 0.35rem;
+`
+
+const ModulatorsTitle = styled.div`
+  font-size: ${(props) => props.theme.font.size.h1};
+  color: ${(props) => props.theme.colors.text.primary};
 `
 
 const Sp = styled.div`

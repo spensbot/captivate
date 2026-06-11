@@ -414,33 +414,23 @@ function Fields({ ch, fixtureID, channelIndex }: Props) {
     }
 
     if (channel.type === 'colorMap') {
-      if (options.compact) {
-        return (
-          <InfoText>
-            Color map selected. Edit color map entries on a dedicated channel row.
-          </InfoText>
-        )
-      }
-
       return (
         <ColorMapChannel
           ch={channel}
           fixtureID={fixtureID}
           channelIndex={channelIndex}
+          onChange={options.compact ? (newChannel) => onChange(newChannel) : undefined}
         />
       )
     }
 
     if (channel.type === 'goboMap') {
-      if (options.compact) {
-        return (
-          <InfoText>
-            Gobo map selected. Edit gobo entries on a dedicated channel row.
-          </InfoText>
-        )
-      }
-
-      return <GoboMapChannel ch={channel} onChange={(newChannel) => onChange(newChannel)} />
+      return (
+        <GoboMapChannel
+          ch={channel}
+          onChange={(newChannel) => onChange(newChannel)}
+        />
+      )
     }
 
     return null
@@ -485,7 +475,7 @@ function Fields({ ch, fixtureID, channelIndex }: Props) {
                       ranges: nextRanges,
                     })
                   }}
-                  title="Remove range"
+                  title="Remove split range"
                 >
                   <RemoveIcon />
                 </IconButton>
@@ -560,7 +550,7 @@ function Fields({ ch, fixtureID, channelIndex }: Props) {
         <Row>
           <IconButton
             size="small"
-            title="Add range"
+            title="Add split range (DMX band → sub-type)"
             onClick={() => {
               const rangeCount = ch.ranges.length
               const previousMax =

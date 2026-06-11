@@ -43,6 +43,7 @@ import {
 } from 'shared/wledDiscovery'
 import type { DiagnosticsEvent } from '../shared/diagnostics'
 import type {
+  DebugLogExportResult,
   TelemetryExportResult,
   TelemetryMark,
   TelemetrySnapshot,
@@ -230,6 +231,10 @@ export function send_reconcile_video_enabled() {
 export function send_sync_led_sidebar_menu(enabled: boolean) {
   ipcRenderer.send(ipc_channels.sync_led_sidebar_menu, enabled)
 }
+
+export function send_sync_autosave_menu(enabled: boolean) {
+  ipcRenderer.send(ipc_channels.sync_autosave_menu, enabled)
+}
 export async function requestAppQuit() {
   await ipcRenderer.invoke(ipc_channels.request_app_quit)
 }
@@ -289,6 +294,12 @@ export async function exportTelemetrySnapshot() {
   return (await ipcRenderer.invoke(
     ipc_channels.telemetry_export_snapshot
   )) as TelemetryExportResult
+}
+
+export async function exportDebugLog() {
+  return (await ipcRenderer.invoke(
+    ipc_channels.telemetry_export_debug_log
+  )) as DebugLogExportResult
 }
 
 export async function getAppAboutInfo() {

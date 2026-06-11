@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.1.0
+
+### Projects & fixtures
+
+- File-based projects (`.cap` + `.cfx`), New Project dialog, file autosave, and Recent Projects.
+- Subfixtures, emitter layout editor improvements, and fixture mapping/placement polish.
+
+### Show engine & UI
+
+- True transport stop/play freeze with live mixer, audio, and patching while paused.
+- Instant DMX response for master, blackout, split params, and mixer overrides.
+- Smoother engine/UI timing, engine-synced beat meter and mixer display, canvas LFO graph.
+- Redesigned status bar; wide master fader and aligned blackout control.
+- Lighting 3D preview improvements and detached preview window.
+
+### Fixes
+
+- Transport resume jump, live control lag, UI stutter, beat gauge drift, mixer display lag, and layout regressions.
+- Windows/macOS packaging and CI build fixes.
+
 ## 1.0.1
 
 ### Community fixture library

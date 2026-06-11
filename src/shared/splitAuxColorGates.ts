@@ -71,7 +71,6 @@ export function getSplitAuxColorGates(
 
     const groupedFixture = new Set(
       fixture.groups
-        .concat(fixtureType.groups)
         .map((group) => group.trim())
         .filter((group) => group.length > 0)
     )

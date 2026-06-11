@@ -5,6 +5,7 @@ import {
   windowAxes,
 } from './window'
 import { ColorChannel, ColorKind } from './dmxColors'
+import { METERS_PER_FOOT, StageDimensions, stageAxisLengthFt } from './stage'
 import { nanoid } from 'nanoid'
 
 export const DMX_MIN_VALUE = 0
@@ -569,6 +570,11 @@ export type FixtureEmitterDefinition = {
   shape: FixtureEmitterShape
   channelIndexes: number[]
   /**
+   * When the fixture type has subfixtures, which subfixture this emitter drives.
+   * Channel indexes should be a subset of that subfixture's channels.
+   */
+  subFixtureIndex?: number
+  /**
    * Rectangle only: horizontal extent on the fixture face (meters), matching
    * the layout editor X axis and Three.js emitter box X.
    */
@@ -578,6 +584,8 @@ export type FixtureEmitterDefinition = {
    * the layout editor Y axis and Three.js emitter box Y.
    */
   rectHeightM?: number
+  /** Optional editor-only grouping id (WYSIWYG multi-select / move together). */
+  groupId?: string
 }
 
 export const fixtureModelKinds: FixtureModelKind[] = [
@@ -760,14 +768,64 @@ export function initFixtureEmitterDefinition(
     id: nanoid(),
     x: 0.5,
     y: 0.5,
-    z: 0.5,
+    z: 1,
     size: EMITTER_DEFAULT_DIAMETER_M,
     shape: 'disc',
     channelIndexes,
   }
 }
 
-/** Even spacing on a ring (round PAR front face, normalized 0–1). Preserves ids/channels/z/shape. */
+/** Same disc diameter for every emitter; centers may shift slightly for face inset. */
+export function fitUniformDiscEmittersToFace(
+  sourceEmitters: FixtureEmitterDefinition[],
+  targetPositions: { x: number; y: number }[],
+  faceWidthM: number,
+  faceHeightM: number,
+  packingGapRatio: number = 0.1
+): FixtureEmitterDefinition[] {
+  if (sourceEmitters.length !== targetPositions.length) {
+    return sourceEmitters
+  }
+  let uniformDiameterM = Number.POSITIVE_INFINITY
+  for (let index = 0; index < sourceEmitters.length; index++) {
+    const target = targetPositions[index]!
+    uniformDiameterM = Math.min(
+      uniformDiameterM,
+      maxDiscDiameterMForFaceSlot(
+        clampNormalized(target.x),
+        clampNormalized(target.y),
+        targetPositions,
+        index,
+        faceWidthM,
+        faceHeightM,
+        AUTO_EMITTER_FACE_EDGE_RATIO,
+        packingGapRatio
+      )
+    )
+  }
+  uniformDiameterM = clampEmitterDiameterM(
+    Math.max(EMITTER_DIAMETER_MIN_M, uniformDiameterM)
+  )
+  return sourceEmitters.map((emitter, index) => {
+    const target = targetPositions[index]!
+    const centered = clampDiscCenterNormalizedForFaceInset(
+      clampNormalized(target.x),
+      clampNormalized(target.y),
+      uniformDiameterM,
+      faceWidthM,
+      faceHeightM,
+      AUTO_EMITTER_FACE_EDGE_RATIO
+    )
+    return {
+      ...emitter,
+      x: centered.x,
+      y: centered.y,
+      size: uniformDiameterM,
+    }
+  })
+}
+
+/** Concentric PAR rings on the round face (1 + 6 + 12 + … when applicable). Preserves ids/channels/z/shape. */
 export function layoutEmittersParRing(
   emitters: FixtureEmitterDefinition[],
   faceWidthM?: number,
@@ -775,10 +833,15 @@ export function layoutEmittersParRing(
 ): FixtureEmitterDefinition[] {
   const n = emitters.length
   if (n === 0) return emitters
-  const pos = normalizedParRingEmitterPositions(n)
-  const laid = emitters.map((em, i) => {
-    const p = pos[i] ?? { x: 0.5, y: 0.5 }
-    return { ...em, x: p.x, y: p.y }
+  const faceD = Math.max(
+    0.05,
+    faceWidthM ?? faceHeightM ?? PAR_DEFAULT_CYLINDER_DIAMETER_M
+  )
+  const { positions, diameterM, shellCounts } = solveParConcentricRingLayout(n, faceD)
+  const useUniformDiscSize = isParDiamond3Ring9ShellCounts(shellCounts)
+  let laid = emitters.map((em, i) => {
+    const p = positions[i] ?? { x: 0.5, y: 0.5 }
+    return { ...em, x: p.x, y: p.y, size: diameterM }
   })
   if (
     faceWidthM !== undefined &&
@@ -786,7 +849,25 @@ export function layoutEmittersParRing(
     Number.isFinite(faceWidthM) &&
     Number.isFinite(faceHeightM)
   ) {
-    return fitEmitterLayoutToFace(laid, faceWidthM, faceHeightM)
+    const targetPositions = laid.map((emitter) => ({
+      x: emitter.x,
+      y: emitter.y,
+    }))
+    laid = useUniformDiscSize
+      ? fitUniformDiscEmittersToFace(
+          laid,
+          targetPositions,
+          faceWidthM,
+          faceHeightM,
+          PAR_RING_EMITTER_GAP_RATIO
+        )
+      : autoResizeEmittersToFitFace(
+          laid,
+          targetPositions,
+          faceWidthM,
+          faceHeightM,
+          PAR_RING_EMITTER_GAP_RATIO
+        )
   }
   return laid
 }
@@ -1160,7 +1241,8 @@ export function autoResizeEmittersToFitFace(
   sourceEmitters: FixtureEmitterDefinition[],
   targetPositions: { x: number; y: number }[],
   faceWidthM: number,
-  faceHeightM: number
+  faceHeightM: number,
+  packingGapRatio: number = AUTO_EMITTER_FACE_PACKING_RATIO
 ): FixtureEmitterDefinition[] {
   if (sourceEmitters.length !== targetPositions.length) {
     return sourceEmitters
@@ -1184,7 +1266,7 @@ export function autoResizeEmittersToFitFace(
           faceWidthM,
           faceHeightM,
           AUTO_EMITTER_FACE_EDGE_RATIO,
-          AUTO_EMITTER_FACE_PACKING_RATIO
+          packingGapRatio
         )
       )
     }
@@ -1227,7 +1309,7 @@ export function autoResizeEmittersToFitFace(
             faceWidthM,
             faceHeightM,
             AUTO_EMITTER_FACE_EDGE_RATIO,
-            AUTO_EMITTER_FACE_PACKING_RATIO
+            packingGapRatio
           )
         )
       )
@@ -1429,12 +1511,10 @@ export function defaultEmitterDiameterMParCylinderRing(
   n: number,
   bodyDiameterM: number
 ): number {
-  if (n <= 1) {
-    return EMITTER_DEFAULT_DIAMETER_M
-  }
-  const R = 0.38 * bodyDiameterM * PAR_EMITTER_VISUAL_FACE_SCALE
-  const chord = 2 * R * Math.sin(Math.PI / n)
-  return clampEmitterDiameterM(chord * PAR_EMITTER_FACE_FILL_RATIO)
+  return parRingEmitterDiameterM(
+    n,
+    Math.max(0.05, bodyDiameterM)
+  )
 }
 
 export function defaultEmitterDiameterMParCylinderHoneycomb(
@@ -1602,25 +1682,443 @@ function pickHoneycombPositions(
   return { ordered, dx: spacing }
 }
 
-/** Normalized (0–1) PAR ring positions for `n` emitters on the round face. */
-export function normalizedParRingEmitterPositions(
-  n: number
-): { x: number; y: number }[] {
+/** Tight packing gap for PAR concentric ring layouts (~2.5% between emitter edges). */
+export const PAR_RING_EMITTER_GAP_RATIO = 0.025
+
+const PAR_RING_EDGE_INSET_RATIO = 0.012
+const PAR_RING_HEX_STAGGER = Math.sqrt(3) / 2
+
+export type ParConcentricRingLayout = {
+  positions: { x: number; y: number }[]
+  diameterM: number
+  shellCounts: number[]
+}
+
+/**
+ * Greedy decomposition into shells of 6, 12, 18, … (6×k), allowing a final
+ * partial shell of 3–5 only when no better packing exists.
+ */
+function decomposeIntoShells(ledCount: number): number[] | null {
+  if (ledCount <= 0) {
+    return null
+  }
+  if (ledCount <= 6) {
+    return [ledCount]
+  }
+
+  const shells: number[] = []
+  let remaining = ledCount
+  let shellIndex = 1
+  while (remaining > 0) {
+    const fullShell = 6 * shellIndex
+    if (remaining < fullShell) {
+      if (remaining >= 3) {
+        shells.push(remaining)
+        return shells
+      }
+      return null
+    }
+    shells.push(fullShell)
+    remaining -= fullShell
+    shellIndex += 1
+  }
+  return shells
+}
+
+function scoreParRingShellCounts(shellCounts: number[]): number {
+  if (shellCounts.length === 0) {
+    return Number.NEGATIVE_INFINITY
+  }
+  if (shellCounts.length === 1 && shellCounts[0] === 1) {
+    return 1000
+  }
+  if (shellCounts.length === 2 && shellCounts[0] === 3 && shellCounts[1] === 9) {
+    return 1000
+  }
+
+  const hasCenter = shellCounts[0] === 1 && shellCounts.length > 1
+  const rings = hasCenter ? shellCounts.slice(1) : shellCounts
+  let score = 0
+
+  if (rings.length === 1) {
+    score += 35
+  } else if (rings.every((count) => count % 6 === 0 && count >= 6)) {
+    score += 45
+  }
+
+  if (hasCenter && rings.every((count) => count % 6 === 0 && count >= 6)) {
+    score += 30
+  }
+
+  for (let i = 0; i < rings.length; i++) {
+    const count = rings[i]!
+    const isOuter = i === rings.length - 1
+    if (count % 6 === 0 && count >= 6) {
+      score += 40
+    } else if (count >= 3) {
+      score += 8
+    }
+    if (isOuter && count % 6 !== 0 && count > 1) {
+      score -= 120
+    } else if (!isOuter && count % 6 !== 0 && count > 1) {
+      score -= 40
+    }
+  }
+
+  return score
+}
+
+/**
+ * Shell sizes inside→out for PAR ring layout: optional center (1) plus rings of
+ * 6, 12, 18, … LEDs (6×k), or 3+9 (diamond center + outer ring for 12). Picks the most symmetric packing.
+ */
+function parRingShellCounts(n: number): number[] {
   if (n <= 0) {
     return []
   }
-  const rx = 0.42
-  const ry = 0.42
   if (n === 1) {
-    return [{ x: 0.5, y: 0.5 }]
+    return [1]
   }
-  return Array.from({ length: n }, (_, i) => {
-    const t = (2 * Math.PI * i) / n - Math.PI / 2
+  if (n <= 6) {
+    return [n]
+  }
+
+  const candidates: number[][] = [[n]]
+
+  if (n === 12) {
+    candidates.push([3, 9])
+  }
+
+  const withoutCenter = decomposeIntoShells(n)
+  if (withoutCenter !== null) {
+    candidates.push(withoutCenter)
+  }
+
+  const inner = decomposeIntoShells(n - 1)
+  if (inner !== null) {
+    candidates.push([1, ...inner])
+  }
+
+  let best = candidates[0]!
+  let bestScore = scoreParRingShellCounts(best)
+  for (let i = 1; i < candidates.length; i++) {
+    const cand = candidates[i]!
+    const s = scoreParRingShellCounts(cand)
+    if (s > bestScore) {
+      bestScore = s
+      best = cand
+    }
+  }
+  return best
+}
+
+function parRingPositionsOnCircle(
+  count: number,
+  radius: number,
+  cx: number,
+  cy: number,
+  startAngle: number
+): { x: number; y: number }[] {
+  if (count <= 0) {
+    return []
+  }
+  if (count === 1) {
+    return [{ x: clampNormalized(cx), y: clampNormalized(cy) }]
+  }
+  return Array.from({ length: count }, (_, i) => {
+    const t = startAngle + (2 * Math.PI * i) / count
     return {
-      x: clampNormalized(0.5 + rx * Math.cos(t)),
-      y: clampNormalized(0.5 + ry * Math.sin(t)),
+      x: clampNormalized(cx + radius * Math.cos(t)),
+      y: clampNormalized(cy + radius * Math.sin(t)),
     }
   })
+}
+
+function buildParRingRadiiNorm(
+  ringCounts: number[],
+  hasCenter: boolean,
+  dNorm: number,
+  fill: number,
+  maxCenterR: number
+): number[] | null {
+  if (ringCounts.length === 0) {
+    return null
+  }
+  const radii: number[] = []
+  const hexStep = dNorm * PAR_RING_HEX_STAGGER * fill
+
+  for (let i = 0; i < ringCounts.length; i++) {
+    const count = ringCounts[i]!
+    let r: number
+
+    if (hasCenter && i === 0) {
+      r = dNorm * fill
+    } else if (!hasCenter && ringCounts.length === 1) {
+      r = maxCenterR
+    } else if (i === 0) {
+      r = dNorm * fill
+    } else {
+      r = radii[i - 1]! + hexStep
+    }
+
+    if (count > 1) {
+      const tangentialMin = (dNorm * fill) / (2 * Math.sin(Math.PI / count))
+      r = Math.max(r, tangentialMin)
+      const chord = 2 * r * Math.sin(Math.PI / count)
+      if (chord + 1e-9 < dNorm * fill) {
+        return null
+      }
+    }
+
+    if (r > maxCenterR + 1e-9) {
+      return null
+    }
+    radii.push(r)
+  }
+
+  const outer = radii[radii.length - 1]!
+  if (ringCounts.length > 1 && outer > 0 && outer < maxCenterR * 0.985) {
+    const scale = maxCenterR / outer
+    for (let i = 0; i < radii.length; i++) {
+      radii[i] = radii[i]! * scale
+      const count = ringCounts[i]!
+      if (count > 1) {
+        const chord = 2 * radii[i]! * Math.sin(Math.PI / count)
+        if (chord + 1e-9 < dNorm * fill) {
+          return null
+        }
+      }
+      if (radii[i]! > maxCenterR + 1e-9) {
+        return null
+      }
+    }
+  }
+
+  return radii
+}
+
+function assembleParRingPositions(
+  hasCenter: boolean,
+  ringCounts: number[],
+  radii: number[]
+): { x: number; y: number }[] {
+  const cx = 0.5
+  const cy = 0.5
+  const positions: { x: number; y: number }[] = []
+  if (hasCenter) {
+    positions.push({ x: cx, y: cy })
+  }
+  for (let ringIndex = 0; ringIndex < ringCounts.length; ringIndex++) {
+    const count = ringCounts[ringIndex]!
+    const r = radii[ringIndex]!
+    const stagger = ringIndex % 2 === 1 && count > 1 ? Math.PI / count : 0
+    positions.push(
+      ...parRingPositionsOnCircle(
+        count,
+        r,
+        cx,
+        cy,
+        -Math.PI / 2 + stagger
+      )
+    )
+  }
+  return positions
+}
+
+function tryBuildParRingAtDiameterNorm(
+  hasCenter: boolean,
+  ringCounts: number[],
+  dNorm: number,
+  fill: number
+): { positions: { x: number; y: number }[] } | null {
+  const half = dNorm / 2
+  const maxCenterR = 0.5 - PAR_RING_EDGE_INSET_RATIO - half
+  if (maxCenterR <= 0) {
+    return null
+  }
+  const radii = buildParRingRadiiNorm(
+    ringCounts,
+    hasCenter,
+    dNorm,
+    fill,
+    maxCenterR
+  )
+  if (radii === null) {
+    return null
+  }
+  return {
+    positions: assembleParRingPositions(hasCenter, ringCounts, radii),
+  }
+}
+
+function isParDiamond3Ring9ShellCounts(shellCounts: number[]): boolean {
+  return (
+    shellCounts.length === 2 && shellCounts[0] === 3 && shellCounts[1] === 9
+  )
+}
+
+/** 3 LEDs in an equilateral triangle (diamond) + 9 on an outer ring — common 12-LED PAR. */
+function tryBuildParDiamond3Ring9AtDiameterNorm(
+  dNorm: number,
+  fill: number
+): { positions: { x: number; y: number }[] } | null {
+  const half = dNorm / 2
+  const maxOuterR = 0.5 - PAR_RING_EDGE_INSET_RATIO - half
+  if (maxOuterR <= 0) {
+    return null
+  }
+
+  const cx = 0.5
+  const cy = 0.5
+  const centerDist = dNorm * fill
+  const rInner = centerDist / Math.sqrt(3)
+
+  const inner: { x: number; y: number }[] = []
+  for (let i = 0; i < 3; i++) {
+    const t = -Math.PI / 2 + (2 * Math.PI * i) / 3
+    inner.push({
+      x: clampNormalized(cx + rInner * Math.cos(t)),
+      y: clampNormalized(cy + rInner * Math.sin(t)),
+    })
+  }
+
+  let rOuter = rInner + centerDist
+  const tangentialMin = (dNorm * fill) / (2 * Math.sin(Math.PI / 9))
+  rOuter = Math.max(rOuter, tangentialMin)
+  if (rOuter > maxOuterR + 1e-9) {
+    return null
+  }
+
+  const outer = parRingPositionsOnCircle(9, rOuter, cx, cy, -Math.PI / 2)
+  return { positions: [...inner, ...outer] }
+}
+
+function solveParDiamond3Ring9Layout(
+  faceDiameterM: number,
+  shellCounts: number[]
+): ParConcentricRingLayout {
+  const fill = 1 - PAR_RING_EMITTER_GAP_RATIO
+  const faceD = Math.max(0.05, faceDiameterM)
+  let dLo = EMITTER_DIAMETER_MIN_M / faceD
+  let dHi = 0.48
+  let bestPositions: { x: number; y: number }[] = []
+  let bestDNorm = dLo
+
+  for (let iter = 0; iter < 64; iter++) {
+    const dNorm = (dLo + dHi) / 2
+    const built = tryBuildParDiamond3Ring9AtDiameterNorm(dNorm, fill)
+    if (built !== null) {
+      dLo = dNorm
+      bestPositions = built.positions
+      bestDNorm = dNorm
+    } else {
+      dHi = dNorm
+    }
+  }
+
+  if (bestPositions.length === 0) {
+    bestPositions = tryBuildParDiamond3Ring9AtDiameterNorm(dLo, fill)?.positions ?? []
+    bestDNorm = dLo
+  }
+
+  return {
+    positions: bestPositions,
+    diameterM: clampEmitterDiameterM(bestDNorm * faceD),
+    shellCounts,
+  }
+}
+
+/** Solve concentric ring centers and a uniform disc diameter that fills the round face. */
+export function solveParConcentricRingLayout(
+  n: number,
+  faceDiameterM: number
+): ParConcentricRingLayout {
+  const shellCounts = parRingShellCounts(n)
+  const hasCenter = shellCounts[0] === 1 && shellCounts.length > 1
+  const ringCounts = hasCenter ? shellCounts.slice(1) : shellCounts
+  const fill = 1 - PAR_RING_EMITTER_GAP_RATIO
+  const faceD = Math.max(0.05, faceDiameterM)
+
+  if (n <= 0) {
+    return {
+      positions: [],
+      diameterM: EMITTER_DEFAULT_DIAMETER_M,
+      shellCounts,
+    }
+  }
+
+  if (n === 1) {
+    const dNorm = Math.min(
+      0.38,
+      (0.5 - PAR_RING_EDGE_INSET_RATIO * 2) * fill
+    )
+    return {
+      positions: [{ x: 0.5, y: 0.5 }],
+      diameterM: clampEmitterDiameterM(dNorm * faceD),
+      shellCounts,
+    }
+  }
+
+  if (isParDiamond3Ring9ShellCounts(shellCounts)) {
+    return solveParDiamond3Ring9Layout(faceD, shellCounts)
+  }
+
+  let dLo = EMITTER_DIAMETER_MIN_M / faceD
+  let dHi = 0.48
+  let bestPositions: { x: number; y: number }[] = []
+  let bestDNorm = dLo
+
+  for (let iter = 0; iter < 64; iter++) {
+    const dNorm = (dLo + dHi) / 2
+    const built = tryBuildParRingAtDiameterNorm(
+      hasCenter,
+      ringCounts,
+      dNorm,
+      fill
+    )
+    if (built !== null) {
+      dLo = dNorm
+      bestPositions = built.positions
+      bestDNorm = dNorm
+    } else {
+      dHi = dNorm
+    }
+  }
+
+  if (bestPositions.length === 0) {
+    bestPositions = parRingPositionsOnCircle(
+      n,
+      0.5 - PAR_RING_EDGE_INSET_RATIO - dLo / 2,
+      0.5,
+      0.5,
+      -Math.PI / 2
+    )
+    bestDNorm = dLo
+  }
+
+  return {
+    positions: bestPositions.slice(0, n),
+    diameterM: clampEmitterDiameterM(bestDNorm * faceD),
+    shellCounts,
+  }
+}
+
+/**
+ * Normalized (0–1) PAR ring positions: concentric rings packed to the face with
+ * staggered shells. First LED at 12 o'clock, clockwise within each ring.
+ */
+export function normalizedParRingEmitterPositions(
+  n: number,
+  faceDiameterM: number = PAR_DEFAULT_CYLINDER_DIAMETER_M
+): { x: number; y: number }[] {
+  return solveParConcentricRingLayout(n, faceDiameterM).positions
+}
+
+export function parRingEmitterDiameterM(
+  n: number,
+  faceDiameterM: number = PAR_DEFAULT_CYLINDER_DIAMETER_M
+): number {
+  return solveParConcentricRingLayout(n, faceDiameterM).diameterM
 }
 
 /** Normalized honeycomb on the round face (axial hex lattice, clipped to disk). */
@@ -1723,20 +2221,13 @@ function buildParCylinderRing(
   bodyDiameterM: number
 ): FixtureEmitterDefinition[] {
   if (n <= 0) return []
-  const dM = defaultEmitterDiameterMParCylinderRing(n, bodyDiameterM)
-  if (n === 1) {
-    return [
-      makeParEmitter(0.5, 0.5, PAR_EMITTER_Z, 0, maxChannelIndex, dM),
-    ]
-  }
-  const rx = 0.38
-  const ry = 0.38
-  return Array.from({ length: n }, (_, i) => {
-    const t = (2 * Math.PI * i) / n - Math.PI / 2
-    const x = clampNormalized(0.5 + rx * Math.cos(t))
-    const y = clampNormalized(0.5 + ry * Math.sin(t))
-    return makeParEmitter(x, y, PAR_EMITTER_Z, i, maxChannelIndex, dM)
-  })
+  const { positions, diameterM } = solveParConcentricRingLayout(
+    n,
+    Math.max(0.05, bodyDiameterM)
+  )
+  return positions.map((p, i) =>
+    makeParEmitter(p.x, p.y, PAR_EMITTER_Z, i, maxChannelIndex, diameterM)
+  )
 }
 
 function buildParBoxLine(
@@ -1898,7 +2389,9 @@ export function minParCylinderDiameterM(
 ): number {
   if (n <= 1) return PAR_DEFAULT_CYLINDER_DIAMETER_M
   if (layout === 'ring') {
-    const circumference = n * EMITTER_CENTER_GAP_M
+    const shells = parRingShellCounts(n)
+    const outerCount = shells[shells.length - 1] ?? n
+    const circumference = outerCount * EMITTER_CENTER_GAP_M
     const d = circumference / Math.PI + 2 * EMITTER_FACE_MARGIN_M
     return Math.max(PAR_DEFAULT_CYLINDER_DIAMETER_M, d)
   }
@@ -2005,8 +2498,96 @@ export function bundleSubfixtureChannelsOntoEmitters(
     if (bundle.length === 0) {
       return em
     }
-    return { ...em, channelIndexes: bundle }
+    return { ...em, channelIndexes: bundle, subFixtureIndex: subIdx }
   })
+}
+
+/**
+ * Multi-strip wash bars lay out emitters as [RGB top row][RGB bottom row][WW][CW].
+ * Generic index-based bundling maps bottom-row pixel i to sub i+rgbCount instead of
+ * sub i, so every subfixture shares the wrong channel set and spatial anchor.
+ */
+export function bundleMultiStripWashBarSubfixtureChannels(
+  fixtureType: FixtureType,
+  rgbCount: number,
+  warmWhiteCount: number,
+  coolWhiteCount: number,
+  emitters: FixtureEmitterDefinition[]
+): FixtureEmitterDefinition[] {
+  const subs = fixtureType.subFixtures
+  if (subs.length === 0 || emitters.length === 0) {
+    return emitters
+  }
+
+  const maxChannelIndex = fixtureType.channels.length - 1
+  if (maxChannelIndex < 0) {
+    return emitters
+  }
+
+  const rgbN = Math.max(1, Math.min(64, Math.round(rgbCount)))
+  const wwN = Math.max(1, Math.min(64, Math.round(warmWhiteCount)))
+  const cwN = Math.max(1, Math.min(64, Math.round(coolWhiteCount)))
+  const rgbTopEnd = rgbN
+  const rgbBottomEnd = rgbN * 2
+  const wwEnd = rgbBottomEnd + wwN
+  const cwStart = wwEnd
+
+  const applySubBundle = (
+    emitter: FixtureEmitterDefinition,
+    subIndex: number
+  ): FixtureEmitterDefinition => {
+    const sub = subs[Math.min(Math.max(0, subIndex), subs.length - 1)]
+    if (sub === undefined || sub.channels.length === 0) {
+      return emitter
+    }
+    const bundle = sanitizeEmitterChannels(sub.channels, maxChannelIndex)
+    if (bundle.length === 0) {
+      return emitter
+    }
+    return { ...emitter, channelIndexes: bundle, subFixtureIndex: subIndex }
+  }
+
+  return emitters.map((emitter, index) => {
+    if (index < rgbTopEnd) {
+      return applySubBundle(emitter, index)
+    }
+    if (index < rgbBottomEnd) {
+      return applySubBundle(emitter, index - rgbN)
+    }
+    if (index < wwEnd) {
+      const wwSubIndex = rgbN + (index - rgbBottomEnd)
+      return applySubBundle(emitter, wwSubIndex)
+    }
+    const cwSubIndex = rgbN + wwN + Math.min(index - cwStart, cwN - 1)
+    return applySubBundle(emitter, cwSubIndex)
+  })
+}
+
+export function bundleSubfixtureChannelsForFixtureModel(
+  fixtureType: FixtureType,
+  model: FixtureModelConfig,
+  emitters: FixtureEmitterDefinition[]
+): FixtureEmitterDefinition[] {
+  const normalizedKind =
+    model.kind === 'auto' ? inferFixtureModelKind(fixtureType) : model.kind
+  if (
+    normalizedKind === 'washBar' &&
+    model.washBarLayoutMode === 'multiStrip' &&
+    fixtureType.subFixtures.length > 0
+  ) {
+    return bundleMultiStripWashBarSubfixtureChannels(
+      fixtureType,
+      model.washBarRgbCount,
+      model.washBarWarmWhiteCount,
+      model.washBarCoolWhiteCount,
+      emitters
+    )
+  }
+  return bundleSubfixtureChannelsOntoEmitters(
+    fixtureType,
+    model.emittersPerSubFixture,
+    emitters
+  )
 }
 
 /** Re-apply subfixture channel bundles to custom emitters (e.g. after subfixture edits). */
@@ -2025,9 +2606,9 @@ export function syncCustomEmitterSubfixtureChannels(
   }
   return {
     ...model,
-    customEmitters: bundleSubfixtureChannelsOntoEmitters(
+    customEmitters: bundleSubfixtureChannelsForFixtureModel(
       fixtureType,
-      model.emittersPerSubFixture,
+      model,
       model.customEmitters
     ),
   }
@@ -2130,18 +2711,24 @@ function buildDefaultCustomEmitters(
     const cwFace = rectFaceMFromLegacyDimensionlessSize(0.85, 'vertical')
     for (let i = 0; i < washBarRgbCount; i++) {
       const t = washBarRgbCount <= 1 ? 0.5 : i / (washBarRgbCount - 1)
-      pushEmitter(t, 0.16, 0.65, 'rect-h', 0.8, i, rgbFace)
-      pushEmitter(t, 0.84, 0.65, 'rect-h', 0.8, i, rgbFace)
+      pushEmitter(t, 0.16, 1, 'rect-h', 0.8, i, rgbFace)
+      pushEmitter(t, 0.84, 1, 'rect-h', 0.8, i, rgbFace)
     }
     for (let i = 0; i < washBarWarmWhiteCount; i++) {
       const t = washBarWarmWhiteCount <= 1 ? 0.5 : i / (washBarWarmWhiteCount - 1)
-      pushEmitter(t, 0.5, 0.7, 'disc', 1.1, i)
+      pushEmitter(t, 0.5, 1, 'disc', 1.1, i)
     }
     for (let i = 0; i < washBarCoolWhiteCount; i++) {
       const t = washBarCoolWhiteCount <= 1 ? 0.5 : i / (washBarCoolWhiteCount - 1)
-      pushEmitter(t, 0.5, 0.72, 'rect-v', 0.85, i, cwFace)
+      pushEmitter(t, 0.5, 1, 'rect-v', 0.85, i, cwFace)
     }
-    return emitters
+    return bundleMultiStripWashBarSubfixtureChannels(
+      fixtureType,
+      washBarRgbCount,
+      washBarWarmWhiteCount,
+      washBarCoolWhiteCount,
+      emitters
+    )
   }
 
   const count = defaultEmitterCountForFixture(
@@ -2155,7 +2742,7 @@ function buildDefaultCustomEmitters(
   )
 
   if (normalizedKind === 'washBar' && washBarLayoutMode === 'linear') {
-    const zFace = 0.72
+    const zFace = 1
     const positions = normalizedParBoxLineEmitterPositions(count)
     for (let i = 0; i < count; i++) {
       const p = positions[i] ?? { x: 0.5, y: 0.5 }
@@ -2199,10 +2786,7 @@ function buildDefaultCustomEmitters(
     )
   }
 
-  const zFace =
-    normalizedKind === 'moverSpot' || normalizedKind === 'moverWash'
-      ? 0.95
-      : 0.72
+  const zFace = 1
   const positions =
     bodyShape === 'cylinder' && normalizedKind !== 'parCan'
       ? count <= 1
@@ -2266,12 +2850,16 @@ export function buildAutoFittedDefaultCustomEmitters(
       dims.faceHeightM
     )
   }
-  return autoResizeEmittersToFitFace(
+  const fitted = autoResizeEmittersToFitFace(
     raw,
     positions,
     dims.faceWidthM,
     dims.faceHeightM
   )
+  if (fixtureType.subFixtures.length === 0) {
+    return fitted
+  }
+  return bundleSubfixtureChannelsForFixtureModel(fixtureType, model, fitted)
 }
 
 export type FixtureType = {
@@ -2298,6 +2886,19 @@ export function initFixtureType(): FixtureType {
     moverCalibration: undefined,
     model: initFixtureModelConfig(),
   }
+}
+
+/** One-line summary for the fixture list (3D model is optional for DMX control). */
+export function fixtureModelSummaryLine(fixtureType: FixtureType): string {
+  const model = normalizeFixtureModelConfig(fixtureType.model, fixtureType)
+  const kind =
+    model.kind === 'auto' ? inferFixtureModelKind(fixtureType) : model.kind
+  const subCount = Math.max(1, fixtureType.subFixtures.length)
+  const emitterCount = resolvedEmittersForFixtureType(fixtureType).length
+  const customLayout = model.useCustomEmitterLayout ? ' · custom layout' : ''
+  return `${fixtureModelKindName(kind)} · ${subCount} segment${
+    subCount === 1 ? '' : 's'
+  } · ${emitterCount} emitter${emitterCount === 1 ? '' : 's'}${customLayout}`
 }
 
 export function isMoverFixtureType(fixtureType: FixtureType): boolean {
@@ -2363,9 +2964,18 @@ export function inferFixtureModelKind(fixtureType: FixtureType): FixtureModelKin
   return 'parCan'
 }
 
+export type NormalizeFixtureModelOptions = {
+  /**
+   * WYSIWYG editor updates: keep saved emitter positions, sizes, shapes, and
+   * per-emitter channel picks (do not re-bundle from subfixtures or auto-layout).
+   */
+  preserveCustomEmitterLayout?: boolean
+}
+
 export function normalizeFixtureModelConfig(
   config: unknown,
-  fixtureType: FixtureType
+  fixtureType: FixtureType,
+  options?: NormalizeFixtureModelOptions
 ): FixtureModelConfig {
   const defaults = initFixtureModelConfig()
   const source =
@@ -2484,6 +3094,8 @@ export function normalizeFixtureModelConfig(
         size?: unknown
         shape?: unknown
         channelIndexes?: unknown
+        subFixtureIndex?: unknown
+        groupId?: unknown
         rectWidthM?: unknown
         rectHeightM?: unknown
       }
@@ -2514,6 +3126,18 @@ export function normalizeFixtureModelConfig(
         shape,
         channelIndexes: sanitizeEmitterChannels(emitter.channelIndexes, maxChannelIndex),
       }
+      const subRaw = Number(emitter.subFixtureIndex)
+      if (
+        fixtureType.subFixtures.length > 0 &&
+        Number.isFinite(subRaw) &&
+        subRaw >= 0 &&
+        subRaw < fixtureType.subFixtures.length
+      ) {
+        row.subFixtureIndex = Math.floor(subRaw)
+      }
+      if (typeof emitter.groupId === 'string' && emitter.groupId.trim().length > 0) {
+        row.groupId = emitter.groupId.trim()
+      }
       if (hasBothRectDims) {
         row.rectWidthM = clampRectFaceExtentM(rw)
         row.rectHeightM = clampRectFaceExtentM(rh)
@@ -2533,6 +3157,9 @@ export function normalizeFixtureModelConfig(
       ? explicitCustom
       : normalizedCustomEmitters.length > 0
 
+  const hasSavedCustomLayout =
+    useCustomEmitterLayout && normalizedCustomEmitters.length > 0
+
   let widthM = clampModelWidth(Number(source.width ?? defaultWidth))
   let bodyHeightM = clampModelDimension(
     Number(source.bodyHeight ?? defaultBodyHeightForKind(normalizedKind, bodyShape)),
@@ -2547,15 +3174,17 @@ export function normalizeFixtureModelConfig(
     defaultBodyDiameterForKind(normalizedKind, bodyShape)
   )
 
-  const emitterCountForPar = defaultEmitterCountForFixture(
-    fixtureType,
-    normalizedKind,
-    fixedEmitterCount ?? requestedEmitters,
-    washBarLayoutMode,
-    washBarRgbCount,
-    washBarCoolWhiteCount,
-    washBarWarmWhiteCount
-  )
+  const emitterCountForPar = hasSavedCustomLayout
+    ? Math.max(1, normalizedCustomEmitters.length)
+    : defaultEmitterCountForFixture(
+        fixtureType,
+        normalizedKind,
+        fixedEmitterCount ?? requestedEmitters,
+        washBarLayoutMode,
+        washBarRgbCount,
+        washBarCoolWhiteCount,
+        washBarWarmWhiteCount
+      )
 
   if (
     normalizedKind === 'parCan' &&
@@ -2630,7 +3259,7 @@ export function normalizeFixtureModelConfig(
   const defaultAllDiscs =
     defaultCustomEmittersRaw.length > 0 &&
     defaultCustomEmittersRaw.every((emitter) => emitter.shape === 'disc')
-  const defaultCustomEmitters =
+  let defaultCustomEmitters =
     defaultLineAxis === 'horizontal' && defaultAllDiscs
       ? fitUniformHorizontalLineDiscLayoutToFace(
           defaultCustomEmittersRaw,
@@ -2643,15 +3272,85 @@ export function normalizeFixtureModelConfig(
           faceDimsForDefaults.faceWidthM,
           faceDimsForDefaults.faceHeightM
         )
-  const emittersPerSubFixture = fixedEmitterCount ?? requestedEmitters
-  let customEmitters =
-    normalizedCustomEmitters.length > 0 ? normalizedCustomEmitters : defaultCustomEmitters
-  if (fixtureType.subFixtures.length > 0 && customEmitters.length > 0) {
-    customEmitters = bundleSubfixtureChannelsOntoEmitters(
+  if (fixtureType.subFixtures.length > 0 && defaultCustomEmitters.length > 0) {
+    defaultCustomEmitters = bundleSubfixtureChannelsForFixtureModel(
       fixtureType,
-      emittersPerSubFixture,
+      {
+        kind: normalizedKind,
+        emittersPerSubFixture: fixedEmitterCount ?? requestedEmitters,
+        width: widthM,
+        bodyShape,
+        bodyHeight: bodyHeightM,
+        bodyDepth: bodyDepthM,
+        bodyDiameter: bodyDiameterM,
+        moverBeamAngleDeg: clampMoverBeamAngle(
+          Number(source.moverBeamAngleDeg ?? defaultMoverBeamAngleDeg)
+        ),
+        atmosphereEffect,
+        atmosphereNozzleDirection,
+        washBarLayoutMode,
+        washBarWarmWhiteCount,
+        washBarCoolWhiteCount,
+        washBarRgbCount,
+        useCustomEmitterLayout: false,
+        customEmitters: defaultCustomEmitters,
+        emitterFaceAutoSize,
+        parRectLayout,
+        parCylinderLayout,
+      },
+      defaultCustomEmitters
+    )
+  }
+  const emittersPerSubFixture = fixedEmitterCount ?? requestedEmitters
+  const preserveCustomLayout =
+    options?.preserveCustomEmitterLayout === true || hasSavedCustomLayout
+
+  let customEmitters = preserveCustomLayout
+    ? normalizedCustomEmitters
+    : normalizedCustomEmitters.length > 0
+      ? normalizedCustomEmitters
+      : defaultCustomEmitters
+
+  if (
+    !preserveCustomLayout &&
+    fixtureType.subFixtures.length > 0 &&
+    customEmitters.length > 0
+  ) {
+    customEmitters = bundleSubfixtureChannelsForFixtureModel(
+      fixtureType,
+      {
+        kind: normalizedKind,
+        emittersPerSubFixture,
+        width: widthM,
+        bodyShape,
+        bodyHeight: bodyHeightM,
+        bodyDepth: bodyDepthM,
+        bodyDiameter: bodyDiameterM,
+        moverBeamAngleDeg: clampMoverBeamAngle(
+          Number(source.moverBeamAngleDeg ?? defaultMoverBeamAngleDeg)
+        ),
+        atmosphereEffect,
+        atmosphereNozzleDirection,
+        washBarLayoutMode,
+        washBarWarmWhiteCount,
+        washBarCoolWhiteCount,
+        washBarRgbCount,
+        useCustomEmitterLayout,
+        customEmitters,
+        emitterFaceAutoSize,
+        parRectLayout,
+        parCylinderLayout,
+      },
       customEmitters
     )
+  }
+
+  if (
+    useCustomEmitterLayout &&
+    customEmitters.length === 0 &&
+    defaultCustomEmitters.length > 0
+  ) {
+    customEmitters = defaultCustomEmitters
   }
 
   return {
@@ -2695,6 +3394,58 @@ export function computeEmitterCentroid(
   return { x: sx / n, y: sy / n, z: sz / n }
 }
 
+/** Infer subfixture from channel overlap (legacy emitters without `subFixtureIndex`). */
+export function inferEmitterSubFixtureIndex(
+  fixtureType: FixtureType,
+  emitter: FixtureEmitterDefinition
+): number | null {
+  const subs = fixtureType.subFixtures
+  if (subs.length === 0) {
+    return null
+  }
+  if (emitter.channelIndexes.length === 0) {
+    return null
+  }
+  const channelSet = new Set(emitter.channelIndexes)
+  let bestIdx: number | null = null
+  let bestOverlap = 0
+  for (let i = 0; i < subs.length; i++) {
+    const sub = subs[i]
+    if (sub === undefined) {
+      continue
+    }
+    let overlap = 0
+    for (const ch of sub.channels) {
+      if (channelSet.has(ch)) {
+        overlap++
+      }
+    }
+    if (overlap > bestOverlap) {
+      bestOverlap = overlap
+      bestIdx = i
+    }
+  }
+  return bestOverlap > 0 ? bestIdx : null
+}
+
+export function resolveEmitterSubFixtureIndex(
+  fixtureType: FixtureType,
+  emitter: FixtureEmitterDefinition
+): number | null {
+  const subs = fixtureType.subFixtures
+  if (subs.length === 0) {
+    return null
+  }
+  const raw = emitter.subFixtureIndex
+  if (raw !== undefined && Number.isFinite(raw)) {
+    const idx = Math.floor(raw)
+    if (idx >= 0 && idx < subs.length) {
+      return idx
+    }
+  }
+  return inferEmitterSubFixtureIndex(fixtureType, emitter)
+}
+
 export function emittersForSubfixtureIndex(
   fixtureType: FixtureType,
   allEmitters: FixtureEmitterDefinition[],
@@ -2709,9 +3460,13 @@ export function emittersForSubfixtureIndex(
     return []
   }
   const channelSet = new Set(sub.channels)
-  return allEmitters.filter((em) =>
-    em.channelIndexes.some((ch) => channelSet.has(ch))
-  )
+  return allEmitters.filter((em) => {
+    const resolved = resolveEmitterSubFixtureIndex(fixtureType, em)
+    if (resolved !== null) {
+      return resolved === subIndex
+    }
+    return em.channelIndexes.some((ch) => channelSet.has(ch))
+  })
 }
 
 export function resolvedFixtureSubWindowInParent(
@@ -2933,20 +3688,141 @@ export function subfixtureMappingAnchorInParentWindow(
   return resolvedFixtureSubWindowInParent(fixtureWindow, sub)
 }
 
+/** Padding added on each side when converting model size to mapping-pad span. */
+export const FIXTURE_MAPPING_MOTION_MARGIN_FT = 0.1
+
 /**
- * Suggested motion-window axis widths (0–1) when stored widths are still zero,
- * based on subfixture anchor spread or emitter bbox (no subs).
+ * Physical extent of the fixture body on a stage axis (feet), from the 3D model config.
+ */
+export function fixturePhysicalExtentFtOnStageAxis(
+  model: Pick<
+    FixtureModelConfig,
+    'bodyShape' | 'width' | 'bodyHeight' | 'bodyDepth' | 'bodyDiameter' | 'kind'
+  >,
+  axis: WindowAxis,
+  resolvedKind?: FixtureModelKind
+): number {
+  const kind =
+    resolvedKind ?? (model.kind === 'auto' ? 'parCan' : model.kind)
+  const face = fixtureFrontFaceDimensionsM({ ...model, kind })
+  const faceWFt = face.faceWidthM / METERS_PER_FOOT
+  const depthFt = Math.max(0.02, model.bodyDepth) / METERS_PER_FOOT
+  const heightFt = Math.max(0.02, model.bodyHeight) / METERS_PER_FOOT
+
+  if (axis === 'z') {
+    return depthFt
+  }
+  if (model.bodyShape === 'cylinder') {
+    return faceWFt
+  }
+  if (axis === 'x') {
+    return faceWFt
+  }
+  return heightFt
+}
+
+/** 0–1 motion-window span from a physical extent on one stage axis. */
+export function normalizedMotionSpanFromPhysicalFt(
+  extentFt: number,
+  stageAxisLengthFt: number
+): number {
+  const stageFt = Math.max(0.01, stageAxisLengthFt)
+  const padded = Math.max(
+    0.01,
+    extentFt + FIXTURE_MAPPING_MOTION_MARGIN_FT * 2
+  )
+  const span = padded / stageFt
+  const minSpan = 0.012
+  return Math.min(1, Math.max(minSpan, span))
+}
+
+function expandPhysicalExtentWithEmitterLayoutFt(
+  baseFt: number,
+  emitters: FixtureEmitterDefinition[],
+  axis: 'x' | 'y',
+  faceWidthM: number,
+  faceHeightM: number
+): number {
+  if (emitters.length === 0) {
+    return baseFt
+  }
+  const faceM = Math.max(0.01, axis === 'x' ? faceWidthM : faceHeightM)
+  const faceFt = faceM / METERS_PER_FOOT
+  const vals = emitters.map((em) =>
+    clampNormalized(axis === 'x' ? em.x : em.y)
+  )
+  const normSpread = Math.max(...vals) - Math.min(...vals)
+  let maxEmitterFt = 0
+  for (const emitter of emitters) {
+    const dims = normalizeRectEmitterFaceDimensionsM(emitter)
+    const emFt =
+      (axis === 'x' ? dims.widthM : dims.heightM) / METERS_PER_FOOT
+    maxEmitterFt = Math.max(maxEmitterFt, emFt)
+  }
+  return Math.max(baseFt, normSpread * faceFt + maxEmitterFt)
+}
+
+/**
+ * Suggested motion-window axis widths (0–1) when stored widths are still zero.
+ * Uses fixture model dimensions vs stage size when `stage` is provided.
  */
 export function suggestedFixtureMotionWindowWidths(
   fixtureWindow: Window2D_t,
   fixtureType: FixtureType,
-  resolvedEmitters: FixtureEmitterDefinition[]
+  resolvedEmitters: FixtureEmitterDefinition[],
+  stage?: StageDimensions
 ): Partial<Record<WindowAxis, number>> {
+  const out: Partial<Record<WindowAxis, number>> = {}
+  const model = normalizeFixtureModelConfig(fixtureType.model, fixtureType)
+  const effectiveKind =
+    model.kind === 'auto' ? inferFixtureModelKind(fixtureType) : model.kind
+  const face = fixtureFrontFaceDimensionsM({ ...model, kind: effectiveKind })
+
+  const trySetAxis = (axis: WindowAxis, span: number) => {
+    const winAxis = fixtureWindow[axis]
+    if (!winAxis || (winAxis.width ?? 0) > 1e-8) {
+      return
+    }
+    out[axis] = Math.min(1, Math.max(0.012, span))
+  }
+
+  if (stage !== undefined) {
+    for (const axis of windowAxes) {
+      if (fixtureWindow[axis] === undefined) {
+        continue
+      }
+      let extentFt = fixturePhysicalExtentFtOnStageAxis(
+        { ...model, kind: effectiveKind },
+        axis,
+        effectiveKind
+      )
+      if (
+        (axis === 'x' || axis === 'y') &&
+        resolvedEmitters.length > 0
+      ) {
+        extentFt = expandPhysicalExtentWithEmitterLayoutFt(
+          extentFt,
+          resolvedEmitters,
+          axis,
+          face.faceWidthM,
+          face.faceHeightM
+        )
+      }
+      trySetAxis(
+        axis,
+        normalizedMotionSpanFromPhysicalFt(
+          extentFt,
+          stageAxisLengthFt(stage, axis)
+        )
+      )
+    }
+    return out
+  }
+
   const margin = 0.07
   const minSpan = 0.11
-  const out: Partial<Record<WindowAxis, number>> = {}
 
-  const setAxis = (axis: WindowAxis, spread: number) => {
+  const setAxisFromNormalizedSpread = (axis: WindowAxis, spread: number) => {
     const winAxis = fixtureWindow[axis]
     if (!winAxis || (winAxis.width ?? 0) > 1e-8) {
       return
@@ -2973,8 +3849,17 @@ export function suggestedFixtureMotionWindowWidths(
     })
     for (const axis of windowAxes) {
       const vals = centers.map((c) => c[axis])
-      const spread = Math.max(...vals) - Math.min(...vals)
-      setAxis(axis, spread)
+      let spread = Math.max(...vals) - Math.min(...vals)
+      if (resolvedEmitters.length > 0 && (axis === 'x' || axis === 'y')) {
+        const faceCoord = (em: FixtureEmitterDefinition) =>
+          clampNormalized(axis === 'x' ? em.x : em.y)
+        const mapped = resolvedEmitters.map((em) =>
+          mapFixtureFaceCoordToParentAxis(fixtureWindow, axis, faceCoord(em))
+        )
+        const emitterSpread = Math.max(...mapped) - Math.min(...mapped)
+        spread = Math.max(spread, emitterSpread)
+      }
+      setAxisFromNormalizedSpread(axis, spread)
     }
     return out
   }
@@ -2987,7 +3872,7 @@ export function suggestedFixtureMotionWindowWidths(
       clampNormalized(axis === 'x' ? em.x : axis === 'y' ? em.y : em.z)
     )
     const spread = Math.max(...vals) - Math.min(...vals)
-    setAxis(axis, spread)
+    setAxisFromNormalizedSpread(axis, spread)
   }
   return out
 }
@@ -3049,6 +3934,84 @@ export interface Fixture {
 
 export type Universe = Fixture[]
 
+/** 0-based subfixture index → a, b, …, z, aa, ab, … (Excel-style after z). */
+export function subFixtureLabel(index: number): string {
+  if (!Number.isFinite(index) || index < 0) {
+    return 'a'
+  }
+  let i = Math.floor(index)
+  let result = ''
+  do {
+    result = String.fromCharCode(97 + (i % 26)) + result
+    i = Math.floor(i / 26) - 1
+  } while (i >= 0)
+  return result
+}
+
+/** Pre–double-letter scheme: index 26+ used ASCII past z (`{`, `|`, …). */
+export function legacySubFixtureLabel(index: number): string {
+  if (!Number.isFinite(index) || index < 0) {
+    return 'a'
+  }
+  return String.fromCharCode(Math.floor(index) + 97)
+}
+
+/** Legacy single-character labels that differ from {@link subFixtureLabel}. */
+export function buildLegacySubFixtureLabelRemap(
+  maxIndexExclusive = 256
+): Map<string, string> {
+  const remap = new Map<string, string>()
+  const limit = Math.max(0, Math.min(256, Math.floor(maxIndexExclusive)))
+  for (let i = 0; i < limit; i++) {
+    const legacy = legacySubFixtureLabel(i)
+    const modern = subFixtureLabel(i)
+    if (legacy !== modern) {
+      remap.set(legacy, modern)
+    }
+  }
+  return remap
+}
+
+export const LEGACY_SUB_FIXTURE_LABEL_REMAP = buildLegacySubFixtureLabelRemap()
+
+export function remapLegacySubFixtureGroupNames(
+  groups: string[],
+  remap: Map<string, string> = LEGACY_SUB_FIXTURE_LABEL_REMAP
+): string[] {
+  return groups.map((group) => remap.get(group) ?? group)
+}
+
+export function remapLegacySubFixtureGroupRecord(
+  groups: { [key: string]: boolean | undefined },
+  remap: Map<string, string> = LEGACY_SUB_FIXTURE_LABEL_REMAP
+): void {
+  for (const [legacy, modern] of remap) {
+    if (groups[legacy] === undefined) {
+      continue
+    }
+    groups[modern] = groups[legacy]
+    delete groups[legacy]
+  }
+}
+
+/** Rename subfixture groups (and matching names) saved with legacy ASCII labels. */
+export function migrateLegacySubFixtureGroupLabelsOnFixtureType(
+  fixtureType: FixtureType,
+  remap: Map<string, string> = LEGACY_SUB_FIXTURE_LABEL_REMAP
+): void {
+  if (remap.size === 0) {
+    return
+  }
+  fixtureType.groups = remapLegacySubFixtureGroupNames(fixtureType.groups, remap)
+  for (const sub of fixtureType.subFixtures) {
+    sub.groups = remapLegacySubFixtureGroupNames(sub.groups, remap)
+    const renamed = remap.get(sub.name)
+    if (renamed !== undefined) {
+      sub.name = renamed
+    }
+  }
+}
+
 export type SubFixture = {
   name: string
   intensity?: number
@@ -3069,7 +4032,6 @@ export type FlattenedFixture = {
   intensity: number
   channels: [number, FixtureChannel][]
   window: Window2D_t
-  hasMasterChannelInFixtureType?: boolean
   groups: string[]
   fixtureId?: string
   fixtureTypeId?: string

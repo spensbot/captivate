@@ -9,6 +9,7 @@ import ScenesList from './ScenesList'
 import { useDispatch } from 'react-redux'
 import VisualSceneTransitionControls from './VisualSceneTransitionControls'
 import { useControlSelector } from '../redux/store'
+import { LightScenesHelpButton, VisualScenesHelpButton } from './sceneHelpButtons'
 
 export default function SceneSelection({
   sceneType,
@@ -22,7 +23,14 @@ export default function SceneSelection({
   return (
     <Root>
       <Header>
-        {`${sceneType === 'light' ? 'Light' : 'Visual'} Scenes`}
+        <TitleCluster>
+          {`${sceneType === 'light' ? 'Light' : 'Visual'} Scenes`}
+          {sceneType === 'light' ? (
+            <LightScenesHelpButton />
+          ) : (
+            <VisualScenesHelpButton />
+          )}
+        </TitleCluster>
         <Sp />
         {sceneType === 'light' && (
           <>
@@ -30,8 +38,8 @@ export default function SceneSelection({
             <Tooltip
               title={
                 canReweightScenes
-                  ? 'Sort scenes by energy level'
-                  : 'Add at least 2 scenes to sort'
+                  ? 'Sort scenes from calm to intense'
+                  : 'Need at least two scenes'
               }
             >
               <span>
@@ -47,8 +55,8 @@ export default function SceneSelection({
             <Tooltip
               title={
                 canReweightScenes
-                  ? 'Distribute scene energy from low to high automatically'
-                  : 'Add at least 2 scenes to auto-distribute energy'
+                  ? 'Spread energy colors evenly across scenes'
+                  : 'Need at least two scenes'
               }
             >
               <span>
@@ -92,8 +100,14 @@ const Header = styled.div`
   display: flex;
   align-items: center;
   margin-top: -0.3rem;
-  font-size: ${(props) => props.theme.font.size.h1};
   min-height: 2.5rem;
+`
+
+const TitleCluster = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  font-size: ${(props) => props.theme.font.size.h1};
 `
 
 const Sp = styled.div`

@@ -6,6 +6,7 @@ import NewProjectDialog from './NewProjectDialog'
 import AppModal from './AppModal'
 import { resolveActiveAppDialog } from './appDialogService'
 import AboutModal from './AboutModal'
+import SettingsModal from './SettingsModal'
 import { useDispatch } from 'react-redux'
 import { setAboutOpen, setConnectionsMenu } from '../redux/guiSlice'
 
@@ -19,8 +20,15 @@ export default function FullscreenOverlay({}: Props) {
   )
   const appDialog = useTypedSelector((state) => state.gui.appDialog)
   const aboutOpen = useTypedSelector((state) => state.gui.aboutOpen)
+  const settingsOpen = useTypedSelector((state) => state.gui.settingsOpen)
 
-  if (!connectionsMenu && !newProjectDialog && appDialog === null && !aboutOpen) {
+  if (
+    !connectionsMenu &&
+    !newProjectDialog &&
+    appDialog === null &&
+    !aboutOpen &&
+    !settingsOpen
+  ) {
     return null
   }
 
@@ -46,6 +54,7 @@ export default function FullscreenOverlay({}: Props) {
       {appDialog !== null && (
         <AppModal
           open={true}
+          stack={appDialog.critical === true ? 'critical' : 'appModal'}
           title={appDialog.title}
           message={appDialog.message}
           actions={[
@@ -69,6 +78,7 @@ export default function FullscreenOverlay({}: Props) {
         open={aboutOpen}
         onClose={() => dispatch(setAboutOpen(false))}
       />
+      <SettingsModal />
     </Root>
   )
 }

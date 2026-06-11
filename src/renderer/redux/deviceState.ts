@@ -136,6 +136,10 @@ interface ConnectionSettings {
   audioInput: AudioInputSettings
   /** Follow MIDI timing clock (0xF8) from enabled MIDI inputs for master BPM. */
   midiClockBpmEnabled: boolean
+  /** Join an Ableton Link session for wireless tempo sync. Off by default. */
+  linkEnabled: boolean
+  /** When Link is on, follow other Link apps' transport when supported. */
+  linkStartStopSyncEnabled: boolean
   atmos: AtmosSettings
 }
 
@@ -368,6 +372,8 @@ export function initDeviceState(): DeviceState {
       artNetIpByUniverse: {},
       audioInput: initAudioInputSettings(),
       midiClockBpmEnabled: false,
+      linkEnabled: false,
+      linkStartStopSyncEnabled: false,
       atmos: initAtmosSettings(),
     },
   }
@@ -638,6 +644,16 @@ export const midiActions = {
       }).inputGain,
     }
   },
+  setAudioInputAutoGainControl: (
+    state: DeviceState,
+    { payload }: PayloadAction<boolean>
+  ) => {
+    const current = normalizeAudioInputSettings(state.connectionSettings.audioInput)
+    state.connectionSettings.audioInput = {
+      ...current,
+      autoGainControl: payload === true,
+    }
+  },
   setAudioBeatClockEnabled: (
     state: DeviceState,
     { payload }: PayloadAction<boolean>
@@ -663,6 +679,15 @@ export const midiActions = {
         useBeatClock: false,
       }
     }
+  },
+  setLinkEnabled: (state: DeviceState, { payload }: PayloadAction<boolean>) => {
+    state.connectionSettings.linkEnabled = payload === true
+  },
+  setLinkStartStopSyncEnabled: (
+    state: DeviceState,
+    { payload }: PayloadAction<boolean>
+  ) => {
+    state.connectionSettings.linkStartStopSyncEnabled = payload === true
   },
   setAudioBeatSensitivity: (
     state: DeviceState,

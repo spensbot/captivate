@@ -32,6 +32,10 @@ import {
   inferColorKind,
 } from './dmxColors'
 import { evaluateSceneGroups } from './sceneGroups'
+import {
+  getFixtureGroupPickerOptions,
+  normalizeFixtureGroupList,
+} from './fixtureGroups'
 
 type ChannelFamilyGroup =
   | 'rgb'
@@ -464,34 +468,69 @@ export type MoverAxisOverrides = {
   tiltFineEnabled?: boolean
 }
 
+export type MoverAxisPhysicalCalibration = {
+  min: number
+  max: number
+  invert: boolean
+}
+
+function clampAxisPhysicalDmxValue(
+  value: number,
+  fallback: number = DMX_MIN_VALUE
+): number {
+  if (!Number.isFinite(value)) {
+    return fallback
+  }
+
+  return Math.min(DMX_MAX_VALUE, Math.max(DMX_MIN_VALUE, value))
+}
+
+/** Pad 0..1 -> calibrated axis DMX across physical min/max (Free Aim). */
+export function mapNormalizedToAxisPhysicalDmx(
+  normalized: number,
+  calibration?: MoverAxisPhysicalCalibration
+): number {
+  const safe = clampNormalized(normalized)
+
+  if (calibration === undefined) {
+    return clampAxisPhysicalDmxValue(safe * DMX_MAX_VALUE)
+  }
+
+  const min = clampAxisDmxValue(calibration.min, DMX_MIN_VALUE)
+  const max = clampAxisDmxValue(calibration.max, DMX_MAX_VALUE)
+  const oriented = calibration.invert ? 1 - safe : safe
+  return clampAxisPhysicalDmxValue(lerp(min, max, oriented))
+}
+
+/** Calibrated axis DMX -> pad 0..1 across physical min/max (Free Aim). */
+export function mapAxisPhysicalDmxToNormalized(
+  dmx: number,
+  calibration?: MoverAxisPhysicalCalibration
+): number {
+  if (!Number.isFinite(dmx)) {
+    return 0
+  }
+
+  if (calibration === undefined) {
+    return clampNormalized(dmx / DMX_MAX_VALUE)
+  }
+
+  const min = clampAxisDmxValue(calibration.min, DMX_MIN_VALUE)
+  const max = clampAxisDmxValue(calibration.max, DMX_MAX_VALUE)
+  const low = Math.min(min, max)
+  const high = Math.max(min, max)
+  const clamped = Math.min(high, Math.max(low, dmx))
+  const span = Math.max(1e-6, Math.abs(max - min))
+  const oriented = max >= min ? (clamped - min) / span : (min - clamped) / span
+  return clampNormalized(calibration.invert ? 1 - oriented : oriented)
+}
+
 function mapAxisWithCalibration(
   axisValue: Normalized,
-  axisCalibration?: {
-    min: number
-    max: number
-    invert: boolean
-  }
+  axisCalibration?: MoverAxisPhysicalCalibration
 ): Normalized {
-  const normalizedValue = clampNormalized(axisValue)
-
-  if (axisCalibration === undefined) {
-    return normalizedValue
-  }
-
-  const min = Math.min(
-    DMX_MAX_VALUE,
-    Math.max(DMX_MIN_VALUE, Math.round(axisCalibration.min))
-  )
-  const max = Math.min(
-    DMX_MAX_VALUE,
-    Math.max(DMX_MIN_VALUE, Math.round(axisCalibration.max))
-  )
-  const orientedValue = axisCalibration.invert
-    ? 1 - normalizedValue
-    : normalizedValue
-
-  const calibratedDmx = lerp(min, max, orientedValue)
-  return clampNormalized(calibratedDmx / DMX_MAX_VALUE)
+  const dmx = mapNormalizedToAxisPhysicalDmx(axisValue, axisCalibration)
+  return clampNormalized(dmx / DMX_MAX_VALUE)
 }
 
 function axisOverrideDmxToNormalized(
@@ -649,6 +688,25 @@ function shouldOutputColorChannel(
   return isSyntheticStrobePulseOpen(params, timeState, syntheticStrobeFrameRateHz)
 }
 
+/** True when this mapped partition selects color via a wheel/map and uses master for dimming. */
+function partitionBrightnessUsesMasterChannel(
+  fixture: FlattenedFixture
+): boolean {
+  for (const [, channel] of fixture.channels) {
+    if (channel.type === 'colorMap') {
+      return true
+    }
+    if (channel.type === 'split') {
+      for (const range of channel.ranges) {
+        if (range.channel.type === 'colorMap') {
+          return true
+        }
+      }
+    }
+  }
+  return false
+}
+
 export function getDmxValue(
   ch: FixtureChannel,
   params: Params,
@@ -697,13 +755,9 @@ export function getDmxValue(
       return combined
     }
     case 'master': {
-      const level =
-        getWindowRandomizerLevel(
-          params,
-          randomizerLevel,
-          fixture.window,
-          movingWindow
-        ) * master * getParam(params, 'brightness')
+      // Fixture master dimmer follows the global master + split brightness only,
+      // not spatial X/Y pad windows (those gate RGB/aux emitters per subfixture).
+      const level = master * getParam(params, 'brightness')
       if (ch.isOnOff) {
         return level > 0.5 ? ch.max : ch.min
       } else {
@@ -723,8 +777,8 @@ export function getDmxValue(
         return 0
       }
 
-      const useFixtureMaster = fixture.hasMasterChannelInFixtureType === true
-      const outputScale = useFixtureMaster
+      const brightnessViaMaster = partitionBrightnessUsesMasterChannel(fixture)
+      const outputScale = brightnessViaMaster
         ? 1
         : getWindowRandomizerLevel(
             params,
@@ -1062,16 +1116,11 @@ export function getFixturesInGroups(
 
 export function getSortedGroupsForFixture(
   fixture: Fixture,
-  fixtureType: FixtureType
+  _fixtureType: FixtureType
 ) {
-  const groupSet: Set<string> = new Set()
-  for (const group of fixture.groups) {
-    groupSet.add(group)
-  }
-  for (const group of fixtureType.groups) {
-    groupSet.add(group)
-  }
-  return Array.from(groupSet.keys()).sort((a, b) => (a > b ? 1 : -1))
+  return normalizeFixtureGroupList(fixture.groups).sort((a, b) =>
+    a.localeCompare(b, undefined, { sensitivity: 'base' })
+  )
 }
 
 export function getSortedGroupsForFixtureType(fixtureType: FixtureType) {
@@ -1092,9 +1141,6 @@ export function getSortedGroups(
   }
   for (const id of fixtureTypeIds) {
     const fixtureType = fixtureTypesById[id]
-    for (const group of fixtureType.groups) {
-      groupSet.add(group)
-    }
     for (const sub of fixtureType.subFixtures) {
       for (const group of sub.groups) {
         groupSet.add(group)
@@ -1121,37 +1167,7 @@ export function getSortedGroupsFromPlacedFixtures(
   universe: Universe,
   fixtureTypesById: { [id: string]: FixtureType }
 ) {
-  const groupSet: Set<string> = new Set()
-  const usedFixtureTypeIds = new Set<string>()
-  for (const fixture of universe) {
-    usedFixtureTypeIds.add(fixture.type)
-    for (const group of fixture.groups) {
-      groupSet.add(group)
-    }
-  }
-  for (const id of usedFixtureTypeIds) {
-    const fixtureType = fixtureTypesById[id]
-    if (fixtureType === undefined) {
-      continue
-    }
-    for (const group of fixtureType.groups) {
-      groupSet.add(group)
-    }
-    for (const sub of fixtureType.subFixtures) {
-      for (const group of sub.groups) {
-        groupSet.add(group)
-      }
-    }
-    for (const channel of fixtureType.channels) {
-      for (const family of inferChannelFamilies(channel)) {
-        const familyGroup = channelFamilyGroupName(family)
-        if (familyGroup !== undefined) {
-          groupSet.add(familyGroup)
-        }
-      }
-    }
-  }
-  return Array.from(groupSet.keys()).sort((a, b) => (a > b ? 1 : -1))
+  return getFixtureGroupPickerOptions(universe, fixtureTypesById)
 }
 
 function clampAxisDmxValue(value: number, fallback: number = DMX_MIN_VALUE) {
@@ -1251,13 +1267,6 @@ function defaultMoverGroupName(fixture: Fixture, fixtureType: FixtureType): stri
     return fixtureGroup
   }
 
-  const fixtureTypeGroup = fixtureType.groups.find(
-    (group) => group.trim().length > 0
-  )
-  if (fixtureTypeGroup !== undefined) {
-    return fixtureTypeGroup
-  }
-
   return fixtureType.name.trim().length > 0 ? fixtureType.name : 'Mover Group'
 }
 
@@ -1280,10 +1289,7 @@ export function flatten_fixture(
 ): FlattenedFixture[] {
   let subfixture_ch_indexes: Set<number> = new Set()
 
-  const groups = fixture.groups.concat(fixture_type.groups)
-  const hasMasterChannelInFixtureType = fixture_type.channels.some(
-    (channel) => channel.type === 'master'
-  )
+  const groups = [...fixture.groups]
 
   const fixtureId =
     typeof fixture.id === 'string' && fixture.id.trim().length > 0
@@ -1328,7 +1334,6 @@ export function flatten_fixture(
         subfixture_ch_indexes.add(ch_index)
         return [base_channel + ch_index, fixture_type.channels[ch_index]]
       }),
-      hasMasterChannelInFixtureType,
       groups: groups.concat(sub.groups),
       fixtureId,
       fixtureTypeId: fixture_type.id,
@@ -1348,7 +1353,6 @@ export function flatten_fixture(
       })
       .filter(([ch_index]) => !subfixture_ch_indexes.has(ch_index))
       .map(([ch_index, ch]) => [base_channel + ch_index, ch]),
-    hasMasterChannelInFixtureType,
     groups,
     fixtureId,
     fixtureTypeId: fixture_type.id,

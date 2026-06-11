@@ -1,14 +1,18 @@
 import styled from 'styled-components'
-import Slider from '../base/Slider'
+import SliderBase from '../base/SliderBase'
+import LiveDmxSliderCursor from '../controls/LiveDmxSliderCursor'
 import {
   useTypedSelector,
   useDmxSelector,
   useControlSelector,
 } from '../redux/store'
 import { useDispatch } from 'react-redux'
-import { Button, FormControlLabel, IconButton, Switch, Tooltip } from '@mui/material'
+import { Button, FormControlLabel, IconButton, Switch } from '@mui/material'
 import ForwardIcon from '@mui/icons-material/ArrowForward'
 import BackIcon from '@mui/icons-material/ArrowBack'
+import { BriefTooltip } from '../base/appTooltip'
+import { MixerHelpButton } from '../globalHelpButtons'
+import { PopupTitleRow } from '../base/SectionHelpPopover'
 import {
   setActiveMixerUniverse,
   setOverwrite,
@@ -17,7 +21,7 @@ import {
   setMixerShowAllChannels,
 } from '../redux/mixerSlice'
 import type { DmxState } from '../redux/dmxSlice'
-import { useRealtimeSelector } from '../redux/realtimeStore'
+import { useDmxMixerChannelOutput } from '../dmx/dmxMixerOutputBus'
 import React, {
   useEffect,
   useLayoutEffect,
@@ -170,11 +174,14 @@ function Header() {
 
   return (
     <HeaderRoot>
-      <HeaderTitle>DMX Out</HeaderTitle>
+      <PopupTitleRow>
+        <HeaderTitle>DMX Out</HeaderTitle>
+        <MixerHelpButton />
+      </PopupTitleRow>
       <S />
       <UniverseLabel>Universe</UniverseLabel>
       <SSmall />
-      <Tooltip title="Show previous universe">
+      <BriefTooltip title="Previous universe">
         <span>
           <IconButton
             disabled={!canGoBack}
@@ -183,13 +190,13 @@ function Header() {
             <BackIcon />
           </IconButton>
         </span>
-      </Tooltip>
+      </BriefTooltip>
       <SSmall />
-      <Tooltip title="Active universe displayed in DMX output">
+      <BriefTooltip title="Universe shown in the mixer">
         <Page>{_s.activeUniverse}</Page>
-      </Tooltip>
+      </BriefTooltip>
       <SSmall />
-      <Tooltip title="Show next universe">
+      <BriefTooltip title="Next universe">
         <span>
           <IconButton
             disabled={!canGoForward}
@@ -198,9 +205,9 @@ function Header() {
             <ForwardIcon />
           </IconButton>
         </span>
-      </Tooltip>
+      </BriefTooltip>
       <S />
-      <Tooltip title="Show every DMX channel. When off, only channels used by fixtures on this universe are listed.">
+      <BriefTooltip title="Show all 512 channels or only patched fixture channels">
         <FormControlLabel
           sx={{ marginLeft: 0, marginRight: 0, gap: 0.5 }}
           control={
@@ -215,9 +222,9 @@ function Header() {
           }
           label={<MixerToggleLabel>All channels</MixerToggleLabel>}
         />
-      </Tooltip>
+      </BriefTooltip>
       <S />
-      <Tooltip title="Clear manual slider overwrites for this universe">
+      <BriefTooltip title="Clear manual overrides on this universe">
         <span>
           <Button
             disabled={!hasOverwrites}
@@ -227,7 +234,7 @@ function Header() {
             Reset Overwrites
           </Button>
         </span>
-      </Tooltip>
+      </BriefTooltip>
     </HeaderRoot>
   )
 }
@@ -314,7 +321,7 @@ function fixtureChannelName(channel: FixtureChannel | null): string {
   return 'Split'
 }
 
-function LabelledSlider({
+const LabelledSlider = React.memo(function LabelledSlider({
   channelIndex,
   gridIndex,
   visibleChannels,
@@ -416,9 +423,8 @@ function LabelledSlider({
       }
     }
   )
-  const output: number = useRealtimeSelector(
-    (state) => state.dmxOutByUniverse[activeUniverse - 1]?.[channelIndex] ?? 0
-  )
+  const output = useDmxMixerChannelOutput(activeUniverse, channelIndex)
+  const sliderRadius = 0.5
   const dispatch = useDispatch()
   const { hoverDiv, isHover } = useHover()
 
@@ -468,14 +474,19 @@ function LabelledSlider({
       <SliderRow>
         <ChannelName title={channelName}>{channelName}</ChannelName>
         <SliderWrap>
-          <Slider
-            value={output / 255}
-            radius={0.5}
+          <SliderBase
+            radius={sliderRadius}
             onChange={onChange}
             orientation="vertical"
-            disabled={overwrite === undefined}
-            color={overwrite !== undefined ? '#b1b1ff' : undefined}
-          />
+          >
+            <LiveDmxSliderCursor
+              universe={activeUniverse}
+              channelIndex={channelIndex}
+              radius={sliderRadius}
+              orientation="vertical"
+              color={overwrite !== undefined ? '#b1b1ff' : undefined}
+            />
+          </SliderBase>
         </SliderWrap>
       </SliderRow>
       <Div>
@@ -499,7 +510,7 @@ function LabelledSlider({
       )}
     </Col>
   )
-}
+})
 
 const Col = styled.div`
   --mixer-col-width: 2.85rem;

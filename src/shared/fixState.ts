@@ -30,6 +30,10 @@ import {
   isMoverFixtureType,
   normalizeFixtureModelConfig,
   migrateLegacyFixtureChannelDiscriminators,
+  migrateLegacySubFixtureGroupLabelsOnFixtureType,
+  remapLegacySubFixtureGroupNames,
+  remapLegacySubFixtureGroupRecord,
+  LEGACY_SUB_FIXTURE_LABEL_REMAP,
   DMX_MIN_VALUE,
   DMX_MAX_VALUE,
   DMX_MAX_UNIVERSES,
@@ -41,6 +45,10 @@ import {
   MOVER_DEFAULT_TILT_RANGE_DEG,
   MoverMountOrientation,
 } from './dmxFixtures'
+import {
+  normalizeFixtureGroupList,
+  syncFixtureGroupCatalog,
+} from './fixtureGroups'
 import { normalizeStageDimensions } from './stage'
 import { LfoShape, normalizeLfoShape } from './oscillator'
 import { nanoid } from 'nanoid'
@@ -88,19 +96,11 @@ function ensureFixtureId(fixture: DmxState['universe'][number]): string {
 
 function defaultMoverGroupName(
   fixture: DmxState['universe'][number],
-  fixtureTypeName: string,
-  fixtureTypeGroups: string[]
+  fixtureTypeName: string
 ): string {
   const fixtureGroup = fixture.groups.find((group) => group.trim().length > 0)
   if (fixtureGroup !== undefined) {
     return fixtureGroup
-  }
-
-  const fixtureTypeGroup = fixtureTypeGroups.find(
-    (group) => group.trim().length > 0
-  )
-  if (fixtureTypeGroup !== undefined) {
-    return fixtureTypeGroup
   }
 
   return fixtureTypeName.trim().length > 0 ? fixtureTypeName : 'Mover Group'
@@ -298,6 +298,14 @@ function fixGuiState(gui: CleanReduxState['gui']) {
     colorMapCalibrationOverride?: unknown
   }
 
+  if (
+    typeof (_gui as { moverAdvancedControlEnabled?: unknown })
+      .moverAdvancedControlEnabled !== 'boolean'
+  ) {
+    ;(_gui as { moverAdvancedControlEnabled: boolean }).moverAdvancedControlEnabled =
+      false
+  }
+
   const moverOverride = _gui.moverCalibrationOverride as
     | {
         fixtureId?: unknown
@@ -377,6 +385,10 @@ export default function fixState(state: CleanReduxState): CleanReduxState {
   fixScenesAuto(state.control.light.auto)
   fixScenesAuto(state.control.visual.auto)
   fixDmxState(state.dmx)
+  remapLegacySubFixtureLabelsInLightScenes(
+    state.control.light,
+    LEGACY_SUB_FIXTURE_LABEL_REMAP
+  )
   fixDeviceState(state.control.device)
   fixMixerState(state.mixer)
 
@@ -399,6 +411,24 @@ export default function fixState(state: CleanReduxState): CleanReduxState {
   }
 
   return state
+}
+
+function remapLegacySubFixtureLabelsInLightScenes(
+  light: LightScenes_t,
+  remap: Map<string, string>
+): void {
+  if (remap.size === 0) {
+    return
+  }
+  for (const id of light.ids) {
+    const scene = light.byId[id]
+    if (scene === undefined) {
+      continue
+    }
+    for (const split of scene.splitScenes) {
+      remapLegacySubFixtureGroupRecord(split.groups, remap)
+    }
+  }
 }
 
 export function fixLightScenes(light: LightScenes_t) {
@@ -434,6 +464,7 @@ export function fixLightScenes(light: LightScenes_t) {
       squareDuty?: number
       sawFlatten?: number
       noiseSeed?: number
+      noiseSmoothing?: number
       audioBandLowHz?: number
       audioBandHighHz?: number
       audioThreshold?: number
@@ -486,6 +517,9 @@ export function fixLightScenes(light: LightScenes_t) {
     modulator.lfo.noiseSeed = Number.isFinite(lfo.noiseSeed)
       ? Math.min(1, Math.max(0, Number(lfo.noiseSeed)))
       : 0.5
+    modulator.lfo.noiseSmoothing = Number.isFinite(lfo.noiseSmoothing)
+      ? Math.min(1, Math.max(0, Number(lfo.noiseSmoothing)))
+      : 0
 
     const normalizedBand = normalizeAudioBandConfig({
       lowHz: lfo.audioBandLowHz,
@@ -698,8 +732,11 @@ export function fixDmxState(dmx: DmxState) {
     }
   }
 
+  const subLabelRemap = LEGACY_SUB_FIXTURE_LABEL_REMAP
+
   // Add groups + mover calibration defaults
   for (const fixtureType of fixtureTypes(dmx)) {
+    migrateLegacySubFixtureGroupLabelsOnFixtureType(fixtureType, subLabelRemap)
     if (!Array.isArray(fixtureType.groups)) {
       fixtureType.groups = []
     }
@@ -733,6 +770,15 @@ export function fixDmxState(dmx: DmxState) {
     if (!Array.isArray(fixture.groups)) {
       fixture.groups = []
     }
+    fixture.groups = remapLegacySubFixtureGroupNames(fixture.groups, subLabelRemap)
+    const fixtureTypeForGroups = dmx.fixtureTypesByID[fixture.type]
+    if (
+      fixtureTypeForGroups !== undefined &&
+      fixture.groups.length === 0 &&
+      fixtureTypeForGroups.groups.length > 0
+    ) {
+      fixture.groups = normalizeFixtureGroupList(fixtureTypeForGroups.groups)
+    }
     if (fixture.universe === undefined) {
       fixture.universe = 1
     }
@@ -761,6 +807,8 @@ export function fixDmxState(dmx: DmxState) {
     }
     return left.universe - right.universe
   })
+
+  syncFixtureGroupCatalog(dmx.universe, dmx.fixtureTypesByID)
 
   if (
     (dmx as DmxState & { moverGroupByFixtureId?: { [fixtureId: string]: string } })
@@ -791,8 +839,7 @@ export function fixDmxState(dmx: DmxState) {
     if (moverGroupByFixtureId[fixtureId] === undefined) {
       moverGroupByFixtureId[fixtureId] = defaultMoverGroupName(
         fixture,
-        fixtureType.name,
-        fixtureType.groups
+        fixtureType.name
       )
     }
   }
@@ -899,12 +946,18 @@ export function fixDeviceState(deviceState: DeviceState) {
       artNetIpByUniverse: {},
       audioInput: initAudioInputSettings(),
       midiClockBpmEnabled: false,
+      linkEnabled: false,
+      linkStartStopSyncEnabled: false,
       atmos: initAtmosSettings(),
     }
   }
 
   deviceState.connectionSettings.midiClockBpmEnabled =
     deviceState.connectionSettings.midiClockBpmEnabled === true
+  deviceState.connectionSettings.linkEnabled =
+    deviceState.connectionSettings.linkEnabled === true
+  deviceState.connectionSettings.linkStartStopSyncEnabled =
+    deviceState.connectionSettings.linkStartStopSyncEnabled === true
 
   if (deviceState.connectionSettings.universeCount === undefined) {
     deviceState.connectionSettings.universeCount = 1

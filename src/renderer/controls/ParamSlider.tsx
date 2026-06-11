@@ -1,3 +1,4 @@
+import { auxColorParamTrackGradient } from '../../shared/dmxColors'
 import { DefaultParam, paramDisplayName } from '../../shared/params'
 import SliderBase from '../base/SliderBase'
 import { useBaseParam } from '../redux/store'
@@ -55,6 +56,7 @@ export default function ParamSlider({
 
   if (value === undefined) return null
   const sliderLabel = label ?? paramDisplayName(param)
+  const trackBackground = auxColorParamTrackGradient(param)
 
   const content = (
     <>
@@ -82,6 +84,7 @@ export default function ParamSlider({
           orientation="vertical"
           radius={radius}
           verticalPadRem={0.1}
+          trackBackground={trackBackground}
           onChange={onChange}
         >
           <LiveSliderCursor

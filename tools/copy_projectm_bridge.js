@@ -21,6 +21,13 @@ const sourceCandidates = [
   ),
 ]
 
+const destinationDir = path.join(repoRoot, 'assets', 'projectm-bridge')
+const destinationPath = path.join(destinationDir, 'projectm_bridge.node')
+if (fs.existsSync(destinationPath)) {
+  console.log(`Using existing projectm_bridge.node at ${destinationPath}`)
+  process.exit(0)
+}
+
 const sourcePath = sourceCandidates.find((candidate) => fs.existsSync(candidate))
 if (!sourcePath) {
   console.error(
@@ -29,8 +36,6 @@ if (!sourcePath) {
   process.exit(1)
 }
 
-const destinationDir = path.join(repoRoot, 'assets', 'projectm-bridge')
-const destinationPath = path.join(destinationDir, 'projectm_bridge.node')
 fs.mkdirSync(destinationDir, { recursive: true })
 fs.copyFileSync(sourcePath, destinationPath)
 

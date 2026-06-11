@@ -26,8 +26,9 @@ export default function StageScaleControls({
   return (
     <Root compact={compact}>
       <Label>Stage</Label>
-      <Fields compact={compact} showDepth={showDepth}>
-        <StageLengthField
+      <FieldsWrap>
+        <DimensionFields compact={compact} showDepth={showDepth}>
+          <StageLengthField
           val={Number(width.toFixed(3))}
           numberType="float"
           step={0.01}
@@ -77,6 +78,7 @@ export default function StageScaleControls({
             }
           />
         ) : null}
+        </DimensionFields>
         <UnitToggleRow>
           <UnitToggle
             type="button"
@@ -95,7 +97,7 @@ export default function StageScaleControls({
             m
           </UnitToggle>
         </UnitToggleRow>
-      </Fields>
+      </FieldsWrap>
     </Root>
   )
 }
@@ -112,22 +114,31 @@ const Label = styled.div`
   color: ${(props) => props.theme.colors.text.secondary};
 `
 
-const Fields = styled.div<{ compact: boolean; showDepth: boolean }>`
+const FieldsWrap = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.35rem;
+`
+
+const DimensionFields = styled.div<{ compact: boolean; showDepth: boolean }>`
   display: grid;
   gap: 0.35rem;
   grid-template-columns: ${(props) =>
     props.compact
       ? props.showDepth
-        ? 'repeat(4, minmax(5rem, 6.7rem))'
-        : 'repeat(3, minmax(5rem, 6.7rem))'
+        ? 'repeat(3, minmax(5rem, 6.7rem))'
+        : 'repeat(2, minmax(5rem, 6.7rem))'
       : props.showDepth
-        ? 'repeat(2, minmax(5rem, 1fr))'
+        ? 'repeat(3, minmax(5rem, 1fr))'
         : 'repeat(2, minmax(5rem, 1fr))'};
 `
 
 const UnitToggleRow = styled.div`
   display: flex;
   align-items: stretch;
+  flex: 0 0 auto;
+  width: fit-content;
   border: 1px solid #ffffff33;
   border-radius: 0.26rem;
   overflow: hidden;

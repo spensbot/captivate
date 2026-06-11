@@ -24,6 +24,7 @@ export default function LfoPeriod({ index }: Props) {
       min={0.25}
       max={32}
       onChange={onChange}
+      title="How many beats for one full wave (not shown for music-linked shapes)"
       style={{}}
     />
   )

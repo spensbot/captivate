@@ -9,6 +9,16 @@ export function parseMetricLengthToMeters(raw: string): number | null {
     s = s.replace(',', '.')
   }
 
+  const compact = s.replace(/\s+/g, '').match(/^(-?\d+(?:\.\d+)?)(mm|cm|m)$/i)
+  if (compact) {
+    const v = Number(compact[1])
+    if (!Number.isFinite(v)) return null
+    const unit = compact[2]!.toLowerCase()
+    if (unit === 'mm') return v / 1000
+    if (unit === 'cm') return v / 100
+    return v
+  }
+
   const mm = s.match(
     /^(-?\d+(?:\.\d+)?)\s*(?:mm|millimeters?|millimetres?)$/i
   )

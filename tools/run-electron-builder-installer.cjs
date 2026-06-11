@@ -59,17 +59,53 @@ const r = spawnSync(process.execPath, args, {
   env: process.env,
 })
 
+function readPackagedAppVersion() {
+  try {
+    const appPkgPath = path.join(repoRoot, 'release', 'app', 'package.json')
+    const appPkg = JSON.parse(fs.readFileSync(appPkgPath, 'utf8'))
+    const version = String(appPkg.version ?? '').trim()
+    return version.length > 0 ? version : null
+  } catch {
+    return null
+  }
+}
+
+function findWindowsSetupExe(outputRoot) {
+  try {
+    const candidates = fs
+      .readdirSync(outputRoot)
+      .filter((name) => / Setup .*\.exe$/i.test(name) && !name.includes('__uninstaller'))
+      .map((name) => path.join(outputRoot, name))
+    if (candidates.length === 0) {
+      return null
+    }
+    candidates.sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs)
+    return candidates[0]
+  } catch {
+    return null
+  }
+}
+
 const code = r.status === null ? 1 : r.status
 if (code === 0) {
   const winUnpacked = path.join(repoRoot, outputDir, 'win-unpacked')
-  const setupExe = path.join(repoRoot, outputDir, 'Captivate 2 Setup 1.0.0.exe')
-  console.log(`[captivate] Unpacked app: ${path.join(winUnpacked, 'Captivate 2.exe')}`)
+  const appVersion = readPackagedAppVersion()
+  const setupExe =
+    findWindowsSetupExe(path.join(repoRoot, outputDir)) ??
+    path.join(
+      repoRoot,
+      outputDir,
+      `Captivate 2 Setup ${appVersion ?? '0.0.0'}.exe`
+    )
+  const unpackedExe = path.join(winUnpacked, 'Captivate 2.exe')
+  console.log(`[captivate] Unpacked app: ${unpackedExe}`)
   console.log(`[captivate] Installer: ${setupExe}`)
 
   const latestMeta = {
     outputDir,
-    setupExe: setupExe,
-    unpackedExe: path.join(winUnpacked, 'Captivate 2.exe'),
+    setupExe,
+    unpackedExe,
+    appVersion,
     builtAt: new Date().toISOString(),
   }
   const latestPath = path.join(repoRoot, 'release', 'latest-windows-installer.json')

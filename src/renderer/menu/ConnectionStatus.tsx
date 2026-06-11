@@ -1,6 +1,10 @@
 import { useControlSelector, useTypedSelector } from '../redux/store'
 import { useRealtimeSelector } from '../redux/realtimeStore'
-import styled from 'styled-components'
+import {
+  StatusBarConnectionLabel,
+  StatusBarConnectionRow,
+  StatusBarStatusDot,
+} from './statusBarUi'
 
 interface Props {
   type: 'midi' | 'dmx' | 'link'
@@ -19,7 +23,7 @@ function dmxIndicatorState(
   if (liveCount > 0) {
     if (enabledCount === 0 || enabledLiveCount > 0) {
       return {
-        color: '#0f0',
+        color: '#78dc82',
         title:
           liveCount === 1
             ? 'DMX output active (1 adapter connected)'
@@ -39,7 +43,7 @@ function dmxIndicatorState(
   }
 
   return {
-    color: '#f00',
+    color: '#e05a5a',
     title: 'No DMX output — enable a USB adapter in Connections',
   }
 }
@@ -52,6 +56,7 @@ export default function ConnectionStatus({ type }: Props) {
   const dmxConnectable = useControlSelector(
     (state) => state.device.connectable.dmx
   )
+
   if (type === 'link') {
     const peerCount = Number.isFinite(numPeers) ? Math.max(0, Math.floor(numPeers)) : 0
     const title = linkEnabled
@@ -59,20 +64,20 @@ export default function ConnectionStatus({ type }: Props) {
       : 'Ableton Link off'
 
     return (
-      <Root title={title}>
-        <Text>link</Text>
-        <Square style={{ backgroundColor: linkEnabled ? '#0f0' : '#f00' }} />
-      </Root>
+      <StatusBarConnectionRow title={title}>
+        <StatusBarConnectionLabel>link</StatusBarConnectionLabel>
+        <StatusBarStatusDot $color={linkEnabled ? '#78dc82' : '#e05a5a'} />
+      </StatusBarConnectionRow>
     )
   }
 
   if (type === 'dmx') {
     const { color, title } = dmxIndicatorState(dmxConnected, dmxConnectable)
     return (
-      <Root title={title}>
-        <Text>dmx</Text>
-        <Square style={{ backgroundColor: color }} />
-      </Root>
+      <StatusBarConnectionRow title={title}>
+        <StatusBarConnectionLabel>dmx</StatusBarConnectionLabel>
+        <StatusBarStatusDot $color={color} />
+      </StatusBarConnectionRow>
     )
   }
 
@@ -80,27 +85,9 @@ export default function ConnectionStatus({ type }: Props) {
   const title = isConnected ? 'midi connected' : 'No midi connection'
 
   return (
-    <Root title={title}>
-      <Text>midi</Text>
-      <Square style={{ backgroundColor: isConnected ? '#0f0' : '#f00' }} />
-    </Root>
+    <StatusBarConnectionRow title={title}>
+      <StatusBarConnectionLabel>midi</StatusBarConnectionLabel>
+      <StatusBarStatusDot $color={isConnected ? '#78dc82' : '#e05a5a'} />
+    </StatusBarConnectionRow>
   )
 }
-
-const Root = styled.div`
-  display: flex;
-  align-items: center;
-  padding: 0rem 0.2rem;
-  font-size: 0.8rem;
-`
-
-const Text = styled.span`
-  color: #fff7;
-`
-
-const Square = styled.div`
-  width: 0.6rem;
-  height: 0.6rem;
-  margin-left: 0.5rem;
-  flex-shrink: 0;
-`

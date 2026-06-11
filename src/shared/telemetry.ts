@@ -80,3 +80,11 @@ export interface TelemetryExportResult {
   filePath: string
   snapshot: TelemetrySnapshot
 }
+
+/** Result of Help → Export Debug Log (unified NDJSON for GitHub issues). */
+export interface DebugLogExportResult {
+  filePath: string
+  lineCount: number
+  bytesWritten: number
+  sessionId: string
+}

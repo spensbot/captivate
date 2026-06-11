@@ -37,10 +37,13 @@ const Root = styled.button<{ $active: boolean }>`
   height: 5.6rem;
   max-height: 6.4rem;
   min-height: 4.8rem;
-  padding: 0.3rem 0.28rem;
+  padding: 0.3rem 0.12rem;
   box-sizing: border-box;
-  border-radius: 0.35rem;
-  border: 1px solid ${(props) => (props.$active ? '#ffaaaa' : '#c9b06a')};
+  border-radius: 0;
+  border-top: 1px solid ${(props) => (props.$active ? '#ffaaaa' : '#c9b06a')};
+  border-bottom: 1px solid ${(props) => (props.$active ? '#ffaaaa' : '#c9b06a')};
+  border-left: none;
+  border-right: none;
   color: #f4f4f4;
   cursor: pointer;
   background: ${(props) =>
@@ -74,7 +77,7 @@ const StateDot = styled.div<{ $active: boolean }>`
 `
 
 const MainText = styled.div`
-  font-size: 0.62rem;
+  font-size: 0.58rem;
   font-weight: 800;
   letter-spacing: 0.04em;
   color: #ffffff;

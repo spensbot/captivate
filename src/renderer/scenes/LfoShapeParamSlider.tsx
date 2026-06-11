@@ -17,7 +17,7 @@ import {
   sliderValueToThumbNorm,
 } from '../../shared/lfoShapeSlider'
 import { useActiveLightScene } from '../redux/store'
-import { useRealtimeSelector } from '../redux/realtimeStore'
+import { useLfoAudioMetrics, useLfoBeats } from '../redux/realtimeSelectors'
 import { LfoShapeVerticalRange } from './lfoShapeVerticalRange'
 
 function shapeSliderIdToInterModProp(id: string): string {
@@ -30,11 +30,13 @@ function shapeSliderIdToInterModProp(id: string): string {
     threshold: 'audioThreshold',
     max: 'audioMax',
     smoothing: 'audioEnergySmoothing',
+    skew: 'skew',
     sinePeakWidth: 'sinePeakWidth',
     rampCurve: 'rampCurve',
     squareDuty: 'squareDuty',
     sawFlatten: 'sawFlatten',
     noiseSeed: 'noiseSeed',
+    noiseSmoothing: 'noiseSmoothing',
   }
   return map[id] ?? id
 }
@@ -114,8 +116,8 @@ export default function LfoShapeParamSlider({
   const [railBox, setRailBox] = useState<RailBox | null>(null)
 
   const lightScene = useActiveLightScene((s) => s)
-  const time = useRealtimeSelector((s) => s.time)
-  const audio = useRealtimeSelector((s) => s.audio)
+  const beats = useLfoBeats()
+  const audio = useLfoAudioMetrics()
 
   const intermodProp = shapeSliderIdToInterModProp(spec.id)
   const hasIncoming = useActiveLightScene((scene) => {
@@ -132,7 +134,7 @@ export default function LfoShapeParamSlider({
     const lfos = effectiveLfosAtSplit(
       lightScene,
       splitIndex,
-      time.beats,
+      beats,
       audio
     )
     const eff = lfos[modIndex]
@@ -145,7 +147,7 @@ export default function LfoShapeParamSlider({
     hasIncoming,
     lightScene,
     splitIndex,
-    time.beats,
+    beats,
     audio,
     modIndex,
     intermodProp,
@@ -210,7 +212,7 @@ export default function LfoShapeParamSlider({
           <IntermodThumb
             $variant="live"
             $norm={liveNorm}
-            title="Live value (inter-modulation)"
+            title="Live value while other effects are running"
           />
           <IntermodThumb
             $variant="stored"

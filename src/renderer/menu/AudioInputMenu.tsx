@@ -2,11 +2,12 @@ import type { ReactNode } from 'react'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import MusicNoteIcon from '@mui/icons-material/MusicNote'
-import InfoOutlined from '@mui/icons-material/InfoOutlined'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import styled from 'styled-components'
+import { statusBarMuiIconButtonSx } from './statusBarUi'
 import Popup from '../base/Popup'
 import ToggleSwitch from '../base/ToggleSwitch'
+import { FieldHelpButton } from '../base/SectionHelpPopover'
 import { useDispatch } from 'react-redux'
 import { useControlSelector } from '../redux/store'
 import {
@@ -18,6 +19,7 @@ import {
   setAudioInputDeviceId,
   setAudioInputEnabled,
   setAudioInputGain,
+  setAudioInputAutoGainControl,
 } from '../redux/controlSlice'
 import { useRealtimeSelector } from '../redux/realtimeStore'
 import {
@@ -28,7 +30,6 @@ import {
   AUDIO_MIN_BPM_SMOOTHING,
   normalizeAudioInputSettings,
 } from '../../shared/audioEngine'
-import { APP_TOOLTIP_SLOT_PROPS } from '../base/appTooltip'
 
 interface AudioInputDeviceOption {
   deviceId: string
@@ -37,77 +38,86 @@ interface AudioInputDeviceOption {
 
 const AUDIO_MODE_INFO = (
   <>
-    Turns on audio capture and analysis for level, energy, and optional beat/BPM
-    detection. Required for audio modulation sources and the meters below.
+    Turn this on to listen to your music or mic for loudness, energy, and optional
+    beat detection. Needed for music-linked motion effects, auto scene audio
+    matching, and the meters below.
   </>
 )
 
 const AUDIO_BEAT_CLOCK_INFO = (
   <>
-    Drives master BPM and beat pulse from detected onsets in the selected input.
-    When MIDI clock tempo is enabled under Connections, audio beat clock is
-    unavailable — disable MIDI clock tempo there first.
+    To drive master BPM and the beat pulse from onsets in the selected input,
+    turn this on. If MIDI clock tempo is enabled under Connections, disable that
+    first — only one external BPM source can be active.
   </>
 )
 
 const BPM_TAP_HINT_INFO = (
   <>
-    With Audio Mode on, use the <strong>TAP</strong> button next to the tempo
-    readout in the status bar (same as manual tap tempo). That feeds a
-    short-lived hint into beat detection. Hints are not saved with the project.
+    With Audio Mode on, press the <strong>TAP</strong> button next to the tempo
+    readout in the status bar (same as manual tap tempo). That sends a short-lived
+    hint into beat detection. Hints are not saved with the project.
   </>
 )
 
 const ADVANCED_BEAT_INFO = (
   <>
-    Fine-tune onset sensitivity, minimum time between beats, and how quickly
-    tracked BPM follows the signal. Useful when detection is too sparse or too
-    chatty.
+    Use these when beat detection is too sparse or too chatty: adjust onset
+    sensitivity, minimum time between beats, and how quickly tracked BPM follows
+    the signal.
   </>
 )
 
 const INPUT_DEVICE_INFO = (
   <>
-    Microphone or desktop loopback source used for analysis. Desktop Audio
-    captures system output when supported. Refresh the list after plugging in
-    hardware.
+    Choose the microphone or desktop loopback source for analysis. Pick{' '}
+    <strong>Desktop Audio</strong> to capture system output when supported.
+    Click <strong>Refresh</strong> after plugging in hardware.
   </>
 )
 
 const INPUT_GAIN_INFO = (
   <>
-    Scales incoming audio before analysis (0–4×). Raise if meters stay low;
-    lower if the signal clips or overloads detection.
+    Scales incoming audio before analysis (0–4×). Raise it if meters stay low;
+    lower it if the signal clips or overloads detection. When Auto Gain Control is
+    on, this slider is the baseline level AGC adjusts around.
+  </>
+)
+
+const AUTO_GAIN_CONTROL_INFO = (
+  <>
+    Keeps the incoming level steady so quiet and loud songs both work. Your input
+    gain slider is still the starting point — auto gain fine-tunes around it.
   </>
 )
 
 const BEAT_SENSITIVITY_INFO = (
   <>
-    How strongly transients must stand out to count as a beat. Higher values
-    trigger more often; lower values require clearer peaks.
+    Controls how strongly transients must stand out to count as a beat. Higher
+    values trigger more often; lower values require clearer peaks.
   </>
 )
 
 const MIN_BEAT_INTERVAL_INFO = (
   <>
-    Ignores beats closer than this interval, limiting the fastest tempo the
+    Ignores beats closer than this interval, which sets the fastest tempo the
     detector will accept.
   </>
 )
 
 const BPM_RESPONSE_INFO = (
   <>
-    How quickly estimated BPM adapts to new taps and onsets. Higher values follow
-    faster but may jitter more on noisy material.
+    Controls how quickly estimated BPM adapts to new taps and onsets. Higher
+    values follow faster but may jitter more on noisy material.
   </>
 )
 
 const METER_LEVEL_INFO =
-  'Raw input loudness after gain — used for level-based modulation.'
+  'How loud the input is right now (after gain).'
 const METER_ENERGY_INFO =
-  'Smoothed envelope of the signal — used for energy-based modulation.'
+  'Smoothed loudness — used for energy-style effects and auto scenes.'
 const METER_BPM_LOCK_INFO =
-  'Confidence that the current BPM estimate is stable (only when audio beat clock is on).'
+  'How sure Captivate is about the tempo (only when audio beat clock is on).'
 
 function levelPercent(value: number) {
   if (!Number.isFinite(value)) return '0%'
@@ -133,23 +143,7 @@ function InfoHint({
   content: ReactNode
   ariaLabel: string
 }) {
-  return (
-    <Tooltip
-      title={content}
-      placement="top"
-      enterDelay={350}
-      slotProps={APP_TOOLTIP_SLOT_PROPS}
-    >
-      <InfoButton
-        type="button"
-        size="small"
-        aria-label={ariaLabel}
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <InfoOutlined sx={{ fontSize: '0.95rem' }} />
-      </InfoButton>
-    </Tooltip>
-  )
+  return <FieldHelpButton ariaLabel={ariaLabel}>{content}</FieldHelpButton>
 }
 
 function ToggleRow({
@@ -321,6 +315,7 @@ export default function AudioInputMenu({
             onClick={() => setOpen((previous) => !previous)}
             size="small"
             sx={{
+              ...statusBarMuiIconButtonSx,
               color: settings.enabled ? 'primary.main' : 'text.secondary',
             }}
           >
@@ -442,6 +437,16 @@ export default function AudioInputMenu({
               onChange={(value) => dispatch(setAudioInputGain(value))}
             />
           </Field>
+
+          <ToggleRow
+            label="Auto Gain Control (AGC)"
+            checked={settings.autoGainControl}
+            disabled={settings.enabled !== true}
+            onChange={(next) => dispatch(setAudioInputAutoGainControl(next))}
+            info={AUTO_GAIN_CONTROL_INFO}
+            infoAriaLabel="About auto gain control"
+            toggleTitle="Automatically normalize input level for analysis"
+          />
 
           <ToggleRow
             label="Advanced Beat Detection"
@@ -606,16 +611,6 @@ const LabelRow = styled.div`
 const Label = styled.div`
   font-size: 0.74rem;
   color: ${(props) => props.theme.colors.text.secondary};
-`
-
-const InfoButton = styled(IconButton)`
-  && {
-    padding: 0.1rem;
-    color: ${(props) => props.theme.colors.text.secondary};
-  }
-  &&:hover {
-    color: ${(props) => props.theme.colors.text.primary};
-  }
 `
 
 const ToggleRowRoot = styled.div`

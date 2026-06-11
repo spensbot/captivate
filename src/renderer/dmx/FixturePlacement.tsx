@@ -2,9 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import styled from 'styled-components'
 import ChevronLeft from '@mui/icons-material/ChevronLeft'
 import ChevronRight from '@mui/icons-material/ChevronRight'
-import InfoOutlined from '@mui/icons-material/InfoOutlined'
-import IconButton from '@mui/material/IconButton'
-import Popover from '@mui/material/Popover'
+import Button from '@mui/material/Button'
 import { useDmxSelector, useTypedSelector } from '../redux/store'
 import FixtureCursor from './FixtureCursor'
 import useDragMapped, { MappedPos } from '../hooks/useDragMapped'
@@ -15,7 +13,10 @@ import {
   setFixtureRotation,
   setFixtureWindow,
   setFixtureWindowEnabled,
+  setFixtureGroups,
 } from '../redux/dmxSlice'
+import { getFixtureGroupPickerOptions } from '../../shared/fixtureGroups'
+import FixtureGroupsModal from './FixtureGroupsModal'
 import { setFxtrDepthOn } from '../redux/guiSlice'
 import { secondaryEnabled } from 'renderer/base/keyUtil'
 import {
@@ -25,8 +26,10 @@ import {
   STAGE_SNAP_GRID_FEET,
   snapStageAxisNormalized,
   stageAxisFromDisplayValue,
+  stageAxisFromFeet,
   stageAxisLengthFt,
   stageAxisToDisplayValue,
+  stageAxisToFeet,
 } from '../../shared/stage'
 import StageScaleControls from './StageScaleControls'
 import ToggleSwitch from '../base/ToggleSwitch'
@@ -34,9 +37,49 @@ import NumberField from '../base/NumberField'
 import StageLengthField from '../base/StageLengthField'
 import { Window2D_t } from '../../shared/window'
 import { isMoverFixtureType } from '../../shared/dmxFixtures'
+import { canvasLayerZIndex } from '../zIndexes'
+import SectionHelpButton, {
+  HelpIntro,
+  HelpList,
+  HelpTitle,
+} from './SectionHelpPopover'
 
 type DragStatus = 'Start' | 'Moved' | 'End'
 type Axis = StageAxis
+type PadAxis = 'horizontal' | 'vertical'
+
+function padAxisLockFromDragDelta(dx: number, dy: number): PadAxis {
+  return Math.abs(dx) >= Math.abs(dy) ? 'horizontal' : 'vertical'
+}
+
+function isKeyboardNudgeTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) {
+    return false
+  }
+  const tag = target.tagName
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+    return true
+  }
+  return target.isContentEditable
+}
+
+function nudgeStageAxisNormalized(
+  stage: StageDimensions,
+  axis: StageAxis,
+  currentNormalized: number,
+  deltaFeet: number,
+  snapFeet: number
+): number {
+  const axisLengthFt = Math.max(0.00001, stageAxisLengthFt(stage, axis))
+  const currentFeet = stageAxisToFeet(stage, axis, currentNormalized)
+  const nextFeet = Math.min(axisLengthFt, Math.max(0, currentFeet + deltaFeet))
+  return snapStageAxisNormalized(
+    stage,
+    axis,
+    stageAxisFromFeet(stage, axis, nextFeet),
+    snapFeet
+  )
+}
 
 const AXIS_LABEL: { [key in Axis]: string } = {
   x: 'X',
@@ -98,72 +141,55 @@ function MappingHelpButton({
   snapGridFeet: number
   zDepthEnabled: boolean
 }) {
-  const [anchor, setAnchor] = useState<HTMLElement | null>(null)
-  const open = anchor !== null
   const snapLabel = snapSpacingDisplayLabel(stage, snapGridFeet)
 
   return (
-    <>
-      <IconButton
-        size="small"
-        aria-label="Fixture mapping help"
-        onClick={(e) => setAnchor(e.currentTarget)}
-        sx={{
-          padding: '0.12rem',
-          color: 'text.secondary',
-          '&:hover': { color: 'text.primary' },
-        }}
-      >
-        <InfoOutlined sx={{ fontSize: '1rem' }} />
-      </IconButton>
-      <Popover
-        open={open}
-        anchorEl={anchor}
-        onClose={() => setAnchor(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-        slotProps={{
-          paper: {
-            sx: {
-              maxWidth: '22rem',
-              p: 1.25,
-              lineHeight: 1.45,
-              fontSize: '0.78rem',
-            },
-          },
-        }}
-      >
-        <HelpTitle>Fixture mapping</HelpTitle>
-        <HelpList>
+    <SectionHelpButton ariaLabel="How to place fixtures on the map">
+      <HelpTitle>How to place fixtures</HelpTitle>
+      <HelpIntro>
+        Pick a fixture from the patch list above, or click it on the map. Then
+        use the map and fields below to set where it sits on stage.
+      </HelpIntro>
+      <HelpList>
+        <li>
+          To move a fixture, drag it on the map. It snaps to{' '}
+          <strong>{snapLabel}</strong> steps — the same spacing as the grid
+          lines and the Snap grid control.
+        </li>
+        <li>
+          To slide in a straight line, hold <strong>Shift</strong> while
+          dragging. Movement locks to horizontal or vertical depending on the
+          direction you were already moving when you pressed Shift.
+        </li>
+        <li>
+          To nudge a selected fixture, use the <strong>arrow keys</strong>.
+          Each press moves one snap step; hold <strong>Shift</strong> for a
+          larger jump.
+        </li>
+        <li>
+          To type an exact position, enter values in the fields below the map.
+          Typed values are not snapped to the grid.
+        </li>
+        <li>
+          To change how much room a fixture has to move, resize its outline
+          with <strong>Ctrl+drag</strong> (<strong>Cmd+drag</strong> on Mac)
+          or by pulling the white handles when it is selected.
+        </li>
+        {zDepthEnabled ? (
           <li>
-            Select a fixture in the universe list or click it on the map.
+            You have depth placement turned on. Switch pages at the bottom to
+            place fixtures on the front view (XY) or the top-down view (XZ).
+            Height also appears in the 3D preview.
           </li>
+        ) : (
           <li>
-            <strong>Drag</strong> to move — snaps to <strong>{snapLabel}</strong>{' '}
-            (matches the <strong>Snap grid</strong> setting and pad grid lines).
+            Most lighting looks only need left/right and up/down (X and Y) for
+            now. Turn on <strong>Enable Z Depth</strong> when you need height
+            on the map; movers can still be aimed with pan and tilt.
           </li>
-          <li>
-            Type exact coordinates in the position fields below (no snap on
-            manual entry).
-          </li>
-          <li>
-            <strong>Ctrl + drag</strong> (Cmd on Mac) or the white edge handles resize
-            the motion window on the visible axes.
-          </li>
-          {zDepthEnabled ? (
-            <li>
-              <strong>Enable Z Depth</strong> is on — use the pager for XY (front)
-              and XZ (top-down); Z appears in the 3D preview.
-            </li>
-          ) : (
-            <li>
-              Light scenes use <strong>X/Y</strong> only until you enable Z Depth;
-              movers still use their pan/tilt controls.
-            </li>
-          )}
-        </HelpList>
-      </Popover>
-    </>
+        )}
+      </HelpList>
+    </SectionHelpButton>
   )
 }
 
@@ -318,7 +344,37 @@ export default function FixturePlacement() {
   )
   const dragFixtureIndexRef = useRef<number | null>(null)
   const dragHasMovedRef = useRef(false)
+  const dragStartMappedRef = useRef<{ x: number; y: number } | null>(null)
+  const dragPadAxisLockRef = useRef<PadAxis | null>(null)
+  const dragShiftDownRef = useRef(false)
+  const dragLockAnchorRef = useRef<{
+    horizontal: number
+    vertical: number
+  } | null>(null)
   const [snapGridFeet, setSnapGridFeet] = useState(STAGE_SNAP_GRID_FEET)
+  const [fixtureGroupsModalOpen, setFixtureGroupsModalOpen] = useState(false)
+  const groupsModalFixture = useDmxSelector((state) => {
+    if (state.activeFixture === null) {
+      return null
+    }
+    const fixture = state.universe[state.activeFixture]
+    if (fixture === undefined) {
+      return null
+    }
+    const fixtureType = state.fixtureTypesByID[fixture.type]
+    const displayName =
+      typeof fixture.name === 'string' && fixture.name.trim().length > 0
+        ? fixture.name.trim()
+        : (fixtureType?.name ?? 'Fixture')
+    return {
+      index: state.activeFixture,
+      label: displayName,
+      groups: fixture.groups,
+    }
+  })
+  const availableFixtureGroups = useDmxSelector((state) =>
+    getFixtureGroupPickerOptions(state.universe, state.fixtureTypesByID)
+  )
 
   function ensureAxisEnabled(index: number, axis: Axis) {
     const fixtureWindow = fixtureWindowByIndex.get(index)
@@ -392,12 +448,20 @@ export default function FixturePlacement() {
       }
       dragFixtureIndexRef.current = clickedFixture ?? activeFixture ?? null
       dragHasMovedRef.current = false
+      dragStartMappedRef.current = null
+      dragPadAxisLockRef.current = null
+      dragShiftDownRef.current = false
+      dragLockAnchorRef.current = null
       return
     }
 
     if (status === 'End') {
       dragFixtureIndexRef.current = null
       dragHasMovedRef.current = false
+      dragStartMappedRef.current = null
+      dragPadAxisLockRef.current = null
+      dragShiftDownRef.current = false
+      dragLockAnchorRef.current = null
       return
     }
 
@@ -415,8 +479,31 @@ export default function FixturePlacement() {
         return
       }
       dragHasMovedRef.current = true
+      dragStartMappedRef.current = { x: mapped.x, y: mapped.y }
       ensureAxisEnabled(dragFixtureIndex, horizontalAxis)
       ensureAxisEnabled(dragFixtureIndex, verticalAxis)
+    }
+
+    const fixtureWindow = fixtureWindowByIndex.get(dragFixtureIndex)
+    if (e.shiftKey) {
+      if (
+        !dragShiftDownRef.current &&
+        dragStartMappedRef.current !== null &&
+        fixtureWindow !== undefined
+      ) {
+        const dx = mapped.x - dragStartMappedRef.current.x
+        const dy = mapped.y - dragStartMappedRef.current.y
+        dragPadAxisLockRef.current = padAxisLockFromDragDelta(dx, dy)
+        dragLockAnchorRef.current = {
+          horizontal: axisPos(fixtureWindow, horizontalAxis),
+          vertical: axisPos(fixtureWindow, verticalAxis),
+        }
+      }
+      dragShiftDownRef.current = true
+    } else {
+      dragShiftDownRef.current = false
+      dragPadAxisLockRef.current = null
+      dragLockAnchorRef.current = null
     }
 
     if (secondaryEnabled(e)) {
@@ -440,18 +527,26 @@ export default function FixturePlacement() {
       return
     }
 
-    const nextHorizontal = snapStageAxisNormalized(
+    let nextHorizontal = snapStageAxisNormalized(
       stage,
       horizontalAxis,
       mapped.x,
       snapGridFeet
     )
-    const nextVertical = snapStageAxisNormalized(
+    let nextVertical = snapStageAxisNormalized(
       stage,
       verticalAxis,
       mapped.y,
       snapGridFeet
     )
+
+    const padAxisLock = dragPadAxisLockRef.current
+    const lockAnchor = dragLockAnchorRef.current
+    if (padAxisLock === 'horizontal' && lockAnchor !== null) {
+      nextVertical = lockAnchor.vertical
+    } else if (padAxisLock === 'vertical' && lockAnchor !== null) {
+      nextHorizontal = lockAnchor.horizontal
+    }
 
     const payload: {
       index: number
@@ -503,6 +598,93 @@ export default function FixturePlacement() {
       setMappingPage(0)
     }
   }, [zDepthEnabled])
+
+  useEffect(() => {
+    if (activeFixture === null) {
+      return
+    }
+
+    const horizontalAxis: Axis = 'x'
+    const verticalAxis: Axis =
+      zDepthEnabled && mappingPage === 1 ? 'z' : 'y'
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (isKeyboardNudgeTarget(event.target)) {
+        return
+      }
+
+      const stepFeet = event.shiftKey ? snapGridFeet * 4 : snapGridFeet
+      let deltaHorizontalFeet = 0
+      let deltaVerticalFeet = 0
+
+      if (event.key === 'ArrowLeft') {
+        deltaHorizontalFeet = -stepFeet
+      } else if (event.key === 'ArrowRight') {
+        deltaHorizontalFeet = stepFeet
+      } else if (event.key === 'ArrowUp') {
+        deltaVerticalFeet = stepFeet
+      } else if (event.key === 'ArrowDown') {
+        deltaVerticalFeet = -stepFeet
+      } else {
+        return
+      }
+
+      event.preventDefault()
+
+      const fixtureWindow = fixtureWindowByIndex.get(activeFixture)
+      if (fixtureWindow === undefined) {
+        return
+      }
+
+      if (deltaHorizontalFeet !== 0) {
+        ensureAxisEnabled(activeFixture, horizontalAxis)
+      }
+      if (deltaVerticalFeet !== 0) {
+        ensureAxisEnabled(activeFixture, verticalAxis)
+      }
+
+      const payload: {
+        index: number
+        x?: number
+        y?: number
+        z?: number
+      } = {
+        index: activeFixture,
+      }
+
+      if (deltaHorizontalFeet !== 0) {
+        payload[horizontalAxis] = nudgeStageAxisNormalized(
+          stage,
+          horizontalAxis,
+          axisPos(fixtureWindow, horizontalAxis),
+          deltaHorizontalFeet,
+          snapGridFeet
+        )
+      }
+      if (deltaVerticalFeet !== 0) {
+        payload[verticalAxis] = nudgeStageAxisNormalized(
+          stage,
+          verticalAxis,
+          axisPos(fixtureWindow, verticalAxis),
+          deltaVerticalFeet,
+          snapGridFeet
+        )
+      }
+
+      dispatch(setFixtureWindow(payload))
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [
+    activeFixture,
+    dispatch,
+    fixtureWindowByIndex,
+    mappingPage,
+    snapGridFeet,
+    stage,
+    zDepthEnabled,
+  ])
 
   const mappingPageTitle =
     mappingPage === 0
@@ -615,10 +797,11 @@ export default function FixturePlacement() {
           <Inspector>
             <InspectorTitle>
               Selected fixture · position
-              {!selectedFixtureIsMover ? ' & rotation' : ''}
+              {!selectedFixtureIsMover ? ', rotation' : ''} and groups
             </InspectorTitle>
             <InspectorCompactRow>
-              {positionAxes.map((axis) => {
+              <InspectorFields>
+                {positionAxes.map((axis) => {
                 const displayVal = stageAxisToDisplayValue(
                   stage,
                   axis,
@@ -663,7 +846,45 @@ export default function FixturePlacement() {
                     sx={inspectorCompactFieldSx}
                   />
                 ))}
+              </InspectorFields>
+              <InspectorGroupsBlock>
+                {groupsModalFixture !== null &&
+                groupsModalFixture.groups.length > 0 ? (
+                  <InspectorGroupsSummary
+                    title={groupsModalFixture.groups.join(', ')}
+                  >
+                    {groupsModalFixture.groups.join(', ')}
+                  </InspectorGroupsSummary>
+                ) : (
+                  <InspectorGroupsSummary $muted>No groups assigned</InspectorGroupsSummary>
+                )}
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => setFixtureGroupsModalOpen(true)}
+                >
+                  Groups…
+                </Button>
+              </InspectorGroupsBlock>
             </InspectorCompactRow>
+            {groupsModalFixture !== null ? (
+              <FixtureGroupsModal
+                open={fixtureGroupsModalOpen}
+                fixtureLabel={groupsModalFixture.label}
+                selectedGroups={groupsModalFixture.groups}
+                availableGroups={availableFixtureGroups}
+                onClose={() => setFixtureGroupsModalOpen(false)}
+                onSave={(groups) => {
+                  dispatch(
+                    setFixtureGroups({
+                      index: groupsModalFixture.index,
+                      groups,
+                    })
+                  )
+                  setFixtureGroupsModalOpen(false)
+                }}
+              />
+            ) : null}
           </Inspector>
         ) : (
           <Inspector>
@@ -811,23 +1032,6 @@ const SectionTitle = styled.div`
   color: ${(props) => props.theme.colors.text.primary};
 `
 
-const HelpTitle = styled.div`
-  font-size: 0.82rem;
-  font-weight: 600;
-  margin-bottom: 0.45rem;
-  color: ${(props) => props.theme.colors.text.primary};
-`
-
-const HelpList = styled.ul`
-  margin: 0;
-  padding-left: 1.1rem;
-  color: ${(props) => props.theme.colors.text.secondary};
-
-  li + li {
-    margin-top: 0.35rem;
-  }
-`
-
 const TopControls = styled.div`
   display: flex;
   align-items: center;
@@ -940,6 +1144,8 @@ const BottomAxisLabel = styled.div`
 
 const PadRoot = styled.div<{ $aspectRatio: number }>`
   position: relative;
+  isolation: isolate;
+  z-index: ${canvasLayerZIndex.grid};
   width: 100%;
   box-sizing: border-box;
   aspect-ratio: ${(props) => props.$aspectRatio} / 1;
@@ -1007,7 +1213,41 @@ const InspectorCompactRow = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.4rem 0.65rem;
+  width: 100%;
+`
+
+const InspectorFields = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
   gap: 0.4rem;
+  flex: 1 1 auto;
+  min-width: 0;
+`
+
+const InspectorGroupsBlock = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  flex: 0 1 auto;
+  min-width: min(100%, 10rem);
+  max-width: min(100%, 18rem);
+  margin-left: auto;
+`
+
+const InspectorGroupsSummary = styled.div<{ $muted?: boolean }>`
+  font-size: 0.74rem;
+  color: ${(p) =>
+    p.$muted ? p.theme.colors.text.secondary : p.theme.colors.text.primary};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: right;
 `
 
 const inspectorCompactFieldSx = {

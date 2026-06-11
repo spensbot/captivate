@@ -1,19 +1,17 @@
 import styled from 'styled-components'
-import { useDmxSelector, useTypedSelector } from '../redux/store'
+import { useDmxSelector } from '../redux/store'
 import { Fixture, FixtureType } from '../../shared/dmxFixtures'
 import { Slot_t } from './UniverseSlotTypes'
 import { useDispatch } from 'react-redux'
 import {
   setSelectedFixture,
-  setFixtureWindowEnabled,
   setFixtureName,
   addFixture,
   removeFixture,
 } from '../redux/dmxSlice'
-import ToggleButton from '../base/ToggleButton'
 import Popup from '../base/Popup'
 import { useEffect, useRef, useState } from 'react'
-import { TextField, IconButton, Tooltip, Button } from '@mui/material'
+import { TextField, Tooltip, Button } from '@mui/material'
 import RemoveIcon from '@mui/icons-material/Remove'
 import AddIcon from '@mui/icons-material/Add'
 import { clamp } from '../../math/util'
@@ -207,10 +205,6 @@ function FixtureSlot({
   const [revertName, setRevertName] = useState(fixtureDisplayName)
   const [showBlankNameWarning, setShowBlankNameWarning] = useState(false)
   const nameInputRef = useRef<HTMLInputElement | null>(null)
-  const fxtrDepthOn = useTypedSelector(
-    (state) => state.gui.fxtrDepthOn
-  )
-  const showZToggle = fxtrDepthOn
 
   useEffect(() => {
     setPendingName(fixtureDisplayName)
@@ -258,20 +252,6 @@ function FixtureSlot({
     })
   }
 
-  function setWindowEnabled(dimension: 'x' | 'y' | 'z', isEnabled: boolean) {
-    return (e: React.MouseEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
-      dispatch(
-        setFixtureWindowEnabled({
-          dimension: dimension,
-          index: globalIndex,
-          isEnabled: isEnabled,
-        })
-      )
-    }
-  }
-
   const backgroundColor = fixtureUniverseColor(localIndex)
   const style = {
     backgroundColor,
@@ -288,14 +268,31 @@ function FixtureSlot({
       }}
       title={
         isSelected
-          ? 'Selected fixture. Use controls to edit patch window or remove fixture.'
+          ? 'Selected fixture. Edit name or remove from patch.'
           : 'Click to select this fixture.'
       }
       style={style}
     >
-      <AddressLabel>
-        <ChannelSpan start={start} count={count} />
-      </AddressLabel>
+      <HeaderRow onClick={(e) => isSelected && e.stopPropagation()}>
+        <AddressLabel>
+          <ChannelSpan start={start} count={count} />
+        </AddressLabel>
+        {isSelected ? (
+          <Tooltip title="Remove this fixture from the universe">
+            <RemoveButton
+              type="button"
+              aria-label="Remove fixture"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                dispatch(removeFixture(globalIndex))
+              }}
+            >
+              <RemoveIcon fontSize="small" />
+            </RemoveButton>
+          </Tooltip>
+        ) : null}
+      </HeaderRow>
       <MainContent>
         {isSelected ? (
           <>
@@ -335,52 +332,6 @@ function FixtureSlot({
                 </WarningActions>
               </Popup>
             )}
-            <ControlsRow onClick={(e) => e.stopPropagation()}>
-              <Tooltip title="Enable or disable Pan (X) window control">
-                <span>
-                  <ToggleButton
-                    isEnabled={!!fixture.window.x}
-                    onClick={setWindowEnabled('x', !fixture.window.x)}
-                  >
-                    X
-                  </ToggleButton>
-                </span>
-              </Tooltip>
-              <Tooltip title="Enable or disable Tilt (Y) window control">
-                <span>
-                  <ToggleButton
-                    isEnabled={!!fixture.window.y}
-                    onClick={setWindowEnabled('y', !fixture.window.y)}
-                  >
-                    Y
-                  </ToggleButton>
-                </span>
-              </Tooltip>
-              {showZToggle && (
-                <Tooltip title="Enable or disable Depth (Z) window control">
-                  <span>
-                    <ToggleButton
-                      isEnabled={!!fixture.window.z}
-                      onClick={setWindowEnabled('z', !fixture.window.z)}
-                    >
-                      Z
-                    </ToggleButton>
-                  </span>
-                </Tooltip>
-              )}
-              <Tooltip title="Remove this fixture from the universe">
-                <span>
-                  <IconButton
-                    onClick={(e) => {
-                      e.preventDefault()
-                      dispatch(removeFixture(globalIndex))
-                    }}
-                  >
-                    <RemoveIcon />
-                  </IconButton>
-                </span>
-              </Tooltip>
-            </ControlsRow>
           </>
         ) : (
           <FixtureName title={fixtureDisplayName}>{fixtureDisplayName}</FixtureName>
@@ -405,18 +356,20 @@ export default function UniverseSlot({ slot }: { slot: Slot_t }) {
   }
 }
 
-const height = 5
+const height = 3.35
 const width = 8
 
 const Slot = styled.div`
-  height: ${height}rem;
-  padding: 0.5rem;
+  min-height: ${height}rem;
+  padding: 0.32rem 0.38rem;
   min-width: ${width}rem;
   margin-right: 0.3rem;
   margin-bottom: 0.3rem;
   color: #fff8;
   background-color: #2f2f2f;
-  display: block;
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
   border: 1px solid #fff8;
   :hover {
     border: 1px solid #fffc;
@@ -428,32 +381,54 @@ const Slot = styled.div`
   overflow: hidden;
 `
 
+const HeaderRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.2rem;
+  min-height: 1.15rem;
+  flex: 0 0 auto;
+`
+
 const AddressLabel = styled.div`
-  position: absolute;
-  top: 0.32rem;
-  left: 0.38rem;
   font-size: 0.72rem;
   color: #ffffffd8;
-  z-index: 2;
+  line-height: 1.1;
+  min-width: 0;
+`
+
+const RemoveButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0.05rem;
+  border: 0;
+  border-radius: 0.2rem;
+  background: transparent;
+  color: #ffffffcc;
+  cursor: pointer;
+
+  &:hover {
+    color: #fff;
+    background: #0006;
+  }
 `
 
 const MainContent = styled.div`
-  position: absolute;
-  top: 1.2rem;
-  left: 0.35rem;
-  right: 0.35rem;
-  bottom: 0.35rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.25rem;
+  justify-content: center;
 `
 
 const FixtureName = styled.div`
-  font-size: 0.86rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.15;
   text-align: center;
   color: #fffef2;
   width: 100%;
@@ -470,17 +445,9 @@ const NameInput = styled.input`
   color: #eef4ff;
   border: 1px solid #ffffff55;
   border-radius: 0.2rem;
-  padding: 0.12rem 0.25rem;
-  font-size: 0.76rem;
-  line-height: 1.2;
-`
-
-const ControlsRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.12rem;
-  width: 100%;
-  justify-content: flex-end;
+  padding: 0.08rem 0.22rem;
+  font-size: 0.74rem;
+  line-height: 1.15;
 `
 
 const WarningText = styled.div`

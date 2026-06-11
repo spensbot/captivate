@@ -3,11 +3,12 @@ import styled from 'styled-components'
 import { useDmxSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import { indexArray } from '../../shared/util'
-import { initFixtureChannel } from '../../shared/dmxFixtures'
+import { initFixtureChannel, subFixtureLabel } from '../../shared/dmxFixtures'
 import { addFixtureChannel } from '../redux/dmxSlice'
 import { IconButton } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import FixtureChannelItem from './FixtureChannelItem'
+import { ChannelsHelpButton } from './fixtureEditorHelpButtons'
 
 interface Props {
   fixtureID: string
@@ -36,6 +37,7 @@ export default function FixtureChannels({ fixtureID, isInUse }: Props) {
 
   const addChannelButton = isInUse ? null : (
     <IconButton
+      title="Add DMX channel"
       onClick={() =>
         dispatch(
           addFixtureChannel({
@@ -52,14 +54,17 @@ export default function FixtureChannels({ fixtureID, isInUse }: Props) {
   return (
     <Root>
       <Header>
-        <Title>Channels</Title>
+        <TitleRow>
+          <Title>Channels</Title>
+          <ChannelsHelpButton />
+        </TitleRow>
         {addChannelButton}
       </Header>
       {subfixtureCount > 0 && (
         <Hint>
           {activeSubFixture === null
             ? 'Subfixture assignment: select a subfixture above, then click the colored circle on the left of each channel.'
-            : `Subfixture ${subFixtureId(
+            : `Subfixture ${subFixtureLabel(
                 activeSubFixture
               )} selected. Click the colored circle on the left to add or remove channels.`}
         </Hint>
@@ -89,6 +94,14 @@ const Header = styled.div`
   align-items: center;
 `
 
+const TitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex: 1 1 auto;
+  min-width: 0;
+`
+
 const Title = styled.span`
   font-size: 1.2rem;
   margin: 0.5rem 0;
@@ -105,6 +118,3 @@ const Channels = styled.div`
   padding: 0.5rem;
 `
 
-function subFixtureId(subFixtureIndex: number): string {
-  return String.fromCharCode(subFixtureIndex + 97)
-}

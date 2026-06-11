@@ -15,7 +15,25 @@ export function parseImperialLengthToDecimalFeet(raw: string): number | null {
   if (s.length === 0) return null
 
   s = s.replace(/′/g, "'").replace(/″/g, '"').replace(/[–—]/g, '-')
-  s = s.replace(/\bfeet\b/gi, ' ').replace(/\bft\b/gi, ' ')
+  s = s
+    .replace(/\bfeet\b/gi, ' ')
+    .replace(/\bfoot\b/gi, ' ')
+    .replace(/\bft\b/gi, ' ')
+    .replace(/\binches\b/gi, ' in ')
+    .replace(/\binch\b/gi, ' in ')
+    .replace(/\bin\b/gi, ' in ')
+  s = s.replace(/\s+/g, ' ').trim()
+
+  const compact = s.replace(/\s+/g, '').match(/^(-?\d+(?:\.\d+)?)(ft|f|in|['"])$/i)
+  if (compact) {
+    const v = Number(compact[1])
+    if (!Number.isFinite(v)) return null
+    const unit = compact[2]!.toLowerCase()
+    if (unit === 'ft' || unit === 'f' || unit === "'") {
+      return v
+    }
+    return v / INCHES_PER_FOOT
+  }
 
   // Decimal feet only (no quote marks)
   if (!/['"]/.test(s) && /^-?\d+(\.\d+)?$/.test(s.trim())) {
@@ -51,8 +69,15 @@ export function parseImperialLengthToDecimalFeet(raw: string): number | null {
     }
   }
 
-  // Inches-only: 10", 10 in
-  const inchOnly = s.match(/^\s*(-?\d+(?:\.\d+)?)\s*(?:"|in(?:ches?)?)\s*$/i)
+  // Feet suffix without quote: 4ft, 4 ft (after ft token strip), 4f
+  const feetSuffix = s.match(/^\s*(-?\d+(?:\.\d+)?)\s*f\s*$/i)
+  if (feetSuffix) {
+    const ft = Number(feetSuffix[1])
+    return Number.isFinite(ft) ? ft : null
+  }
+
+  // Inches-only: 10", 10 in (after inch word normalization)
+  const inchOnly = s.match(/^\s*(-?\d+(?:\.\d+)?)\s*(?:"|in)\s*$/i)
   if (inchOnly) {
     const inches = Number(inchOnly[1])
     if (!Number.isFinite(inches)) return null

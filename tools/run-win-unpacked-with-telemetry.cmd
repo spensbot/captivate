@@ -1,4 +1,5 @@
 @echo off
-set CAPTIVATE_TELEMETRY_LIVE_LOG=1
+REM Verbose logging is always on; no env vars required.
 cd /d "%~dp0..\release\build\win-unpacked"
 start "" "%CD%\Captivate 2.exe"
+echo Verbose log: %APPDATA%\captivate2\logs\captivate-verbose.ndjson

@@ -96,10 +96,9 @@ export function isAtmosFxtrType(fixtureType: FixtureType): boolean {
     )
 }
 
-function getFixtureGroups(fixtureGroups: string[], typeGroups: string[]): string[] {
+function getFixtureGroups(fixtureGroups: string[]): string[] {
   const groups = new Set<string>()
   fixtureGroups
-    .concat(typeGroups)
     .map((group) => group.trim())
     .filter((group) => group.length > 0)
     .forEach((group) => groups.add(group))
@@ -188,7 +187,7 @@ export function listAtmosFxtrs(
         fixtureName:
           (fixture.name?.trim() || fixtureType.name?.trim()) ?? `Fixture ${fixtureId}`,
         universe: fixture.universe ?? 1,
-        groups: getFixtureGroups(fixture.groups, fixtureType.groups),
+        groups: getFixtureGroups(fixture.groups),
         triggerChannels,
         auxChannels,
       })

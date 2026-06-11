@@ -71,6 +71,7 @@ jobs:
       - name: Package application bundle
         env:
           CI: true
+          CAPTIVATE_DARWIN_UNIVERSAL_NATIVE: true
           CAPTIVATE_EBUILDER_OUTPUT: release/build
           CAPTIVATE_BUILD_PROJECTM_BRIDGE: true
           GYP_MSVS_VERSION: '2022'
@@ -81,7 +82,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CI: true
+          # Without a Developer ID cert, ad-hoc-sign the whole bundle (including Electron
+          # Framework). Otherwise the main binary and framework keep mismatched Team IDs and
+          # macOS refuses to launch (DYLD "different Team IDs").
           CSC_IDENTITY_AUTO_DISCOVERY: false
+          CSC_IDENTITY: '-'
           CAPTIVATE_EBUILDER_OUTPUT: release/build
         run: |
           if [ "$RUNNER_OS" = "Windows" ]; then
@@ -146,19 +151,17 @@ jobs:
         run: |
           tag="${{ steps.meta.outputs.tag }}"
           version="${tag#v}"
-          notes_file="$(mktemp)"
-          cat > "$notes_file" <<EOF
+          notes_file="docs/RELEASE-NOTES-${version}.md"
+          if [[ ! -f "$notes_file" ]]; then
+            notes_file="$(mktemp)"
+            cat > "$notes_file" <<EOF
           ## Captivate 2 ${version}
 
           Cross-platform installers built from [\`${GITHUB_SHA:0:7}\`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}).
 
-          ### Downloads
-          - **Windows** — \`.exe\` NSIS installer
-          - **macOS** — \`.dmg\` disk image (Apple Silicon + Intel)
-          - **Linux** — \`.AppImage\`
-
-          End users only need the installer for their operating system.
+          See [\`docs/RELEASE-NOTES-${version}.md\`](${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/docs/RELEASE-NOTES-${version}.md) in the repository for release notes.
           EOF
+          fi
           if gh release view "$tag" >/dev/null 2>&1; then
             echo "Release $tag already exists; uploading assets"
           else

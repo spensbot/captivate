@@ -14,7 +14,13 @@ export default {
   dispatch: 'dispatch',
   load_file: 'load_file',
   save_file: 'save_file',
+  get_recent_projects: 'get_recent_projects',
+  record_recent_project: 'record_recent_project',
+  clear_recent_projects: 'clear_recent_projects',
+  get_app_settings: 'get_app_settings',
+  set_app_settings: 'set_app_settings',
   read_text_file: 'read_text_file',
+  write_text_file: 'write_text_file',
   load_fixture_library_default: 'load_fixture_library_default',
   save_fixture_library_default: 'save_fixture_library_default',
   get_fixture_library_default_path: 'get_fixture_library_default_path',
@@ -23,6 +29,7 @@ export default {
   reconcile_video_enabled: 'reconcile_video_enabled',
   /** Primary renderer → main: sync Extras menu checkbox for LED sidebar visibility. */
   sync_led_sidebar_menu: 'sync_led_sidebar_menu',
+  sync_autosave_menu: 'sync_autosave_menu',
   app_close_prompt: 'app_close_prompt',
   detached_window_close_prompt: 'detached_window_close_prompt',
   request_app_quit: 'request_app_quit',
@@ -62,6 +69,7 @@ export default {
   telemetry_mark: 'telemetry_mark',
   telemetry_get_snapshot: 'telemetry_get_snapshot',
   telemetry_export_snapshot: 'telemetry_export_snapshot',
+  telemetry_export_debug_log: 'telemetry_export_debug_log',
   app_about_info: 'app_about_info',
   /** Visualizer → main: downsampled RGBA frame for stage pixel mapping. */
   visualizer_stage_light_map: 'visualizer_stage_light_map',
@@ -131,8 +139,23 @@ interface Redo {
 interface Save {
   type: 'save'
 }
+interface SaveAs {
+  type: 'save-as'
+}
 interface Load {
   type: 'load'
+}
+interface ToggleAutosave {
+  type: 'toggle-autosave'
+}
+interface LoadFixtureDatabase {
+  type: 'load-fixture-database'
+}
+interface SaveFixtureDatabase {
+  type: 'save-fixture-database'
+}
+interface SaveFixtureDatabaseAs {
+  type: 'save-fixture-database-as'
 }
 interface NewProject {
   type: 'new-project'
@@ -144,11 +167,29 @@ interface SetLedSidebarEnabled {
   type: 'set-led-sidebar-enabled'
   enabled: boolean
 }
+interface LoadRecentProject {
+  type: 'load-recent-project'
+  path: string
+}
+interface ClearRecentProjects {
+  type: 'clear-recent-projects'
+}
+interface OpenSettings {
+  type: 'open-settings'
+}
 export type MainCommand =
   | Undo
   | Redo
   | Save
+  | SaveAs
   | Load
+  | ToggleAutosave
+  | LoadFixtureDatabase
+  | SaveFixtureDatabase
+  | SaveFixtureDatabaseAs
   | NewProject
   | About
   | SetLedSidebarEnabled
+  | LoadRecentProject
+  | ClearRecentProjects
+  | OpenSettings

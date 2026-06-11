@@ -22,6 +22,12 @@ import {
 } from 'electron'
 import ipcChannels from '../shared/ipc_channels'
 import MenuBuilder from './menu'
+import {
+  clearRecentProjects,
+  getRecentProjects,
+  recordRecentProject,
+} from './recentProjectsStorage'
+import { readAppSettings, writeAppSettings } from './appSettingsStorage'
 import { resolveHtmlPath } from './util'
 import * as engine from './engine/engine'
 import {
@@ -958,7 +964,32 @@ const createWindow = async () => {
     openPageWindow: (page) => openOrFocusDetachedPage(page),
     requestAppQuit,
   })
+  menuBuilder.setRecentProjects(getRecentProjects())
   menuBuilder.buildMenu()
+
+  const refreshApplicationMenu = () => {
+    menuBuilder.setRecentProjects(getRecentProjects())
+    menuBuilder.buildMenu()
+  }
+
+  ipcMain.handle(ipcChannels.get_recent_projects, () => getRecentProjects())
+  ipcMain.handle(ipcChannels.record_recent_project, (_event, filePath: unknown) => {
+    if (typeof filePath !== 'string' || filePath.trim().length === 0) {
+      return getRecentProjects()
+    }
+    recordRecentProject(filePath)
+    refreshApplicationMenu()
+    return getRecentProjects()
+  })
+  ipcMain.handle(ipcChannels.clear_recent_projects, () => {
+    clearRecentProjects()
+    refreshApplicationMenu()
+    return []
+  })
+  ipcMain.handle(ipcChannels.get_app_settings, () => readAppSettings())
+  ipcMain.handle(ipcChannels.set_app_settings, (_event, settings: unknown) =>
+    writeAppSettings(settings as import('../shared/appSettings').AppSettings)
+  )
   ipcMain.on(
     ipcChannels.sync_led_sidebar_menu,
     (_event, enabled: unknown) => {
@@ -969,6 +1000,13 @@ const createWindow = async () => {
       menuBuilder.buildMenu()
     }
   )
+  ipcMain.on(ipcChannels.sync_autosave_menu, (_event, enabled: unknown) => {
+    if (typeof enabled !== 'boolean') {
+      return
+    }
+    menuBuilder.setAutosaveMenuChecked(enabled)
+    menuBuilder.buildMenu()
+  })
 
   const detachedToRestore = persistedWindowLayout.detached
     .filter((state) => state.page !== 'Atmospherics')

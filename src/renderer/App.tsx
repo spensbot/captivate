@@ -28,6 +28,7 @@ import useKeyboardShortcuts from './hooks/useKeyboardShortcuts'
 import KeyboardMappingFocus from './base/KeyboardMappingFocus'
 import DetachedKeyboardMappingBar from './menu/DetachedKeyboardMappingBar'
 import AutoManagedSplitSync from './sync/AutoManagedSplitSync'
+import ProjectSaveLoadDialogs from './menu/ProjectSaveLoadDialogs'
 
 export default function App() {
   useGlobalControlTooltips()
@@ -152,6 +153,7 @@ export default function App() {
           <BottomStatus />
         </Col>
         <FullscreenOverlay />
+        <ProjectSaveLoadDialogs />
       </ErrorBoundary>
     </Root>
   )

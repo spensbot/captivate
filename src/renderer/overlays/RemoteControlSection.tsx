@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import styled from 'styled-components'
 import { TextField, IconButton, Tooltip } from '@mui/material'
-import InfoOutlined from '@mui/icons-material/InfoOutlined'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import ToggleSwitch from '../base/ToggleSwitch'
+import SectionHelpButton, {
+  HelpIntro,
+  HelpList,
+  HelpTitle,
+} from '../base/SectionHelpPopover'
 import {
   remoteControlApplySettings,
   remoteControlGetStatus,
@@ -11,37 +15,6 @@ import {
 } from '../ipcHandler'
 import type { RemoteControlRuntimeStatus } from '../../shared/remoteControl'
 import { REMOTE_CONTROL_DEFAULT_PORT } from '../../shared/remoteControl'
-import { APP_TOOLTIP_SLOT_PROPS } from '../base/appTooltip'
-
-const REMOTE_CONTROL_TOOLTIP = (
-  <>
-    <strong>Remote control</strong> serves a slim web interface on your local network so
-    phones, tablets, or another laptop can operate lighting without running full Captivate.
-    The show computer keeps all USB/network hardware, visualizers, fixture editing, and
-    detached windows.
-    <br />
-    <br />
-    <strong>Enable</strong> starts an HTTP/WebSocket server on this machine. Devices on the
-    same Wi‑Fi or LAN open the listed URL in a browser (Chrome recommended), enter the PIN,
-    then use <strong>Scenes &amp; modulation</strong> and the <strong>DMX mixer</strong>.
-    They can also open <strong>Connections</strong> and see <strong>audio</strong> meters;
-    audio capture always runs here, not on the remote device.
-    <br />
-    <br />
-    <strong>Port</strong> is the TCP port for the web server (default {REMOTE_CONTROL_DEFAULT_PORT}
-    ). Your OS firewall may prompt to allow inbound connections the first time. Only use
-    on trusted venue networks.
-    <br />
-    <br />
-    <strong>PIN</strong> is required when a browser connects. Regenerate the PIN if it was
-    shared too widely. Connected clients are shown below the controls when the server is
-    running.
-    <br />
-    <br />
-    <strong>Not available remotely:</strong> visualizer, fixture editor, Laser ILDA, Lighting
-    3D, wLED, MIDI mapping learn mode, keyboard shortcuts, and project save/load dialogs.
-  </>
-)
 
 export default function RemoteControlSection() {
   const [status, setStatus] = useState<RemoteControlRuntimeStatus | null>(null)
@@ -134,25 +107,37 @@ export default function RemoteControlSection() {
     <Section>
       <SectionHeaderRow>
         <SectionTitle>Remote control</SectionTitle>
-        <Tooltip
-          title={REMOTE_CONTROL_TOOLTIP}
-          placement="top-start"
-          enterDelay={350}
-          slotProps={APP_TOOLTIP_SLOT_PROPS}
-        >
-          <IconButton
-            size="small"
-            aria-label="About remote control on the LAN"
-            onMouseDown={(e) => e.stopPropagation()}
-            sx={{
-              padding: '0.12rem',
-              color: 'text.secondary',
-              '&:hover': { color: 'text.primary' },
-            }}
-          >
-            <InfoOutlined sx={{ fontSize: '1rem' }} />
-          </IconButton>
-        </Tooltip>
+        <SectionHelpButton ariaLabel="How to use remote control">
+          <HelpTitle>How to use remote control</HelpTitle>
+          <HelpIntro>
+            Run a slim web interface on your local network so phones, tablets, or
+            another laptop can operate the show. This computer keeps all hardware,
+            visualizers, and editing tools.
+          </HelpIntro>
+          <HelpList>
+            <li>
+              Turn <strong>Enable</strong> on to start the server. Devices on the
+              same Wi‑Fi or LAN open the listed URL in a browser (Chrome
+              recommended), enter the PIN, then use scenes, the DMX mixer, and
+              connections. Audio capture always runs on this computer, not on the
+              remote device.
+            </li>
+            <li>
+              Set <strong>Port</strong> to the TCP port for the web server (default{' '}
+              {REMOTE_CONTROL_DEFAULT_PORT}). Your firewall may ask to allow
+              inbound connections the first time — only use on trusted networks.
+            </li>
+            <li>
+              Set or regenerate the <strong>PIN</strong> if it was shared too
+              widely. Connected browsers appear below when the server is running.
+            </li>
+            <li>
+              Not available remotely: visualizer, fixture editor, Laser ILDA,
+              Lighting 3D, wLED, MIDI mapping learn mode, keyboard shortcuts, and
+              project save/load.
+            </li>
+          </HelpList>
+        </SectionHelpButton>
       </SectionHeaderRow>
 
       <ControlGrid $expanded={enabled}>

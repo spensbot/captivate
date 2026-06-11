@@ -92,11 +92,13 @@ interface SetModulatorAudioConfigPayload {
 
 interface SetModulatorWaveConfigPayload {
   index: number
+  skew?: number
   sinePeakWidth?: number
   rampCurve?: number
   squareDuty?: number
   sawFlatten?: number
   noiseSeed?: number
+  noiseSmoothing?: number
 }
 
 function modifyActiveLightScene(
@@ -411,6 +413,9 @@ export const scenesSlice = createSlice({
       modifyActiveLightScene(state, (scene) => {
         const modulator = scene.modulators[payload.index]
         if (modulator === undefined) return
+        if (payload.skew !== undefined) {
+          modulator.lfo.skew = clampNormalized(payload.skew)
+        }
         if (payload.sinePeakWidth !== undefined) {
           modulator.lfo.sinePeakWidth = clampNormalized(payload.sinePeakWidth)
         }
@@ -425,6 +430,9 @@ export const scenesSlice = createSlice({
         }
         if (payload.noiseSeed !== undefined) {
           modulator.lfo.noiseSeed = clampNormalized(payload.noiseSeed)
+        }
+        if (payload.noiseSmoothing !== undefined) {
+          modulator.lfo.noiseSmoothing = clampNormalized(payload.noiseSmoothing)
         }
       })
     },
@@ -964,10 +972,16 @@ export const scenesSlice = createSlice({
       midiActions.setAudioInputDeviceId(state.device, action),
     setAudioInputGain: (state, action) =>
       midiActions.setAudioInputGain(state.device, action),
+    setAudioInputAutoGainControl: (state, action) =>
+      midiActions.setAudioInputAutoGainControl(state.device, action),
     setAudioBeatClockEnabled: (state, action) =>
       midiActions.setAudioBeatClockEnabled(state.device, action),
     setMidiClockBpmEnabled: (state, action) =>
       midiActions.setMidiClockBpmEnabled(state.device, action),
+    setLinkEnabled: (state, action) =>
+      midiActions.setLinkEnabled(state.device, action),
+    setLinkStartStopSyncEnabled: (state, action) =>
+      midiActions.setLinkStartStopSyncEnabled(state.device, action),
     setAudioBeatSensitivity: (state, action) =>
       midiActions.setAudioBeatSensitivity(state.device, action),
     setAudioBeatMinIntervalMs: (state, action) =>
@@ -1107,8 +1121,11 @@ export const {
   setAudioInputEnabled,
   setAudioInputDeviceId,
   setAudioInputGain,
+  setAudioInputAutoGainControl,
   setAudioBeatClockEnabled,
   setMidiClockBpmEnabled,
+  setLinkEnabled,
+  setLinkStartStopSyncEnabled,
   setAudioBeatSensitivity,
   setAudioBeatMinIntervalMs,
   setAudioBpmSmoothing,

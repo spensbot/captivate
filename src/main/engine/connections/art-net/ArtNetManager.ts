@@ -1,5 +1,8 @@
 import dgram from 'node:dgram'
-import { artDmxBuffer } from './artNetBuffers'
+import {
+  createArtDmxPacketBuffer,
+  writeArtDmxPacket,
+} from './artNetBuffers'
 import { toIpBuffer } from '../ipUtil'
 import * as constants from './constants'
 import { ArtNetConnectionInfo } from 'shared/connection'
@@ -9,6 +12,8 @@ export class ArtNetManager {
   private client: dgram.Socket
   private intervalHandle: NodeJS.Timeout
   private destroyed = false
+  private sequence = 1
+  private packetByUniverseIndex = new Map<number, Buffer>()
 
   constructor(c: EngineContext) {
     this.client = dgram.createSocket('udp4')
@@ -29,6 +34,9 @@ export class ArtNetManager {
           ? dmxOutByUniverse
           : [c.realtimeState().dmxOut]
 
+      const sequence = this.sequence
+      this.sequence = sequence >= 255 ? 1 : sequence + 1
+
       universes.forEach((universe, universeIndex) => {
         const universeNumber = universeIndex + 1
         const routeIp = routingTable[universeNumber]
@@ -37,9 +45,14 @@ export class ArtNetManager {
           return
         }
 
-        const buffer = artDmxBuffer(universe, universeIndex)
+        let packet = this.packetByUniverseIndex.get(universeIndex)
+        if (packet === undefined) {
+          packet = createArtDmxPacketBuffer(universeIndex)
+          this.packetByUniverseIndex.set(universeIndex, packet)
+        }
+        writeArtDmxPacket(packet, universe, sequence)
 
-        this.client.send(buffer, constants.ARTNET_PORT, targetIp, (err, _bytes) => {
+        this.client.send(packet, constants.ARTNET_PORT, targetIp, (err) => {
           if (err) {
             console.error(`ArtNet UDP Error: ${err}`)
             this.client.close()
@@ -58,6 +71,7 @@ export class ArtNetManager {
     if (this.destroyed) return
     this.destroyed = true
     clearInterval(this.intervalHandle)
+    this.packetByUniverseIndex.clear()
     try {
       this.client.close()
     } catch {

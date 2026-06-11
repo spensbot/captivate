@@ -12,6 +12,7 @@ import { removeFixtureChannel } from '..//redux/dmxSlice'
 import { getCustomColorChannelName } from '../../shared/dmxColors'
 import { ChannelToggle } from './Subfixtures'
 import { FixtureChannelItemProps } from './FixtureChannelTypes'
+import { ChannelEditorHelpButton } from './fixtureEditorHelpButtons'
 
 export default function FixtureChannelItem(props: FixtureChannelItemProps) {
   const {
@@ -51,6 +52,7 @@ export default function FixtureChannelItem(props: FixtureChannelItemProps) {
         <IconButton
           size="small"
           style={{ margin: '-0.9rem 0' }}
+          title="Remove this channel"
           onClick={(e) => {
             e.preventDefault()
             dispatch(
@@ -70,10 +72,11 @@ export default function FixtureChannelItem(props: FixtureChannelItemProps) {
             <PopupTitleRow>
               <PopupTitleText>{`Channel ${channelIndex + 1}`}</PopupTitleText>
               <PopupTitleActions>
+                <ChannelEditorHelpButton />
                 <IconButton
                   size="small"
                   disabled={!canEditPrevious}
-                  title="Previous Channel"
+                  title="Previous channel (stay in editor)"
                   onClick={(event) => {
                     event.preventDefault()
                     event.stopPropagation()
@@ -86,7 +89,7 @@ export default function FixtureChannelItem(props: FixtureChannelItemProps) {
                 <IconButton
                   size="small"
                   disabled={!canEditNext}
-                  title="Next Channel"
+                  title="Next channel (stay in editor)"
                   onClick={(event) => {
                     event.preventDefault()
                     event.stopPropagation()

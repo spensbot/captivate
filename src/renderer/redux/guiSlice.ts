@@ -8,6 +8,11 @@ import {
   initDmxConnections,
   initMidiConnections,
 } from '../../shared/connection'
+import {
+  DEFAULT_APP_SETTINGS,
+  normalizeAppSettings,
+  type AppSettings,
+} from '../../shared/appSettings'
 
 export type { Page }
 
@@ -38,6 +43,13 @@ export interface AppDialogState {
   confirmLabel?: string
   cancelLabel?: string
   danger?: boolean
+  /** Quit app and other must-see prompts — above all other overlays except tooltips. */
+  critical?: boolean
+}
+
+export interface ProjectWorkspace {
+  projectFilePath: string | null
+  fixtureLibraryFilePath: string | null
 }
 
 export interface GuiState {
@@ -46,9 +58,12 @@ export interface GuiState {
   connectionMenu: boolean
   midi: MidiConnections
   dmx: DmxConnectionInfo
+  /** @deprecated Save no longer opens a config modal; kept for compatibility. */
   saving: boolean
   loading: SaveInfo | null
   newProjectDialog: boolean
+  /** Active on-disk project + paired fixture DB paths. */
+  projectWorkspace: ProjectWorkspace
   ledEnabled: boolean
   videoEnabled: boolean
   /** True while the detached Laser window is open (synced from main). */
@@ -59,6 +74,8 @@ export interface GuiState {
   moverFollowOverrideTilt: number
   moverFollowOverrideUseAllGroups: boolean
   moverFollowOverrideGroups: string[]
+  /** When true, show floor bounds calibration, follow override, and related tools. */
+  moverAdvancedControlEnabled: boolean
   colorMapCalibrationOverride: ColorMapCalibrationOverride | null
   fxtrDepthOn: boolean
   /** When true, the left sidebar shows the LED editor page (off by default; Extras menu). */
@@ -67,6 +84,8 @@ export interface GuiState {
   statusLogOpen: boolean
   appDialog: AppDialogState | null
   aboutOpen: boolean
+  settingsOpen: boolean
+  appSettings: AppSettings
   atmosManualTriggerNonceByFixtureId: { [fixtureId: string]: number | undefined }
   /** Laser editor (detached window) applies tool when this nonce bumps. */
   laserToolMidiRequest: { tool: LaserTool; nonce: number } | null
@@ -82,6 +101,10 @@ export function initGuiState(): GuiState {
     saving: false,
     loading: null,
     newProjectDialog: false,
+    projectWorkspace: {
+      projectFilePath: null,
+      fixtureLibraryFilePath: null,
+    },
     ledEnabled: true,
     videoEnabled: false,
     laserWindowOpen: false,
@@ -91,6 +114,7 @@ export function initGuiState(): GuiState {
     moverFollowOverrideTilt: 0.5,
     moverFollowOverrideUseAllGroups: true,
     moverFollowOverrideGroups: [],
+    moverAdvancedControlEnabled: false,
     colorMapCalibrationOverride: null,
     fxtrDepthOn: false,
     ledSidebarEnabled: false,
@@ -98,6 +122,8 @@ export function initGuiState(): GuiState {
     statusLogOpen: false,
     appDialog: null,
     aboutOpen: false,
+    settingsOpen: false,
+    appSettings: { ...DEFAULT_APP_SETTINGS },
     atmosManualTriggerNonceByFixtureId: {},
     laserToolMidiRequest: null,
   }
@@ -130,6 +156,18 @@ export const guiSlice = createSlice({
     },
     setNewProjectDialog: (state, { payload }: PayloadAction<boolean>) => {
       state.newProjectDialog = payload
+    },
+    setProjectWorkspace: (state, { payload }: PayloadAction<ProjectWorkspace>) => {
+      state.projectWorkspace = {
+        projectFilePath: payload.projectFilePath,
+        fixtureLibraryFilePath: payload.fixtureLibraryFilePath,
+      }
+    },
+    clearProjectWorkspace: (state) => {
+      state.projectWorkspace = {
+        projectFilePath: null,
+        fixtureLibraryFilePath: null,
+      }
     },
     toggleLedEnabled: (state, _: PayloadAction<undefined>) => {
       state.ledEnabled = true
@@ -214,6 +252,23 @@ export const guiSlice = createSlice({
       }
       state.moverFollowOverrideGroups = Array.from(current)
     },
+    setMoverAdvancedControlEnabled: (
+      state,
+      { payload }: PayloadAction<boolean>
+    ) => {
+      state.moverAdvancedControlEnabled = payload === true
+      if (!state.moverAdvancedControlEnabled) {
+        state.moverCalibrationOverride = null
+        state.moverFollowOverrideEnabled = false
+      }
+    },
+    toggleMoverAdvancedControl: (state, _: PayloadAction<undefined>) => {
+      state.moverAdvancedControlEnabled = !state.moverAdvancedControlEnabled
+      if (!state.moverAdvancedControlEnabled) {
+        state.moverCalibrationOverride = null
+        state.moverFollowOverrideEnabled = false
+      }
+    },
     setColorMapCalibrationOverride: (
       state,
       { payload }: PayloadAction<ColorMapCalibrationOverride>
@@ -287,6 +342,12 @@ export const guiSlice = createSlice({
     setAboutOpen: (state, { payload }: PayloadAction<boolean>) => {
       state.aboutOpen = payload === true
     },
+    setSettingsOpen: (state, { payload }: PayloadAction<boolean>) => {
+      state.settingsOpen = payload === true
+    },
+    setAppSettings: (state, { payload }: PayloadAction<AppSettings>) => {
+      state.appSettings = normalizeAppSettings(payload)
+    },
     fireAtmosManualTrigger: (state, { payload }: PayloadAction<string>) => {
       const fixtureId = typeof payload === 'string' ? payload.trim() : ''
       if (fixtureId.length <= 0) {
@@ -319,6 +380,8 @@ export const {
   setSaving,
   setLoading,
   setNewProjectDialog,
+  setProjectWorkspace,
+  clearProjectWorkspace,
   toggleLedEnabled,
   toggleVideoEnabled,
   setVideoEnabled,
@@ -332,6 +395,8 @@ export const {
   setMoverFollowOverrideUseAllGroups,
   setMoverFollowOverrideGroups,
   toggleMoverFollowOverrideGroup,
+  setMoverAdvancedControlEnabled,
+  toggleMoverAdvancedControl,
   setColorMapCalibrationOverride,
   clearColorMapCalibrationOverride,
   setFxtrDepthOn,
@@ -342,6 +407,8 @@ export const {
   showAppDialog,
   hideAppDialog,
   setAboutOpen,
+  setSettingsOpen,
+  setAppSettings,
   fireAtmosManualTrigger,
   clearAtmosManualTriggers,
   setLaserToolFromMidiMapping,

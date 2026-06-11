@@ -13,7 +13,7 @@ import {
   replaceActiveFixtureTypeSubFixture,
   setActiveSubFixture,
 } from '../redux/dmxSlice'
-import { SubFixture } from '../../shared/dmxFixtures'
+import { SubFixture, subFixtureLabel } from '../../shared/dmxFixtures'
 import RemoveIcon from '@mui/icons-material/Remove'
 import wrapClick from '../base/wrapClick'
 import { hsvaForCss, separateHue } from '../../shared/baseColors'
@@ -21,6 +21,7 @@ import Input from '../base/Input'
 import Slider from 'renderer/base/Slider'
 import GroupPicker from 'renderer/base/GroupPicker'
 import { getSortedGroups } from 'shared/dmxUtil'
+import { SubfixturesHelpButton } from './fixtureEditorHelpButtons'
 
 export default function Subfixtures() {
   const subFixtures = useDmxSelector((dmx) => {
@@ -56,7 +57,10 @@ export default function Subfixtures() {
   return (
     <Root>
       <Header>
-        <span>SubFixtures</span>
+        <TitleRow>
+          <span>SubFixtures</span>
+          <SubfixturesHelpButton />
+        </TitleRow>
         <SpFill />
         {duplicateSubFixtureButton}
         {addSubFixtureButton}
@@ -64,8 +68,8 @@ export default function Subfixtures() {
       {subFixtures.length > 0 && (
         <HelperText>
           {activeSubFixtureIndex === null
-            ? 'Select a subfixture (a, b, c...) and click the channel marker on the left to assign channels.'
-            : `Editing subfixture ${subFixtureId(
+            ? 'Select a subfixture (a, b, … z, aa, ab…) and click the channel marker on the left to assign channels.'
+            : `Editing subfixture ${subFixtureLabel(
                 activeSubFixtureIndex
               )}. Click channel markers on the left to add or remove channels.`}
         </HelperText>
@@ -145,6 +149,7 @@ function SubFixture({
         <IconButton
           size="small"
           style={{ margin: '-0.9rem 0' }}
+          title="Remove this subfixture"
           onClick={wrapClick(() => dispatch(removeSubFixture(subFixtureIndex)))}
         >
           <RemoveIcon />
@@ -187,6 +192,14 @@ const Root = styled.div`
 const Header = styled.div`
   display: flex;
   align-items: center;
+`
+
+const TitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex: 1 1 auto;
+  min-width: 0;
 `
 
 const SpFill = styled.div`
@@ -251,10 +264,14 @@ export function SubFixtureToggle({
   const hue = separateHue(subfixtureCount, subFixtureIndex)
   const a = isActive ? 1.0 : 0.5
   const color = isActive ? 'black' : 'white'
+  const label = subFixtureLabel(subFixtureIndex)
+  const toggleSize = label.length > 1 ? '1.35rem' : '1rem'
 
   return (
     <Toggle
       style={{
+        width: toggleSize,
+        height: toggleSize,
         borderColor: 'white',
         backgroundColor: hsvaForCss(hue, 1, 1, a),
         color: color,
@@ -270,7 +287,7 @@ export function SubFixtureToggle({
           : 'Select this subfixture for channel assignment'
       }
     >
-      {subFixtureId(subFixtureIndex)}
+      {label}
     </Toggle>
   )
 }
@@ -305,18 +322,25 @@ export function ChannelToggle({ channelIndex }: { channelIndex: number }) {
     activeSubFixtureIndex === null
       ? subFixtureIndex === null
         ? 'Select a subfixture above, then click to assign this channel'
-        : `Assigned to subfixture ${subFixtureId(
+        : `Assigned to subfixture ${subFixtureLabel(
             subFixtureIndex
           )}. Click to select it`
       : isPartOfActiveSubfixture
-      ? `Click to remove from subfixture ${subFixtureId(activeSubFixtureIndex)}`
-      : `Click to assign to subfixture ${subFixtureId(activeSubFixtureIndex)}`
+      ? `Click to remove from subfixture ${subFixtureLabel(activeSubFixtureIndex)}`
+      : `Click to assign to subfixture ${subFixtureLabel(activeSubFixtureIndex)}`
 
   if (subfixtureCount === 0) return null
+
+  const channelLabel =
+    subFixtureIndex !== null ? subFixtureLabel(subFixtureIndex) : null
+  const toggleSize =
+    channelLabel !== null && channelLabel.length > 1 ? '1.35rem' : '1rem'
 
   return (
     <Toggle
       style={{
+        width: toggleSize,
+        height: toggleSize,
         borderColor: `rgba(255, 255, 255, ${borderA})`,
         backgroundColor: hsvaForCss(hue, 1, 1, bgA),
         color: color,
@@ -342,17 +366,9 @@ export function ChannelToggle({ channelIndex }: { channelIndex: number }) {
         }
       }}
     >
-      {subFixtureIndex !== null
-        ? subFixtureId(subFixtureIndex)
-        : activeSubFixtureIndex !== null
-        ? '+'
-        : ''}
+      {channelLabel ?? (activeSubFixtureIndex !== null ? '+' : '')}
     </Toggle>
   )
-}
-
-function subFixtureId(subFixtureIndex: number): string {
-  return String.fromCharCode(subFixtureIndex + 97)
 }
 
 const Toggle = styled.div`

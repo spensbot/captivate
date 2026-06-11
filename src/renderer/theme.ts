@@ -1,5 +1,6 @@
 // import original module declarations
 import 'styled-components'
+import type { ThemePackId } from '../shared/appSettings'
 
 export type ThemeType = 'light' | 'dark'
 
@@ -66,6 +67,10 @@ export function dark(): Theme_t {
       insetDepth: 'inset 0 2px 8px rgba(0, 0, 0, 0.45)',
     },
   }
+}
+
+export function resolveThemePack(themePackId: ThemePackId): Theme_t {
+  return themePackId === 'light' ? light() : dark()
 }
 
 declare module 'styled-components' {

@@ -27,6 +27,10 @@ import {
   MOVER_DEFAULT_PAN_RANGE_DEG,
   MOVER_DEFAULT_TILT_RANGE_DEG,
 } from '../../shared/dmxFixtures'
+import {
+  normalizeFixtureGroupList,
+  syncFixtureGroupCatalog,
+} from '../../shared/fixtureGroups'
 import { clampNormalized } from '../../math/util'
 import { defaultParamsList } from '../../shared/params'
 import { initLedState, LedState } from './ledState'
@@ -341,12 +345,11 @@ function getDefaultMoverGroupName(
     return firstFixtureGroup
   }
 
-  const firstTypeGroup = fixtureType?.groups.find((group) => group.trim().length > 0)
-  if (firstTypeGroup !== undefined) {
-    return firstTypeGroup
-  }
-
   return fixtureType?.name?.trim() || 'Mover Group'
+}
+
+function syncFixtureGroupCatalogState(state: DmxState) {
+  syncFixtureGroupCatalog(state.universe, state.fixtureTypesByID)
 }
 
 function clampDmxValue(value: number, fallback: number): number {
@@ -695,6 +698,7 @@ export const dmxSlice = createSlice({
             other.ch === fixture.ch &&
             other.type === fixture.type)
       )
+      syncFixtureGroupCatalogState(state)
       syncMoverState(state)
     },
     setActiveUniverse: (state, { payload }: PayloadAction<number>) => {
@@ -713,6 +717,7 @@ export const dmxSlice = createSlice({
       if (fixture?.id) {
         delete state.moverGroupByFixtureId[fixture.id]
       }
+      syncFixtureGroupCatalogState(state)
       syncMoverState(state)
     },
     setFixtureWindow: (
@@ -845,6 +850,18 @@ export const dmxSlice = createSlice({
         state,
         (ft) => (ft.groups = remove_noDuplicates(payload, ft.groups))
       )
+      syncMoverState(state)
+    },
+    setFixtureGroups: (
+      state,
+      { payload }: PayloadAction<{ index: number; groups: string[] }>
+    ) => {
+      const fixture = state.universe[payload.index]
+      if (fixture === undefined) {
+        return
+      }
+      fixture.groups = normalizeFixtureGroupList(payload.groups)
+      syncFixtureGroupCatalogState(state)
       syncMoverState(state)
     },
     setEditedFixture: (state, { payload }: PayloadAction<null | string>) => {
@@ -1313,6 +1330,7 @@ export const {
   deleteFixtureType,
   addActiveFixtureTypeGroup,
   removeActiveFixtureTypeGroup,
+  setFixtureGroups,
   addFixtureChannel,
   editFixtureChannel,
   removeFixtureChannel,

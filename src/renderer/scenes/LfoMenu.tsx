@@ -44,7 +44,7 @@ export default function LfoMenu({ index }: Props) {
         value={lfo.shape}
         size="small"
         variant="standard"
-        title="Choose the waveform/LFO source"
+        title="Choose the waveform or audio source for this modulator"
         onChange={(e) => {
           dispatch(
             setModulatorShape({
@@ -69,7 +69,7 @@ export default function LfoMenu({ index }: Props) {
         color="primary"
         aria-label="delete"
         size="small"
-        title="Reset this LFO to defaults"
+        title="Reset this motion effect to its default shape and settings"
         onClick={() => dispatch(resetModulator(index))}
       >
         <SettingsBackupRestoreIcon />
@@ -79,7 +79,7 @@ export default function LfoMenu({ index }: Props) {
         color="primary"
         aria-label="delete"
         size="small"
-        title="Remove this LFO"
+        title="Remove this motion effect"
         onClick={() => dispatch(removeModulator(index))}
       >
         <CloseIcon />

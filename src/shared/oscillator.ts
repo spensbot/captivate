@@ -53,6 +53,8 @@ export interface Lfo {
   squareDuty: number
   sawFlatten: number
   noiseSeed: number
+  /** 0 = stepped noise; 1 = rounded tips and flatter slopes (low-pass + center flatten). */
+  noiseSmoothing: number
   audioBandLowHz: number
   audioBandHighHz: number
   audioThreshold: number
@@ -78,6 +80,7 @@ export function GetSin() {
     squareDuty: 0.5,
     sawFlatten: 0.0,
     noiseSeed: 0.5,
+    noiseSmoothing: 0,
     audioBandLowHz: defaultBand.lowHz,
     audioBandHighHz: defaultBand.highHz,
     audioThreshold: 0.02,
@@ -152,16 +155,174 @@ function GetValue_base(lfo: Lfo, phaseNormalized: Normalized): Normalized {
   }
 
   if (lfo.shape === LfoShape.Noise) {
-    return noiseAtPhase(phaseNormalized, lfo.noiseSeed)
+    return noiseAtPhase(
+      phaseNormalized,
+      lfo.noiseSeed,
+      lfo.noiseSmoothing ?? 0
+    )
   }
 
   return 0.0
 }
 
-function noiseAtPhase(phaseNormalized: Normalized, noiseSeed: number): Normalized {
-  const step = Math.floor(phaseNormalized * NOISE_STEPS_PER_CYCLE)
+function noiseSampleAtStep(stepIndex: number, noiseSeed: number): Normalized {
   const seedOffset = Math.floor(clamp01(noiseSeed) * 10000)
-  return hashToUnit(step + 1 + seedOffset * 131)
+  const wrapped =
+    ((stepIndex % NOISE_STEPS_PER_CYCLE) + NOISE_STEPS_PER_CYCLE) %
+    NOISE_STEPS_PER_CYCLE
+  return hashToUnit(wrapped + 1 + seedOffset * 131)
+}
+
+const NOISE_CYCLE_CACHE_MAX = 48
+const noiseCycleCache = new Map<string, Float32Array>()
+
+/** UI 0–1 → internal smoothing; boosts low slider so 0–25% already blends steps. */
+function noiseSmoothingStrength(smoothing: number): number {
+  const s = clamp01(smoothing)
+  if (s <= 0) {
+    return 0
+  }
+  return Math.pow(s, 0.5)
+}
+
+function noiseCycleCacheKey(noiseSeed: number, noiseSmoothing: number): string {
+  const strength = noiseSmoothingStrength(noiseSmoothing)
+  return `${Math.floor(clamp01(noiseSeed) * 10000)}:${strength.toFixed(6)}`
+}
+
+function rememberNoiseCycle(key: string, values: Float32Array): Float32Array {
+  if (noiseCycleCache.has(key)) {
+    noiseCycleCache.delete(key)
+  }
+  noiseCycleCache.set(key, values)
+  while (noiseCycleCache.size > NOISE_CYCLE_CACHE_MAX) {
+    const oldest = noiseCycleCache.keys().next().value
+    if (oldest === undefined) {
+      break
+    }
+    noiseCycleCache.delete(oldest)
+  }
+  return values
+}
+
+/** Tent-weighted circular blur; radius in sample units (0 = none). */
+function circularTentBlur(samples: number[], radius: number): number[] {
+  const count = samples.length
+  if (count === 0 || radius <= 0.0001) {
+    return samples.slice()
+  }
+  const out = new Array<number>(count)
+  const radiusCeil = Math.ceil(radius)
+  for (let index = 0; index < count; index++) {
+    let weightedSum = 0
+    let weightTotal = 0
+    for (let offset = -radiusCeil; offset <= radiusCeil; offset++) {
+      const distance = Math.abs(offset)
+      if (distance > radius + 0.0001) {
+        continue
+      }
+      const weight = Math.max(0, 1 - distance / (radius + 0.5))
+      const wrapped =
+        ((index + offset) % count + count) % count
+      weightedSum += samples[wrapped] * weight
+      weightTotal += weight
+    }
+    out[index] = weightTotal > 0 ? weightedSum / weightTotal : samples[index]
+  }
+  return out
+}
+
+/**
+ * Rounds peak/valley tips (tanh soft-knee) and flattens small excursions near 0.5
+ * more than large swings.
+ */
+function shapeNoiseAmplitude(value: number, smoothing: number): number {
+  const smooth = clamp01(smoothing)
+  const delta = value - 0.5
+  const absDelta = Math.abs(delta)
+  const knee = 2 + (1 - smooth) * 14
+  const kneeDenom = 2 * Math.tanh(knee * 0.5)
+  let shaped = 0.5 + Math.tanh(delta * knee) / kneeDenom
+  const nearMid = Math.max(0, 1 - absDelta * 2)
+  const midFlatten = smooth * nearMid * nearMid
+  shaped += (0.5 - shaped) * midFlatten
+  return clamp01(shaped)
+}
+
+function buildSmoothedNoiseCycle(
+  noiseSeed: number,
+  noiseSmoothing: number
+): Float32Array {
+  const strength = noiseSmoothingStrength(noiseSmoothing)
+  const count = NOISE_STEPS_PER_CYCLE
+  const raw = new Array<number>(count)
+  for (let index = 0; index < count; index++) {
+    raw[index] = noiseSampleAtStep(index, noiseSeed)
+  }
+
+  const blurRadius = 0.35 + strength * 9.65
+  let values = circularTentBlur(raw, blurRadius)
+
+  for (let index = 0; index < count; index++) {
+    values[index] = shapeNoiseAmplitude(values[index], strength)
+  }
+
+  const secondBlur = strength * 5.5
+  if (secondBlur > 0.0001) {
+    values = circularTentBlur(values, secondBlur)
+  }
+
+  return new Float32Array(values)
+}
+
+function smoothedNoiseCycle(
+  noiseSeed: number,
+  noiseSmoothing: number
+): Float32Array {
+  const key = noiseCycleCacheKey(noiseSeed, noiseSmoothing)
+  const cached = noiseCycleCache.get(key)
+  if (cached !== undefined) {
+    return cached
+  }
+  return rememberNoiseCycle(
+    key,
+    buildSmoothedNoiseCycle(noiseSeed, noiseSmoothing)
+  )
+}
+
+function noiseSmoothstep(edge0: number, edge1: number, x: number): number {
+  const span = Math.max(1e-6, edge1 - edge0)
+  const t = clamp01((x - edge0) / span)
+  return t * t * (3 - 2 * t)
+}
+
+function noiseAtPhase(
+  phaseNormalized: Normalized,
+  noiseSeed: number,
+  noiseSmoothing: number
+): Normalized {
+  const smoothing = clamp01(noiseSmoothing)
+  const phaseSteps = clamp01(phaseNormalized) * NOISE_STEPS_PER_CYCLE
+  const stepIndex = Math.floor(phaseSteps) % NOISE_STEPS_PER_CYCLE
+  const stepped = noiseSampleAtStep(stepIndex, noiseSeed)
+
+  if (smoothing <= 0) {
+    return stepped
+  }
+
+  const cycle = smoothedNoiseCycle(noiseSeed, smoothing)
+  const count = NOISE_STEPS_PER_CYCLE
+  const index0 = Math.floor(phaseSteps) % count
+  const frac = phaseSteps - Math.floor(phaseSteps)
+  const index1 = (index0 + 1) % count
+  const v0 = cycle[index0]
+  const v1 = cycle[index1]
+  const t = frac * frac * (3 - 2 * frac)
+  const interpolated = clamp01(v0 + (v1 - v0) * t)
+
+  // Ease off stepped holds at the bottom of the slider (no pop at first tick above 0).
+  const wet = noiseSmoothstep(0, 0.12, smoothing)
+  return clamp01(stepped * (1 - wet) + interpolated * wet)
 }
 
 function hashToUnit(seed: number): number {

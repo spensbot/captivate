@@ -10,8 +10,8 @@ const selectMenuPaperSx: SxProps<Theme> = {
   maxHeight: 'min(50vh, 22rem)',
 }
 
-/** MUI Menu uses Modal with theme.zIndex.modal (~1300). AppModal is fullscreenOverlay+2 (~10002). */
-const selectMenuModalZIndex = zIndexes.fullscreenOverlay + 60
+/** MUI Menu portal must sit above modals but below critical quit dialog (see zIndexes.overlay). */
+const selectMenuModalZIndex = zIndexes.overlay.muiMenu
 
 interface Props<T extends string> {
   label: string

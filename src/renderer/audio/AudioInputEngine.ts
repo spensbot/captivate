@@ -17,7 +17,15 @@ import {
   normalizeAudioInputSettings,
   computePerceivedEnergyLevel,
   resolveEnergyTempoBpm,
+  AUDIO_MIN_GAIN,
+  AUDIO_MAX_GAIN,
 } from '../../shared/audioEngine'
+import {
+  combineManualAndAgcGain,
+  initAudioAgcState,
+  processAudioAgc,
+  type AudioAgcState,
+} from '../../shared/audioAgc'
 
 function clamp01(value: number) {
   if (!Number.isFinite(value)) return 0
@@ -39,7 +47,10 @@ export default class AudioInputEngine {
   private context: AudioContext | null = null
   private source: MediaStreamAudioSourceNode | null = null
   private gain: GainNode | null = null
+  /** Pre-gain tap for AGC level measurement. */
+  private agcMeter: AnalyserNode | null = null
   private analyser: AnalyserNode | null = null
+  private agcState: AudioAgcState = initAudioAgcState()
   private rafHandle: number | null = null
   private lastSettings: AudioInputSettings | null = null
   private lastAnalyzeAtMs = 0
@@ -180,10 +191,40 @@ export default class AudioInputEngine {
       return
     }
 
-    if (this.gain !== null) {
-      this.gain.gain.value = settings.inputGain
+    if (this.gain !== null && this.context !== null) {
+      this.applyGainToNode(settings, this.context.currentTime)
+    }
+    if (
+      previous !== null &&
+      previous.autoGainControl !== settings.autoGainControl &&
+      settings.autoGainControl !== true
+    ) {
+      this.agcState = initAudioAgcState()
     }
     this.startAnalysisLoop()
+  }
+
+  private applyGainToNode(
+    settings: AudioInputSettings,
+    audioTime: number,
+    agcMultiplier = 1
+  ) {
+    if (this.gain === null) {
+      return
+    }
+    const totalGain = settings.autoGainControl
+      ? combineManualAndAgcGain(
+          settings.inputGain,
+          agcMultiplier,
+          AUDIO_MIN_GAIN,
+          AUDIO_MAX_GAIN
+        )
+      : Math.min(
+          AUDIO_MAX_GAIN,
+          Math.max(AUDIO_MIN_GAIN, settings.inputGain)
+        )
+    const timeConstant = settings.autoGainControl ? 0.03 : 0.015
+    this.gain.gain.setTargetAtTime(totalGain, audioTime, timeConstant)
   }
 
   private async startStream(settings: AudioInputSettings) {
@@ -256,20 +297,26 @@ export default class AudioInputEngine {
       } catch {}
     }
     const source = context.createMediaStreamSource(stream)
+    const agcMeter = context.createAnalyser()
+    agcMeter.fftSize = 2048
+    agcMeter.smoothingTimeConstant = 0
     const gain = context.createGain()
     gain.gain.value = settings.inputGain
     const analyser = context.createAnalyser()
     analyser.fftSize = 2048
     analyser.smoothingTimeConstant = 0.2
 
+    source.connect(agcMeter)
     source.connect(gain)
     gain.connect(analyser)
 
     this.stream = stream
     this.context = context
     this.source = source
+    this.agcMeter = agcMeter
     this.gain = gain
     this.analyser = analyser
+    this.agcState = initAudioAgcState()
     this.prevSpectrum = new Float32Array(analyser.frequencyBinCount)
     this.beatEnergyEma = 0
     this.beatOnsetEma = 0
@@ -485,6 +532,11 @@ export default class AudioInputEngine {
         this.source.disconnect()
       } catch {}
     }
+    if (this.agcMeter) {
+      try {
+        this.agcMeter.disconnect()
+      } catch {}
+    }
     if (this.gain) {
       try {
         this.gain.disconnect()
@@ -510,7 +562,9 @@ export default class AudioInputEngine {
     this.context = null
     this.source = null
     this.gain = null
+    this.agcMeter = null
     this.analyser = null
+    this.agcState = initAudioAgcState()
   }
 
   private analyze() {
@@ -531,10 +585,19 @@ export default class AudioInputEngine {
     const dtMs = Math.max(1, now - this.lastAnalyzeAtMs)
     const dtSec = dtMs / 1000
     this.lastAnalyzeAtMs = now
+
+    const settings = normalizeAudioInputSettings(this.lastSettings ?? undefined)
+    if (settings.autoGainControl && this.agcMeter !== null && this.gain !== null) {
+      const agcWaveform = new Float32Array(this.agcMeter.fftSize)
+      this.agcMeter.getFloatTimeDomainData(agcWaveform)
+      const agcGain = processAudioAgc(this.agcState, agcWaveform, dtSec)
+      this.applyGainToNode(settings, context.currentTime, agcGain)
+    } else if (this.gain !== null) {
+      this.applyGainToNode(settings, context.currentTime)
+    }
     const fps = 1 / Math.max(1e-3, dtSec)
     this.analysisFpsEma += (fps - this.analysisFpsEma) * 0.08
     this.beatPulse = Math.max(0, this.beatPulse - dtMs / 220)
-    const settings = normalizeAudioInputSettings(this.lastSettings ?? undefined)
 
     let rms = 0
     for (let i = 0; i < waveform.length; i++) {

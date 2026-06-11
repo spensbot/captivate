@@ -26,6 +26,8 @@ interface Props {
   ch: ChannelColorMap
   fixtureID: string
   channelIndex: number
+  /** When set (e.g. color map inside a split range), edits flow through this instead of Redux. */
+  onChange?: (newChannel: ChannelColorMap) => void
 }
 
 function clampDmxValue(value: number, fallback: number = 0): number {
@@ -68,9 +70,11 @@ export default function ColorMapChannel({
   ch,
   fixtureID,
   channelIndex,
+  onChange,
 }: Props) {
   const dispatch = useDispatch()
   const [activeColorIndex, setActiveColorIndex] = useState(0)
+  const controlled = onChange !== undefined
 
   const hasAssignedFixture = useDmxSelector((dmx) =>
     dmx.universe.some((fixture) => fixture.type === fixtureID)
@@ -79,12 +83,41 @@ export default function ColorMapChannel({
     (state) => state.gui.colorMapCalibrationOverride
   )
 
+  function replaceColors(nextColors: ChannelColorMap['colors']) {
+    onChange?.({
+      ...ch,
+      colors: nextColors,
+    })
+  }
+
+  function updateColorAt(colorIndex: number, newColor: ChannelColorMap['colors'][number]) {
+    if (controlled) {
+      replaceColors(
+        ch.colors.map((color, index) =>
+          index === colorIndex ? newColor : color
+        )
+      )
+      return
+    }
+    dispatch(
+      setColorMapColor({
+        fixtureTypeId: fixtureID,
+        channelIndex,
+        colorIndex,
+        newColor,
+      })
+    )
+  }
+
   useEffect(() => {
     if (activeColorIndex < ch.colors.length) return
     setActiveColorIndex(Math.max(0, ch.colors.length - 1))
   }, [activeColorIndex, ch.colors.length])
 
   useEffect(() => {
+    if (controlled) {
+      return
+    }
     if (!hasAssignedFixture || ch.colors.length === 0) {
       if (currentOverride !== null) {
         dispatch(clearColorMapCalibrationOverride())
@@ -114,6 +147,7 @@ export default function ColorMapChannel({
       })
     )
   }, [
+    controlled,
     dispatch,
     hasAssignedFixture,
     ch.colors,
@@ -124,10 +158,13 @@ export default function ColorMapChannel({
   ])
 
   useEffect(() => {
+    if (controlled) {
+      return
+    }
     return () => {
       dispatch(clearColorMapCalibrationOverride())
     }
-  }, [dispatch])
+  }, [controlled, dispatch])
 
   const safeColorIndex = Math.max(0, Math.min(activeColorIndex, ch.colors.length - 1))
   const activeColor = ch.colors[safeColorIndex] ?? {
@@ -141,19 +178,12 @@ export default function ColorMapChannel({
     hue: activeColor.hue,
     saturation: activeColor.saturation,
     onChange: (newHue, newSaturation) => {
-      dispatch(
-        setColorMapColor({
-          fixtureTypeId: fixtureID,
-          channelIndex,
-          colorIndex: safeColorIndex,
-          newColor: {
-            max: activeColor.max,
-            hue: newHue,
-            saturation: newSaturation,
-            kind: inferColorKind({ hue: newHue, saturation: newSaturation }),
-          },
-        })
-      )
+      updateColorAt(safeColorIndex, {
+        max: activeColor.max,
+        hue: newHue,
+        saturation: newSaturation,
+        kind: inferColorKind({ hue: newHue, saturation: newSaturation }),
+      })
     },
   }
 
@@ -162,19 +192,12 @@ export default function ColorMapChannel({
       <ColorPicker
         color={activeColor}
         onChange={(newColor) =>
-          dispatch(
-            setColorMapColor({
-              fixtureTypeId: fixtureID,
-              channelIndex,
-              colorIndex: safeColorIndex,
-              newColor: {
-                max: activeColor.max,
-                hue: newColor.hue,
-                saturation: newColor.saturation,
-                kind: newColor.kind,
-              },
-            })
-          )
+          updateColorAt(safeColorIndex, {
+            max: activeColor.max,
+            hue: newColor.hue,
+            saturation: newColor.saturation,
+            kind: newColor.kind,
+          })
         }
       />
       <div style={{ height: '0.5rem' }} />
@@ -201,41 +224,52 @@ export default function ColorMapChannel({
               min={0}
               max={DMX_MAX_VALUE}
               onChange={(newMax) =>
-                dispatch(
-                  setColorMapColor({
-                    fixtureTypeId: fixtureID,
-                    channelIndex,
-                    colorIndex: i,
-                    newColor: {
-                      max: newMax,
-                      hue: color.hue,
-                      saturation: color.saturation,
-                      kind: color.kind,
-                    },
-                  })
-                )
+                updateColorAt(i, {
+                  max: newMax,
+                  hue: color.hue,
+                  saturation: color.saturation,
+                  kind: color.kind,
+                })
               }
             />
           </ColorMapColor>
         )
       })}
       <IconButton
-        onClick={() =>
+        title="Add color map entry"
+        onClick={() => {
+          const lastColorMax = ch.colors[ch.colors.length - 1]?.max
+          if (controlled) {
+            replaceColors(
+              ch.colors.concat({
+                max: lastColorMax ?? 0,
+                hue: 0,
+                saturation: 1,
+                kind: 'color',
+              })
+            )
+            return
+          }
           dispatch(
             addColorMapColor({
               fixtureTypeId: fixtureID,
               channelIndex,
             })
           )
-        }
+        }}
       >
         <Add />
       </IconButton>
       {ch.colors.length > 1 && (
         <IconButton
+          title="Remove last color map entry"
           onClick={() => {
             if (safeColorIndex === ch.colors.length - 1) {
               setActiveColorIndex(safeColorIndex - 1)
+            }
+            if (controlled) {
+              replaceColors(ch.colors.slice(0, -1))
+              return
             }
             dispatch(
               removeColorMapColor({

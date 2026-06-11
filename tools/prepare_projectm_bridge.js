@@ -44,43 +44,43 @@ if (!nodeGypBin) {
   process.exit(1)
 }
 
-const buildArgs = [
-  nodeGypBin,
-  'rebuild',
-  '--directory',
-  'native/projectm-bridge',
-  '--runtime=electron',
-  `--target=${electronVersion}`,
-  '--dist-url=https://electronjs.org/headers',
-  `--arch=${process.arch}`,
-]
-if (process.platform === 'win32') {
-  buildArgs.push('--msvs_version=2022', '--', '-Dclang=0')
-}
-const buildResult = spawnSync(process.execPath, buildArgs, {
-  cwd: repoRoot,
-  stdio: 'inherit',
-  shell: false,
-  env: {
-    ...process.env,
-    ...(process.platform === 'win32' ? { GYP_MSVS_VERSION: '2022' } : {}),
-  },
-})
+const buildDarwinUniversal =
+  process.platform === 'darwin' &&
+  (process.env.CAPTIVATE_DARWIN_UNIVERSAL_NATIVE === '1' ||
+    process.env.CAPTIVATE_DARWIN_UNIVERSAL_NATIVE === 'true' ||
+    process.env.CI === 'true')
 
-if (buildResult.error || buildResult.status !== 0) {
-  const reason =
-    buildResult.error?.message ??
-    `node-gyp exited with status ${buildResult.status ?? 'unknown'}`
-  if (allowFallback) {
-    console.warn(
-      `Native projectM bridge build failed (${reason}). Continuing with compatibility bridge due to CAPTIVATE_ALLOW_PROJECTM_BRIDGE_FALLBACK.`
-    )
-    process.exit(0)
+if (buildDarwinUniversal) {
+  const arm64Node = buildProjectmForArch(nodeGypBin, electronVersion, 'arm64')
+  if (!arm64Node) {
+    handleBuildFailure('arm64 projectM bridge build produced no .node output')
   }
-  console.error(
-    `Native projectM bridge build failed (${reason}). Set CAPTIVATE_ALLOW_PROJECTM_BRIDGE_FALLBACK=1 only if you intentionally want compatibility mode.`
+  const x64Node = buildProjectmForArch(nodeGypBin, electronVersion, 'x64')
+  if (!x64Node) {
+    handleBuildFailure('x64 projectM bridge build produced no .node output')
+  }
+  const destinationDir = path.join(repoRoot, 'assets', 'projectm-bridge')
+  const destinationPath = path.join(destinationDir, 'projectm_bridge.node')
+  fs.mkdirSync(destinationDir, { recursive: true })
+  const lipo = spawnSync(
+    'lipo',
+    ['-create', arm64Node, x64Node, '-output', destinationPath],
+    { encoding: 'utf8' }
   )
-  process.exit(1)
+  if (lipo.status !== 0) {
+    handleBuildFailure(
+      `lipo projectM bridge failed: ${lipo.stderr || lipo.stdout || lipo.status}`
+    )
+  }
+  console.log(`Created universal projectm_bridge.node at ${destinationPath}`)
+} else {
+  const buildResult = runProjectmGyp(nodeGypBin, electronVersion, process.arch)
+  if (buildResult.error || buildResult.status !== 0) {
+    const reason =
+      buildResult.error?.message ??
+      `node-gyp exited with status ${buildResult.status ?? 'unknown'}`
+    handleBuildFailure(reason)
+  }
 }
 
 const copyResult = spawnSync(process.execPath, [copyScriptPath], {
@@ -106,6 +106,75 @@ if (copyResult.error || copyResult.status !== 0) {
 }
 
 console.log('Native projectM bridge prepared.')
+
+function handleBuildFailure(reason) {
+  if (allowFallback) {
+    console.warn(
+      `Native projectM bridge build failed (${reason}). Continuing with compatibility bridge due to CAPTIVATE_ALLOW_PROJECTM_BRIDGE_FALLBACK.`
+    )
+    process.exit(0)
+  }
+  console.error(
+    `Native projectM bridge build failed (${reason}). Set CAPTIVATE_ALLOW_PROJECTM_BRIDGE_FALLBACK=1 only if you intentionally want compatibility mode.`
+  )
+  process.exit(1)
+}
+
+function runProjectmGyp(nodeGypBin, electronVersion, arch) {
+  const buildArgs = [
+    nodeGypBin,
+    'rebuild',
+    '--directory',
+    'native/projectm-bridge',
+    '--runtime=electron',
+    `--target=${electronVersion}`,
+    '--dist-url=https://electronjs.org/headers',
+    `--arch=${arch}`,
+  ]
+  if (process.platform === 'win32') {
+    buildArgs.push('--msvs_version=2022', '--', '-Dclang=0')
+  }
+  return spawnSync(process.execPath, buildArgs, {
+    cwd: repoRoot,
+    stdio: 'inherit',
+    shell: false,
+    env: {
+      ...process.env,
+      ...(process.platform === 'win32' ? { GYP_MSVS_VERSION: '2022' } : {}),
+    },
+  })
+}
+
+function findProjectmNodeOutput() {
+  const candidates = [
+    path.join(
+      repoRoot,
+      'native',
+      'projectm-bridge',
+      'build',
+      'Release',
+      'projectm_bridge.node'
+    ),
+    path.join(
+      repoRoot,
+      'native',
+      'projectm-bridge',
+      'build',
+      'Debug',
+      'projectm_bridge.node'
+    ),
+  ]
+  return candidates.find((candidate) => fs.existsSync(candidate)) || null
+}
+
+function buildProjectmForArch(nodeGypBin, electronVersion, arch) {
+  console.log(`[captivate] Building projectM bridge for ${arch}...`)
+  const buildResult = runProjectmGyp(nodeGypBin, electronVersion, arch)
+  if (buildResult.error || buildResult.status !== 0) {
+    return null
+  }
+  return findProjectmNodeOutput()
+}
 
 function resolveNodeGypBin(root) {
   const candidates = [

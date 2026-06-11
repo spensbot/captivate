@@ -18,6 +18,8 @@ import { DefaultParam, initBaseParams, Params } from '../../shared/params'
 import { SaveInfo } from 'shared/save'
 import { migrateLaserProjectState } from '../laser/laserProjectState'
 import { FixtureType } from 'shared/dmxFixtures'
+import cloneDeep from 'lodash.clonedeep'
+import { projectPersistenceMiddleware } from './projectPersistenceStoreMiddleware'
 
 export interface UndoActionTypes {
   undo: string
@@ -74,6 +76,74 @@ export function applySave(info: SaveInfo): PayloadAction<SaveInfo> {
   }
 }
 
+export function mergeProjectSave(
+  state: ReduxState,
+  info: SaveInfo
+): CleanReduxState {
+  const control = state.control.present
+  const loadedGuiRaw =
+    info.config.gui && info.state.gui
+      ? {
+          ...state.gui,
+          ...info.state.gui,
+          activePage:
+            info.state.gui.activePage === 'Streaming'
+              ? 'Video'
+              : (info.state.gui.activePage ?? state.gui.activePage),
+          saving: false,
+          loading: null,
+          connectionMenu: false,
+          newProjectDialog: false,
+          moverCalibrationOverride: null,
+          colorMapCalibrationOverride: null,
+          statusLogOpen: false,
+          appDialog: null,
+          aboutOpen: false,
+          settingsOpen: false,
+        }
+      : state.gui
+  const loadedGui =
+    loadedGuiRaw !== state.gui &&
+    loadedGuiRaw.activePage === 'Led' &&
+    loadedGuiRaw.ledSidebarEnabled !== true
+      ? { ...loadedGuiRaw, activePage: 'Universe' as const }
+      : loadedGuiRaw
+  const nextDevice =
+    info.config.device && info.state.device
+      ? cloneDeep(info.state.device)
+      : control.device
+  fixDeviceState(nextDevice)
+
+  const cleanState: CleanReduxState = {
+    dmx:
+      info.config.dmx && info.state.dmx
+        ? cloneDeep(info.state.dmx)
+        : cloneDeep(state.dmx.present),
+    control: {
+      ...control,
+      device: nextDevice,
+      light:
+        info.config.light && info.state.light
+          ? cloneDeep(info.state.light)
+          : cloneDeep(control.light),
+      visual:
+        info.config.visual && info.state.visual
+          ? cloneDeep(info.state.visual)
+          : cloneDeep(control.visual),
+    },
+    gui: sanitizeGuiTransientState(loadedGui),
+    mixer:
+      info.config.mixer && info.state.mixer
+        ? { ...initMixerState(), ...cloneDeep(info.state.mixer) }
+        : cloneDeep(state.mixer),
+    laser:
+      info.config.laser && info.state.laser
+        ? migrateLaserProjectState(cloneDeep(info.state.laser))
+        : cloneDeep(state.laser),
+  }
+  return fixState(cleanState)
+}
+
 export function resetState(
   newState: CleanReduxState
 ): PayloadAction<CleanReduxState> {
@@ -119,6 +189,7 @@ function sanitizeGuiTransientState(gui: GuiState): GuiState {
     statusLogOpen: false,
     appDialog: null,
     aboutOpen: false,
+    settingsOpen: false,
     atmosManualTriggerNonceByFixtureId: {},
   }
 }
@@ -183,6 +254,8 @@ const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (
         statusLogOpen: localGui.statusLogOpen,
         appDialog: localGui.appDialog,
         aboutOpen: localGui.aboutOpen,
+        settingsOpen: localGui.settingsOpen,
+        appSettings: localGui.appSettings,
         atmosManualTriggerNonceByFixtureId: {},
       },
       control: initUndoState(cleanState.control),
@@ -207,89 +280,21 @@ const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (
     }
   } else if (action.type === APPLY_SAVE) {
     const info: SaveInfo = action.payload
-    const control = state.control.present
-    const loadedGuiRaw =
-      info.config.gui && info.state.gui
-        ? {
-            ...state.gui,
-            ...info.state.gui,
-            activePage:
-              info.state.gui.activePage === 'Streaming'
-                ? 'Video'
-                : (info.state.gui.activePage ?? state.gui.activePage),
-            saving: false,
-            loading: null,
-            connectionMenu: false,
-            newProjectDialog: false,
-            moverCalibrationOverride: null,
-            colorMapCalibrationOverride: null,
-            statusLogOpen: false,
-            appDialog: null,
-            aboutOpen: false,
-          }
-        : state.gui
-    const loadedGui =
-      loadedGuiRaw !== state.gui &&
-      loadedGuiRaw.activePage === 'Led' &&
-      loadedGuiRaw.ledSidebarEnabled !== true
-        ? { ...loadedGuiRaw, activePage: 'Universe' as const }
-        : loadedGuiRaw
-    const nextDevice =
-      info.config.device && info.state.device
-        ? info.state.device
-        : control.device
-    fixDeviceState(nextDevice)
+    const cleanState = mergeProjectSave(state, info)
     return {
       ...state,
-      dmx: {
-        ...state.dmx,
-        present:
-          info.config.dmx && info.state.dmx
-            ? info.state.dmx
-            : state.dmx.present,
+      dmx: initUndoState(cleanState.dmx),
+      control: initUndoState(cleanState.control),
+      gui: {
+        ...cleanState.gui,
+        dmx: state.gui.dmx,
+        midi: state.gui.midi,
+        appSettings: state.gui.appSettings,
+        projectWorkspace: state.gui.projectWorkspace,
       },
-      control: {
-        ...state.control,
-        present: {
-          ...state.control.present,
-          device: nextDevice,
-          light:
-            info.config.light && info.state.light
-              ? info.state.light
-              : control.light,
-          visual:
-            info.config.visual && info.state.visual
-              ? info.state.visual
-              : control.visual,
-        },
-      },
-      gui: loadedGui,
-      mixer:
-        info.config.mixer && info.state.mixer
-          ? { ...initMixerState(), ...info.state.mixer }
-          : state.mixer,
-      laser:
-        info.config.laser && info.state.laser
-          ? migrateLaserProjectState(info.state.laser)
-          : state.laser,
+      mixer: cleanState.mixer,
+      laser: cleanState.laser,
     }
-    // I HAVE NO IDEA WHY THE BELOW APPROACH DOESN"T WORK IF ANYBODY KNOWS PLEASE TELL ME!!!
-    // let newState = {
-    //   ...state,
-    // }
-    // if (info.config.device && info.state.device) {
-    //   newState.control.present.device = info.state.device
-    // }
-    // if (info.config.dmx && info.state.dmx) {
-    //   newState.dmx.present = info.state.dmx
-    // }
-    // if (info.config.light && info.state.light) {
-    //   newState.control.present.light = info.state.light
-    // }
-    // if (info.config.visual && info.state.visual) {
-    //   newState.control.present.visual = info.state.visual
-    // }
-    // return newState
   }
   return baseReducer(state, action)
 }
@@ -300,7 +305,7 @@ export const store = configureStore({
     getDefaultMiddleware({
       serializableCheck: false,
       immutableCheck: false,
-    }),
+    }).concat(projectPersistenceMiddleware),
   devTools: { name: 'UI Store' },
 })
 

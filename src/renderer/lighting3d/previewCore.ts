@@ -4,7 +4,11 @@
 import * as THREE from 'three'
 import { Params, getParam } from '../../shared/params'
 import { type BaseColors, hsv2rgb } from '../../shared/baseColors'
-import { inferColorKind, type ColorChannel } from '../../shared/dmxColors'
+import {
+  inferColorKind,
+  type ColorChannel,
+  type ColorKind,
+} from '../../shared/dmxColors'
 import { SplitScene_t } from '../../shared/Scenes'
 import { fixtureGroupsMatchSceneGroups } from '../../shared/sceneGroups'
 import { getLedValues } from '../../shared/ledFixtures'
@@ -20,6 +24,7 @@ import {
   type FixtureEmitterShape,
   type FixtureModelKind,
   type FixtureRotation,
+  defaultMoverBeamAngleForModelKind,
   type MoverCalibration,
 } from '../../shared/dmxFixtures'
 import type {
@@ -31,6 +36,16 @@ import type {
   MoverPreviewMasterChannel,
 } from '../pages/lightingPreviewTypes'
 import { METERS_PER_FOOT, type StageDimensions } from '../../shared/stage'
+import { mapAxisPhysicalDmxToNormalized } from '../../shared/dmxUtil'
+import type { LightingRendererCapabilities } from './webglFallback'
+export type BeamConeGroupLayout = 'spot' | 'linear-x'
+
+export interface BeamConeGroupVisual {
+  mesh: THREE.Mesh
+  emitterIndices: number[]
+  layout: BeamConeGroupLayout
+}
+
 export interface FixtureVisual {
   signature: string
   modelKind: FixtureModelKind
@@ -39,6 +54,8 @@ export interface FixtureVisual {
   ledWireSegments?: THREE.LineSegments
   emitters: THREE.Mesh[]
   beamMeshes: Array<THREE.Mesh | undefined>
+  /** One shared beam cone per adjacent emitter cluster (PAR / wash bar / uplight). */
+  beamConeGroups?: BeamConeGroupVisual[]
   emitterLights: Array<THREE.Light | undefined>
   emitterLightTargets: Array<THREE.Object3D | undefined>
   emitterFillRects: Array<THREE.RectAreaLight | undefined>
@@ -66,6 +83,9 @@ export interface PreviewEmitterTarget {
   /** When set with `rectHeightM`, overrides legacy `sizeScale` box sizing. */
   rectWidthM?: number
   rectHeightM?: number
+  /** DMX channel grouping for live color updates without rebuilding layout. */
+  liveChannelSet: BeamChannelSet
+  liveEffectChannels: MoverPreviewMasterChannel[]
 }
 
 export interface PreviewTarget {
@@ -157,19 +177,106 @@ export const DEFAULT_CAMERA_POSITION: [number, number, number] = [0, 6.9, 10.1]
 export const DEFAULT_CAMERA_TARGET: [number, number, number] = [0, 1.8, 0.8]
 export const CAMERA_STORAGE_KEY = 'captivate.lighting3d.camera.v1'
 export const VOLUMETRIC_FOG_MAX_LIGHTS = 16
-export const ENABLE_BEAM_CONE_MESHES = true
-export const ENABLE_RECT_AREA_FILL_LIGHTS = true
+/**
+ * Simplified preview: fixture housings, emitter lenses (DMX color/brightness),
+ * stage, room, bounds, and curtain only — no beam cones, dynamic lights, splats,
+ * atmosphere jets, or volumetric fog.
+ */
+export const PREVIEW_ESSENTIALS_MODE = true
+export const ENABLE_BEAM_CONE_MESHES = !PREVIEW_ESSENTIALS_MODE
+export const ENABLE_RECT_AREA_FILL_LIGHTS = !PREVIEW_ESSENTIALS_MODE
 /** Emissive gain for DMX emitter lenses (toneMapped: false on material). */
 export const EMITTER_EMISSIVE_GAIN = 2.1
 export const ENABLE_LED_PIXEL_LIGHTS = false
-export const ENABLE_LED_AGGREGATE_LIGHT = true
+export const ENABLE_LED_AGGREGATE_LIGHT = !PREVIEW_ESSENTIALS_MODE
 export const ENABLE_SURFACE_SPLATS = false
-export const MAX_DYNAMIC_LIGHTS_PER_FIXTURE = 24
+export const MAX_DYNAMIC_LIGHTS_PER_FIXTURE = 8
 export const LED_EMISSIVE_GAIN = 41
 export const LED_EMITTER_BASE_EMISSIVE = 8.4
 export const LED_AGGREGATE_LIGHT_GAIN = 11.2
 export const LED_AGGREGATE_FOG_GAIN = 0.85
+/** Default preview DMX sync interval; use `previewSyncIntervalMs` for adaptive rigs. */
 export const PREVIEW_SYNC_MIN_INTERVAL_MS = 16
+
+export type Lighting3dPerformanceProfile = {
+  heavyScene: boolean
+  previewSyncMinMs: number
+  volumetricFogAllowed: boolean
+  maxFogLights: number
+}
+
+export function estimatePreviewEmitterCount(fixtures: MoverPreviewFixture[]): number {
+  let count = 0
+  for (const fixture of fixtures) {
+    if (fixture.isLedFixture) {
+      count += fixture.ledPixels?.length ?? 1
+      continue
+    }
+    if (fixture.customEmitters.length > 0) {
+      count += fixture.customEmitters.length
+      continue
+    }
+    for (const group of fixture.emitterGroups) {
+      count += Math.max(1, Math.round(group.emitterCount))
+    }
+    if (fixture.emitterGroups.length === 0) {
+      count += 1
+    }
+  }
+  return count
+}
+
+export function lighting3dPerformanceProfile(
+  fixtureCount: number,
+  emitterCount: number,
+  webgl1Fallback = false
+): Lighting3dPerformanceProfile {
+  const heavyScene = fixtureCount > 8 || emitterCount > 56
+  const previewSyncMinMs = webgl1Fallback
+    ? Math.max(50, fixtureCount <= 6 ? 50 : fixtureCount <= 14 ? 66 : 80)
+    : fixtureCount <= 6
+      ? 25
+      : fixtureCount <= 14
+        ? 50
+        : fixtureCount <= 28
+          ? 66
+          : 80
+  const volumetricFogAllowed =
+    !PREVIEW_ESSENTIALS_MODE &&
+    !webgl1Fallback &&
+    !heavyScene &&
+    emitterCount <= 48
+  const maxFogLights = fixtureCount <= 10 ? VOLUMETRIC_FOG_MAX_LIGHTS : 8
+  return {
+    heavyScene: heavyScene || webgl1Fallback,
+    previewSyncMinMs,
+    volumetricFogAllowed,
+    maxFogLights,
+  }
+}
+
+export function previewSyncIntervalMs(fixtureCount: number, emitterCount: number): number {
+  return lighting3dPerformanceProfile(fixtureCount, emitterCount).previewSyncMinMs
+}
+
+/** Stable key for fixture layout / model — when unchanged, only live DMX is applied. */
+export function previewFixturesStructureKey(fixtures: MoverPreviewFixture[]): string {
+  const parts: string[] = []
+  for (const fixture of fixtures) {
+    parts.push(
+      fixture.fixtureId,
+      String(fixture.universe),
+      String(fixture.channelBase),
+      String(fixture.customEmitters.length),
+      String(fixture.emitterGroups.length),
+      fixture.model.kind,
+      String(fixture.isLedFixture),
+      `${fixture.xPos.toFixed(4)},${fixture.yPos.toFixed(4)},${fixture.zPos.toFixed(4)}`
+    )
+  }
+  return parts.join('|')
+}
+
 /** DMX/output level below this is treated as off (no beams, fog slots, or dynamic lights). */
 /** ~2.5/255 — ignore residual DMX noise when deciding preview is "on". */
 export const PREVIEW_EMITTER_OUTPUT_EPSILON = 0.01
@@ -189,17 +296,198 @@ export function isEmitterOutputActive(
   }
   return true
 }
-export const MAX_VISUAL_CREATIONS_PER_SYNC = 4
+export const MAX_VISUAL_CREATIONS_PER_SYNC = 12
 export const LOCAL_AXIS_Y = new THREE.Vector3(0, 1, 0)
 export const LOCAL_AXIS_Z = new THREE.Vector3(0, 0, 1)
 export const LOCAL_AXIS_NEG_Z = new THREE.Vector3(0, 0, -1)
+
+export function isRectPreviewEmitterShape(
+  shape: PreviewEmitterShape | FixtureEmitterShape
+): boolean {
+  return shape === 'rect-h' || shape === 'rect-v'
+}
+
+/** Lens mesh local axis that should align with fixture beam / face normal (+Z). */
+export function emitterLensForwardAxis(
+  _shape: PreviewEmitterShape | FixtureEmitterShape
+): THREE.Vector3 {
+  return LOCAL_AXIS_Z
+}
+
+/** Shared body dimensions for emitter / face placement math. */
+export type FixturePlacementContext = {
+  modelKind: FixtureModelKind
+  bodyShape: FixtureBodyShape
+  modelWidth: number
+  bodyHeight: number
+  bodyDepth: number
+  bodyDiameter: number
+}
+
+export function fixturePlacementContextFromTarget(
+  target: Pick<
+    PreviewTarget,
+    'modelKind' | 'bodyShape' | 'modelWidth' | 'bodyHeight' | 'bodyDepth' | 'bodyDiameter'
+  >
+): FixturePlacementContext {
+  return {
+    modelKind: target.modelKind,
+    bodyShape: target.bodyShape,
+    modelWidth: target.modelWidth,
+    bodyHeight: target.bodyHeight,
+    bodyDepth: target.bodyDepth,
+    bodyDiameter: target.bodyDiameter,
+  }
+}
+
+/** Root-space center of the fixture housing mesh (matches createFixtureVisual body.position). */
+export function fixtureBodyCenterInRoot(ctx: FixturePlacementContext): THREE.Vector3 {
+  return fixtureHousingExtentsAlongBeam(ctx).center
+}
+
+/** Unit vector for default emitter output in root space. */
+export function fixtureBeamAxisInRoot(ctx: FixturePlacementContext): THREE.Vector3 {
+  return ctx.modelKind === 'uplight' ? LOCAL_AXIS_Y : LOCAL_AXIS_Z
+}
+
+/** Half of body extent along the beam axis (meters). */
+export function fixtureBodyHalfExtentAlongBeam(ctx: FixturePlacementContext): number {
+  return fixtureHousingExtentsAlongBeam(ctx).halfExtent
+}
+
+/**
+ * Housing center and half-extent along the beam axis — kept in sync with createFixtureVisual meshes.
+ */
+export function fixtureHousingExtentsAlongBeam(ctx: FixturePlacementContext): {
+  center: THREE.Vector3
+  halfExtent: number
+} {
+  const baseY = nonMoverEmitterBaseY(ctx.modelKind)
+  const depth = Math.max(0.04, ctx.bodyDepth)
+  const height = Math.max(0.04, ctx.bodyHeight)
+
+  if (ctx.modelKind === 'uplight') {
+    const topCapCenterY = baseY + clamp(height * 0.44, 0.08, 1)
+    const topCapHalfY = clamp(height * 0.36, 0.04, 0.8) * 0.5
+    const bodyCenterY = baseY - 0.02
+    const bodyHalfY = height * 0.5
+    const frontY = topCapCenterY + topCapHalfY
+    const backY = bodyCenterY - bodyHalfY
+    return {
+      center: new THREE.Vector3(0, (frontY + backY) * 0.5, 0),
+      halfExtent: Math.max(0.02, (frontY - backY) * 0.5),
+    }
+  }
+
+  const housingCenterY =
+    ctx.modelKind === 'washBar' || ctx.modelKind === 'atmosphericFxtr'
+      ? baseY
+      : baseY + 0.08
+
+  if (ctx.bodyShape === 'cylinder') {
+    const axisHalf = Math.max(height, depth) * 0.5
+    return {
+      center: new THREE.Vector3(0, housingCenterY, 0),
+      halfExtent: axisHalf,
+    }
+  }
+
+  return {
+    center: new THREE.Vector3(0, housingCenterY, 0),
+    halfExtent: depth * 0.5,
+  }
+}
+
+/** Offset along the beam axis from housing center (0 = midline, +half = front face). */
+export function emitterBeamOffsetFromFaceZ01(
+  ctx: FixturePlacementContext,
+  faceZ01: number
+): number {
+  const { halfExtent } = fixtureHousingExtentsAlongBeam(ctx)
+  return (clamp01(faceZ01) - 0.5) * 2 * halfExtent
+}
+
+export function fixtureFrontFaceBeamOffset(ctx: FixturePlacementContext): number {
+  return emitterBeamOffsetFromFaceZ01(ctx, 1)
+}
+
+/**
+ * Point along the housing depth (faceZ01: 0 = rear, 1 = front) where the emitter center sits.
+ * At faceZ01 = 1 the emitter center is on the fixture front face (bisected by that plane).
+ */
+export function emitterFaceCenterAlongBeam(
+  ctx: FixturePlacementContext,
+  faceZ01: number
+): THREE.Vector3 {
+  const { center } = fixtureHousingExtentsAlongBeam(ctx)
+  const beam = fixtureBeamAxisInRoot(ctx)
+  return center.clone().add(beam.multiplyScalar(emitterBeamOffsetFromFaceZ01(ctx, faceZ01)))
+}
+
+export function fixtureFaceWidthM(ctx: FixturePlacementContext): number {
+  if (ctx.bodyShape === 'cylinder') {
+    return Math.max(0.05, ctx.bodyDiameter)
+  }
+  return Math.max(0.05, ctx.modelWidth * fixtureEmitterFaceWidthScale(ctx.modelKind))
+}
+
+export function fixtureFaceHeightM(ctx: FixturePlacementContext): number {
+  return Math.max(0.05, ctx.bodyHeight)
+}
+
+/** Normalized face Z (0 rear, 1 front) → root Z of emitter center along +Z beam. */
+export function emitterBackPlaneRootZ(
+  ctx: FixturePlacementContext,
+  faceZ01: number
+): number {
+  return emitterFaceCenterAlongBeam(ctx, faceZ01).z
+}
+
+/** Normalized face Z → root Y of emitter center for uplight (+Y beam). */
+export function emitterBackPlaneRootY(
+  ctx: FixturePlacementContext,
+  faceZ01: number
+): number {
+  return emitterFaceCenterAlongBeam(ctx, faceZ01).y
+}
+
+/**
+ * Normalized depth for 3D preview emitters (0 rear, 1 front).
+ * Legacy data often stores 0.5 on the body midline — treat that as "use the front face".
+ */
+export function previewEmitterFaceZ01(
+  fxtrDepthOn: boolean,
+  storedZ: number
+): number {
+  const z = clamp01(storedZ)
+  if (!fxtrDepthOn) {
+    return 1
+  }
+  if (z >= 0.45 && z <= 0.55) {
+    return 1
+  }
+  return z
+}
+
+/** Offset from body center to a point on the fixture face (X/Y in root; Z from faceZ01). */
+export function emitterFaceOffsetFromNormalized(
+  ctx: FixturePlacementContext,
+  faceX01: number,
+  faceY01: number
+): { offsetX: number; offsetY: number } {
+  return {
+    offsetX: (clamp01(faceX01) - 0.5) * fixtureFaceWidthM(ctx) * 0.9,
+    offsetY: (0.5 - clamp01(faceY01)) * fixtureFaceHeightM(ctx) * 0.9,
+  }
+}
 export const LIGHTING3D_WARMUP_MIN_MS = 900
 export const LIGHTING3D_WARMUP_SETTLE_MS = 500
 export const LIGHTING3D_PERF_HUD_STORAGE_KEY = 'captivate.debug.lighting3dPerfHud'
 
 export type LightingRendererInit = {
   renderer: THREE.WebGLRenderer
-  /** When false, volumetric haze is disabled (WebGL1 fallback). */
+  capabilities: LightingRendererCapabilities
+  /** @deprecated Use `capabilities.webgl1Fallback === false` */
   webgl2: boolean
 }
 
@@ -216,6 +504,7 @@ export function createLightingRenderer(heavyScene: boolean): LightingRendererIni
   }
 
   const gl2Context = canvas.getContext('webgl2', contextAttributes)
+  const webgl1Fallback = gl2Context === null
   const gl1Context =
     gl2Context ??
     canvas.getContext('webgl', contextAttributes) ??
@@ -227,25 +516,39 @@ export function createLightingRenderer(heavyScene: boolean): LightingRendererIni
     )
   }
 
+  const effectiveHeavy = heavyScene || webgl1Fallback
+  const antialias = !effectiveHeavy
+  const maxPixelRatio = webgl1Fallback ? 1 : effectiveHeavy ? 1 : 1.35
+
   const renderer = new THREE.WebGLRenderer({
     canvas,
-    antialias: !heavyScene,
+    antialias,
     context: gl1Context as WebGL2RenderingContext | WebGLRenderingContext,
     powerPreference: 'high-performance',
   })
 
-  const maxPixelRatio = heavyScene ? 1 : 1.35
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxPixelRatio))
-  // No material clipping planes are used; leaving this false avoids driver edge cases.
   renderer.localClippingEnabled = false
-  renderer.shadowMap.enabled = true
-  // Large rigs: PCFSoft is noticeably expensive; Basic keeps shadows readable at lower cost.
-  renderer.shadowMap.type = heavyScene ? THREE.BasicShadowMap : THREE.PCFSoftShadowMap
+  renderer.shadowMap.enabled = !webgl1Fallback && !effectiveHeavy
+  renderer.shadowMap.type =
+    webgl1Fallback || effectiveHeavy
+      ? THREE.BasicShadowMap
+      : THREE.PCFSoftShadowMap
   renderer.toneMapping = THREE.ACESFilmicToneMapping
-  // Slightly lifted so dark fixture housings and room shells read against volumetric haze.
   renderer.toneMappingExposure = 1.0
   renderer.outputColorSpace = THREE.SRGBColorSpace
-  return { renderer, webgl2: gl2Context !== null }
+
+  const capabilities: LightingRendererCapabilities = {
+    webglVersion: webgl1Fallback ? 1 : 2,
+    webgl1Fallback,
+    volumetricFog: !webgl1Fallback,
+    antialias,
+    softShadows: !webgl1Fallback && !effectiveHeavy,
+    spotShadows: !webgl1Fallback,
+    maxPixelRatio,
+  }
+
+  return { renderer, capabilities, webgl2: !webgl1Fallback }
 }
 
 export interface PersistedCameraState {
@@ -568,6 +871,12 @@ export interface BeamChannelSet {
   masterChannels: MoverPreviewMasterChannel[]
 }
 
+const EMPTY_BEAM_CHANNEL_SET: BeamChannelSet = {
+  colorChannels: [],
+  colorMapChannels: [],
+  masterChannels: [],
+}
+
 export function normalizeDmxRange(value: number, min: number, max: number): number {
   if (Math.abs(max - min) < 0.0001) {
     return clamp01(value / 255)
@@ -608,6 +917,45 @@ export function estimateColorMapIntensity(value: number, mappedMax: number): num
     return clamp01(value / 255)
   }
   return clamp01(value / mappedMax)
+}
+
+/** Max RGB peak when overdriving additive channel mix (white + RGB, etc.). */
+export const PREVIEW_ADDITIVE_COLOR_PEAK_CAP = 3
+
+/**
+ * Turn summed per-channel RGB contributions into a stable preview color + level.
+ * Per-channel clamp01 on additive sums skews hue when white and RGB are both active.
+ */
+export function finalizeAdditivePreviewColor(
+  combinedColor: THREE.Color,
+  colorControlLevel: number
+): { color: THREE.Color; colorControlLevel: number; hasCombinedColor: boolean } {
+  const peak = Math.max(combinedColor.r, combinedColor.g, combinedColor.b, 0)
+  if (peak <= 0.001) {
+    return {
+      color: new THREE.Color(0, 0, 0),
+      colorControlLevel,
+      hasCombinedColor: false,
+    }
+  }
+
+  const divisor = Math.max(peak, 1)
+  const color = new THREE.Color(
+    combinedColor.r / divisor,
+    combinedColor.g / divisor,
+    combinedColor.b / divisor
+  )
+
+  const intensityBoost =
+    peak > 1
+      ? Math.min(peak, PREVIEW_ADDITIVE_COLOR_PEAK_CAP)
+      : 1
+
+  return {
+    color,
+    colorControlLevel: clamp01(colorControlLevel * intensityBoost),
+    hasCombinedColor: true,
+  }
 }
 
 export function readLiveBeamValuesForChannels(
@@ -695,22 +1043,20 @@ export function readLiveBeamValuesForChannels(
 
   const hasColorDefinitions =
     channelSet.colorChannels.length > 0 || channelSet.colorMapChannels.length > 0
-  const hasCombinedColor =
-    combinedColor.r + combinedColor.g + combinedColor.b > 0.001
+  const finalized = finalizeAdditivePreviewColor(
+    combinedColor,
+    colorControlLevel
+  )
 
-  const previewColor = hasCombinedColor
-    ? new THREE.Color(
-        clamp01(combinedColor.r),
-        clamp01(combinedColor.g),
-        clamp01(combinedColor.b)
-      )
+  const previewColor = finalized.hasCombinedColor
+    ? finalized.color
     : hasColorDefinitions
       ? hsvFallbackColor
       : fallbackColor.clone()
 
   const hasMasterDimmer = channelSet.masterChannels.length > 0
   const intensity = hasColorDefinitions
-    ? clamp01(colorControlLevel * masterLevel)
+    ? clamp01(finalized.colorControlLevel * masterLevel)
     : hasMasterDimmer
       ? clamp01(masterLevel)
       : 0
@@ -1166,7 +1512,8 @@ export function mapPanDmxToYawDeg(
   value: number,
   calibration: MoverCalibration | undefined,
   fallbackNorm: number,
-  fixtureId?: string
+  fixtureId?: string,
+  usePhysicalLinearDecode = false
 ): number {
   if (calibration === undefined) {
     // Renderer preview uses opposite handedness on Y yaw vs DMX pan intent.
@@ -1180,12 +1527,21 @@ export function mapPanDmxToYawDeg(
     }
     return fallbackYaw
   }
-  const normalized = solveNormalizedFromDmx(
-    value,
-    (n) => mapPanNormalizedToDmxPreview(n, calibration.pan),
-    fallbackNorm
-  )
-  const canonicalYaw = -((normalized - 0.5) * 360)
+
+  const normalized = usePhysicalLinearDecode
+    ? mapAxisPhysicalDmxToNormalized(value, calibration.pan)
+    : solveNormalizedFromDmx(
+        value,
+        (n) => mapPanNormalizedToDmxPreview(n, calibration.pan),
+        fallbackNorm
+      )
+  const rangeDeg = Number.isFinite(calibration.pan.rangeDeg)
+    ? Math.max(45, Math.min(1440, Number(calibration.pan.rangeDeg)))
+    : 540
+  const frontNorm = usePhysicalLinearDecode
+    ? mapAxisPhysicalDmxToNormalized(calibration.pan.front, calibration.pan)
+    : 0.5
+  const canonicalYaw = -((normalized - frontNorm) * rangeDeg)
   if (fixtureId === undefined) {
     return canonicalYaw
   }
@@ -1199,16 +1555,19 @@ export function mapTiltDmxToPitchDeg(
   value: number,
   calibration: MoverCalibration | undefined,
   fallbackNorm: number,
-  mountInverted: boolean
+  mountInverted: boolean,
+  usePhysicalLinearDecode = false
 ): number {
   if (calibration === undefined) {
     return lerp(-90, 90, fallbackNorm)
   }
-  const normalized = solveNormalizedFromDmx(
-    value,
-    (n) => mapTiltNormalizedToDmxPreview(n, mountInverted, calibration.tilt),
-    fallbackNorm
-  )
+  const normalized = usePhysicalLinearDecode
+    ? mapAxisPhysicalDmxToNormalized(value, calibration.tilt)
+    : solveNormalizedFromDmx(
+        value,
+        (n) => mapTiltNormalizedToDmxPreview(n, mountInverted, calibration.tilt),
+        fallbackNorm
+      )
   const rangeDeg = Number.isFinite(calibration.tilt.rangeDeg)
     ? Math.max(30, Math.min(720, calibration.tilt.rangeDeg))
     : 270
@@ -1261,19 +1620,22 @@ export function projectAimToFloor(
 export function targetFromLiveAxis(
   fixture: MoverPreviewFixture,
   liveAxis: LiveAxisValues,
-  fixtureWorld: { worldX: number; worldY: number; worldZ: number }
+  fixtureWorld: { worldX: number; worldY: number; worldZ: number },
+  usePhysicalLinearDecode = false
 ): { worldX: number; worldY: number; worldZ: number } {
   const yawDeg = mapPanDmxToYawDeg(
     liveAxis.panRaw,
     fixture.moverCalibration,
     liveAxis.panNorm,
-    fixture.fixtureId
+    fixture.fixtureId,
+    usePhysicalLinearDecode
   )
   const pitchDeg = mapTiltDmxToPitchDeg(
     liveAxis.tiltRaw,
     fixture.moverCalibration,
     liveAxis.tiltNorm,
-    fixture.moverMountOrientation === 'inverted'
+    fixture.moverMountOrientation === 'inverted',
+    usePhysicalLinearDecode
   )
 
   const floorHit = projectAimToFloor(fixtureWorld, yawDeg, pitchDeg)
@@ -1390,6 +1752,19 @@ export function combineLedLayers(layers: BaseColors[][]): BaseColors[] {
   }
 
   return merged
+}
+
+function previewGroupHasColorKind(
+  colorChannels: MoverPreviewColorChannel[],
+  kind: ColorKind | 'rgb'
+): boolean {
+  return colorChannels.some((channel) => {
+    const inferred = inferColorKind(channel.color)
+    if (kind === 'rgb') {
+      return inferred === 'color'
+    }
+    return inferred === kind
+  })
 }
 
 export function buildTargets(
@@ -1566,6 +1941,8 @@ export function buildTargets(
               effectIntensity: 0,
               shape: 'disc',
               sizeScale: 1,
+              liveChannelSet: EMPTY_BEAM_CHANNEL_SET,
+              liveEffectChannels: [],
             }
           }
         )
@@ -1604,14 +1981,30 @@ export function buildTargets(
         return
       }
 
+      const splitParamsList = resolveSplitParamsForFixture(
+        fixture.groups,
+        splitScenes,
+        splitStates,
+        fallbackParams
+      )
+      const splitParams = splitParamsList[0] ?? fallbackParams
+      const freeAimMode = getParam(splitParams, 'moverFloorLock') <= 0.5
+
       let targetWorld = danceFloorWorldFromNormalized(
         targetNormX,
         targetNormY,
         floorSpec
       )
-      const moverModelScale = clamp(modelWidth, 0.4, 1.6)
-      const moverSpotEmitterFaceZ = moverModelScale * 0.17
-      const moverWashEmitterFaceZ = moverModelScale * 0.18
+      const bodyDepthForFace = clamp(fixture.model.bodyDepth, 0.04, 3)
+      const bodyHeightForFace = clamp(fixture.model.bodyHeight, 0.04, 3)
+      const bodyShapeForFace = fixture.model.bodyShape
+      const moverHeadFaceZ = moverHeadEmitterBackPlaneLocalZ(
+        modelWidth,
+        bodyDepthForFace,
+        bodyHeightForFace,
+        fixture.model.bodyDiameter,
+        modelKind === 'moverWash'
+      )
       let aimYawDeg: number | undefined = undefined
       let aimPitchDeg: number | undefined = undefined
 
@@ -1622,16 +2015,23 @@ export function buildTargets(
           liveAxis.panRaw,
           fixture.moverCalibration,
           liveAxis.panNorm,
-          fixture.fixtureId
+          fixture.fixtureId,
+          freeAimMode
         )
         aimPitchDeg = mapTiltDmxToPitchDeg(
           liveAxis.tiltRaw,
           fixture.moverCalibration,
           liveAxis.tiltNorm,
-          fixture.moverMountOrientation === 'inverted'
+          fixture.moverMountOrientation === 'inverted',
+          freeAimMode
         )
         // Primary mode: use real DMX output and mover calibration directly.
-        targetWorld = targetFromLiveAxis(fixture, liveAxis, fixtureWorld)
+        targetWorld = targetFromLiveAxis(
+          fixture,
+          liveAxis,
+          fixtureWorld,
+          freeAimMode
+        )
       }
 
       const focusNorm = readLiveFocusNormalized(fixture.focusChannels, universeData)
@@ -1646,8 +2046,7 @@ export function buildTargets(
         const bodyWidth = modelWidth
         const bodyHeight = clamp(fixture.model.bodyHeight, 0.04, 3)
         const bodyDepth = clamp(fixture.model.bodyDepth, 0.04, 3)
-        const moverFaceZ =
-          modelKind === 'moverWash' ? moverWashEmitterFaceZ : moverSpotEmitterFaceZ
+        const moverFaceZ = moverHeadFaceZ
 
         for (const customEmitter of fixture.customEmitters) {
           const absoluteChannelSet = new Set<number>(
@@ -1693,12 +2092,37 @@ export function buildTargets(
             hasAtmosLighting = true
           }
 
-          const localX = (clamp01(customEmitter.x) - 0.5) * bodyWidth * 0.9
+          const placementCtx: FixturePlacementContext = {
+            modelKind,
+            bodyShape: bodyShapeForFace,
+            modelWidth: bodyWidth,
+            bodyHeight,
+            bodyDepth,
+            bodyDiameter: fixture.model.bodyDiameter,
+          }
+          const { offsetX, offsetY } = emitterFaceOffsetFromNormalized(
+            placementCtx,
+            customEmitter.x,
+            customEmitter.y
+          )
+          const layoutFaceZ01 = previewEmitterFaceZ01(fxtrDepthOn, customEmitter.z)
+          const beamOffset = emitterBeamOffsetFromFaceZ01(
+            placementCtx,
+            layoutFaceZ01
+          )
+          const localX = offsetX
           const localY =
-            (0.5 - clamp01(customEmitter.y)) * bodyHeight * 0.9
+            modelKind === 'uplight' ? beamOffset : offsetY
           const localZ =
-            (clamp01(customEmitter.z) - 0.5) * bodyDepth * 0.9 +
-            (isMoverModel ? moverFaceZ : Math.max(0.01, bodyDepth * 0.5))
+            modelKind === 'uplight'
+              ? offsetY
+              : isMoverModel
+                ? moverFaceZ +
+                  (layoutFaceZ01 - 0.5) *
+                    2 *
+                    fixtureBodyHalfExtentAlongBeam(placementCtx) *
+                    0.15
+                : beamOffset
 
           const face = normalizeRectEmitterFaceDimensionsM(customEmitter)
           const equivD = Math.sqrt(
@@ -1726,6 +2150,12 @@ export function buildTargets(
               customEmitter.shape === 'disc' ? undefined : face.widthM,
             rectHeightM:
               customEmitter.shape === 'disc' ? undefined : face.heightM,
+            liveChannelSet: {
+              colorChannels: emitterChannels.colorChannels,
+              colorMapChannels: emitterChannels.colorMapChannels,
+              masterChannels: emitterChannels.masterChannels,
+            },
+            liveEffectChannels: emitterChannels.effectChannels,
           })
         }
       } else {
@@ -1737,7 +2167,7 @@ export function buildTargets(
                   emitterCount: 1,
                   relativeX: 0.5,
                   relativeY: 0.5,
-                  relativeZ: 0.5,
+                  relativeZ: 1,
                   colorChannels: fixture.colorChannels,
                   colorMapChannels: fixture.colorMapChannels,
                   masterChannels: fixture.masterChannels,
@@ -1791,17 +2221,6 @@ export function buildTargets(
           hasAtmosLighting = groupSamples.some((sample) => sample.hasLightingChannels)
         }
 
-        const sampleGroupAt = (normalizedPosition: number) => {
-          if (groupSamples.length <= 1) {
-            return groupSamples[0]
-          }
-          const clampedPosition = clamp01(normalizedPosition)
-          const sampleIndex = Math.round(
-            clampedPosition * (groupSamples.length - 1)
-          )
-          return groupSamples[Math.max(0, Math.min(groupSamples.length - 1, sampleIndex))]
-        }
-
         if (modelKind === 'washBar' && fixture.model.washBarLayoutMode === 'multiStrip') {
           const rgbCount = Math.max(1, Math.min(64, Math.round(fixture.model.washBarRgbCount)))
           const coolWhiteCount = Math.max(
@@ -1813,34 +2232,88 @@ export function buildTargets(
             Math.min(64, Math.round(fixture.model.washBarWarmWhiteCount))
           )
           const laneWidth = modelWidth * 0.88
+          const stripPlacementCtx: FixturePlacementContext = {
+            modelKind,
+            bodyShape: bodyShapeForFace,
+            modelWidth,
+            bodyHeight: clamp(fixture.model.bodyHeight, 0.04, 2),
+            bodyDepth: clamp(fixture.model.bodyDepth, 0.04, 2.4),
+            bodyDiameter: fixture.model.bodyDiameter,
+          }
+          const stripFaceBeamOffset = fixtureFrontFaceBeamOffset(stripPlacementCtx)
+          const rgbGroupSamples = groupSamples.filter((sample) =>
+            previewGroupHasColorKind(sample.emitterGroup.colorChannels, 'rgb')
+          )
+          const warmWhiteSample = groupSamples.find((sample) =>
+            previewGroupHasColorKind(
+              sample.emitterGroup.colorChannels,
+              'warmWhite'
+            )
+          )
+          const coolWhiteSample = groupSamples.find((sample) =>
+            previewGroupHasColorKind(sample.emitterGroup.colorChannels, 'white')
+          )
+          const fallbackSample = groupSamples[0]
           const pushStripEmitter = (
             count: number,
             laneY: number,
-            laneZ: number,
+            sample: (typeof groupSamples)[number] | undefined,
             shape: PreviewEmitterShape,
             sizeScale: number
           ) => {
+            if (sample === undefined) {
+              return
+            }
             for (let emitterIndex = 0; emitterIndex < count; emitterIndex++) {
               const normalizedPosition =
                 count <= 1 ? 0.5 : emitterIndex / Math.max(1, count - 1)
-              const sample = sampleGroupAt(normalizedPosition)
               const slot = normalizedPosition - 0.5
               emitters.push({
                 localX: slot * laneWidth,
                 localY: laneY,
-                localZ: laneZ,
+                localZ: stripFaceBeamOffset,
                 color: sample.beamValues.color.clone(),
                 intensity: sample.beamValues.intensity,
                 effectIntensity: 0,
                 shape,
                 sizeScale,
+                liveChannelSet: {
+                  colorChannels: sample.emitterGroup.colorChannels,
+                  colorMapChannels: sample.emitterGroup.colorMapChannels,
+                  masterChannels: sample.emitterGroup.masterChannels,
+                },
+                liveEffectChannels: sample.emitterGroup.effectChannels,
               })
             }
           }
-          pushStripEmitter(rgbCount, 0.09, 0.03, 'rect-h', 0.82)
-          pushStripEmitter(rgbCount, -0.09, 0.03, 'rect-h', 0.82)
-          pushStripEmitter(warmWhiteCount, 0, 0.03, 'disc', 1.12)
-          pushStripEmitter(coolWhiteCount, 0, 0.034, 'rect-v', 0.9)
+          pushStripEmitter(
+            rgbCount,
+            0.09,
+            rgbGroupSamples[0] ?? fallbackSample,
+            'rect-h',
+            0.82
+          )
+          pushStripEmitter(
+            rgbCount,
+            -0.09,
+            rgbGroupSamples[1] ?? rgbGroupSamples[0] ?? fallbackSample,
+            'rect-h',
+            0.82
+          )
+          pushStripEmitter(
+            warmWhiteCount,
+            0,
+            warmWhiteSample ?? fallbackSample,
+            'disc',
+            1.12
+          )
+          pushStripEmitter(
+            coolWhiteCount,
+            0,
+            coolWhiteSample ?? warmWhiteSample ?? fallbackSample,
+            'rect-v',
+            0.9
+          )
         } else {
         for (const [, groupSample] of groupSamples.entries()) {
           const { emitterGroup, beamValues, effectLevel, hasLightingChannels } = groupSample
@@ -1854,7 +2327,6 @@ export function buildTargets(
             const centerX =
               (clamp01(emitterGroup.relativeX) - 0.5) * washBarUsableWidth
             const centerY = 0
-            const centerZ = 0
 
             for (let emitterIndex = 0; emitterIndex < count; emitterIndex++) {
               const slot =
@@ -1862,12 +2334,25 @@ export function buildTargets(
               emitters.push({
                 localX: centerX + slot * washBarClusterWidth,
                 localY: centerY,
-                localZ: 0.029 + centerZ,
+                localZ: fixtureFrontFaceBeamOffset({
+                  modelKind,
+                  bodyShape: bodyShapeForFace,
+                  modelWidth,
+                  bodyHeight: clamp(fixture.model.bodyHeight, 0.04, 2),
+                  bodyDepth: clamp(fixture.model.bodyDepth, 0.04, 2.4),
+                  bodyDiameter: fixture.model.bodyDiameter,
+                }),
                 color: beamValues.color.clone(),
                 intensity: beamValues.intensity,
                 effectIntensity: 0,
                 shape: 'disc',
                 sizeScale: 1,
+                liveChannelSet: {
+                  colorChannels: emitterGroup.colorChannels,
+                  colorMapChannels: emitterGroup.colorMapChannels,
+                  masterChannels: emitterGroup.masterChannels,
+                },
+                liveEffectChannels: emitterGroup.effectChannels,
               })
             }
           } else if (modelKind === 'moverWash') {
@@ -1880,12 +2365,18 @@ export function buildTargets(
                 emitters.push({
                   localX: centerX,
                   localY: centerY,
-                  localZ: moverWashEmitterFaceZ + centerZ * 0.2,
+                  localZ: moverHeadFaceZ + centerZ * 0.06,
                   color: beamValues.color.clone(),
                   intensity: beamValues.intensity,
                   effectIntensity: 0,
                   shape: 'disc',
                   sizeScale: 1,
+                  liveChannelSet: {
+                    colorChannels: emitterGroup.colorChannels,
+                    colorMapChannels: emitterGroup.colorMapChannels,
+                    masterChannels: emitterGroup.masterChannels,
+                  },
+                  liveEffectChannels: emitterGroup.effectChannels,
                 })
                 continue
               }
@@ -1896,12 +2387,18 @@ export function buildTargets(
               emitters.push({
                 localX: centerX + Math.cos(angle) * radius,
                 localY: centerY + Math.sin(angle) * radius,
-                localZ: moverWashEmitterFaceZ + centerZ * 0.2,
+                localZ: moverHeadFaceZ + centerZ * 0.06,
                 color: beamValues.color.clone(),
                 intensity: beamValues.intensity,
                 effectIntensity: 0,
                 shape: 'disc',
                 sizeScale: 1,
+                liveChannelSet: {
+                  colorChannels: emitterGroup.colorChannels,
+                  colorMapChannels: emitterGroup.colorMapChannels,
+                  masterChannels: emitterGroup.masterChannels,
+                },
+                liveEffectChannels: emitterGroup.effectChannels,
               })
             }
           } else if (modelKind === 'atmosphericFxtr') {
@@ -1942,6 +2439,12 @@ export function buildTargets(
                 effectIntensity: effectLevel,
                 shape: 'disc',
                 sizeScale: 1,
+                liveChannelSet: {
+                  colorChannels: emitterGroup.colorChannels,
+                  colorMapChannels: emitterGroup.colorMapChannels,
+                  masterChannels: emitterGroup.masterChannels,
+                },
+                liveEffectChannels: emitterGroup.effectChannels,
               })
             }
           } else {
@@ -1959,12 +2462,22 @@ export function buildTargets(
                 : modelKind === 'moverSpot'
                 ? 0.04
                 : 0.14
-            const baseZ =
-              modelKind === 'uplight'
-                ? 0.02 + centerZ
-                : modelKind === 'moverSpot'
-                ? moverSpotEmitterFaceZ + centerZ * 0.2
-                : 0.17 + centerZ
+            const placementCtx: FixturePlacementContext = {
+              modelKind,
+              bodyShape: bodyShapeForFace,
+              modelWidth,
+              bodyHeight: bodyHeightForFace,
+              bodyDepth: bodyDepthForFace,
+              bodyDiameter: fixture.model.bodyDiameter,
+            }
+            const emitterFaceZ01 = previewEmitterFaceZ01(
+              fxtrDepthOn,
+              emitterGroup.relativeZ
+            )
+            const faceBeamOffset = emitterBeamOffsetFromFaceZ01(
+              placementCtx,
+              emitterFaceZ01
+            )
 
             for (let emitterIndex = 0; emitterIndex < count; emitterIndex++) {
               const slot =
@@ -1974,13 +2487,24 @@ export function buildTargets(
                   modelKind === 'uplight'
                     ? centerX + slot * spread * 0.45
                     : centerX + slot * spread,
-                localY: modelKind === 'uplight' ? centerY + 0.04 : centerY,
-                localZ: baseZ,
+                localY: modelKind === 'uplight' ? faceBeamOffset : centerY,
+                localZ:
+                  modelKind === 'uplight'
+                    ? 0.02 + centerZ
+                    : modelKind === 'moverSpot'
+                      ? moverHeadFaceZ + centerZ * 0.06
+                      : faceBeamOffset,
                 color: beamValues.color.clone(),
                 intensity: beamValues.intensity,
                 effectIntensity: 0,
                 shape: 'disc',
                 sizeScale: 1,
+                liveChannelSet: {
+                  colorChannels: emitterGroup.colorChannels,
+                  colorMapChannels: emitterGroup.colorMapChannels,
+                  masterChannels: emitterGroup.masterChannels,
+                },
+                liveEffectChannels: emitterGroup.effectChannels,
               })
             }
           }
@@ -2044,6 +2568,157 @@ export function buildTargets(
   return targets
 }
 
+/**
+ * Updates colors, mover aim, and LED pixels from live DMX without rebuilding emitter layout.
+ */
+export function applyLiveValuesToPreviewTargets(
+  targets: PreviewTarget[],
+  fixturesById: Map<string, MoverPreviewFixture>,
+  fallbackParams: Params,
+  splitStates: Array<{ outputParams: Params } | undefined>,
+  splitScenes: SplitScene_t[],
+  dmxOutByUniverse: number[][],
+  floorSpec: FloorSpec,
+  stageHeight: number,
+  master: number,
+  fxtrDepthOn: boolean,
+  groupColorByFixtureId: Map<string, THREE.Color>
+): void {
+  const placementDepth2DOnly = !fxtrDepthOn
+
+  for (const target of targets) {
+    const fixture = fixturesById.get(target.fixtureId)
+    if (fixture === undefined) {
+      continue
+    }
+
+    const groupColor =
+      groupColorByFixtureId.get(target.fixtureId) ??
+      colorForGroup(fixture.groupName)
+
+    if (target.isLedFixture) {
+      const ledParams = resolveSplitParamsForFixture(
+        fixture.groups,
+        splitScenes,
+        splitStates,
+        fallbackParams
+      )
+      const ledFixture = fixture.ledFixture
+      const ledLayers =
+        ledFixture !== undefined
+          ? ledParams.map((params) =>
+              getLedValues(params, ledFixture, master, placementDepth2DOnly)
+            )
+          : []
+      const combinedLedValues = combineLedLayers(ledLayers)
+      for (let pixelIndex = 0; pixelIndex < target.emitters.length; pixelIndex++) {
+        const emitter = target.emitters[pixelIndex]
+        const pixelColor = combinedLedValues[pixelIndex]
+        if (pixelColor !== undefined) {
+          emitter.color.setRGB(pixelColor.red, pixelColor.green, pixelColor.blue)
+          emitter.intensity = clamp01(
+            Math.max(pixelColor.red, pixelColor.green, pixelColor.blue)
+          )
+        } else {
+          emitter.color.setRGB(0, 0, 0)
+          emitter.intensity = 0
+        }
+      }
+      continue
+    }
+
+    const universe = Math.max(1, Math.round(fixture.universe || 1))
+    const universeData = dmxOutByUniverse[universe - 1]
+    const splitParamsList = resolveSplitParamsForFixture(
+      fixture.groups,
+      splitScenes,
+      splitStates,
+      fallbackParams
+    )
+    const splitParams = splitParamsList[0] ?? fallbackParams
+    const freeAimMode = getParam(splitParams, 'moverFloorLock') <= 0.5
+    const fixtureWorld = fixtureWorldFromUniversePosition(
+      fixture.xPos,
+      fixture.yPos,
+      fixture.zPos,
+      floorSpec,
+      stageHeight
+    )
+
+    if (target.isMoverModel) {
+      const liveAxis = readLiveAxisValues(fixture, dmxOutByUniverse)
+      if (liveAxis !== undefined) {
+        target.aimYawDeg = mapPanDmxToYawDeg(
+          liveAxis.panRaw,
+          fixture.moverCalibration,
+          liveAxis.panNorm,
+          fixture.fixtureId,
+          freeAimMode
+        )
+        target.aimPitchDeg = mapTiltDmxToPitchDeg(
+          liveAxis.tiltRaw,
+          fixture.moverCalibration,
+          liveAxis.tiltNorm,
+          fixture.moverMountOrientation === 'inverted',
+          freeAimMode
+        )
+        const targetWorld = targetFromLiveAxis(
+          fixture,
+          liveAxis,
+          fixtureWorld,
+          freeAimMode
+        )
+        target.targetX = targetWorld.worldX
+        target.targetY = targetWorld.worldY
+        target.targetZ = targetWorld.worldZ
+      }
+    }
+
+    target.focusNorm = readLiveFocusNormalized(fixture.focusChannels, universeData)
+    target.goboIndex = readLiveGoboIndex(fixture.goboMapChannels, universeData)
+
+    for (const emitter of target.emitters) {
+      const beamValues = readLiveBeamValuesForChannels(
+        emitter.liveChannelSet,
+        universeData,
+        splitParams,
+        groupColor,
+        master
+      )
+      emitter.color.copy(beamValues.color)
+      emitter.intensity = beamValues.intensity
+      emitter.effectIntensity = readLiveEffectLevelForChannels(
+        emitter.liveEffectChannels,
+        universeData
+      )
+    }
+  }
+}
+
+export function buildPreviewGroupColorMap(
+  fixtures: MoverPreviewFixture[]
+): Map<string, THREE.Color> {
+  const grouped: Record<string, MoverPreviewFixture[]> = {}
+  for (const fixture of fixtures) {
+    const groupName =
+      fixture.groupName.trim().length > 0
+        ? fixture.groupName.trim()
+        : 'Mover Group'
+    const items = grouped[groupName] ?? []
+    items.push(fixture)
+    grouped[groupName] = items
+  }
+
+  const map = new Map<string, THREE.Color>()
+  for (const [groupName, groupFixtures] of Object.entries(grouped)) {
+    const groupColor = colorForGroup(groupName)
+    for (const fixture of groupFixtures) {
+      map.set(fixture.fixtureId, groupColor)
+    }
+  }
+  return map
+}
+
 export function fixtureVisualSignature(target: PreviewTarget): string {
   const wireCount = target.ledWireEdges?.length ?? 0
   let emitterLayoutHash = 0
@@ -2085,13 +2760,316 @@ export function fixtureVisualSignature(target: PreviewTarget): string {
     return `${target.modelKind}:${target.emitters.length}:led:${wireCount}:${positionHash}:layout:${emitterLayoutHash}:beam${ENABLE_BEAM_CONE_MESHES ? 1 : 0}:fill${ENABLE_RECT_AREA_FILL_LIGHTS ? 1 : 0}:splat${ENABLE_SURFACE_SPLATS ? 1 : 0}`
   }
   const shadowFlag = target.castPrimarySpotShadow === true ? 1 : 0
-  return `${target.modelKind}:${target.modelWidth.toFixed(3)}:${target.bodyShape}:${target.bodyHeight.toFixed(3)}:${target.bodyDepth.toFixed(3)}:${target.bodyDiameter.toFixed(3)}:${target.emitters.length}:dmx:${target.atmosphereEffect}:${target.atmosphereNozzleDirection}:layout:${emitterLayoutHash}:beam${ENABLE_BEAM_CONE_MESHES ? 1 : 0}:fill${ENABLE_RECT_AREA_FILL_LIGHTS ? 1 : 0}:splat${ENABLE_SURFACE_SPLATS ? 1 : 0}:sh${shadowFlag}`
+  const beamGrouped = shouldGroupBeamConesForTarget(target) ? 1 : 0
+  return `${target.modelKind}:${target.modelWidth.toFixed(3)}:${target.bodyShape}:${target.bodyHeight.toFixed(3)}:${target.bodyDepth.toFixed(3)}:${target.bodyDiameter.toFixed(3)}:${target.emitters.length}:dmx:${target.atmosphereEffect}:${target.atmosphereNozzleDirection}:layout:${emitterLayoutHash}:beam${ENABLE_BEAM_CONE_MESHES ? 1 : 0}:beamgrp${beamGrouped}:fill${ENABLE_RECT_AREA_FILL_LIGHTS ? 1 : 0}:splat${ENABLE_SURFACE_SPLATS ? 1 : 0}:ess${PREVIEW_ESSENTIALS_MODE ? 1 : 0}:sh${shadowFlag}`
+}
+
+export function shouldGroupBeamConesForTarget(target: PreviewTarget): boolean {
+  if (!ENABLE_BEAM_CONE_MESHES || target.isLedFixture || target.isMoverModel) {
+    return false
+  }
+  return (
+    target.modelKind === 'parCan' ||
+    target.modelKind === 'washBar' ||
+    target.modelKind === 'uplight'
+  )
+}
+
+export function computeBeamConeGroups(
+  target: PreviewTarget
+): Array<{ emitterIndices: number[]; layout: BeamConeGroupLayout }> {
+  const candidates: Array<{
+    index: number
+    x: number
+    y: number
+    z: number
+  }> = []
+  for (let index = 0; index < target.emitters.length; index++) {
+    if (!shouldCreateDynamicEmitterLight(target, index)) {
+      continue
+    }
+    const emitter = target.emitters[index]
+    if (emitter === undefined) {
+      continue
+    }
+    candidates.push({
+      index,
+      x: emitter.localX,
+      y: emitter.localY,
+      z: emitter.localZ,
+    })
+  }
+  if (candidates.length === 0) {
+    return []
+  }
+  if (candidates.length === 1) {
+    return [{ emitterIndices: [candidates[0]!.index], layout: 'spot' }]
+  }
+
+  const layout: BeamConeGroupLayout =
+    target.modelKind === 'washBar' || target.modelKind === 'uplight'
+      ? 'linear-x'
+      : 'spot'
+  candidates.sort((a, b) => a.x - b.x)
+
+  const axisGaps: number[] = []
+  for (let i = 1; i < candidates.length; i++) {
+    axisGaps.push(Math.abs(candidates[i]!.x - candidates[i - 1]!.x))
+  }
+  const sortedGaps = [...axisGaps].sort((a, b) => a - b)
+  const medianGap = sortedGaps[Math.floor(sortedGaps.length / 2)] ?? 0.08
+  const maxNeighborGap = Math.max(medianGap * 1.85, 0.045)
+  const maxLateralGap =
+    target.modelKind === 'washBar' ? 0.06 : target.modelKind === 'uplight' ? 0.08 : 0.12
+
+  const groups: Array<{ emitterIndices: number[]; layout: BeamConeGroupLayout }> =
+    []
+  let current: number[] = [candidates[0]!.index]
+  for (let i = 1; i < candidates.length; i++) {
+    const prev = candidates[i - 1]!
+    const curr = candidates[i]!
+    const axisGap = Math.abs(curr.x - prev.x)
+    const lateralGap = Math.hypot(curr.y - prev.y, curr.z - prev.z)
+    if (axisGap <= maxNeighborGap && lateralGap <= maxLateralGap) {
+      current.push(curr.index)
+      continue
+    }
+    groups.push({
+      emitterIndices: current,
+      layout: current.length === 1 ? 'spot' : layout,
+    })
+    current = [curr.index]
+  }
+  groups.push({
+    emitterIndices: current,
+    layout: current.length === 1 ? 'spot' : layout,
+  })
+  return groups
+}
+
+export function previewBeamHalfAngleDeg(target: PreviewTarget): number {
+  const focusScale = focusWidthScale(target.focusNorm)
+  const moverSpotBaseAngle = target.hasFocusChannel
+    ? defaultMoverBeamAngleForModelKind('moverSpot')
+    : target.moverBeamAngleDeg
+  const moverWashBaseAngle = target.hasFocusChannel
+    ? defaultMoverBeamAngleForModelKind('moverWash')
+    : target.moverBeamAngleDeg
+  const staticBeamAngle = Number.isFinite(target.moverBeamAngleDeg)
+    ? target.moverBeamAngleDeg
+    : 26
+  let halfAngleDeg =
+    target.modelKind === 'moverSpot'
+      ? clamp(moverSpotBaseAngle * focusScale, 2.5, 20)
+      : target.modelKind === 'parCan'
+        ? clamp(10 * focusScale, 2.5, 20)
+        : target.modelKind === 'moverWash'
+          ? clamp(moverWashBaseAngle * focusScale * 0.5, 4, 35)
+          : target.modelKind === 'washBar'
+            ? clamp(staticBeamAngle * focusScale * 0.38, 5, 22)
+            : target.modelKind === 'uplight'
+              ? clamp(staticBeamAngle * focusScale * 0.5, 10, 65)
+              : target.modelKind === 'atmosphericFxtr'
+                ? clamp(
+                    (target.atmosphereNozzleDirection === 'up' ? 18 : 14) *
+                      focusScale,
+                    4,
+                    35
+                  )
+                : 16
+  if (isCloudModelKind(target.modelKind)) {
+    halfAngleDeg = Math.min(25, halfAngleDeg)
+  }
+  return halfAngleDeg
+}
+
+export function previewBeamDefaultReachFt(target: PreviewTarget): number {
+  return target.modelKind === 'washBar'
+    ? 64
+    : target.modelKind === 'moverWash'
+      ? 120
+      : target.modelKind === 'atmosphericFxtr'
+        ? 40
+        : 100
+}
+
+const _groupedBeamScratch = {
+  localBeamDir: new THREE.Vector3(),
+  beamDirWorld: new THREE.Vector3(),
+  center: new THREE.Vector3(),
+  emitterWorld: new THREE.Vector3(),
+  quat: new THREE.Quaternion(),
+  color: new THREE.Color(),
+}
+
+export function syncGroupedBeamCones(options: {
+  groups: BeamConeGroupVisual[]
+  target: PreviewTarget
+  emitters: THREE.Mesh[]
+  surfaceSpec: SurfaceSpec
+  hazeAmount: number
+  previewLightingSuppressed: boolean
+  resolveEmitterIntensity: (rawIntensity: number) => number
+}): void {
+  const {
+    groups,
+    target,
+    emitters,
+    surfaceSpec,
+    hazeAmount,
+    previewLightingSuppressed,
+    resolveEmitterIntensity,
+  } = options
+  if (groups.length === 0) {
+    return
+  }
+
+  const halfAngleRad = THREE.MathUtils.degToRad(previewBeamHalfAngleDeg(target))
+  const defaultReach = feetToWorld(previewBeamDefaultReachFt(target))
+  const atmosphericUp =
+    target.modelKind === 'atmosphericFxtr' &&
+    target.atmosphereNozzleDirection === 'up'
+  const localBeamDirection =
+    target.modelKind === 'uplight' || atmosphericUp
+      ? LOCAL_AXIS_Y
+      : LOCAL_AXIS_Z
+
+  for (const group of groups) {
+    const beamMesh = group.mesh
+    const beamMaterial = beamMesh.material as THREE.MeshBasicMaterial
+    const scratch = _groupedBeamScratch
+    scratch.color.setRGB(0, 0, 0)
+    let blendWeight = 0
+    let maxIntensity = 0
+    let minX = Infinity
+    let maxX = -Infinity
+    let minY = Infinity
+    let maxY = -Infinity
+    let minZ = Infinity
+    let maxZ = -Infinity
+    let activeCount = 0
+
+    scratch.center.set(0, 0, 0)
+
+    for (const emitterIndex of group.emitterIndices) {
+      const emitterTarget = target.emitters[emitterIndex]
+      const emitterMesh = emitters[emitterIndex]
+      if (emitterTarget === undefined || emitterMesh === undefined) {
+        continue
+      }
+      minX = Math.min(minX, emitterMesh.position.x)
+      maxX = Math.max(maxX, emitterMesh.position.x)
+      minY = Math.min(minY, emitterMesh.position.y)
+      maxY = Math.max(maxY, emitterMesh.position.y)
+      minZ = Math.min(minZ, emitterMesh.position.z)
+      maxZ = Math.max(maxZ, emitterMesh.position.z)
+
+      const emitterIntensity = resolveEmitterIntensity(emitterTarget.intensity)
+      const outputActive = isEmitterOutputActive(
+        emitterIntensity,
+        emitterTarget.color
+      )
+      if (!outputActive) {
+        continue
+      }
+      activeCount += 1
+      maxIntensity = Math.max(maxIntensity, emitterIntensity)
+      blendWeight += emitterIntensity
+      scratch.color.r += emitterTarget.color.r * emitterIntensity
+      scratch.color.g += emitterTarget.color.g * emitterIntensity
+      scratch.color.b += emitterTarget.color.b * emitterIntensity
+      scratch.center.addScaledVector(emitterMesh.position, emitterIntensity)
+    }
+
+    if (
+      previewLightingSuppressed ||
+      activeCount === 0 ||
+      blendWeight <= PREVIEW_EMITTER_OUTPUT_EPSILON
+    ) {
+      beamMaterial.opacity = 0
+      beamMesh.visible = false
+      beamMesh.scale.set(0, 0, 0)
+      continue
+    }
+
+    scratch.color.multiplyScalar(1 / blendWeight)
+    scratch.center.multiplyScalar(1 / blendWeight)
+
+    const anchorMesh = emitters[group.emitterIndices[0]!]
+    const emitterParent = anchorMesh?.parent ?? null
+    scratch.beamDirWorld.copy(localBeamDirection)
+    if (emitterParent !== null) {
+      emitterParent.getWorldQuaternion(scratch.quat)
+      scratch.beamDirWorld.applyQuaternion(scratch.quat).normalize()
+    }
+
+    beamMesh.position.copy(scratch.center)
+
+    scratch.emitterWorld.copy(scratch.center)
+    if (emitterParent !== null) {
+      emitterParent.localToWorld(scratch.emitterWorld)
+    }
+
+    const surfaceHit = nearestSurfaceHit(
+      scratch.emitterWorld.clone().addScaledVector(scratch.beamDirWorld, 0.01),
+      scratch.beamDirWorld,
+      surfaceSpec
+    )
+    const coneLength = clamp(
+      surfaceHit !== undefined ? surfaceHit.distance - 0.01 : defaultReach,
+      0.08,
+      defaultReach
+    )
+
+    const hazeMix = clamp(hazeAmount, 0, 1)
+    if (hazeMix <= 0.0005) {
+      beamMaterial.opacity = 0
+      beamMesh.visible = false
+      beamMesh.scale.set(0, 0, 0)
+      continue
+    }
+
+    const baseRadius = Math.max(0.02, Math.tan(halfAngleRad) * coneLength)
+    const spanX = Math.max(0.02, maxX - minX + 0.035)
+    const spanY = Math.max(0.02, maxY - minY + 0.035)
+    const spanZ = Math.max(0.02, maxZ - minZ + 0.035)
+
+    let scaleX = baseRadius
+    let scaleY = baseRadius
+    if (group.layout === 'linear-x' && group.emitterIndices.length > 1) {
+      scaleX = Math.max(baseRadius, spanX * 0.55 + baseRadius * 0.45)
+      scaleY = Math.max(
+        baseRadius * 0.82,
+        Math.max(spanY, spanZ) * 0.42 + baseRadius * 0.35
+      )
+    } else if (group.emitterIndices.length > 1) {
+      const cover = Math.max(spanX, spanY, spanZ) * 0.58 + baseRadius * 0.35
+      scaleX = Math.max(baseRadius, cover)
+      scaleY = scaleX
+    }
+
+    beamMesh.quaternion.setFromUnitVectors(LOCAL_AXIS_Z, localBeamDirection)
+    beamMesh.scale.set(scaleX, scaleY, coneLength)
+    beamMaterial.color.copy(scratch.color)
+    const beamStrength =
+      Math.pow(maxIntensity, target.modelKind === 'moverSpot' ? 1.1 : 0.95) *
+      hazeMix
+    beamMaterial.opacity = clamp(
+      beamStrength * (target.modelKind === 'moverSpot' ? 0.72 : 0.58),
+      0,
+      0.62
+    )
+    beamMesh.visible = beamMaterial.opacity > 0.012
+  }
 }
 
 export function shouldCreateDynamicEmitterLight(
   target: PreviewTarget,
   emitterIndex: number
 ): boolean {
+  if (PREVIEW_ESSENTIALS_MODE) {
+    return false
+  }
   if (target.isLedFixture) {
     return ENABLE_LED_PIXEL_LIGHTS
   }
@@ -2101,6 +3079,13 @@ export function shouldCreateDynamicEmitterLight(
   // One steerable beam per mover head; ring/secondary emitters are lens markers only.
   if (target.modelKind === 'moverSpot' || target.modelKind === 'moverWash') {
     return emitterIndex === 0
+  }
+  if (
+    target.modelKind === 'washBar' ||
+    target.modelKind === 'parCan' ||
+    target.modelKind === 'uplight'
+  ) {
+    return emitterIndex < 6
   }
   return emitterIndex < MAX_DYNAMIC_LIGHTS_PER_FIXTURE
 }
@@ -2112,6 +3097,13 @@ export function shouldCreateSpotEmitterLight(
 ): boolean {
   if (!shouldCreateDynamicEmitterLight(target, emitterIndex)) {
     return false
+  }
+  const emitter = target.emitters[emitterIndex]
+  if (
+    emitter !== undefined &&
+    isRectPreviewEmitterShape(emitter.shape)
+  ) {
+    return true
   }
   return (
     target.modelKind === 'parCan' ||
@@ -2166,6 +3158,210 @@ export function nonMoverEmitterBaseY(modelKind: FixtureModelKind): number {
   return 0.23
 }
 
+/** Authoring reference width/depth for horizontal mover proportions (meters). */
+const MOVER_REF_WIDTH = 0.42
+const MOVER_REF_DEPTH = 0.34
+
+/** Locked mover mesh dimensions; pan/tilt pivots match attachment points in createFixtureVisual. */
+export interface MoverRigDimensions {
+  totalHeight: number
+  baseWidth: number
+  baseHeight: number
+  baseDepth: number
+  panAxisY: number
+  yokeInnerWidth: number
+  yokeArmThickness: number
+  yokeArmHeight: number
+  yokeDepth: number
+  tiltAxisY: number
+  headRadius: number
+  headLen: number
+  bezelDepth: number
+  lensDepth: number
+  washCapDepth: number
+  emitterFaceZ: number
+}
+
+export function computeMoverRigDimensions(
+  modelWidth: number,
+  bodyHeight: number,
+  bodyDepth: number,
+  bodyDiameter: number,
+  options?: { isWashMover?: boolean }
+): MoverRigDimensions {
+  const totalHeight = clamp(bodyHeight, 0.12, 2.5)
+  const width = clamp(Math.max(modelWidth, bodyDiameter), 0.2, 3)
+  const depth = clamp(bodyDepth, 0.12, 1.2)
+
+  const widthScale = width / MOVER_REF_WIDTH
+  const depthScale = depth / MOVER_REF_DEPTH
+
+  const baseHeight = totalHeight * 0.28
+  const yokeArmHeight = totalHeight * 0.72
+  const panAxisY = baseHeight
+  const yokeArmThickness = 0.055 * widthScale
+  const tiltAxisY = yokeArmHeight - yokeArmThickness * 0.5
+
+  const baseWidth = 1.05 * MOVER_REF_WIDTH * widthScale
+  const baseDepth = 0.86 * MOVER_REF_WIDTH * widthScale
+  const yokeInnerWidth = 0.81 * MOVER_REF_WIDTH * widthScale
+  const yokeDepth = 0.26 * MOVER_REF_WIDTH * widthScale
+
+  const headRadius = 0.34 * MOVER_REF_WIDTH * widthScale
+  const headLen = 0.88 * MOVER_REF_DEPTH * depthScale
+  const bezelDepth = 0.08 * MOVER_REF_DEPTH * depthScale
+  const lensDepth = 0.04 * MOVER_REF_DEPTH * depthScale
+  const isWashMover = options?.isWashMover === true
+  const washCapDepth = isWashMover ? 0.065 * MOVER_REF_DEPTH * depthScale : 0
+  const headFrontZ = headLen * 0.5
+  const emitterFaceZ =
+    headFrontZ + bezelDepth + lensDepth + (isWashMover ? washCapDepth : 0)
+
+  return {
+    totalHeight,
+    baseWidth,
+    baseHeight,
+    baseDepth,
+    panAxisY,
+    yokeInnerWidth,
+    yokeArmThickness,
+    yokeArmHeight,
+    yokeDepth,
+    tiltAxisY,
+    headRadius,
+    headLen,
+    bezelDepth,
+    lensDepth,
+    washCapDepth,
+    emitterFaceZ,
+  }
+}
+
+/** Mover head front face in head-local +Z (emitter center on lens plane; tilt pivot at z = 0). */
+export function moverHeadEmitterBackPlaneLocalZ(
+  modelWidth: number,
+  bodyDepth: number,
+  bodyHeight: number,
+  bodyDiameter: number,
+  isWashMover = false
+): number {
+  return computeMoverRigDimensions(
+    modelWidth,
+    bodyHeight,
+    bodyDepth,
+    bodyDiameter,
+    { isWashMover }
+  ).emitterFaceZ
+}
+
+/**
+ * Maps fixture-face Z (0 = rear, 1 = front) to root Z of the emitter center (+Z beam).
+ */
+export function emitterBackPlaneLocalZ(
+  modelKind: FixtureModelKind,
+  bodyDepth: number,
+  bodyHeight: number,
+  bodyShape: FixtureBodyShape,
+  faceZ01: number,
+  options?: {
+    isMover?: boolean
+    moverHeadFaceZ?: number
+    modelWidth?: number
+    bodyDiameter?: number
+  }
+): number {
+  if (options?.isMover === true && options.moverHeadFaceZ !== undefined) {
+    return options.moverHeadFaceZ
+  }
+  const ctx: FixturePlacementContext = {
+    modelKind,
+    bodyShape,
+    modelWidth: options?.modelWidth ?? 0.6,
+    bodyHeight,
+    bodyDepth,
+    bodyDiameter: options?.bodyDiameter ?? bodyDepth,
+  }
+  if (modelKind === 'uplight') {
+    return emitterBackPlaneRootY(ctx, faceZ01)
+  }
+  return emitterBackPlaneRootZ(ctx, faceZ01)
+}
+
+/** Half-thickness of emitter mesh along the beam (support function of oriented bbox). */
+export function emitterHalfExtentAlongBeam(mesh: THREE.Mesh): number {
+  const beam = LOCAL_AXIS_Z.clone().applyQuaternion(mesh.quaternion).normalize()
+  mesh.geometry.computeBoundingBox()
+  const box = mesh.geometry.boundingBox
+  if (box === null) {
+    return 0.002
+  }
+  const hx = ((box.max.x - box.min.x) * 0.5) * Math.abs(mesh.scale.x)
+  const hy = ((box.max.y - box.min.y) * 0.5) * Math.abs(mesh.scale.y)
+  const hz = ((box.max.z - box.min.z) * 0.5) * Math.abs(mesh.scale.z)
+  const ex = new THREE.Vector3(hx, 0, 0).applyQuaternion(mesh.quaternion)
+  const ey = new THREE.Vector3(0, hy, 0).applyQuaternion(mesh.quaternion)
+  const ez = new THREE.Vector3(0, 0, hz).applyQuaternion(mesh.quaternion)
+  return Math.max(
+    0.0006,
+    Math.abs(beam.dot(ex)) + Math.abs(beam.dot(ey)) + Math.abs(beam.dot(ez))
+  )
+}
+
+export function placeEmitterMeshOnFixtureFace(
+  mesh: THREE.Mesh,
+  faceCenter: THREE.Vector3,
+  beamDirection: THREE.Vector3,
+  shape: PreviewEmitterShape | FixtureEmitterShape
+): void {
+  mesh.quaternion.setFromUnitVectors(emitterLensForwardAxis(shape), beamDirection)
+  mesh.position.copy(faceCenter)
+}
+
+/**
+ * Positions an emitter mesh with its center on the fixture face plane.
+ * PreviewEmitterTarget: localX/localY = offset from body center; localZ = face depth on beam axis.
+ */
+export function applyEmitterRootPlacement(
+  mesh: THREE.Mesh,
+  target: PreviewTarget,
+  emitter: PreviewEmitterTarget
+): THREE.Vector3 {
+  if (target.isMoverModel) {
+    const beam = LOCAL_AXIS_Z
+    placeEmitterMeshOnFixtureFace(
+      mesh,
+      new THREE.Vector3(emitter.localX, emitter.localY, emitter.localZ),
+      beam,
+      emitter.shape
+    )
+    return mesh.position.clone()
+  }
+
+  if (target.modelKind === 'atmosphericFxtr') {
+    const beam =
+      target.atmosphereNozzleDirection === 'up' ? LOCAL_AXIS_Y : LOCAL_AXIS_Z
+    placeEmitterMeshOnFixtureFace(
+      mesh,
+      new THREE.Vector3(emitter.localX, emitter.localY, emitter.localZ),
+      beam,
+      emitter.shape
+    )
+    return mesh.position.clone()
+  }
+
+  const ctx = fixturePlacementContextFromTarget(target)
+  const center = fixtureBodyCenterInRoot(ctx)
+  const beam = fixtureBeamAxisInRoot(ctx)
+
+  const faceCenter = new THREE.Vector3(
+    center.x + emitter.localX,
+    center.y + emitter.localY,
+    center.z + emitter.localZ
+  )
+  placeEmitterMeshOnFixtureFace(mesh, faceCenter, beam, emitter.shape)
+  return mesh.position.clone()
+}
+
 export function createEmitterMesh(
   color: THREE.Color,
   sizeScale = 1,
@@ -2174,12 +3370,16 @@ export function createEmitterMesh(
 ): THREE.Mesh {
   const geometry =
     shape === 'disc'
-      ? new THREE.CylinderGeometry(
-          Math.max(0.0025, 0.0225 * sizeScale),
-          Math.max(0.0025, 0.0225 * sizeScale),
-          Math.max(0.0012, 0.005 * sizeScale),
-          24
-        )
+      ? (() => {
+          const disc = new THREE.CylinderGeometry(
+            Math.max(0.0025, 0.0225 * sizeScale),
+            Math.max(0.0025, 0.0225 * sizeScale),
+            Math.max(0.0012, 0.005 * sizeScale),
+            24
+          )
+          disc.rotateX(-Math.PI / 2)
+          return disc
+        })()
       : (() => {
           const wx =
             rectFaceM !== undefined
@@ -2673,6 +3873,46 @@ export function createVolumetricFogMaterial(
   })
 }
 
+/** Hide cones, splats, jets, and dynamic lights — essentials preview uses emitters only. */
+export function suppressFixtureSecondaryVisuals(visual: FixtureVisual): void {
+  for (const mesh of visual.beamMeshes) {
+    if (mesh !== undefined) {
+      mesh.visible = false
+    }
+  }
+  if (visual.beamConeGroups !== undefined) {
+    for (const group of visual.beamConeGroups) {
+      group.mesh.visible = false
+    }
+  }
+  for (const splat of visual.surfaceSplats) {
+    if (splat !== undefined) {
+      splat.visible = false
+    }
+  }
+  for (const jet of visual.atmosphereJets) {
+    if (jet !== undefined) {
+      jet.visible = false
+    }
+  }
+  for (const light of visual.emitterLights) {
+    if (light !== undefined) {
+      light.intensity = 0
+      light.visible = false
+    }
+  }
+  for (const fill of visual.emitterFillRects) {
+    if (fill !== undefined) {
+      fill.intensity = 0
+      fill.visible = false
+    }
+  }
+  if (visual.ledAggregateLight !== undefined) {
+    visual.ledAggregateLight.intensity = 0
+    visual.ledAggregateLight.visible = false
+  }
+}
+
 export function createFixtureVisual(target: PreviewTarget): FixtureVisual {
   const signature = fixtureVisualSignature(target)
   const root = new THREE.Group()
@@ -2779,84 +4019,123 @@ export function createFixtureVisual(target: PreviewTarget): FixtureVisual {
   }
 
   if (target.isMoverModel) {
-    const moverScale = clamp(Math.max(target.modelWidth, target.bodyDiameter), 0.35, 2.4)
     const isWashMover = target.modelKind === 'moverWash'
+    const rig = computeMoverRigDimensions(
+      target.modelWidth,
+      target.bodyHeight,
+      target.bodyDepth,
+      target.bodyDiameter,
+      { isWashMover }
+    )
     const mountGroup = new THREE.Group()
     if (target.mountInverted) {
       mountGroup.rotation.z = Math.PI
     }
     root.add(mountGroup)
 
-    const baseRadius = 0.34 * moverScale
-    const baseHeight = 0.28 * moverScale
     const base = new THREE.Mesh(
-      new THREE.CylinderGeometry(baseRadius * 0.68, baseRadius, baseHeight, 24),
+      new THREE.BoxGeometry(rig.baseWidth, rig.baseHeight, rig.baseDepth),
       bodyMaterial
     )
-    base.position.y = baseHeight * 0.5
+    base.position.y = rig.baseHeight * 0.5
     mountGroup.add(base)
 
     const panPivot = new THREE.Group()
-    panPivot.position.y = baseHeight
+    panPivot.position.y = rig.panAxisY
     mountGroup.add(panPivot)
     const yokeGroup = new THREE.Group()
     panPivot.add(yokeGroup)
 
-    const yokeInnerWidth = 0.32 * moverScale
-    const yokeArmThickness = 0.056 * moverScale
-    const yokeArmHeight = 0.32 * moverScale
-    const yokeDepth = 0.12 * moverScale
-    const yokeOuterWidth = yokeInnerWidth + yokeArmThickness * 2
+    const yokeOuterWidth = rig.yokeInnerWidth + rig.yokeArmThickness * 2
 
     const leftArm = new THREE.Mesh(
-      new THREE.BoxGeometry(yokeArmThickness, yokeArmHeight, yokeDepth),
+      new THREE.BoxGeometry(
+        rig.yokeArmThickness,
+        rig.yokeArmHeight,
+        rig.yokeDepth
+      ),
       bodyMaterial
     )
     leftArm.position.set(
-      -yokeInnerWidth * 0.5 - yokeArmThickness * 0.5,
-      yokeArmHeight * 0.5,
+      -rig.yokeInnerWidth * 0.5 - rig.yokeArmThickness * 0.5,
+      rig.yokeArmHeight * 0.5,
       0
     )
     yokeGroup.add(leftArm)
 
     const rightArm = leftArm.clone()
-    rightArm.position.x = yokeInnerWidth * 0.5 + yokeArmThickness * 0.5
+    rightArm.position.x = rig.yokeInnerWidth * 0.5 + rig.yokeArmThickness * 0.5
     yokeGroup.add(rightArm)
 
     const bottomBridge = new THREE.Mesh(
-      new THREE.BoxGeometry(yokeOuterWidth, yokeArmThickness, yokeDepth),
+      new THREE.BoxGeometry(yokeOuterWidth, rig.yokeArmThickness, rig.yokeDepth),
       bodyMaterial
     )
-    bottomBridge.position.y = yokeArmThickness * 0.5
+    bottomBridge.position.y = rig.yokeArmThickness * 0.5
     yokeGroup.add(bottomBridge)
 
     const headPivot = new THREE.Group()
-    headPivot.position.set(0, yokeArmHeight * 0.56, 0)
+    headPivot.position.set(0, rig.tiltAxisY, 0)
     yokeGroup.add(headPivot)
 
-    const headWidth = Math.max(yokeInnerWidth * 0.9, target.modelWidth * 0.32)
-    const headHeight = clamp(target.bodyHeight, 0.08, 0.95)
-    const headDepth = clamp(target.bodyDepth, 0.08, 1.1)
     const head = new THREE.Mesh(
-      new THREE.BoxGeometry(headWidth, headHeight, headDepth),
+      new THREE.CylinderGeometry(
+        rig.headRadius,
+        rig.headRadius * 0.97,
+        rig.headLen,
+        28
+      ),
       bodyMaterial
     )
-    head.position.z = headDepth * 0.18
+    head.rotation.x = Math.PI / 2
+    head.position.set(0, 0, 0)
     headPivot.add(head)
 
-    let emitterFaceZ = head.position.z + headDepth * 0.5 + 0.008 * moverScale
-    if (isWashMover) {
-      const capRadius = clamp(Math.min(headWidth, headHeight) * 0.44, 0.03, 0.14)
-      const capDepth = 0.03 * moverScale
-      const frontCap = new THREE.Mesh(
-        new THREE.CylinderGeometry(capRadius, capRadius, capDepth, 20),
+    const headFrontZ = rig.headLen * 0.5
+
+    const bezel = new THREE.Mesh(
+      new THREE.CylinderGeometry(
+        rig.headRadius * 1.06,
+        rig.headRadius * 1.06,
+        rig.bezelDepth,
+        24
+      ),
+      bodyMaterial
+    )
+    bezel.rotation.x = Math.PI / 2
+    bezel.position.z = headFrontZ + rig.bezelDepth * 0.5
+    headPivot.add(bezel)
+
+    const lens = new THREE.Mesh(
+      new THREE.CylinderGeometry(
+        rig.headRadius * 0.9,
+        rig.headRadius * 0.9,
+        rig.lensDepth,
+        22
+      ),
+      lensMaterial
+    )
+    lens.rotation.x = Math.PI / 2
+    lens.position.z = headFrontZ + rig.bezelDepth + rig.lensDepth * 0.5
+    headPivot.add(lens)
+
+    if (isWashMover && rig.washCapDepth > 0) {
+      const washCap = new THREE.Mesh(
+        new THREE.CylinderGeometry(
+          rig.headRadius * 1.12,
+          rig.headRadius * 1.12,
+          rig.washCapDepth,
+          22
+        ),
         lensMaterial
       )
-      frontCap.rotation.x = Math.PI / 2
-      frontCap.position.z = head.position.z + headDepth * 0.5 + capDepth * 0.52
-      headPivot.add(frontCap)
-      emitterFaceZ = frontCap.position.z + capDepth * 0.52
+      washCap.rotation.x = Math.PI / 2
+      washCap.position.z =
+        headFrontZ + rig.bezelDepth + rig.lensDepth + rig.washCapDepth * 0.5
+      headPivot.add(washCap)
     }
+
+    const emitterFaceZ = rig.emitterFaceZ
 
     const beamStartProbe = new THREE.Object3D()
     beamStartProbe.position.set(0, 0, emitterFaceZ)
@@ -2899,8 +4178,13 @@ export function createFixtureVisual(target: PreviewTarget): FixtureVisual {
       const surfaceSplat = ENABLE_SURFACE_SPLATS && shouldCreateLight
         ? createSurfaceSplatMesh(emitter.color)
         : undefined
-      emitterMesh.position.set(emitter.localX, emitter.localY, emitter.localZ)
       headPivot.add(emitterMesh)
+      placeEmitterMeshOnFixtureFace(
+        emitterMesh,
+        new THREE.Vector3(emitter.localX, emitter.localY, emitter.localZ),
+        LOCAL_AXIS_Z,
+        emitter.shape
+      )
       if (lightBundle !== null) {
         headPivot.add(lightBundle.light)
         headPivot.add(lightBundle.target)
@@ -3013,6 +4297,10 @@ export function createFixtureVisual(target: PreviewTarget): FixtureVisual {
     root.add(body)
   }
 
+  const groupedBeamSpecs = shouldGroupBeamConesForTarget(target)
+    ? computeBeamConeGroups(target)
+    : null
+
   for (const [emitterIndex, emitter] of target.emitters.entries()) {
     const rectFaceNonMover =
       emitter.shape !== 'disc' &&
@@ -3038,7 +4326,7 @@ export function createFixtureVisual(target: PreviewTarget): FixtureVisual {
       ? createSpotEmitterLight(emitter.color, shadowedSpot)
       : null
     const beamMesh =
-      ENABLE_BEAM_CONE_MESHES && shouldCreateLight
+      ENABLE_BEAM_CONE_MESHES && shouldCreateLight && groupedBeamSpecs === null
         ? createBeamMesh(emitter.color)
         : undefined
     const fillRect = shouldCreateFillRectLight(target, emitterIndex)
@@ -3047,12 +4335,8 @@ export function createFixtureVisual(target: PreviewTarget): FixtureVisual {
     const surfaceSplat = ENABLE_SURFACE_SPLATS && shouldCreateLight
       ? createSurfaceSplatMesh(emitter.color)
       : undefined
-    emitterMesh.position.set(
-      emitter.localX,
-      nonMoverEmitterBaseY(target.modelKind) + emitter.localY,
-      emitter.localZ
-    )
     root.add(emitterMesh)
+    applyEmitterRootPlacement(emitterMesh, target, emitter)
     if (lightBundle !== null) {
       root.add(lightBundle.light)
       root.add(lightBundle.target)
@@ -3071,9 +4355,11 @@ export function createFixtureVisual(target: PreviewTarget): FixtureVisual {
     emitterLights.push(lightBundle?.light)
     emitterLightTargets.push(lightBundle?.target)
     emitterFillRects.push(fillRect)
-    const atmosphereJet = isAtmosphericModelKind(target.modelKind)
-      ? createAtmosphereJetMesh(emitter.color, target.atmosphereEffect)
-      : undefined
+    const atmosphereJet =
+      !PREVIEW_ESSENTIALS_MODE &&
+      isAtmosphericModelKind(target.modelKind)
+        ? createAtmosphereJetMesh(emitter.color, target.atmosphereEffect)
+        : undefined
     if (atmosphereJet !== undefined) {
       atmosphereJet.position.copy(emitterMesh.position)
       root.add(atmosphereJet)
@@ -3082,12 +4368,26 @@ export function createFixtureVisual(target: PreviewTarget): FixtureVisual {
     surfaceSplats.push(surfaceSplat)
   }
 
+  const beamConeGroups: BeamConeGroupVisual[] | undefined =
+    groupedBeamSpecs !== null && ENABLE_BEAM_CONE_MESHES
+      ? groupedBeamSpecs.map((spec) => {
+          const mesh = createBeamMesh(new THREE.Color(1, 1, 1))
+          root.add(mesh)
+          return {
+            mesh,
+            emitterIndices: spec.emitterIndices,
+            layout: spec.layout,
+          }
+        })
+      : undefined
+
   return {
     signature,
     modelKind: target.modelKind,
     root,
     emitters,
     beamMeshes,
+    beamConeGroups,
     emitterLights,
     emitterLightTargets,
     emitterFillRects,

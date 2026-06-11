@@ -5,26 +5,22 @@ import AddIcon from '@mui/icons-material/Add'
 import { IconButton, Button } from '@mui/material'
 import { addFixtureType } from '../redux/dmxSlice'
 import { useDispatch } from 'react-redux'
-import { FixtureType, initFixtureType } from '../../shared/dmxFixtures'
+import { FixtureType } from '../../shared/dmxFixtures'
 import styled from 'styled-components'
 import Popup from 'renderer/base/Popup'
+import { captivateFileFilters, loadFile } from '../autosave'
 import {
-  captivateFileFilters,
-  getDefaultFixtureLibraryPath,
-  loadFile,
-  loadFixtureLibraryFromDefaultPath,
-  saveFixtureLibraryToDefaultPath,
-} from '../autosave'
-import {
-  cloneFixtureType,
-  parseFixtureLibrary,
-  serializeFixtureLibrary,
-} from '../../shared/fixtureLibrary'
+  loadFixtureDatabase,
+  saveFixtureDatabase,
+} from '../menu/projectSaveLoadActions'
+import { cloneFixtureType, parseFixtureLibrary } from '../../shared/fixtureLibrary'
 import QlcFixtureBrowserModal from './QlcFixtureBrowserModal'
 import FixtureLibraryInfoButton from './FixtureLibraryInfoButton'
-import { openAppAlert, openAppConfirm } from 'renderer/overlays/appDialogService'
+import { openAppAlert } from 'renderer/overlays/appDialogService'
 import BusyModal from 'renderer/overlays/BusyModal'
 import useStandardBusy from 'renderer/hooks/useStandardBusy'
+import CustomFixtureCreationWizard from './CustomFixtureCreationWizard'
+import FixtureModelLayoutWizard from './FixtureModelLayoutWizard'
 
 export default function MyFixtures() {
   const fixtureTypeIds = useDmxSelector((state) => state.fixtureTypes)
@@ -39,6 +35,10 @@ export default function MyFixtures() {
   })
   const [isPopup, setIsPopup] = useState(false)
   const [isQlcModalOpen, setIsQlcModalOpen] = useState(false)
+  const [isCreationWizardOpen, setIsCreationWizardOpen] = useState(false)
+  const [modelWizardFixtureId, setModelWizardFixtureId] = useState<string | null>(
+    null
+  )
   const { busy, busyMessage, startBusy, stopBusy } = useStandardBusy()
 
   function addImportedFixtures(importedFixtures: FixtureType[]) {
@@ -47,80 +47,19 @@ export default function MyFixtures() {
     }
   }
 
-  async function loadFixtureDatabaseFromFile() {
-    startBusy({
-      title: 'Loading Fixture Database',
-      message: 'Reading fixture database file...',
-    })
+  async function onLoadFixtureDatabase() {
     try {
-      const serialized = await loadFile('Load Fixture Database', [
-        captivateFileFilters.captivateFixtures,
-      ])
-      if (serialized === null) {
-        return
-      }
-      const importedFixtures = parseFixtureLibrary(serialized)
-      addImportedFixtures(importedFixtures)
-      stopBusy()
-      await openAppAlert({
-        title: 'Fixture Database',
-        message: `Loaded ${importedFixtures.length} fixture${
-          importedFixtures.length === 1 ? '' : 's'
-        } from selected database.`,
-        level: 'info',
-        source: 'Fixtures',
-      })
-    } finally {
-      stopBusy()
-    }
-  }
-
-  async function loadFixtureDatabase() {
-    try {
-      startBusy({
-        title: 'Loading Fixture Database',
-        message: 'Reading saved fixture database...',
-      })
-      const serialized = await loadFixtureLibraryFromDefaultPath()
-      if (serialized !== null) {
-        const importedFixtures = parseFixtureLibrary(serialized)
-        addImportedFixtures(importedFixtures)
-        stopBusy()
-        await openAppAlert({
-          title: 'Fixture Database',
-          message: `Loaded ${importedFixtures.length} fixture${
-            importedFixtures.length === 1 ? '' : 's'
-          } from saved fixture database.`,
-          level: 'info',
-          source: 'Fixtures',
-        })
-        return
-      }
-
-      stopBusy()
-      const defaultPath = await getDefaultFixtureLibraryPath()
-      const shouldPickFile = await openAppConfirm({
-        title: 'Fixture Database',
-        message: `No saved fixture database was found at:\n${defaultPath}\n\nDo you want to pick a fixture database file instead?`,
-        confirmLabel: 'Pick File',
-        cancelLabel: 'Cancel',
-      })
-      if (shouldPickFile) {
-        await loadFixtureDatabaseFromFile()
-      }
+      await loadFixtureDatabase()
     } catch (err) {
       console.warn(err)
       const message =
         err instanceof Error ? err.message : 'Unknown fixture database error.'
-      stopBusy()
       await openAppAlert({
         title: 'Fixture Database',
         message: `Fixture database load failed: ${message}`,
         level: 'error',
         source: 'Fixtures',
       })
-    } finally {
-      stopBusy()
     }
   }
 
@@ -130,14 +69,14 @@ export default function MyFixtures() {
         title: 'Importing Fixtures',
         message: 'Reading fixture definitions...',
       })
-      const serialized = await loadFile('Import Fixtures', [
+      const loaded = await loadFile('Import Fixtures', [
         captivateFileFilters.captivateFixtures,
         captivateFileFilters.qlcFixtures,
       ])
-      if (serialized === null) {
+      if (loaded === null) {
         return
       }
-      const importedFixtures = parseFixtureLibrary(serialized)
+      const importedFixtures = parseFixtureLibrary(loaded.content)
       addImportedFixtures(importedFixtures)
     } catch (err) {
       console.warn(err)
@@ -155,37 +94,19 @@ export default function MyFixtures() {
     }
   }
 
-  async function exportFixtures() {
+  async function onSaveFixtureDatabase() {
     try {
-      startBusy({
-        title: 'Saving Fixture Database',
-        message: 'Writing fixture database to disk...',
-      })
-      const serialized = serializeFixtureLibrary(fixtureTypes)
-      const savedPath = await saveFixtureLibraryToDefaultPath(serialized)
-      stopBusy()
-      await openAppAlert({
-        title: 'Fixture Database',
-        message: `Fixture database saved to:\n${savedPath}`,
-        level: 'info',
-        source: 'Fixtures',
-      })
+      await saveFixtureDatabase()
     } catch (err) {
       console.warn(err)
-      const fallbackPath = await getDefaultFixtureLibraryPath().catch(
-        () => 'default fixture library path'
-      )
-      stopBusy()
       await openAppAlert({
         title: 'Fixture Database',
-        message: `Failed to save fixture database to:\n${fallbackPath}\n\n${
+        message: `Failed to save fixture database: ${
           err instanceof Error ? err.message : 'Unknown save error.'
         }`,
         level: 'error',
         source: 'Fixtures',
       })
-    } finally {
-      stopBusy()
     }
   }
 
@@ -214,15 +135,15 @@ export default function MyFixtures() {
       <ListFooter>
         <FooterDbButton
           variant="outlined"
-          onClick={() => void loadFixtureDatabase()}
-          title="Load all fixtures from your saved fixture database"
+          onClick={() => void onLoadFixtureDatabase()}
+          title="Load fixture database from the project folder (or choose another file)"
         >
           Load DB
         </FooterDbButton>
         <FooterDbButton
           variant="outlined"
-          onClick={() => void exportFixtures()}
-          title="Save all fixtures in this project to the default fixture database file"
+          onClick={() => void onSaveFixtureDatabase()}
+          title="Save fixture database to the project folder"
         >
           Save DB
         </FooterDbButton>
@@ -251,10 +172,10 @@ export default function MyFixtures() {
             <Button
               variant="contained"
               onClick={() => {
-                dispatch(addFixtureType(initFixtureType()))
                 setIsPopup(false)
+                setIsCreationWizardOpen(true)
               }}
-              title="Create a new custom fixture"
+              title="Step-by-step wizard to create a new custom fixture"
             >
               Create New
             </Button>
@@ -276,6 +197,22 @@ export default function MyFixtures() {
         onClose={() => setIsQlcModalOpen(false)}
         onImportFixtures={addImportedFixtures}
       />
+      <CustomFixtureCreationWizard
+        open={isCreationWizardOpen}
+        onClose={() => setIsCreationWizardOpen(false)}
+        onSaved={(fixtureId, options) => {
+          if (options.openModelWizard) {
+            setModelWizardFixtureId(fixtureId)
+          }
+        }}
+      />
+      {modelWizardFixtureId !== null && (
+        <FixtureModelLayoutWizard
+          open
+          fixtureId={modelWizardFixtureId}
+          onClose={() => setModelWizardFixtureId(null)}
+        />
+      )}
       <BusyModal
         open={busy !== null}
         title={busy?.title ?? 'Working...'}

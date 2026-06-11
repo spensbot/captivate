@@ -1,58 +1,30 @@
 import type { Lighting3dRealtimeTick } from '../../shared/lighting3dPreviewTransport'
-import { store } from '../redux/store'
-import {
-  realtimeStore,
-  update as updateRealtimeStore,
-  type RealtimeState,
-  type SplitState,
-} from '../redux/realtimeStore'
-import { setMaster } from '../redux/controlSlice'
+
+export type Lighting3dTickSink = (tick: Lighting3dRealtimeTick) => void
 
 /**
  * Applies throttled main-process DMX ticks to the Lighting 3D renderer without
- * touching the full IPC control-state mirror path.
+ * touching the full IPC control-state mirror path or the main window Redux tree.
  */
 export const lighting3dPreviewRuntimeManager = {
-  applyTick(tick: Lighting3dRealtimeTick) {
-    const prev = realtimeStore.getState()
-    const nextSplitStates = prev.splitStates.map(
-      (existing: SplitState | undefined, index: number) => {
-        const incoming = tick.splitStates[index]
-        if (incoming === undefined) {
-          return existing
-        }
-        if (existing === undefined) {
-          return {
-            outputParams: incoming.outputParams,
-            randomizer: incoming.randomizer,
-          }
-        }
-        return {
-          ...existing,
-          outputParams: incoming.outputParams,
-          randomizer: incoming.randomizer,
-        }
+  /** Latest master from preview ticks (Lighting 3D does not mirror full control state). */
+  master: 1,
+
+  registerTickSink(sink: Lighting3dTickSink): () => void {
+    tickSink = sink
+    return () => {
+      if (tickSink === sink) {
+        tickSink = null
       }
-    ) as RealtimeState['splitStates']
+    }
+  },
 
-    const dmxOutByUniverse = tick.dmxOutByUniverse.map((u) => u.slice())
-    const dmxOut =
-      dmxOutByUniverse[0] !== undefined
-        ? dmxOutByUniverse[0].slice()
-        : prev.dmxOut.slice()
-
-    realtimeStore.dispatch(
-      updateRealtimeStore({
-        ...prev,
-        time: tick.time,
-        dmxOut,
-        dmxOutByUniverse,
-        splitStates: nextSplitStates,
-      })
-    )
-    const nextMaster = tick.master
-    if (store.getState().control.present.master !== nextMaster) {
-      store.dispatch(setMaster(nextMaster))
+  applyTick(tick: Lighting3dRealtimeTick) {
+    this.master = tick.master
+    if (tickSink !== null) {
+      tickSink(tick)
     }
   },
 }
+
+let tickSink: Lighting3dTickSink | null = null
