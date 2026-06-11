@@ -88,6 +88,38 @@ function copyTree(filePaths, destRoot, rootDir) {
   }
 }
 
+function clearPackageBuildDirs(nodeModulesRoot) {
+  if (!fs.existsSync(nodeModulesRoot)) {
+    return
+  }
+  for (const entry of fs.readdirSync(nodeModulesRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory() || entry.name.startsWith('.')) {
+      continue
+    }
+    const buildDir = path.join(nodeModulesRoot, entry.name, 'build')
+    if (fs.existsSync(buildDir)) {
+      fs.rmSync(buildDir, { recursive: true, force: true })
+    }
+  }
+}
+
+function readArchitectures(filePath) {
+  const result = spawnSync('lipo', ['-info', filePath], { encoding: 'utf8' })
+  if (result.status !== 0) {
+    return null
+  }
+  const text = `${result.stdout || ''} ${result.stderr || ''}`
+  const nonFat = text.match(/Non-fat file:\s+\S+\s+is architecture:\s+(\S+)/)
+  if (nonFat) {
+    return [nonFat[1]]
+  }
+  const fat = text.match(/Architectures in the fat file:[\s\S]*?:\s+(.+)/)
+  if (fat) {
+    return fat[1].trim().split(/\s+/)
+  }
+  return null
+}
+
 function lipoCreate(outputPath, inputs) {
   const existing = inputs.filter((p) => fs.existsSync(p))
   if (existing.length === 0) {
@@ -96,6 +128,18 @@ function lipoCreate(outputPath, inputs) {
   if (existing.length === 1) {
     fs.mkdirSync(path.dirname(outputPath), { recursive: true })
     fs.copyFileSync(existing[0], outputPath)
+    return true
+  }
+  const archLists = existing.map((inputPath) => readArchitectures(inputPath))
+  if (
+    archLists.every(Boolean) &&
+    archLists[0].join(',') === archLists[1].join(',')
+  ) {
+    fs.mkdirSync(path.dirname(outputPath), { recursive: true })
+    fs.copyFileSync(existing[0], outputPath)
+    console.warn(
+      `[captivate] Skipping lipo for ${outputPath}: inputs share architectures (${archLists[0].join(', ')})`
+    )
     return true
   }
   fs.mkdirSync(path.dirname(outputPath), { recursive: true })
@@ -115,6 +159,7 @@ async function rebuildForArch(arch) {
   if (!electronVersion) {
     throw new Error('Unable to resolve Electron version for darwin universal rebuild')
   }
+  clearPackageBuildDirs(path.join(appPath, 'node_modules'))
   console.log(`[captivate] Rebuilding release/app native modules for ${arch}...`)
   await rebuild({
     buildPath: appPath,
