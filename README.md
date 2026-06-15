@@ -121,6 +121,7 @@ CI builds all three platforms on push and publishes assets when you push a versi
 - [Remote control (LAN)](docs/remote-control.md)
 - [Laser FB4 / Pangolin BEYOND](docs/laser-fb4-beyond.md)
 - [Visualizer streaming (RTSP / NDI)](docs/visualizer-streaming.md)
+- [WLED fixtures](docs/wled-fixtures.md)
 
 ---
 
