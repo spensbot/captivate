@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.1.1
+
+### Audio input
+
+- Advanced Music Energy controls: energy response, dynamics, and rhythm emphasis in the audio input menu.
+
+### Connections & fixes
+
+- Ableton Link toggle and status stay in sync while transport is playing.
+- Windows CI native rebuild fix for updated GitHub Actions runner images.
+
 ## 1.1.0
 
 ### Projects & fixtures
