@@ -25,7 +25,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
+        # windows-2022: stable MSVC 2022 for node-gyp/electron-rebuild (windows-latest is VS 2026).
+        os: [macos-latest, windows-2022, ubuntu-latest]
 
     steps:
       - name: Check out Git repository
@@ -50,6 +51,8 @@ jobs:
       - name: Configure Windows native build (MSVC)
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
+        with:
+          vsversion: '17.0'
       - name: Install Node.js and NPM
         uses: actions/setup-node@v4
         with:
@@ -59,6 +62,9 @@ jobs:
         with:
           python-version: '3.11'
       - name: npm install
+        env:
+          GYP_MSVS_VERSION: ${{ runner.os == 'Windows' && '2022' || '' }}
+          JOBS: ${{ runner.os == 'Windows' && '1' || '' }}
         run: npm install
       - name: Ensure Node.js types resolve for node-link
         shell: bash
