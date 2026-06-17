@@ -49,7 +49,9 @@ function dmxIndicatorState(
 }
 
 export default function ConnectionStatus({ type }: Props) {
-  const linkEnabled = useRealtimeSelector((state) => state.time.isEnabled)
+  const linkEnabled = useControlSelector(
+    (state) => state.device.connectionSettings.linkEnabled === true
+  )
   const numPeers = useRealtimeSelector((state) => state.time.numPeers)
   const dmxConnected = useTypedSelector((state) => state.gui.dmx.connected)
   const midiConnected = useTypedSelector((state) => state.gui.midi.connected)

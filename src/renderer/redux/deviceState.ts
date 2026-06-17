@@ -728,6 +728,45 @@ export const midiActions = {
       }).bpmSmoothing,
     }
   },
+  setAudioEnergySmoothing: (
+    state: DeviceState,
+    { payload }: PayloadAction<number>
+  ) => {
+    const current = normalizeAudioInputSettings(state.connectionSettings.audioInput)
+    state.connectionSettings.audioInput = {
+      ...current,
+      energySmoothing: normalizeAudioInputSettings({
+        ...current,
+        energySmoothing: payload,
+      }).energySmoothing,
+    }
+  },
+  setAudioEnergyDynamics: (
+    state: DeviceState,
+    { payload }: PayloadAction<number>
+  ) => {
+    const current = normalizeAudioInputSettings(state.connectionSettings.audioInput)
+    state.connectionSettings.audioInput = {
+      ...current,
+      energyDynamics: normalizeAudioInputSettings({
+        ...current,
+        energyDynamics: payload,
+      }).energyDynamics,
+    }
+  },
+  setAudioEnergyRhythmBias: (
+    state: DeviceState,
+    { payload }: PayloadAction<number>
+  ) => {
+    const current = normalizeAudioInputSettings(state.connectionSettings.audioInput)
+    state.connectionSettings.audioInput = {
+      ...current,
+      energyRhythmBias: normalizeAudioInputSettings({
+        ...current,
+        energyRhythmBias: payload,
+      }).energyRhythmBias,
+    }
+  },
   setAudioBeatTapHint: (
     state: DeviceState,
     { payload }: PayloadAction<{ bpm: number; atMs?: number }>

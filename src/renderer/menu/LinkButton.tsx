@@ -1,6 +1,7 @@
 import Tooltip from '@mui/material/Tooltip'
 import styled from 'styled-components'
 import { useDispatch } from 'react-redux'
+import { useControlSelector } from '../redux/store'
 import { useRealtimeSelector } from '../redux/realtimeStore'
 import { setLinkEnabled } from '../redux/controlSlice'
 import { send_user_command } from '../ipcHandler'
@@ -13,7 +14,9 @@ export default function LinkButton({
 }) {
   const dispatch = useDispatch()
   const numPeers = useRealtimeSelector((state) => state.time.numPeers)
-  const isEnabled = useRealtimeSelector((state) => state.time.isEnabled)
+  const isEnabled = useControlSelector(
+    (state) => state.device.connectionSettings.linkEnabled === true
+  )
 
   const statusLine = !isEnabled
     ? 'Off'

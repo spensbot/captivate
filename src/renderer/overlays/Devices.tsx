@@ -440,7 +440,9 @@ const SyncTransportState = styled.div`
 `
 
 function AbletonLinkConnections() {
-  const linkEnabled = useRealtimeSelector((state) => state.time.isEnabled)
+  const linkEnabled = useControlSelector(
+    (state) => state.device.connectionSettings.linkEnabled === true
+  )
   const startStopSyncEnabled = useRealtimeSelector(
     (state) => state.time.isStartStopSyncEnabled
   )

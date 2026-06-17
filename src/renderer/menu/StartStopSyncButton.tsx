@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 import { useDispatch } from 'react-redux'
-import { useRealtimeSelector } from '../redux/realtimeStore'
+import { useControlSelector } from '../redux/store'
 import { setLinkStartStopSyncEnabled } from '../redux/controlSlice'
 import { send_user_command } from '../ipcHandler'
 
@@ -14,9 +14,12 @@ interface Props {
 
 export default function StartStopSyncButton({ mode = 'toolbar' }: Props) {
   const dispatch = useDispatch()
-  const linkEnabled = useRealtimeSelector((state) => state.time.isEnabled)
-  const startStopSyncEnabled = useRealtimeSelector(
-    (state) => state.time.isStartStopSyncEnabled
+  const linkEnabled = useControlSelector(
+    (state) => state.device.connectionSettings.linkEnabled === true
+  )
+  const startStopSyncEnabled = useControlSelector(
+    (state) =>
+      state.device.connectionSettings.linkStartStopSyncEnabled === true
   )
 
   const toggleStartStopSync = () => {

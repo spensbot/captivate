@@ -86,9 +86,12 @@ import {
   openAppAlert,
   openAppConfirm,
 } from './overlays/appDialogService'
+import type { TimeState } from '../shared/TimeState'
 import {
   createTimeExtrapolationAnchor,
+  engineConnectionTimeChanged,
   extrapolateTimeState,
+  mergeEngineConnectionTime,
   resyncTimeExtrapolationAnchor,
   timeStatesVisuallyEqual,
   type TimeExtrapolationAnchor,
@@ -230,6 +233,7 @@ function shouldForwardActionToPrimary(action: unknown) {
   if (LOCAL_ONLY_ACTION_TYPES.has(type)) return false
   if (type.startsWith('dmx/')) return true
   if (type.startsWith('scenes/')) return true
+  if (type.startsWith('laser/')) return true
   if (SHARED_GUI_ACTION_TYPES.has(type)) return true
   if (SHARED_MIXER_ACTION_TYPES.has(type)) return true
   return false
@@ -649,6 +653,26 @@ let _ipcRealtimeDirty = false
 let _lastAppliedIpcRealtimeState = initRealtimeState()
 let _stoppedTransportFrameLocked = false
 
+function stoppedTransportConnectionTimeChanged(
+  prev: TimeState,
+  next: TimeState
+): boolean {
+  return engineConnectionTimeChanged(prev, next)
+}
+
+function mergeStoppedTransportLiveFields(
+  frozen: ReturnType<typeof initRealtimeState>,
+  anchor: ReturnType<typeof initRealtimeState>
+): ReturnType<typeof initRealtimeState> {
+  return {
+    ...frozen,
+    time: mergeEngineConnectionTime(frozen.time, anchor.time),
+    audio: anchor.audio,
+    dmxOutByUniverse: anchor.dmxOutByUniverse,
+    dmxOut: anchor.dmxOut,
+  }
+}
+
 function applyTransportRealtimeToStore(anchor: ReturnType<typeof initRealtimeState>) {
   if (document.visibilityState !== 'visible') {
     return
@@ -662,15 +686,14 @@ function applyTransportRealtimeToStore(anchor: ReturnType<typeof initRealtimeSta
       const dmxChanged =
         prev.dmxOutByUniverse !== anchor.dmxOutByUniverse ||
         prev.dmxOut !== anchor.dmxOut
-      if (!audioChanged && !dmxChanged) {
+      const linkChanged = stoppedTransportConnectionTimeChanged(
+        prev.time,
+        anchor.time
+      )
+      if (!audioChanged && !dmxChanged && !linkChanged) {
         return
       }
-      const merged = {
-        ...prev,
-        audio: anchor.audio,
-        dmxOutByUniverse: anchor.dmxOutByUniverse,
-        dmxOut: anchor.dmxOut,
-      }
+      const merged = mergeStoppedTransportLiveFields(prev, anchor)
       _lastAppliedIpcRealtimeState = merged
       realtimeStore.dispatch(updateRealtimeStore(merged))
       if (dmxChanged) {
@@ -731,6 +754,7 @@ function dispatchDisplayRealtimeFrame() {
 
   _stoppedTransportFrameLocked = false
   const extrapolatedTime = extrapolateTimeState(_timeExtrapolationAnchor)
+  const displayTime = mergeEngineConnectionTime(extrapolatedTime, anchor.time)
   const ipcDirty = _ipcRealtimeDirty
 
   if (ipcDirty) {
@@ -743,17 +767,26 @@ function dispatchDisplayRealtimeFrame() {
 
     if (modulationChanged) {
       realtimeStore.dispatch(
-        updateRealtimeStore({ ...anchor, time: extrapolatedTime })
+        updateRealtimeStore({ ...anchor, time: displayTime })
       )
+      return
+    }
+
+    const currentTime = realtimeStore.getState().time
+    if (engineConnectionTimeChanged(currentTime, displayTime)) {
+      realtimeStore.dispatch(updateRealtimeTime(displayTime))
       return
     }
   }
 
   const currentTime = realtimeStore.getState().time
-  if (timeStatesVisuallyEqual(currentTime, extrapolatedTime)) {
+  if (
+    timeStatesVisuallyEqual(currentTime, displayTime) &&
+    !engineConnectionTimeChanged(currentTime, displayTime)
+  ) {
     return
   }
-  realtimeStore.dispatch(updateRealtimeTime(extrapolatedTime))
+  realtimeStore.dispatch(updateRealtimeTime(displayTime))
 }
 
 function animateTelemetryFrame() {

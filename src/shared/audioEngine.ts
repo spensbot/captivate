@@ -7,6 +7,8 @@ export const AUDIO_MIN_BEAT_INTERVAL_MS = 120
 export const AUDIO_MAX_BEAT_INTERVAL_MS = 800
 export const AUDIO_MIN_BPM_SMOOTHING = 0.05
 export const AUDIO_MAX_BPM_SMOOTHING = 0.95
+export const AUDIO_MIN_ENERGY_SMOOTHING = 0.05
+export const AUDIO_MAX_ENERGY_SMOOTHING = 0.95
 
 function clamp(value: number, min: number, max: number) {
   if (!Number.isFinite(value)) return min
@@ -41,6 +43,8 @@ export interface PerceivedEnergyInput {
   rhythmShare: number
   beatPulse: number
   fastBreakdown?: boolean
+  /** 0 = bass-weighted, 1 = rhythm/bright-weighted; 0.5 = default mix. */
+  rhythmEmphasis?: number
 }
 
 /**
@@ -53,6 +57,13 @@ export function computePerceivedEnergyLevel(input: PerceivedEnergyInput): number
   const rhythmShare = clamp01(input.rhythmShare)
   const beatPulse = clamp01(input.beatPulse)
   const fastBreakdown = input.fastBreakdown === true
+  const rhythmEmphasis = clamp01(
+    input.rhythmEmphasis != null && Number.isFinite(input.rhythmEmphasis)
+      ? input.rhythmEmphasis
+      : 0.5
+  )
+  const rhythmEmphasisScale = lerpValue(0.72, 1.32, rhythmEmphasis)
+  const spectralEmphasisScale = lerpValue(1.18, 0.86, rhythmEmphasis)
 
   const rawBpm =
     input.bpm !== null && Number.isFinite(input.bpm) && input.bpm > 0
@@ -68,7 +79,7 @@ export function computePerceivedEnergyLevel(input: PerceivedEnergyInput): number
     clamp01(rhythmShare * 0.55 + spectral * 0.45) * activityGate
 
   let bpmWeight = lerpValue(0.12, 0.28, conf)
-  let rhythmWeight = 0.12 + genreActivity * 0.1
+  let rhythmWeight = (0.12 + genreActivity * 0.1) * rhythmEmphasisScale
   if (fastBreakdown) {
     bpmWeight *= 0.35
     rhythmWeight *= 0.45
@@ -80,7 +91,7 @@ export function computePerceivedEnergyLevel(input: PerceivedEnergyInput): number
   )
 
   return clamp01(
-    spectral * spectralWeight +
+    spectral * spectralWeight * spectralEmphasisScale +
       bpmFactor * bpmWeight * activityGate +
       rhythmFactor * rhythmWeight * activityGate
   )
@@ -129,6 +140,12 @@ export interface AudioInputSettings {
   beatSensitivity: number
   beatMinIntervalMs: number
   bpmSmoothing: number
+  /** How quickly the energy meter follows musical changes (higher = faster). */
+  energySmoothing: number
+  /** Dynamic range of the energy meter (lower = punchier, higher = smoother). */
+  energyDynamics: number
+  /** 0 = bass-heavy energy, 1 = rhythm/bright-heavy energy. */
+  energyRhythmBias: number
   /** User tap-teach hint for beat/BPM learning (renderer; cleared on project load). */
   beatTapHintBpm: number | null
   /** Wall-clock ms when `beatTapHintBpm` was set (from `Date.now()`). */
@@ -145,6 +162,9 @@ export function initAudioInputSettings(): AudioInputSettings {
     beatSensitivity: 0.45,
     beatMinIntervalMs: 260,
     bpmSmoothing: 0.12,
+    energySmoothing: 0.35,
+    energyDynamics: 0.5,
+    energyRhythmBias: 0.5,
     beatTapHintBpm: null,
     beatTapHintAtMs: 0,
   }
@@ -185,6 +205,23 @@ export function normalizeAudioInputSettings(
         : defaults.bpmSmoothing,
       AUDIO_MIN_BPM_SMOOTHING,
       AUDIO_MAX_BPM_SMOOTHING
+    ),
+    energySmoothing: clamp(
+      Number.isFinite(source.energySmoothing)
+        ? Number(source.energySmoothing)
+        : defaults.energySmoothing,
+      AUDIO_MIN_ENERGY_SMOOTHING,
+      AUDIO_MAX_ENERGY_SMOOTHING
+    ),
+    energyDynamics: clamp01(
+      Number.isFinite(source.energyDynamics)
+        ? Number(source.energyDynamics)
+        : defaults.energyDynamics
+    ),
+    energyRhythmBias: clamp01(
+      Number.isFinite(source.energyRhythmBias)
+        ? Number(source.energyRhythmBias)
+        : defaults.energyRhythmBias
     ),
     beatTapHintBpm:
       source.beatTapHintBpm != null &&

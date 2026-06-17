@@ -929,13 +929,14 @@ export default class AudioInputEngine {
     const dancePresence = clamp01(
       0.55 * highEnergy + 0.45 * Math.max(midEnergy, highEnergy * 0.92)
     )
+    const rhythmBias = clamp01(settings.energyRhythmBias)
     const instantEnergy = clamp01(
-      lowEnergy * 0.36 +
-        midEnergy * 0.19 +
+      lowEnergy * lerp(0.44, 0.28, rhythmBias) +
+        midEnergy * lerp(0.17, 0.2, rhythmBias) +
         broadEnergy * 0.19 +
-        dancePresence * 0.14 +
-        transient * 0.1 +
-        inputLevel * 0.12
+        dancePresence * lerp(0.1, 0.18, rhythmBias) +
+        transient * lerp(0.08, 0.14, rhythmBias) +
+        inputLevel * lerp(0.14, 0.08, rhythmBias)
     )
 
     const shortAlpha = alphaFromTau(dtSec, Math.max(0.12, barSec * 0.42))
@@ -996,7 +997,11 @@ export default class AudioInputEngine {
       1,
       Math.max(this.energyCeilingEma + 0.01, autoFloor + 0.24)
     )
-    const normSpan = Math.max(fastBreakdown ? 0.14 : 0.19, autoCeiling - autoFloor)
+    const energyDynamics = clamp01(settings.energyDynamics)
+    const minNormSpan = fastBreakdown
+      ? lerp(0.16, 0.08, energyDynamics)
+      : lerp(0.22, 0.11, energyDynamics)
+    const normSpan = Math.max(minNormSpan, autoCeiling - autoFloor)
     const normalizedEnergy = clamp01((compositeEnergy - autoFloor) / normSpan)
 
     const perceivedEnergy = computePerceivedEnergyLevel({
@@ -1006,6 +1011,7 @@ export default class AudioInputEngine {
       rhythmShare: highRhythmShare,
       beatPulse: this.beatPulse,
       fastBreakdown,
+      rhythmEmphasis: rhythmBias,
     })
 
     const deltaEnergy = perceivedEnergy - this.energyLevelEma
@@ -1014,7 +1020,9 @@ export default class AudioInputEngine {
     const changeBoost = clamp01((changeMagnitude - 0.012) / 0.16)
     const edgeBoost = clamp01((Math.abs(deltaEnergy) - 0.042) / 0.24)
     const beatBoost = beatDetected ? 0.07 : 0
-    const baseAlpha = alphaFromTau(dtSec, Math.max(0.38, barSec * 3.2))
+    const energyBlend = clamp01(settings.energySmoothing)
+    const smoothBars = lerp(5.5, 1.6, energyBlend)
+    const baseAlpha = alphaFromTau(dtSec, Math.max(0.38, barSec * smoothBars))
     const dropFollow =
       perceivedEnergy < this.energyLevelEma
         ? 1 + changeBoost * 0.28 + edgeBoost * 0.32 + (fastBreakdown ? 0.45 : 0)

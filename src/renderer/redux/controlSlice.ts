@@ -988,6 +988,12 @@ export const scenesSlice = createSlice({
       midiActions.setAudioBeatMinIntervalMs(state.device, action),
     setAudioBpmSmoothing: (state, action) =>
       midiActions.setAudioBpmSmoothing(state.device, action),
+    setAudioEnergySmoothing: (state, action) =>
+      midiActions.setAudioEnergySmoothing(state.device, action),
+    setAudioEnergyDynamics: (state, action) =>
+      midiActions.setAudioEnergyDynamics(state.device, action),
+    setAudioEnergyRhythmBias: (state, action) =>
+      midiActions.setAudioEnergyRhythmBias(state.device, action),
     setAudioBeatTapHint: (state, action) =>
       midiActions.setAudioBeatTapHint(state.device, action),
     clearAudioBeatTapHint: (state) => midiActions.clearAudioBeatTapHint(state.device),
@@ -1129,6 +1135,9 @@ export const {
   setAudioBeatSensitivity,
   setAudioBeatMinIntervalMs,
   setAudioBpmSmoothing,
+  setAudioEnergySmoothing,
+  setAudioEnergyDynamics,
+  setAudioEnergyRhythmBias,
   setAudioBeatTapHint,
   clearAudioBeatTapHint,
   setAtmosOn,

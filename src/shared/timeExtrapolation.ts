@@ -19,6 +19,32 @@ function beatDriftThreshold(time: TimeState): number {
   return Math.max(0.008, (bpm * MIN_DRIFT_RESYNC_MS) / 60000)
 }
 
+/** Link/session fields that should track the engine immediately, not extrapolated beats. */
+export function engineConnectionTimeChanged(
+  prev: TimeState,
+  next: TimeState
+): boolean {
+  return (
+    prev.isEnabled !== next.isEnabled ||
+    prev.numPeers !== next.numPeers ||
+    prev.isStartStopSyncEnabled !== next.isStartStopSyncEnabled ||
+    prev.bpm !== next.bpm
+  )
+}
+
+export function mergeEngineConnectionTime(
+  displayed: TimeState,
+  engine: TimeState
+): TimeState {
+  return {
+    ...displayed,
+    isEnabled: engine.isEnabled,
+    numPeers: engine.numPeers,
+    isStartStopSyncEnabled: engine.isStartStopSyncEnabled,
+    bpm: engine.bpm,
+  }
+}
+
 /** Resync to the engine without visible beat jumps (important at slow tempos). */
 export function resyncTimeExtrapolationAnchor(
   previous: TimeExtrapolationAnchor,
@@ -35,6 +61,18 @@ export function resyncTimeExtrapolationAnchor(
     engineTime.isPlaying !== previous.time.isPlaying
 
   if (transportChanged) {
+    const displayed = extrapolateTimeState(previous, nowMs)
+    return createTimeExtrapolationAnchor(
+      {
+        ...engineTime,
+        beats: displayed.beats,
+        phase: displayed.phase,
+      },
+      nowMs
+    )
+  }
+
+  if (engineConnectionTimeChanged(previous.time, engineTime)) {
     const displayed = extrapolateTimeState(previous, nowMs)
     return createTimeExtrapolationAnchor(
       {

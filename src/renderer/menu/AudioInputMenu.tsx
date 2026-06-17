@@ -15,6 +15,9 @@ import {
   setAudioBeatSensitivity,
   setAudioBeatClockEnabled,
   setAudioBpmSmoothing,
+  setAudioEnergySmoothing,
+  setAudioEnergyDynamics,
+  setAudioEnergyRhythmBias,
   clearAudioBeatTapHint,
   setAudioInputDeviceId,
   setAudioInputEnabled,
@@ -25,9 +28,11 @@ import { useRealtimeSelector } from '../redux/realtimeStore'
 import {
   AUDIO_MAX_BEAT_INTERVAL_MS,
   AUDIO_MAX_BPM_SMOOTHING,
+  AUDIO_MAX_ENERGY_SMOOTHING,
   AUDIO_INPUT_DEVICE_DESKTOP,
   AUDIO_MIN_BEAT_INTERVAL_MS,
   AUDIO_MIN_BPM_SMOOTHING,
+  AUDIO_MIN_ENERGY_SMOOTHING,
   normalizeAudioInputSettings,
 } from '../../shared/audioEngine'
 
@@ -65,6 +70,13 @@ const ADVANCED_BEAT_INFO = (
     Use these when beat detection is too sparse or too chatty: adjust onset
     sensitivity, minimum time between beats, and how quickly tracked BPM follows
     the signal.
+  </>
+)
+
+const ADVANCED_ENERGY_INFO = (
+  <>
+    Tune how the energy meter and auto-scene matching react to your music: response
+    speed, dynamic range, and whether bass or rhythm drives the reading.
   </>
 )
 
@@ -109,6 +121,27 @@ const BPM_RESPONSE_INFO = (
   <>
     Controls how quickly estimated BPM adapts to new taps and onsets. Higher
     values follow faster but may jitter more on noisy material.
+  </>
+)
+
+const ENERGY_RESPONSE_INFO = (
+  <>
+    Controls how quickly the energy meter follows drops, builds, and breakdowns.
+    Higher values react faster; lower values smooth out short spikes.
+  </>
+)
+
+const ENERGY_DYNAMICS_INFO = (
+  <>
+    Sets how much the meter compresses loud vs quiet sections. Lower values feel
+    punchier; higher values keep energy changes smoother across the song.
+  </>
+)
+
+const ENERGY_RHYTHM_BIAS_INFO = (
+  <>
+    Shifts energy toward sub-bass and sustained low end (left) or toward
+    percussion, hats, and bright transients (right).
   </>
 )
 
@@ -236,6 +269,7 @@ export default function AudioInputMenu({
   const dispatch = useDispatch()
   const [open, setOpen] = useState(false)
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const [showAdvancedEnergy, setShowAdvancedEnergy] = useState(false)
   const [devices, setDevices] = useState<AudioInputDeviceOption[]>([])
   const [loading, setLoading] = useState(false)
   const audioState = useRealtimeSelector((state) => state.audio)
@@ -512,6 +546,80 @@ export default function AudioInputMenu({
                   disabled={settings.enabled !== true}
                   title="How quickly BPM estimate adapts"
                   onChange={(value) => dispatch(setAudioBpmSmoothing(value))}
+                />
+              </Field>
+            </>
+          )}
+
+          <ToggleRow
+            label="Advanced Music Energy"
+            checked={showAdvancedEnergy}
+            onChange={setShowAdvancedEnergy}
+            info={ADVANCED_ENERGY_INFO}
+            infoAriaLabel="About advanced music energy"
+            toggleTitle="Show energy meter tuning controls"
+          />
+
+          {showAdvancedEnergy && (
+            <>
+              <Field>
+                <LabelRow>
+                  <Label>
+                    Energy Response ({Math.round(settings.energySmoothing * 100)}%)
+                  </Label>
+                  <InfoHint
+                    content={ENERGY_RESPONSE_INFO}
+                    ariaLabel="About energy response"
+                  />
+                </LabelRow>
+                <CaptivateSlider
+                  min={AUDIO_MIN_ENERGY_SMOOTHING}
+                  max={AUDIO_MAX_ENERGY_SMOOTHING}
+                  step={0.01}
+                  value={settings.energySmoothing}
+                  disabled={settings.enabled !== true}
+                  title="How quickly energy meter follows musical changes"
+                  onChange={(value) => dispatch(setAudioEnergySmoothing(value))}
+                />
+              </Field>
+              <Field>
+                <LabelRow>
+                  <Label>
+                    Energy Dynamics ({Math.round(settings.energyDynamics * 100)}%)
+                  </Label>
+                  <InfoHint
+                    content={ENERGY_DYNAMICS_INFO}
+                    ariaLabel="About energy dynamics"
+                  />
+                </LabelRow>
+                <CaptivateSlider
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={settings.energyDynamics}
+                  disabled={settings.enabled !== true}
+                  title="Dynamic range compression of the energy meter"
+                  onChange={(value) => dispatch(setAudioEnergyDynamics(value))}
+                />
+              </Field>
+              <Field>
+                <LabelRow>
+                  <Label>
+                    Rhythm Emphasis ({Math.round(settings.energyRhythmBias * 100)}%)
+                  </Label>
+                  <InfoHint
+                    content={ENERGY_RHYTHM_BIAS_INFO}
+                    ariaLabel="About rhythm emphasis"
+                  />
+                </LabelRow>
+                <CaptivateSlider
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={settings.energyRhythmBias}
+                  disabled={settings.enabled !== true}
+                  title="Bass-heavy vs rhythm/bright energy balance"
+                  onChange={(value) => dispatch(setAudioEnergyRhythmBias(value))}
                 />
               </Field>
             </>
