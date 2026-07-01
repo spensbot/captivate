@@ -3,6 +3,7 @@ import { useDispatch } from 'react-redux'
 import {
   useActiveLightScene,
   useControlSelector,
+  useDeviceSelector,
   useDmxSelector,
   useTypedSelector,
 } from 'renderer/redux/store'
@@ -74,7 +75,7 @@ export default function AutoManagedSplitSync() {
     [laser.groupSlots, laser.units]
   )
   const dmx = useDmxSelector((state) => state)
-  const atmosSettings = useControlSelector(
+  const atmosSettings = useDeviceSelector(
     (state) => state.connectionSettings.atmos
   )
   const hasMovers = useMemo(
