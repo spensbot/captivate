@@ -34,14 +34,14 @@ export const LASER_DAC_CONNECTION_PRESETS: (LaserConnectionPresetBase & {
   {
     id: 'helios_usb',
     label: 'Helios — USB (ILDA)',
-    shortHint: 'Helios DAC over USB. Use projection zones for multiple scanners on one device.',
+    shortHint:
+      'Plug in the Helios over USB — Captivate detects it automatically (VID 1209 / PID E500).',
     protocol: 'ilda',
     backend: 'helios',
-    showTarget: true,
-    targetLabel: 'Device',
-    targetPlaceholder: 'Auto discover or USB path',
-    targetTooltip:
-      'Leave as Auto discover for the first Helios, or enter a device path if you have several.',
+    showTarget: false,
+    targetLabel: '',
+    targetPlaceholder: '',
+    targetTooltip: '',
     showZonesButton: true,
     showFb4Info: false,
   },

@@ -28,6 +28,12 @@ export interface ColorMapCalibrationOverride {
   dmxValue: number
 }
 
+export interface GoboMapCalibrationOverride {
+  fixtureTypeId: string
+  channelIndex: number
+  dmxValue: number
+}
+
 export interface StatusMessage {
   id: string
   level: 'info' | 'warn' | 'error'
@@ -77,6 +83,7 @@ export interface GuiState {
   /** When true, show floor bounds calibration, follow override, and related tools. */
   moverAdvancedControlEnabled: boolean
   colorMapCalibrationOverride: ColorMapCalibrationOverride | null
+  goboMapCalibrationOverride: GoboMapCalibrationOverride | null
   fxtrDepthOn: boolean
   /** When true, the left sidebar shows the LED editor page (off by default; Extras menu). */
   ledSidebarEnabled: boolean
@@ -116,6 +123,7 @@ export function initGuiState(): GuiState {
     moverFollowOverrideGroups: [],
     moverAdvancedControlEnabled: false,
     colorMapCalibrationOverride: null,
+    goboMapCalibrationOverride: null,
     fxtrDepthOn: false,
     ledSidebarEnabled: false,
     statusMessages: [],
@@ -278,6 +286,15 @@ export const guiSlice = createSlice({
     clearColorMapCalibrationOverride: (state, _: PayloadAction<undefined>) => {
       state.colorMapCalibrationOverride = null
     },
+    setGoboMapCalibrationOverride: (
+      state,
+      { payload }: PayloadAction<GoboMapCalibrationOverride>
+    ) => {
+      state.goboMapCalibrationOverride = payload
+    },
+    clearGoboMapCalibrationOverride: (state, _: PayloadAction<undefined>) => {
+      state.goboMapCalibrationOverride = null
+    },
     setFxtrDepthOn: (
       state,
       { payload }: PayloadAction<boolean>
@@ -399,6 +416,8 @@ export const {
   toggleMoverAdvancedControl,
   setColorMapCalibrationOverride,
   clearColorMapCalibrationOverride,
+  setGoboMapCalibrationOverride,
+  clearGoboMapCalibrationOverride,
   setFxtrDepthOn,
   setLedSidebarEnabled,
   pushStatusMessage,

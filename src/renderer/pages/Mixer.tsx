@@ -39,6 +39,8 @@ import {
 import zIndexes from 'renderer/zIndexes'
 import useMousePosition from 'renderer/hooks/useMousePosition'
 import { getCustomColorChannelName } from 'shared/dmxColors'
+import useDragMapped from '../hooks/useDragMapped'
+import { useRemoteMobileLayout } from '../hooks/useRemoteMobileLayout'
 
 function buildAssignedChannelIndices(
   dmx: DmxState,
@@ -64,7 +66,14 @@ function buildAssignedChannelIndices(
   return [...set].sort((a, b) => a - b)
 }
 
-export default function Mixer({ hideStatusBar = false }: { hideStatusBar?: boolean }) {
+export default function Mixer({
+  hideStatusBar = false,
+  mobileTouchFaders = false,
+}: {
+  hideStatusBar?: boolean
+  /** Remote mobile: handle-only faders + page scroll in channel grid. */
+  mobileTouchFaders?: boolean
+}) {
   const activeUniverse = useTypedSelector((s) => s.mixer.activeUniverse)
   const showAllMixerChannels = useTypedSelector(
     (s) => s.mixer.showAllMixerChannels
@@ -119,6 +128,7 @@ export default function Mixer({ hideStatusBar = false }: { hideStatusBar?: boole
             gridIndex={gridIndex}
             visibleChannels={dmxIndexes}
             colsPerRow={colsPerRow}
+            mobileTouchFaders={mobileTouchFaders}
           />
         ))}
       </LabelledSliderWrapper>
@@ -128,19 +138,30 @@ export default function Mixer({ hideStatusBar = false }: { hideStatusBar?: boole
 
 const Root = styled.div`
   height: 100%;
+  min-height: 0;
+  flex: 1 1 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 `
 
 const LabelledSliderWrapper = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-content: flex-start;
+  flex: 1 1 0;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   margin: 0 1rem;
   scrollbar-width: thin;
   scrollbar-color: #7a7a7a33 #0000;
+  -webkit-overflow-scrolling: touch;
+
+  [data-remote-ui-mode='mobile'] & {
+    margin: 0 0.65rem;
+    touch-action: pan-y;
+  }
 
   &::-webkit-scrollbar {
     display: block !important;
@@ -174,67 +195,71 @@ function Header() {
 
   return (
     <HeaderRoot>
-      <PopupTitleRow>
-        <HeaderTitle>DMX Out</HeaderTitle>
-        <MixerHelpButton />
-      </PopupTitleRow>
-      <S />
-      <UniverseLabel>Universe</UniverseLabel>
-      <SSmall />
-      <BriefTooltip title="Previous universe">
-        <span>
-          <IconButton
-            disabled={!canGoBack}
-            onClick={() => dispatch(setActiveMixerUniverse(_s.activeUniverse - 1))}
-          >
-            <BackIcon />
-          </IconButton>
-        </span>
-      </BriefTooltip>
-      <SSmall />
-      <BriefTooltip title="Universe shown in the mixer">
-        <Page>{_s.activeUniverse}</Page>
-      </BriefTooltip>
-      <SSmall />
-      <BriefTooltip title="Next universe">
-        <span>
-          <IconButton
-            disabled={!canGoForward}
-            onClick={() => dispatch(setActiveMixerUniverse(_s.activeUniverse + 1))}
-          >
-            <ForwardIcon />
-          </IconButton>
-        </span>
-      </BriefTooltip>
-      <S />
-      <BriefTooltip title="Show all 512 channels or only patched fixture channels">
-        <FormControlLabel
-          sx={{ marginLeft: 0, marginRight: 0, gap: 0.5 }}
-          control={
-            <Switch
+      <HeaderTitleRow>
+        <PopupTitleRow>
+          <HeaderTitle>DMX Out</HeaderTitle>
+          <MixerHelpButton />
+        </PopupTitleRow>
+      </HeaderTitleRow>
+      <HeaderToolbar>
+        <UniverseCluster>
+          <UniverseLabel>Universe</UniverseLabel>
+          <BriefTooltip title="Previous universe">
+            <span>
+              <IconButton
+                disabled={!canGoBack}
+                onClick={() =>
+                  dispatch(setActiveMixerUniverse(_s.activeUniverse - 1))
+                }
+              >
+                <BackIcon />
+              </IconButton>
+            </span>
+          </BriefTooltip>
+          <BriefTooltip title="Universe shown in the mixer">
+            <Page>{_s.activeUniverse}</Page>
+          </BriefTooltip>
+          <BriefTooltip title="Next universe">
+            <span>
+              <IconButton
+                disabled={!canGoForward}
+                onClick={() =>
+                  dispatch(setActiveMixerUniverse(_s.activeUniverse + 1))
+                }
+              >
+                <ForwardIcon />
+              </IconButton>
+            </span>
+          </BriefTooltip>
+        </UniverseCluster>
+        <BriefTooltip title="Show all 512 channels or only patched fixture channels">
+          <AllChannelsToggle
+            control={
+              <Switch
+                size="small"
+                checked={showAllMixerChannels}
+                onChange={(_, checked) =>
+                  dispatch(setMixerShowAllChannels(checked))
+                }
+                inputProps={{ 'aria-label': 'Show all DMX channels' }}
+              />
+            }
+            label={<MixerToggleLabel>All channels</MixerToggleLabel>}
+          />
+        </BriefTooltip>
+        <BriefTooltip title="Clear manual overrides on this universe">
+          <span>
+            <ResetOverwritesButton
+              disabled={!hasOverwrites}
+              variant="contained"
               size="small"
-              checked={showAllMixerChannels}
-              onChange={(_, checked) =>
-                dispatch(setMixerShowAllChannels(checked))
-              }
-              inputProps={{ 'aria-label': 'Show all DMX channels' }}
-            />
-          }
-          label={<MixerToggleLabel>All channels</MixerToggleLabel>}
-        />
-      </BriefTooltip>
-      <S />
-      <BriefTooltip title="Clear manual overrides on this universe">
-        <span>
-          <Button
-            disabled={!hasOverwrites}
-            variant="contained"
-            onClick={() => dispatch(clearOverwrites(_s.activeUniverse))}
-          >
-            Reset Overwrites
-          </Button>
-        </span>
-      </BriefTooltip>
+              onClick={() => dispatch(clearOverwrites(_s.activeUniverse))}
+            >
+              Reset
+            </ResetOverwritesButton>
+          </span>
+        </BriefTooltip>
+      </HeaderToolbar>
     </HeaderRoot>
   )
 }
@@ -243,37 +268,108 @@ const MixerToggleLabel = styled.span`
   font-size: 0.85rem;
   color: ${(props) => props.theme.colors.text.secondary};
   user-select: none;
+  white-space: nowrap;
 `
 
 const HeaderTitle = styled.div`
   font-size: 1.3rem;
 `
 
+const HeaderTitleRow = styled.div`
+  display: flex;
+  align-items: center;
+
+  [data-remote-ui-mode='mobile'] & {
+    display: none;
+  }
+`
+
+const HeaderToolbar = styled.div`
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  min-width: 0;
+
+  [data-remote-ui-mode='mobile'] & {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    width: 100%;
+    gap: 0.35rem;
+  }
+`
+
+const UniverseCluster = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex-shrink: 0;
+`
+
+const AllChannelsToggle = styled(FormControlLabel)`
+  && {
+    margin: 0;
+    gap: 0.35rem;
+    flex-shrink: 1;
+    min-width: 0;
+    align-items: center;
+  }
+
+  [data-remote-ui-mode='mobile'] & {
+    && {
+      flex: 1 1 auto;
+      justify-content: center;
+    }
+
+    .MuiFormControlLabel-label {
+      text-align: center;
+    }
+  }
+`
+
+const ResetOverwritesButton = styled(Button)`
+  [data-remote-ui-mode='mobile'] & {
+    min-width: 0;
+    padding-left: 0.65rem;
+    padding-right: 0.65rem;
+    font-size: 0.82rem;
+    flex-shrink: 0;
+  }
+`
+
 const UniverseLabel = styled.div`
   font-size: 0.9rem;
   color: ${(props) => props.theme.colors.text.secondary};
+  white-space: nowrap;
+
+  [data-remote-ui-mode='mobile'] & {
+    display: none;
+  }
 `
 
 const HeaderRoot = styled.div`
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.65rem;
   margin-top: 1rem;
   margin-left: 1rem;
+  margin-right: 1rem;
   margin-bottom: 1rem;
+  min-width: 0;
+  box-sizing: border-box;
+
+  [data-remote-ui-mode='mobile'] & {
+    margin-top: 0.65rem;
+    margin-bottom: 0.65rem;
+    gap: 0;
+  }
 `
 
 const Page = styled.span`
   font-size: 1.1rem;
   min-width: 1.8rem;
   text-align: center;
-`
-
-const S = styled.div`
-  width: 1rem;
-`
-
-const SSmall = styled.div`
-  width: 0.35rem;
 `
 
 function getColor(index: number | null) {
@@ -326,6 +422,7 @@ const LabelledSlider = React.memo(function LabelledSlider({
   gridIndex,
   visibleChannels,
   colsPerRow,
+  mobileTouchFaders = false,
 }: {
   /** Absolute 0-based DMX channel index for this universe. */
   channelIndex: number
@@ -333,6 +430,7 @@ const LabelledSlider = React.memo(function LabelledSlider({
   gridIndex: number
   visibleChannels: readonly number[]
   colsPerRow: number
+  mobileTouchFaders?: boolean
 }) {
   const ch = channelIndex + 1
   const activeUniverse = useTypedSelector((state) => state.mixer.activeUniverse)
@@ -427,6 +525,8 @@ const LabelledSlider = React.memo(function LabelledSlider({
   const sliderRadius = 0.5
   const dispatch = useDispatch()
   const { hoverDiv, isHover } = useHover()
+  const isRemoteMobile = mobileTouchFaders || useRemoteMobileLayout()
+  const trackRef = useRef<HTMLDivElement | null>(null)
 
   const onChange = (newVal: number) => {
     dispatch(
@@ -437,6 +537,15 @@ const LabelledSlider = React.memo(function LabelledSlider({
       })
     )
   }
+
+  const [, onTouchHandlePointerDown] = useDragMapped(
+    ({ y }) => {
+      onChange(y)
+    },
+    { containerRef: trackRef, axis: 'vertical', thresholdPx: 0 }
+  )
+  const touchHandleValue =
+    overwrite !== undefined ? overwrite : output / 255
 
   const fixtureStartIndex = fixtureStartCh - 1
   const fixtureEndIndex = fixtureEndCh - 1
@@ -473,20 +582,41 @@ const LabelledSlider = React.memo(function LabelledSlider({
     <Col ref={hoverDiv}>
       <SliderRow>
         <ChannelName title={channelName}>{channelName}</ChannelName>
-        <SliderWrap>
-          <SliderBase
-            radius={sliderRadius}
-            onChange={onChange}
-            orientation="vertical"
-          >
-            <LiveDmxSliderCursor
-              universe={activeUniverse}
-              channelIndex={channelIndex}
+        <SliderWrap ref={isRemoteMobile ? trackRef : undefined}>
+          {isRemoteMobile ? (
+            <>
+              <MobileFaderTrack $radius={sliderRadius} />
+              <LiveDmxSliderCursor
+                universe={activeUniverse}
+                channelIndex={channelIndex}
+                radius={sliderRadius}
+                orientation="vertical"
+                color={overwrite !== undefined ? '#b1b1ff' : undefined}
+              />
+              <MobileTouchHandle
+                $radius={sliderRadius}
+                $value={touchHandleValue}
+                $active={overwrite !== undefined}
+                onPointerDown={onTouchHandlePointerDown}
+                title={`Channel ${ch} — drag handle to override`}
+                aria-label={`Channel ${ch} level`}
+              />
+            </>
+          ) : (
+            <SliderBase
               radius={sliderRadius}
+              onChange={onChange}
               orientation="vertical"
-              color={overwrite !== undefined ? '#b1b1ff' : undefined}
-            />
-          </SliderBase>
+            >
+              <LiveDmxSliderCursor
+                universe={activeUniverse}
+                channelIndex={channelIndex}
+                radius={sliderRadius}
+                orientation="vertical"
+                color={overwrite !== undefined ? '#b1b1ff' : undefined}
+              />
+            </SliderBase>
+          )}
         </SliderWrap>
       </SliderRow>
       <Div>
@@ -553,9 +683,57 @@ const ChannelName = styled.div`
 `
 
 const SliderWrap = styled.div`
+  position: relative;
   flex: 1 1 auto;
   min-width: 1.5rem;
   height: 100%;
+
+  [data-remote-ui-mode='mobile'] & {
+    touch-action: pan-y;
+  }
+`
+
+const MobileFaderTrack = styled.div<{ $radius: number }>`
+  position: absolute;
+  top: ${(p) => p.$radius}rem;
+  bottom: ${(p) => p.$radius}rem;
+  left: 50%;
+  width: ${(p) => p.$radius * 2}rem;
+  transform: translateX(-50%);
+  border-radius: ${(p) => p.$radius}rem;
+  background: #0006;
+  pointer-events: none;
+`
+
+const MobileTouchHandle = styled.div<{
+  $radius: number
+  $value: number
+  $active: boolean
+}>`
+  position: absolute;
+  left: 50%;
+  width: max(2.35rem, ${(p) => p.$radius * 2 + 0.55}rem);
+  height: max(1.15rem, 2.35rem);
+  min-height: 2.35rem;
+  bottom: ${(p) => p.$value * 100}%;
+  transform: translate(-50%, 50%);
+  border-radius: 0.28rem;
+  border: 1px solid ${(p) => (p.$active ? '#c8c8ff' : '#8a8a8a')};
+  background: ${(p) =>
+    p.$active
+      ? 'linear-gradient(180deg, #ececff 0%, #b4b4e8 45%, #7575b0 100%)'
+      : 'linear-gradient(180deg, #ececec 0%, #b4b4b4 45%, #757575 100%)'};
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.22);
+  z-index: 2;
+  touch-action: none;
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
+  }
 `
 
 const Div = styled.div`

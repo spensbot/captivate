@@ -13,7 +13,7 @@ export default function SVpad({ splitIndex }: Props) {
   const hue = useOutputParam('hue', splitIndex)
   const dispatch = useDispatch()
 
-  const [dragContainer, onMouseDown] = useDragMapped(({ x, y }) => {
+  const [dragContainer, onPointerDown] = useDragMapped(({ x, y }) => {
     dispatch(
       setBaseParams({
         splitIndex,
@@ -29,7 +29,7 @@ export default function SVpad({ splitIndex }: Props) {
     <Root
       style={{ background: `hsl(${hue * 360},100%, 50%)` }}
       ref={dragContainer}
-      onMouseDown={onMouseDown}
+      onPointerDown={onPointerDown}
     >
       <White>
         <Black />

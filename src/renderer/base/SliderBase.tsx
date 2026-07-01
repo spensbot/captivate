@@ -11,6 +11,10 @@ interface Props {
   verticalPadRem?: number
   /** Replaces default track fill (`#0006`) when set — e.g. aux color vertical gradients. */
   trackBackground?: string
+  /** Measure drags against this element instead of the drag surface. */
+  containerRef?: React.RefObject<HTMLElement | null>
+  /** Optional drag threshold before capture (helps nested scroll views). */
+  dragThresholdPx?: number
 }
 
 // SliderBase displays the track and handles dragging
@@ -23,15 +27,24 @@ export default function SliderBase({
   ariaLabel,
   verticalPadRem,
   trackBackground,
+  containerRef: externalContainerRef,
+  dragThresholdPx,
 }: Props) {
   const r = `${radius}rem`
   const d = `${radius * 2}rem`
   const v = orientation === 'vertical'
   const vPad = v ? (verticalPadRem ?? radius) : radius
 
-  const [dragContainer, onMouseDown] = useDragMapped(({ x, y }) => {
-    onChange(v ? y : x)
-  })
+  const [dragContainer, onPointerDown] = useDragMapped(
+    ({ x, y }) => {
+      onChange(v ? y : x)
+    },
+    {
+      containerRef: externalContainerRef,
+      axis: v ? 'vertical' : 'horizontal',
+      thresholdPx: dragThresholdPx ?? 0,
+    }
+  )
 
   const styles: { [key: string]: React.CSSProperties } = {
     root: {
@@ -71,9 +84,14 @@ export default function SliderBase({
       title={title ?? ariaLabel ?? 'Drag to adjust'}
     >
       <div
-        style={styles.dragArea}
+        style={{
+          ...styles.dragArea,
+          touchAction: 'none',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+        }}
         ref={dragContainer}
-        onMouseDown={onMouseDown}
+        onPointerDown={onPointerDown}
       >
         <div style={styles.track} />
         {children}

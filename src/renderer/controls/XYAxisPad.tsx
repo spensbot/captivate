@@ -69,7 +69,7 @@ export default function XYAxispad({ splitIndex }: Props) {
     })
   })
 
-  const [dragContainer, onMouseDown] = useDragMapped(({ x, y }) => {
+  const [dragContainer, onPointerDown] = useDragMapped(({ x, y }) => {
     dispatch(
       setBaseParams({
         splitIndex,
@@ -150,7 +150,7 @@ export default function XYAxispad({ splitIndex }: Props) {
           makeSetBaseParamAction(splitIndex, 'yAxis'),
         ]}
       >
-        <PadSurface ref={dragContainer} onMouseDown={onMouseDown}>
+        <PadSurface ref={dragContainer} onPointerDown={onPointerDown}>
           <CenterMarker aria-hidden />
           <XYAxisCursor splitIndex={splitIndex} />
         </PadSurface>

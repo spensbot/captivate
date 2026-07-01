@@ -18,7 +18,7 @@ import {
 } from 'renderer/redux/controlSlice'
 import { universeHasMovers } from 'shared/dmxFixtures'
 import { getSortedGroupsFromPlacedFixtures } from 'shared/dmxUtil'
-import { listAtmosFxtrs } from 'shared/atmosphericsMapping'
+import { universeHasAtmospherics } from 'shared/atmosphericsMapping'
 import { showVisGroupUi, splitDisplayName } from './splitUiVisibility'
 import SplitModShapingModal from './SplitModShapingModal'
 import { SplitGroupsHelpButton, SplitModShapingHelpButton } from './sceneHelpButtons'
@@ -42,8 +42,10 @@ export default function GroupSelection({ splitIndex }: Props) {
     dmx.universe,
     dmx.fixtureTypesByID
   )
-  const hasAtmosphericsInUniverse =
-    listAtmosFxtrs(dmx).length > 0
+  const hasAtmosphericsInUniverse = universeHasAtmospherics(
+    dmx.universe,
+    dmx.fixtureTypesByID
+  )
   const ledGroups = dmx.led.ledFixtures
     .flatMap((fixture) => fixture.groups)
     .map((group) => group.trim())

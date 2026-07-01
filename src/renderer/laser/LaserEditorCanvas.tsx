@@ -19,7 +19,7 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import TextFieldsIcon from '@mui/icons-material/TextFields'
 import styled from 'styled-components'
 import { LASER_CANVAS_MIN_HEIGHT_REM } from './laserLayoutConstants'
-import type { ReactNode } from 'react'
+import type { ReactNode, MutableRefObject } from 'react'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import type {
   BeamGradientStop,
@@ -31,7 +31,15 @@ import type {
   NormPoint,
 } from './laserEditorTypes'
 import { clampPoint, pickLayerAt, snapNormPoint } from './laserEditorGeometry'
-import { shiftShapeLayerPoints } from './laserAnimationPath'
+import {
+  clamp01,
+  motionPathDisplacement01,
+  pathHueOffset01,
+  shiftShapeLayerPoints,
+} from './laserAnimationPath'
+import { getLaserSceneDisplayLayers } from './laserSceneDisplay'
+import type { LaserPresetSplitPin } from './laserPresetCatalog'
+import type { LaserScene } from './laserEditorTypes'
 import {
   handleCentersForRender,
   hitTestVertexHandle,
@@ -90,6 +98,19 @@ export interface LaserEditorCanvasProps {
   presetGeometryLocked?: boolean
   /** When set (preset scenes), beam / solid color from the toolbar patch the selected layer id. */
   toolbarTargetSelection?: (patch: LaserPresetLayerOverride) => void
+  /** Drives canvas-only animation preview without re-rendering the whole Laser page. */
+  animPreview?: {
+    playing: boolean
+    playbackRef: MutableRefObject<number>
+    scanPhase01: number
+    animationPath?: NormPoint[]
+    samplesAlong: number
+  }
+  /** Preset scenes: procedural layers are resolved inside the canvas during playback. */
+  presetDisplay?: {
+    scene: LaserScene
+    splitPin: LaserPresetSplitPin
+  }
 }
 
 const TOOLS: Array<{ id: LaserTool; label: string; icon: ReactNode }> = [
@@ -191,36 +212,103 @@ export default function LaserEditorCanvas({
   textFontFamily,
   presetGeometryLocked = false,
   toolbarTargetSelection,
+  animPreview,
+  presetDisplay,
 }: LaserEditorCanvasProps) {
   const rid = useId().replace(/:/g, '')
   const svgRef = useRef<SVGSVGElement | null>(null)
   const layersRef = useRef(layers)
   layersRef.current = layers
 
+  const [previewFrame, setPreviewFrame] = useState(0)
+  useEffect(() => {
+    if (!animPreview?.playing) return
+    let raf = 0
+    const tick = () => {
+      setPreviewFrame((n) => n + 1)
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [animPreview?.playing])
+
+  const previewMotion = useMemo(() => {
+    if (!animPreview?.playing) return shapeMotionDelta
+    void previewFrame
+    const progress = clamp01(animPreview.playbackRef.current)
+    return motionPathDisplacement01(animPreview.animationPath, progress)
+  }, [
+    animPreview?.playing,
+    animPreview?.animationPath,
+    animPreview?.playbackRef,
+    previewFrame,
+    shapeMotionDelta,
+  ])
+
+  const effectiveStrokeRenderOpts = useMemo((): LayerStrokeRenderOpts => {
+    if (!animPreview?.playing) {
+      return {
+        ...strokeRenderOpts,
+        editorPreview: true,
+      }
+    }
+    void previewFrame
+    const progress = clamp01(animPreview.playbackRef.current)
+    const pathHue = pathHueOffset01(animPreview.animationPath, progress)
+    return {
+      samplesAlong: animPreview.samplesAlong,
+      huePhase01: progress + animPreview.scanPhase01 * 0.25 + pathHue,
+      editorPreview: true,
+    }
+  }, [
+    animPreview?.playing,
+    animPreview?.animationPath,
+    animPreview?.playbackRef,
+    animPreview?.samplesAlong,
+    animPreview?.scanPhase01,
+    previewFrame,
+    strokeRenderOpts,
+  ])
+
   const toRest = useCallback(
     (p: NormPoint) =>
       clampPoint({
-        x: p.x - shapeMotionDelta.x,
-        y: p.y - shapeMotionDelta.y,
+        x: p.x - previewMotion.x,
+        y: p.y - previewMotion.y,
       }),
-    [shapeMotionDelta.x, shapeMotionDelta.y]
+    [previewMotion.x, previewMotion.y]
   )
 
-  const layersDisplay = useMemo(
-    () =>
-      shapeMotionDelta.x === 0 && shapeMotionDelta.y === 0
-        ? layers
-        : layers.map((l) => shiftShapeLayerPoints(l, shapeMotionDelta)),
-    [layers, shapeMotionDelta.x, shapeMotionDelta.y]
-  )
+  const layersDisplay = useMemo(() => {
+    if (presetGeometryLocked && presetDisplay && animPreview?.playing) {
+      void previewFrame
+      const progress = clamp01(animPreview.playbackRef.current)
+      return getLaserSceneDisplayLayers(
+        presetDisplay.scene,
+        presetDisplay.splitPin,
+        progress,
+        previewMotion
+      )
+    }
+    if (previewMotion.x === 0 && previewMotion.y === 0) return layers
+    return layers.map((l) => shiftShapeLayerPoints(l, previewMotion))
+  }, [
+    layers,
+    presetDisplay,
+    presetGeometryLocked,
+    previewMotion,
+    animPreview?.playing,
+    animPreview?.playbackRef,
+    previewFrame,
+  ])
 
   const shiftPreview = useCallback(
     (p: NormPoint) =>
       clampPoint({
-        x: p.x + shapeMotionDelta.x,
-        y: p.y + shapeMotionDelta.y,
+        x: p.x + previewMotion.x,
+        y: p.y + previewMotion.y,
       }),
-    [shapeMotionDelta.x, shapeMotionDelta.y]
+    [previewMotion.x, previewMotion.y]
   )
 
   const [draft, setDraft] = useState<{
@@ -461,7 +549,7 @@ export default function LaserEditorCanvas({
       if (selectedLayerId) {
         const sel = layersRef.current.find((l) => l.id === selectedLayerId)
         if (sel && !presetGeometryLocked) {
-          const disp = shiftShapeLayerPoints(sel, shapeMotionDelta)
+          const disp = shiftShapeLayerPoints(sel, previewMotion)
           const h = hitTestVertexHandle(raw, disp)
           if (h) {
             vertexDragRef.current = h
@@ -691,10 +779,10 @@ export default function LaserEditorCanvas({
           : {}),
       }
       return layerStrokeSvgElements(
-        shiftShapeLayerPoints(temp, shapeMotionDelta),
+        shiftShapeLayerPoints(temp, previewMotion),
         laserCapabilities,
         LASER_LAYER_STROKE_PT_NORMAL,
-        strokeRenderOpts
+        effectiveStrokeRenderOpts
       )
     }
     if (draft.kind === 'freehand' && draft.points.length >= 2) {
@@ -747,7 +835,7 @@ export default function LaserEditorCanvas({
   const handleCenters =
     tool === 'select' && selected && !presetGeometryLocked
       ? handleCentersForRender(
-          shiftShapeLayerPoints(selected, shapeMotionDelta)
+          shiftShapeLayerPoints(selected, previewMotion)
         )
       : []
 
@@ -1012,13 +1100,13 @@ export default function LaserEditorCanvas({
                   layer.id === selectedLayerId
                     ? LASER_LAYER_STROKE_PT_SELECTED
                     : LASER_LAYER_STROKE_PT_NORMAL,
-                  strokeRenderOpts
+                  effectiveStrokeRenderOpts
                 )}
               </g>
             ))}
             {selected && (
               <g fill="none" opacity={0.9}>
-                {outlineBounds(shiftShapeLayerPoints(selected, shapeMotionDelta))}
+                {outlineBounds(shiftShapeLayerPoints(selected, previewMotion))}
               </g>
             )}
             {handleCenters.map((hp, i) => (

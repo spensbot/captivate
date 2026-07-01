@@ -1,4 +1,14 @@
 !include "MUI2.nsh"
+!include "nsDialogs.nsh"
+!include "LogicLib.nsh"
+
+Var Dialog
+Var InstallVcRedist
+Var InstallNdiRuntime
+Var InstallProjectMRuntime
+Var HwndVcRedist
+Var HwndNdiRuntime
+Var HwndProjectMRuntime
 
 ; Sets $R9 to 1 when VC++ 2015-2022 x64 appears installed, else 0.
 !macro DetectVcRedist2015_2022_x64
@@ -82,20 +92,77 @@ ndiDetectFound:
 ndiDetectDone:
 !macroend
 
+!macro customInit
+  StrCpy $InstallVcRedist "1"
+  StrCpy $InstallNdiRuntime "0"
+  StrCpy $InstallProjectMRuntime "1"
+!macroend
+
 !macro customWelcomePage
   !define MUI_WELCOMEPAGE_TITLE "Captivate 2 Setup"
-  !define MUI_WELCOMEPAGE_TEXT "Welcome to the Captivate 2 installer.$\r$\n$\r$\nChoose where to install Captivate 2. If optional runtimes (Visual C++ or NDI) are missing on this PC, setup may offer to install them."
+  !define MUI_WELCOMEPAGE_TEXT "Welcome to the Captivate 2 installer.$\r$\n$\r$\nChoose where to install Captivate 2. On the next page you can select optional third-party components (Visual C++, NDI, projectM Visualizer)."
   !insertmacro MUI_PAGE_WELCOME
 !macroend
+
+!macro customPageAfterChangeDir
+  Page custom captivateOptionalComponentsPage captivateOptionalComponentsLeave
+!macroend
+
+Function captivateOptionalComponentsPage
+  !insertmacro DetectVcRedist2015_2022_x64
+  ${If} $R9 == "1"
+    StrCpy $InstallVcRedist "0"
+  ${EndIf}
+
+  !insertmacro DetectNdiRuntime
+  ${If} $R9 == "1"
+    StrCpy $InstallNdiRuntime "0"
+  ${EndIf}
+
+  nsDialogs::Create 1018
+  Pop $Dialog
+  ${If} $Dialog == error
+    Abort
+  ${EndIf}
+
+  ${NSD_CreateLabel} 0u 0u 100% 24u "Select optional components to install with Captivate 2:"
+  Pop $0
+
+  ${NSD_CreateCheckbox} 0u 28u 100% 20u "Microsoft Visual C++ 2015-2022 Redistributable (x64) — recommended for native modules"
+  Pop $HwndVcRedist
+  ${If} $InstallVcRedist == "1"
+    ${NSD_Check} $HwndVcRedist
+  ${EndIf}
+
+  ${NSD_CreateCheckbox} 0u 52u 100% 20u "NDI Runtime — required for NDI video streaming"
+  Pop $HwndNdiRuntime
+  ${If} $InstallNdiRuntime == "1"
+    ${NSD_Check} $HwndNdiRuntime
+  ${EndIf}
+
+  ${NSD_CreateCheckbox} 0u 76u 100% 28u "projectM Visualizer runtime — Milkdrop-style visuals and presets (bundled with this installer)"
+  Pop $HwndProjectMRuntime
+  ${If} $InstallProjectMRuntime == "1"
+    ${NSD_Check} $HwndProjectMRuntime
+  ${EndIf}
+
+  nsDialogs::Show
+FunctionEnd
+
+Function captivateOptionalComponentsLeave
+  ${NSD_GetState} $HwndVcRedist $InstallVcRedist
+  ${NSD_GetState} $HwndNdiRuntime $InstallNdiRuntime
+  ${NSD_GetState} $HwndProjectMRuntime $InstallProjectMRuntime
+FunctionEnd
 
 !macro customInstall
   SetOutPath "$PLUGINSDIR"
 
   ; --- Microsoft Visual C++ 2015-2022 Redistributable (x64) ---
+  IntCmp $InstallVcRedist 1 0 skipVcRedist
   !insertmacro DetectVcRedist2015_2022_x64
   IntCmp $R9 1 skipVcRedist 0 skipVcRedist
   IfSilent skipVcRedist
-  MessageBox MB_YESNO|MB_ICONQUESTION "Microsoft Visual C++ 2015-2022 Redistributable (x64) was not detected.$\r$\n$\r$\nInstall it now?$\r$\n$\r$\nRecommended for native streaming and runtime dependencies." IDNO skipVcRedist
   DetailPrint "Downloading Microsoft Visual C++ Redistributable..."
   inetc::get /SILENT "https://aka.ms/vs/17/release/vc_redist.x64.exe" "$PLUGINSDIR\vc_redist.x64.exe" /END
   Pop $0
@@ -110,10 +177,10 @@ vcRedistDownloadFailed:
 skipVcRedist:
 
   ; --- NDI Runtime ---
+  IntCmp $InstallNdiRuntime 1 0 skipNdiRuntime
   !insertmacro DetectNdiRuntime
   IntCmp $R9 1 skipNdiRuntime 0 skipNdiRuntime
   IfSilent skipNdiRuntime
-  MessageBox MB_YESNO|MB_ICONQUESTION "NDI Runtime was not detected.$\r$\n$\r$\nInstall it now?$\r$\n$\r$\nNeeded for NDI streaming features." IDNO skipNdiRuntime
   DetailPrint "Downloading NDI Runtime..."
   inetc::get /SILENT "https://downloads.ndi.tv/SDK/NDI_SDK/Install_NDI_Runtime.exe" "$PLUGINSDIR\Install_NDI_Runtime.exe" /END
   Pop $2
@@ -126,4 +193,18 @@ ndiRuntimeDownloadFailed:
   DetailPrint "NDI Runtime download failed ($2). Opening download page..."
   ExecShell "open" "https://ndi.video/tools/"
 skipNdiRuntime:
+
+  ; --- projectM Visualizer runtime (bundled copy to user profile) ---
+  IntCmp $InstallProjectMRuntime 1 0 skipProjectMRuntime
+  IfFileExists "$INSTDIR\resources\assets\projectm-runtime\*.*" 0 projectMRuntimeMissing
+  ReadEnvStr $R0 APPDATA
+  StrCpy $R1 "$R0\Captivate 2\projectm\projectm-runtime"
+  CreateDirectory "$R0\Captivate 2\projectm"
+  DetailPrint "Installing projectM Visualizer runtime to your profile..."
+  ExecWait 'robocopy "$INSTDIR\resources\assets\projectm-runtime" "$R1" /E /NFL /NDL /NJH /NJS /nc /ns /np' $4
+  DetailPrint "projectM runtime profile install exit code: $4"
+  Goto skipProjectMRuntime
+projectMRuntimeMissing:
+  DetailPrint "projectM runtime was not bundled in this installer. Install it later from Visualizer settings."
+skipProjectMRuntime:
 !macroend

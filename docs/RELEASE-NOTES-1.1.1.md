@@ -26,13 +26,13 @@ This patch release fixes **Ableton Link** while transport is playing and adds **
 
 Download the installer for your operating system below. You can install over Captivate 2 1.1.0; projects and settings are kept.
 
-#### macOS first-launch note
+#### macOS install
 
-Captivate is not notarized yet because this project currently does not have an Apple Developer account or Apple hardware for full Apple signing/notarization. macOS may warn on first launch.
+Captivate 2 is not Apple-notarized. Download the **architecture-specific** DMG:
 
-If macOS blocks launch:
+- **Apple Silicon (M1–M4):** `Captivate.2-1.1.1-arm64.dmg`
+- **Intel Mac:** `Captivate.2-1.1.1-x64.dmg`
 
-1. Drag **Captivate 2.app** to **Applications**.
-2. In **Applications**, right-click **Captivate 2.app** and choose **Open**.
-3. Click **Open** in the warning dialog.
-4. If still blocked, go to **System Settings -> Privacy & Security** and click **Open Anyway**.
+Check **About This Mac** → **Chip** (Apple M…) vs **Processor** (Intel). Do not use a generic `.dmg` without `-arm64` or `-x64` if both are listed.
+
+First launch: drag to **Applications**, then **right-click → Open** and confirm. Full steps: [docs/MACOS-INSTALL.md](https://github.com/NicholasTracy/captivate-2/blob/main/docs/MACOS-INSTALL.md).

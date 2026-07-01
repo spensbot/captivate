@@ -22,7 +22,7 @@ Download the installer for your operating system below. You can install over Cap
 
 #### macOS first-launch note
 
-Captivate is not notarized yet because this project currently does not have an Apple Developer account or Apple hardware for full Apple signing/notarization. macOS may warn on first launch.
+Captivate 2 is not Apple-notarized. Use the **arm64** DMG on Apple Silicon or **x64** on Intel — see [docs/MACOS-INSTALL.md](https://github.com/NicholasTracy/captivate-2/blob/main/docs/MACOS-INSTALL.md).
 
 If macOS blocks launch:
 

@@ -20,9 +20,9 @@ export default function Input({ value, onChange, size, placeholder }: Props) {
 }
 
 const Root = styled.input`
-  border: none;
-  color: #fff;
-  background-color: #fff1;
+  border: 1px solid ${(props) => props.theme.colors.divider};
+  color: ${(props) => props.theme.colors.text.primary};
+  background-color: ${(props) => props.theme.colors.bg.lighter};
   width: 100%;
   font-size: 1rem;
   padding: 0.1rem 0.3rem;
@@ -51,10 +51,38 @@ export function MultilineInput({
 }
 
 const MLRoot = styled.textarea`
-  border: none;
-  color: #fff;
-  background-color: #fff1;
+  border: 1px solid ${(props) => props.theme.colors.divider};
+  color: ${(props) => props.theme.colors.text.primary};
+  background-color: ${(props) => props.theme.colors.bg.lighter};
   width: 100%;
   font-size: 1rem;
   resize: none;
+`
+
+interface TextAreaProps {
+  value: string
+  onChange: (newVal: string) => void
+  size?: string
+  placeholder?: string
+}
+
+export function TextArea({ value, onChange, size, placeholder }: TextAreaProps) {
+  return (
+    <Area
+      style={{ fontSize: size }}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+    />
+  )
+}
+
+const Area = styled.textarea`
+  border: 1px solid ${(props) => props.theme.colors.divider};
+  color: ${(props) => props.theme.colors.text.primary};
+  background-color: ${(props) => props.theme.colors.bg.lighter};
+  width: 100%;
+  font-size: 1rem;
+  padding: 0.1rem 0.3rem;
+  resize: vertical;
 `

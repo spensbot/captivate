@@ -18,17 +18,22 @@ const Root = styled.div`
   min-width: var(--remote-mod-graph-w, 200px);
   align-self: stretch;
   min-height: var(--remote-mod-panel-h, 10rem);
-  background-color: #fff1;
+  background-color: ${(p) => p.theme.colors.bg.panel};
   display: flex;
   justify-content: center;
   align-items: center;
   cursor: pointer;
   flex: 0 0 auto;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid ${(p) => p.theme.colors.divider};
   border-radius: 0.28rem;
+  color: ${(p) => p.theme.colors.icon.primary};
   touch-action: manipulation;
 
+  &:hover {
+    background-color: ${(p) => p.theme.colors.bg.raised};
+  }
+
   &:active {
-    background-color: #fff2;
+    background-color: ${(p) => p.theme.colors.bg.lighter};
   }
 `

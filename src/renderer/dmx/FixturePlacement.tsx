@@ -246,7 +246,7 @@ function Pad({
     status: DragStatus
   ) => void
 }) {
-  const [dragContainer, onMouseDown] = useDragMapped((mapped, e, status) =>
+  const [dragContainer, onPointerDown] = useDragMapped((mapped, e, status) =>
     onDrag(horizontalAxis, verticalAxis, mapped, e, status)
   )
   const horizontalStops = getGridStops(stage, horizontalAxis, snapGridFeet)
@@ -266,7 +266,7 @@ function Pad({
           <PadRoot
             ref={dragContainer}
             data-fixture-pad=""
-            onMouseDown={onMouseDown}
+            onPointerDown={onPointerDown}
             $aspectRatio={aspectRatio}
           >
             {horizontalStops.map((stop) => (

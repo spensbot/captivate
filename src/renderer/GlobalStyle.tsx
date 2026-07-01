@@ -34,19 +34,22 @@ export default createGlobalStyle`
     ):not([type='reset']):not([type='file']):not([type='image']):not([type='color']),
   textarea,
   select {
-    background-color: #000000;
-    color: #ffffff;
+    background-color: ${(props) => props.theme.colors.bg.lighter};
+    color: ${(props) => props.theme.colors.text.primary};
+    border: 1px solid ${(props) => props.theme.colors.divider};
   }
 
   input:disabled:not([type='checkbox']):not([type='radio']),
   textarea:disabled,
   select:disabled {
-    color: rgba(255, 255, 255, 0.38);
+    color: ${(props) => props.theme.colors.text.secondary};
+    opacity: 0.72;
   }
 
   input::placeholder,
   textarea::placeholder {
-    color: rgba(255, 255, 255, 0.45);
+    color: ${(props) => props.theme.colors.text.secondary};
+    opacity: 0.85;
   }
 
   *::-webkit-scrollbar {

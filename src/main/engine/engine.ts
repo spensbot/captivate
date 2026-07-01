@@ -352,6 +352,9 @@ function controlStateAffectsLiveDmxOutput(
   if (prev.gui.colorMapCalibrationOverride !== next.gui.colorMapCalibrationOverride) {
     return true
   }
+  if (prev.gui.goboMapCalibrationOverride !== next.gui.goboMapCalibrationOverride) {
+    return true
+  }
   return false
 }
 

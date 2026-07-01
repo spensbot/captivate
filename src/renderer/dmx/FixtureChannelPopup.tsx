@@ -428,6 +428,8 @@ function Fields({ ch, fixtureID, channelIndex }: Props) {
       return (
         <GoboMapChannel
           ch={channel}
+          fixtureID={fixtureID}
+          channelIndex={channelIndex}
           onChange={(newChannel) => onChange(newChannel)}
         />
       )

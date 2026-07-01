@@ -50,18 +50,27 @@ More walkthroughs: **[Wiki](https://github.com/NicholasTracy/captivate-2/wiki)**
 
 Installers for Windows, macOS, and Linux are on the [Releases](https://github.com/NicholasTracy/captivate-2/releases/latest) page.
 
-### macOS install help (if Apple blocks launch)
+### macOS install help
 
-Because I do not currently have an Apple Developer account or Apple hardware, Captivate's macOS build is not notarized yet. macOS may show a warning like "Apple cannot verify this app is free from malware" the first time you open it.
+Captivate 2 is **not Apple-notarized** (no paid Developer Program). macOS may warn the first time you open the app — that is expected.
 
-If that appears:
+**Download the correct file for your Mac** ([full guide](docs/MACOS-INSTALL.md)):
 
-1. Drag **Captivate 2.app** to **Applications** from the DMG.
-2. In **Applications**, right-click **Captivate 2.app** and choose **Open**.
-3. Click **Open** in the warning dialog.
-4. If you still see a block, open **System Settings -> Privacy & Security**, scroll down, and click **Open Anyway** for Captivate.
+| Mac type | Release file |
+|----------|----------------|
+| Apple Silicon (M1, M2, M3, M4…) | `Captivate.2-<version>-arm64.dmg` |
+| Intel | `Captivate.2-<version>-x64.dmg` |
 
-After this one-time approval, Captivate should open normally.
+Check **About This Mac** → **Chip** (Apple M…) vs **Processor** (Intel).
+
+**First launch:**
+
+1. Open the DMG and drag **Captivate 2** to **Applications**.
+2. In **Applications**, **right-click** **Captivate 2.app** → **Open** (not double-click the first time).
+3. Click **Open** in the security dialog.
+4. If still blocked: **System Settings → Privacy & Security → Open Anyway**.
+
+If the app quits immediately on launch, reinstall using the **arm64** DMG on Apple Silicon (see [macOS install guide](docs/MACOS-INSTALL.md)).
 
 ## Video
 

@@ -35,11 +35,24 @@ export function bpmToEnergyContribution(bpm: number): number {
 }
 
 export interface PerceivedEnergyInput {
-  /** Loudness / spectral envelope after adaptive normalization (0–1). */
-  spectralEnergy: number
+  /** Loudness after adaptive normalization (0–1). */
+  normalizedLoudness: number
+  /** Instant / short / long loudness envelopes for trend detection. */
+  loudnessInstant: number
+  loudnessShort: number
+  loudnessLong: number
+  lowLoudness: number
+  midLoudness: number
+  highLoudness: number
+  lowBaseline: number
+  highBaseline: number
+  lowOnset: number
+  beatOnset: number
   bpm: number | null
   bpmConfidence: number
-  /** Mid+high onset share — dance, rock, and pop vs sustained bass/drone. */
+  /** Current BPM / recent peak BPM (1 = no drop). */
+  bpmDropRatio: number
+  /** Mid+high onset share — hi-hat heavy vs kick/bass heavy. */
   rhythmShare: number
   beatPulse: number
   fastBreakdown?: boolean
@@ -48,53 +61,219 @@ export interface PerceivedEnergyInput {
 }
 
 /**
- * Combines loudness, tempo, and rhythmic activity for scene matching and meters.
- * Tuned so slow/quiet material reads lower than equally loud but faster, percussive tracks.
+ * Expands small 0–1 magnitudes (typical byte-FFT band averages) into a usable meter range.
+ */
+export function expandAudioMagnitude(linear: number, knee = 2.4): number {
+  const v = clamp01(linear)
+  if (v <= 0) return 0
+  return clamp01(1 - Math.exp(-v * knee))
+}
+
+/** Bass/kick body vs thin bright-only material (hi-hat breakdowns). */
+export function computeSpectralFullness(input: {
+  lowLoudness: number
+  midLoudness: number
+  highLoudness: number
+  lowBaseline: number
+  highBaseline: number
+  rhythmShare: number
+}): number {
+  const low = clamp01(input.lowLoudness)
+  const mid = clamp01(input.midLoudness)
+  const high = clamp01(input.highLoudness)
+  const lowBase = Math.max(0.012, input.lowBaseline)
+  const highBase = Math.max(0.012, input.highBaseline)
+  const rhythmShare = clamp01(input.rhythmShare)
+
+  const bodyMix = clamp01(low * 0.58 + mid * 0.3 + high * 0.12)
+  const relativeBass = clamp01(low / lowBase)
+  const bassPresent = clamp01((relativeBass - 0.42) / 0.58)
+  const subWeight = clamp01(low / Math.max(0.04, low + mid * 0.55 + high * 0.35))
+
+  const highVsLow = high / Math.max(0.02, low + high * 0.15)
+  const brightOnly =
+    rhythmShare > 0.52 &&
+    relativeBass < 0.62 &&
+    highVsLow > 0.72 &&
+    high > highBase * 0.82
+
+  let fullness = clamp01(bodyMix * 0.42 + bassPresent * 0.38 + subWeight * 0.2)
+  if (brightOnly) {
+    const hatPenalty = clamp01((rhythmShare - 0.48) / 0.42)
+    fullness *= lerpValue(0.22, 0.48, 1 - hatPenalty)
+  }
+  return fullness
+}
+
+/** Percussive drive from kick/bass onsets and beat pulse — not just level. */
+export function computeRhythmicDrive(input: {
+  lowOnset: number
+  beatOnset: number
+  beatPulse: number
+  rhythmShare: number
+  lowLoudness: number
+  lowBaseline: number
+}): number {
+  const lowOnset = clamp01(input.lowOnset * 3.8)
+  const beatOnset = clamp01(input.beatOnset * 2.6)
+  const beatPulse = clamp01(input.beatPulse)
+  const rhythmShare = clamp01(input.rhythmShare)
+  const relativeBass = clamp01(input.lowLoudness / Math.max(0.012, input.lowBaseline))
+
+  const kickDrive = clamp01(lowOnset * 0.52 + beatOnset * 0.28 + beatPulse * 0.2)
+  const hatOnly =
+    rhythmShare > 0.55 && relativeBass < 0.55 && lowOnset < 0.14
+  if (hatOnly) {
+    return clamp01(kickDrive * lerpValue(0.18, 0.42, rhythmShare))
+  }
+  return clamp01(kickDrive * lerpValue(0.55, 1, relativeBass))
+}
+
+/**
+ * Musical energy: loudness is the floor, but spectral body, rhythm, tempo, and
+ * section trends shape drops, hi-hat-only passages, build-ups, and hits.
  */
 export function computePerceivedEnergyLevel(input: PerceivedEnergyInput): number {
-  const spectral = clamp01(input.spectralEnergy)
+  const loudness = clamp01(input.normalizedLoudness)
+  const instant = clamp01(input.loudnessInstant)
+  const short = clamp01(input.loudnessShort)
+  const long = clamp01(input.loudnessLong)
   const conf = clamp01(input.bpmConfidence)
   const rhythmShare = clamp01(input.rhythmShare)
   const beatPulse = clamp01(input.beatPulse)
   const fastBreakdown = input.fastBreakdown === true
+  const bpmDropRatio = clamp01(input.bpmDropRatio)
   const rhythmEmphasis = clamp01(
     input.rhythmEmphasis != null && Number.isFinite(input.rhythmEmphasis)
       ? input.rhythmEmphasis
       : 0.5
   )
-  const rhythmEmphasisScale = lerpValue(0.72, 1.32, rhythmEmphasis)
-  const spectralEmphasisScale = lerpValue(1.18, 0.86, rhythmEmphasis)
+  const bassEmphasis = 1 - rhythmEmphasis
+
+  const fullness = computeSpectralFullness({
+    lowLoudness: input.lowLoudness,
+    midLoudness: input.midLoudness,
+    highLoudness: input.highLoudness,
+    lowBaseline: input.lowBaseline,
+    highBaseline: input.highBaseline,
+    rhythmShare,
+  })
+  const rhythmDrive = computeRhythmicDrive({
+    lowOnset: input.lowOnset,
+    beatOnset: input.beatOnset,
+    beatPulse,
+    rhythmShare,
+    lowLoudness: input.lowLoudness,
+    lowBaseline: input.lowBaseline,
+  })
 
   const rawBpm =
     input.bpm !== null && Number.isFinite(input.bpm) && input.bpm > 0
       ? input.bpm
       : null
   const bpmContribution =
-    rawBpm === null ? 0.42 : bpmToEnergyContribution(rawBpm)
-  const bpmFactor = lerpValue(0.42, bpmContribution, conf)
+    rawBpm === null ? 0.46 : bpmToEnergyContribution(rawBpm)
+  const tempoFactor = lerpValue(0.5, bpmContribution, conf)
 
-  const rhythmFactor = clamp01(rhythmShare * 0.68 + beatPulse * 0.32)
-  const activityGate = clamp01((spectral - 0.035) / 0.2)
-  const genreActivity =
-    clamp01(rhythmShare * 0.55 + spectral * 0.45) * activityGate
+  const fullnessW = lerpValue(0.4, 0.28, rhythmEmphasis)
+  const rhythmW = lerpValue(0.34, 0.46, rhythmEmphasis)
+  const tempoW = 0.26
+  let musicalShape = clamp01(
+    fullness * fullnessW + rhythmDrive * rhythmW + tempoFactor * tempoW
+  )
 
-  let bpmWeight = lerpValue(0.12, 0.28, conf)
-  let rhythmWeight = (0.12 + genreActivity * 0.1) * rhythmEmphasisScale
+  if (bpmDropRatio < 0.86 && loudness < 0.42) {
+    const tempoDrop = clamp01((0.86 - bpmDropRatio) / 0.42)
+    musicalShape *= lerpValue(1, 0.42, tempoDrop * conf)
+  }
   if (fastBreakdown) {
-    bpmWeight *= 0.35
-    rhythmWeight *= 0.45
+    musicalShape *= 0.58
   }
 
-  const spectralWeight = Math.max(
-    0.48,
-    1 - bpmWeight * activityGate - rhythmWeight * activityGate
-  )
+  const floor = lerpValue(0.32, 0.24, bassEmphasis)
+  let energy = loudness * lerpValue(floor, 1, musicalShape)
 
-  return clamp01(
-    spectral * spectralWeight * spectralEmphasisScale +
-      bpmFactor * bpmWeight * activityGate +
-      rhythmFactor * rhythmWeight * activityGate
-  )
+  const buildTrend = clamp01((short - long) / 0.14)
+  const risingInstant = clamp01((instant - short) / 0.12)
+  const buildBoost =
+    buildTrend * lerpValue(0.06, 0.14, 1 - rhythmEmphasis) +
+    risingInstant * 0.05
+  energy += buildBoost
+
+  const hitAccent =
+    beatPulse * lerpValue(0.05, 0.1, rhythmEmphasis) +
+    clamp01(input.lowOnset * 3.2) * lerpValue(0.08, 0.04, rhythmEmphasis)
+  energy += hitAccent
+
+  if (fastBreakdown) {
+    energy = Math.min(energy, loudness * lerpValue(0.62, 0.78, musicalShape))
+  }
+
+  return clamp01(energy)
+}
+
+export interface AdaptiveEnergyNormalizerState {
+  floorEma: number
+  peakHold: number
+}
+
+export function initAdaptiveEnergyNormalizerState(): AdaptiveEnergyNormalizerState {
+  return { floorEma: 0, peakHold: 0 }
+}
+
+export interface StepAdaptiveEnergyNormalizerParams {
+  compositeEnergy: number
+  floorAlpha: number
+  peakReleaseAlpha: number
+  energyDynamics: number
+  fastBreakdown: boolean
+}
+
+/**
+ * Maps running loudness to 0–1 for the energy meter. Peak-hold reference + quiet floor;
+ * uses ratio-to-peak so sustained loud material reaches the top of the meter.
+ */
+export function stepAdaptiveEnergyNormalizer(
+  state: AdaptiveEnergyNormalizerState,
+  params: StepAdaptiveEnergyNormalizerParams
+): { state: AdaptiveEnergyNormalizerState; normalizedEnergy: number } {
+  const composite = clamp01(params.compositeEnergy)
+  const dynamics = clamp01(params.energyDynamics)
+  let { floorEma, peakHold } = state
+
+  if (floorEma <= 0 && peakHold <= 0) {
+    floorEma = composite
+    peakHold = Math.max(composite, 0.05)
+  } else {
+    if (composite < floorEma) {
+      floorEma += (composite - floorEma) * params.floorAlpha
+    } else {
+      floorEma += (composite - floorEma) * params.floorAlpha * lerpValue(0.02, 0.06, dynamics)
+    }
+
+    if (composite >= peakHold) {
+      peakHold = composite
+    } else {
+      let releaseAlpha = params.peakReleaseAlpha
+      if (params.fastBreakdown) {
+        releaseAlpha = Math.min(1, releaseAlpha * 2.5)
+      }
+      peakHold += (composite - peakHold) * releaseAlpha
+    }
+  }
+
+  const referencePeak = Math.max(peakHold, 0.045)
+  const quietFloor = Math.max(0, floorEma - lerpValue(0.018, 0.008, dynamics))
+  const span = Math.max(lerpValue(0.055, 0.035, dynamics), referencePeak - quietFloor)
+  const linear = clamp01((composite - quietFloor) / span)
+  const ratio = composite / referencePeak
+  const ratioCurve = clamp01(1 - Math.exp(-ratio * lerpValue(2.2, 2.8, 1 - dynamics)))
+  const normalizedEnergy = clamp01(linear * 0.4 + ratioCurve * 0.6)
+
+  return {
+    state: { floorEma, peakHold },
+    normalizedEnergy,
+  }
 }
 
 /** Tempo used for energy: detected when confident, otherwise Link/session BPM. */
@@ -162,8 +341,8 @@ export function initAudioInputSettings(): AudioInputSettings {
     beatSensitivity: 0.45,
     beatMinIntervalMs: 260,
     bpmSmoothing: 0.12,
-    energySmoothing: 0.35,
-    energyDynamics: 0.5,
+    energySmoothing: 0.5,
+    energyDynamics: 0.45,
     energyRhythmBias: 0.5,
     beatTapHintBpm: null,
     beatTapHintAtMs: 0,
@@ -363,8 +542,54 @@ export function getAudioBandLevel(
   audio: AudioEngineMetrics,
   band: AudioBandConfig
 ): number {
-  if (!audio.enabled || audio.spectrum.length === 0 || audio.nyquistHz <= 0) {
+  const stats = measureAudioBand(audio, band)
+  if (stats === null) {
     return 0
+  }
+  return clamp01(stats.average * normalizeAudioBandConfig(band).gain)
+}
+
+/** Peak + average blend with perceptual expansion — for energy metering. */
+export function getAudioBandLoudness(
+  audio: AudioEngineMetrics,
+  band: AudioBandConfig
+): number {
+  const stats = measureAudioBand(audio, band)
+  if (stats === null) {
+    return 0
+  }
+  const normalizedBand = normalizeAudioBandConfig(band)
+  const linear = clamp01(
+    (stats.average * 0.32 + stats.peak * 0.68) * normalizedBand.gain * 1.85
+  )
+  return expandAudioMagnitude(linear, 2.15)
+}
+
+export function computeMusicLoudnessCore(params: {
+  inputLevel: number
+  broad: number
+  mid: number
+  low: number
+  high: number
+  flux?: number
+}): number {
+  const weighted = clamp01(
+    params.inputLevel * 0.36 +
+      params.broad * 0.3 +
+      params.mid * 0.16 +
+      params.low * 0.1 +
+      params.high * 0.08 +
+      (params.flux ?? 0) * 0.05
+  )
+  return expandAudioMagnitude(weighted, 2.75)
+}
+
+function measureAudioBand(
+  audio: AudioEngineMetrics,
+  band: AudioBandConfig
+): { average: number; peak: number } | null {
+  if (!audio.enabled || audio.spectrum.length === 0 || audio.nyquistHz <= 0) {
+    return null
   }
 
   const normalizedBand = normalizeAudioBandConfig(band)
@@ -381,16 +606,18 @@ export function getAudioBandLevel(
   )
 
   let sum = 0
+  let peak = 0
   let count = 0
   for (let i = lowIndex; i <= highIndex; i++) {
-    sum += audio.spectrum[i] ?? 0
+    const value = audio.spectrum[i] ?? 0
+    sum += value
+    if (value > peak) peak = value
     count++
   }
 
   if (count <= 0) {
-    return 0
+    return null
   }
 
-  const average = sum / count
-  return clamp01(average * normalizedBand.gain)
+  return { average: sum / count, peak }
 }

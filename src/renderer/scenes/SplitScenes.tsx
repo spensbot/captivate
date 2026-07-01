@@ -21,7 +21,13 @@ import { useDispatch } from 'react-redux'
 import { addSplitScene } from 'renderer/redux/controlSlice'
 import { SplitScenesHelpButton } from './sceneHelpButtons'
 
-export default function SplitScenes() {
+export default function SplitScenes({
+  flattenScroll = false,
+  hideTitle = false,
+}: {
+  flattenScroll?: boolean
+  hideTitle?: boolean
+}) {
   const dispatch = useDispatch()
   const activeScene = useControlSelector((scenes) => scenes.light.active)
   const splitSceneCount = useActiveLightScene(
@@ -33,12 +39,14 @@ export default function SplitScenes() {
   const onAddSplitScene = () => dispatch(addSplitScene())
 
   return (
-    <Root>
-      <TitleRow>
-        <Title>Splits</Title>
-        <SplitScenesHelpButton />
-      </TitleRow>
-      <SplitList>
+    <Root $flatten={flattenScroll}>
+      {!hideTitle ? (
+        <TitleRow>
+          <Title>Splits</Title>
+          <SplitScenesHelpButton />
+        </TitleRow>
+      ) : null}
+      <SplitList $flatten={flattenScroll}>
         {splitSceneCount < 1 ? (
           <EmptyState>No splits yet. Add a split to start mapping groups and params.</EmptyState>
         ) : (
@@ -60,15 +68,14 @@ export default function SplitScenes() {
   )
 }
 
-const Root = styled.div`
+const Root = styled.div<{ $flatten?: boolean }>`
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
   min-width: 0;
   min-height: 0;
-  /* flex-basis 0 so this panel can shrink below the sum of its children; SplitList scrolls */
-  flex: 1 1 0;
-  overflow: hidden;
+  flex: ${(p) => (p.$flatten ? '0 0 auto' : '1 1 0')};
+  overflow: ${(p) => (p.$flatten ? 'visible' : 'hidden')};
 `
 
 const TitleRow = styled.div`
@@ -83,14 +90,14 @@ const Title = styled.div`
   color: ${(props) => props.theme.colors.text.primary};
 `
 
-const SplitList = styled.div`
+const SplitList = styled.div<{ $flatten?: boolean }>`
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
   min-width: 0;
   min-height: 0;
-  flex: 1 1 0;
-  overflow-y: auto;
+  flex: ${(p) => (p.$flatten ? '0 0 auto' : '1 1 0')};
+  overflow-y: ${(p) => (p.$flatten ? 'visible' : 'auto')};
   overflow-x: hidden;
   padding-right: 0.12rem;
   scrollbar-gutter: stable;

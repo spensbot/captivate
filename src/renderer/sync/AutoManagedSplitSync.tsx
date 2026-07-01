@@ -11,9 +11,10 @@ import {
   ensureSplitSceneForGroup,
   removeSplitSceneByIndex,
   restoreSplitSceneForGroup,
+  removeAtmosFxtr,
 } from 'renderer/redux/controlSlice'
 import { universeHasMovers } from '../../shared/dmxFixtures'
-import { listAtmosFxtrs } from '../../shared/atmosphericsMapping'
+import { listAtmosFxtrs, universeHasAtmospherics } from '../../shared/atmosphericsMapping'
 import { LightScene_t, SplitScene_t } from '../../shared/Scenes'
 import { isDedicatedGroupSplit } from '../scenes/splitUiVisibility'
 import { collectLaserLightingGroupNames } from '../laser/laserSplitLink'
@@ -73,13 +74,16 @@ export default function AutoManagedSplitSync() {
     [laser.groupSlots, laser.units]
   )
   const dmx = useDmxSelector((state) => state)
+  const atmosSettings = useControlSelector(
+    (state) => state.connectionSettings.atmos
+  )
   const hasMovers = useMemo(
     () => universeHasMovers(dmx.universe, dmx.fixtureTypesByID),
     [dmx.fixtureTypesByID, dmx.universe]
   )
   const hasAtmospherics = useMemo(
-    () => listAtmosFxtrs(dmx).length > 0,
-    [dmx]
+    () => universeHasAtmospherics(dmx.universe, dmx.fixtureTypesByID),
+    [dmx.fixtureTypesByID, dmx.universe]
   )
   const hasLedFixtures = useMemo(
     () => dmx.led.ledFixtures.length > 0,
@@ -224,6 +228,17 @@ export default function AutoManagedSplitSync() {
       }
     }
   }, [activeLightScene, activeScene, autoManagedGroupStates, dispatch, videoEnabled])
+
+  useEffect(() => {
+    const mappedFixtureIds = new Set(
+      listAtmosFxtrs(dmx).map((fixture) => fixture.fixtureId)
+    )
+    for (const fixtureId of Object.keys(atmosSettings.fixtures)) {
+      if (!mappedFixtureIds.has(fixtureId)) {
+        dispatch(removeAtmosFxtr(fixtureId))
+      }
+    }
+  }, [atmosSettings.fixtures, dmx, dispatch])
 
   return null
 }

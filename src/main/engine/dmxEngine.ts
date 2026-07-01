@@ -1196,12 +1196,33 @@ function getMoverCalibrationOverrideTarget(
   }
 }
 
+function channelMatchesFixtureTypeChannelIndex(
+  fixtureType: CleanReduxState['dmx']['fixtureTypesByID'][string],
+  typeChannelIndex: number,
+  channel: FlattenedFixture['channels'][number][1]
+): boolean {
+  if (fixtureType === undefined) {
+    return false
+  }
+
+  const expectedChannel = fixtureType.channels[typeChannelIndex]
+  if (expectedChannel === undefined) {
+    return false
+  }
+  if (expectedChannel === channel) {
+    return true
+  }
+  if (expectedChannel.type === 'split') {
+    return expectedChannel.ranges.some((range) => range.channel === channel)
+  }
+  return false
+}
+
 function getColorMapCalibrationOverrideTarget(
   state: CleanReduxState,
   fixture: FlattenedFixture,
   channel: FlattenedFixture['channels'][number][1]
 ): number | undefined {
-  // Only apply preview output to the chosen color-map channel.
   if (channel.type !== 'colorMap') {
     return undefined
   }
@@ -1212,12 +1233,41 @@ function getColorMapCalibrationOverrideTarget(
   }
 
   const fixtureType = state.dmx.fixtureTypesByID[override.fixtureTypeId]
-  if (fixtureType === undefined) {
+  if (
+    !channelMatchesFixtureTypeChannelIndex(
+      fixtureType,
+      override.channelIndex,
+      channel
+    )
+  ) {
     return undefined
   }
 
-  const expectedChannel = fixtureType.channels[override.channelIndex]
-  if (expectedChannel === undefined || expectedChannel !== channel) {
+  return clampDmxValue(override.dmxValue, DMX_MIN_VALUE)
+}
+
+function getGoboMapCalibrationOverrideTarget(
+  state: CleanReduxState,
+  fixture: FlattenedFixture,
+  channel: FlattenedFixture['channels'][number][1]
+): number | undefined {
+  if (channel.type !== 'goboMap') {
+    return undefined
+  }
+
+  const override = state.gui.goboMapCalibrationOverride
+  if (override === null || fixture.fixtureTypeId !== override.fixtureTypeId) {
+    return undefined
+  }
+
+  const fixtureType = state.dmx.fixtureTypesByID[override.fixtureTypeId]
+  if (
+    !channelMatchesFixtureTypeChannelIndex(
+      fixtureType,
+      override.channelIndex,
+      channel
+    )
+  ) {
     return undefined
   }
 
@@ -1248,12 +1298,15 @@ function calculateDmxForUniverse(
 
   const moverCalibrationOverride = state.gui.moverCalibrationOverride
   const colorMapCalibrationOverride = state.gui.colorMapCalibrationOverride
+  const goboMapCalibrationOverride = state.gui.goboMapCalibrationOverride
+  const fixtureMapCalibrationActive =
+    colorMapCalibrationOverride !== null || goboMapCalibrationOverride !== null
   const axisOnlyOverrideMode =
     !timeState.isPlaying &&
     state.gui.moverAdvancedControlEnabled === true &&
-    moverCalibrationOverride !== null
-  const colorMapOnlyOverrideMode =
-    !timeState.isPlaying && colorMapCalibrationOverride !== null
+    moverCalibrationOverride !== null &&
+    !fixtureMapCalibrationActive
+  const fixtureMapOnlyOverrideMode = fixtureMapCalibrationActive
 
   const syntheticStrobeFrameRateHz = getSyntheticStrobeFrameRateHz(state)
   const placementDepth2DOnly = state.gui.fxtrDepthOn !== true
@@ -1280,11 +1333,15 @@ function calculateDmxForUniverse(
 
       writeDmxChannel(channels, channelIdx, clampDmxValue(overrideDmx, channel.min))
     })
-  } else if (colorMapOnlyOverrideMode && colorMapCalibrationOverride !== null) {
-    // While stopped, keep output simple so wheel tuning is immediate.
+  } else if (fixtureMapOnlyOverrideMode) {
+    // Fixture-manager wheel tuning overrides scene output on matching fixtures.
     forEachChannel(all_fixtures, (_fixtureIdx, fixture, channelIdx, channel) => {
+      const matchingFixtureTypeId =
+        colorMapCalibrationOverride?.fixtureTypeId ??
+        goboMapCalibrationOverride?.fixtureTypeId
       if (
-        fixture.fixtureTypeId === colorMapCalibrationOverride.fixtureTypeId &&
+        matchingFixtureTypeId !== undefined &&
+        fixture.fixtureTypeId === matchingFixtureTypeId &&
         channel.type === 'master'
       ) {
         writeDmxChannel(channels, channelIdx, channel.max)
@@ -1295,9 +1352,15 @@ function calculateDmxForUniverse(
         channel.type === 'colorMap'
           ? getColorMapCalibrationOverrideTarget(state, fixture, channel)
           : undefined
+      const goboMapOverrideValue =
+        channel.type === 'goboMap'
+          ? getGoboMapCalibrationOverrideTarget(state, fixture, channel)
+          : undefined
 
       if (colorMapOverrideValue !== undefined) {
         writeDmxChannel(channels, channelIdx, colorMapOverrideValue)
+      } else if (goboMapOverrideValue !== undefined) {
+        writeDmxChannel(channels, channelIdx, goboMapOverrideValue)
       }
     })
   } else {
@@ -1408,6 +1471,10 @@ function calculateDmxForUniverse(
             channel.type === 'colorMap'
               ? getColorMapCalibrationOverrideTarget(state, fixture, channel)
               : undefined
+          const goboMapOverrideValue =
+            channel.type === 'goboMap'
+              ? getGoboMapCalibrationOverrideTarget(state, fixture, channel)
+              : undefined
 
           let dmxParams = outputParams
           if (stageLightFixtureParams !== null && stageLightGrid !== null) {
@@ -1448,7 +1515,9 @@ function calculateDmxForUniverse(
                   )
               : channel.type === 'colorMap' && colorMapOverrideValue !== undefined
                 ? colorMapOverrideValue
-                : getDmxValue(
+                : channel.type === 'goboMap' && goboMapOverrideValue !== undefined
+                  ? goboMapOverrideValue
+                  : getDmxValue(
                     channel,
                     dmxParams,
                     fixture,

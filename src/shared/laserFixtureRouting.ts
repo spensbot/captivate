@@ -1,4 +1,8 @@
 import type { LaserDacBackend, LaserOutputProtocol } from './laserDac'
+import {
+  createDefaultLaserDacHardwareSettings,
+  type LaserDacHardwareSettings,
+} from './laserHardwareSettings'
 
 /** Normalized projection canvas rect (origin top-left, 0–1). */
 export type LaserProjectionZoneRect = {
@@ -26,6 +30,8 @@ export type LaserDacProfile = {
   outputProtocol: LaserOutputProtocol
   connectionTarget: string
   zones: LaserProjectionZone[]
+  /** Scan rate, color mode, output power, and galvo calibration. */
+  hardwareSettings: LaserDacHardwareSettings
 }
 
 /** Network / IDN node — one logical laser endpoint (host or interface). */
@@ -81,8 +87,9 @@ export function createDefaultLaserDacProfile(
     name,
     backend: 'helios',
     outputProtocol: 'ilda',
-    connectionTarget: 'Auto discover',
+    connectionTarget: '0',
     zones: [createDefaultProjectionZone(1)],
+    hardwareSettings: createDefaultLaserDacHardwareSettings(),
   }
 }
 

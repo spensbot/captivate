@@ -16,7 +16,11 @@ import { DeviceState, initDeviceState } from './deviceState'
 import fixState, { fixDeviceState } from '../../shared/fixState'
 import { DefaultParam, initBaseParams, Params } from '../../shared/params'
 import { SaveInfo } from 'shared/save'
-import { migrateLaserProjectState } from '../laser/laserProjectState'
+import { normalizeAppSettings } from '../../shared/appSettings'
+import {
+  initLaserState,
+  migrateLaserProjectState,
+} from '../laser/laserProjectState'
 import { FixtureType } from 'shared/dmxFixtures'
 import cloneDeep from 'lodash.clonedeep'
 import { projectPersistenceMiddleware } from './projectPersistenceStoreMiddleware'
@@ -96,6 +100,7 @@ export function mergeProjectSave(
           newProjectDialog: false,
           moverCalibrationOverride: null,
           colorMapCalibrationOverride: null,
+          goboMapCalibrationOverride: null,
           statusLogOpen: false,
           appDialog: null,
           aboutOpen: false,
@@ -179,12 +184,14 @@ export function resetControl(
 function sanitizeGuiTransientState(gui: GuiState): GuiState {
   return {
     ...gui,
+    appSettings: normalizeAppSettings(gui?.appSettings),
     connectionMenu: false,
     saving: false,
     loading: null,
     newProjectDialog: false,
     moverCalibrationOverride: null,
     colorMapCalibrationOverride: null,
+    goboMapCalibrationOverride: null,
     statusMessages: [],
     statusLogOpen: false,
     appDialog: null,
@@ -215,7 +222,7 @@ const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (
       gui: sanitizeGuiTransientState(cleanState.gui),
       control: initUndoState(cleanState.control),
       mixer: cleanState.mixer,
-      laser: cleanState.laser,
+      laser: migrateLaserProjectState(cleanState.laser ?? initLaserState()),
     }
   } else if (action.type === RESET_REMOTE_STATE) {
     const cleanState: CleanReduxState = action.payload
@@ -251,16 +258,19 @@ const rootReducer: Reducer<ReduxState, PayloadAction<any>> = (
         newProjectDialog: localGui.newProjectDialog,
         moverCalibrationOverride: localGui.moverCalibrationOverride,
         colorMapCalibrationOverride: localGui.colorMapCalibrationOverride,
+        goboMapCalibrationOverride: localGui.goboMapCalibrationOverride,
         statusLogOpen: localGui.statusLogOpen,
         appDialog: localGui.appDialog,
         aboutOpen: localGui.aboutOpen,
         settingsOpen: localGui.settingsOpen,
-        appSettings: localGui.appSettings,
+        appSettings: normalizeAppSettings(
+          localGui.appSettings ?? cleanState.gui?.appSettings
+        ),
         atmosManualTriggerNonceByFixtureId: {},
       },
       control: initUndoState(cleanState.control),
       mixer: cleanState.mixer,
-      laser: cleanState.laser,
+      laser: migrateLaserProjectState(cleanState.laser ?? initLaserState()),
     }
   } else if (action.type === RESET_UNIVERSE) {
     const us: DmxState = action.payload

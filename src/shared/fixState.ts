@@ -16,7 +16,12 @@ import {
 } from './atmospherics'
 import { DmxState, normalizeLighting3DSettings } from 'renderer/redux/dmxSlice'
 import { initLedState } from 'renderer/redux/ledState'
+import { normalizeAppSettings } from './appSettings'
 import type { CleanReduxState } from '../renderer/redux/store'
+import {
+  initLaserState,
+  migrateLaserProjectState,
+} from '../renderer/laser/laserProjectState'
 import { MixerState } from 'renderer/redux/mixerSlice'
 import { ColorChannel, inferColorKind } from './dmxColors'
 import {
@@ -296,6 +301,7 @@ function fixGuiState(gui: CleanReduxState['gui']) {
   const _gui = gui as CleanReduxState['gui'] & {
     moverCalibrationOverride?: unknown
     colorMapCalibrationOverride?: unknown
+    goboMapCalibrationOverride?: unknown
   }
 
   if (
@@ -355,6 +361,31 @@ function fixGuiState(gui: CleanReduxState['gui']) {
   } else {
     _gui.colorMapCalibrationOverride = null
   }
+
+  const goboMapOverride = _gui.goboMapCalibrationOverride as
+    | {
+        fixtureTypeId?: unknown
+        channelIndex?: unknown
+        dmxValue?: unknown
+      }
+    | null
+    | undefined
+
+  if (
+    goboMapOverride !== null &&
+    goboMapOverride !== undefined &&
+    typeof goboMapOverride.fixtureTypeId === 'string' &&
+    Number.isFinite(Number(goboMapOverride.channelIndex)) &&
+    Number.isFinite(Number(goboMapOverride.dmxValue))
+  ) {
+    _gui.goboMapCalibrationOverride = {
+      fixtureTypeId: goboMapOverride.fixtureTypeId,
+      channelIndex: Math.max(0, Math.round(Number(goboMapOverride.channelIndex))),
+      dmxValue: clampDmxValue(Number(goboMapOverride.dmxValue), DMX_MIN_VALUE),
+    }
+  } else {
+    _gui.goboMapCalibrationOverride = null
+  }
 }
 
 function fixScenesAuto(auto: AutoScene_t): void {
@@ -409,6 +440,17 @@ export default function fixState(state: CleanReduxState): CleanReduxState {
       state.gui.colorMapCalibrationOverride = null
     }
   }
+
+  if (state.gui.goboMapCalibrationOverride !== null) {
+    const fixtureTypeId = state.gui.goboMapCalibrationOverride.fixtureTypeId
+    if (state.dmx.fixtureTypesByID[fixtureTypeId] === undefined) {
+      state.gui.goboMapCalibrationOverride = null
+    }
+  }
+
+  state.laser = migrateLaserProjectState(state.laser ?? initLaserState())
+
+  state.gui.appSettings = normalizeAppSettings(state.gui.appSettings)
 
   return state
 }

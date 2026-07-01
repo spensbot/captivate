@@ -49,7 +49,7 @@ export const BUILTIN_THEME_PACKS: ThemePackOption[] = [
   {
     id: 'light',
     label: 'Light',
-    description: 'Higher-contrast light interface.',
+    description: 'Light backgrounds with high-contrast text and icons.',
   },
 ]
 

@@ -8,13 +8,13 @@ import WbIncandescentIcon from '@mui/icons-material/WbIncandescent'
 import AirIcon from '@mui/icons-material/Air'
 import VisualsIcon from '../images/Thick.png'
 import MixerIcon from '@mui/icons-material/BarChart'
-import { useTypedSelector } from '../redux/store'
+import { useDmxSelector, useTypedSelector } from '../redux/store'
 import { useDispatch } from 'react-redux'
 import { setActivePage, Page } from '../redux/guiSlice'
 import MasterSlider from '../controls/MasterSlider'
 import BlackoutButton from '../controls/BlackoutButton'
 import { send_open_page_window } from '../ipcHandler'
-import { listAtmosFxtrs } from '../../shared/atmosphericsMapping'
+import { universeHasAtmospherics } from '../../shared/atmosphericsMapping'
 import { universeHasMovers } from '../../shared/dmxFixtures'
 import { ButtonMidiOverlay } from '../base/MidiOverlay'
 import Tooltip from '@mui/material/Tooltip'
@@ -79,8 +79,8 @@ function accentColors(accent: SidebarAccent) {
 
 export default function MenuBar() {
   const activePage = useTypedSelector((state) => state.gui.activePage)
-  const hasAtmosphericsFixtures = useTypedSelector(
-    (state) => listAtmosFxtrs(state.dmx.present).length > 0
+  const hasAtmosphericsFixtures = useDmxSelector((dmx) =>
+    universeHasAtmospherics(dmx.universe, dmx.fixtureTypesByID)
   )
   const hasMoverFixtures = useTypedSelector((state) =>
     universeHasMovers(state.dmx.present.universe, state.dmx.present.fixtureTypesByID)

@@ -108,7 +108,7 @@ export default function ZParamsPad({ splitIndex }: Props) {
     setCenterMenuOpen(false)
   }
 
-  const [dragContainer, onMouseDown] = useDragMapped(({ x, dx }, e) => {
+  const [dragContainer, onPointerDown] = useDragMapped(({ x, dx }, e) => {
     if (!isEnabled) {
       return
     }
@@ -154,7 +154,7 @@ export default function ZParamsPad({ splitIndex }: Props) {
             action={makeSetBaseParamAction(splitIndex, 'z')}
             style={{ position: 'relative', flex: '1 1 auto', minHeight: 0 }}
           >
-            <PadRoot ref={dragContainer} onMouseDown={onMouseDown}>
+            <PadRoot ref={dragContainer} onPointerDown={onPointerDown}>
             <ZWindow z={outputZ} depth={outputDepth} centerMode={centerMode} />
             <Cursor x={outputZ} y={0.5} color="#f2c66daa" withVertical />
             <Cursor x={baseZ} y={0.5} color="#fff" withVertical />

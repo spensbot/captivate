@@ -66,10 +66,7 @@ export default function AutoScene({ sceneType }: { sceneType: SceneType }) {
       >
         <Button
           title="Turn on to change scenes automatically on the beat"
-          style={{
-            backgroundColor: enabled ? '#3d5a' : '#fff3',
-            color: enabled ? '#eee' : '#fff9',
-          }}
+          $enabled={enabled === true}
           onClick={() =>
             dispatch(
               setAutoSceneEnabled({
@@ -173,12 +170,15 @@ const Root = styled.div`
   min-width: 0;
 `
 
-const Button = styled.div`
+const Button = styled.div<{ $enabled: boolean }>`
   border-radius: 0.3rem;
   padding: 0.1rem 0.3rem;
   cursor: pointer;
   font-size: 0.9rem;
   flex-shrink: 0;
+  border: 1px solid ${(p) => p.theme.colors.divider};
+  background-color: ${(p) => (p.$enabled ? '#3d5a3d' : p.theme.colors.bg.panel)};
+  color: ${(p) => (p.$enabled ? '#ececec' : p.theme.colors.text.primary)};
 `
 
 const EnergyModeToggle = styled.button<{ $active: boolean }>`
@@ -189,8 +189,9 @@ const EnergyModeToggle = styled.button<{ $active: boolean }>`
   cursor: pointer;
   border: 1px solid
     ${(p) => (p.$active ? '#7dff9d' : p.theme.colors.divider)};
-  background: ${(p) => (p.$active ? '#7dff9d22' : '#0005')};
-  color: ${(p) => (p.$active ? '#b8ffc8' : p.theme.colors.text.secondary)};
+  background: ${(p) =>
+    p.$active ? '#7dff9d22' : p.theme.colors.bg.panel};
+  color: ${(p) => (p.$active ? '#2d6b3d' : p.theme.colors.text.secondary)};
   white-space: nowrap;
 `
 
@@ -202,8 +203,8 @@ const AudioMatchToggle = styled.button<{ $active: boolean }>`
   cursor: pointer;
   border: 1px solid
     ${(p) => (p.$active ? '#ffd36f' : p.theme.colors.divider)};
-  background: ${(p) => (p.$active ? '#ffd36f33' : '#0005')};
-  color: ${(p) => (p.$active ? '#ffe9a8' : p.theme.colors.text.secondary)};
+  background: ${(p) => (p.$active ? '#ffd36f33' : p.theme.colors.bg.panel)};
+  color: ${(p) => (p.$active ? '#7a5a00' : p.theme.colors.text.secondary)};
   white-space: nowrap;
 `
 

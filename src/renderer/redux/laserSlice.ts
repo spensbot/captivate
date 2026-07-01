@@ -122,6 +122,9 @@ const laserSlice = createSlice({
     setShowZonePreview: (state, { payload }: PayloadAction<boolean>) => {
       state.showZonePreview = payload
     },
+    setLaserDacSetupComplete: (state, { payload }: PayloadAction<boolean>) => {
+      state.laserDacSetupComplete = payload === true
+    },
     addNetworkNode: (state) => {
       state.networkNodes.push(
         createDefaultLaserNetworkNode(state.networkNodes.length + 1)
@@ -191,6 +194,7 @@ export const {
   setEnableProjectionMask,
   setAudienceScanGate,
   setShowZonePreview,
+  setLaserDacSetupComplete,
   addNetworkNode,
   addDacProfile,
   addUnit,

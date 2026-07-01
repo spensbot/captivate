@@ -8,14 +8,18 @@ import { SceneType } from '../../shared/Scenes'
 
 interface Props {
   sceneType: SceneType
+  flattenScroll?: boolean
 }
 
-export default function ScenesList({ sceneType }: Props) {
+export default function ScenesList({
+  sceneType,
+  flattenScroll = false,
+}: Props) {
   const sceneIds = useControlSelector((control) => control[sceneType].ids)
   const dispatch = useDispatch()
 
   return (
-    <Root>
+    <Root $flatten={flattenScroll}>
       <DragDropContext
         onDragEnd={(res) => {
           if (!res.destination) return
@@ -49,10 +53,10 @@ export default function ScenesList({ sceneType }: Props) {
   )
 }
 
-const Root = styled.div`
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
+const Root = styled.div<{ $flatten?: boolean }>`
+  flex: ${(p) => (p.$flatten ? '0 0 auto' : '1 1 auto')};
+  min-height: ${(p) => (p.$flatten ? 'auto' : 0)};
+  overflow-y: ${(p) => (p.$flatten ? 'visible' : 'auto')};
   overflow-x: hidden;
   scrollbar-width: thin;
   scrollbar-color: #7a7a7a33 #0000;

@@ -14,7 +14,7 @@ export default function HSpad({
   saturation,
   onChange,
 }: ColorChannelProps) {
-  const [dragContainer, onMouseDown] = useDragMapped(({ x, y }) => {
+  const [dragContainer, onPointerDown] = useDragMapped(({ x, y }) => {
     onChange(x, y)
   })
 
@@ -25,7 +25,7 @@ export default function HSpad({
           'linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%)',
       }}
       ref={dragContainer}
-      onMouseDown={onMouseDown}
+      onPointerDown={onPointerDown}
     >
       <White>
         <Cursor x={hue} y={saturation} color={'#000'} />

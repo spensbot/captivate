@@ -229,10 +229,10 @@ const NewSceneRoot = styled.div`
   margin-bottom: 0.3rem;
   display: flex;
   align-items: center;
-  color: #fffa;
+  color: ${(props) => props.theme.colors.text.primary};
   border-radius: 7px;
   box-sizing: border-box;
-  border: 1px solid #7777;
+  border: 1px solid ${(props) => props.theme.colors.divider};
   background-color: ${(props) => props.theme.colors.bg.lighter};
   height: 3.4rem;
 `
@@ -254,10 +254,10 @@ const Root = styled.div<{ $isActive?: boolean; $isCued?: boolean }>`
   margin-bottom: 0.3rem;
   display: flex;
   align-items: center;
-  color: #fffa;
+  color: ${(props) => props.theme.colors.text.primary};
   border-radius: 7px;
   box-sizing: border-box;
-  border: 1px solid #7777;
+  border: 1px solid ${(props) => props.theme.colors.divider};
   background-color: ${(props) => props.theme.colors.bg.lighter};
   height: 3.4rem;
 

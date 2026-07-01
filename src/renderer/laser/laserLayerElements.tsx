@@ -70,7 +70,12 @@ export type LayerStrokeRenderOpts = {
   samplesAlong?: number
   /** 0–1 phase shift along stroke for animated preview (rainbow/gradient). */
   huePhase01?: number
+  /** Cap rainbow/gradient segment count for live editor preview (DAC output unchanged). */
+  editorPreview?: boolean
 }
+
+/** Max colored segments per beam layer in the editor preview (not DAC sampling). */
+const EDITOR_BEAM_SEGMENT_CAP = 88
 
 /** Editor canvas stroke in pt (`vectorEffect="non-scaling-stroke"` in layerStrokeSvgElements). */
 export const LASER_LAYER_STROKE_PT_NORMAL = 3.5
@@ -80,7 +85,8 @@ export function layerStrokeSegments(
   layer: LaserShapeLayer,
   caps: LaserRgbCapabilities,
   samplesAlong = 160,
-  huePhase01 = 0
+  huePhase01 = 0,
+  editorPreview = false
 ): LayerStrokeSeg[] {
   const { kind, points } = layer
 
@@ -96,7 +102,7 @@ export function layerStrokeSegments(
       { x: x0, y: y1 },
       { x: x0, y: y0 },
     ]
-    return colorAlongPolyline(r, layer, caps, samplesAlong, huePhase01)
+    return colorAlongPolyline(r, layer, caps, samplesAlong, huePhase01, editorPreview)
   }
   if (kind === 'text' && points.length >= 2) {
     const x0 = Math.min(points[0].x, points[1].x)
@@ -110,7 +116,7 @@ export function layerStrokeSegments(
       { x: x0, y: y1 },
       { x: x0, y: y0 },
     ]
-    return colorAlongPolyline(r, layer, caps, samplesAlong, huePhase01)
+    return colorAlongPolyline(r, layer, caps, samplesAlong, huePhase01, editorPreview)
   }
   if (kind === 'circle' && points.length >= 2) {
     const cx = points[0].x
@@ -122,16 +128,16 @@ export function layerStrokeSegments(
       const t = (i / n) * Math.PI * 2
       ring.push({ x: cx + rad * Math.cos(t), y: cy + rad * Math.sin(t) })
     }
-    return colorAlongPolyline(ring, layer, caps, samplesAlong, huePhase01)
+    return colorAlongPolyline(ring, layer, caps, samplesAlong, huePhase01, editorPreview)
   }
   if (kind === 'poly' && points.length >= 3) {
     const closed = [...points, points[0]]
-    return colorAlongPolyline(closed, layer, caps, samplesAlong, huePhase01)
+    return colorAlongPolyline(closed, layer, caps, samplesAlong, huePhase01, editorPreview)
   }
 
   const pl = layerPolylinePoints(layer)
   if (pl && pl.length >= 2) {
-    return colorAlongPolyline(pl, layer, caps, samplesAlong, huePhase01)
+    return colorAlongPolyline(pl, layer, caps, samplesAlong, huePhase01, editorPreview)
   }
 
   return []
@@ -174,7 +180,8 @@ function colorAlongPolyline(
   layer: LaserShapeLayer,
   caps: LaserRgbCapabilities,
   samplesAlong: number,
-  huePhase01 = 0
+  huePhase01 = 0,
+  editorPreview = false
 ): LayerStrokeSeg[] {
   if (pts.length < 2) return []
   let len = 0
@@ -189,10 +196,13 @@ function colorAlongPolyline(
     return polylineToSegs(pts, c)
   }
   const minSeg = 8
-  const maxSeg = Math.max(minSeg, samplesAlong)
+  const maxSeg = editorPreview
+    ? Math.max(minSeg, Math.min(EDITOR_BEAM_SEGMENT_CAP, samplesAlong))
+    : Math.max(minSeg, samplesAlong)
+  const density = editorPreview ? 28 : Math.max(32, samplesAlong * 1.2)
   const target = Math.max(
     minSeg,
-    Math.min(maxSeg, Math.ceil(len * Math.max(32, samplesAlong * 1.2)))
+    Math.min(maxSeg, Math.ceil(len * density))
   )
   const closedHue = polylineClosedRing(pts)
   const out: LayerStrokeSeg[] = []
@@ -270,6 +280,7 @@ export function layerStrokeSvgElements(
 ): ReactNode {
   const samplesAlong = Math.max(24, Math.min(640, opts?.samplesAlong ?? 200))
   const huePhase01 = opts?.huePhase01 ?? 0
+  const editorPreview = opts?.editorPreview === true
 
   if (
     layer.kind === 'text' &&
@@ -321,7 +332,7 @@ export function layerStrokeSvgElements(
     }
   }
 
-  const segs = layerStrokeSegments(layer, caps, samplesAlong, huePhase01)
+  const segs = layerStrokeSegments(layer, caps, samplesAlong, huePhase01, editorPreview)
   if (segs.length > 0) {
     const sw = `${Math.max(strokeWidthPt, 2)}pt`
     return (

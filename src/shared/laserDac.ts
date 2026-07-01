@@ -30,6 +30,21 @@ export interface LaserDacConnectResult {
   message?: string
 }
 
+export type LaserDacDeviceInfo = {
+  /** Device index or stable id for connect target string. */
+  id: string
+  label: string
+}
+
+export type LaserDacListDevicesRequest = {
+  backend: LaserDacBackend
+}
+
+export type LaserDacListDevicesResult = {
+  devices: LaserDacDeviceInfo[]
+  message?: string
+}
+
 export type LaserDacSessionStatus = {
   sessionId: string
   connected: boolean
@@ -73,6 +88,8 @@ export interface LaserDacPushFramePayload {
   /** FB4 / BEYOND: one frame per projection zone (no merge). */
   zoneFrames?: LaserDacZoneFrame[]
   sessionId?: string
+  /** Changes when hardware settings or scene content change (dedupe / coalesce). */
+  contentKey?: string
 }
 
 export function normalizeLaserDacPushFramePayload(
@@ -100,11 +117,17 @@ export function normalizeLaserDacPushFramePayload(
     (o as { sessionId: string }).sessionId.trim().length > 0
       ? (o as { sessionId: string }).sessionId.trim()
       : undefined
+  const contentKeyRaw = (o as { contentKey?: unknown }).contentKey
+  const contentKey =
+    typeof contentKeyRaw === 'string' && contentKeyRaw.length > 0
+      ? contentKeyRaw
+      : undefined
   return {
     pointRatePps: Math.round(pps),
     points,
     zoneFrames: zoneFrames?.length ? zoneFrames : undefined,
     sessionId,
+    contentKey,
   }
 }
 

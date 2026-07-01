@@ -299,7 +299,9 @@ export default class ProjectM extends LayerBase {
       ) {
         return
       }
-      this.sessionReady = result.ok
+      this.sessionReady =
+        result.ok &&
+        (result.mode === 'native' || presetPath.length === 0)
     } catch (_error) {
       if (requestedGeneration === this.sessionGeneration) {
         this.sessionReady = false

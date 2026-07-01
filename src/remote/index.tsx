@@ -2,7 +2,7 @@ import { createRoot } from 'react-dom/client'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ThemeProvider } from 'styled-components'
 import GlobalStyle from '../renderer/GlobalStyle'
-import * as themes from '../renderer/theme'
+import { resolveThemePack } from '../renderer/theme'
 import { Provider } from 'react-redux'
 import {
   store,
@@ -18,7 +18,7 @@ import {
   update as updateRealtimeStore,
 } from '../renderer/redux/realtimeStore'
 import { ThemeProvider as MuiThemeProvider } from '@emotion/react'
-import { muiTheme } from '../renderer/muiTheme'
+import { createMuiTheme } from '../renderer/muiTheme'
 import {
   clearHostTransport,
   registerHostTransport,
@@ -31,8 +31,26 @@ import { RemoteUiModeProvider } from './RemoteUiModeContext'
 import RemoteMobileGlobalStyle from './RemoteMobileGlobalStyle'
 import { isRemoteDispatchAllowed } from '../shared/remoteControl'
 import type { PayloadAction } from '@reduxjs/toolkit'
+import { useTypedSelector } from '../renderer/redux/store'
+import type { ThemePackId } from '../shared/appSettings'
 
-const theme = themes.dark()
+function RemoteThemeProviders({ children }: { children: React.ReactNode }) {
+  const themePackId = useTypedSelector(
+    (state) => state.gui.appSettings?.themePackId ?? 'dark'
+  ) as ThemePackId
+  const theme = useMemo(() => resolveThemePack(themePackId), [themePackId])
+  const muiTheme = useMemo(() => createMuiTheme(themePackId), [themePackId])
+
+  return (
+    <ThemeProvider theme={theme}>
+      <MuiThemeProvider theme={muiTheme}>
+        <GlobalStyle />
+        <RemoteMobileGlobalStyle />
+        {children}
+      </MuiThemeProvider>
+    </ThemeProvider>
+  )
+}
 
 let _isApplyingRemoteState = false
 let _isApplyingRemoteDispatch = false
@@ -146,15 +164,11 @@ createRoot(appRoot).render(
   <RemoteErrorBoundary>
     <Provider store={store}>
       <Provider store={realtimeStore} context={realtimeContext}>
-        <ThemeProvider theme={theme}>
-          <MuiThemeProvider theme={muiTheme}>
-            <RemoteUiModeProvider>
-              <GlobalStyle />
-              <RemoteMobileGlobalStyle />
-              <RemoteRoot />
-            </RemoteUiModeProvider>
-          </MuiThemeProvider>
-        </ThemeProvider>
+        <RemoteThemeProviders>
+          <RemoteUiModeProvider>
+            <RemoteRoot />
+          </RemoteUiModeProvider>
+        </RemoteThemeProviders>
       </Provider>
     </Provider>
   </RemoteErrorBoundary>

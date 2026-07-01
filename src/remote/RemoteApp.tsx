@@ -1,6 +1,8 @@
 import { lazy, Suspense, useState } from 'react'
 import styled from 'styled-components'
 import { useDispatch } from 'react-redux'
+import IconButton from '@mui/material/IconButton'
+import CloseIcon from '@mui/icons-material/Close'
 import RemoteModulationPage from './RemoteModulationPage'
 import RemoteStatusBar from './RemoteStatusBar'
 import Devices from '../renderer/overlays/Devices'
@@ -44,13 +46,24 @@ export default function RemoteApp() {
           <RemoteModulationPage />
         ) : (
           <Suspense fallback={<TabLoading $mobile={isMobile}>Loading DMX mixer…</TabLoading>}>
-            <Mixer hideStatusBar />
+            <Mixer hideStatusBar mobileTouchFaders={isMobile} />
           </Suspense>
         )}
       </PageBody>
       {connectionMenu ? (
         <OverlayBackdrop onClick={() => dispatch(setConnectionsMenu(false))}>
           <OverlayPanel $mobile={isMobile} onClick={(e) => e.stopPropagation()}>
+            <OverlayHeader>
+              <OverlayTitle>Connections</OverlayTitle>
+              <IconButton
+                aria-label="Close connections"
+                title="Close"
+                onClick={() => dispatch(setConnectionsMenu(false))}
+                size="large"
+              >
+                <CloseIcon />
+              </IconButton>
+            </OverlayHeader>
             <Devices embedded hideRemoteControl />
           </OverlayPanel>
         </OverlayBackdrop>
@@ -100,6 +113,12 @@ const PageBody = styled.div`
   display: flex;
   flex-direction: column;
   overflow: hidden;
+
+  > * {
+    flex: 1 1 0;
+    min-height: 0;
+    min-width: 0;
+  }
 `
 
 const TabLoading = styled.div<{ $mobile: boolean }>`
@@ -139,4 +158,30 @@ const OverlayPanel = styled.div<{ $mobile: boolean }>`
     p.$mobile ? `1px solid ${p.theme.colors.divider}` : 'none'};
   border-radius: ${(p) => (p.$mobile ? '0.65rem 0.65rem 0 0' : '0')};
   padding: ${(p) => (p.$mobile ? '0.75rem' : '0.5rem')};
+  box-sizing: border-box;
+`
+
+const OverlayHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: ${(p) => p.theme.colors.bg.darker};
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid ${(p) => p.theme.colors.divider};
+
+  .MuiIconButton-root {
+    flex-shrink: 0;
+  }
+`
+
+const OverlayTitle = styled.h2`
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: ${(p) => p.theme.colors.text.primary};
 `

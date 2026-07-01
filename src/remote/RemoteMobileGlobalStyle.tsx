@@ -4,7 +4,6 @@ import { createGlobalStyle } from 'styled-components'
 export default createGlobalStyle`
   [data-remote-ui-mode='mobile'] {
     -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
     font-size: 16px;
     --mixer-col-width: 3.5rem;
   }
@@ -85,8 +84,11 @@ export default createGlobalStyle`
     align-items: center;
   }
 
-  [data-remote-ui-mode='mobile'] [data-remote-mobile-modulation] .MuiInputBase-root {
-    font-size: 1rem;
+  [data-remote-ui-mode='mobile'] .MuiButton-root.MuiButton-contained {
+    min-height: 2.35rem;
+    font-size: 0.82rem;
+    padding-left: 0.65rem;
+    padding-right: 0.65rem;
   }
 `
 

@@ -13,15 +13,17 @@ import { LightScenesHelpButton, VisualScenesHelpButton } from './sceneHelpButton
 
 export default function SceneSelection({
   sceneType,
+  flattenScroll = false,
 }: {
   sceneType: SceneType
+  flattenScroll?: boolean
 }) {
   const dispatch = useDispatch()
   const sceneCount = useControlSelector((state) => state[sceneType].ids.length)
   const canReweightScenes = sceneCount > 1
 
   return (
-    <Root>
+    <Root $flatten={flattenScroll}>
       <Header>
         <TitleCluster>
           {`${sceneType === 'light' ? 'Light' : 'Visual'} Scenes`}
@@ -81,16 +83,18 @@ export default function SceneSelection({
         </>
       )}
       <Sp2 />
-      <ScenesList sceneType={sceneType} />
+      <ScenesList sceneType={sceneType} flattenScroll={flattenScroll} />
     </Root>
   )
 }
 
-const Root = styled.div`
+const Root = styled.div<{ $flatten?: boolean }>`
   background-color: ${(props) => props.theme.colors.bg.darker};
-  padding: 1rem 1rem 0 1rem;
-  height: 100%;
-  border-right: 1px solid ${(props) => props.theme.colors.divider};
+  padding: ${(p) => (p.$flatten ? '0' : '1rem 1rem 0 1rem')};
+  height: ${(p) => (p.$flatten ? 'auto' : '100%')};
+  flex: ${(p) => (p.$flatten ? '0 0 auto' : undefined)};
+  border-right: ${(p) =>
+    p.$flatten ? 'none' : `1px solid ${p.theme.colors.divider}`};
   display: flex;
   flex-direction: column;
   box-sizing: border-box;

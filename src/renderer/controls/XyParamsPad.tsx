@@ -42,7 +42,7 @@ function applyCenterDetent(value: number): number {
 export default function XyParamsPad({ splitIndex }: Props) {
   const dispatch = useDispatch()
 
-  const [dragContainer, onMouseDown] = useDragMapped(({ x, y, dx, dy }, e) => {
+  const [dragContainer, onPointerDown] = useDragMapped(({ x, y, dx, dy }, e) => {
     if (secondaryEnabled(e)) {
       dispatch(
         incrementBaseParams({
@@ -124,7 +124,7 @@ export default function XyParamsPad({ splitIndex }: Props) {
             makeSetBaseParamAction(splitIndex, 'y'),
           ]}
         >
-          <PlotArea ref={dragContainer} onMouseDown={onMouseDown}>
+          <PlotArea ref={dragContainer} onPointerDown={onPointerDown}>
             <CenterMarker aria-hidden />
             <XYCursorOutput splitIndex={splitIndex} />
             <XYCursorBase splitIndex={splitIndex} />

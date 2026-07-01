@@ -65,11 +65,9 @@ Download the installer for your operating system below. You can install over Cap
 
 #### macOS first-launch note
 
-Captivate is not notarized yet because this project currently does not have an Apple Developer account or Apple hardware for full Apple signing/notarization. macOS may warn on first launch.
+Captivate 2 is not Apple-notarized. Download the **architecture-specific** DMG from the release:
 
-If macOS blocks launch:
+- **Apple Silicon (M1–M4):** `Captivate.2-<version>-arm64.dmg`
+- **Intel Mac:** `Captivate.2-<version>-x64.dmg`
 
-1. Drag **Captivate 2.app** to **Applications**.
-2. In **Applications**, right-click **Captivate 2.app** and choose **Open**.
-3. Click **Open** in the warning dialog.
-4. If still blocked, go to **System Settings -> Privacy & Security** and click **Open Anyway**.
+First launch: drag to **Applications**, then **right-click → Open**. See [docs/MACOS-INSTALL.md](https://github.com/NicholasTracy/captivate-2/blob/main/docs/MACOS-INSTALL.md).

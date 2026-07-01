@@ -1,6 +1,10 @@
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useDispatch } from 'react-redux'
 import { useTypedSelector } from '../redux/store'
+import {
+  initLaserState,
+  migrateLaserProjectState,
+} from './laserProjectState'
 import {
   addDacProfile,
   addNetworkNode,
@@ -18,6 +22,7 @@ import {
   setSceneStripHeightPx,
   setSelectedUnitId,
   setShowZonePreview,
+  setLaserDacSetupComplete,
   setUnits,
 } from '../redux/laserSlice'
 import type { LaserDacProfile } from '../../shared/laserFixtureRouting'
@@ -27,7 +32,11 @@ import type { LaserScene } from './laserEditorTypes'
 /** Redux-backed laser project fields used by the Laser page. */
 export function useLaserPageStore() {
   const dispatch = useDispatch()
-  const laser = useTypedSelector((s) => s.laser)
+  const rawLaser = useTypedSelector((s) => s.laser)
+  const laser = useMemo(
+    () => migrateLaserProjectState(rawLaser ?? initLaserState()),
+    [rawLaser]
+  )
 
   return {
     laser,
@@ -95,6 +104,10 @@ export function useLaserPageStore() {
     ),
     setShowZonePreview: useCallback(
       (v: boolean) => dispatch(setShowZonePreview(v)),
+      [dispatch]
+    ),
+    setLaserDacSetupComplete: useCallback(
+      (v: boolean) => dispatch(setLaserDacSetupComplete(v)),
       [dispatch]
     ),
     addUnit: useCallback(() => dispatch(addUnit()), [dispatch]),

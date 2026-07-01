@@ -26,7 +26,7 @@ const padding = 0.05
 const padding_string = `${padding * 100}%`
 
 export default function ADSR({ width, height, ratio, duration }: Props) {
-  const [dragContainer, onMouseDown] = useDragMapped((mappedPos) => {
+  const [dragContainer, onPointerDown] = useDragMapped((mappedPos) => {
     ratio.onChange(mappedPos.x)
   })
 
@@ -59,7 +59,7 @@ export default function ADSR({ width, height, ratio, duration }: Props) {
 
   return (
     <Root style={{ width: `${width}`, height: `${height}` }}>
-      <DragContainer ref={dragContainer} onMouseDown={onMouseDown}>
+      <DragContainer ref={dragContainer} onPointerDown={onPointerDown}>
         <svg height={height} width={width}>
           <polyline
             points={GetPoints()}

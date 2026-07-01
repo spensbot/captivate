@@ -14,12 +14,16 @@ export function light() {
         panel: '#f4f4f4',
         raised: '#fafafa',
       },
-      divider: '#999',
+      divider: '#8a8a8a',
       text: {
-        primary: '#111',
-        secondary: '#777',
-        error: '#922',
-        warning: '#881',
+        primary: '#141414',
+        secondary: '#444444',
+        error: '#8b1a1a',
+        warning: '#7a5a00',
+      },
+      icon: {
+        primary: 'rgba(0, 0, 0, 0.72)',
+        secondary: 'rgba(0, 0, 0, 0.54)',
       },
     },
     font: {
@@ -53,10 +57,14 @@ export function dark(): Theme_t {
       },
       divider: '#555',
       text: {
-        primary: '#eee',
-        secondary: '#777',
+        primary: '#ececec',
+        secondary: '#a8a8a8',
         error: '#f88',
         warning: '#ff8',
+      },
+      icon: {
+        primary: 'rgba(255, 255, 255, 0.86)',
+        secondary: 'rgba(255, 255, 255, 0.68)',
       },
     },
     elevation: {

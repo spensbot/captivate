@@ -13,9 +13,41 @@ import {
   laserDacConnectRequest,
   laserDacDisconnectRequest,
   laserDacGetStatus,
+  laserDacListDevicesRequest,
+  laserDacStopOutputRequest,
   sendLaserDacPushFrame,
   send_open_page_window,
 } from '../ipcHandler'
+import StatusBar from '../menu/StatusBar'
+import {
+  LaserActionRow,
+  LaserFieldLabel,
+  LaserInlineButton,
+  LaserMainGrid,
+  LaserMuted,
+  LaserPageContent,
+  LaserPageHint,
+  LaserPageIntro,
+  LaserPageRoot,
+  LaserStandaloneRoot,
+  LaserPageTag,
+  LaserPageTitle,
+  LaserPageTitleRow,
+  LaserPanel,
+  LaserPanelBody,
+  LaserPanelHeader,
+  LaserPanelHint,
+  LaserPanelTitle,
+  LaserPrimaryButton,
+  LaserSection,
+  LaserSectionTitle,
+  LaserSelect,
+  LaserSetupCallout,
+  LaserTextInput,
+  LaserToggleLabel,
+  LaserToggleRow,
+  panelScrollbarCss,
+} from '../laser/laserUi'
 import {
   buildLaserOutputPushes,
   buildSplitPinFromParams,
@@ -26,6 +58,7 @@ import { resolveRoutesForGroup } from '../laser/laserGroupState'
 import { useActiveLightScene } from '../redux/store'
 import LaserZoningModal from '../laser/LaserZoningModal'
 import {
+  createDefaultLaserDacProfile,
   createUnassignedRoute,
   dacSessionId,
   nodeSessionId,
@@ -51,12 +84,7 @@ import type { LaserSceneGridLayout } from '../laser/laserSceneGridLayout'
 import {
   LASER_CANVAS_MIN_HEIGHT_REM,
   LASER_CANVAS_MIN_WIDTH_REM,
-  LASER_CENTER_COLUMN_MIN_WIDTH_REM,
   LASER_SCENE_STRIP_MIN_HEIGHT_PX,
-  LASER_SIDE_PANEL_MAX_WIDTH_REM,
-  LASER_SIDE_PANEL_MIN_WIDTH_REM,
-  LASER_WORKSPACE_MIN_HEIGHT_PX,
-  LASER_WORKSPACE_MIN_WIDTH_PX,
 } from '../laser/laserLayoutConstants'
 import { sceneHasAnimatedContent } from '../laser/laserEditorSceneUtils'
 import { DEFAULT_LASER_RGB_CAPABILITIES } from '../laser/laserBeamColor'
@@ -70,14 +98,41 @@ import { useLaserGroupController } from '../laser/useLaserGroupController'
 import type { LaserParamBindingId } from '../laser/laserSplitLink'
 import type { LaserParamRouteMode } from '../laser/laserGroupState'
 import { useLaserPageStore } from '../laser/useLaserPageStore'
-import LaserZoneCanvasOverlay from '../laser/LaserZoneCanvasOverlay'
+import LaserCalibrationPatternOverlay from '../laser/LaserCalibrationPatternOverlay'
 import LaserConnectionPanel from '../laser/LaserConnectionPanel'
+import LaserSetupWizard from '../laser/LaserSetupWizard'
+import LaserFirstRunPrompt from '../laser/LaserFirstRunPrompt'
+import { needsLaserDacSetup } from '../laser/laserDacSetup'
 import { collectRequiredLaserSessions } from '../laser/laserSessionConnect'
 import type { LaserFixtureUnitState } from '../laser/laserProjectState'
+import { pickHeliosDeviceTarget } from '../../shared/laserHeliosConnection'
+import {
+  resolveLaserDacHardwareSettings,
+} from '../../shared/laserHardwareSettings'
 
-/** Fixed DAC stream defaults (no longer exposed in the Laser UI footer). */
-const LASER_DAC_DEFAULT_SCAN_RATE_PPS = 30000
-const LASER_DAC_DEFAULT_OUTPUT_POWER = 75
+function patchSceneContextLiveAnim(
+  contexts: Record<string, LaserFixtureSceneContext>,
+  group: string,
+  animProgress: number
+): Record<string, LaserFixtureSceneContext> {
+  const ctx = contexts[group]
+  if (!ctx?.scene) return contexts
+  const prog = clamp01(animProgress)
+  const { scene } = ctx
+  const oldPathHue = pathHueOffset01(scene.animationPath, ctx.animProgress)
+  const scanPhase = (ctx.huePhase01 - ctx.animProgress - oldPathHue) / 0.25
+  const motion = motionPathDisplacement01(scene.animationPath, prog)
+  const pathHue = pathHueOffset01(scene.animationPath, prog)
+  return {
+    ...contexts,
+    [group]: {
+      ...ctx,
+      animProgress: prog,
+      shapeMotionDelta: motion,
+      huePhase01: prog + scanPhase * 0.25 + pathHue,
+    },
+  }
+}
 
 interface LaserAlphaPageProps {
   standalone?: boolean
@@ -91,6 +146,7 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
     laser,
     setDacProfiles,
     setActiveDacProfileId,
+    patchDacProfile,
     setNetworkNodes,
     patchUnit,
     setSelectedUnitId,
@@ -99,11 +155,11 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
     setSceneStripHeightPx,
     setEnableProjectionMask,
     setAudienceScanGate,
-    setShowZonePreview,
     addUnit,
     removeUnit,
     addDacProfile,
     addNetworkNode,
+    setLaserDacSetupComplete,
   } = useLaserPageStore()
 
   const {
@@ -117,7 +173,7 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
     sceneStripHeightPx,
     enableProjectionMask,
     audienceScanGate,
-    showZonePreview,
+    laserDacSetupComplete,
   } = laser
 
   const [isConnected, setIsConnected] = useState(false)
@@ -151,11 +207,17 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
   const prevBeamStrokeMode = useRef(beamStrokeMode)
   const [gradientModalOpen, setGradientModalOpen] = useState(false)
   const [zoningModalOpen, setZoningModalOpen] = useState(false)
+  const [setupWizardOpen, setSetupWizardOpen] = useState(false)
+  const [firstRunPromptDismissed, setFirstRunPromptDismissed] = useState(false)
+  const [calibrationTestPatternProfileId, setCalibrationTestPatternProfileId] =
+    useState<string | null>(null)
   const [connectedSessionIds, setConnectedSessionIds] = useState<string[]>([])
+  const connectedSessionIdsRef = useRef(connectedSessionIds)
+  connectedSessionIdsRef.current = connectedSessionIds
 
   const groupNames = useMemo(() => {
     const names = new Set<string>()
-    for (const unit of units) {
+    for (const unit of units ?? []) {
       if (unit.group.trim().length > 0) {
         names.add(unit.group.trim())
       }
@@ -189,11 +251,48 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
     animationProgress01,
   } = routes
 
-  const activeDacProfile = useMemo(
-    () =>
-      dacProfiles.find((p) => p.id === activeDacProfileId) ?? dacProfiles[0]!,
-    [dacProfiles, activeDacProfileId]
+  const [livePlayback01, setLivePlayback01] = useState(animationProgress01)
+  const livePlaybackRef = useRef(animationProgress01)
+
+  const activeDacProfile = useMemo(() => {
+    const profiles = Array.isArray(dacProfiles) ? dacProfiles : []
+    return (
+      profiles.find((p) => p.id === activeDacProfileId) ??
+      profiles[0] ??
+      createDefaultLaserDacProfile()
+    )
+  }, [dacProfiles, activeDacProfileId])
+
+  const activeDacHardware = useMemo(
+    () => resolveLaserDacHardwareSettings(activeDacProfile),
+    [activeDacProfile]
   )
+
+  const calibrationTestPatternActive =
+    calibrationTestPatternProfileId === activeDacProfileId
+
+  const showFirstRunPrompt =
+    needsLaserDacSetup({ laserDacSetupComplete }) &&
+    !firstRunPromptDismissed &&
+    !setupWizardOpen
+
+  const calibrationTestPatternOutputReady = useMemo(() => {
+    if (
+      calibrationTestPatternProfileId === null ||
+      !isConnected ||
+      !safetyArmed
+    ) {
+      return false
+    }
+    return connectedSessionIds.includes(
+      dacSessionId(calibrationTestPatternProfileId)
+    )
+  }, [
+    calibrationTestPatternProfileId,
+    isConnected,
+    safetyArmed,
+    connectedSessionIds,
+  ])
 
   const lightScene = useActiveLightScene((s) => s)
 
@@ -235,19 +334,75 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
       .map((s) => s.sessionId)
     setConnectedSessionIds(ids)
     setIsConnected(ids.length > 0)
+    const pushError = (st.sessions ?? [])
+      .map((s) => s.lastError?.trim())
+      .find((msg) => msg && msg.length > 0)
+    if (pushError) {
+      setDacConnectionNote(pushError)
+    } else if (ids.length > 0) {
+      setDacConnectionNote((note) =>
+        note.toLowerCase().includes('timed out') ||
+        note.toLowerCase().includes('helios') ||
+        note.toLowerCase().includes('usb')
+          ? ''
+          : note
+      )
+    }
   }, [])
 
   useEffect(() => {
     void refreshDacSessions()
   }, [refreshDacSessions])
 
+  useEffect(() => {
+    if (!isConnected || !safetyArmed) return
+    const id = window.setInterval(() => {
+      void refreshDacSessions()
+    }, 2000)
+    return () => window.clearInterval(id)
+  }, [isConnected, safetyArmed, refreshDacSessions])
+
+  useEffect(() => {
+    if (safetyArmed) return
+    void (async () => {
+      for (const sid of connectedSessionIdsRef.current) {
+        await laserDacStopOutputRequest(sid)
+      }
+    })()
+  }, [safetyArmed])
+
+  const prevTestPatternProfileIdRef = useRef<string | null>(null)
+  useEffect(() => {
+    const prev = prevTestPatternProfileIdRef.current
+    prevTestPatternProfileIdRef.current = calibrationTestPatternProfileId
+    if (prev !== null && prev !== calibrationTestPatternProfileId) {
+      void laserDacStopOutputRequest(dacSessionId(prev))
+    }
+    if (
+      calibrationTestPatternProfileId !== null &&
+      calibrationTestPatternProfileId !== prev
+    ) {
+      void laserDacStopOutputRequest(
+        dacSessionId(calibrationTestPatternProfileId)
+      )
+    }
+  }, [calibrationTestPatternProfileId])
+
   const connectDacProfile = useCallback(
     async (profile: LaserDacProfile) => {
       const sid = dacSessionId(profile.id)
+      let target = profile.connectionTarget
+      if (profile.backend === 'helios') {
+        const scan = await laserDacListDevicesRequest('helios')
+        target = pickHeliosDeviceTarget(scan.devices, profile.connectionTarget)
+        if (target !== profile.connectionTarget.trim()) {
+          patchDacProfile(profile.id, { connectionTarget: target })
+        }
+      }
       const res = await laserDacConnectRequest({
         protocol: profile.outputProtocol,
         backend: profile.backend,
-        target: profile.connectionTarget,
+        target,
         sessionId: sid,
       })
       setDacConnectionNote(
@@ -255,7 +410,7 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
       )
       await refreshDacSessions()
     },
-    [refreshDacSessions]
+    [refreshDacSessions, patchDacProfile]
   )
 
   const connectNetworkNode = useCallback(
@@ -285,11 +440,6 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
     },
     [refreshDacSessions]
   )
-
-  const highlightZoneId = useMemo(() => {
-    const route = selectedUnit?.outputRoute
-    return route?.kind === 'dac_zone' ? route.zoneId : null
-  }, [selectedUnit?.outputRoute])
 
   useEffect(() => {
     if (!safetyArmed) return
@@ -345,8 +495,8 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
 
   const effectiveAnimationProgress = useMemo(() => {
     if (animationProgressRoute === 'split') return clamp01(splitAnimProgress)
-    return clamp01(animationProgress01)
-  }, [animationProgressRoute, animationProgress01, splitAnimProgress])
+    return clamp01(livePlayback01)
+  }, [animationProgressRoute, livePlayback01, splitAnimProgress])
 
   const effectiveAnimSpeed = useMemo(() => {
     if (playbackSpeedRoute === 'manual') return animSpeed
@@ -374,21 +524,38 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
     prevBeamStrokeMode.current = beamStrokeMode
   }, [beamStrokeMode])
 
+  useEffect(() => {
+    if (animPlaying || animationProgressRoute === 'split') return
+    livePlaybackRef.current = animationProgress01
+    setLivePlayback01(animationProgress01)
+  }, [animationProgress01, animPlaying, animationProgressRoute])
+
   const animSpeedRef = useRef(effectiveAnimSpeed)
   animSpeedRef.current = effectiveAnimSpeed
+  const animPlayingRef = useRef(animPlaying)
+  animPlayingRef.current = animPlaying
+  const animationProgressRouteRef = useRef(animationProgressRoute)
+  animationProgressRouteRef.current = animationProgressRoute
+  const activeLaserGroupRef = useRef(activeLaserGroup)
+  activeLaserGroupRef.current = activeLaserGroup
 
   useEffect(() => {
     if (!animPlaying) return
     if (animationProgressRoute === 'split') return
     let raf = 0
     let last = performance.now()
+    let lastUiSent = 0
+    let progress = livePlaybackRef.current
     const tick = (now: number) => {
       const dt = (now - last) / 1000
       last = now
-      setAnimationProgress01((p) => {
-        const next = (p + dt * animSpeedRef.current * 0.52) % 1
-        return next < 0.0015 ? 0 : next
-      })
+      progress = (progress + dt * animSpeedRef.current * 0.52) % 1
+      if (progress < 0) progress += 1
+      livePlaybackRef.current = progress
+      if (now - lastUiSent >= 125) {
+        lastUiSent = now
+        setLivePlayback01(progress)
+      }
       raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
@@ -427,19 +594,41 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
     [splitXOut, splitYOut, splitWOut, splitHOut]
   )
 
+  const laserAnimPreview = useMemo(
+    () => ({
+      playing: animPlaying && animationProgressRoute !== 'split',
+      playbackRef: livePlaybackRef,
+      scanPhase01: scanPhaseEffective,
+      animationPath: activeLaserScene?.animationPath,
+      samplesAlong: samplesLinked,
+    }),
+    [
+      animPlaying,
+      animationProgressRoute,
+      scanPhaseEffective,
+      activeLaserScene?.animationPath,
+      samplesLinked,
+    ]
+  )
+
+  const laserPresetDisplay = useMemo(() => {
+    if (!activeLaserScene || activeLaserScene.contentMode !== 'preset') {
+      return undefined
+    }
+    return { scene: activeLaserScene, splitPin: laserSplitPin }
+  }, [activeLaserScene, laserSplitPin])
+
   const editorLayers = useMemo(() => {
     if (!activeLaserScene) return []
     return getLaserSceneDisplayLayers(
       activeLaserScene,
       laserSplitPin,
-      effectiveAnimationProgress,
-      shapeMotionDelta
+      effectiveAnimationProgress
     )
   }, [
     activeLaserScene,
     laserSplitPin,
     effectiveAnimationProgress,
-    shapeMotionDelta,
   ])
 
   const selectedLayer = useMemo(() => {
@@ -490,12 +679,20 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
     const out: Record<string, LaserFixtureSceneContext> = {}
     const maxPts = Math.min(
       4095,
-      Math.max(200, Math.round(LASER_DAC_DEFAULT_SCAN_RATE_PPS / 8))
+      Math.max(
+        200,
+        Math.round(activeDacHardware.scanRatePps / 8)
+      )
     )
+    const activeGroupKey = activeLaserGroup.trim()
     for (const g of groupNames) {
       const slot = groupSlots[g]
-      if (!slot?.activeSceneId) continue
-      const scene = laserScenes.find((s) => s.id === slot.activeSceneId) ?? null
+      const sceneId =
+        g === activeGroupKey && activeLaserSceneId
+          ? activeLaserSceneId
+          : slot?.activeSceneId
+      if (!sceneId) continue
+      const scene = laserScenes.find((s) => s.id === sceneId) ?? null
       if (!scene) continue
       const ix = findLaserGroupSplitIndex(lightScene, g)
       const bp =
@@ -544,14 +741,28 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
     lightScene,
     activeLaserGroup,
     routes,
+    activeDacHardware.scanRatePps,
+    activeLaserGroup,
+    activeLaserSceneId,
   ])
+
+  const sceneContextByGroupRef = useRef(sceneContextByGroup)
+  sceneContextByGroupRef.current = sceneContextByGroup
+  const dacProfilesRef = useRef(dacProfiles)
+  dacProfilesRef.current = dacProfiles
+  const unitsRef = useRef(units)
+  unitsRef.current = units
+  const calibrationTestPatternProfileIdRef = useRef(
+    calibrationTestPatternProfileId
+  )
+  calibrationTestPatternProfileIdRef.current = calibrationTestPatternProfileId
+  const connectedSessionIdsRefForOutput = useRef(connectedSessionIds)
+  connectedSessionIdsRefForOutput.current = connectedSessionIds
+  const activeDacHardwareRef = useRef(activeDacHardware)
+  activeDacHardwareRef.current = activeDacHardware
 
   useEffect(() => {
     if (!isConnected || !safetyArmed) return
-    const power = Math.max(
-      0,
-      Math.min(1, LASER_DAC_DEFAULT_OUTPUT_POWER / 100)
-    )
     let raf = 0
     let lastSent = 0
     const minIntervalMs = 1000 / 30
@@ -559,25 +770,38 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
     const tick = (now: number) => {
       if (now - lastSent >= minIntervalMs) {
         lastSent = now
+        let contexts = sceneContextByGroupRef.current
+        if (
+          animPlayingRef.current &&
+          animationProgressRouteRef.current === 'manual'
+        ) {
+          contexts = patchSceneContextLiveAnim(
+            contexts,
+            activeLaserGroupRef.current,
+            livePlaybackRef.current
+          )
+        }
         const { dacComposites, nodePushes } = buildLaserOutputPushes({
-          fixtures: units.map((u) => ({
+          fixtures: unitsRef.current.map((u) => ({
             id: u.id,
             group: u.group.trim(),
             enabled: u.enabled,
             outputRoute: u.outputRoute,
             laserChannels: u.laserChannels,
           })),
-          dacProfiles,
-          sceneContextByGroup,
-          pointRatePps: LASER_DAC_DEFAULT_SCAN_RATE_PPS,
-          outputPower01: power,
+          dacProfiles: dacProfilesRef.current,
+          sceneContextByGroup: contexts,
+          defaultOutputPower01: activeDacHardwareRef.current.outputPower01,
+          calibrationTestPatternProfileId:
+            calibrationTestPatternProfileIdRef.current,
         })
+        const sessions = connectedSessionIdsRefForOutput.current
         for (const push of dacComposites) {
-          if (!connectedSessionIds.includes(push.sessionId)) continue
+          if (!sessions.includes(push.sessionId)) continue
           sendLaserDacPushFrame(push)
         }
         for (const push of nodePushes) {
-          if (!connectedSessionIds.includes(push.sessionId)) continue
+          if (!sessions.includes(push.sessionId)) continue
           sendLaserDacPushFrame(push)
         }
       }
@@ -585,15 +809,7 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [
-    isConnected,
-    safetyArmed,
-    units,
-    groupSlots,
-    dacProfiles,
-    sceneContextByGroup,
-    connectedSessionIds,
-  ])
+  }, [isConnected, safetyArmed])
 
   const viewportMaskResolved = useMemo(() => {
     const m = activeLaserScene?.viewportMask
@@ -690,7 +906,7 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
       case 'playbackSpeed':
         return (animSpeed - 0.2) / 2.8
       case 'animProgress':
-        return animationProgress01
+        return livePlayback01
       default:
         return 0.5
     }
@@ -830,45 +1046,63 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
     patchUnit(selectedUnit.id, patch)
   }
 
-  return (
-    <WorkspaceRoot>
-      <WorkspaceInner>
-      <Header>
-        <BoltIcon fontSize="small" />
-        <HeaderTitle>Laser Engine (Alpha)</HeaderTitle>
-        <HeaderTag>Laser · ILDA and IDN</HeaderTag>
-        {!standalone && (
-          <HeaderOpenButton
-            type="button"
-            onClick={() => send_open_page_window('Laser')}
-          >
-            <OpenInNewIcon fontSize="small" />
-            Open / Focus Laser Window
-          </HeaderOpenButton>
-        )}
-      </Header>
+  const pageBody = (
+    <>
+      {!standalone && <StatusBar />}
+      <LaserPageContent>
+      <LaserPageIntro>
+        <LaserPageTitleRow>
+          <BoltIcon fontSize="small" />
+          <LaserPageTitle>Laser</LaserPageTitle>
+          <LaserPageTag>ILDA · IDN</LaserPageTag>
+          {!standalone && (
+            <LaserInlineButton
+              onClick={() => send_open_page_window('Laser')}
+              startIcon={<OpenInNewIcon fontSize="small" />}
+              sx={{ marginLeft: 'auto' }}
+            >
+              Open laser window
+            </LaserInlineButton>
+          )}
+        </LaserPageTitleRow>
+        <LaserPageHint>
+          Configure fixtures and routing on the left, draw graphics in the center,
+          and connect or arm DAC output on the right.
+        </LaserPageHint>
+      </LaserPageIntro>
 
-      <MainStack>
-      <MainGrid>
-        <SetupPanel>
-          <PanelTitle>Laser Setup</PanelTitle>
-          <PanelBody>
-            <SectionBlock>
-              <SectionBlockTitle>Laser Units</SectionBlockTitle>
-              <ActionRow>
-                <TinyButton type="button" onClick={addLaserUnit}>
-                  <AddIcon fontSize="inherit" />
-                  Add Laser
-                </TinyButton>
-                <TinyButton
-                  type="button"
+      <LaserMainGrid>
+        <LaserPanel>
+          <LaserPanelHeader>
+            <LaserPanelTitle>Fixtures &amp; routing</LaserPanelTitle>
+            <LaserPanelHint>
+              Add laser units, assign DAC zones, and link group parameters to
+              lighting splits.
+            </LaserPanelHint>
+          </LaserPanelHeader>
+          {needsLaserDacSetup({ laserDacSetupComplete }) ? (
+            <LaserSetupCallout>
+              <span>No laser DAC configured yet.</span>
+              <LaserPrimaryButton onClick={() => setSetupWizardOpen(true)}>
+                Open setup wizard
+              </LaserPrimaryButton>
+            </LaserSetupCallout>
+          ) : null}
+          <LaserPanelBody>
+            <LaserSection>
+              <LaserSectionTitle>Laser units</LaserSectionTitle>
+              <LaserActionRow>
+                <LaserInlineButton onClick={addLaserUnit} startIcon={<AddIcon fontSize="inherit" />}>
+                  Add laser
+                </LaserInlineButton>
+                <LaserInlineButton
                   onClick={removeSelectedLaserUnit}
                   disabled={selectedUnit === null}
+                  startIcon={<DeleteOutlineIcon fontSize="inherit" />}
                 >
-                  <DeleteOutlineIcon fontSize="inherit" />
                   Remove
-                </TinyButton>
-              </ActionRow>
+                </LaserInlineButton>
+              </LaserActionRow>
               <UnitList>
                 {units.map((unit) => (
                   <UnitRow
@@ -887,30 +1121,30 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
                   </UnitRow>
                 ))}
                 {units.length <= 0 && (
-                  <MutedLine>No laser units configured yet.</MutedLine>
+                  <LaserMuted>No laser units configured yet.</LaserMuted>
                 )}
               </UnitList>
-            </SectionBlock>
+</LaserSection>
 
-            <SectionBlock>
-              <SectionBlockTitle>Selected Unit</SectionBlockTitle>
+            <LaserSection>
+              <LaserSectionTitle>Selected Unit</LaserSectionTitle>
               {selectedUnit === null ? (
-                <MutedLine>Select a laser unit to edit settings.</MutedLine>
+                <LaserMuted>Select a laser unit to edit settings.</LaserMuted>
               ) : (
                 <>
-                  <MiniFieldLabel>Name</MiniFieldLabel>
-                  <TextField
+                  <LaserFieldLabel>Name</LaserFieldLabel>
+                  <LaserTextInput
                     value={selectedUnit.name}
                     onChange={(event) => updateSelectedUnit({ name: event.target.value })}
                   />
-                  <MiniFieldLabel>Group</MiniFieldLabel>
-                  <TextField
+                  <LaserFieldLabel>Group</LaserFieldLabel>
+                  <LaserTextInput
                     value={selectedUnit.group}
                     onChange={(event) => updateSelectedUnit({ group: event.target.value })}
                     placeholder="Main Lasers"
                   />
-                  <MiniFieldLabel>Output routing</MiniFieldLabel>
-                  <SelectLike
+                  <LaserFieldLabel>Output routing</LaserFieldLabel>
+                  <LaserSelect
                     value={selectedUnit.outputRoute.kind}
                     onChange={(event) => {
                       const kind = event.target.value as LaserFixtureOutputRoute['kind']
@@ -938,11 +1172,11 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
                     <option value="unassigned">Unassigned</option>
                     <option value="dac_zone">DAC projection zone</option>
                     <option value="network_node">Network node</option>
-                  </SelectLike>
+                  </LaserSelect>
                   {selectedUnit.outputRoute.kind === 'dac_zone' ? (
                     <>
-                      <MiniFieldLabel>DAC profile</MiniFieldLabel>
-                      <SelectLike
+                      <LaserFieldLabel>DAC profile</LaserFieldLabel>
+                      <LaserSelect
                         value={selectedUnit.outputRoute.dacProfileId}
                         onChange={(event) => {
                           const pid = event.target.value
@@ -962,9 +1196,9 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
                             {p.name}
                           </option>
                         ))}
-                      </SelectLike>
-                      <MiniFieldLabel>Projection zone</MiniFieldLabel>
-                      <SelectLike
+                      </LaserSelect>
+                      <LaserFieldLabel>Projection zone</LaserFieldLabel>
+                      <LaserSelect
                         value={selectedUnit.outputRoute.zoneId}
                         onChange={(event) => {
                           const route = selectedUnit.outputRoute
@@ -991,13 +1225,13 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
                             {z.name}
                           </option>
                         ))}
-                      </SelectLike>
+                      </LaserSelect>
                     </>
                   ) : null}
                   {selectedUnit.outputRoute.kind === 'network_node' ? (
                     <>
-                      <MiniFieldLabel>Network node</MiniFieldLabel>
-                      <SelectLike
+                      <LaserFieldLabel>Network node</LaserFieldLabel>
+                      <LaserSelect
                         value={
                           selectedUnit.outputRoute.kind === 'network_node'
                             ? selectedUnit.outputRoute.nodeId
@@ -1020,20 +1254,20 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
                             {n.name}
                           </option>
                         ))}
-                      </SelectLike>
+                      </LaserSelect>
                     </>
                   ) : null}
-                  <SafetyToggleRow>
-                    <SafetyToggleLabel style={{ fontSize: '0.72rem' }}>
+                  <LaserToggleRow>
+                    <LaserToggleLabel>
                       Enabled
-                    </SafetyToggleLabel>
+                    </LaserToggleLabel>
                     <ToggleSwitch
                       checked={selectedUnit.enabled}
                       onChange={(next) => updateSelectedUnit({ enabled: next })}
                       aria-label="Laser unit enabled"
                     />
-                  </SafetyToggleRow>
-                  <MiniFieldLabel>Output channels (RGBY+)</MiniFieldLabel>
+                  </LaserToggleRow>
+                  <LaserFieldLabel>Output channels (RGBY+)</LaserFieldLabel>
                   <ChannelGrid>
                     {(
                       [
@@ -1044,10 +1278,10 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
                         ['white', 'White'],
                       ] as const
                     ).map(([key, label]) => (
-                      <SafetyToggleRow key={key}>
-                        <SafetyToggleLabel style={{ fontSize: '0.72rem' }}>
+                      <LaserToggleRow key={key}>
+                        <LaserToggleLabel>
                           {label}
-                        </SafetyToggleLabel>
+                        </LaserToggleLabel>
                         <ToggleSwitch
                           checked={selectedUnit.laserChannels[key]}
                           onChange={(next) =>
@@ -1060,23 +1294,23 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
                           }
                           aria-label={`${label} channel`}
                         />
-                      </SafetyToggleRow>
+                      </LaserToggleRow>
                     ))}
                   </ChannelGrid>
                 </>
               )}
-            </SectionBlock>
+</LaserSection>
 
-            <SectionBlock>
-              <SectionBlockTitle>Group routing</SectionBlockTitle>
-              <MutedLine>
+            <LaserSection>
+              <LaserSectionTitle>Group routing</LaserSectionTitle>
+              <LaserMuted>
                 Each fixture group keeps its own latched scene and split links. Output
                 hardware is assigned per fixture (DAC zone or network node).
-              </MutedLine>
+              </LaserMuted>
               {groupNames.length <= 0 ? (
-                <MutedLine style={{ marginTop: '0.35rem' }}>
+                <LaserMuted style={{ marginTop: '0.35rem' }}>
                   Create a group name on a laser unit to enable routing.
-                </MutedLine>
+                </LaserMuted>
               ) : (
                 <GroupRouteList>
                   {groupNames.map((groupName) => {
@@ -1096,7 +1330,7 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
                           >
                             {groupName}
                           </GroupPickButton>
-                          <SelectLike
+                          <LaserSelect
                             value={slotSceneId ?? ''}
                             onChange={(event) => {
                               const id = event.target.value
@@ -1116,7 +1350,7 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
                                 {s.name}
                               </option>
                             ))}
-                          </SelectLike>
+                          </LaserSelect>
                         </GroupRouteMain>
                         <GroupRouteMeta>
                           {latchedScene
@@ -1129,15 +1363,15 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
                   })}
                 </GroupRouteList>
               )}
-            </SectionBlock>
+</LaserSection>
 
-            <SectionBlock>
-              <SectionBlockTitle>{splitLinkTitle}</SectionBlockTitle>
-              <MutedLine>
+            <LaserSection>
+              <LaserSectionTitle>{splitLinkTitle}</LaserSectionTitle>
+              <LaserMuted>
                 Split mode adds named sliders on this group&apos;s lighting split (e.g. Dot
                 density, Scan path). Use the split scene in the lighting workspace to drive
                 live ILDA/IDN output.
-              </MutedLine>
+              </LaserMuted>
               <ParamMapGrid style={{ marginTop: '0.35rem' }}>
                 <ParamMapItem>
                   <ParamMapHeader>
@@ -1309,17 +1543,22 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
                   ) : null}
                 </ParamMapItem>
               </ParamMapGrid>
-            </SectionBlock>
-          </PanelBody>
-        </SetupPanel>
+</LaserSection>
+          </LaserPanelBody>
+        </LaserPanel>
 
-        <DrawPanel>
-          <PanelTitle>Main Laser Control</PanelTitle>
+        <LaserPanel>
+          <LaserPanelHeader>
+            <LaserPanelTitle>Graphics editor</LaserPanelTitle>
+            <LaserPanelHint>
+              Draw ILDA vector content, import SVG, and tune animation parameters.
+            </LaserPanelHint>
+          </LaserPanelHeader>
           <DrawPanelBody>
             <GraphicMetaRow>
               <MetaField>
-                <MiniFieldLabel>Graphic Name</MiniFieldLabel>
-                <TextField
+                <LaserFieldLabel>Graphic Name</LaserFieldLabel>
+                <LaserTextInput
                   value={activeLaserScene?.name ?? ''}
                   onChange={(event) => {
                     const v = event.target.value
@@ -1334,25 +1573,20 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
               </MetaField>
             </GraphicMetaRow>
             <EditorImportRow>
-              <TinyButton
-                type="button"
+              <LaserInlineButton
                 onClick={() => setSvgImportOpen(true)}
                 disabled={activeLaserScene === null}
+                startIcon={<UploadFileIcon fontSize="inherit" />}
               >
-                <UploadFileIcon fontSize="inherit" />
-                Import Vector
-              </TinyButton>
-              <TinyButton type="button">Save Graphic</TinyButton>
+                Import vector
+              </LaserInlineButton>
+              <LaserInlineButton disabled>Save graphic</LaserInlineButton>
             </EditorImportRow>
             <LaserSkyModePanel scene={activeLaserScene} onPatchScene={patchActiveLaserScene} />
             <EditorMainRow>
             <EditorCanvasSlot>
-              {showZonePreview ? (
-                <LaserZoneCanvasOverlay
-                  zones={activeDacProfile.zones}
-                  fixtureNamesByZone={zoneFixtureLabels}
-                  highlightZoneId={highlightZoneId}
-                />
+              {calibrationTestPatternActive ? (
+                <LaserCalibrationPatternOverlay visible />
               ) : null}
               {activeLaserScene ? (
                 <LaserEditorCanvas
@@ -1372,7 +1606,9 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
                   onRainbowCyclesChange={setRainbowCycles}
                   onOpenBeamGradientModal={() => setGradientModalOpen(true)}
                   strokeRenderOpts={strokeRenderOpts}
-                  shapeMotionDelta={{ x: 0, y: 0 }}
+                  shapeMotionDelta={shapeMotionDelta}
+                  animPreview={laserAnimPreview}
+                  presetDisplay={laserPresetDisplay}
                   projectionMaskEnabled={enableProjectionMask}
                   audienceScanGateEnabled={audienceScanGate}
                   viewportMask={viewportMaskResolved}
@@ -1382,7 +1618,7 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
                 />
               ) : (
                 <EditorFallback>
-                  <MutedLine>Select or create a scene below.</MutedLine>
+                  <LaserMuted>Select or create a scene below.</LaserMuted>
                 </EditorFallback>
               )}
             </EditorCanvasSlot>
@@ -1395,7 +1631,14 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
                 scanPathLocked={scanMotionRoute !== 'manual'}
                 onScanPathPhase01={setScanPathPhase01}
                 animPlaying={animPlaying}
-                onAnimPlayingToggle={() => setAnimPlaying((p) => !p)}
+                onAnimPlayingToggle={() => {
+                  setAnimPlaying((playing) => {
+                    if (playing) {
+                      setAnimationProgress01(livePlaybackRef.current)
+                    }
+                    return !playing
+                  })
+                }}
                 animSpeed={animSpeed}
                 onAnimSpeed={setAnimSpeed}
                 effectiveAnimSpeed={effectiveAnimSpeed}
@@ -1405,9 +1648,12 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
                 animationProgressSliderLocked={
                   animationProgressRoute !== 'manual' || animPlaying
                 }
-                onAnimationProgress={(v) =>
-                  setAnimationProgress01(Math.max(0, Math.min(1, v)))
-                }
+                onAnimationProgress={(v) => {
+                  const clamped = Math.max(0, Math.min(1, v))
+                  livePlaybackRef.current = clamped
+                  setLivePlayback01(clamped)
+                  setAnimationProgress01(clamped)
+                }}
                 selectedLayer={selectedLayer}
                 textDraft={textDraft}
                 onTextDraft={(v) => {
@@ -1427,11 +1673,16 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
             ) : null}
             </EditorMainRow>
           </DrawPanelBody>
-        </DrawPanel>
+        </LaserPanel>
 
-        <ControlPanel>
-          <PanelTitle>Control + Safety</PanelTitle>
-          <PanelBody>
+        <LaserPanel>
+          <LaserPanelHeader>
+            <LaserPanelTitle>Output &amp; safety</LaserPanelTitle>
+            <LaserPanelHint>
+              Connect your DAC, tune hardware settings, then arm laser output.
+            </LaserPanelHint>
+          </LaserPanelHeader>
+          <LaserPanelBody>
             <LaserConnectionPanel
               dacProfiles={dacProfiles}
               activeDacProfileId={activeDacProfileId}
@@ -1445,43 +1696,45 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
               onAddDacProfile={addDacProfile}
               onAddNetworkNode={addNetworkNode}
               onOpenZones={() => setZoningModalOpen(true)}
+              onOpenSetupWizard={() => setSetupWizardOpen(true)}
+              calibrationTestPatternActive={calibrationTestPatternActive}
+              onCalibrationTestPatternActiveChange={(active) =>
+                setCalibrationTestPatternProfileId(
+                  active ? activeDacProfileId : null
+                )
+              }
+              calibrationTestPatternOutputReady={
+                calibrationTestPatternOutputReady
+              }
               onConnectDac={(profile) => void connectDacProfile(profile)}
               onConnectNode={(node) => void connectNetworkNode(node)}
               onDisconnectSession={(sid) => void disconnectSession(sid)}
               onDisconnectAll={() => void disconnectSession()}
             />
 
-            <SectionBlock>
-              <SectionBlockTitle>Safety</SectionBlockTitle>
+            <LaserSection>
+              <LaserSectionTitle>Safety</LaserSectionTitle>
               <LaserArmHoldButton armed={safetyArmed} onSetArmed={setSafetyArmed} />
-              <SafetyToggleRow>
-                <SafetyToggleLabel>Show zone layout on canvas</SafetyToggleLabel>
-                <ToggleSwitch
-                  checked={showZonePreview}
-                  onChange={setShowZonePreview}
-                  aria-label="Show DAC zone layout on laser canvas"
-                />
-              </SafetyToggleRow>
-              <SafetyToggleRow>
-                <SafetyToggleLabel>Projection mask</SafetyToggleLabel>
+              <LaserToggleRow>
+                <LaserToggleLabel>Projection mask</LaserToggleLabel>
                 <ToggleSwitch
                   checked={enableProjectionMask}
                   onChange={setEnableProjectionMask}
                   aria-label="Projection mask enabled"
                 />
-              </SafetyToggleRow>
-              <SafetyToggleRow>
-                <SafetyToggleLabel>Audience scan gate</SafetyToggleLabel>
+              </LaserToggleRow>
+              <LaserToggleRow>
+                <LaserToggleLabel>Audience scan gate</LaserToggleLabel>
                 <ToggleSwitch
                   checked={audienceScanGate}
                   onChange={setAudienceScanGate}
                   aria-label="Audience scan gate"
                 />
-              </SafetyToggleRow>
-            </SectionBlock>
-          </PanelBody>
-        </ControlPanel>
-      </MainGrid>
+              </LaserToggleRow>
+</LaserSection>
+          </LaserPanelBody>
+        </LaserPanel>
+      </LaserMainGrid>
 
       <SceneSection>
         <SceneResizeHandle onPointerDown={onSceneResizePointerDown} />
@@ -1510,7 +1763,6 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
       />
         </SceneDock>
       </SceneSection>
-      </MainStack>
 
       <LaserSvgImportDialog
         open={svgImportOpen}
@@ -1546,6 +1798,31 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
           )
         }}
       />
+      <LaserFirstRunPrompt
+        open={showFirstRunPrompt}
+        onOpenWizard={() => {
+          setFirstRunPromptDismissed(true)
+          setSetupWizardOpen(true)
+        }}
+        onDismiss={() => setFirstRunPromptDismissed(true)}
+      />
+      <LaserSetupWizard
+        open={setupWizardOpen}
+        profile={activeDacProfile}
+        onClose={() => setSetupWizardOpen(false)}
+        onSave={(next) => {
+          patchDacProfile(next.id, next)
+          setLaserDacSetupComplete(true)
+        }}
+        onOpenZones={() => {
+          setZoningModalOpen(true)
+        }}
+        testPatternActive={calibrationTestPatternActive}
+        onTestPatternActiveChange={(active) =>
+          setCalibrationTestPatternProfileId(active ? activeDacProfileId : null)
+        }
+        testPatternOutputReady={calibrationTestPatternOutputReady}
+      />
       <LaserGradientModal
         open={gradientModalOpen}
         onClose={() => setGradientModalOpen(false)}
@@ -1559,9 +1836,15 @@ export function LaserAlphaPage({ standalone = false }: LaserAlphaPageProps) {
         }}
         laserCaps={editorLaserCaps}
       />
-      </WorkspaceInner>
-    </WorkspaceRoot>
+      </LaserPageContent>
+    </>
   )
+
+  if (standalone) {
+    return <LaserStandaloneRoot>{pageBody}</LaserStandaloneRoot>
+  }
+
+  return <LaserPageRoot>{pageBody}</LaserPageRoot>
 }
 
 function fixtureRouteLabel(
@@ -1664,108 +1947,6 @@ const OpenButton = styled.button`
   cursor: pointer;
 `
 
-const WorkspaceRoot = styled.div`
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  box-sizing: border-box;
-  overflow: auto;
-  scrollbar-width: thin;
-`
-
-const WorkspaceInner = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  padding: 0.7rem;
-  box-sizing: border-box;
-  width: 100%;
-  min-width: ${LASER_WORKSPACE_MIN_WIDTH_PX}px;
-  min-height: max(100%, ${LASER_WORKSPACE_MIN_HEIGHT_PX}px);
-`
-
-const Header = styled.div`
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  border: 1px solid ${(props) => props.theme.colors.divider};
-  background: ${(props) => props.theme.colors.bg.darker};
-  border-radius: 0.38rem;
-  padding: 0.32rem 0.75rem;
-  min-width: 0;
-`
-
-const HeaderTitle = styled.div`
-  font-size: 0.88rem;
-  font-weight: 700;
-  text-align: center;
-`
-
-const HeaderTag = styled.div`
-  font-size: 0.65rem;
-  border: 1px solid ${(props) => props.theme.colors.divider};
-  border-radius: 999px;
-  padding: 0.1rem 0.38rem;
-  color: ${(props) => props.theme.colors.text.secondary};
-`
-
-const HeaderOpenButton = styled.button`
-  margin-left: auto;
-  border: 1px solid ${(props) => props.theme.colors.divider};
-  background: ${(props) => props.theme.colors.bg.primary};
-  color: ${(props) => props.theme.colors.text.primary};
-  border-radius: 0.33rem;
-  padding: 0.28rem 0.5rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.72rem;
-  cursor: pointer;
-`
-
-const MainGrid = styled.div`
-  flex: 1 1 0;
-  min-height: 14rem;
-  min-width: 0;
-  display: grid;
-  /* Center column grows first; side panels cap width and scroll internally. */
-  grid-template-columns:
-    minmax(${LASER_SIDE_PANEL_MIN_WIDTH_REM}rem, min(${LASER_SIDE_PANEL_MAX_WIDTH_REM}rem, 24vw))
-    minmax(${LASER_CENTER_COLUMN_MIN_WIDTH_REM}rem, 1fr)
-    minmax(${LASER_SIDE_PANEL_MIN_WIDTH_REM}rem, min(${LASER_SIDE_PANEL_MAX_WIDTH_REM}rem, 24vw));
-  gap: 0.55rem;
-  align-items: stretch;
-  overflow: hidden;
-`
-
-const SetupPanel = styled.div`
-  border: 1px solid ${(props) => props.theme.colors.divider};
-  border-radius: 0.45rem;
-  background: ${(props) => props.theme.colors.bg.darker};
-  min-height: 0;
-  min-width: 0;
-  width: 100%;
-  max-width: ${LASER_SIDE_PANEL_MAX_WIDTH_REM}rem;
-  justify-self: stretch;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-`
-
-const DrawPanel = styled.div`
-  border: 1px solid ${(props) => props.theme.colors.divider};
-  border-radius: 0.45rem;
-  background: ${(props) => props.theme.colors.bg.darker};
-  min-height: 0;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-`
-
 const DrawPanelBody = styled.div`
   flex: 1 1 0;
   min-height: 0;
@@ -1784,6 +1965,10 @@ const EditorMainRow = styled.div`
   align-items: stretch;
   gap: 0.45rem;
   overflow: hidden;
+
+  @media (max-width: 960px) {
+    flex-direction: column;
+  }
 `
 
 const EditorCanvasSlot = styled.div`
@@ -1802,72 +1987,13 @@ const EditorCanvasSlot = styled.div`
   }
 `
 
-const ControlPanel = styled(SetupPanel)`
-  justify-self: stretch;
-`
-
-const PanelTitle = styled.div`
-  padding: 0.48rem 0.58rem;
-  border-bottom: 1px solid ${(props) => props.theme.colors.divider};
-  font-size: 0.78rem;
-  font-weight: 700;
-`
-
-const PanelBody = styled.div`
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 0.52rem;
-  padding: 0.55rem;
-  scrollbar-width: thin;
-`
-
-const SectionBlock = styled.div`
-  border: 1px solid ${(props) => props.theme.colors.divider};
-  border-radius: 0.35rem;
-  background: ${(props) => props.theme.colors.bg.primary};
-  padding: 0.45rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-`
-
-const SectionBlockTitle = styled.div`
-  font-size: 0.73rem;
-  font-weight: 700;
-`
-
-const ActionRow = styled.div`
-  display: flex;
-  gap: 0.35rem;
-`
-
-const TinyButton = styled.button`
-  border: 1px solid ${(props) => props.theme.colors.divider};
-  background: ${(props) => props.theme.colors.bg.primary};
-  color: ${(props) => props.theme.colors.text.primary};
-  border-radius: 0.3rem;
-  padding: 0.24rem 0.42rem;
-  font-size: 0.67rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  cursor: pointer;
-
-  :disabled {
-    opacity: 0.45;
-    cursor: default;
-  }
-`
-
 const UnitList = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
   max-height: 12rem;
   overflow: auto;
+  ${panelScrollbarCss}
 `
 
 const UnitRow = styled.button<{ $selected: boolean }>`
@@ -1893,31 +2019,6 @@ const UnitName = styled.div`
 const UnitMeta = styled.div`
   font-size: 0.62rem;
   color: ${(props) => props.theme.colors.text.secondary};
-`
-
-const MiniFieldLabel = styled.label`
-  font-size: 0.66rem;
-  color: ${(props) => props.theme.colors.text.secondary};
-`
-
-const TextField = styled.input`
-  border: 1px solid ${(props) => props.theme.colors.divider};
-  border-radius: 0.28rem;
-  padding: 0.24rem 0.34rem;
-  background: ${(props) => props.theme.colors.bg.primary};
-  color: ${(props) => props.theme.colors.text.primary};
-  width: 100%;
-  box-sizing: border-box;
-`
-
-const SelectLike = styled.select`
-  border: 1px solid ${(props) => props.theme.colors.divider};
-  border-radius: 0.28rem;
-  padding: 0.22rem 0.3rem;
-  background: ${(props) => props.theme.colors.bg.primary};
-  color: ${(props) => props.theme.colors.text.primary};
-  width: 100%;
-  box-sizing: border-box;
 `
 
 const ChannelGrid = styled.div`
@@ -1961,21 +2062,11 @@ const EditorFallback = styled.div`
   justify-content: center;
 `
 
-const MainStack = styled.div`
-  flex: 1 1 auto;
-  min-height: 0;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  overflow: hidden;
-`
-
 const SceneSection = styled.div`
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  margin-top: 10px;
+  margin-top: 0.65rem;
   min-width: 0;
 `
 
@@ -2016,20 +2107,6 @@ const SceneDock = styled.div<{ $h: number }>`
   flex-direction: column;
   box-sizing: border-box;
   overflow: hidden;
-`
-
-const SafetyToggleRow = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.28rem 0;
-`
-
-const SafetyToggleLabel = styled.span`
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: ${(p) => p.theme.colors.text.primary};
 `
 
 const ParamMapGrid = styled.div`
@@ -2085,11 +2162,6 @@ const ParamSelect = styled.select`
   font-size: 0.64rem;
   max-width: min(8.6rem, 42vw);
   min-width: 0;
-`
-
-const MutedLine = styled.div`
-  font-size: 0.66rem;
-  color: ${(props) => props.theme.colors.text.secondary};
 `
 
 const GroupRouteList = styled.div`

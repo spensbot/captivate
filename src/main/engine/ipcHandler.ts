@@ -71,10 +71,12 @@ import {
 import {
   laserDacConnect,
   laserDacDisconnect,
+  laserDacListDevices,
   laserDacStatus,
   laserDacPushFrame,
+  laserDacStopOutput,
 } from './laserDacSession'
-import type { LaserDacConnectResult } from '../../shared/laserDac'
+import type { LaserDacConnectResult, LaserDacListDevicesRequest } from '../../shared/laserDac'
 import { normalizeLaserDacConnectRequest } from '../../shared/laserDac'
 import path from 'path'
 import os from 'os'
@@ -986,15 +988,46 @@ export function ipcSetup(config: Config) {
     return await laserDacConnect(req)
   })
 
-  ipcMain.handle(ipcChannels.laser_dac_disconnect, async () => {
-    telemetryCounter('ipc', 'laser_dac_disconnect')
-    await laserDacDisconnect()
-    return null
-  })
+  ipcMain.handle(
+    ipcChannels.laser_dac_disconnect,
+    async (_event, sessionId: unknown) => {
+      telemetryCounter('ipc', 'laser_dac_disconnect')
+      const sid =
+        typeof sessionId === 'string' && sessionId.trim().length > 0
+          ? sessionId.trim()
+          : undefined
+      await laserDacDisconnect(sid)
+      return null
+    }
+  )
+
+  ipcMain.handle(
+    ipcChannels.laser_dac_stop_output,
+    async (_event, sessionId: unknown) => {
+      telemetryCounter('ipc', 'laser_dac_stop_output')
+      const sid =
+        typeof sessionId === 'string' && sessionId.trim().length > 0
+          ? sessionId.trim()
+          : undefined
+      await laserDacStopOutput(sid)
+      return null
+    }
+  )
 
   ipcMain.handle(ipcChannels.laser_dac_status, () => {
     telemetryCounter('ipc', 'laser_dac_status')
     return laserDacStatus()
+  })
+
+  ipcMain.handle(ipcChannels.laser_dac_list_devices, (_event, raw: unknown) => {
+    telemetryCounter('ipc', 'laser_dac_list_devices')
+    const backend =
+      raw !== null &&
+      typeof raw === 'object' &&
+      typeof (raw as LaserDacListDevicesRequest).backend === 'string'
+        ? (raw as LaserDacListDevicesRequest).backend
+        : 'helios'
+    return laserDacListDevices({ backend: backend as LaserDacListDevicesRequest['backend'] })
   })
 
   ipcMain.handle(

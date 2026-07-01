@@ -9,6 +9,7 @@ import {
   addFixture,
   removeFixture,
 } from '../redux/dmxSlice'
+import { removeAtmosFxtr } from '../redux/controlSlice'
 import Popup from '../base/Popup'
 import { useEffect, useRef, useState } from 'react'
 import { TextField, Tooltip, Button } from '@mui/material'
@@ -285,7 +286,12 @@ function FixtureSlot({
               onClick={(e) => {
                 e.preventDefault()
                 e.stopPropagation()
+                const fixtureId =
+                  typeof fixture.id === 'string' ? fixture.id.trim() : ''
                 dispatch(removeFixture(globalIndex))
+                if (fixtureId.length > 0) {
+                  dispatch(removeAtmosFxtr(fixtureId))
+                }
               }}
             >
               <RemoveIcon fontSize="small" />

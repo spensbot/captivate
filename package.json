@@ -5,6 +5,8 @@
     "build:remote": "cross-env NODE_ENV=production TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.remote.prod.ts",
     "build:projectm-bridge": "node tools/run-projectm-node-gyp.js",
     "prepare:projectm-bridge": "node tools/prepare_projectm_bridge.js",
+    "prepare:projectm-runtime": "node tools/prepare_projectm_runtime.js",
+    "verify:release-assets": "node tools/verify-release-assets.js",
     "build:main": "cross-env NODE_ENV=production TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.main.prod.ts",
     "build:main:dev": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.main.dev.ts",
     "build:renderer": "cross-env NODE_ENV=production TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.renderer.prod.ts",
@@ -15,12 +17,12 @@
     "generate:default-save": "node scripts/generate-default-save.mjs",
     "package:bundle": "node tools/run-with-qualified-node.cjs -- npm run package:bundle:inner",
     "package:bundle:inner": "node tools/run-with-qualified-node.cjs -- npm run __package:bundle:inner",
-    "__package:bundle:inner": "node tools/check-build-environment.js && ts-node ./.erb/scripts/clean.js dist && npm run prepare:projectm-bridge && npm run prepare:node-link && npm run rebuild && node tools/rebuild-darwin-universal-natives.cjs && npm run build",
+    "__package:bundle:inner": "node tools/check-build-environment.js && ts-node ./.erb/scripts/clean.js dist && npm run prepare:projectm-bridge && npm run prepare:projectm-runtime && npm run prepare:node-link && npm run rebuild && node tools/rebuild-darwin-universal-natives.cjs && npm run build && npm run verify:release-assets",
     "package": "npm run package:bundle && node tools/run-with-qualified-node.cjs -- node tools/run-electron-builder-installer.cjs",
     "package:installer-only": "node tools/run-with-qualified-node.cjs -- node tools/run-electron-builder-installer.cjs --win",
     "package:win": "npm run package:bundle && node tools/run-with-qualified-node.cjs -- node tools/run-electron-builder-installer.cjs --win",
     "package:linux": "npm run package:bundle && electron-builder build --linux --publish never",
-    "package:mac": "cross-env CAPTIVATE_DARWIN_UNIVERSAL_NATIVE=1 npm run package:bundle && electron-builder build --mac --publish never",
+    "package:mac": "cross-env CAPTIVATE_DARWIN_UNIVERSAL_NATIVE=1 CAPTIVATE_MAC_ADHOC_SIGN=1 CSC_IDENTITY_AUTO_DISCOVERY=false npm run package:bundle && electron-builder build --mac dmg --arm64 --publish never && electron-builder build --mac dmg --x64 --publish never",
     "rebuild": "node -r ts-node/register/transpile-only ./.erb/scripts/electron-rebuild.js",
     "start": "ts-node ./.erb/scripts/check-port-in-use.js && npm run start:renderer",
     "start:main": "cross-env NODE_ENV=development electronmon .",
@@ -157,22 +159,26 @@
       "node_modules",
       "package.json"
     ],
+    "afterPack": ".erb/scripts/macAdhocSign.js",
     "afterSign": ".erb/scripts/notarize.js",
     "mac": {
-      "target": {
-        "target": "default",
-        "arch": [
-          "arm64",
-          "x64"
-        ]
-      },
-      "type": "distribution",
-      "hardenedRuntime": true,
-      "entitlements": "assets/entitlements.mac.plist",
-      "entitlementsInherit": "assets/entitlements.mac.plist",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "identity": null,
+      "type": "development",
+      "hardenedRuntime": false,
       "gatekeeperAssess": false
     },
     "dmg": {
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
       "contents": [
         {
           "x": 130,

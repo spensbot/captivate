@@ -125,7 +125,7 @@ const Card = styled.div<{
       : props.$minHeight ?? 'auto'};
   max-height: ${(props) => props.$maxHeight ?? 'calc(100dvh - 2rem)'};
   overflow: hidden;
-  border: 1px solid #ffffff2d;
+  border: 1px solid ${(props) => props.theme.colors.divider};
   border-radius: 0.5rem;
   background: ${(props) => props.theme.colors.bg.primary};
   box-shadow: 0 0.6rem 2.1rem #0008;
@@ -169,9 +169,16 @@ const ActionButton = styled.button<{ $tone: AppModalTone }>`
   min-width: 6.6rem;
   border-radius: 0.35rem;
   border: 1px solid
-    ${(props) => (props.$tone === 'danger' ? '#d16c6c' : '#ffffff42')};
-  background: ${(props) => (props.$tone === 'danger' ? '#7a2020' : '#0007')};
-  color: #e9efff;
+    ${(props) =>
+      props.$tone === 'danger'
+        ? '#d16c6c'
+        : props.theme.colors.divider};
+  background: ${(props) =>
+    props.$tone === 'danger'
+      ? '#7a2020'
+      : props.theme.colors.bg.panel};
+  color: ${(props) =>
+    props.$tone === 'danger' ? '#ffeaea' : props.theme.colors.text.primary};
   padding: 0.35rem 0.65rem;
   cursor: pointer;
   font-size: 0.8rem;

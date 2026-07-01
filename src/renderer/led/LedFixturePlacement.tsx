@@ -334,7 +334,7 @@ export default function LedFixturePlacement({}: Props) {
     )
   }
 
-  const [dragContainer, onMouseDown] = useDragMapped((pos, e, status) => {
+  const [dragContainer, onPointerDown] = useDragMapped((pos, e, status) => {
     if (activeLedFixture === null) {
       dragPointIndexRef.current = null
       dragHandleRef.current = null
@@ -675,7 +675,7 @@ export default function LedFixturePlacement({}: Props) {
             <Background
               style={{ width: `${canvasWidthPx}px`, height: `${canvasHeightPx}px` }}
               ref={dragContainer}
-              onMouseDown={onMouseDown}
+              onPointerDown={onPointerDown}
               onContextMenu={(event) => event.preventDefault()}
             >
               {horizontalStops.map((stop) => (

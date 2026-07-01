@@ -80,6 +80,7 @@ jobs:
           CAPTIVATE_DARWIN_UNIVERSAL_NATIVE: true
           CAPTIVATE_EBUILDER_OUTPUT: release/build
           CAPTIVATE_BUILD_PROJECTM_BRIDGE: true
+          CAPTIVATE_BUILD_PROJECTM_RUNTIME: true
           GYP_MSVS_VERSION: '2022'
           JOBS: '1'
         run: npm run __package:bundle:inner
@@ -88,17 +89,27 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CI: true
-          # Without a Developer ID cert, ad-hoc-sign the whole bundle (including Electron
-          # Framework). Otherwise the main binary and framework keep mismatched Team IDs and
-          # macOS refuses to launch (DYLD "different Team IDs").
+          # Ad-hoc deep sign in afterPack (see .erb/scripts/macAdhocSign.js). Avoid CSC_IDENTITY
+          # partial sign — it caused DYLD Team ID mismatches at launch on macOS.
           CSC_IDENTITY_AUTO_DISCOVERY: false
-          CSC_IDENTITY: '-'
+          CAPTIVATE_MAC_ADHOC_SIGN: '1'
           CAPTIVATE_EBUILDER_OUTPUT: release/build
         run: |
           if [ "$RUNNER_OS" = "Windows" ]; then
             npx electron-builder build --win --publish never --config.directories.output=release/build
           elif [ "$RUNNER_OS" = "macOS" ]; then
-            npx electron-builder build --mac --publish never --config.directories.output=release/build
+            npx electron-builder build --mac dmg --arm64 --publish never --config.directories.output=release/build
+            npx electron-builder build --mac dmg --x64 --publish never --config.directories.output=release/build
+            app_arm="release/build/mac-arm64/Captivate 2.app"
+            app_x64="release/build/mac/Captivate 2.app"
+            if [ -d "$app_arm" ]; then
+              codesign --verify --deep --strict "$app_arm"
+            fi
+            if [ -d "$app_x64" ]; then
+              codesign --verify --deep --strict "$app_x64"
+            fi
+            echo "macOS DMG artifacts:"
+            ls -la release/build/*-arm64.dmg release/build/*-x64.dmg 2>/dev/null || ls -la release/build/*.dmg
           else
             npx electron-builder build --linux --publish never --config.directories.output=release/build
           fi
@@ -107,9 +118,15 @@ jobs:
         run: |
           mkdir -p release/artifacts
           shopt -s nullglob
-          for f in release/build/*.exe release/build/*.dmg release/build/*.AppImage release/build/*.deb release/build/*.rpm; do
-            cp -v "$f" release/artifacts/
-          done
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            for f in release/build/*-arm64.dmg release/build/*-x64.dmg; do
+              cp -v "$f" release/artifacts/
+            done
+          else
+            for f in release/build/*.exe release/build/*.AppImage release/build/*.deb release/build/*.rpm; do
+              cp -v "$f" release/artifacts/
+            done
+          fi
           ls -la release/artifacts/
           if [ -z "$(ls -A release/artifacts)" ]; then
             echo "No installer artifacts found under release/build"

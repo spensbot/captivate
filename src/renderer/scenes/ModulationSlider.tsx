@@ -134,7 +134,7 @@ export default function ModulationSlider({
   const splitGroups = useActiveLightScene(
     (scene) => scene.splitScenes[splitIndex]?.groups ?? {}
   )
-  const [dragContainer, onMouseDown] = useDragMapped(({ x }) => {
+  const [dragContainer, onPointerDown] = useDragMapped(({ x }) => {
     dispatch(setModulation({ splitIndex, param, modIndex, value: x }))
   })
 
@@ -154,7 +154,7 @@ export default function ModulationSlider({
   return (
     <Root
       ref={dragContainer}
-      onMouseDown={onMouseDown}
+      onPointerDown={onPointerDown}
       title="Drag sideways: middle = off, farther = stronger up or down"
     >
       <StripHeader>

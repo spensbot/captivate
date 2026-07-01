@@ -584,10 +584,19 @@ bool looksLikePresetPath(const std::string& preset) {
     return false;
   }
   const std::string lowered = toLower(preset);
-  return lowered.find("://") != std::string::npos ||
-         lowered.find(".milk") != std::string::npos ||
-         lowered.find(".prjm") != std::string::npos ||
-         lowered.find(".txt") != std::string::npos;
+  if (lowered.find("://") != std::string::npos) {
+    return true;
+  }
+  if (lowered.find(".milk") != std::string::npos ||
+      lowered.find(".prjm") != std::string::npos ||
+      lowered.find(".preset") != std::string::npos ||
+      lowered.find(".txt") != std::string::npos) {
+    return true;
+  }
+  // Accept local file paths with any filename extension.
+  const size_t slash = std::max(preset.rfind('/'), preset.rfind('\\'));
+  const size_t dot = preset.rfind('.');
+  return dot != std::string::npos && dot > slash && dot + 1 < preset.size();
 }
 
 std::string trimWhitespace(const std::string& input) {
@@ -742,14 +751,22 @@ bool applySessionPreset(
     session.textureSearchPathKey = textureKey;
   }
 
-  const std::string presetToLoad = looksLikePresetPath(presetPath) ? presetPath : "";
+  if (presetPath.empty()) {
+    return true;
+  }
+
+  if (!looksLikePresetPath(presetPath)) {
+    bridgeLog(
+        std::string(logPrefix) + ":skip-preset-unrecognized-path:" + presetPath);
+    return false;
+  }
+
   if (
       g_api.loadPresetFile != nullptr &&
-      !presetToLoad.empty() &&
-      presetToLoad != session.lastPresetPath) {
-    bridgeLog(std::string(logPrefix) + ":load-preset:" + presetToLoad);
-    g_api.loadPresetFile(session.instance, presetToLoad.c_str(), false);
-    session.lastPresetPath = presetToLoad;
+      presetPath != session.lastPresetPath) {
+    bridgeLog(std::string(logPrefix) + ":load-preset:" + presetPath);
+    g_api.loadPresetFile(session.instance, presetPath.c_str(), false);
+    session.lastPresetPath = presetPath;
   }
 
   return true;

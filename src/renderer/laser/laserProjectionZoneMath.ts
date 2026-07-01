@@ -53,7 +53,12 @@ export function applyZoneToFrame(
   const out: LaserDacFramePoint[] = []
   for (const p of points) {
     if (p.blank) {
-      out.push(p)
+      const mapped = mapPointToZoneScanner(p.x, p.y, z)
+      out.push({
+        ...p,
+        x: mapped?.x ?? clamp01((p.x - z.x) / z.w),
+        y: mapped?.y ?? clamp01((p.y - z.y) / z.h),
+      })
       continue
     }
     const mapped = mapPointToZoneScanner(p.x, p.y, z)

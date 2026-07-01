@@ -8,6 +8,7 @@ import {
   type LaserFixtureOutputRoute,
   LaserNetworkNode,
 } from '../../shared/laserFixtureRouting'
+import { normalizeLaserDacHardwareSettings } from '../../shared/laserHardwareSettings'
 import {
   createDefaultLaserGroupSlot,
   type LaserGroupSlot,
@@ -41,6 +42,8 @@ export type LaserProjectState = {
   enableProjectionMask: boolean
   audienceScanGate: boolean
   showZonePreview: boolean
+  /** False until the user completes the laser DAC setup wizard (first-run prompt). */
+  laserDacSetupComplete: boolean
 }
 
 const BOOT_DAC = (() => {
@@ -106,7 +109,8 @@ export function initLaserState(): LaserProjectState {
     sceneStripHeightPx: LASER_SCENE_STRIP_DEFAULT_HEIGHT_PX,
     enableProjectionMask: true,
     audienceScanGate: true,
-    showZonePreview: true,
+    showZonePreview: false,
+    laserDacSetupComplete: false,
   }
 }
 
@@ -118,6 +122,7 @@ export function migrateLaserProjectState(raw: unknown): LaserProjectState {
     Array.isArray(o.dacProfiles) && o.dacProfiles.length > 0
       ? o.dacProfiles.map((p) => ({
           ...p,
+          hardwareSettings: normalizeLaserDacHardwareSettings(p.hardwareSettings),
           zones: (p.zones ?? []).map((z, i) => ({
             ...z,
             clipOutside: z.clipOutside !== false,
@@ -143,6 +148,10 @@ export function migrateLaserProjectState(raw: unknown): LaserProjectState {
         ? o.groupSlots
         : base.groupSlots,
     routes: { ...base.routes, ...(o.routes ?? {}) },
-    showZonePreview: o.showZonePreview !== false,
+    showZonePreview: o.showZonePreview === true,
+    laserDacSetupComplete:
+      typeof o.laserDacSetupComplete === 'boolean'
+        ? o.laserDacSetupComplete
+        : true,
   }
 }

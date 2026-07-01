@@ -4,7 +4,15 @@ import {
   AtmosFxtrDesc,
   normAtmosFxtrDesc,
 } from './atmospherics'
-import { FixtureChannel, fixtureChannelLeafChannels, FixtureType } from './dmxFixtures'
+import {
+  Fixture,
+  FixtureChannel,
+  fixtureChannelLeafChannels,
+  FixtureType,
+  inferFixtureModelKind,
+  normalizeFixtureModelConfig,
+  Universe,
+} from './dmxFixtures'
 
 function channelNameOrDefault(channel: FixtureChannel, fallback: string) {
   if ('name' in channel && typeof channel.name === 'string') {
@@ -96,6 +104,28 @@ export function isAtmosFxtrType(fixtureType: FixtureType): boolean {
     )
 }
 
+export function isMappedAtmosphericFixture(
+  fixture: Fixture,
+  fixtureType: FixtureType
+): boolean {
+  if (!isAtmosFxtrType(fixtureType)) {
+    return false
+  }
+  const model = normalizeFixtureModelConfig(fixtureType.model, fixtureType)
+  const effectiveKind =
+    model.kind === 'auto' ? inferFixtureModelKind(fixtureType) : model.kind
+  return effectiveKind === 'atmosphericFxtr'
+}
+
+export function universeHasAtmospherics(
+  universe: Universe,
+  fixtureTypesByID: { [id: string]: FixtureType | undefined }
+): boolean {
+  return (
+    listAtmosFxtrs({ universe, fixtureTypesByID } as DmxState).length > 0
+  )
+}
+
 function getFixtureGroups(fixtureGroups: string[]): string[] {
   const groups = new Set<string>()
   fixtureGroups
@@ -114,6 +144,9 @@ export function listAtmosFxtrs(
   for (const fixture of dmx.universe) {
     const fixtureType = dmx.fixtureTypesByID[fixture.type]
     if (fixtureType === undefined) {
+      continue
+    }
+    if (!isMappedAtmosphericFixture(fixture, fixtureType)) {
       continue
     }
     const fixtureId = typeof fixture.id === 'string' ? fixture.id.trim() : ''

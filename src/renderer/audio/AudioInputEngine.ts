@@ -11,12 +11,17 @@ import {
   AudioEngineMetrics,
   AudioInputSettings,
   getAudioBandLevel,
+  getAudioBandLoudness,
+  computeMusicLoudnessCore,
   initAudioBandConfig,
   initAudioEngineMetrics,
   normalizeAudioEngineMetrics,
   normalizeAudioInputSettings,
   computePerceivedEnergyLevel,
+  initAdaptiveEnergyNormalizerState,
   resolveEnergyTempoBpm,
+  stepAdaptiveEnergyNormalizer,
+  type AdaptiveEnergyNormalizerState,
   AUDIO_MIN_GAIN,
   AUDIO_MAX_GAIN,
 } from '../../shared/audioEngine'
@@ -73,8 +78,8 @@ export default class AudioInputEngine {
   private energyLongEma = 0
   private energyTrendEma = 0
   private energyLevelEma = 0
-  private energyFloorEma = 0
-  private energyCeilingEma = 0
+  private energyNormalizer: AdaptiveEnergyNormalizerState =
+    initAdaptiveEnergyNormalizerState()
   /** Prior-frame composite (for detecting breakdown-style drops). */
   private lastCompositeEnergy = 0
   private recentBeatIntervalsMs: number[] = []
@@ -86,6 +91,7 @@ export default class AudioInputEngine {
   private plpTempoBpm: number | null = null
   private plpTempoConfidence = 0
   private bpmConfidenceEma = 0
+  private bpmPeakForEnergy = 120
   private lastTempoFromOnsetAtMs = 0
   private deviceListener: (() => void) | null = null
   private lastTelemetryAtMs = 0
@@ -335,8 +341,7 @@ export default class AudioInputEngine {
     this.energyLongEma = 0
     this.energyTrendEma = 0
     this.energyLevelEma = 0
-    this.energyFloorEma = 0
-    this.energyCeilingEma = 0
+    this.energyNormalizer = initAdaptiveEnergyNormalizerState()
     this.lastCompositeEnergy = 0
     this.recentBeatIntervalsMs = []
     this.onsetHistory = []
@@ -346,6 +351,7 @@ export default class AudioInputEngine {
     this.plpTempoBpm = null
     this.plpTempoConfidence = 0
     this.bpmConfidenceEma = 0
+    this.bpmPeakForEnergy = 120
     this.lastTempoFromOnsetAtMs = 0
     this.analyzeMsAccum = 0
     this.analyzeSampleCount = 0
@@ -605,7 +611,7 @@ export default class AudioInputEngine {
       rms += sample * sample
     }
     rms = Math.sqrt(rms / Math.max(1, waveform.length))
-    const inputLevel = clamp01(rms * 2.2)
+    const inputLevel = clamp01(rms * 3.2)
 
     const spectrum: number[] = Array.from(freq, (value) => value / 255)
     if (this.prevSpectrum.length !== spectrum.length) {
@@ -627,7 +633,7 @@ export default class AudioInputEngine {
       spectrum,
       nyquistHz,
     })
-    const lowEnergy = getAudioBandLevel(
+    const lowEnergy = getAudioBandLoudness(
       metricsForBands,
       {
         ...initAudioBandConfig(),
@@ -636,7 +642,7 @@ export default class AudioInputEngine {
         gain: 1.05,
       }
     )
-    const midEnergy = getAudioBandLevel(
+    const midEnergy = getAudioBandLoudness(
       metricsForBands,
       {
         ...initAudioBandConfig(),
@@ -645,7 +651,7 @@ export default class AudioInputEngine {
         gain: 1,
       }
     )
-    const broadEnergy = getAudioBandLevel(
+    const broadEnergy = getAudioBandLoudness(
       metricsForBands,
       {
         ...initAudioBandConfig(),
@@ -654,7 +660,7 @@ export default class AudioInputEngine {
         gain: 1,
       }
     )
-    const highEnergy = getAudioBandLevel(
+    const highEnergy = getAudioBandLoudness(
       metricsForBands,
       {
         ...initAudioBandConfig(),
@@ -918,30 +924,24 @@ export default class AudioInputEngine {
     )
     const beatSec = 60 / bpmForEnergy
     const barSec = beatSec * 4
-    const twoBarsSec = barSec * 2
     const fourBarsSec = barSec * 4
-    const eightBarsSec = barSec * 8
     const sixteenBarsSec = barSec * 16
 
     // Musical multi-bar trend, but include RMS + highs so compressed EDM/house does not
     // read falsely low; transients + flux help breakdowns and drops.
     const transient = clamp01(beatOnset * 1.9 + fluxNormalized * 0.24)
-    const dancePresence = clamp01(
-      0.55 * highEnergy + 0.45 * Math.max(midEnergy, highEnergy * 0.92)
-    )
-    const rhythmBias = clamp01(settings.energyRhythmBias)
-    const instantEnergy = clamp01(
-      lowEnergy * lerp(0.44, 0.28, rhythmBias) +
-        midEnergy * lerp(0.17, 0.2, rhythmBias) +
-        broadEnergy * 0.19 +
-        dancePresence * lerp(0.1, 0.18, rhythmBias) +
-        transient * lerp(0.08, 0.14, rhythmBias) +
-        inputLevel * lerp(0.14, 0.08, rhythmBias)
-    )
+    const loudnessCore = computeMusicLoudnessCore({
+      inputLevel,
+      broad: broadEnergy,
+      mid: midEnergy,
+      low: lowEnergy,
+      high: highEnergy,
+      flux: fluxNormalized,
+    })
+    const instantEnergy = clamp01(loudnessCore * 0.88 + transient * 0.12)
 
-    const shortAlpha = alphaFromTau(dtSec, Math.max(0.12, barSec * 0.42))
-    const longAlpha = alphaFromTau(dtSec, Math.max(0.55, fourBarsSec * 0.88))
-    const trendAlpha = alphaFromTau(dtSec, Math.max(0.9, eightBarsSec * 0.92))
+    const shortAlpha = alphaFromTau(dtSec, Math.max(0.08, barSec * 0.22))
+    const longAlpha = alphaFromTau(dtSec, Math.max(0.28, fourBarsSec * 0.45))
     if (
       this.energyShortEma <= 0 &&
       this.energyLongEma <= 0 &&
@@ -953,61 +953,74 @@ export default class AudioInputEngine {
     } else {
       this.energyShortEma += (instantEnergy - this.energyShortEma) * shortAlpha
       this.energyLongEma += (instantEnergy - this.energyLongEma) * longAlpha
-      this.energyTrendEma += (instantEnergy - this.energyTrendEma) * trendAlpha
+      this.energyTrendEma += (instantEnergy - this.energyTrendEma) * longAlpha
     }
 
     const compositeEnergy = clamp01(
-      this.energyTrendEma * 0.46 +
-        this.energyLongEma * 0.32 +
-        this.energyShortEma * 0.22
+      instantEnergy * 0.4 +
+        this.energyShortEma * 0.3 +
+        this.energyLongEma * 0.17 +
+        this.energyTrendEma * 0.13
     )
 
+    const bassDrop =
+      this.lowBandEma > 0.02 &&
+      lowEnergy < this.lowBandEma * lerp(0.72, 0.58, highRhythmShare)
     const compositeDropPerSec =
       this.lastCompositeEnergy > 1e-6
         ? (this.lastCompositeEnergy - compositeEnergy) / Math.max(1e-3, dtSec)
         : 0
     this.lastCompositeEnergy = compositeEnergy
-    const fastBreakdown = compositeDropPerSec > 0.32
+    const fastBreakdown =
+      compositeDropPerSec > 0.26 ||
+      (compositeDropPerSec > 0.14 && bassDrop && highRhythmShare > 0.48)
+
+    if (bpmForEnergy > this.bpmPeakForEnergy) {
+      this.bpmPeakForEnergy = bpmForEnergy
+    } else {
+      const bpmPeakAlpha = alphaFromTau(dtSec, Math.max(1.8, fourBarsSec * 1.1))
+      this.bpmPeakForEnergy +=
+        (bpmForEnergy - this.bpmPeakForEnergy) * bpmPeakAlpha
+    }
+    const bpmDropRatio = clamp01(
+      bpmForEnergy / Math.max(55, this.bpmPeakForEnergy)
+    )
 
     const floorAlpha = alphaFromTau(dtSec, Math.max(0.58, sixteenBarsSec * 0.78))
-    const ceilingRiseAlpha = alphaFromTau(dtSec, Math.max(0.28, twoBarsSec * 0.82))
-    let ceilingFallAlpha = alphaFromTau(
+    let peakReleaseAlpha = alphaFromTau(
       dtSec,
-      Math.max(0.62, sixteenBarsSec * 1.02)
+      Math.max(0.45, fourBarsSec * 0.95)
     )
     if (fastBreakdown) {
-      ceilingFallAlpha = Math.min(1, ceilingFallAlpha * 2.6)
+      peakReleaseAlpha = Math.min(1, peakReleaseAlpha * 2.4)
     }
-    if (this.energyFloorEma <= 0 && this.energyCeilingEma <= 0) {
-      this.energyFloorEma = compositeEnergy
-      this.energyCeilingEma = compositeEnergy
-    } else {
-      this.energyFloorEma += (compositeEnergy - this.energyFloorEma) * floorAlpha
-      if (compositeEnergy >= this.energyCeilingEma) {
-        this.energyCeilingEma +=
-          (compositeEnergy - this.energyCeilingEma) * ceilingRiseAlpha
-      } else {
-        this.energyCeilingEma +=
-          (compositeEnergy - this.energyCeilingEma) * ceilingFallAlpha
-      }
-    }
-
-    const autoFloor = Math.max(0, this.energyFloorEma - 0.02)
-    const autoCeiling = Math.min(
-      1,
-      Math.max(this.energyCeilingEma + 0.01, autoFloor + 0.24)
-    )
     const energyDynamics = clamp01(settings.energyDynamics)
-    const minNormSpan = fastBreakdown
-      ? lerp(0.16, 0.08, energyDynamics)
-      : lerp(0.22, 0.11, energyDynamics)
-    const normSpan = Math.max(minNormSpan, autoCeiling - autoFloor)
-    const normalizedEnergy = clamp01((compositeEnergy - autoFloor) / normSpan)
+    const normStep = stepAdaptiveEnergyNormalizer(this.energyNormalizer, {
+      compositeEnergy,
+      floorAlpha,
+      peakReleaseAlpha,
+      energyDynamics,
+      fastBreakdown,
+    })
+    this.energyNormalizer = normStep.state
+    const normalizedEnergy = normStep.normalizedEnergy
 
+    const rhythmBias = clamp01(settings.energyRhythmBias)
     const perceivedEnergy = computePerceivedEnergyLevel({
-      spectralEnergy: normalizedEnergy,
+      normalizedLoudness: normalizedEnergy,
+      loudnessInstant: instantEnergy,
+      loudnessShort: this.energyShortEma,
+      loudnessLong: this.energyLongEma,
+      lowLoudness: lowEnergy,
+      midLoudness: midEnergy,
+      highLoudness: highEnergy,
+      lowBaseline: this.lowBandEma,
+      highBaseline: this.highBandEma,
+      lowOnset,
+      beatOnset,
       bpm: bpmForEnergy,
       bpmConfidence: tempoConfidence,
+      bpmDropRatio,
       rhythmShare: highRhythmShare,
       beatPulse: this.beatPulse,
       fastBreakdown,
@@ -1015,27 +1028,41 @@ export default class AudioInputEngine {
     })
 
     const deltaEnergy = perceivedEnergy - this.energyLevelEma
-    const jitterDeadband = 0.002
+    const jitterDeadband = 0.0008
+    const buildTrend = clamp01(
+      (this.energyShortEma - this.energyLongEma - 0.01) / 0.12
+    )
     const changeMagnitude = Math.abs(this.energyShortEma - this.energyTrendEma)
     const changeBoost = clamp01((changeMagnitude - 0.012) / 0.16)
     const edgeBoost = clamp01((Math.abs(deltaEnergy) - 0.042) / 0.24)
     const beatBoost = beatDetected ? 0.07 : 0
     const energyBlend = clamp01(settings.energySmoothing)
-    const smoothBars = lerp(5.5, 1.6, energyBlend)
-    const baseAlpha = alphaFromTau(dtSec, Math.max(0.38, barSec * smoothBars))
+    const smoothBars = lerp(2.6, 0.85, energyBlend)
+    const baseAlpha = alphaFromTau(dtSec, Math.max(0.22, barSec * smoothBars))
     const dropFollow =
       perceivedEnergy < this.energyLevelEma
-        ? 1 + changeBoost * 0.28 + edgeBoost * 0.32 + (fastBreakdown ? 0.45 : 0)
+        ? 1 + changeBoost * 0.32 + edgeBoost * 0.38 + (fastBreakdown ? 0.55 : 0)
+        : 1
+    const buildSlow =
+      perceivedEnergy > this.energyLevelEma && buildTrend > 0.08
+        ? lerp(0.55, 0.82, buildTrend)
         : 1
     const alpha = Math.min(
       1,
-      (baseAlpha +
+      ((baseAlpha +
         (1 - baseAlpha) * (changeBoost * 0.48 + edgeBoost * 0.52 + beatBoost)) *
-        dropFollow
+        dropFollow) /
+        buildSlow
     )
+    const riseAlpha = Math.min(
+      1,
+      alpha * lerp(2.4, 3.6, 1 - energyBlend) * (fastBreakdown ? 0.85 : 1)
+    )
+    const alphaUse =
+      perceivedEnergy > this.energyLevelEma ? riseAlpha : alpha
 
     if (Math.abs(deltaEnergy) > jitterDeadband) {
-      this.energyLevelEma += (perceivedEnergy - this.energyLevelEma) * alpha
+      this.energyLevelEma += (perceivedEnergy - this.energyLevelEma) * alphaUse
     }
     const energyLevel = clamp01(this.energyLevelEma)
 

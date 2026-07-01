@@ -12,7 +12,7 @@ interface Props {
 export default function Hue({ splitIndex }: Props) {
   const dispatch = useDispatch()
 
-  const [dragContainer, onMouseDown] = useDragMapped(({ x }) => {
+  const [dragContainer, onPointerDown] = useDragMapped(({ x }) => {
     dispatch(
       setBaseParams({
         splitIndex,
@@ -25,7 +25,7 @@ export default function Hue({ splitIndex }: Props) {
   const outputHue = useOutputParam('hue', splitIndex)
 
   return (
-    <Root ref={dragContainer} onMouseDown={onMouseDown}>
+    <Root ref={dragContainer} onPointerDown={onPointerDown}>
       <OutputCursor style={{ left: `${outputHue * 100}%` }} />
       <BaseCursor style={{ left: `${baseHue * 100}%` }} />
     </Root>

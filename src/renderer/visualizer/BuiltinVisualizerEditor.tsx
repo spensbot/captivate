@@ -43,6 +43,7 @@ import { visSplitIdx } from '../scenes/splitUiVisibility'
 import {
   getLocalDirectories,
   getLocalFilepaths,
+  getProjectMBridgeStatus,
   listProjectMPresets,
   listProjectMPresetsInDirectory,
   visNdiList,
@@ -53,7 +54,11 @@ import { setBaseParams } from '../redux/controlSlice'
 import { openAppAlert } from '../overlays/appDialogService'
 import BusyModal from '../overlays/BusyModal'
 import useStandardBusy from '../hooks/useStandardBusy'
-import { ProjectMPresetOption } from '../../shared/projectm'
+import {
+  initProjectMRuntimeDetection,
+  ProjectMPresetOption,
+} from '../../shared/projectm'
+import { ProjectMBridgeStatus } from '../../shared/projectmBridge'
 import AppModal from '../overlays/AppModal'
 import {
   sumBuiltinVisSliders,
@@ -251,6 +256,27 @@ export default function BuiltinVisualizerEditor({ config, onChange }: Props) {
   >([])
   const [projectMPresetLoading, setProjectMPresetLoading] = useState(false)
   const [projectMPresetMessage, setProjectMPresetMessage] = useState('')
+  const [projectMBridgeStatus, setProjectMBridgeStatus] = useState<ProjectMBridgeStatus>(
+    () => ({
+      bridgeLoaded: false,
+      bridgePath: null,
+      runtime: initProjectMRuntimeDetection(),
+      supportedTransports: [],
+      message: '',
+    })
+  )
+  const projectMBridgeWarning = useMemo(() => {
+    if (!hasProjectMLayers) {
+      return ''
+    }
+    if (!projectMBridgeStatus.runtime.available) {
+      return projectMBridgeStatus.runtime.message
+    }
+    if (!projectMBridgeStatus.bridgeLoaded) {
+      return 'Native projectM bridge is not loaded. Preset files will not apply — only compatibility visuals are shown.'
+    }
+    return ''
+  }, [hasProjectMLayers, projectMBridgeStatus])
   const [projectMPresetDirectory, setProjectMPresetDirectory] = useState(
     () => loadStoredProjectMPresetDirectory()
   )
@@ -327,6 +353,48 @@ export default function BuiltinVisualizerEditor({ config, onChange }: Props) {
       // User cancelled.
     }
   }, [refreshInlineProjectMPresets])
+
+  useEffect(() => {
+    if (!hasProjectMLayers) {
+      return
+    }
+    let cancelled = false
+    void (async () => {
+      try {
+        const result = await getProjectMBridgeStatus()
+        if (!cancelled) {
+          setProjectMBridgeStatus(result)
+        }
+      } catch (_error) {
+        if (!cancelled) {
+          setProjectMBridgeStatus({
+            bridgeLoaded: false,
+            bridgePath: null,
+            runtime: initProjectMRuntimeDetection(),
+            supportedTransports: [],
+            message: 'Failed to query projectM bridge status.',
+          })
+        }
+      }
+    })()
+    const onStatusUpdated = () => {
+      void getProjectMBridgeStatus()
+        .then((result) => {
+          if (!cancelled) {
+            setProjectMBridgeStatus(result)
+          }
+        })
+        .catch(() => undefined)
+    }
+    window.addEventListener('captivate:projectm-status-updated', onStatusUpdated)
+    return () => {
+      cancelled = true
+      window.removeEventListener(
+        'captivate:projectm-status-updated',
+        onStatusUpdated
+      )
+    }
+  }, [hasProjectMLayers])
 
   useEffect(() => {
     if (!hasProjectMLayers) {
@@ -957,6 +1025,11 @@ export default function BuiltinVisualizerEditor({ config, onChange }: Props) {
                             </ProjectMInlineListItem>
                           )}
                         </ProjectMInlineList>
+                        {projectMBridgeWarning.trim().length > 0 && (
+                          <ProjectMInlineMessage title={projectMBridgeWarning}>
+                            {projectMBridgeWarning}
+                          </ProjectMInlineMessage>
+                        )}
                         {projectMPresetMessage.trim().length > 0 && (
                           <ProjectMInlineMessage title={projectMPresetMessage}>
                             {projectMPresetMessage}

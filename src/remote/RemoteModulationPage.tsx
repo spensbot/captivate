@@ -23,7 +23,7 @@ export default function RemoteModulationPage() {
         <MobileBody data-remote-mobile-modulation>
           <MobileSection>
             <MobileSectionTitle>Scenes</MobileSectionTitle>
-            <SceneSelection sceneType="light" />
+            <SceneSelection sceneType="light" flattenScroll />
           </MobileSection>
           <MobileSection>
             <MobileSectionTitle>Modulation</MobileSectionTitle>
@@ -34,7 +34,7 @@ export default function RemoteModulationPage() {
           <MobileSection>
             <MobileSectionTitle>Splits</MobileSectionTitle>
             <SplitScenesHost>
-              <SplitScenes />
+              <SplitScenes flattenScroll hideTitle />
             </SplitScenesHost>
           </MobileSection>
         </MobileBody>
@@ -121,6 +121,7 @@ const MobileBody = styled.div`
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   padding: 0.5rem 0.65rem 1rem;
 
   &[data-remote-mobile-modulation] {
@@ -158,8 +159,7 @@ const MobileSectionTitle = styled.h2`
 `
 
 const SplitScenesHost = styled.div`
-  min-height: 14rem;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
 `

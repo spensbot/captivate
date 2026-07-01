@@ -25,7 +25,7 @@ export default function SplitPane({
 
   const [split, setSplit] = useState(initialSplit)
 
-  const [dragContainer, onMouseDown] = useDragMapped(({ x, y }) => {
+  const [dragContainer, onPointerDown] = useDragMapped(({ x, y }) => {
     const newSplit = v ? x : 1 - y
     setSplit(clamp(newSplit, min || 0, max || 1))
   })
@@ -82,7 +82,7 @@ export default function SplitPane({
     >
       <div style={styles.root}>
         <div style={styles.child1}>{children[0]}</div>
-        <div style={styles.divider} onMouseDown={onMouseDown}></div>
+        <div style={styles.divider} onPointerDown={onPointerDown}></div>
         <div style={styles.child2}>{children[1]}</div>
       </div>
     </div>

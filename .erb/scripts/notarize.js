@@ -19,9 +19,9 @@ exports.default = async function notarizeMacos(context) {
     return
   }
 
-  if (process.env.CSC_IDENTITY === '-') {
+  if (process.env.CSC_IDENTITY === '-' || process.env.CAPTIVATE_MAC_ADHOC_SIGN === '1') {
     console.warn(
-      'Skipping notarizing step. Ad-hoc CSC_IDENTITY ("-") cannot be notarized; use a Developer ID certificate (CSC_LINK / CSC_NAME) in CI for distribution builds.'
+      'Skipping notarizing step. Ad-hoc signing is in use; see docs/MACOS-INSTALL.md for Mac install help.'
     )
     return
   }

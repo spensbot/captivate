@@ -16,6 +16,23 @@ import {
   type LaserNodeConnectionPresetId,
 } from './laserConnectionPresets'
 import LaserFb4BeyondInfoDialog from './LaserFb4BeyondInfoDialog'
+import LaserHardwareSettingsFields from './LaserHardwareSettingsFields'
+import LaserHeliosDeviceField from './LaserHeliosDeviceField'
+import { defaultConnectionTargetForBackend } from './laserHeliosConnection'
+import { normalizeLaserDacHardwareSettings } from '../../shared/laserHardwareSettings'
+import {
+  LaserActionRow,
+  LaserConnectionStatus,
+  LaserFieldLabel,
+  LaserInlineButton,
+  LaserMuted,
+  LaserPrimaryButton,
+  LaserSection,
+  LaserSectionTitle,
+  LaserSelect,
+  LaserTextInput,
+  LaserToggleRow,
+} from './laserUi'
 
 export type LaserConnectionPanelProps = {
   dacProfiles: LaserDacProfile[]
@@ -38,6 +55,10 @@ export type LaserConnectionPanelProps = {
   onConnectNode: (node: LaserNetworkNode) => void
   onDisconnectSession: (sessionId?: string) => void
   onDisconnectAll: () => void
+  onOpenSetupWizard?: () => void
+  calibrationTestPatternActive?: boolean
+  onCalibrationTestPatternActiveChange?: (active: boolean) => void
+  calibrationTestPatternOutputReady?: boolean
 }
 
 export default function LaserConnectionPanel({
@@ -57,9 +78,14 @@ export default function LaserConnectionPanel({
   onConnectNode,
   onDisconnectSession,
   onDisconnectAll,
+  onOpenSetupWizard,
+  calibrationTestPatternActive = false,
+  onCalibrationTestPatternActiveChange,
+  calibrationTestPatternOutputReady = false,
 }: LaserConnectionPanelProps) {
   const [fb4InfoOpen, setFb4InfoOpen] = useState(false)
   const [nodesExpanded, setNodesExpanded] = useState(networkNodes.length > 0)
+  const [hardwareExpanded, setHardwareExpanded] = useState(false)
 
   useEffect(() => {
     if (networkNodes.length > 0) setNodesExpanded(true)
@@ -81,24 +107,35 @@ export default function LaserConnectionPanel({
     )
   }
 
+  const patchActiveHardware = (
+    hardwareSettings: LaserDacProfile['hardwareSettings']
+  ) => {
+    patchActiveProfile({
+      hardwareSettings: normalizeLaserDacHardwareSettings(hardwareSettings),
+    })
+  }
+
   const applyDacPreset = (presetId: LaserDacConnectionPresetId) => {
     const preset = dacPresetById(presetId)
     patchActiveProfile({
       outputProtocol: preset.protocol,
       backend: preset.backend,
+      connectionTarget: defaultConnectionTargetForBackend(preset.backend),
     })
   }
 
   return (
     <>
-      <SectionBlock>
-        <SectionBlockTitle>Output connection</SectionBlockTitle>
-        <MutedLine>
-          Pick hardware type, connect, then assign fixtures to zones or nodes.
-        </MutedLine>
+      <LaserSection>
+        <LaserSectionTitle>DAC connection</LaserSectionTitle>
+        <LaserMuted>
+          Choose your ILDA hardware, connect, then assign fixtures to projection
+          zones.
+        </LaserMuted>
 
-        <MiniFieldLabel>Profile</MiniFieldLabel>
-        <SelectLike
+        <LaserFieldLabel htmlFor="laser-dac-profile">Profile</LaserFieldLabel>
+        <LaserSelect
+          id="laser-dac-profile"
           value={activeDacProfileId}
           onChange={(e) => onActiveDacProfileId(e.target.value)}
         >
@@ -107,16 +144,19 @@ export default function LaserConnectionPanel({
               {p.name}
             </option>
           ))}
-        </SelectLike>
-        <ConnectionActionRow>
-          <PanelButton type="button" onClick={onAddDacProfile}>
-            Add profile
-          </PanelButton>
-        </ConnectionActionRow>
+        </LaserSelect>
+        <LaserActionRow>
+          <LaserInlineButton onClick={onAddDacProfile}>Add profile</LaserInlineButton>
+          {onOpenSetupWizard ? (
+            <LaserPrimaryButton onClick={onOpenSetupWizard}>
+              Setup wizard
+            </LaserPrimaryButton>
+          ) : null}
+        </LaserActionRow>
 
-        <FieldLabelRow>
+        <SectionTitleRow>
           <Tooltip title="How this DAC reaches your hardware" placement="top">
-            <MiniFieldLabel $inline>Connection type</MiniFieldLabel>
+            <LaserFieldLabel as="span">Connection type</LaserFieldLabel>
           </Tooltip>
           {dacPreset.showFb4Info ? (
             <Tooltip title="FB4 & BEYOND setup guide">
@@ -130,8 +170,8 @@ export default function LaserConnectionPanel({
               </IconButton>
             </Tooltip>
           ) : null}
-        </FieldLabelRow>
-        <SelectLike
+        </SectionTitleRow>
+        <LaserSelect
           value={dacPreset.id}
           onChange={(e) =>
             applyDacPreset(e.target.value as LaserDacConnectionPresetId)
@@ -142,16 +182,25 @@ export default function LaserConnectionPanel({
               {opt.label}
             </option>
           ))}
-        </SelectLike>
+        </LaserSelect>
 
-        <MutedLine>{dacPreset.shortHint}</MutedLine>
+        <LaserMuted>{dacPreset.shortHint}</LaserMuted>
 
-        {dacPreset.showTarget ? (
+        {activeProfile.backend === 'helios' ? (
+          <LaserHeliosDeviceField
+            connectionTarget={activeProfile.connectionTarget}
+            onConnectionTargetChange={(connectionTarget) =>
+              patchActiveProfile({ connectionTarget })
+            }
+          />
+        ) : null}
+
+        {dacPreset.showTarget && activeProfile.backend !== 'helios' ? (
           <>
             <Tooltip title={dacPreset.targetTooltip} placement="left">
-              <MiniFieldLabel>{dacPreset.targetLabel}</MiniFieldLabel>
+              <LaserFieldLabel>{dacPreset.targetLabel}</LaserFieldLabel>
             </Tooltip>
-            <TextField
+            <LaserTextInput
               value={activeProfile.connectionTarget}
               onChange={(e) =>
                 patchActiveProfile({ connectionTarget: e.target.value })
@@ -162,40 +211,70 @@ export default function LaserConnectionPanel({
         ) : null}
 
         {dacPreset.showZonesButton ? (
-          <ConnectionActionRow>
-            <PanelButton type="button" onClick={onOpenZones}>
+          <LaserActionRow>
+            <LaserInlineButton onClick={onOpenZones}>
               Projection zones…
-            </PanelButton>
-          </ConnectionActionRow>
+            </LaserInlineButton>
+          </LaserActionRow>
         ) : null}
 
-        <ConnectionRow>
-          <ConnectionLabel>Status</ConnectionLabel>
-          <ConnectionStatus $connected={dacConnected}>
+        <LaserToggleRow>
+          <LaserFieldLabel as="span">Status</LaserFieldLabel>
+          <LaserConnectionStatus $connected={dacConnected}>
             {dacConnected ? 'Connected' : 'Disconnected'}
-          </ConnectionStatus>
-        </ConnectionRow>
-        <ConnectionActionRow>
-          <PanelButton
-            type="button"
+          </LaserConnectionStatus>
+        </LaserToggleRow>
+        <LaserActionRow>
+          <LaserInlineButton
             disabled={!dacConnected}
             onClick={() => onDisconnectSession(dacSessionId(activeProfile.id))}
           >
             Disconnect
-          </PanelButton>
-          <PanelButton
-            type="button"
-            onClick={() => onConnectDac(activeProfile)}
-          >
+          </LaserInlineButton>
+          <LaserPrimaryButton onClick={() => onConnectDac(activeProfile)}>
             Connect
-          </PanelButton>
-        </ConnectionActionRow>
-      </SectionBlock>
+          </LaserPrimaryButton>
+        </LaserActionRow>
+      </LaserSection>
 
-      <SectionBlock>
-        <SectionBlockTitleRow>
-          <SectionBlockTitle $flush>Network nodes</SectionBlockTitle>
-          <Tooltip title="Optional extra endpoints (Ether Dream, IDN, etc.) — one session per node">
+      <LaserSection>
+        <SectionTitleRow>
+          <LaserSectionTitle>Hardware tuning</LaserSectionTitle>
+          <LaserInlineButton
+            onClick={() => setHardwareExpanded((v) => !v)}
+            style={{ marginLeft: 'auto' }}
+          >
+            {hardwareExpanded ? 'Hide' : 'Show'}
+          </LaserInlineButton>
+        </SectionTitleRow>
+        {hardwareExpanded ? (
+          <>
+            <LaserMuted>
+              Scan rate, analog/TTL color mode, output power, and galvo calibration.
+            </LaserMuted>
+            <HardwareFieldsWrap>
+              <LaserHardwareSettingsFields
+                settings={normalizeLaserDacHardwareSettings(
+                  activeProfile.hardwareSettings
+                )}
+                onChange={patchActiveHardware}
+                testPatternActive={calibrationTestPatternActive}
+                onTestPatternActiveChange={onCalibrationTestPatternActiveChange}
+                testPatternOutputReady={calibrationTestPatternOutputReady}
+              />
+            </HardwareFieldsWrap>
+          </>
+        ) : (
+          <LaserMuted>
+            Expand to adjust scan rate, color mode, and calibration test pattern.
+          </LaserMuted>
+        )}
+      </LaserSection>
+
+      <LaserSection>
+        <SectionTitleRow>
+          <LaserSectionTitle>Network nodes</LaserSectionTitle>
+          <Tooltip title="Optional extra endpoints (Ether Dream, IDN, etc.)">
             <IconButton
               size="small"
               aria-label="About network nodes"
@@ -204,31 +283,27 @@ export default function LaserConnectionPanel({
               <InfoOutlinedIcon fontSize="inherit" />
             </IconButton>
           </Tooltip>
-          <PanelButton
-            type="button"
+          <LaserInlineButton
             onClick={() => setNodesExpanded((v) => !v)}
             style={{ marginLeft: 'auto' }}
           >
             {nodesExpanded ? 'Hide' : 'Show'}
-          </PanelButton>
-        </SectionBlockTitleRow>
+          </LaserInlineButton>
+        </SectionTitleRow>
         {nodesExpanded ? (
           <>
-            <MutedLine>
-              Assign fixtures to a node in the unit list. Use the main profile above for
-              multi-zone DACs.
-            </MutedLine>
-            <ConnectionActionRow>
-              <PanelButton type="button" onClick={onAddNetworkNode}>
-                Add node
-              </PanelButton>
-            </ConnectionActionRow>
+            <LaserMuted>
+              One session per node. Use the main DAC profile for multi-zone scanners.
+            </LaserMuted>
+            <LaserActionRow>
+              <LaserInlineButton onClick={onAddNetworkNode}>Add node</LaserInlineButton>
+            </LaserActionRow>
             {networkNodes.length <= 0 ? (
-              <MutedLine>No nodes yet.</MutedLine>
+              <LaserMuted>No nodes yet.</LaserMuted>
             ) : (
               networkNodes.map((node) => (
                 <NodeCard key={node.id}>
-                  <TextField
+                  <LaserTextInput
                     value={node.name}
                     onChange={(e) => {
                       const name = e.target.value
@@ -274,28 +349,30 @@ export default function LaserConnectionPanel({
               ))
             )}
           </>
-        ) : null}
-      </SectionBlock>
+        ) : (
+          <LaserMuted>Optional remote laser endpoints beyond the main DAC.</LaserMuted>
+        )}
+      </LaserSection>
 
-      <SectionBlock>
-        <SectionBlockTitle>Sessions</SectionBlockTitle>
-        <ConnectionRow>
-          <ConnectionLabel>Active</ConnectionLabel>
-          <ConnectionStatus $connected={isConnected}>
+      <LaserSection>
+        <LaserSectionTitle>Active sessions</LaserSectionTitle>
+        <LaserToggleRow>
+          <LaserFieldLabel as="span">Open sessions</LaserFieldLabel>
+          <LaserConnectionStatus $connected={isConnected}>
             {isConnected
-              ? `${connectedSessionIds.length} session(s)`
+              ? `${connectedSessionIds.length} connected`
               : 'None'}
-          </ConnectionStatus>
-        </ConnectionRow>
+          </LaserConnectionStatus>
+        </LaserToggleRow>
         {connectionNote.length > 0 ? (
-          <MutedLine>{connectionNote}</MutedLine>
+          <LaserMuted>{connectionNote}</LaserMuted>
         ) : null}
-        <ConnectionActionRow>
-          <PanelButton type="button" onClick={onDisconnectAll}>
+        <LaserActionRow>
+          <LaserInlineButton onClick={onDisconnectAll}>
             Disconnect all
-          </PanelButton>
-        </ConnectionActionRow>
-      </SectionBlock>
+          </LaserInlineButton>
+        </LaserActionRow>
+      </LaserSection>
 
       <LaserFb4BeyondInfoDialog
         open={fb4InfoOpen}
@@ -325,8 +402,8 @@ function NodeConnectionFields({
   const preset = nodePresetFromNode(node)
   return (
     <>
-      <FieldLabelRow>
-        <MiniFieldLabel $inline>Connection</MiniFieldLabel>
+      <SectionTitleRow>
+        <LaserFieldLabel as="span">Connection</LaserFieldLabel>
         {preset.showFb4Info ? (
           <Tooltip title="FB4 & BEYOND setup">
             <IconButton
@@ -339,8 +416,8 @@ function NodeConnectionFields({
             </IconButton>
           </Tooltip>
         ) : null}
-      </FieldLabelRow>
-      <SelectLike
+      </SectionTitleRow>
+      <LaserSelect
         value={preset.id}
         onChange={(e) =>
           onPresetChange(e.target.value as LaserNodeConnectionPresetId)
@@ -351,147 +428,51 @@ function NodeConnectionFields({
             {opt.label}
           </option>
         ))}
-      </SelectLike>
-      <MutedLine>{preset.shortHint}</MutedLine>
+      </LaserSelect>
+      <LaserMuted>{preset.shortHint}</LaserMuted>
       {preset.showTarget ? (
         <Tooltip title={preset.targetTooltip}>
-          <TextField
+          <LaserTextInput
             value={node.connectionTarget}
             onChange={(e) => onTargetChange(e.target.value)}
             placeholder={preset.targetPlaceholder}
           />
         </Tooltip>
       ) : null}
-      <ConnectionRow>
-        <ConnectionStatus $connected={connected}>
+      <LaserToggleRow>
+        <LaserConnectionStatus $connected={connected}>
           {connected ? 'Connected' : 'Disconnected'}
-        </ConnectionStatus>
-      </ConnectionRow>
-      <ConnectionActionRow>
-        <PanelButton type="button" disabled={!connected} onClick={onDisconnect}>
+        </LaserConnectionStatus>
+      </LaserToggleRow>
+      <LaserActionRow>
+        <LaserInlineButton disabled={!connected} onClick={onDisconnect}>
           Disconnect
-        </PanelButton>
-        <PanelButton type="button" onClick={onConnect}>
-          Connect
-        </PanelButton>
-      </ConnectionActionRow>
+        </LaserInlineButton>
+        <LaserPrimaryButton onClick={onConnect}>Connect</LaserPrimaryButton>
+      </LaserActionRow>
     </>
   )
 }
 
-const SectionBlock = styled.div`
-  border: 1px solid ${(p) => p.theme.colors.divider};
-  border-radius: 0.35rem;
-  background: ${(p) => p.theme.colors.bg.primary};
-  padding: 0.45rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-`
-
-const SectionBlockTitle = styled.div<{ $flush?: boolean }>`
-  font-size: 0.74rem;
-  font-weight: 700;
-  color: ${(p) => p.theme.colors.text.primary};
-  margin-bottom: ${(p) => (p.$flush ? 0 : '0.1rem')};
-`
-
-const SectionBlockTitleRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.2rem;
-  flex-wrap: wrap;
-`
-
-const MutedLine = styled.div`
-  font-size: 0.66rem;
-  color: ${(p) => p.theme.colors.text.secondary};
-  line-height: 1.35;
-`
-
-const MiniFieldLabel = styled.label<{ $inline?: boolean }>`
-  font-size: 0.68rem;
-  font-weight: 600;
-  color: ${(p) => p.theme.colors.text.secondary};
-  display: ${(p) => (p.$inline ? 'inline' : 'block')};
-`
-
-const FieldLabelRow = styled.div`
+const SectionTitleRow = styled.div`
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  width: 100%;
-`
-
-const TextField = styled.input`
-  width: 100%;
-  box-sizing: border-box;
-  border: 1px solid ${(p) => p.theme.colors.divider};
-  border-radius: 0.28rem;
-  background: ${(p) => p.theme.colors.bg.darker};
-  color: ${(p) => p.theme.colors.text.primary};
-  padding: 0.28rem 0.38rem;
-  font-size: 0.72rem;
-`
-
-const SelectLike = styled.select`
-  width: 100%;
-  border: 1px solid ${(p) => p.theme.colors.divider};
-  border-radius: 0.28rem;
-  background: ${(p) => p.theme.colors.bg.darker};
-  color: ${(p) => p.theme.colors.text.primary};
-  padding: 0.28rem 0.34rem;
-  font-size: 0.72rem;
-`
-
-const ConnectionRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-`
-
-const ConnectionLabel = styled.div`
-  font-size: 0.75rem;
-  color: ${(p) => p.theme.colors.text.secondary};
-  margin-right: auto;
-`
-
-const ConnectionStatus = styled.div<{ $connected: boolean }>`
-  font-size: 0.7rem;
-  border: 1px solid ${(p) => (p.$connected ? '#2ea56b' : '#a15858')};
-  color: ${(p) => (p.$connected ? '#b8ffd9' : '#ffd7d7')};
-  border-radius: 999px;
-  padding: 0.08rem 0.4rem;
-`
-
-const ConnectionActionRow = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.35rem;
   flex-wrap: wrap;
-`
-
-const PanelButton = styled.button`
-  border: 1px solid ${(p) => p.theme.colors.divider};
-  background: ${(p) => p.theme.colors.bg.primary};
-  color: ${(p) => p.theme.colors.text.primary};
-  border-radius: 0.3rem;
-  padding: 0.32rem 0.5rem;
-  font-size: 0.72rem;
-  cursor: pointer;
-
-  &:disabled {
-    opacity: 0.45;
-    cursor: default;
-  }
+  width: 100%;
 `
 
 const NodeCard = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.28rem;
+  gap: 0.35rem;
   border: 1px solid ${(p) => p.theme.colors.divider};
   border-radius: 0.3rem;
-  padding: 0.35rem;
-  margin-top: 0.2rem;
+  padding: 0.45rem;
+  margin-top: 0.15rem;
+  background: ${(p) => p.theme.colors.bg.darker};
+`
+
+const HardwareFieldsWrap = styled.div`
+  margin-top: 0.1rem;
 `

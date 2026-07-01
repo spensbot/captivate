@@ -1589,7 +1589,9 @@ export default class BuiltinVisualizer extends LayerBase {
           return
         }
         currentProjectM.sessionReady =
-          result.ok && currentProjectM.presetPathKey === requestedPresetKey
+          result.ok &&
+          result.mode === 'native' &&
+          currentProjectM.presetPathKey === requestedPresetKey
         if (!currentProjectM.sessionReady) {
           currentProjectM.hasRenderedFrame = false
         }
@@ -1597,8 +1599,15 @@ export default class BuiltinVisualizer extends LayerBase {
           source: 'visualizer-renderer',
           area: 'projectm-layer',
           event: 'session-init',
-          level: result.ok ? 'info' : 'warn',
-          message: result.message,
+          level:
+            result.ok &&
+            (result.mode === 'native' || normalizedPresetPath.length === 0)
+              ? 'info'
+              : 'warn',
+          message:
+            result.mode === 'fallback' && normalizedPresetPath.length > 0
+              ? `${result.message} Presets require the native projectM bridge.`
+              : result.message,
           data: {
             sessionId,
             mode: result.mode,

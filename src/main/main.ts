@@ -30,6 +30,7 @@ import {
 import { readAppSettings, writeAppSettings } from './appSettingsStorage'
 import { resolveHtmlPath } from './util'
 import * as engine from './engine/engine'
+import { laserDacDisconnect } from './engine/laserDacSession'
 import {
   bootstrapRemoteControlIpc,
   registerLighting3dPreviewPage,
@@ -876,6 +877,20 @@ function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+let appShutdownCleanupPromise: Promise<void> | null = null
+
+function runAppShutdownCleanup(): Promise<void> {
+  if (appShutdownCleanupPromise) return appShutdownCleanupPromise
+  appShutdownCleanupPromise = (async () => {
+    try {
+      await Promise.race([laserDacDisconnect(), wait(1500)])
+    } catch {
+      /* ignore */
+    }
+  })()
+  return appShutdownCleanupPromise
+}
+
 async function requestMainWindowQuit(window: BrowserWindow): Promise<void> {
   try {
     const saveAttempt = saveFixtureLibraryIfDirty().catch((error) => {
@@ -900,6 +915,7 @@ async function requestMainWindowQuit(window: BrowserWindow): Promise<void> {
 
   isClosing = true
   flushPersistedWindowLayout()
+  await runAppShutdownCleanup()
   engine.stop()
   mainWindow = null
   if (!window.isDestroyed()) {
@@ -942,9 +958,12 @@ const createWindow = async () => {
     if (mainWindow !== null && !mainWindow.isDestroyed()) {
       void requestMainWindowQuit(mainWindow)
     } else {
-      isClosing = true
-      engine.stop()
-      app.quit()
+      void (async () => {
+        isClosing = true
+        await runAppShutdownCleanup()
+        engine.stop()
+        app.quit()
+      })()
     }
   }
 

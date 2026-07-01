@@ -52,6 +52,9 @@ import { AppAboutInfo } from '../shared/about'
 import type {
   LaserDacConnectRequest,
   LaserDacConnectResult,
+  LaserDacDeviceInfo,
+  LaserDacListDevicesRequest,
+  LaserDacListDevicesResult,
   LaserDacPushFramePayload,
   LaserDacStatus,
 } from '../shared/laserDac'
@@ -211,6 +214,46 @@ export async function laserDacDisconnectRequest(
     await ipcRenderer.invoke(ipc_channels.laser_dac_disconnect, sessionId ?? null)
   } catch {
     /* non-Electron or IPC failure */
+  }
+}
+
+export async function laserDacStopOutputRequest(
+  sessionId?: string
+): Promise<void> {
+  try {
+    await ipcRenderer.invoke(ipc_channels.laser_dac_stop_output, sessionId ?? null)
+  } catch {
+    /* non-Electron or IPC failure */
+  }
+}
+
+export async function laserDacListDevicesRequest(
+  backend: LaserDacListDevicesRequest['backend']
+): Promise<LaserDacListDevicesResult> {
+  try {
+    const raw = await ipcRenderer.invoke(ipc_channels.laser_dac_list_devices, {
+      backend,
+    })
+    if (
+      raw &&
+      typeof raw === 'object' &&
+      Array.isArray((raw as LaserDacListDevicesResult).devices)
+    ) {
+      const result = raw as LaserDacListDevicesResult
+      return {
+        devices: result.devices,
+        message: result.message,
+      }
+    }
+    if (Array.isArray(raw)) {
+      return { devices: raw as LaserDacDeviceInfo[] }
+    }
+    return { devices: [] }
+  } catch (e) {
+    return {
+      devices: [],
+      message: e instanceof Error ? e.message : String(e),
+    }
   }
 }
 

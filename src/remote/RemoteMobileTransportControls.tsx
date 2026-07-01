@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import styled from 'styled-components'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
@@ -9,7 +9,7 @@ import { send_user_command } from '../renderer/ipcHandler'
 import { useRealtimeSelector } from '../renderer/redux/realtimeStore'
 import { ButtonMidiOverlay } from '../renderer/base/MidiOverlay'
 import { SliderMidiOverlay } from '../renderer/base/MidiOverlay'
-import Slider from '../renderer/base/Slider'
+import useDragMapped from '../renderer/hooks/useDragMapped'
 import { useControlSelector, useTypedSelector } from '../renderer/redux/store'
 import { setMaster } from '../renderer/redux/controlSlice'
 import { setBlackout } from '../renderer/redux/guiSlice'
@@ -167,6 +167,14 @@ function RemoteMobileMaster() {
   const master = useControlSelector((state) => state.master)
   const dispatch = useDispatch()
   const percent = Math.round(master * 100)
+  const hot = percent >= 85
+  const trackRef = useRef<HTMLDivElement | null>(null)
+  const [, onHandlePointerDown] = useDragMapped(
+    ({ x }) => {
+      dispatch(setMaster(x))
+    },
+    { containerRef: trackRef, axis: 'horizontal', thresholdPx: 0 }
+  )
   return (
     <MasterBlock title="Master output">
       <MasterLabel>MASTER</MasterLabel>
@@ -174,16 +182,16 @@ function RemoteMobileMaster() {
         action={{ type: 'setMaster' }}
         style={{ flex: 1, minWidth: 0, height: '100%', display: 'flex' }}
       >
-        <MasterSliderWrap>
-          <Slider
-            value={master}
-            radius={0.34}
-            color={percent >= 85 ? '#f2f2f2' : '#cccccc'}
-            orientation="horizontal"
-            onChange={(v: number) => dispatch(setMaster(v))}
-            ariaLabel="Master level"
+        <MasterTrack ref={trackRef}>
+          <MasterTrackGradient aria-hidden />
+          <MasterTrackMask style={{ width: `${100 - percent}%` }} aria-hidden />
+          <HorizontalWideFaderCap
+            $hot={hot}
+            $value={master}
+            onPointerDown={onHandlePointerDown}
+            aria-hidden
           />
-        </MasterSliderWrap>
+        </MasterTrack>
       </SliderMidiOverlay>
       <MasterValue>{percent}%</MasterValue>
     </MasterBlock>
@@ -364,12 +372,80 @@ const MasterLabel = styled.span`
   flex-shrink: 0;
 `
 
-const MasterSliderWrap = styled.div`
+const MasterTrack = styled.div`
+  position: relative;
   flex: 1 1 auto;
+  width: 100%;
   min-width: 0;
-  height: 2.2rem;
-  display: flex;
-  align-items: center;
+  height: 2.35rem;
+  border-radius: 0.32rem;
+  border: 1px solid #d3e7ff44;
+  background: #050a11;
+  overflow: hidden;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.55);
+`
+
+const MasterTrackGradient = styled.div`
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #0b0b0b 0%, #ffffff 100%);
+  box-shadow: 0 0 0.5rem #ffffff33;
+  pointer-events: none;
+`
+
+const MasterTrackMask = styled.div`
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: #050a11;
+  pointer-events: none;
+`
+
+const HorizontalWideFaderCap = styled.div<{ $value: number; $hot: boolean }>`
+  position: absolute;
+  top: 3%;
+  height: 94%;
+  width: 1.35rem;
+  min-width: 2.35rem;
+  left: ${(p) => p.$value * 100}%;
+  transform: translateX(-50%);
+  border-radius: 0.24rem;
+  border: 1px solid ${(p) => (p.$hot ? '#ffffffcc' : '#8a8a8a')};
+  background: ${(p) =>
+    p.$hot
+      ? 'linear-gradient(180deg, #f6f6f6 0%, #c8c8c8 42%, #8e8e8e 100%)'
+      : 'linear-gradient(180deg, #ececec 0%, #b4b4b4 45%, #757575 100%)'};
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.22);
+  z-index: 2;
+  touch-action: none;
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 14%;
+    bottom: 14%;
+    left: 50%;
+    width: 1px;
+    transform: translateX(-50%);
+    background: repeating-linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.28) 0,
+      rgba(0, 0, 0, 0.28) 2px,
+      transparent 2px,
+      transparent 5px
+    );
+    opacity: 0.55;
+  }
 `
 
 const MasterValue = styled.span`

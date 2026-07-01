@@ -15,6 +15,8 @@ export interface LaserTransport {
   connect(): Promise<void>
   /** Tear down IO. */
   disconnect(): Promise<void>
+  /** Halt scanner output without closing the connection (safety / disarm). */
+  stopOutput?(): Promise<void>
   /** Push one frame worth of samples at the given point rate. */
   pushFrame(
     points: LaserDacFramePoint[],

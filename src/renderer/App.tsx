@@ -18,6 +18,7 @@ import DetachedVisualizerFullscreenBar from './visualizer/DetachedVisualizerFull
 import { useTypedSelector } from './redux/store'
 import { setActivePage } from './redux/guiSlice'
 import { universeHasMovers } from '../shared/dmxFixtures'
+import { universeHasAtmospherics } from '../shared/atmosphericsMapping'
 import FullscreenOverlay from './overlays/FullscreenOverlay'
 import BottomStatus from './menu/BottomStatus'
 import LedPage from './pages/LedPage'
@@ -39,11 +40,22 @@ export default function App() {
   const hasMoverFixtures = useTypedSelector((state) =>
     universeHasMovers(state.dmx.present.universe, state.dmx.present.fixtureTypesByID)
   )
+  const hasAtmosphericsFixtures = useTypedSelector((state) =>
+    universeHasAtmospherics(
+      state.dmx.present.universe,
+      state.dmx.present.fixtureTypesByID
+    )
+  )
   useEffect(() => {
     if (activePage === 'Movers' && !hasMoverFixtures) {
       dispatch(setActivePage('Universe'))
     }
   }, [activePage, dispatch, hasMoverFixtures])
+  useEffect(() => {
+    if (activePage === 'Atmospherics' && !hasAtmosphericsFixtures) {
+      dispatch(setActivePage('Universe'))
+    }
+  }, [activePage, dispatch, hasAtmosphericsFixtures])
   useEffect(() => {
     if (activePage === 'Led' && !ledSidebarEnabled) {
       dispatch(setActivePage('Universe'))
@@ -95,7 +107,14 @@ export default function App() {
         <KeyboardMappingFocus />
         <ErrorBoundary FallbackComponent={ErrorBoundaryFallback}>
           <Col>
-            <PageWrapper>
+            <PageWrapper
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                overflow: 'hidden',
+              }}
+            >
               <LaserAlphaPage standalone />
             </PageWrapper>
           </Col>

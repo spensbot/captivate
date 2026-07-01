@@ -23,10 +23,6 @@ const sourceCandidates = [
 
 const destinationDir = path.join(repoRoot, 'assets', 'projectm-bridge')
 const destinationPath = path.join(destinationDir, 'projectm_bridge.node')
-if (fs.existsSync(destinationPath)) {
-  console.log(`Using existing projectm_bridge.node at ${destinationPath}`)
-  process.exit(0)
-}
 
 const sourcePath = sourceCandidates.find((candidate) => fs.existsSync(candidate))
 if (!sourcePath) {
@@ -34,6 +30,19 @@ if (!sourcePath) {
     'projectM bridge build output was not found. Expected projectm_bridge.node in native/projectm-bridge/build/(Release|Debug).'
   )
   process.exit(1)
+}
+
+const sourceStat = fs.statSync(sourcePath)
+const destinationExists = fs.existsSync(destinationPath)
+if (destinationExists) {
+  const destinationStat = fs.statSync(destinationPath)
+  if (
+    destinationStat.mtimeMs >= sourceStat.mtimeMs &&
+    destinationStat.size === sourceStat.size
+  ) {
+    console.log(`Using up-to-date projectm_bridge.node at ${destinationPath}`)
+    process.exit(0)
+  }
 }
 
 fs.mkdirSync(destinationDir, { recursive: true })

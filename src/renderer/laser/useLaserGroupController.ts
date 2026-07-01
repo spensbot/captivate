@@ -50,8 +50,21 @@ export function useLaserGroupController(groupNames: string[]) {
   const laser = useTypedSelector((s) => s.laser)
 
   const activeLaserGroup = laser.activeLaserGroup
-  const groupSlots = laser.groupSlots
-  const routes = laser.routes
+  const groupSlots = laser.groupSlots ?? {}
+  const routes = useMemo(
+    () =>
+      laser.routes ??
+      groupSlotToRoutes(
+        groupSlots[laser.activeLaserGroup.trim()] ??
+          createDefaultLaserGroupSlot(laser.activeLaserSceneId)
+      ),
+    [
+      laser.routes,
+      laser.activeLaserGroup,
+      laser.activeLaserSceneId,
+      groupSlots,
+    ]
+  )
   const activeSceneId = laser.activeLaserSceneId
 
   const laserSplitIndex = useMemo(

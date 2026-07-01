@@ -115,9 +115,6 @@ export default function ColorMapChannel({
   }, [activeColorIndex, ch.colors.length])
 
   useEffect(() => {
-    if (controlled) {
-      return
-    }
     if (!hasAssignedFixture || ch.colors.length === 0) {
       if (currentOverride !== null) {
         dispatch(clearColorMapCalibrationOverride())
@@ -147,7 +144,6 @@ export default function ColorMapChannel({
       })
     )
   }, [
-    controlled,
     dispatch,
     hasAssignedFixture,
     ch.colors,
@@ -158,13 +154,10 @@ export default function ColorMapChannel({
   ])
 
   useEffect(() => {
-    if (controlled) {
-      return
-    }
     return () => {
       dispatch(clearColorMapCalibrationOverride())
     }
-  }, [controlled, dispatch])
+  }, [dispatch])
 
   const safeColorIndex = Math.max(0, Math.min(activeColorIndex, ch.colors.length - 1))
   const activeColor = ch.colors[safeColorIndex] ?? {
