@@ -127,6 +127,8 @@ function getOptions(
   activeVisualizerSliders: Set<string>,
   splitSupportsMovers: boolean,
   splitSupportsGobo: boolean,
+  splitSupportsFocus: boolean,
+  splitSupportsPrism: boolean,
   splitSupportsAtmosphere: boolean,
   splitSupportsColorChannels: boolean,
   auxColorGates: AuxColorGates,
@@ -252,7 +254,9 @@ function getOptions(
       (option !== 'uv' || auxColorGates.uv) &&
       (option !== 'white' || auxColorGates.white) &&
       (!moverOnlyParamSet.has(option) || splitSupportsMovers) &&
-      (option !== 'gobo' || splitSupportsGobo)
+      (option !== 'gobo' || splitSupportsGobo) &&
+      (option !== 'focus' || splitSupportsFocus) &&
+      (option !== 'prism' || splitSupportsPrism)
   )
 
   const dynamicParamOptions = allParamKeys.filter(
@@ -267,7 +271,9 @@ function getOptions(
       (option !== 'white' || auxColorGates.white) &&
       (!atmosphereOnlyParamSet.has(option) || splitSupportsAtmosphere) &&
       (!moverOnlyParamSet.has(option) || splitSupportsMovers) &&
-      (option !== 'gobo' || splitSupportsGobo)
+      (option !== 'gobo' || splitSupportsGobo) &&
+      (option !== 'focus' || splitSupportsFocus) &&
+      (option !== 'prism' || splitSupportsPrism)
   )
 
   return paramOptions
@@ -327,6 +333,8 @@ export default function ParamAddButton({ splitIndex }: Props) {
   const splitCapabilities = useDmxSelector((dmx) => {
     let supportsMovers = false
     let supportsGobo = false
+    let supportsFocus = false
+    let supportsPrism = false
     let supportsAtmosphere = false
     let supportsDmxColorChannels = false
     let supportsLedColorChannels = false
@@ -364,6 +372,16 @@ export default function ParamAddButton({ splitIndex }: Props) {
       if (
         fixtureType.channels
           .flatMap((channel) => fixtureChannelLeafChannels(channel))
+          .some((channel) => channel.type === 'focus')
+      ) {
+        supportsFocus = true
+      }
+      if (fixtureType.channels.some((channel) => channel.type === 'prismMap')) {
+        supportsPrism = true
+      }
+      if (
+        fixtureType.channels
+          .flatMap((channel) => fixtureChannelLeafChannels(channel))
           .some((channel) => {
             return (
               channel.type === 'master' ||
@@ -386,6 +404,8 @@ export default function ParamAddButton({ splitIndex }: Props) {
       if (
         supportsMovers &&
         supportsGobo &&
+        supportsFocus &&
+        supportsPrism &&
         supportsAtmosphere &&
         supportsDmxColorChannels
       ) {
@@ -413,6 +433,8 @@ export default function ParamAddButton({ splitIndex }: Props) {
     return {
       supportsMovers,
       supportsGobo,
+      supportsFocus,
+      supportsPrism,
       supportsAtmosphere,
       supportsColorChannels: supportsDmxColorChannels || supportsLedColorChannels,
     }
@@ -436,6 +458,8 @@ export default function ParamAddButton({ splitIndex }: Props) {
     activeVisualizerSliders,
     splitSupportsMoversInUi,
     splitCapabilities.supportsGobo,
+    splitCapabilities.supportsFocus,
+    splitCapabilities.supportsPrism,
     splitCapabilities.supportsAtmosphere,
     splitCapabilities.supportsColorChannels,
     auxColorGates,

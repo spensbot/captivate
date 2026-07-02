@@ -34,6 +34,12 @@ export interface GoboMapCalibrationOverride {
   dmxValue: number
 }
 
+export interface PrismMapCalibrationOverride {
+  fixtureTypeId: string
+  channelIndex: number
+  dmxValue: number
+}
+
 export interface StatusMessage {
   id: string
   level: 'info' | 'warn' | 'error'
@@ -84,6 +90,7 @@ export interface GuiState {
   moverAdvancedControlEnabled: boolean
   colorMapCalibrationOverride: ColorMapCalibrationOverride | null
   goboMapCalibrationOverride: GoboMapCalibrationOverride | null
+  prismMapCalibrationOverride: PrismMapCalibrationOverride | null
   fxtrDepthOn: boolean
   /** When true, the left sidebar shows the LED editor page (off by default; Extras menu). */
   ledSidebarEnabled: boolean
@@ -124,6 +131,7 @@ export function initGuiState(): GuiState {
     moverAdvancedControlEnabled: false,
     colorMapCalibrationOverride: null,
     goboMapCalibrationOverride: null,
+    prismMapCalibrationOverride: null,
     fxtrDepthOn: false,
     ledSidebarEnabled: false,
     statusMessages: [],
@@ -295,6 +303,15 @@ const guiSlice = createSlice({
     clearGoboMapCalibrationOverride: (state, _: PayloadAction<undefined>) => {
       state.goboMapCalibrationOverride = null
     },
+    setPrismMapCalibrationOverride: (
+      state,
+      { payload }: PayloadAction<PrismMapCalibrationOverride>
+    ) => {
+      state.prismMapCalibrationOverride = payload
+    },
+    clearPrismMapCalibrationOverride: (state, _: PayloadAction<undefined>) => {
+      state.prismMapCalibrationOverride = null
+    },
     setFxtrDepthOn: (
       state,
       { payload }: PayloadAction<boolean>
@@ -418,6 +435,8 @@ export const {
   clearColorMapCalibrationOverride,
   setGoboMapCalibrationOverride,
   clearGoboMapCalibrationOverride,
+  setPrismMapCalibrationOverride,
+  clearPrismMapCalibrationOverride,
   setFxtrDepthOn,
   setLedSidebarEnabled,
   pushStatusMessage,

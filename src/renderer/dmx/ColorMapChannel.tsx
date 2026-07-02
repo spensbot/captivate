@@ -21,6 +21,7 @@ import {
   clearColorMapCalibrationOverride,
   setColorMapCalibrationOverride,
 } from '../redux/guiSlice'
+import { getColorMapSlotPreviewDmxValue } from '../../shared/fixtureMapCalibration'
 
 interface Props {
   ch: ChannelColorMap
@@ -28,42 +29,6 @@ interface Props {
   channelIndex: number
   /** When set (e.g. color map inside a split range), edits flow through this instead of Redux. */
   onChange?: (newChannel: ChannelColorMap) => void
-}
-
-function clampDmxValue(value: number, fallback: number = 0): number {
-  if (!Number.isFinite(value)) return fallback
-  return Math.min(DMX_MAX_VALUE, Math.max(0, Math.round(value)))
-}
-
-function getColorMapPreviewDmxValue(
-  colors: ChannelColorMap['colors'],
-  activeColorIndex: number
-): number {
-  if (colors.length === 0) return 0
-
-  const sorted = colors
-    .map((color, index) => ({
-      index,
-      max: clampDmxValue(color.max),
-    }))
-    .sort((left, right) => left.max - right.max)
-
-  const sortedIndex = sorted.findIndex((entry) => entry.index === activeColorIndex)
-  if (sortedIndex === -1) {
-    return sorted[0]?.max ?? 0
-  }
-
-  const entry = sorted[sortedIndex]
-  const previousMax = sortedIndex > 0 ? sorted[sortedIndex - 1].max : -1
-  const rangeMin = Math.min(DMX_MAX_VALUE, Math.max(0, previousMax + 1))
-  const rangeMax = Math.min(DMX_MAX_VALUE, Math.max(rangeMin, entry.max))
-
-  if (rangeMin >= rangeMax) {
-    return rangeMax
-  }
-
-  // Keep preview values inside each slot to avoid edge flicker.
-  return Math.round((rangeMin + rangeMax) / 2)
 }
 
 export default function ColorMapChannel({
@@ -91,6 +56,7 @@ export default function ColorMapChannel({
   }
 
   function updateColorAt(colorIndex: number, newColor: ChannelColorMap['colors'][number]) {
+    setActiveColorIndex(colorIndex)
     if (controlled) {
       replaceColors(
         ch.colors.map((color, index) =>
@@ -126,7 +92,7 @@ export default function ColorMapChannel({
       0,
       Math.min(activeColorIndex, ch.colors.length - 1)
     )
-    const dmxValue = getColorMapPreviewDmxValue(ch.colors, clampedColorIndex)
+    const dmxValue = getColorMapSlotPreviewDmxValue(ch.colors, clampedColorIndex)
 
     if (
       currentOverride?.fixtureTypeId === fixtureID &&
@@ -216,6 +182,7 @@ export default function ColorMapChannel({
               label=""
               min={0}
               max={DMX_MAX_VALUE}
+              onFocus={() => setActiveColorIndex(i)}
               onChange={(newMax) =>
                 updateColorAt(i, {
                   max: newMax,
@@ -301,4 +268,3 @@ const Sp = styled.div`
   width: 1rem;
   height: 1rem;
 `
-

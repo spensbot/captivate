@@ -53,7 +53,7 @@ function isAtmosCustomChannelName(name: string) {
     'onoff',
     'fx',
   ]
-  const exclusions = ['pan', 'tilt', 'speed', 'gobo', 'zoom', 'focus']
+  const exclusions = ['pan', 'tilt', 'speed', 'gobo', 'prism', 'zoom', 'focus']
   if (exclusions.some((token) => name.includes(token))) {
     return false
   }

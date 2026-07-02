@@ -419,7 +419,16 @@ export function getDefaultDmxValue(
       )
       return ch.gobos[defaultIndex]?.max ?? DMX_DEFAULT_VALUE
     }
-    default: // 'color' | 'strobe' | 'colorMap' | 'goboMap'
+    case 'focus':
+      return ch.default
+    case 'prismMap': {
+      const defaultIndex = Math.max(
+        0,
+        Math.min(Math.round(ch.defaultIndex), ch.prisms.length - 1)
+      )
+      return ch.prisms[defaultIndex]?.max ?? DMX_DEFAULT_VALUE
+    }
+    default: // 'color' | 'strobe' | 'colorMap'
       return DMX_DEFAULT_VALUE
   }
 }
@@ -939,6 +948,30 @@ export function getDmxValue(
 
       return ch.gobos[selectedIndex]?.max ?? DMX_DEFAULT_VALUE
     }
+    case 'focus': {
+      const rawFocus = params.focus
+      if (!Number.isFinite(rawFocus)) {
+        return ch.default
+      }
+      return rLerp(ch, rawFocus as number)
+    }
+    case 'prismMap': {
+      const prismCount = ch.prisms.length
+      if (prismCount <= 0) return DMX_DEFAULT_VALUE
+
+      const rawPrismSelection = params.prism
+      const selectedIndex = Number.isFinite(rawPrismSelection)
+        ? Math.max(
+            0,
+            Math.min(
+              prismCount - 1,
+              Math.round(clampNormalized(rawPrismSelection as number) * (prismCount - 1))
+            )
+          )
+        : Math.max(0, Math.min(Math.round(ch.defaultIndex), prismCount - 1))
+
+      return ch.prisms[selectedIndex]?.max ?? DMX_DEFAULT_VALUE
+    }
     case 'custom': {
       const customParam = params[ch.name]
       if (customParam === undefined) {
@@ -1066,7 +1099,7 @@ export function getFixturesInGroups(
           return false
         }
         if (
-          ['pan', 'tilt', 'speed', 'gobo', 'zoom', 'focus'].some((token) =>
+          ['pan', 'tilt', 'speed', 'gobo', 'prism', 'zoom', 'focus'].some((token) =>
             name.includes(token)
           )
         ) {

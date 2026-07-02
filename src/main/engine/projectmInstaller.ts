@@ -255,6 +255,17 @@ function pickReleaseRuntimeAsset(assets: GitHubReleaseAsset[]): GitHubReleaseAss
   return ranked[0] ?? null
 }
 
+function isExcludedRuntimeBundle(name: string) {
+  const lower = name.toLowerCase()
+  return (
+    lower.includes('itunes-plugin') ||
+    lower.includes('music.app-plugin') ||
+    lower.includes('projectm-sdl') ||
+    lower.includes('projectm_sdl') ||
+    lower.endsWith('.pkg')
+  )
+}
+
 function isRuntimeArchiveAsset(name: string) {
   const lower = name.toLowerCase()
   if (
@@ -273,11 +284,7 @@ function isRuntimeArchiveAsset(name: string) {
   if (lower.includes('source') || lower.includes('-src') || lower.includes('src-')) {
     return false
   }
-  if (
-    lower.includes('itunes-plugin') ||
-    lower.includes('music.app-plugin') ||
-    lower.includes('projectm-sdl')
-  ) {
+  if (isExcludedRuntimeBundle(lower)) {
     return false
   }
   return true

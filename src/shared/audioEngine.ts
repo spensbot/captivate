@@ -201,8 +201,8 @@ export function computePerceivedEnergyLevel(input: PerceivedEnergyInput): number
   energy += buildBoost
 
   const hitAccent =
-    beatPulse * lerpValue(0.05, 0.1, rhythmEmphasis) +
-    clamp01(input.lowOnset * 3.2) * lerpValue(0.08, 0.04, rhythmEmphasis)
+    beatPulse * lerpValue(0.022, 0.045, rhythmEmphasis) +
+    clamp01(input.lowOnset * 3.2) * lerpValue(0.035, 0.018, rhythmEmphasis)
   energy += hitAccent
 
   if (fastBreakdown) {
@@ -341,7 +341,7 @@ export function initAudioInputSettings(): AudioInputSettings {
     beatSensitivity: 0.45,
     beatMinIntervalMs: 260,
     bpmSmoothing: 0.12,
-    energySmoothing: 0.5,
+    energySmoothing: 0.4,
     energyDynamics: 0.45,
     energyRhythmBias: 0.5,
     beatTapHintBpm: null,

@@ -937,7 +937,7 @@ export default class AudioInputEngine {
       high: highEnergy,
       flux: fluxNormalized,
     })
-    const instantEnergy = clamp01(loudnessCore * 0.88 + transient * 0.12)
+    const instantEnergy = clamp01(loudnessCore * 0.91 + transient * 0.09)
 
     const shortAlpha = alphaFromTau(dtSec, Math.max(0.08, barSec * 0.22))
     const longAlpha = alphaFromTau(dtSec, Math.max(0.28, fourBarsSec * 0.45))
@@ -956,10 +956,10 @@ export default class AudioInputEngine {
     }
 
     const compositeEnergy = clamp01(
-      instantEnergy * 0.4 +
-        this.energyShortEma * 0.3 +
-        this.energyLongEma * 0.17 +
-        this.energyTrendEma * 0.13
+      instantEnergy * 0.32 +
+        this.energyShortEma * 0.34 +
+        this.energyLongEma * 0.2 +
+        this.energyTrendEma * 0.14
     )
 
     const bassDrop =
@@ -1027,40 +1027,65 @@ export default class AudioInputEngine {
     })
 
     const deltaEnergy = perceivedEnergy - this.energyLevelEma
-    const jitterDeadband = 0.0008
+    const absDelta = Math.abs(deltaEnergy)
+    const energyBlend = clamp01(settings.energySmoothing)
     const buildTrend = clamp01(
       (this.energyShortEma - this.energyLongEma - 0.01) / 0.12
     )
     const changeMagnitude = Math.abs(this.energyShortEma - this.energyTrendEma)
-    const changeBoost = clamp01((changeMagnitude - 0.012) / 0.16)
-    const edgeBoost = clamp01((Math.abs(deltaEnergy) - 0.042) / 0.24)
-    const beatBoost = beatDetected ? 0.07 : 0
-    const energyBlend = clamp01(settings.energySmoothing)
-    const smoothBars = lerp(2.6, 0.85, energyBlend)
-    const baseAlpha = alphaFromTau(dtSec, Math.max(0.22, barSec * smoothBars))
+
+    const jitterDeadband = lerp(0.014, 0.005, energyBlend)
+    const isBigChange = absDelta > lerp(0.13, 0.09, energyBlend)
+    const isMediumChange = absDelta > lerp(0.042, 0.028, energyBlend)
+
+    const smoothBars = lerp(3.6, 1.15, energyBlend)
+    let baseAlpha = alphaFromTau(dtSec, Math.max(0.26, barSec * smoothBars))
+    if (!isBigChange && !isMediumChange) {
+      baseAlpha *= lerp(0.2, 0.32, energyBlend)
+    } else if (!isBigChange) {
+      baseAlpha *= lerp(0.5, 0.68, energyBlend)
+    }
+
+    const changeBoost =
+      isBigChange ? clamp01((changeMagnitude - 0.01) / 0.14) * 0.35 : 0
+    const edgeBoost = isBigChange
+      ? clamp01((absDelta - 0.09) / 0.22)
+      : isMediumChange
+        ? clamp01((absDelta - 0.04) / 0.12) * 0.35
+        : 0
+    const beatBoost =
+      beatDetected && (isBigChange || isMediumChange) ? 0.025 : 0
     const dropFollow =
       perceivedEnergy < this.energyLevelEma
-        ? 1 + changeBoost * 0.32 + edgeBoost * 0.38 + (fastBreakdown ? 0.55 : 0)
+        ? 1 +
+          (isBigChange ? changeBoost * 0.45 + edgeBoost * 0.5 : edgeBoost * 0.2) +
+          (fastBreakdown ? 0.55 : 0)
         : 1
     const buildSlow =
-      perceivedEnergy > this.energyLevelEma && buildTrend > 0.08
+      perceivedEnergy > this.energyLevelEma && buildTrend > 0.08 && isBigChange
         ? lerp(0.55, 0.82, buildTrend)
         : 1
     const alpha = Math.min(
       1,
       ((baseAlpha +
-        (1 - baseAlpha) * (changeBoost * 0.48 + edgeBoost * 0.52 + beatBoost)) *
+        (1 - baseAlpha) * (changeBoost + edgeBoost * 0.85 + beatBoost)) *
         dropFollow) /
         buildSlow
     )
     const riseAlpha = Math.min(
       1,
-      alpha * lerp(2.4, 3.6, 1 - energyBlend) * (fastBreakdown ? 0.85 : 1)
+      alpha *
+        (isBigChange
+          ? lerp(2.2, 3.2, 1 - energyBlend)
+          : isMediumChange
+            ? lerp(1.35, 1.75, 1 - energyBlend)
+            : lerp(0.75, 0.95, energyBlend)) *
+        (fastBreakdown ? 0.85 : 1)
     )
     const alphaUse =
       perceivedEnergy > this.energyLevelEma ? riseAlpha : alpha
 
-    if (Math.abs(deltaEnergy) > jitterDeadband) {
+    if (absDelta > jitterDeadband) {
       this.energyLevelEma += (perceivedEnergy - this.energyLevelEma) * alphaUse
     }
     const energyLevel = clamp01(this.energyLevelEma)

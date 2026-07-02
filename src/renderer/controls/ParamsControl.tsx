@@ -18,6 +18,8 @@ import {
 import { getCustomChannels } from 'renderer/redux/dmxSlice'
 import StrobeControl from './StrobeControl'
 import GoboControl from './GoboControl'
+import FocusControl from './FocusControl'
+import PrismControl from './PrismControl'
 import ZParamsPad from './ZParamsPad'
 import { useDispatch } from 'react-redux'
 import { useEffect } from 'react'
@@ -670,6 +672,8 @@ export default function ParamsControl({ splitIndex }: Params) {
       <Randomizer splitIndex={splitIndex} />
       <StrobeControl splitIndex={splitIndex} />
       <GoboControl splitIndex={splitIndex} />
+      <FocusControl splitIndex={splitIndex} />
+      <PrismControl splitIndex={splitIndex} />
       <ParamSlider param={'intensity'} splitIndex={splitIndex} />
       {isAtmosphereSplit && (
         <AtmosphereSliderRow>

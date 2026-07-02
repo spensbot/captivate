@@ -6,23 +6,23 @@ import Add from '@mui/icons-material/Add'
 import Remove from '@mui/icons-material/Remove'
 import NumberField from 'renderer/base/NumberField'
 import Input from 'renderer/base/Input'
-import { ChannelGoboMap, DMX_MAX_VALUE, DMX_MIN_VALUE } from '../../shared/dmxFixtures'
+import { ChannelPrismMap, DMX_MAX_VALUE, DMX_MIN_VALUE } from '../../shared/dmxFixtures'
 import wrapClick from 'renderer/base/wrapClick'
 import { useDmxSelector, useTypedSelector } from '../redux/store'
 import {
-  clearGoboMapCalibrationOverride,
-  setGoboMapCalibrationOverride,
+  clearPrismMapCalibrationOverride,
+  setPrismMapCalibrationOverride,
 } from '../redux/guiSlice'
-import { getGoboMapPreviewDmxValue } from '../../shared/fixtureMapCalibration'
+import { getPrismMapPreviewDmxValue } from '../../shared/fixtureMapCalibration'
 
 interface Props {
-  ch: ChannelGoboMap
+  ch: ChannelPrismMap
   fixtureID: string
   channelIndex: number
-  onChange: (newChannel: ChannelGoboMap) => void
+  onChange: (newChannel: ChannelPrismMap) => void
 }
 
-export default function GoboMapChannel({
+export default function PrismMapChannel({
   ch,
   fixtureID,
   channelIndex,
@@ -30,37 +30,37 @@ export default function GoboMapChannel({
 }: Props) {
   const dispatch = useDispatch()
   const [activeIndex, setActiveIndex] = useState(
-    Math.max(0, Math.min(ch.defaultIndex, ch.gobos.length - 1))
+    Math.max(0, Math.min(ch.defaultIndex, ch.prisms.length - 1))
   )
 
   const hasAssignedFixture = useDmxSelector((dmx) =>
     dmx.universe.some((fixture) => fixture.type === fixtureID)
   )
   const currentOverride = useTypedSelector(
-    (state) => state.gui.goboMapCalibrationOverride
+    (state) => state.gui.prismMapCalibrationOverride
   )
 
-  const safeDefaultIndex = Math.max(0, Math.min(ch.defaultIndex, ch.gobos.length - 1))
-  const safeActiveIndex = Math.max(0, Math.min(activeIndex, ch.gobos.length - 1))
+  const safeDefaultIndex = Math.max(0, Math.min(ch.defaultIndex, ch.prisms.length - 1))
+  const safeActiveIndex = Math.max(0, Math.min(activeIndex, ch.prisms.length - 1))
 
-  function updateGobo(
+  function updatePrism(
     index: number,
-    updater: (gobo: ChannelGoboMap['gobos'][number]) => ChannelGoboMap['gobos'][number]
+    updater: (prism: ChannelPrismMap['prisms'][number]) => ChannelPrismMap['prisms'][number]
   ) {
     setActiveIndex(index)
-    const nextGobos = ch.gobos.map((gobo, goboIndex) =>
-      goboIndex === index ? updater(gobo) : gobo
+    const nextPrisms = ch.prisms.map((prism, prismIndex) =>
+      prismIndex === index ? updater(prism) : prism
     )
 
     onChange({
       ...ch,
-      gobos: nextGobos,
-      defaultIndex: Math.max(0, Math.min(ch.defaultIndex, nextGobos.length - 1)),
+      prisms: nextPrisms,
+      defaultIndex: Math.max(0, Math.min(ch.defaultIndex, nextPrisms.length - 1)),
     })
   }
 
   function setDefaultIndex(index: number) {
-    const clamped = Math.max(0, Math.min(index, ch.gobos.length - 1))
+    const clamped = Math.max(0, Math.min(index, ch.prisms.length - 1))
     setActiveIndex(clamped)
     onChange({
       ...ch,
@@ -68,48 +68,48 @@ export default function GoboMapChannel({
     })
   }
 
-  function addGobo() {
-    const nextGobos = ch.gobos.concat({
-      name: `Gobo ${ch.gobos.length + 1}`,
+  function addPrism() {
+    const nextPrisms = ch.prisms.concat({
+      name: `Prism ${ch.prisms.length + 1}`,
       max: DMX_MIN_VALUE,
     })
 
     onChange({
       ...ch,
-      gobos: nextGobos,
+      prisms: nextPrisms,
       defaultIndex: safeDefaultIndex,
     })
   }
 
-  function removeActiveGobo() {
-    if (ch.gobos.length <= 1) return
+  function removeActivePrism() {
+    if (ch.prisms.length <= 1) return
 
-    const removeIndex = Math.max(0, Math.min(activeIndex, ch.gobos.length - 1))
-    const nextGobos = ch.gobos.filter((_, index) => index !== removeIndex)
-    const nextDefaultIndex = Math.max(0, Math.min(safeDefaultIndex, nextGobos.length - 1))
+    const removeIndex = Math.max(0, Math.min(activeIndex, ch.prisms.length - 1))
+    const nextPrisms = ch.prisms.filter((_, index) => index !== removeIndex)
+    const nextDefaultIndex = Math.max(0, Math.min(safeDefaultIndex, nextPrisms.length - 1))
 
-    setActiveIndex(Math.max(0, Math.min(removeIndex, nextGobos.length - 1)))
+    setActiveIndex(Math.max(0, Math.min(removeIndex, nextPrisms.length - 1)))
     onChange({
       ...ch,
-      gobos: nextGobos,
+      prisms: nextPrisms,
       defaultIndex: nextDefaultIndex,
     })
   }
 
   useEffect(() => {
-    if (activeIndex < ch.gobos.length) return
-    setActiveIndex(Math.max(0, ch.gobos.length - 1))
-  }, [activeIndex, ch.gobos.length])
+    if (activeIndex < ch.prisms.length) return
+    setActiveIndex(Math.max(0, ch.prisms.length - 1))
+  }, [activeIndex, ch.prisms.length])
 
   useEffect(() => {
-    if (!hasAssignedFixture || ch.gobos.length === 0) {
+    if (!hasAssignedFixture || ch.prisms.length === 0) {
       if (currentOverride !== null) {
-        dispatch(clearGoboMapCalibrationOverride())
+        dispatch(clearPrismMapCalibrationOverride())
       }
       return
     }
 
-    const dmxValue = getGoboMapPreviewDmxValue(ch.gobos, safeActiveIndex)
+    const dmxValue = getPrismMapPreviewDmxValue(ch.prisms, safeActiveIndex)
 
     if (
       currentOverride?.fixtureTypeId === fixtureID &&
@@ -120,7 +120,7 @@ export default function GoboMapChannel({
     }
 
     dispatch(
-      setGoboMapCalibrationOverride({
+      setPrismMapCalibrationOverride({
         fixtureTypeId: fixtureID,
         channelIndex,
         dmxValue,
@@ -129,7 +129,7 @@ export default function GoboMapChannel({
   }, [
     dispatch,
     hasAssignedFixture,
-    ch.gobos,
+    ch.prisms,
     safeActiveIndex,
     fixtureID,
     channelIndex,
@@ -138,58 +138,58 @@ export default function GoboMapChannel({
 
   useEffect(() => {
     return () => {
-      dispatch(clearGoboMapCalibrationOverride())
+      dispatch(clearPrismMapCalibrationOverride())
     }
   }, [dispatch])
 
   return (
     <Root>
       <HeaderRow>
-        <Info style={{ flex: '1 0 8rem' }}>Gobo</Info>
+        <Info style={{ flex: '1 0 8rem' }}>Prism</Info>
         <Info>DMX Max</Info>
       </HeaderRow>
 
-      {ch.gobos.map((gobo, index) => {
+      {ch.prisms.map((prism, index) => {
         const isDefault = safeDefaultIndex === index
         const isEditing = safeActiveIndex === index
         return (
-          <GoboRow key={`${index}-${gobo.name}`}>
+          <PrismRow key={`${index}-${prism.name}`}>
             <DefaultDot
               isDefault={isDefault}
               onClick={wrapClick(() => setDefaultIndex(index))}
-              title={isDefault ? 'Default gobo' : 'Set as default gobo'}
+              title={isDefault ? 'Default prism' : 'Set as default prism'}
             />
             <PreviewDot
               isActive={isEditing}
               onClick={wrapClick(() => setActiveIndex(index))}
-              title="Preview this gobo on patched fixtures"
+              title="Preview this prism on patched fixtures"
             />
-            <NameCell title="Gobo name">
+            <NameCell title="Prism name">
               <Input
-                value={gobo.name}
-                onChange={(name) => updateGobo(index, (item) => ({ ...item, name }))}
+                value={prism.name}
+                onChange={(name) => updatePrism(index, (item) => ({ ...item, name }))}
               />
             </NameCell>
             <NumberField
-              val={gobo.max}
+              val={prism.max}
               label=""
               min={DMX_MIN_VALUE}
               max={DMX_MAX_VALUE}
               onFocus={() => setActiveIndex(index)}
-              onChange={(max) => updateGobo(index, (item) => ({ ...item, max }))}
+              onChange={(max) => updatePrism(index, (item) => ({ ...item, max }))}
             />
-          </GoboRow>
+          </PrismRow>
         )
       })}
 
       <ButtonRow>
-        <IconButton onClick={addGobo} title="Add gobo entry">
+        <IconButton onClick={addPrism} title="Add prism entry">
           <Add />
         </IconButton>
         <IconButton
-          onClick={removeActiveGobo}
-          disabled={ch.gobos.length <= 1}
-          title="Remove selected gobo entry"
+          onClick={removeActivePrism}
+          disabled={ch.prisms.length <= 1}
+          title="Remove selected prism entry"
         >
           <Remove />
         </IconButton>
@@ -207,7 +207,7 @@ const HeaderRow = styled.div`
   gap: 0.5rem;
 `
 
-const GoboRow = styled.div`
+const PrismRow = styled.div`
   display: flex;
   align-items: center;
   margin-bottom: 0.4rem;

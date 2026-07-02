@@ -9,7 +9,9 @@ import {
   initChannelColor,
   initChannelColorMap,
   initChannelCustom,
+  initChannelFocus,
   initChannelGoboMap,
+  initChannelPrismMap,
   initChannelMaster,
   initChannelStrobe,
 } from './dmxFixtures'
@@ -142,6 +144,27 @@ function buildColorMapFromCapabilities(capabilities: QlcCapability[]): FixtureCh
   return initChannelColorMap(colors)
 }
 
+function buildPrismMapFromCapabilities(
+  capabilities: QlcCapability[]
+): FixtureChannel {
+  const prisms: GoboMapItem[] = capabilities.map((capability, index) => {
+    const name = normalizeString(capabilityText(capability), `Prism ${index + 1}`)
+    return {
+      name,
+      max: clampDmx(
+        capability['@_Max'],
+        Math.round(((index + 1) / capabilities.length) * DMX_MAX_VALUE)
+      ),
+    }
+  })
+
+  if (prisms.length === 0) {
+    return initChannelPrismMap([{ name: 'Open', max: DMX_MIN_VALUE }])
+  }
+
+  return initChannelPrismMap(prisms.sort((left, right) => left.max - right.max))
+}
+
 function buildGoboMapFromCapabilities(capabilities: QlcCapability[]): FixtureChannel {
   const gobos: GoboMapItem[] = capabilities.map((capability, index) => {
     const name = normalizeString(capabilityText(capability), `Gobo ${index + 1}`)
@@ -211,8 +234,12 @@ function convertQlcChannel(channel: QlcChannel): FixtureChannel {
     return buildGoboMapFromCapabilities(capabilities)
   }
 
+  if (preset === 'PrismWheel' || preset === 'PrismIndex') {
+    return buildPrismMapFromCapabilities(capabilities)
+  }
+
   if (preset.includes('BeamFocus')) {
-    return initChannelCustom('Focus')
+    return initChannelFocus()
   }
 
   return initChannelCustom(name)

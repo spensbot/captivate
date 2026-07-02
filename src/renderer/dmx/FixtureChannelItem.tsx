@@ -167,6 +167,10 @@ function getInfo(ch: FixtureChannel): string {
       return `Color Map`
     case 'goboMap':
       return `Gobo Map`
+    case 'focus':
+      return `Focus`
+    case 'prismMap':
+      return `Prism Map`
     case 'master':
       return `Master`
     case 'strobe':
@@ -190,6 +194,10 @@ function getSubInfo(ch: FixtureChannel): string | null {
       return `${ch.colors.length} colors`
     case 'goboMap':
       return `${ch.gobos.length} gobos`
+    case 'focus':
+      return `${ch.min} - ${ch.max} | Default: ${ch.default}`
+    case 'prismMap':
+      return `${ch.prisms.length} prisms`
     case 'strobe':
       return `Solid: ${ch.default_solid} | Strobe: ${ch.default_strobe}`
     case 'fxtrTrigger':

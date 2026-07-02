@@ -238,6 +238,62 @@ export function activeInterModParamKeys(
   return out
 }
 
+export type SplitModulationEntry = {
+  splitIndex: number
+  param: string
+}
+
+/** Split-scene modulation assignments on this modulator (excludes inter-mod keys). */
+export function activeSplitModulationEntries(
+  modulator: Pick<Modulator, 'splitModulations'> | undefined,
+  splitCount: number,
+  options?: {
+    shouldIncludeSplit?: (splitIndex: number) => boolean
+  }
+): SplitModulationEntry[] {
+  if (modulator === undefined || splitCount <= 0) {
+    return []
+  }
+
+  const entries: SplitModulationEntry[] = []
+  const seen = new Set<string>()
+
+  for (let splitIndex = 0; splitIndex < splitCount; splitIndex++) {
+    if (options?.shouldIncludeSplit?.(splitIndex) === false) {
+      continue
+    }
+
+    const modulation = modulator.splitModulations[splitIndex]
+    if (modulation === undefined) {
+      continue
+    }
+
+    for (const [param, val] of Object.entries(modulation)) {
+      if (typeof val !== 'number' || !Number.isFinite(val)) {
+        continue
+      }
+      if (param.startsWith(INTER_MOD_PREFIX)) {
+        continue
+      }
+      const key = `${splitIndex}\0${param}`
+      if (seen.has(key)) {
+        continue
+      }
+      seen.add(key)
+      entries.push({ splitIndex, param })
+    }
+  }
+
+  entries.sort((left, right) => {
+    if (left.splitIndex !== right.splitIndex) {
+      return left.splitIndex - right.splitIndex
+    }
+    return left.param.localeCompare(right.param, 'en')
+  })
+
+  return entries
+}
+
 /** Distinct target LFO indices this source modulates (inter-mod routes only). */
 export function intermodOutgoingTargets(
   scene: LightSceneLike,

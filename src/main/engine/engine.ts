@@ -355,6 +355,9 @@ function controlStateAffectsLiveDmxOutput(
   if (prev.gui.goboMapCalibrationOverride !== next.gui.goboMapCalibrationOverride) {
     return true
   }
+  if (prev.gui.prismMapCalibrationOverride !== next.gui.prismMapCalibrationOverride) {
+    return true
+  }
   return false
 }
 

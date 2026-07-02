@@ -8,6 +8,13 @@ import {
   MoverBounds,
   zeroUnpatchedDmxChannels,
 } from '../../shared/dmxFixtures'
+import {
+  fixtureChannelHasColorMap,
+  fixtureChannelHasGoboMap,
+  fixtureChannelHasPrismMap,
+  getFixtureMapCalibrationOverrideValue,
+} from '../../shared/fixtureMapCalibration'
+import { FixtureChannel } from '../../shared/dmxFixtures'
 import { CleanReduxState } from '../../renderer/redux/store'
 import {
   getDmxValue,
@@ -104,7 +111,7 @@ function splitHasLightingControlBundle(
 
 function isAtmosCustomChannelName(name: string) {
   if (name.length <= 0) return false
-  const exclusions = ['pan', 'tilt', 'speed', 'gobo', 'zoom', 'focus']
+  const exclusions = ['pan', 'tilt', 'speed', 'gobo', 'prism', 'zoom', 'focus']
   if (exclusions.some((token) => name.includes(token))) {
     return false
   }
@@ -356,7 +363,10 @@ function mapPanNormalizedToDmx(
     invert: boolean
   },
   plannerKey?: string,
-  rangeDegOverride?: number
+  rangeDegOverride?: number,
+  options?: {
+    centerAnchor?: 'front' | 'home'
+  }
 ): number {
   const safeNormalized = clampNormalized(normalized)
   const hasRangeOverride = Number.isFinite(rangeDegOverride)
@@ -395,9 +405,21 @@ function mapPanNormalizedToDmx(
     max,
     calibration.invert
   )
+  const homeRaw = Number(calibration.home)
+  const orientedHome = orientDmxValue(
+    clampDmxFloatValue(
+      Number.isFinite(homeRaw) ? homeRaw : calibration.front,
+      min
+    ),
+    min,
+    max,
+    calibration.invert
+  )
+  const orientedCenter =
+    options?.centerAnchor === 'home' ? orientedHome : orientedFront
 
-  const direction = Math.abs(orientedBack - orientedFront) > 0.0001
-    ? Math.sign(orientedBack - orientedFront)
+  const direction = Math.abs(orientedBack - orientedCenter) > 0.0001
+    ? Math.sign(orientedBack - orientedCenter)
     : Math.sign(orientedMax - orientedMin) || 1
 
   const canonicalYawDeg = (safeNormalized - 0.5) * rangeDeg
@@ -409,7 +431,7 @@ function mapPanNormalizedToDmx(
     }
     const yawRatio = canonicalYawDeg / Math.max(0.0001, calibrationRangeDeg)
     const orientedDeterministic =
-      orientedFront + direction * yawRatio * span
+      orientedCenter + direction * yawRatio * span
     const orientedClamped = Math.min(
       Math.max(orientedDeterministic, Math.min(orientedMin, orientedMax)),
       Math.max(orientedMin, orientedMax)
@@ -420,8 +442,8 @@ function mapPanNormalizedToDmx(
     )
   }
 
-  const yawAtMin = direction * ((orientedMin - orientedFront) / span) * rangeDeg
-  const yawAtMax = direction * ((orientedMax - orientedFront) / span) * rangeDeg
+  const yawAtMin = direction * ((orientedMin - orientedCenter) / span) * rangeDeg
+  const yawAtMax = direction * ((orientedMax - orientedCenter) / span) * rangeDeg
   const yawMin = Math.min(yawAtMin, yawAtMax)
   const yawMax = Math.max(yawAtMin, yawAtMax)
   const preferredYaw =
@@ -438,7 +460,7 @@ function mapPanNormalizedToDmx(
     _panPathYawByFixtureKey.set(plannerKey, targetYawDeg)
   }
 
-  const oriented = orientedFront + direction * (targetYawDeg / rangeDeg) * span
+  const oriented = orientedCenter + direction * (targetYawDeg / rangeDeg) * span
   const orientedClamped = Math.min(
     Math.max(oriented, Math.min(orientedMin, orientedMax)),
     Math.max(orientedMin, orientedMax)
@@ -500,11 +522,13 @@ function mapTiltNormalizedToDmx(
     down: number
     forward: number
     up: number
+    home?: number
     rangeDeg?: number
     invert: boolean
   },
   options?: {
     centerOnDown?: boolean
+    centerAnchor?: 'mount' | 'home'
   }
 ): number {
   const safeNormalized = clampNormalized(normalized)
@@ -542,12 +566,22 @@ function mapTiltNormalizedToDmx(
     max,
     calibration.invert
   )
+  const homeRaw = Number(calibration.home)
+  const orientedHome = orientDmxValue(
+    clampDmxFloatValue(Number.isFinite(homeRaw) ? homeRaw : calibration.forward, min),
+    min,
+    max,
+    calibration.invert
+  )
   const centerOnDown = options?.centerOnDown === true
-  const preferredCenterAnchor = centerOnDown
-    ? orientedDown
-    : mountOrientation === 'inverted'
-      ? orientedDown
-      : orientedUp
+  const preferredCenterAnchor =
+    options?.centerAnchor === 'home'
+      ? orientedHome
+      : centerOnDown
+        ? orientedDown
+        : mountOrientation === 'inverted'
+          ? orientedDown
+          : orientedUp
   const fallbackCenterAnchor = centerOnDown
     ? orientedUp
     : mountOrientation === 'inverted'
@@ -719,20 +753,33 @@ function mapMoverPointToFixtureAxisTarget(
   y: number,
   useFloorBoundsLock: boolean,
   plannerKey: string | undefined,
-  timeState: TimeState
+  timeState: TimeState,
+  options?: {
+    useHomeCenteredBasicAim?: boolean
+  }
 ): MoverAxisOverrides {
   const normalizedX = clampNormalized(x)
   const normalizedY = clampNormalized(y)
+  const useHomeCenteredBasicAim = options?.useHomeCenteredBasicAim === true
 
   if (!useFloorBoundsLock) {
-    const targetPanDmx = mapNormalizedToAxisPhysicalDmx(
-      normalizedX,
-      fixture.moverCalibration?.pan
-    )
+    const targetPanDmx = useHomeCenteredBasicAim
+      ? mapPanNormalizedToDmx(
+          normalizedX,
+          fixture.moverCalibration?.pan,
+          plannerKey,
+          undefined,
+          { centerAnchor: 'home' }
+        )
+      : mapNormalizedToAxisPhysicalDmx(
+          normalizedX,
+          fixture.moverCalibration?.pan
+        )
     const targetTiltDmx = mapTiltNormalizedToDmx(
       normalizedY,
       fixture.moverMountOrientation === 'inverted' ? 'inverted' : 'upright',
-      fixture.moverCalibration?.tilt
+      fixture.moverCalibration?.tilt,
+      useHomeCenteredBasicAim ? { centerAnchor: 'home' } : undefined
     )
 
     return resolveMoverAxisTargetWithPathing(
@@ -1004,7 +1051,8 @@ function buildMoverAxisOverridesForSplit(
         baseY,
         false,
         plannerKey,
-        timeState
+        timeState,
+        { useHomeCenteredBasicAim: true }
       )
     })
 
@@ -1196,82 +1244,31 @@ function getMoverCalibrationOverrideTarget(
   }
 }
 
-function channelMatchesFixtureTypeChannelIndex(
-  fixtureType: CleanReduxState['dmx']['fixtureTypesByID'][string],
-  typeChannelIndex: number,
-  channel: FlattenedFixture['channels'][number][1]
-): boolean {
-  if (fixtureType === undefined) {
-    return false
-  }
-
-  const expectedChannel = fixtureType.channels[typeChannelIndex]
-  if (expectedChannel === undefined) {
-    return false
-  }
-  if (expectedChannel === channel) {
-    return true
-  }
-  if (expectedChannel.type === 'split') {
-    return expectedChannel.ranges.some((range) => range.channel === channel)
-  }
-  return false
-}
-
-function getColorMapCalibrationOverrideTarget(
+function getMapCalibrationOverrideForChannel(
   state: CleanReduxState,
   fixture: FlattenedFixture,
-  channel: FlattenedFixture['channels'][number][1]
+  channel: FixtureChannel
 ): number | undefined {
-  if (channel.type !== 'colorMap') {
-    return undefined
-  }
-
-  const override = state.gui.colorMapCalibrationOverride
-  if (override === null || fixture.fixtureTypeId !== override.fixtureTypeId) {
-    return undefined
-  }
-
-  const fixtureType = state.dmx.fixtureTypesByID[override.fixtureTypeId]
-  if (
-    !channelMatchesFixtureTypeChannelIndex(
-      fixtureType,
-      override.channelIndex,
-      channel
-    )
-  ) {
-    return undefined
-  }
-
-  return clampDmxValue(override.dmxValue, DMX_MIN_VALUE)
-}
-
-function getGoboMapCalibrationOverrideTarget(
-  state: CleanReduxState,
-  fixture: FlattenedFixture,
-  channel: FlattenedFixture['channels'][number][1]
-): number | undefined {
-  if (channel.type !== 'goboMap') {
-    return undefined
-  }
-
-  const override = state.gui.goboMapCalibrationOverride
-  if (override === null || fixture.fixtureTypeId !== override.fixtureTypeId) {
-    return undefined
-  }
-
-  const fixtureType = state.dmx.fixtureTypesByID[override.fixtureTypeId]
-  if (
-    !channelMatchesFixtureTypeChannelIndex(
-      fixtureType,
-      override.channelIndex,
-      channel
-    )
-  ) {
-    return undefined
-  }
-
-  return clampDmxValue(override.dmxValue, DMX_MIN_VALUE)
+  const fixtureType = state.dmx.fixtureTypesByID[fixture.fixtureTypeId ?? '']
+  return getFixtureMapCalibrationOverrideValue(
+    fixture.fixtureTypeId,
+    fixtureType?.channels,
+    channel,
+    [
+      {
+        override: state.gui.colorMapCalibrationOverride,
+        predicate: fixtureChannelHasColorMap,
+      },
+      {
+        override: state.gui.goboMapCalibrationOverride,
+        predicate: fixtureChannelHasGoboMap,
+      },
+      {
+        override: state.gui.prismMapCalibrationOverride,
+        predicate: fixtureChannelHasPrismMap,
+      },
+    ]
+  )
 }
 
 function calculateDmxForUniverse(
@@ -1299,8 +1296,11 @@ function calculateDmxForUniverse(
   const moverCalibrationOverride = state.gui.moverCalibrationOverride
   const colorMapCalibrationOverride = state.gui.colorMapCalibrationOverride
   const goboMapCalibrationOverride = state.gui.goboMapCalibrationOverride
+  const prismMapCalibrationOverride = state.gui.prismMapCalibrationOverride
   const fixtureMapCalibrationActive =
-    colorMapCalibrationOverride !== null || goboMapCalibrationOverride !== null
+    colorMapCalibrationOverride !== null ||
+    goboMapCalibrationOverride !== null ||
+    prismMapCalibrationOverride !== null
   const axisOnlyOverrideMode =
     !timeState.isPlaying &&
     state.gui.moverAdvancedControlEnabled === true &&
@@ -1335,32 +1335,28 @@ function calculateDmxForUniverse(
     })
   } else if (fixtureMapOnlyOverrideMode) {
     // Fixture-manager wheel tuning overrides scene output on matching fixtures.
+    const activeOverride =
+      colorMapCalibrationOverride ??
+      goboMapCalibrationOverride ??
+      prismMapCalibrationOverride
+    const matchingFixtureTypeId = activeOverride?.fixtureTypeId
+
     forEachChannel(all_fixtures, (_fixtureIdx, fixture, channelIdx, channel) => {
-      const matchingFixtureTypeId =
-        colorMapCalibrationOverride?.fixtureTypeId ??
-        goboMapCalibrationOverride?.fixtureTypeId
       if (
         matchingFixtureTypeId !== undefined &&
         fixture.fixtureTypeId === matchingFixtureTypeId &&
         channel.type === 'master'
       ) {
         writeDmxChannel(channels, channelIdx, channel.max)
-        return
       }
 
-      const colorMapOverrideValue =
-        channel.type === 'colorMap'
-          ? getColorMapCalibrationOverrideTarget(state, fixture, channel)
-          : undefined
-      const goboMapOverrideValue =
-        channel.type === 'goboMap'
-          ? getGoboMapCalibrationOverrideTarget(state, fixture, channel)
-          : undefined
-
-      if (colorMapOverrideValue !== undefined) {
-        writeDmxChannel(channels, channelIdx, colorMapOverrideValue)
-      } else if (goboMapOverrideValue !== undefined) {
-        writeDmxChannel(channels, channelIdx, goboMapOverrideValue)
+      const mapOverrideValue = getMapCalibrationOverrideForChannel(
+        state,
+        fixture,
+        channel
+      )
+      if (mapOverrideValue !== undefined) {
+        writeDmxChannel(channels, channelIdx, mapOverrideValue)
       }
     })
   } else {
@@ -1467,14 +1463,11 @@ function calculateDmxForUniverse(
             channel.type === 'axis'
               ? getMoverCalibrationOverrideTarget(state, fixture.fixtureId)
               : undefined
-          const colorMapOverrideValue =
-            channel.type === 'colorMap'
-              ? getColorMapCalibrationOverrideTarget(state, fixture, channel)
-              : undefined
-          const goboMapOverrideValue =
-            channel.type === 'goboMap'
-              ? getGoboMapCalibrationOverrideTarget(state, fixture, channel)
-              : undefined
+          const mapOverrideValue = getMapCalibrationOverrideForChannel(
+            state,
+            fixture,
+            channel
+          )
 
           let dmxParams = outputParams
           if (stageLightFixtureParams !== null && stageLightGrid !== null) {
@@ -1513,11 +1506,9 @@ function calculateDmxForUniverse(
                       : calibrationOverride.tiltDmx,
                     channel.min
                   )
-              : channel.type === 'colorMap' && colorMapOverrideValue !== undefined
-                ? colorMapOverrideValue
-                : channel.type === 'goboMap' && goboMapOverrideValue !== undefined
-                  ? goboMapOverrideValue
-                  : getDmxValue(
+              : mapOverrideValue !== undefined
+                ? mapOverrideValue
+                : getDmxValue(
                     channel,
                     dmxParams,
                     fixture,

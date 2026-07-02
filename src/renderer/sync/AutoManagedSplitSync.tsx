@@ -111,6 +111,8 @@ export default function AutoManagedSplitSync() {
           moverMirrorX: 0,
           moverMirrorY: 0,
           moverMode: 0,
+          focus: 0.5,
+          prism: 0,
         },
       },
       {
@@ -218,6 +220,30 @@ export default function AutoManagedSplitSync() {
 
     if (didMutate) {
       return
+    }
+
+    const moversState = autoManagedGroupStates.find(
+      (groupState) => groupState.group === 'Movers'
+    )
+    if (moversState?.present && moversState.defaultParams !== undefined) {
+      const moversSplitIndex = scene.splitScenes.findIndex(
+        (split) => split.groups.Movers === true
+      )
+      if (moversSplitIndex >= 0) {
+        const split = scene.splitScenes[moversSplitIndex]
+        const needsDefaults = Object.entries(moversState.defaultParams).some(
+          ([param, value]) => split.baseParams[param] === undefined && value !== undefined
+        )
+        if (needsDefaults) {
+          dispatch(
+            ensureSplitSceneForGroup({
+              group: 'Movers',
+              defaultParams: { ...moversState.defaultParams },
+            })
+          )
+          return
+        }
+      }
     }
 
     if (!videoEnabled) {

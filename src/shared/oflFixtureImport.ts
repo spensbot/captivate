@@ -9,7 +9,9 @@ import {
   initChannelColor,
   initChannelColorMap,
   initChannelCustom,
+  initChannelFocus,
   initChannelGoboMap,
+  initChannelPrismMap,
   initChannelMaster,
   initChannelStrobe,
 } from './dmxFixtures'
@@ -335,6 +337,33 @@ function buildColorMapChannel(
   return initChannelColorMap(colors)
 }
 
+function buildPrismMapChannel(
+  capabilities: OflCapability[],
+  wheels: { [wheelName: string]: OflWheel }
+): FixtureChannel {
+  const prisms: GoboMapItem[] = capabilities.map((capability, index) => {
+    const slot = getWheelSlot(capability, wheels)
+    const slotName = slot ? normalizeString(slot.name, '') : ''
+    const slotType = slot ? normalizeString(slot.type, '') : ''
+    const capabilityName = normalizeString(capability.comment, '')
+    const name =
+      slotName ||
+      capabilityName ||
+      (slotType.length > 0 ? slotType : `Prism ${index + 1}`)
+
+    return {
+      name,
+      max: getCapabilityMax(capability, index, capabilities.length),
+    }
+  })
+
+  if (prisms.length === 0) {
+    return initChannelPrismMap([{ name: 'Open', max: DMX_MIN_VALUE }])
+  }
+
+  return initChannelPrismMap(prisms.sort((left, right) => left.max - right.max))
+}
+
 function buildGoboMapChannel(
   capabilities: OflCapability[],
   wheels: { [wheelName: string]: OflWheel }
@@ -416,7 +445,7 @@ function convertOflChannel(
   }
 
   if (hasCapabilityType(capabilities, 'focus') || lowerName.includes('focus')) {
-    return initChannelCustom('Focus')
+    return initChannelFocus()
   }
 
   if (
@@ -437,6 +466,9 @@ function convertOflChannel(
   if (hasWheelSlots) {
     if (lowerName.includes('gobo')) {
       return buildGoboMapChannel(capabilities, options.wheels)
+    }
+    if (lowerName.includes('prism')) {
+      return buildPrismMapChannel(capabilities, options.wheels)
     }
     if (lowerName.includes('color')) {
       return buildColorMapChannel(capabilities, options.wheels)

@@ -399,6 +399,12 @@ function fixtureChannelName(channel: FixtureChannel | null): string {
   if (channel.type === 'goboMap') {
     return 'Gobo Map'
   }
+  if (channel.type === 'focus') {
+    return 'Focus'
+  }
+  if (channel.type === 'prismMap') {
+    return 'Prism Map'
+  }
   if (channel.type === 'colorMap') {
     return 'Color Map'
   }
