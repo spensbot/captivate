@@ -153,6 +153,19 @@ export function pickReleaseRuntimeAsset(assets) {
   return ranked[0] ?? null
 }
 
+function githubRequestHeaders(accept = 'application/vnd.github+json') {
+  const headers = {
+    Accept: accept,
+    'User-Agent': 'Captivate-build/1.0',
+  }
+  const token =
+    process.env.GITHUB_TOKEN?.trim() || process.env.GH_TOKEN?.trim() || ''
+  if (token.length > 0) {
+    headers.Authorization = `Bearer ${token}`
+  }
+  return headers
+}
+
 async function downloadToBuffer(url, headers = {}) {
   return new Promise((resolve, reject) => {
     const request = https.get(url, { headers }, (response) => {
@@ -185,10 +198,11 @@ async function downloadToBuffer(url, headers = {}) {
 }
 
 async function downloadToFile(url, destination) {
-  const data = await downloadToBuffer(url, {
+  const headers = {
+    ...githubRequestHeaders('application/octet-stream'),
     Accept: 'application/octet-stream',
-    'User-Agent': 'Captivate-build/1.0',
-  })
+  }
+  const data = await downloadToBuffer(url, headers)
   await fs.promises.writeFile(destination, data)
 }
 
@@ -198,10 +212,7 @@ async function fetchReleaseManifest() {
     configuredUrl && configuredUrl.length > 0
       ? configuredUrl
       : 'https://api.github.com/repos/projectM-visualizer/projectm/releases/latest'
-  const body = await downloadToBuffer(finalUrl, {
-    Accept: 'application/vnd.github+json',
-    'User-Agent': 'Captivate-build/1.0',
-  })
+  const body = await downloadToBuffer(finalUrl, githubRequestHeaders())
   return {
     release: JSON.parse(body.toString('utf8')),
     manifestUrl: finalUrl,
@@ -211,10 +222,7 @@ async function fetchReleaseManifest() {
 async function fetchReleaseCandidates() {
   const configuredUrl = process.env.CAPTIVATE_PROJECTM_RELEASE_MANIFEST_URL?.trim()
   if (configuredUrl && configuredUrl.length > 0) {
-    const body = await downloadToBuffer(configuredUrl, {
-      Accept: 'application/vnd.github+json',
-      'User-Agent': 'Captivate-build/1.0',
-    })
+    const body = await downloadToBuffer(configuredUrl, githubRequestHeaders())
     const parsed = JSON.parse(body.toString('utf8'))
     return {
       releases: Array.isArray(parsed) ? parsed : [parsed],
@@ -226,10 +234,7 @@ async function fetchReleaseCandidates() {
   const taggedCandidatesUrl =
     'https://api.github.com/repos/projectM-visualizer/projectm/releases?per_page=100'
   try {
-    const body = await downloadToBuffer(taggedCandidatesUrl, {
-      Accept: 'application/vnd.github+json',
-      'User-Agent': 'Captivate-build/1.0',
-    })
+    const body = await downloadToBuffer(taggedCandidatesUrl, githubRequestHeaders())
     const parsed = JSON.parse(body.toString('utf8'))
     if (Array.isArray(parsed) && parsed.length > 0) {
       const nonDraft = parsed.filter((release) => release.draft !== true)
