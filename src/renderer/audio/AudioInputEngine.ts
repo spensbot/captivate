@@ -10,7 +10,6 @@ import {
   AUDIO_INPUT_DEVICE_DESKTOP,
   AudioEngineMetrics,
   AudioInputSettings,
-  getAudioBandLevel,
   getAudioBandLoudness,
   computeMusicLoudnessCore,
   initAudioBandConfig,

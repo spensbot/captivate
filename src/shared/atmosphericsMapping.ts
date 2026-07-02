@@ -105,7 +105,7 @@ export function isAtmosFxtrType(fixtureType: FixtureType): boolean {
 }
 
 export function isMappedAtmosphericFixture(
-  fixture: Fixture,
+  _fixture: Fixture,
   fixtureType: FixtureType
 ): boolean {
   if (!isAtmosFxtrType(fixtureType)) {

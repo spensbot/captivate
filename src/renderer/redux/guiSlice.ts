@@ -137,7 +137,7 @@ export function initGuiState(): GuiState {
   }
 }
 
-export const guiSlice = createSlice({
+const guiSlice = createSlice({
   name: 'gui',
   initialState: initGuiState(),
   reducers: {
