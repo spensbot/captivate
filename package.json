@@ -203,6 +203,7 @@
       "allowToChangeInstallationDirectory": true,
       "perMachine": false,
       "createDesktopShortcut": "always",
+      "warningsAsErrors": false,
       "include": "build/installer/nsis/custom.nsh"
     },
     "linux": {

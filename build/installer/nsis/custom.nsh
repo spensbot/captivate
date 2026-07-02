@@ -2,13 +2,16 @@
 !include "nsDialogs.nsh"
 !include "LogicLib.nsh"
 
-Var Dialog
 Var InstallVcRedist
 Var InstallNdiRuntime
 Var InstallProjectMRuntime
+
+!ifndef BUILD_UNINSTALLER
+Var Dialog
 Var HwndVcRedist
 Var HwndNdiRuntime
 Var HwndProjectMRuntime
+!endif
 
 ; Sets $R9 to 1 when VC++ 2015-2022 x64 appears installed, else 0.
 !macro DetectVcRedist2015_2022_x64
@@ -105,9 +108,12 @@ ndiDetectDone:
 !macroend
 
 !macro customPageAfterChangeDir
+  !ifndef BUILD_UNINSTALLER
   Page custom captivateOptionalComponentsPage captivateOptionalComponentsLeave
+  !endif
 !macroend
 
+!ifndef BUILD_UNINSTALLER
 Function captivateOptionalComponentsPage
   !insertmacro DetectVcRedist2015_2022_x64
   ${If} $R9 == "1"
@@ -154,6 +160,8 @@ Function captivateOptionalComponentsLeave
   ${NSD_GetState} $HwndNdiRuntime $InstallNdiRuntime
   ${NSD_GetState} $HwndProjectMRuntime $InstallProjectMRuntime
 FunctionEnd
+
+!endif
 
 !macro customInstall
   SetOutPath "$PLUGINSDIR"
