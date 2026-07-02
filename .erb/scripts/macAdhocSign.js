@@ -36,6 +36,22 @@ function codesign(target, entitlements) {
   execFileSync('codesign', args, { stdio: 'inherit' })
 }
 
+function isSignableFile(fullPath, fileName) {
+  if (
+    fileName.endsWith('.dylib') ||
+    fileName.endsWith('.node') ||
+    fileName.endsWith('.so') ||
+    fileName === 'Electron Framework' ||
+    fileName.endsWith('.exe')
+  ) {
+    return true
+  }
+  if (fullPath.includes(`${path.sep}Helpers${path.sep}`)) {
+    return true
+  }
+  return false
+}
+
 function collectNestedBinaries(dir, out) {
   if (!fs.existsSync(dir)) {
     return
@@ -52,16 +68,14 @@ function collectNestedBinaries(dir, out) {
     if (!entry.isFile()) {
       continue
     }
-    if (
-      entry.name.endsWith('.dylib') ||
-      entry.name.endsWith('.node') ||
-      entry.name.endsWith('.so') ||
-      entry.name === 'Electron Framework' ||
-      entry.name.endsWith('.exe')
-    ) {
+    if (isSignableFile(full, entry.name)) {
       out.push(full)
     }
   }
+}
+
+function signDepth(target) {
+  return target.split(path.sep).length
 }
 
 exports.default = async function macAdhocSign(context) {
@@ -86,20 +100,9 @@ exports.default = async function macAdhocSign(context) {
 
   console.log(`[captivate] Deep ad-hoc signing ${appPath}...`)
 
-  const electronFrameworkBinary = path.join(
-    appPath,
-    'Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework'
-  )
-  const electronFrameworkBundle = path.join(
-    appPath,
-    'Contents/Frameworks/Electron Framework.framework'
-  )
-  codesign(electronFrameworkBinary, null)
-  codesign(electronFrameworkBundle, null)
-
   const nested = []
   collectNestedBinaries(path.join(appPath, 'Contents'), nested)
-  nested.sort((a, b) => b.length - a.length)
+  nested.sort((a, b) => signDepth(b) - signDepth(a))
   for (const target of nested) {
     try {
       codesign(target, null)
