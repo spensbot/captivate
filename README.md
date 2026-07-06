@@ -137,6 +137,7 @@ CI builds all three platforms on push and publishes assets when you push a versi
 - [Audio input, beat clock, and music energy](docs/audio-input-sync.md)
 - [Laser FB4 / Pangolin BEYOND](docs/laser-fb4-beyond.md)
 - [Visualizer streaming (RTSP / NDI)](docs/visualizer-streaming.md)
+- [WLED fixtures](docs/wled-fixtures.md)
 
 ---
 
