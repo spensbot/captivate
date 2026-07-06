@@ -134,6 +134,7 @@ CI builds all three platforms on push and publishes assets when you push a versi
 - [Audio input and music energy](docs/audio-input.md)
 - [Community fixture library](docs/CAPTIVATE-FIXTURE-LIBRARY.md)
 - [Remote control (LAN)](docs/remote-control.md)
+- [Audio input, beat clock, and music energy](docs/audio-input-sync.md)
 - [Laser FB4 / Pangolin BEYOND](docs/laser-fb4-beyond.md)
 - [Visualizer streaming (RTSP / NDI)](docs/visualizer-streaming.md)
 
