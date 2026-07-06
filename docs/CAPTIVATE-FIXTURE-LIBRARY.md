@@ -55,6 +55,10 @@ Use the [fixture submission form](https://github.com/NicholasTracy/captivate-fix
 | Load a saved database file | **Load DB** |
 | Export one fixture to a file | Edit fixture → **Export Fixture** |
 
+Project saves also write a sibling `.cfx` fixture database next to the `.cap`
+file. See [Project files and autosave](PROJECTS.md) for how that paired file is
+used; **Load DB** and **Save DB** remain the manual import/export tools.
+
 ## Library repository
 
 Browse published fixtures on GitHub:
