@@ -1,4 +1,5 @@
 import HsvPad from './HsvPad'
+import ColorWheelControl from './ColorWheelControl'
 import ParamSlider from './ParamSlider'
 import XyPad from './XyParamsPad'
 import styled from 'styled-components'
@@ -18,6 +19,8 @@ import {
 import { getCustomChannels } from 'renderer/redux/dmxSlice'
 import StrobeControl from './StrobeControl'
 import GoboControl from './GoboControl'
+import FocusControl from './FocusControl'
+import PrismControl from './PrismControl'
 import ZParamsPad from './ZParamsPad'
 import { useDispatch } from 'react-redux'
 import { useEffect } from 'react'
@@ -39,7 +42,13 @@ import { sumAtmosSliders } from '../atmospherics/atmosSliderAssignments'
 import { evaluateSceneGroups } from '../../shared/sceneGroups'
 import { isDedicatedGroupSplit, visSplitIdx } from '../scenes/splitUiVisibility'
 import { LASER_SPLIT_PARAM_KEYS } from '../laser/laserSplitLink'
-import { getSplitAuxColorGates } from '../../shared/splitAuxColorGates'
+import { getSplitAuxColorGates, type AuxColorGates } from '../../shared/splitAuxColorGates'
+import {
+  getSplitColorCapabilities,
+  splitSupportsColorWheel,
+  type SplitColorControlMode,
+} from '../../shared/splitColorCapabilities'
+import { getColorChannelDistance } from '../../shared/dmxColors'
 import StageLightMapSplitPreview from '../scenes/StageLightMapSplitPreview'
 
 const moverBundleParams = [
@@ -66,7 +75,32 @@ const colorControlCoreParams = ['hue', 'saturation', 'brightness', 'white'] as c
 const colorControlExtendedParams = ['warmWhite', 'amber', 'uv'] as const
 const hsvOnlyParams = ['hue', 'saturation', 'brightness'] as const
 const whiteAuxColorParams = ['white', 'warmWhite', 'amber', 'uv'] as const
+const colorWheelOnlyParams = ['colorWheel', 'brightness'] as const
+const colorWheelHybridCoreParams = [
+  'colorWheel',
+  'hue',
+  'saturation',
+  'brightness',
+] as const
 const colorControlDefaultValues = initBaseParams()
+
+function colorParamsForMode(
+  mode: SplitColorControlMode,
+  gates: AuxColorGates
+): readonly string[] {
+  if (mode === 'colorWheelOnly') {
+    return colorWheelOnlyParams
+  }
+  if (mode === 'colorWheelAndRgb') {
+    const params: string[] = [...colorWheelHybridCoreParams]
+    if (gates.white) params.push('white')
+    if (gates.warmWhite) params.push('warmWhite')
+    if (gates.amber) params.push('amber')
+    if (gates.uv) params.push('uv')
+    return params
+  }
+  return colorControlParams
+}
 
 function areClose(a: number | undefined, b: number | undefined) {
   if (a === undefined || b === undefined) return false
@@ -238,6 +272,16 @@ export default function ParamsControl({ splitIndex }: Params) {
     () => getSplitAuxColorGates(dmx, splitGroups, atmosFixtureIdSet),
     [atmosFixtureIdSet, dmx, splitGroups]
   )
+  const splitColorCapabilities = useMemo(
+    () => getSplitColorCapabilities(dmx, splitGroups, atmosFixtureIdSet),
+    [atmosFixtureIdSet, dmx, splitGroups]
+  )
+  const colorControlMode = splitColorCapabilities.mode
+  const isColorWheelOnly = colorControlMode === 'colorWheelOnly'
+  const activeColorParams = useMemo(
+    () => colorParamsForMode(colorControlMode, auxColorGates),
+    [auxColorGates, colorControlMode]
+  )
 
   const hasMoverFixturesInProject = useMemo(
     () => universeHasMovers(dmx.universe, dmx.fixtureTypesByID),
@@ -354,23 +398,32 @@ export default function ParamsControl({ splitIndex }: Params) {
     )
   }, [baseParams, dispatch, splitCapabilities.supportsAtmosphere, splitIndex])
 
-  const hasAnyColorControls = colorControlParams.some(
+  const hasAnyColorControls = activeColorParams.some(
     (param) => baseParams[param] !== undefined
   )
-  const hasCoreColorControls = colorControlCoreParams.every(
-    (param) => baseParams[param] !== undefined
-  )
+  const hasCoreColorControls =
+    colorControlMode === 'colorWheelOnly'
+      ? colorWheelOnlyParams.every((param) => baseParams[param] !== undefined)
+      : colorControlMode === 'colorWheelAndRgb'
+        ? colorWheelHybridCoreParams.every(
+            (param) => baseParams[param] !== undefined
+          )
+        : colorControlCoreParams.every(
+            (param) => baseParams[param as DefaultParam] !== undefined
+          )
   const hasExtendedColorControls = colorControlExtendedParams.some(
     (param) => baseParams[param] !== undefined
   )
-  const hasFullColorControls = colorControlParams.every(
+  const hasFullColorControls = activeColorParams.every(
     (param) => baseParams[param] !== undefined
   )
-  const colorControlsAreDefault = colorControlParams.every((param) => {
-    const expected = colorControlDefaultValues[param as DefaultParam]
+  const colorControlsAreDefault = activeColorParams.every((param) => {
+    const expected =
+      colorControlDefaultValues[param as DefaultParam] ??
+      (param === 'colorWheel' ? 0 : undefined)
     return (
       baseParams[param] === undefined ||
-      areClose(baseParams[param], expected)
+      (expected !== undefined && areClose(baseParams[param], expected))
     )
   })
   const shouldAutoAddColorControls =
@@ -414,6 +467,64 @@ export default function ParamsControl({ splitIndex }: Params) {
   }, [baseParams, dispatch, isVisualizerSplit, splitIndex])
 
   useEffect(() => {
+    if (!isColorWheelOnly || isVisualizerSplit) return
+
+    const slots = splitColorCapabilities.slots
+    const paramsToAdd: Record<string, number> = {}
+    if (baseParams.colorWheel === undefined && slots.length > 0) {
+      let bestIndex = 0
+      if (
+        baseParams.hue !== undefined &&
+        baseParams.saturation !== undefined &&
+        slots.length > 1
+      ) {
+        let bestScore = Number.POSITIVE_INFINITY
+        for (let i = 0; i < slots.length; i += 1) {
+          const slot = slots[i]!
+          const score = getColorChannelDistance(
+            baseParams.hue,
+            baseParams.saturation,
+            slot
+          )
+          if (score < bestScore) {
+            bestScore = score
+            bestIndex = i
+          }
+        }
+      }
+      paramsToAdd.colorWheel =
+        slots.length <= 1 ? 0 : bestIndex / (slots.length - 1)
+    }
+
+    const toRemove = ['hue', 'saturation', ...whiteAuxColorParams].filter(
+      (param) => baseParams[param as DefaultParam] !== undefined
+    )
+
+    if (Object.keys(paramsToAdd).length > 0) {
+      dispatch(
+        setBaseParams({
+          splitIndex,
+          params: paramsToAdd,
+        })
+      )
+    }
+    if (toRemove.length === 0) return
+    dispatch(
+      deleteBaseParams({
+        splitIndex,
+        params: toRemove,
+      })
+    )
+  }, [
+    baseParams,
+    dispatch,
+    isColorWheelOnly,
+    isVisualizerSplit,
+    splitColorCapabilities.slots,
+    splitIndex,
+  ])
+
+  useEffect(() => {
     if (isVisualizerSplit) return
     const toRemove: string[] = []
     if (baseParams.white !== undefined && !auxColorGates.white) {
@@ -449,18 +560,60 @@ export default function ParamsControl({ splitIndex }: Params) {
     splitIndex,
   ])
 
+  const splitUsesColorWheelPanel =
+    !isVisualizerSplit && splitSupportsColorWheel(splitColorCapabilities)
+  const splitUsesHsvPanel =
+    !isVisualizerSplit &&
+    colorControlMode !== 'colorWheelOnly' &&
+    splitCapabilities.supportsColorChannels
+
+  useEffect(() => {
+    if (!splitUsesColorWheelPanel && !splitUsesHsvPanel) return
+
+    const paramsToAdd: Record<string, number> = {}
+    activeColorParams.forEach((param) => {
+      if (baseParams[param] !== undefined) return
+      if (param === 'white' && !auxColorGates.white) return
+      if (param === 'warmWhite' && !auxColorGates.warmWhite) return
+      if (param === 'amber' && !auxColorGates.amber) return
+      if (param === 'uv' && !auxColorGates.uv) return
+      paramsToAdd[param] =
+        colorControlDefaultValues[param as DefaultParam] ??
+        (param === 'colorWheel' ? 0 : 0)
+    })
+    if (Object.keys(paramsToAdd).length === 0) return
+    dispatch(
+      setBaseParams({
+        splitIndex,
+        params: paramsToAdd,
+      })
+    )
+  }, [
+    activeColorParams,
+    auxColorGates.amber,
+    auxColorGates.uv,
+    auxColorGates.warmWhite,
+    auxColorGates.white,
+    baseParams,
+    dispatch,
+    splitIndex,
+    splitUsesColorWheelPanel,
+    splitUsesHsvPanel,
+  ])
+
   useEffect(() => {
     if (isAllSplit) {
       if (hasFullColorControls) return
       const paramsToAdd: Record<string, number> = {}
-      colorControlParams.forEach((param) => {
+      activeColorParams.forEach((param) => {
         if (baseParams[param] !== undefined) return
         if (param === 'white' && !auxColorGates.white) return
         if (param === 'warmWhite' && !auxColorGates.warmWhite) return
         if (param === 'amber' && !auxColorGates.amber) return
         if (param === 'uv' && !auxColorGates.uv) return
         paramsToAdd[param] =
-          colorControlDefaultValues[param as DefaultParam] ?? 0
+          colorControlDefaultValues[param as DefaultParam] ??
+          (param === 'colorWheel' ? 0 : 0)
       })
       if (Object.keys(paramsToAdd).length > 0) {
         dispatch(
@@ -510,14 +663,15 @@ export default function ParamsControl({ splitIndex }: Params) {
     if (shouldAutoAddColorControls) {
       if (hasFullColorControls) return
       const paramsToAdd: Record<string, number> = {}
-      colorControlParams.forEach((param) => {
+      activeColorParams.forEach((param) => {
         if (baseParams[param] !== undefined) return
         if (param === 'white' && !auxColorGates.white) return
         if (param === 'warmWhite' && !auxColorGates.warmWhite) return
         if (param === 'amber' && !auxColorGates.amber) return
         if (param === 'uv' && !auxColorGates.uv) return
         paramsToAdd[param] =
-          colorControlDefaultValues[param as DefaultParam] ?? 0
+          colorControlDefaultValues[param as DefaultParam] ??
+          (param === 'colorWheel' ? 0 : 0)
       })
       if (Object.keys(paramsToAdd).length > 0) {
         dispatch(
@@ -532,10 +686,11 @@ export default function ParamsControl({ splitIndex }: Params) {
 
     if (!hasAnyColorControls) return
     if (!colorControlsAreDefault) return
+    if (splitUsesColorWheelPanel || splitUsesHsvPanel) return
     dispatch(
       deleteBaseParams({
         splitIndex,
-        params: colorControlParams,
+        params: [...activeColorParams],
       })
     )
   }, [
@@ -554,10 +709,13 @@ export default function ParamsControl({ splitIndex }: Params) {
     splitIncludesLedGroup,
     shouldAutoAddColorControls,
     splitIndex,
+    activeColorParams,
     auxColorGates.amber,
     auxColorGates.uv,
     auxColorGates.warmWhite,
     auxColorGates.white,
+    splitUsesColorWheelPanel,
+    splitUsesHsvPanel,
   ])
 
   const activeVisualizerSliders = visualSliderParams.filter(
@@ -582,12 +740,12 @@ export default function ParamsControl({ splitIndex }: Params) {
     (param) => baseParams[param] !== undefined
   )
 
-  const hasHsvControls = hsvOnlyParams.every(
-    (param) => baseParams[param as DefaultParam] !== undefined
-  )
+  const showHsvPad = splitUsesHsvPanel
+  const showColorWheelControl =
+    splitUsesColorWheelPanel && splitColorCapabilities.slots.length > 0
 
   const showAuxColorSliders =
-    hasHsvControls &&
+    showHsvPad &&
     !isVisualizerSplit &&
     ((baseParams.white !== undefined && auxColorGates.white) ||
       (!shouldTrimExtendedColorControlsForLedSplit &&
@@ -602,7 +760,14 @@ export default function ParamsControl({ splitIndex }: Params) {
 
   return (
     <Root>
-      {hasHsvControls && <HsvPad splitIndex={splitIndex} />}
+      {showColorWheelControl && (
+        <ColorWheelControl
+          splitIndex={splitIndex}
+          slots={splitColorCapabilities.slots}
+          showBrightness={isColorWheelOnly}
+        />
+      )}
+      {showHsvPad && <HsvPad splitIndex={splitIndex} />}
       {showAuxColorSliders && (
         <AuxColorRoot>
           {baseParams.white !== undefined && auxColorGates.white && (
@@ -670,6 +835,8 @@ export default function ParamsControl({ splitIndex }: Params) {
       <Randomizer splitIndex={splitIndex} />
       <StrobeControl splitIndex={splitIndex} />
       <GoboControl splitIndex={splitIndex} />
+      <FocusControl splitIndex={splitIndex} />
+      <PrismControl splitIndex={splitIndex} />
       <ParamSlider param={'intensity'} splitIndex={splitIndex} />
       {isAtmosphereSplit && (
         <AtmosphereSliderRow>

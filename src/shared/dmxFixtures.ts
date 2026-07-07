@@ -162,6 +162,19 @@ export type ChannelGoboMap = {
   defaultIndex: number
 }
 
+export type ChannelFocus = {
+  type: 'focus'
+  min: DmxValue
+  max: DmxValue
+  default: DmxValue
+}
+
+export type ChannelPrismMap = {
+  type: 'prismMap'
+  prisms: GoboMapItem[]
+  defaultIndex: number
+}
+
 export type ChannelCustom = {
   type: 'custom'
   name: string
@@ -179,6 +192,8 @@ export type LeafFixtureChannel =
   | ChannelColor
   | ChannelColorMap
   | ChannelGoboMap
+  | ChannelFocus
+  | ChannelPrismMap
   | ChannelStrobe
   | ChannelFxtrTrigger
   | ChannelFxtrLevel
@@ -208,6 +223,8 @@ export const channelTypes: ChannelType[] = [
   'color',
   'colorMap',
   'goboMap',
+  'focus',
+  'prismMap',
   'strobe',
   'fxtrTrigger',
   'fxtrLevel',
@@ -239,6 +256,10 @@ export function initFixtureChannel(
     ])
   } else if (type === 'goboMap') {
     return initChannelGoboMap([{ name: 'Open', max: DMX_MIN_VALUE }])
+  } else if (type === 'focus') {
+    return initChannelFocus()
+  } else if (type === 'prismMap') {
+    return initChannelPrismMap([{ name: 'Open', max: DMX_MIN_VALUE }])
   } else if (type === 'custom') {
     return initChannelCustom('Custom')
   } else if (type === 'split') {
@@ -356,6 +377,23 @@ export function initChannelGoboMap(gobos: GoboMapItem[]): ChannelGoboMap {
   return {
     type: 'goboMap',
     gobos,
+    defaultIndex: 0,
+  }
+}
+
+export function initChannelFocus(): ChannelFocus {
+  return {
+    type: 'focus',
+    min: DMX_MIN_VALUE,
+    max: DMX_MAX_VALUE,
+    default: DMX_DEFAULT_VALUE,
+  }
+}
+
+export function initChannelPrismMap(prisms: GoboMapItem[]): ChannelPrismMap {
+  return {
+    type: 'prismMap',
+    prisms,
     defaultIndex: 0,
   }
 }
@@ -2929,13 +2967,20 @@ export function universeHasMovers(
 }
 
 export function fixtureTypeHasFocusChannel(fixtureType: FixtureType): boolean {
-  return fixtureType.channels.flatMap((channel) =>
-    fixtureChannelLeafChannels(channel)
-  ).some(
-    (channel) =>
-      channel.type === 'custom' &&
-      channel.name.trim().toLowerCase().includes('focus')
-  )
+  return fixtureType.channels
+    .flatMap((channel) => fixtureChannelLeafChannels(channel))
+    .some(
+      (channel) =>
+        channel.type === 'focus' ||
+        (channel.type === 'custom' &&
+          channel.name.trim().toLowerCase().includes('focus'))
+    )
+}
+
+export function fixtureTypeHasPrismChannel(fixtureType: FixtureType): boolean {
+  return fixtureType.channels
+    .flatMap((channel) => fixtureChannelLeafChannels(channel))
+    .some((channel) => channel.type === 'prismMap')
 }
 
 export function inferFixtureModelKind(fixtureType: FixtureType): FixtureModelKind {

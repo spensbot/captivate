@@ -855,8 +855,14 @@ export function readLiveAxisValues(
   return {
     panRaw,
     tiltRaw,
-    panNorm: normalizeAxisValue(panRaw, fixture.panMin ?? 0, fixture.panMax ?? 255),
-    tiltNorm: normalizeAxisValue(tiltRaw, fixture.tiltMin ?? 0, fixture.tiltMax ?? 255),
+    panNorm:
+      fixture.moverCalibration?.pan !== undefined
+        ? mapAxisPhysicalDmxToNormalized(panRaw, fixture.moverCalibration.pan)
+        : normalizeAxisValue(panRaw, fixture.panMin ?? 0, fixture.panMax ?? 255),
+    tiltNorm:
+      fixture.moverCalibration?.tilt !== undefined
+        ? mapAxisPhysicalDmxToNormalized(tiltRaw, fixture.moverCalibration.tilt)
+        : normalizeAxisValue(tiltRaw, fixture.tiltMin ?? 0, fixture.tiltMax ?? 255),
   }
 }
 
@@ -1538,10 +1544,10 @@ export function mapPanDmxToYawDeg(
   const rangeDeg = Number.isFinite(calibration.pan.rangeDeg)
     ? Math.max(45, Math.min(1440, Number(calibration.pan.rangeDeg)))
     : 540
-  const frontNorm = usePhysicalLinearDecode
-    ? mapAxisPhysicalDmxToNormalized(calibration.pan.front, calibration.pan)
-    : 0.5
-  const canonicalYaw = -((normalized - frontNorm) * rangeDeg)
+  const anchorNorm = usePhysicalLinearDecode
+    ? 0.5
+    : mapAxisPhysicalDmxToNormalized(calibration.pan.front, calibration.pan)
+  const canonicalYaw = -((normalized - anchorNorm) * rangeDeg)
   if (fixtureId === undefined) {
     return canonicalYaw
   }
@@ -1981,15 +1987,6 @@ export function buildTargets(
         return
       }
 
-      const splitParamsList = resolveSplitParamsForFixture(
-        fixture.groups,
-        splitScenes,
-        splitStates,
-        fallbackParams
-      )
-      const splitParams = splitParamsList[0] ?? fallbackParams
-      const freeAimMode = getParam(splitParams, 'moverFloorLock') <= 0.5
-
       let targetWorld = danceFloorWorldFromNormalized(
         targetNormX,
         targetNormY,
@@ -2016,21 +2013,21 @@ export function buildTargets(
           fixture.moverCalibration,
           liveAxis.panNorm,
           fixture.fixtureId,
-          freeAimMode
+          true
         )
         aimPitchDeg = mapTiltDmxToPitchDeg(
           liveAxis.tiltRaw,
           fixture.moverCalibration,
           liveAxis.tiltNorm,
           fixture.moverMountOrientation === 'inverted',
-          freeAimMode
+          true
         )
-        // Primary mode: use real DMX output and mover calibration directly.
+        // Match engine: linear pan/tilt decode across calibrated min/max.
         targetWorld = targetFromLiveAxis(
           fixture,
           liveAxis,
           fixtureWorld,
-          freeAimMode
+          true
         )
       }
 
@@ -2636,7 +2633,6 @@ export function applyLiveValuesToPreviewTargets(
       fallbackParams
     )
     const splitParams = splitParamsList[0] ?? fallbackParams
-    const freeAimMode = getParam(splitParams, 'moverFloorLock') <= 0.5
     const fixtureWorld = fixtureWorldFromUniversePosition(
       fixture.xPos,
       fixture.yPos,
@@ -2653,20 +2649,20 @@ export function applyLiveValuesToPreviewTargets(
           fixture.moverCalibration,
           liveAxis.panNorm,
           fixture.fixtureId,
-          freeAimMode
+          true
         )
         target.aimPitchDeg = mapTiltDmxToPitchDeg(
           liveAxis.tiltRaw,
           fixture.moverCalibration,
           liveAxis.tiltNorm,
           fixture.moverMountOrientation === 'inverted',
-          freeAimMode
+          true
         )
         const targetWorld = targetFromLiveAxis(
           fixture,
           liveAxis,
           fixtureWorld,
-          freeAimMode
+          true
         )
         target.targetX = targetWorld.worldX
         target.targetY = targetWorld.worldY

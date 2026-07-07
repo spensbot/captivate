@@ -10,17 +10,22 @@ import {
   AUDIO_INPUT_DEVICE_DESKTOP,
   AudioEngineMetrics,
   AudioInputSettings,
-  getAudioBandLevel,
   getAudioBandLoudness,
   computeMusicLoudnessCore,
   initAudioBandConfig,
   initAudioEngineMetrics,
   normalizeAudioEngineMetrics,
   normalizeAudioInputSettings,
-  computePerceivedEnergyLevel,
+  computeMusicalEnergyEstimate,
   initAdaptiveEnergyNormalizerState,
+  initStableEnergyLevelState,
   resolveEnergyTempoBpm,
+  resolveAudioBpmRangeLock,
+  pickTempoBpmWithRangeLock,
+  clampBpmToAudioRange,
+  type AudioBpmRangeBounds,
   stepAdaptiveEnergyNormalizer,
+  stepStableEnergyLevel,
   type AdaptiveEnergyNormalizerState,
   AUDIO_MIN_GAIN,
   AUDIO_MAX_GAIN,
@@ -77,7 +82,7 @@ export default class AudioInputEngine {
   private energyShortEma = 0
   private energyLongEma = 0
   private energyTrendEma = 0
-  private energyLevelEma = 0
+  private stableEnergyLevel = initStableEnergyLevelState()
   private energyNormalizer: AdaptiveEnergyNormalizerState =
     initAdaptiveEnergyNormalizerState()
   /** Prior-frame composite (for detecting breakdown-style drops). */
@@ -340,7 +345,7 @@ export default class AudioInputEngine {
     this.energyShortEma = 0
     this.energyLongEma = 0
     this.energyTrendEma = 0
-    this.energyLevelEma = 0
+    this.stableEnergyLevel = initStableEnergyLevelState()
     this.energyNormalizer = initAdaptiveEnergyNormalizerState()
     this.lastCompositeEnergy = 0
     this.recentBeatIntervalsMs = []
@@ -938,7 +943,7 @@ export default class AudioInputEngine {
       high: highEnergy,
       flux: fluxNormalized,
     })
-    const instantEnergy = clamp01(loudnessCore * 0.88 + transient * 0.12)
+    const instantEnergy = clamp01(loudnessCore * 0.94 + transient * 0.04)
 
     const shortAlpha = alphaFromTau(dtSec, Math.max(0.08, barSec * 0.22))
     const longAlpha = alphaFromTau(dtSec, Math.max(0.28, fourBarsSec * 0.45))
@@ -957,10 +962,13 @@ export default class AudioInputEngine {
     }
 
     const compositeEnergy = clamp01(
-      instantEnergy * 0.4 +
-        this.energyShortEma * 0.3 +
-        this.energyLongEma * 0.17 +
-        this.energyTrendEma * 0.13
+      instantEnergy * 0.28 +
+        this.energyShortEma * 0.36 +
+        this.energyLongEma * 0.22 +
+        this.energyTrendEma * 0.14
+    )
+    const normalizerInput = clamp01(
+      instantEnergy * 0.54 + this.energyShortEma * 0.46
     )
 
     const bassDrop =
@@ -986,17 +994,17 @@ export default class AudioInputEngine {
       bpmForEnergy / Math.max(55, this.bpmPeakForEnergy)
     )
 
-    const floorAlpha = alphaFromTau(dtSec, Math.max(0.58, sixteenBarsSec * 0.78))
+    const floorAlpha = alphaFromTau(dtSec, Math.max(0.4, sixteenBarsSec * 0.52))
     let peakReleaseAlpha = alphaFromTau(
       dtSec,
-      Math.max(0.45, fourBarsSec * 0.95)
+      Math.max(0.8, fourBarsSec * 1.65)
     )
     if (fastBreakdown) {
       peakReleaseAlpha = Math.min(1, peakReleaseAlpha * 2.4)
     }
     const energyDynamics = clamp01(settings.energyDynamics)
     const normStep = stepAdaptiveEnergyNormalizer(this.energyNormalizer, {
-      compositeEnergy,
+      compositeEnergy: normalizerInput,
       floorAlpha,
       peakReleaseAlpha,
       energyDynamics,
@@ -1006,7 +1014,13 @@ export default class AudioInputEngine {
     const normalizedEnergy = normStep.normalizedEnergy
 
     const rhythmBias = clamp01(settings.energyRhythmBias)
-    const perceivedEnergy = computePerceivedEnergyLevel({
+    const bpmForMusical =
+      this.bpmEstimate !== null &&
+      Number.isFinite(this.bpmEstimate) &&
+      tempoConfidence >= 0.22
+        ? this.bpmEstimate
+        : null
+    const musicalEstimate = computeMusicalEnergyEstimate({
       normalizedLoudness: normalizedEnergy,
       loudnessInstant: instantEnergy,
       loudnessShort: this.energyShortEma,
@@ -1018,7 +1032,7 @@ export default class AudioInputEngine {
       highBaseline: this.highBandEma,
       lowOnset,
       beatOnset,
-      bpm: bpmForEnergy,
+      bpm: bpmForMusical,
       bpmConfidence: tempoConfidence,
       bpmDropRatio,
       rhythmShare: highRhythmShare,
@@ -1027,44 +1041,15 @@ export default class AudioInputEngine {
       rhythmEmphasis: rhythmBias,
     })
 
-    const deltaEnergy = perceivedEnergy - this.energyLevelEma
-    const jitterDeadband = 0.0008
-    const buildTrend = clamp01(
-      (this.energyShortEma - this.energyLongEma - 0.01) / 0.12
-    )
-    const changeMagnitude = Math.abs(this.energyShortEma - this.energyTrendEma)
-    const changeBoost = clamp01((changeMagnitude - 0.012) / 0.16)
-    const edgeBoost = clamp01((Math.abs(deltaEnergy) - 0.042) / 0.24)
-    const beatBoost = beatDetected ? 0.07 : 0
-    const energyBlend = clamp01(settings.energySmoothing)
-    const smoothBars = lerp(2.6, 0.85, energyBlend)
-    const baseAlpha = alphaFromTau(dtSec, Math.max(0.22, barSec * smoothBars))
-    const dropFollow =
-      perceivedEnergy < this.energyLevelEma
-        ? 1 + changeBoost * 0.32 + edgeBoost * 0.38 + (fastBreakdown ? 0.55 : 0)
-        : 1
-    const buildSlow =
-      perceivedEnergy > this.energyLevelEma && buildTrend > 0.08
-        ? lerp(0.55, 0.82, buildTrend)
-        : 1
-    const alpha = Math.min(
-      1,
-      ((baseAlpha +
-        (1 - baseAlpha) * (changeBoost * 0.48 + edgeBoost * 0.52 + beatBoost)) *
-        dropFollow) /
-        buildSlow
-    )
-    const riseAlpha = Math.min(
-      1,
-      alpha * lerp(2.4, 3.6, 1 - energyBlend) * (fastBreakdown ? 0.85 : 1)
-    )
-    const alphaUse =
-      perceivedEnergy > this.energyLevelEma ? riseAlpha : alpha
-
-    if (Math.abs(deltaEnergy) > jitterDeadband) {
-      this.energyLevelEma += (perceivedEnergy - this.energyLevelEma) * alphaUse
-    }
-    const energyLevel = clamp01(this.energyLevelEma)
+    const stableStep = stepStableEnergyLevel(this.stableEnergyLevel, {
+      musicalEstimate,
+      dtSec,
+      barSec,
+      energySmoothing: clamp01(settings.energySmoothing),
+      fastBreakdown,
+    })
+    this.stableEnergyLevel = stableStep.state
+    const energyLevel = stableStep.energyLevel
 
     const stabilizedBpm = this.updateStabilizedBpmEstimate(
       this.bpmEstimate,
@@ -1630,6 +1615,22 @@ export default class AudioInputEngine {
     return s.beatTapHintBpm
   }
 
+  private getAudioBpmRangeLockForDetection(): AudioBpmRangeBounds | null {
+    const settings = normalizeAudioInputSettings(this.lastSettings ?? undefined)
+    if (!settings.useBeatClock) {
+      return null
+    }
+    return resolveAudioBpmRangeLock(settings)
+  }
+
+  private clampBpmToActiveRange(bpm: number): number {
+    const range = this.getAudioBpmRangeLockForDetection()
+    if (range === null) {
+      return bpm
+    }
+    return clampBpmToAudioRange(bpm, range)
+  }
+
   private getPreferredTempoReference(): number | null {
     // Prefer tap-teach, then blended autocorr+PLP (stable global tempo), then the
     // interval-based estimate so half/double-time octave errors resolve toward
@@ -1684,75 +1685,35 @@ export default class AudioInputEngine {
       return null
     }
 
-    const base = rawBpm
-    const candidates = [base, base * 2, base * 0.5]
-      .filter((value) => value >= 45 && value <= 220)
-
-    if (candidates.length <= 0) {
-      return null
-    }
+    const range = this.getAudioBpmRangeLockForDetection()
+    let reference = referenceHint
 
     if (
-      referenceHint !== null &&
-      referenceHint !== undefined &&
-      Number.isFinite(referenceHint) &&
-      referenceHint >= 45 &&
-      referenceHint <= 220
+      (reference === null || reference === undefined || !Number.isFinite(reference)) &&
+      range === null
     ) {
-      let best = candidates[0]!
-      let bestDelta = Math.abs(best - referenceHint)
-      for (let i = 1; i < candidates.length; i++) {
-        const candidate = candidates[i]!
-        const delta = Math.abs(candidate - referenceHint)
-        if (delta < bestDelta) {
-          best = candidate
-          bestDelta = delta
-        }
-      }
-      return best
+      const current = this.bpmEstimate
+      const autocorr =
+        this.autocorrTempoBpm !== null && Number.isFinite(this.autocorrTempoBpm)
+          ? this.autocorrTempoBpm
+          : null
+      const shouldTrustAutocorrHarmonic =
+        current !== null &&
+        autocorr !== null &&
+        this.autocorrTempoConfidence >= 0.16 &&
+        ((autocorr / Math.max(1, current) >= 1.8 &&
+          autocorr / Math.max(1, current) <= 2.2) ||
+          (autocorr / Math.max(1, current) >= 0.45 &&
+            autocorr / Math.max(1, current) <= 0.56))
+      reference =
+        shouldTrustAutocorrHarmonic && autocorr !== null ? autocorr : current
     }
 
-    const current = this.bpmEstimate
-    const autocorr =
-      this.autocorrTempoBpm !== null && Number.isFinite(this.autocorrTempoBpm)
-        ? this.autocorrTempoBpm
-        : null
-    const shouldTrustAutocorrHarmonic =
-      current !== null &&
-      autocorr !== null &&
-      this.autocorrTempoConfidence >= 0.16 &&
-      ((autocorr / Math.max(1, current) >= 1.8 &&
-        autocorr / Math.max(1, current) <= 2.2) ||
-        (autocorr / Math.max(1, current) >= 0.45 &&
-          autocorr / Math.max(1, current) <= 0.56))
-    const referenceTempo =
-      shouldTrustAutocorrHarmonic && autocorr !== null ? autocorr : current
-    if (referenceTempo !== null && Number.isFinite(referenceTempo)) {
-      let best = candidates[0]
-      let bestDelta = Math.abs(best - referenceTempo)
-      for (let i = 1; i < candidates.length; i++) {
-        const candidate = candidates[i]
-        const delta = Math.abs(candidate - referenceTempo)
-        if (delta < bestDelta) {
-          best = candidate
-          bestDelta = delta
-        }
-      }
-      return best
+    const normalized = pickTempoBpmWithRangeLock(rawBpm, range, reference)
+    if (normalized === null) {
+      return null
     }
-
-    // Initial lock bias toward dance-tempo center while still allowing slower songs.
-    let best = candidates[0]
-    let bestScore = Math.abs(best - 120)
-    for (let i = 1; i < candidates.length; i++) {
-      const candidate = candidates[i]
-      const score = Math.abs(candidate - 120)
-      if (score < bestScore) {
-        best = candidate
-        bestScore = score
-      }
-    }
-    return best
+    return range !== null ? clampBpmToAudioRange(normalized, range) : normalized
   }
 
   private getBeatIntervalStabilityConfidence() {
@@ -1880,9 +1841,9 @@ export default class AudioInputEngine {
       this.stabilizedBpmEstimate === null ||
       !Number.isFinite(this.stabilizedBpmEstimate)
     ) {
-      this.stabilizedBpmEstimate = rawBpm
+      this.stabilizedBpmEstimate = this.clampBpmToActiveRange(rawBpm)
       this.stabilizedBpmLastAtMs = nowMs
-      return rawBpm
+      return this.stabilizedBpmEstimate
     }
 
     const safeDtSec = Math.max(1 / 240, dtSec)
@@ -1900,6 +1861,7 @@ export default class AudioInputEngine {
         : this.stabilizedBpmEstimate + Math.sign(delta) * maxStep
     const alpha = beatDetected ? lerp(0.32, 0.68, changeNorm) : lerp(0.18, 0.4, changeNorm)
     this.stabilizedBpmEstimate += (stepped - this.stabilizedBpmEstimate) * alpha
+    this.stabilizedBpmEstimate = this.clampBpmToActiveRange(this.stabilizedBpmEstimate)
     this.stabilizedBpmLastAtMs = nowMs
     return this.stabilizedBpmEstimate
   }

@@ -233,6 +233,9 @@ export const defaultParamsList: DefaultParam[] = [
 
 const paramDisplayNames: { [key: string]: string } = {
   gobo: 'Gobo',
+  focus: 'Focus',
+  prism: 'Prism',
+  colorWheel: 'Color wheel',
   white: 'White',
   warmWhite: 'Warm White',
   amber: 'Amber',

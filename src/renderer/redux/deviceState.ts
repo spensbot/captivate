@@ -795,6 +795,36 @@ export const midiActions = {
       beatTapHintAtMs: 0,
     }
   },
+  setAudioBpmRangePreset: (
+    state: DeviceState,
+    { payload }: PayloadAction<AudioInputSettings['audioBpmRangePreset']>
+  ) => {
+    const current = normalizeAudioInputSettings(state.connectionSettings.audioInput)
+    state.connectionSettings.audioInput = {
+      ...current,
+      audioBpmRangePreset: normalizeAudioInputSettings({
+        ...current,
+        audioBpmRangePreset: payload,
+      }).audioBpmRangePreset,
+    }
+  },
+  setAudioBpmRangeCustom: (
+    state: DeviceState,
+    { payload }: PayloadAction<{ min: number; max: number }>
+  ) => {
+    const current = normalizeAudioInputSettings(state.connectionSettings.audioInput)
+    const bounds = normalizeAudioInputSettings({
+      ...current,
+      audioBpmRangeCustomMin: payload.min,
+      audioBpmRangeCustomMax: payload.max,
+    })
+    state.connectionSettings.audioInput = {
+      ...current,
+      audioBpmRangePreset: 'custom',
+      audioBpmRangeCustomMin: bounds.audioBpmRangeCustomMin,
+      audioBpmRangeCustomMax: bounds.audioBpmRangeCustomMax,
+    }
+  },
   setAtmosOn: (
     state: DeviceState,
     { payload }: PayloadAction<boolean>

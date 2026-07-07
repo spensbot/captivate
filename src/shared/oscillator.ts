@@ -87,7 +87,7 @@ export function GetSin() {
     audioMax: 0.6,
     audioAttack: 0.35,
     audioDecay: 0.55,
-    audioEnergySmoothing: 0.65,
+    audioEnergySmoothing: 0.78,
     audioBandSmoothing: 0,
   }
 }

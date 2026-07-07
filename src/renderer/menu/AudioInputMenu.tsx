@@ -23,9 +23,12 @@ import {
   setAudioInputEnabled,
   setAudioInputGain,
   setAudioInputAutoGainControl,
+  setAudioBpmRangeCustom,
 } from '../redux/controlSlice'
 import { useRealtimeSelector } from '../redux/realtimeStore'
 import {
+  AUDIO_BPM_RANGE_MAX,
+  AUDIO_BPM_RANGE_MIN,
   AUDIO_MAX_BEAT_INTERVAL_MS,
   AUDIO_MAX_BPM_SMOOTHING,
   AUDIO_MAX_ENERGY_SMOOTHING,
@@ -53,7 +56,9 @@ const AUDIO_BEAT_CLOCK_INFO = (
   <>
     To drive master BPM and the beat pulse from onsets in the selected input,
     turn this on. If MIDI clock tempo is enabled under Connections, disable that
-    first — only one external BPM source can be active.
+    first — only one external BPM source can be active. When audio beat clock is
+    active, use the range dropdown under <strong>BPM</strong> in the status bar to
+    lock detection to a known tempo window.
   </>
 )
 
@@ -126,15 +131,15 @@ const BPM_RESPONSE_INFO = (
 
 const ENERGY_RESPONSE_INFO = (
   <>
-    Controls how quickly the energy meter follows drops, builds, and breakdowns.
-    Higher values react faster; lower values smooth out short spikes.
+    Controls how quickly the steady energy level follows quiet vs loud sections.
+    Higher values react faster; lower values hold longer through small changes.
   </>
 )
 
 const ENERGY_DYNAMICS_INFO = (
   <>
-    Sets how much the meter compresses loud vs quiet sections. Lower values feel
-    punchier; higher values keep energy changes smoother across the song.
+    Sets how much the meter compresses loud vs quiet sections. Lower values use
+    more of the meter range; higher values keep changes smoother across the song.
   </>
 )
 
@@ -148,7 +153,7 @@ const ENERGY_RHYTHM_BIAS_INFO = (
 const METER_LEVEL_INFO =
   'How loud the input is right now (after gain).'
 const METER_ENERGY_INFO =
-  'Smoothed loudness — used for energy-style effects and auto scenes.'
+  'Steady musical energy from loudness, rhythm, and spectrum — quiet sections read low, drops and choruses read high.'
 const METER_BPM_LOCK_INFO =
   'How sure Captivate is about the tempo (only when audio beat clock is on).'
 
@@ -548,6 +553,56 @@ export default function AudioInputMenu({
                   onChange={(value) => dispatch(setAudioBpmSmoothing(value))}
                 />
               </Field>
+              {settings.useBeatClock && settings.audioBpmRangePreset === 'custom' && (
+                <>
+                  <Field>
+                    <LabelRow>
+                      <Label>
+                        Custom BPM Min ({Math.round(settings.audioBpmRangeCustomMin)})
+                      </Label>
+                    </LabelRow>
+                    <CaptivateSlider
+                      min={AUDIO_BPM_RANGE_MIN}
+                      max={AUDIO_BPM_RANGE_MAX}
+                      step={1}
+                      value={settings.audioBpmRangeCustomMin}
+                      disabled={settings.enabled !== true}
+                      title="Minimum BPM for audio beat detection"
+                      onChange={(value) =>
+                        dispatch(
+                          setAudioBpmRangeCustom({
+                            min: value,
+                            max: settings.audioBpmRangeCustomMax,
+                          })
+                        )
+                      }
+                    />
+                  </Field>
+                  <Field>
+                    <LabelRow>
+                      <Label>
+                        Custom BPM Max ({Math.round(settings.audioBpmRangeCustomMax)})
+                      </Label>
+                    </LabelRow>
+                    <CaptivateSlider
+                      min={AUDIO_BPM_RANGE_MIN}
+                      max={AUDIO_BPM_RANGE_MAX}
+                      step={1}
+                      value={settings.audioBpmRangeCustomMax}
+                      disabled={settings.enabled !== true}
+                      title="Maximum BPM for audio beat detection"
+                      onChange={(value) =>
+                        dispatch(
+                          setAudioBpmRangeCustom({
+                            min: settings.audioBpmRangeCustomMin,
+                            max: value,
+                          })
+                        )
+                      }
+                    />
+                  </Field>
+                </>
+              )}
             </>
           )}
 

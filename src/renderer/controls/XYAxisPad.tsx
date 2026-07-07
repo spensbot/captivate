@@ -10,7 +10,6 @@ import { isMoverFixtureType } from '../../shared/dmxFixtures'
 import MidiOverlay_xy from '../base/MidiOverlay_xy'
 import { makeSetBaseParamAction } from '../redux/deviceState'
 import {
-  MoverFloorBoundsHelpButton,
   MoverPatternHelpButton,
 } from '../pages/moverHelpButtons'
 
@@ -83,7 +82,6 @@ export default function XYAxispad({ splitIndex }: Props) {
 
   const xAxis = useBaseParam('xAxis', splitIndex)
   const yAxis = useBaseParam('yAxis', splitIndex)
-  const moverFloorLock = useBaseParam('moverFloorLock', splitIndex)
   const moverSpread = useBaseParam('moverSpread', splitIndex)
   const moverMirrorX = useBaseParam('moverMirrorX', splitIndex)
   const moverMirrorY = useBaseParam('moverMirrorY', splitIndex)
@@ -95,7 +93,6 @@ export default function XYAxispad({ splitIndex }: Props) {
     }
 
     const nextParams: { [key: string]: number } = {}
-    if (moverFloorLock === undefined) nextParams.moverFloorLock = 0
     if (moverSpread === undefined) nextParams.moverSpread = 0
     if (moverMirrorX === undefined) nextParams.moverMirrorX = 0
     if (moverMirrorY === undefined) nextParams.moverMirrorY = 0
@@ -114,7 +111,6 @@ export default function XYAxispad({ splitIndex }: Props) {
     moverMirrorX,
     moverMirrorY,
     moverModeRaw,
-    moverFloorLock,
     moverSpread,
     splitIndex,
     xAxis,
@@ -124,7 +120,6 @@ export default function XYAxispad({ splitIndex }: Props) {
   if (
     xAxis === undefined ||
     yAxis === undefined ||
-    moverFloorLock === undefined ||
     moverSpread === undefined ||
     moverMirrorX === undefined ||
     moverMirrorY === undefined ||
@@ -135,7 +130,6 @@ export default function XYAxispad({ splitIndex }: Props) {
 
   const moverMode = normalizeMoverMode(moverModeRaw)
   const moverModeOption = moverModeToOption(moverMode)
-  const floorLockEnabled = moverFloorLock > 0.5
   const mirrorXEnabled = moverMirrorX > 0.5
   const mirrorYEnabled = moverMirrorY > 0.5
 
@@ -162,30 +156,6 @@ export default function XYAxispad({ splitIndex }: Props) {
       >
         {moverAdvancedControlEnabled ? (
           <>
-        <ControlLabelRow>
-          <ControlLabel>Floor Bounds</ControlLabel>
-          <MoverFloorBoundsHelpButton />
-        </ControlLabelRow>
-        <SingleToggleButton
-          type="button"
-          $active={floorLockEnabled}
-          title={
-            floorLockEnabled
-              ? 'Locked: pad targets calibrated floor positions'
-              : 'Free aim: pad maps to fixture physical limits'
-          }
-          onClick={() => {
-            dispatch(
-              setBaseParams({
-                splitIndex,
-                params: { moverFloorLock: floorLockEnabled ? 0 : 1 },
-              })
-            )
-          }}
-        >
-          {floorLockEnabled ? 'Bounds Locked' : 'Free Aim'}
-        </SingleToggleButton>
-
         <ControlLabelRow>
           <ControlLabel>Mover Pattern</ControlLabel>
           <MoverPatternHelpButton />
@@ -406,20 +376,6 @@ const ControlLabel = styled.div`
 
 const SelectRow = styled.div`
   margin-bottom: 0.14rem;
-`
-
-const SingleToggleButton = styled.button<{ $active: boolean }>`
-  border: 1px solid ${(props) => (props.$active ? '#8fdab6bb' : '#ffffff33')};
-  background: ${(props) => (props.$active ? '#174a2f' : '#101317')};
-  color: ${(props) => (props.$active ? '#ecfff5' : '#d9e3f2')};
-  font-size: 0.68rem;
-  font-weight: 600;
-  border-radius: 0.28rem;
-  cursor: pointer;
-  padding: 0.2rem 0.42rem;
-  width: 100%;
-  text-align: center;
-  transition: background-color 120ms ease, border-color 120ms ease;
 `
 
 const SpreadInput = styled.input`

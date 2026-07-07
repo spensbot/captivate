@@ -91,6 +91,48 @@ function hasGoboMapChannels(dmx: DmxState): boolean {
 
   return false
 }
+
+function hasFocusChannels(dmx: DmxState): boolean {
+  for (const ftId of dmx.fixtureTypes) {
+    for (const ch of dmx.fixtureTypesByID[ftId].channels.flatMap((channel) =>
+      fixtureChannelLeafChannels(channel)
+    )) {
+      if (ch.type === 'focus') {
+        return true
+      }
+    }
+  }
+
+  return false
+}
+
+function hasPrismMapChannels(dmx: DmxState): boolean {
+  for (const ftId of dmx.fixtureTypes) {
+    for (const ch of dmx.fixtureTypesByID[ftId].channels.flatMap((channel) =>
+      fixtureChannelLeafChannels(channel)
+    )) {
+      if (ch.type === 'prismMap') {
+        return true
+      }
+    }
+  }
+
+  return false
+}
+
+function hasColorMapChannels(dmx: DmxState): boolean {
+  for (const ftId of dmx.fixtureTypes) {
+    for (const ch of dmx.fixtureTypesByID[ftId].channels.flatMap((channel) =>
+      fixtureChannelLeafChannels(channel)
+    )) {
+      if (ch.type === 'colorMap') {
+        return true
+      }
+    }
+  }
+
+  return false
+}
 export function getAllParamKeys(dmx: DmxState): string[] {
   const keys = (defaultParamsList as string[]).concat(
     Array.from(getCustomChannels(dmx))
@@ -98,6 +140,15 @@ export function getAllParamKeys(dmx: DmxState): string[] {
 
   if (hasGoboMapChannels(dmx)) {
     keys.push('gobo')
+  }
+  if (hasFocusChannels(dmx)) {
+    keys.push('focus')
+  }
+  if (hasPrismMapChannels(dmx)) {
+    keys.push('prism')
+  }
+  if (hasColorMapChannels(dmx)) {
+    keys.push('colorWheel')
   }
 
   return Array.from(new Set(keys))
@@ -547,7 +598,7 @@ function isAtmosphereFixtureType(fixtureType: FixtureType): boolean {
       if (name.length <= 0) {
         return false
       }
-      const exclusions = ['pan', 'tilt', 'speed', 'gobo', 'zoom', 'focus']
+      const exclusions = ['pan', 'tilt', 'speed', 'gobo', 'prism', 'zoom', 'focus']
       if (exclusions.some((token) => name.includes(token))) {
         return false
       }

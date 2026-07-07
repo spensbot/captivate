@@ -180,6 +180,9 @@ interface ClearRecentProjects {
 interface OpenSettings {
   type: 'open-settings'
 }
+interface GenerateScenes {
+  type: 'generate-scenes'
+}
 export type MainCommand =
   | Undo
   | Redo
@@ -196,3 +199,4 @@ export type MainCommand =
   | LoadRecentProject
   | ClearRecentProjects
   | OpenSettings
+  | GenerateScenes

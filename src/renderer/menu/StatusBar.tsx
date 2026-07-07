@@ -91,7 +91,7 @@ export default function StatusBar() {
             size="small"
             sx={{
               ...statusBarMuiIconButtonSx,
-              color: isEditing ? 'success.main' : 'text.secondary',
+              color: isEditing ? 'success.main' : 'text.primary',
               opacity: midiConnected ? 1 : 0.55,
             }}
           >

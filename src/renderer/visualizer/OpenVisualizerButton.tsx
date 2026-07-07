@@ -48,7 +48,7 @@ export default function OpenVisualizerButton() {
         sx={{
           minWidth: 0,
           px: 0.45,
-          color: 'text.secondary',
+          color: 'text.primary',
           '&:hover': { color: 'text.primary' },
         }}
       >

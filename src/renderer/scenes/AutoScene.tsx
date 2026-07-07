@@ -178,7 +178,7 @@ const Button = styled.div<{ $enabled: boolean }>`
   flex-shrink: 0;
   border: 1px solid ${(p) => p.theme.colors.divider};
   background-color: ${(p) => (p.$enabled ? '#3d5a3d' : p.theme.colors.bg.panel)};
-  color: ${(p) => (p.$enabled ? '#ececec' : p.theme.colors.text.primary)};
+  color: ${(p) => (p.$enabled ? '#ececec' : p.theme.colors.button.text)};
 `
 
 const EnergyModeToggle = styled.button<{ $active: boolean }>`
@@ -186,12 +186,13 @@ const EnergyModeToggle = styled.button<{ $active: boolean }>`
   border-radius: 0.3rem;
   padding: 0.15rem 0.4rem;
   font-size: 0.72rem;
+  font-weight: ${(p) => (p.$active ? 700 : 500)};
   cursor: pointer;
   border: 1px solid
     ${(p) => (p.$active ? '#7dff9d' : p.theme.colors.divider)};
   background: ${(p) =>
-    p.$active ? '#7dff9d22' : p.theme.colors.bg.panel};
-  color: ${(p) => (p.$active ? '#2d6b3d' : p.theme.colors.text.secondary)};
+    p.$active ? '#7dff9d40' : p.theme.colors.bg.panel};
+  color: ${(p) => (p.$active ? '#dfffec' : p.theme.colors.button.text)};
   white-space: nowrap;
 `
 
@@ -200,11 +201,12 @@ const AudioMatchToggle = styled.button<{ $active: boolean }>`
   border-radius: 0.3rem;
   padding: 0.15rem 0.4rem;
   font-size: 0.72rem;
+  font-weight: ${(p) => (p.$active ? 700 : 500)};
   cursor: pointer;
   border: 1px solid
     ${(p) => (p.$active ? '#ffd36f' : p.theme.colors.divider)};
-  background: ${(p) => (p.$active ? '#ffd36f33' : p.theme.colors.bg.panel)};
-  color: ${(p) => (p.$active ? '#7a5a00' : p.theme.colors.text.secondary)};
+  background: ${(p) => (p.$active ? '#ffd36f45' : p.theme.colors.bg.panel)};
+  color: ${(p) => (p.$active ? '#fff3d0' : p.theme.colors.button.text)};
   white-space: nowrap;
 `
 
@@ -237,7 +239,7 @@ const EnergyMeterFill = styled.div<{ $level: number }>`
 const EnergyMeterValue = styled.div`
   flex-shrink: 0;
   font-size: 0.68rem;
-  color: ${(p) => p.theme.colors.text.secondary};
+  color: ${(p) => p.theme.colors.button.textMuted};
   width: 2.5rem;
   text-align: right;
 `

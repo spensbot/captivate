@@ -1,13 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
 import { send_user_command } from '../ipcHandler'
 import { useRealtimeSelector } from 'renderer/redux/realtimeStore'
+import { useControlSelector } from '../redux/store'
 import useDragBasic from 'renderer/hooks/useDragBasic'
 import { SliderMidiOverlay } from 'renderer/base/MidiOverlay'
+import { normalizeAudioInputSettings } from '../../shared/audioEngine'
+import BpmRangeLockDropdown from './BpmRangeLockDropdown'
 import {
+  StatusBarBpmAccentLabel,
+  StatusBarBpmColumnLabel,
+  StatusBarBpmControlShell,
+  StatusBarBpmLabelColumn,
   StatusBarBpmRow,
   StatusBarControlShell,
   StatusBarFieldInput,
-  StatusBarLabel,
   StatusBarReadout,
   StatusBarStepButton,
 } from './statusBarUi'
@@ -21,6 +27,20 @@ const TEMPO_DRAG_FLUSH_MS = 50
 
 export default function BPM() {
   const bpm = useRealtimeSelector((state) => state.time.bpm)
+  const audioSettings = useControlSelector((state) =>
+    normalizeAudioInputSettings(state.device.connectionSettings.audioInput)
+  )
+  const midiClockDrivesBpm = useControlSelector(
+    (state) => state.device.connectionSettings.midiClockBpmEnabled === true
+  )
+  const linkEnabled = useControlSelector(
+    (state) => state.device.connectionSettings.linkEnabled === true
+  )
+  const showBpmRangeLock =
+    audioSettings.enabled === true &&
+    audioSettings.useBeatClock === true &&
+    !midiClockDrivesBpm &&
+    !linkEnabled
   const [isEditing, setIsEditing] = useState(false)
   const [draft, setDraft] = useState(() => `${Math.round(bpm)}`)
   const tempoDragAccumRef = useRef(0)
@@ -87,10 +107,19 @@ export default function BPM() {
     send_user_command({ type: 'SetBPM', bpm: next })
   }
 
+  const Shell = showBpmRangeLock ? StatusBarBpmControlShell : StatusBarControlShell
+
   return (
     <SliderMidiOverlay action={{ type: 'setBpm' }}>
-      <StatusBarControlShell>
-        <StatusBarLabel>BPM</StatusBarLabel>
+      <Shell>
+        {showBpmRangeLock ? (
+          <StatusBarBpmLabelColumn>
+            <StatusBarBpmColumnLabel>BPM</StatusBarBpmColumnLabel>
+            <BpmRangeLockDropdown />
+          </StatusBarBpmLabelColumn>
+        ) : (
+          <StatusBarBpmAccentLabel>BPM</StatusBarBpmAccentLabel>
+        )}
         <StatusBarBpmRow>
           <StatusBarStepButton
             type="button"
@@ -136,7 +165,7 @@ export default function BPM() {
             +
           </StatusBarStepButton>
         </StatusBarBpmRow>
-      </StatusBarControlShell>
+      </Shell>
     </SliderMidiOverlay>
   )
 }

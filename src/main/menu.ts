@@ -353,6 +353,13 @@ export default class MenuBuilder {
         },
         { type: 'separator' },
         {
+          label: 'Generate Scenes…',
+          click: () => {
+            this.res.ipcCallbacks.send_main_command({ type: 'generate-scenes' })
+          },
+        },
+        { type: 'separator' },
+        {
           label: 'Open Lighting 3D Window (Alpha)',
           click: () => {
             this.res.openPageWindow('Lighting3D')
@@ -531,6 +538,13 @@ export default class MenuBuilder {
                 type: 'set-led-sidebar-enabled',
                 enabled: !this.ledSidebarMenuChecked,
               })
+            },
+          },
+          { type: 'separator' },
+          {
+            label: 'Generate Scenes…',
+            click: () => {
+              this.res.ipcCallbacks.send_main_command({ type: 'generate-scenes' })
             },
           },
           { type: 'separator' },

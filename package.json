@@ -14,7 +14,7 @@
     "postinstall": "ts-node .erb/scripts/check-native-dep.js && electron-builder install-app-deps && patch-package && cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.renderer.dev.dll.ts",
     "prepare:node-link": "node tools/prepare_node_link_runtime.js",
     "check:build-env": "node tools/check-build-environment.js",
-    "generate:default-save": "node scripts/generate-default-save.mjs",
+    "generate:default-save": "cross-env TS_NODE_TRANSPILE_ONLY=true ts-node scripts/generate-default-save.ts",
     "package:bundle": "node tools/run-with-qualified-node.cjs -- npm run package:bundle:inner",
     "package:bundle:inner": "node tools/run-with-qualified-node.cjs -- npm run __package:bundle:inner",
     "__package:bundle:inner": "node tools/check-build-environment.js && ts-node ./.erb/scripts/clean.js dist && npm run prepare:projectm-bridge && npm run prepare:projectm-runtime && npm run prepare:node-link && npm run rebuild && node tools/rebuild-darwin-universal-natives.cjs && npm run build && npm run verify:release-assets",
@@ -203,6 +203,7 @@
       "allowToChangeInstallationDirectory": true,
       "perMachine": false,
       "createDesktopShortcut": "always",
+      "warningsAsErrors": false,
       "include": "build/installer/nsis/custom.nsh"
     },
     "linux": {

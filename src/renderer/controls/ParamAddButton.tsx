@@ -40,6 +40,10 @@ import { sumAtmosSliders } from '../atmospherics/atmosSliderAssignments'
 import { visSplitIdx } from '../scenes/splitUiVisibility'
 import { getSplitAuxColorGates } from '../../shared/splitAuxColorGates'
 import type { AuxColorGates } from '../../shared/splitAuxColorGates'
+import {
+  getSplitColorCapabilities,
+  splitSupportsColorWheel,
+} from '../../shared/splitColorCapabilities'
 import { AddParamsHelpButton } from '../scenes/sceneHelpButtons'
 
 interface Props {
@@ -127,6 +131,10 @@ function getOptions(
   activeVisualizerSliders: Set<string>,
   splitSupportsMovers: boolean,
   splitSupportsGobo: boolean,
+  splitSupportsFocus: boolean,
+  splitSupportsPrism: boolean,
+  splitSupportsColorWheel: boolean,
+  colorWheelOnly: boolean,
   splitSupportsAtmosphere: boolean,
   splitSupportsColorChannels: boolean,
   auxColorGates: AuxColorGates,
@@ -160,15 +168,18 @@ function getOptions(
       if (param === 'uv' && !auxColorGates.uv) {
         return false
       }
-      if (
-        colorParamSet.has(param) &&
-        !splitSupportsColorChannels &&
-        !(
-          isVisualizerSplit &&
-          (param === 'hue' || param === 'saturation' || param === 'brightness')
-        )
-      ) {
-        return false
+      if (colorParamSet.has(param)) {
+        const isVisualizerHsvParam =
+          param === 'hue' || param === 'saturation' || param === 'brightness'
+        if (
+          !splitSupportsColorChannels &&
+          !(isVisualizerSplit && isVisualizerHsvParam)
+        ) {
+          return false
+        }
+        if (colorWheelOnly && param !== 'brightness') {
+          return false
+        }
       }
       if (
         isVisualizerSplit &&
@@ -201,6 +212,9 @@ function getOptions(
       return false
     }
     if (pb === 'axis' && !splitSupportsMovers) {
+      return false
+    }
+    if (colorWheelOnly && (pb === 'hsb' || pb === 'wwauv')) {
       return false
     }
     if (
@@ -252,7 +266,9 @@ function getOptions(
       (option !== 'uv' || auxColorGates.uv) &&
       (option !== 'white' || auxColorGates.white) &&
       (!moverOnlyParamSet.has(option) || splitSupportsMovers) &&
-      (option !== 'gobo' || splitSupportsGobo)
+      (option !== 'gobo' || splitSupportsGobo) &&
+      (option !== 'focus' || splitSupportsFocus) &&
+      (option !== 'prism' || splitSupportsPrism)
   )
 
   const dynamicParamOptions = allParamKeys.filter(
@@ -267,7 +283,10 @@ function getOptions(
       (option !== 'white' || auxColorGates.white) &&
       (!atmosphereOnlyParamSet.has(option) || splitSupportsAtmosphere) &&
       (!moverOnlyParamSet.has(option) || splitSupportsMovers) &&
-      (option !== 'gobo' || splitSupportsGobo)
+      (option !== 'gobo' || splitSupportsGobo) &&
+      (option !== 'focus' || splitSupportsFocus) &&
+      (option !== 'prism' || splitSupportsPrism) &&
+      (option !== 'colorWheel' || splitSupportsColorWheel)
   )
 
   return paramOptions
@@ -327,6 +346,8 @@ export default function ParamAddButton({ splitIndex }: Props) {
   const splitCapabilities = useDmxSelector((dmx) => {
     let supportsMovers = false
     let supportsGobo = false
+    let supportsFocus = false
+    let supportsPrism = false
     let supportsAtmosphere = false
     let supportsDmxColorChannels = false
     let supportsLedColorChannels = false
@@ -364,6 +385,16 @@ export default function ParamAddButton({ splitIndex }: Props) {
       if (
         fixtureType.channels
           .flatMap((channel) => fixtureChannelLeafChannels(channel))
+          .some((channel) => channel.type === 'focus')
+      ) {
+        supportsFocus = true
+      }
+      if (fixtureType.channels.some((channel) => channel.type === 'prismMap')) {
+        supportsPrism = true
+      }
+      if (
+        fixtureType.channels
+          .flatMap((channel) => fixtureChannelLeafChannels(channel))
           .some((channel) => {
             return (
               channel.type === 'master' ||
@@ -386,6 +417,8 @@ export default function ParamAddButton({ splitIndex }: Props) {
       if (
         supportsMovers &&
         supportsGobo &&
+        supportsFocus &&
+        supportsPrism &&
         supportsAtmosphere &&
         supportsDmxColorChannels
       ) {
@@ -413,6 +446,8 @@ export default function ParamAddButton({ splitIndex }: Props) {
     return {
       supportsMovers,
       supportsGobo,
+      supportsFocus,
+      supportsPrism,
       supportsAtmosphere,
       supportsColorChannels: supportsDmxColorChannels || supportsLedColorChannels,
     }
@@ -422,6 +457,12 @@ export default function ParamAddButton({ splitIndex }: Props) {
     () => getSplitAuxColorGates(dmx, splitGroups, atmosFixtureIdSet),
     [atmosFixtureIdSet, dmx, splitGroups]
   )
+  const splitColorCapabilities = useMemo(
+    () => getSplitColorCapabilities(dmx, splitGroups, atmosFixtureIdSet),
+    [atmosFixtureIdSet, dmx, splitGroups]
+  )
+  const colorWheelOnly = splitColorCapabilities.mode === 'colorWheelOnly'
+  const splitSupportsColorWheelUi = splitSupportsColorWheel(splitColorCapabilities)
 
   const splitSupportsMoversInUi =
     hasMoverFixturesInProject && splitCapabilities.supportsMovers
@@ -436,6 +477,10 @@ export default function ParamAddButton({ splitIndex }: Props) {
     activeVisualizerSliders,
     splitSupportsMoversInUi,
     splitCapabilities.supportsGobo,
+    splitCapabilities.supportsFocus,
+    splitCapabilities.supportsPrism,
+    splitSupportsColorWheelUi,
+    colorWheelOnly,
     splitCapabilities.supportsAtmosphere,
     splitCapabilities.supportsColorChannels,
     auxColorGates,
@@ -479,6 +524,16 @@ export default function ParamAddButton({ splitIndex }: Props) {
                   ) {
                     for (const param of paramBundles[option]) {
                       newParams[param] = initialParams[param] ?? 0
+                    }
+                  } else if (option === 'hsb') {
+                    for (const param of paramBundles.hsb) {
+                      newParams[param] = initialParams[param] ?? 0
+                    }
+                    if (
+                      splitSupportsColorWheelUi &&
+                      baseParams.colorWheel === undefined
+                    ) {
+                      newParams.colorWheel = 0
                     }
                   } else if (option === 'wwauv') {
                     const initialParamDefaults = initialParams as Params

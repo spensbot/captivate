@@ -52,6 +52,18 @@ export default createGlobalStyle`
     opacity: 0.85;
   }
 
+  button,
+  [role='button'] {
+    color: ${(props) => props.theme.colors.button.text};
+  }
+
+  button svg,
+  button .MuiSvgIcon-root,
+  [role='button'] svg,
+  [role='button'] .MuiSvgIcon-root {
+    color: ${(props) => props.theme.colors.button.icon};
+  }
+
   *::-webkit-scrollbar {
     display: none;
   }

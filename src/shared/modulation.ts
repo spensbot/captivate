@@ -88,7 +88,7 @@ export function initModulator(splitCount: number): Modulator {
   lfo.audioMax = 0.6
   lfo.audioAttack = 0.35
   lfo.audioDecay = 0.55
-  lfo.audioEnergySmoothing = 0.65
+  lfo.audioEnergySmoothing = 0.78
   lfo.audioBandSmoothing = 0
 
   return {
@@ -238,6 +238,62 @@ export function activeInterModParamKeys(
   return out
 }
 
+export type SplitModulationEntry = {
+  splitIndex: number
+  param: string
+}
+
+/** Split-scene modulation assignments on this modulator (excludes inter-mod keys). */
+export function activeSplitModulationEntries(
+  modulator: Pick<Modulator, 'splitModulations'> | undefined,
+  splitCount: number,
+  options?: {
+    shouldIncludeSplit?: (splitIndex: number) => boolean
+  }
+): SplitModulationEntry[] {
+  if (modulator === undefined || splitCount <= 0) {
+    return []
+  }
+
+  const entries: SplitModulationEntry[] = []
+  const seen = new Set<string>()
+
+  for (let splitIndex = 0; splitIndex < splitCount; splitIndex++) {
+    if (options?.shouldIncludeSplit?.(splitIndex) === false) {
+      continue
+    }
+
+    const modulation = modulator.splitModulations[splitIndex]
+    if (modulation === undefined) {
+      continue
+    }
+
+    for (const [param, val] of Object.entries(modulation)) {
+      if (typeof val !== 'number' || !Number.isFinite(val)) {
+        continue
+      }
+      if (param.startsWith(INTER_MOD_PREFIX)) {
+        continue
+      }
+      const key = `${splitIndex}\0${param}`
+      if (seen.has(key)) {
+        continue
+      }
+      seen.add(key)
+      entries.push({ splitIndex, param })
+    }
+  }
+
+  entries.sort((left, right) => {
+    if (left.splitIndex !== right.splitIndex) {
+      return left.splitIndex - right.splitIndex
+    }
+    return left.param.localeCompare(right.param, 'en')
+  })
+
+  return entries
+}
+
 /** Distinct target LFO indices this source modulates (inter-mod routes only). */
 export function intermodOutgoingTargets(
   scene: LightSceneLike,
@@ -281,6 +337,109 @@ export function intermodIncomingSources(
     }
   }
   return Array.from(set).sort((a, b) => a - b)
+}
+
+/** True when this modulator drives at least one split param or LFO inter-mod route. */
+export function modulatorIsUsedInScene(
+  scene: LightSceneLike,
+  modIndex: number
+): boolean {
+  const modulator = scene.modulators[modIndex]
+  if (modulator === undefined) {
+    return false
+  }
+
+  const splitCount = scene.splitScenes.length
+  if (activeSplitModulationEntries(modulator, splitCount).length > 0) {
+    return true
+  }
+  if (activeInterModParamKeys(modulator.lfoInterModulation).length > 0) {
+    return true
+  }
+  if (intermodIncomingSources(scene, modIndex).length > 0) {
+    return true
+  }
+  return false
+}
+
+export function remapModulatorInterModAfterRemoval(
+  modulators: Modulator[],
+  removedIndex: number
+): void {
+  for (const modulator of modulators) {
+    modulator.splitModulations = modulator.splitModulations.map((splitMod) => {
+      if (!splitMod) {
+        return {}
+      }
+      const remapped: Record<string, number | undefined> = {}
+      for (const [key, value] of Object.entries(splitMod)) {
+        if (!key.startsWith(INTER_MOD_PREFIX)) {
+          remapped[key] = value
+          continue
+        }
+        const [targetRaw, prop] = key.slice(INTER_MOD_PREFIX.length).split(':')
+        const targetIndex = Number(targetRaw)
+        if (!Number.isInteger(targetIndex) || !prop) {
+          remapped[key] = value
+          continue
+        }
+        if (targetIndex === removedIndex) {
+          continue
+        }
+        if (targetIndex > removedIndex) {
+          remapped[`${INTER_MOD_PREFIX}${targetIndex - 1}:${prop}`] = value
+        } else {
+          remapped[key] = value
+        }
+      }
+      return remapped
+    })
+
+    const im = modulator.lfoInterModulation
+    if (im === undefined) {
+      continue
+    }
+    const nextIm: Record<string, number> = {}
+    for (const [key, value] of Object.entries(im)) {
+      if (typeof value !== 'number' || !Number.isFinite(value)) {
+        continue
+      }
+      if (!key.startsWith(INTER_MOD_PREFIX)) {
+        continue
+      }
+      const [targetRaw, prop] = key.slice(INTER_MOD_PREFIX.length).split(':')
+      const targetIndex = Number(targetRaw)
+      if (!Number.isInteger(targetIndex) || !prop) {
+        continue
+      }
+      if (targetIndex === removedIndex) {
+        continue
+      }
+      const newT = targetIndex > removedIndex ? targetIndex - 1 : targetIndex
+      nextIm[`${INTER_MOD_PREFIX}${newT}:${prop}`] = value
+    }
+    if (Object.keys(nextIm).length > 0) {
+      modulator.lfoInterModulation = nextIm
+    } else {
+      delete modulator.lfoInterModulation
+    }
+  }
+}
+
+/** Drop modulators that do not modulate any split param or LFO route. */
+export function pruneUnusedModulators(scene: LightSceneLike): void {
+  let removedAny = true
+  while (removedAny) {
+    removedAny = false
+    for (let index = scene.modulators.length - 1; index >= 0; index -= 1) {
+      if (modulatorIsUsedInScene(scene, index)) {
+        continue
+      }
+      scene.modulators.splice(index, 1)
+      remapModulatorInterModAfterRemoval(scene.modulators, index)
+      removedAny = true
+    }
+  }
 }
 
 const INTERMOD_SOURCE_COLOR_SLOTS = 16
@@ -752,13 +911,22 @@ function getAudioEnergyLevelSmoothed(
   }
 
   const smoothing = clamp01(lfo.audioEnergySmoothing)
-  const tauBeats = 0.035 + smoothing * 5.2
+  const tauBeats = 0.1 + smoothing * 7.2
   const alpha = alphaFromBeats(dtBeats, tauBeats)
+  const absDelta = Math.abs(raw - state.smoothed)
+  const isBigMove = absDelta > 0.14
+  const isMediumMove = absDelta > 0.055
+  let alphaUse = alpha
+  if (!isBigMove && !isMediumMove) {
+    alphaUse *= 0.22
+  } else if (!isBigMove) {
+    alphaUse *= 0.48
+  }
   const downward = raw + 0.002 < state.smoothed
   const dropGap = state.smoothed - raw
   const dropBoost =
-    downward && dropGap > 0.045 ? Math.min(0.35, dropGap * 1.1) : 0
-  const alphaUse = Math.min(1, alpha + dropBoost)
+    downward && dropGap > 0.08 ? Math.min(0.32, dropGap * 0.95) : 0
+  alphaUse = Math.min(1, alphaUse + dropBoost)
   state.smoothed += (raw - state.smoothed) * alphaUse
   state.smoothed = clamp01(state.smoothed)
   state.lastBeat = beatNow

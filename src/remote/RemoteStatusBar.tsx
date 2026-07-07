@@ -30,7 +30,7 @@ export default function RemoteStatusBar() {
             title="Connections (DMX, MIDI, Link)"
             onClick={() => dispatch(setConnectionsMenu(!connectionMenu))}
             size="medium"
-            sx={{ color: 'text.secondary' }}
+            sx={{ color: 'text.primary' }}
           >
             <SettingsEthernetIcon />
           </IconButton>
@@ -60,7 +60,7 @@ export default function RemoteStatusBar() {
         title="Connections (DMX, MIDI, Link)"
         onClick={() => dispatch(setConnectionsMenu(!connectionMenu))}
         size="small"
-        sx={{ color: 'text.secondary' }}
+        sx={{ color: 'text.primary' }}
       >
         <SettingsEthernetIcon fontSize="small" />
       </IconButton>

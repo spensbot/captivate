@@ -34,7 +34,7 @@ import {
   setActiveScene,
   setAudioBeatTapHint,
 } from '../../renderer/redux/controlSlice'
-import { normalizeAudioInputSettings } from '../../shared/audioEngine'
+import { normalizeAudioInputSettings, resolveAudioBpmRangeLock, clampBpmToAudioRange } from '../../shared/audioEngine'
 import TapTempoEngine from './TapTempoEngine'
 import { flatten_fixtures } from '../../shared/dmxUtil'
 import { countSplitRandomizerSlots } from '../../shared/splitRandomizer'
@@ -353,6 +353,9 @@ function controlStateAffectsLiveDmxOutput(
     return true
   }
   if (prev.gui.goboMapCalibrationOverride !== next.gui.goboMapCalibrationOverride) {
+    return true
+  }
+  if (prev.gui.prismMapCalibrationOverride !== next.gui.prismMapCalibrationOverride) {
     return true
   }
   return false
@@ -935,6 +938,11 @@ function getAudioBeatClockDetectedBpm(
   const ageMs = Date.now() - _latestAudioMetrics.updatedAtMs
   if (Number.isFinite(ageMs) !== true || ageMs > AUDIO_BEAT_CLOCK_MAX_STALE_MS) {
     return null
+  }
+
+  const range = resolveAudioBpmRangeLock(audioSettings)
+  if (range !== null) {
+    return clampBpmToAudioRange(detectedBpm, range)
   }
 
   return detectedBpm

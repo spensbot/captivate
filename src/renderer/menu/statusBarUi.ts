@@ -1,5 +1,6 @@
 import styled, { css } from 'styled-components'
 import type { SxProps, Theme } from '@mui/material/styles'
+import { audioBpmRangeWidestButtonLabel } from '../../shared/audioEngine'
 
 /** Three connection rows + gaps — target height for all status bar controls. */
 export const STATUS_BAR_CONTROL_HEIGHT = '2.5rem'
@@ -12,9 +13,18 @@ export const STATUS_BAR_TAP_SIDE_MARGIN = '1.05rem'
 
 const statusBarInnerControlHeight = `calc(${STATUS_BAR_CONTROL_HEIGHT} - 0.3rem)`
 const statusBarFieldHeight = `calc(${STATUS_BAR_CONTROL_HEIGHT} - 0.2rem)`
+const statusBarBpmRangeWidestLabel = audioBpmRangeWidestButtonLabel()
+/** Fixed width for BPM range dropdown — fits the widest preset/custom label + chevron. */
+export const STATUS_BAR_BPM_RANGE_BUTTON_WIDTH = `calc(${statusBarBpmRangeWidestLabel.length}ch + 1.15rem)`
+
+function statusBarBpmAccentColor(theme: {
+  colors: { button: { text: string } }
+}) {
+  return theme.colors.button.text
+}
 
 export const statusBarMuiIconButtonSx: SxProps<Theme> = {
-  color: 'text.secondary',
+  color: 'text.primary',
   width: STATUS_BAR_CONTROL_HEIGHT,
   height: STATUS_BAR_CONTROL_HEIGHT,
   borderRadius: '0.35rem',
@@ -24,6 +34,7 @@ export const statusBarMuiIconButtonSx: SxProps<Theme> = {
   flexShrink: 0,
   '& .MuiSvgIcon-root': {
     fontSize: '1.35rem',
+    color: 'text.primary',
   },
   '&:hover': {
     bgcolor: 'action.hover',
@@ -55,6 +66,14 @@ export const StatusBarControlShell = styled.div`
   background: ${(p) => p.theme.colors.bg.darker};
   box-shadow: ${(p) => p.theme.elevation.insetHighlight};
   min-width: 0;
+  overflow: hidden;
+`
+
+/** BPM shell when the range-lock column is shown — keeps stacked label + dropdown inside the box. */
+export const StatusBarBpmControlShell = styled(StatusBarControlShell)`
+  align-items: stretch;
+  padding-top: 0.1rem;
+  padding-bottom: 0.1rem;
 `
 
 export const StatusBarLabel = styled.span`
@@ -62,14 +81,14 @@ export const StatusBarLabel = styled.span`
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: ${(p) => p.theme.colors.text.secondary};
+  color: ${(p) => p.theme.colors.button.text};
   user-select: none;
   flex: 0 0 auto;
 `
 
 const interactiveControlBase = css`
   font: inherit;
-  color: ${(p) => p.theme.colors.text.primary};
+  color: ${(p) => p.theme.colors.button.text};
   cursor: pointer;
   transition:
     background-color 120ms ease,
@@ -187,6 +206,79 @@ export const StatusBarBpmRow = styled.div`
   flex: 0 0 auto;
 `
 
+export const StatusBarBpmLabelColumn = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.06rem;
+  flex: 0 0 auto;
+  width: ${STATUS_BAR_BPM_RANGE_BUTTON_WIDTH};
+  min-width: ${STATUS_BAR_BPM_RANGE_BUTTON_WIDTH};
+  height: 100%;
+`
+
+export const StatusBarBpmAccentLabel = styled.span`
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: ${(p) => statusBarBpmAccentColor(p.theme)};
+  user-select: none;
+  line-height: 1;
+  text-align: center;
+  width: 100%;
+`
+
+export const StatusBarBpmColumnLabel = styled(StatusBarBpmAccentLabel)`
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+`
+
+export const StatusBarBpmRangeButton = styled.button`
+  ${interactiveControlBase}
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  box-sizing: border-box;
+  width: ${STATUS_BAR_BPM_RANGE_BUTTON_WIDTH};
+  min-width: ${STATUS_BAR_BPM_RANGE_BUTTON_WIDTH};
+  max-width: ${STATUS_BAR_BPM_RANGE_BUTTON_WIDTH};
+  height: 0.9rem;
+  padding: 0 0.1rem 0 0.14rem;
+  border-radius: 0.2rem;
+  border: 1px solid ${(p) => p.theme.colors.divider};
+  background: ${(p) => p.theme.colors.bg.panel};
+  color: ${(p) => statusBarBpmAccentColor(p.theme)};
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+  white-space: nowrap;
+  flex: 0 0 auto;
+
+  svg {
+    font-size: 0.68rem;
+    flex: 0 0 auto;
+    margin-left: -0.04rem;
+    margin-right: -0.08rem;
+  }
+
+  &:hover:not(:disabled) {
+    color: ${(p) => statusBarBpmAccentColor(p.theme)};
+    border-color: ${(p) => p.theme.colors.text.secondary};
+    background: ${(p) => p.theme.colors.bg.raised};
+  }
+`
+
+export const StatusBarBpmRangeButtonLabel = styled.span`
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+`
+
 export const StatusBarStepButton = styled.button`
   ${interactiveControlBase}
   width: ${statusBarInnerControlHeight};
@@ -196,12 +288,12 @@ export const StatusBarStepButton = styled.button`
   border-radius: 0.28rem;
   border: 1px solid ${(p) => p.theme.colors.divider};
   background: ${(p) => p.theme.colors.bg.panel};
-  color: ${(p) => p.theme.colors.text.secondary};
+  color: ${(p) => p.theme.colors.button.text};
   font-size: 1rem;
   font-weight: 700;
 
   &:hover:not(:disabled) {
-    color: ${(p) => p.theme.colors.text.primary};
+    color: ${(p) => p.theme.colors.button.text};
     border-color: ${(p) => p.theme.colors.text.secondary};
     background: ${(p) => p.theme.colors.bg.raised};
   }

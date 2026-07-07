@@ -4,6 +4,10 @@ import { DefaultParam, Params } from '../../shared/params'
 import { ReorderParams } from '../../shared/util'
 import { clampNormalized, clamp } from '../../math/util'
 import {
+  quantizeBeatEighth,
+  quantizePhaseShiftToBeatEighth,
+} from '../../shared/lfoPeriod'
+import {
   initModulator,
   type ModManualAnchor,
   type SplitModShaping,
@@ -167,18 +171,6 @@ function modifyActiveScene(
   if (scene) {
     callback(scene)
   }
-}
-
-function quantizeBeatEighth(value: number) {
-  const safe = Number.isFinite(value) ? value : 0.25
-  return Math.round(safe * 8) / 8
-}
-
-function quantizePhaseShiftToBeatEighth(phaseShift: number, period: number) {
-  const safePeriod = Math.max(0.25, Number.isFinite(period) ? period : 4)
-  const phaseStep = 1 / (safePeriod * 8)
-  const safePhase = clampNormalized(phaseShift)
-  return clampNormalized(Math.round(safePhase / phaseStep) * phaseStep)
 }
 
 type ScopedAction<T> = PayloadAction<{
@@ -997,6 +989,10 @@ export const scenesSlice = createSlice({
     setAudioBeatTapHint: (state, action) =>
       midiActions.setAudioBeatTapHint(state.device, action),
     clearAudioBeatTapHint: (state) => midiActions.clearAudioBeatTapHint(state.device),
+    setAudioBpmRangePreset: (state, action) =>
+      midiActions.setAudioBpmRangePreset(state.device, action),
+    setAudioBpmRangeCustom: (state, action) =>
+      midiActions.setAudioBpmRangeCustom(state.device, action),
     setAtmosOn: (state, action) =>
       midiActions.setAtmosOn(state.device, action),
     setAtmosArmed: (state, action) =>
@@ -1140,6 +1136,8 @@ export const {
   setAudioEnergyRhythmBias,
   setAudioBeatTapHint,
   clearAudioBeatTapHint,
+  setAudioBpmRangePreset,
+  setAudioBpmRangeCustom,
   setAtmosOn,
   setAtmosArmed,
   setAtmosEStop,

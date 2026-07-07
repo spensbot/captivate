@@ -86,6 +86,7 @@ import {
   openAppAlert,
   openAppConfirm,
 } from './overlays/appDialogService'
+import { runGenerateScenesFromMenu } from './sceneGeneration/runGenerateScenesFromMenu'
 import type { TimeState } from '../shared/TimeState'
 import {
   createTimeExtrapolationAnchor,
@@ -167,6 +168,8 @@ const LOCAL_ONLY_ACTION_TYPES = new Set<string>([
   'gui/clearColorMapCalibrationOverride',
   'gui/setGoboMapCalibrationOverride',
   'gui/clearGoboMapCalibrationOverride',
+  'gui/setPrismMapCalibrationOverride',
+  'gui/clearPrismMapCalibrationOverride',
   'gui/pushStatusMessage',
   'gui/clearStatusMessages',
   'gui/setStatusLogOpen',
@@ -491,6 +494,10 @@ ipc_setup({
     } else if (command.type === 'open-settings') {
       if (typeof document === 'undefined' || document.hasFocus()) {
         store.dispatch(setSettingsOpen(true))
+      }
+    } else if (command.type === 'generate-scenes') {
+      if (typeof document === 'undefined' || document.hasFocus()) {
+        void runGenerateScenesFromMenu()
       }
     } else if (command.type === 'load-recent-project') {
       if (typeof command.path !== 'string' || command.path.length === 0) {

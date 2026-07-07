@@ -55,7 +55,7 @@ const Root = styled.button<{ $toolbar: boolean }>`
   border: 1px solid #ffffff44;
   background-color: #101521f0;
   cursor: pointer;
-  color: ${(props) => props.theme.colors.text.secondary};
+  color: ${(props) => props.theme.colors.button.text};
   font-size: 0.62rem;
   line-height: 1;
   user-select: none;

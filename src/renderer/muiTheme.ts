@@ -99,19 +99,32 @@ function inputOverrides(isLight: boolean) {
 }
 
 function iconOverrides(isLight: boolean) {
-  const primary = isLight ? 'rgba(0, 0, 0, 0.72)' : 'rgba(255, 255, 255, 0.86)'
-  const secondary = isLight ? 'rgba(0, 0, 0, 0.54)' : 'rgba(255, 255, 255, 0.68)'
+  const primary = isLight ? 'rgba(0, 0, 0, 0.84)' : 'rgba(255, 255, 255, 0.94)'
+  const secondary = isLight ? 'rgba(0, 0, 0, 0.72)' : 'rgba(255, 255, 255, 0.84)'
 
   return {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          color: isLight ? '#141414' : 'rgba(255, 255, 255, 0.94)',
+        },
+        text: {
+          color: isLight ? '#141414' : 'rgba(255, 255, 255, 0.94)',
+        },
+        outlined: {
+          color: isLight ? '#141414' : 'rgba(255, 255, 255, 0.94)',
+        },
+      },
+    },
     MuiIconButton: {
       styleOverrides: {
         root: {
           color: primary,
           '&:hover': {
-            color: isLight ? 'rgba(0, 0, 0, 0.87)' : 'rgba(255, 255, 255, 0.95)',
+            color: isLight ? 'rgba(0, 0, 0, 0.92)' : 'rgba(255, 255, 255, 0.98)',
           },
           '&.Mui-disabled': {
-            color: isLight ? 'rgba(0, 0, 0, 0.26)' : 'rgba(255, 255, 255, 0.3)',
+            color: isLight ? 'rgba(0, 0, 0, 0.32)' : 'rgba(255, 255, 255, 0.38)',
           },
         },
       },
@@ -157,22 +170,22 @@ export function createMuiTheme(themePackId: ThemePackId): Theme {
             },
             text: {
               primary: '#141414',
-              secondary: '#444444',
+              secondary: '#2e2e2e',
               disabled: 'rgba(0, 0, 0, 0.38)',
             },
             action: {
-              active: 'rgba(0, 0, 0, 0.68)',
+              active: 'rgba(0, 0, 0, 0.78)',
               disabled: 'rgba(0, 0, 0, 0.26)',
             },
             divider: 'rgba(0, 0, 0, 0.14)',
           }
         : {
             text: {
-              primary: '#ececec',
-              secondary: '#a8a8a8',
+              primary: '#f2f2f2',
+              secondary: '#d2d2d2',
             },
             action: {
-              active: 'rgba(255, 255, 255, 0.78)',
+              active: 'rgba(255, 255, 255, 0.9)',
             },
           }),
     },

@@ -346,6 +346,12 @@ function fixtureChannelLabel(channel: FixtureChannel, index: number): string {
   if (channel.type === 'goboMap') {
     return `Ch ${index + 1}: Gobo Map`
   }
+  if (channel.type === 'focus') {
+    return `Ch ${index + 1}: Focus`
+  }
+  if (channel.type === 'prismMap') {
+    return `Ch ${index + 1}: Prism Map`
+  }
   if (channel.type === 'split') {
     return `Ch ${index + 1}: Split`
   }

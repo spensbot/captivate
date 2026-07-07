@@ -2,6 +2,8 @@ import {
   DMX_MAX_VALUE,
   DMX_MIN_VALUE,
 } from '../../shared/dmxFixtures'
+import { mapAxisPhysicalDmxToNormalized } from '../../shared/dmxUtil'
+import type { MoverAxisPhysicalCalibration } from '../../shared/dmxUtil'
 import type { LightingPreviewFixtureRow } from './lightingPreviewFixtures'
 
 export interface LiveAxisReadout {
@@ -23,6 +25,8 @@ export interface MoverAxisChannelPlan {
   panMax: number
   tiltMin: number
   tiltMax: number
+  panCalibration?: MoverAxisPhysicalCalibration
+  tiltCalibration?: MoverAxisPhysicalCalibration
 }
 
 function clamp01(value: number): number {
@@ -96,6 +100,8 @@ export function buildMoverAxisChannelPlans(
       panMax,
       tiltMin,
       tiltMax,
+      panCalibration: row.fixtureType.moverCalibration?.pan,
+      tiltCalibration: row.fixtureType.moverCalibration?.tilt,
     }
   })
 }
@@ -126,8 +132,14 @@ export function readLiveAxisFromPlan(
   return {
     panRaw,
     tiltRaw,
-    panNorm: normalizeAxisValue(panRaw, plan.panMin, plan.panMax),
-    tiltNorm: normalizeAxisValue(tiltRaw, plan.tiltMin, plan.tiltMax),
+    panNorm:
+      plan.panCalibration !== undefined
+        ? mapAxisPhysicalDmxToNormalized(panRaw, plan.panCalibration)
+        : normalizeAxisValue(panRaw, plan.panMin, plan.panMax),
+    tiltNorm:
+      plan.tiltCalibration !== undefined
+        ? mapAxisPhysicalDmxToNormalized(tiltRaw, plan.tiltCalibration)
+        : normalizeAxisValue(tiltRaw, plan.tiltMin, plan.tiltMax),
   }
 }
 

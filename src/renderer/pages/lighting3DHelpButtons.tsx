@@ -37,7 +37,7 @@ export function Lighting3DPageHelpButton() {
         onMouseDown={(e) => e.stopPropagation()}
         sx={{
           padding: '0.12rem',
-          color: 'text.secondary',
+          color: 'text.primary',
           '&:hover': { color: 'text.primary' },
         }}
       >

@@ -29,6 +29,7 @@ import {
   FixtureChannel,
   FixtureRotation,
   initChannelCustom,
+  fixtureChannelLeafChannels,
   initFixtureRotation,
   initMoverCalibration,
   initMoverBounds,
@@ -56,6 +57,7 @@ import {
 } from './fixtureGroups'
 import { normalizeStageDimensions } from './stage'
 import { LfoShape, normalizeLfoShape } from './oscillator'
+import { snapLfoPeriodToUi } from './lfoPeriod'
 import { nanoid } from 'nanoid'
 import {
   AutoScene_t,
@@ -302,6 +304,7 @@ function fixGuiState(gui: CleanReduxState['gui']) {
     moverCalibrationOverride?: unknown
     colorMapCalibrationOverride?: unknown
     goboMapCalibrationOverride?: unknown
+    prismMapCalibrationOverride?: unknown
   }
 
   if (
@@ -386,6 +389,31 @@ function fixGuiState(gui: CleanReduxState['gui']) {
   } else {
     _gui.goboMapCalibrationOverride = null
   }
+
+  const prismMapOverride = _gui.prismMapCalibrationOverride as
+    | {
+        fixtureTypeId?: unknown
+        channelIndex?: unknown
+        dmxValue?: unknown
+      }
+    | null
+    | undefined
+
+  if (
+    prismMapOverride !== null &&
+    prismMapOverride !== undefined &&
+    typeof prismMapOverride.fixtureTypeId === 'string' &&
+    Number.isFinite(Number(prismMapOverride.channelIndex)) &&
+    Number.isFinite(Number(prismMapOverride.dmxValue))
+  ) {
+    _gui.prismMapCalibrationOverride = {
+      fixtureTypeId: prismMapOverride.fixtureTypeId,
+      channelIndex: Math.max(0, Math.round(Number(prismMapOverride.channelIndex))),
+      dmxValue: clampDmxValue(Number(prismMapOverride.dmxValue), DMX_MIN_VALUE),
+    }
+  } else {
+    _gui.prismMapCalibrationOverride = null
+  }
 }
 
 function fixScenesAuto(auto: AutoScene_t): void {
@@ -445,6 +473,13 @@ export default function fixState(state: CleanReduxState): CleanReduxState {
     const fixtureTypeId = state.gui.goboMapCalibrationOverride.fixtureTypeId
     if (state.dmx.fixtureTypesByID[fixtureTypeId] === undefined) {
       state.gui.goboMapCalibrationOverride = null
+    }
+  }
+
+  if (state.gui.prismMapCalibrationOverride !== null) {
+    const fixtureTypeId = state.gui.prismMapCalibrationOverride.fixtureTypeId
+    if (state.dmx.fixtureTypesByID[fixtureTypeId] === undefined) {
+      state.gui.prismMapCalibrationOverride = null
     }
   }
 
@@ -543,6 +578,8 @@ export function fixLightScenes(light: LightScenes_t) {
 
     if (!Number.isFinite(lfo.period) || (lfo.period ?? 0) <= 0) {
       modulator.lfo.period = 4
+    } else {
+      modulator.lfo.period = snapLfoPeriodToUi(Number(lfo.period))
     }
     modulator.lfo.sinePeakWidth = Number.isFinite(lfo.sinePeakWidth)
       ? Math.min(1, Math.max(0, Number(lfo.sinePeakWidth)))
@@ -767,6 +804,12 @@ export function fixDmxState(dmx: DmxState) {
     }
   }
 
+  for (const fixture of fixtureTypes(dmx)) {
+    for (let i = 0; i < fixture.channels.length; i++) {
+      fixture.channels[i] = migrateLegacyFocusChannel(fixture.channels[i])
+    }
+  }
+
   // Add subfixtures to all fixtures
   for (const fixture of fixtureTypes(dmx)) {
     if (fixture.subFixtures === undefined) {
@@ -962,6 +1005,38 @@ export function fixDmxState(dmx: DmxState) {
       channel.defaultIndex = Math.max(
         0,
         Math.min(channel.defaultIndex, channel.gobos.length - 1)
+      )
+    } else if (channel.type === 'focus') {
+      if (!Number.isFinite(channel.min)) {
+        channel.min = DMX_MIN_VALUE
+      }
+      if (!Number.isFinite(channel.max)) {
+        channel.max = DMX_MAX_VALUE
+      }
+      if (!Number.isFinite(channel.default)) {
+        channel.default = DMX_MIN_VALUE
+      }
+    } else if (channel.type === 'prismMap') {
+      if (!Array.isArray(channel.prisms) || channel.prisms.length === 0) {
+        channel.prisms = [{ name: 'Open', max: 0 }]
+      }
+
+      for (let i = 0; i < channel.prisms.length; i++) {
+        const prism = channel.prisms[i]
+        if (typeof prism.name !== 'string' || prism.name.trim().length === 0) {
+          prism.name = `Prism ${i + 1}`
+        }
+        if (!Number.isFinite(prism.max)) {
+          prism.max = 0
+        }
+      }
+
+      if (!Number.isFinite(channel.defaultIndex)) {
+        channel.defaultIndex = 0
+      }
+      channel.defaultIndex = Math.max(
+        0,
+        Math.min(channel.defaultIndex, channel.prisms.length - 1)
       )
     }
   }
@@ -1177,6 +1252,37 @@ export function fixMixerState(mixerState: MixerState) {
 function fixtureTypes(dmx: DmxState) {
   return dmx.fixtureTypes.map((id) => dmx.fixtureTypesByID[id])
 }
+
+function migrateLegacyFocusChannel(channel: FixtureChannel): FixtureChannel {
+  if (channel.type === 'split') {
+    return {
+      ...channel,
+      ranges: channel.ranges.map((range) => ({
+        ...range,
+        channel: migrateLegacyFocusLeafChannel(range.channel),
+      })),
+    }
+  }
+  return migrateLegacyFocusLeafChannel(channel)
+}
+
+function migrateLegacyFocusLeafChannel(
+  channel: ReturnType<typeof fixtureChannelLeafChannels>[number]
+): ReturnType<typeof fixtureChannelLeafChannels>[number] {
+  if (
+    channel.type === 'custom' &&
+    channel.name.trim().toLowerCase().includes('focus')
+  ) {
+    return {
+      type: 'focus',
+      min: channel.min,
+      max: channel.max,
+      default: channel.default,
+    }
+  }
+  return channel
+}
+
 //@ts-ignore
 function channels(dmx: DmxState) {
   return fixtureTypes(dmx)

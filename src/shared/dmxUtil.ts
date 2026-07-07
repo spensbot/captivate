@@ -372,6 +372,11 @@ function getColorMapLookup(channel: ChannelColorMap): IndexedColorMapEntry[] {
   return lookup
 }
 
+/** Ordered color-wheel slots used for DMX output and the live color-wheel UI. */
+export function listColorMapSlots(channel: ChannelColorMap): IndexedColorMapEntry[] {
+  return getColorMapLookup(channel)
+}
+
 export function forEachChannel(fixtures: FlattenedFixture[], cb: (fixtureIdx: number, fixture: FlattenedFixture, channelIdx: number, channel: FixtureChannel) => void) {
   fixtures.forEach((fixture, fixtureIdx) => {
     fixture.channels.forEach(([channelNumber, channel]) => {
@@ -419,7 +424,16 @@ export function getDefaultDmxValue(
       )
       return ch.gobos[defaultIndex]?.max ?? DMX_DEFAULT_VALUE
     }
-    default: // 'color' | 'strobe' | 'colorMap' | 'goboMap'
+    case 'focus':
+      return ch.default
+    case 'prismMap': {
+      const defaultIndex = Math.max(
+        0,
+        Math.min(Math.round(ch.defaultIndex), ch.prisms.length - 1)
+      )
+      return ch.prisms[defaultIndex]?.max ?? DMX_DEFAULT_VALUE
+    }
+    default: // 'color' | 'strobe' | 'colorMap'
       return DMX_DEFAULT_VALUE
   }
 }
@@ -875,13 +889,27 @@ export function getDmxValue(
         )
       }
     case 'colorMap': {
-      const hue = clampNormalized(getParam(params, 'hue'))
-      const saturation = clampNormalized(getParam(params, 'saturation'))
-
       const indexedColors = getColorMapLookup(ch)
       if (indexedColors.length === 0) {
         return DMX_DEFAULT_VALUE
       }
+
+      const rawColorWheel = params.colorWheel
+      if (Number.isFinite(rawColorWheel)) {
+        const selectedIndex = Math.max(
+          0,
+          Math.min(
+            indexedColors.length - 1,
+            Math.round(
+              clampNormalized(rawColorWheel as number) * (indexedColors.length - 1)
+            )
+          )
+        )
+        return indexedColors[selectedIndex]!.outputDmx
+      }
+
+      const hue = clampNormalized(getParam(params, 'hue'))
+      const saturation = clampNormalized(getParam(params, 'saturation'))
 
       const whiteThreshold = 0.02
       const whiteEntries = indexedColors.filter(
@@ -938,6 +966,30 @@ export function getDmxValue(
         : Math.max(0, Math.min(Math.round(ch.defaultIndex), goboCount - 1))
 
       return ch.gobos[selectedIndex]?.max ?? DMX_DEFAULT_VALUE
+    }
+    case 'focus': {
+      const rawFocus = params.focus
+      if (!Number.isFinite(rawFocus)) {
+        return ch.default
+      }
+      return rLerp(ch, rawFocus as number)
+    }
+    case 'prismMap': {
+      const prismCount = ch.prisms.length
+      if (prismCount <= 0) return DMX_DEFAULT_VALUE
+
+      const rawPrismSelection = params.prism
+      const selectedIndex = Number.isFinite(rawPrismSelection)
+        ? Math.max(
+            0,
+            Math.min(
+              prismCount - 1,
+              Math.round(clampNormalized(rawPrismSelection as number) * (prismCount - 1))
+            )
+          )
+        : Math.max(0, Math.min(Math.round(ch.defaultIndex), prismCount - 1))
+
+      return ch.prisms[selectedIndex]?.max ?? DMX_DEFAULT_VALUE
     }
     case 'custom': {
       const customParam = params[ch.name]
@@ -1066,7 +1118,7 @@ export function getFixturesInGroups(
           return false
         }
         if (
-          ['pan', 'tilt', 'speed', 'gobo', 'zoom', 'focus'].some((token) =>
+          ['pan', 'tilt', 'speed', 'gobo', 'prism', 'zoom', 'focus'].some((token) =>
             name.includes(token)
           )
         ) {
