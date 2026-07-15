@@ -240,8 +240,9 @@ export function mapRowsToPreviewFixtures(
             isOnOff: false,
           })
         } else if (
-          leaf.type === 'custom' &&
-          leaf.name.trim().toLowerCase().includes('focus')
+          leaf.type === 'focus' ||
+          (leaf.type === 'custom' &&
+            leaf.name.trim().toLowerCase().includes('focus'))
         ) {
           focusChannels.push({
             channelIndex: absoluteChannel,

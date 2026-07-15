@@ -30,6 +30,8 @@ import HSpad, { ColorChannelProps } from 'renderer/base/HSpad'
 import { FixtureChannelItemProps } from './FixtureChannelTypes'
 import ColorMapChannel from './ColorMapChannel'
 import GoboMapChannel from './GoboMapChannel'
+import FocusChannel from './FocusChannel'
+import PrismMapChannel from './PrismMapChannel'
 import ColorPicker from 'renderer/base/ColorPicker'
 import { inferColorKind } from '../../shared/dmxColors'
 import { approximateStandardColor, colorByName } from '../../shared/dmxColors'
@@ -179,6 +181,8 @@ function channelTypeLabel(type: ChannelType): string {
   if (type === 'axis') return 'Axis (Pan/Tilt)'
   if (type === 'colorMap') return 'Color Map'
   if (type === 'goboMap') return 'Gobo Map'
+  if (type === 'focus') return 'Focus'
+  if (type === 'prismMap') return 'Prism Map'
   if (type === 'split') return 'Split (Value Ranges)'
   return type[0].toUpperCase() + type.slice(1)
 }
@@ -427,6 +431,21 @@ function Fields({ ch, fixtureID, channelIndex }: Props) {
     if (channel.type === 'goboMap') {
       return (
         <GoboMapChannel
+          ch={channel}
+          fixtureID={fixtureID}
+          channelIndex={channelIndex}
+          onChange={(newChannel) => onChange(newChannel)}
+        />
+      )
+    }
+
+    if (channel.type === 'focus') {
+      return <FocusChannel ch={channel} onChange={(newChannel) => onChange(newChannel)} />
+    }
+
+    if (channel.type === 'prismMap') {
+      return (
+        <PrismMapChannel
           ch={channel}
           fixtureID={fixtureID}
           channelIndex={channelIndex}

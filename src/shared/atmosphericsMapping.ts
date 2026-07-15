@@ -53,7 +53,7 @@ function isAtmosCustomChannelName(name: string) {
     'onoff',
     'fx',
   ]
-  const exclusions = ['pan', 'tilt', 'speed', 'gobo', 'zoom', 'focus']
+  const exclusions = ['pan', 'tilt', 'speed', 'gobo', 'prism', 'zoom', 'focus']
   if (exclusions.some((token) => name.includes(token))) {
     return false
   }
@@ -105,7 +105,7 @@ export function isAtmosFxtrType(fixtureType: FixtureType): boolean {
 }
 
 export function isMappedAtmosphericFixture(
-  fixture: Fixture,
+  _fixture: Fixture,
   fixtureType: FixtureType
 ): boolean {
   if (!isAtmosFxtrType(fixtureType)) {

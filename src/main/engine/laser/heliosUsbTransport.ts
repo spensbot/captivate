@@ -247,11 +247,12 @@ function releaseInterfaceAsync(iface: {
 function clearEndpointHalt(ep: {
   clearHalt?: (callback: (err?: Error) => void) => void
 }): Promise<void> {
-  if (typeof ep.clearHalt !== 'function') {
+  const clearHalt = ep.clearHalt
+  if (typeof clearHalt !== 'function') {
     return Promise.resolve()
   }
   return new Promise((resolve) => {
-    ep.clearHalt(() => resolve())
+    clearHalt(() => resolve())
   })
 }
 

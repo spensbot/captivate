@@ -44,6 +44,10 @@ More walkthroughs: **[Wiki](https://github.com/NicholasTracy/captivate-2/wiki)**
 
 **[Wiki](https://github.com/NicholasTracy/captivate-2/wiki)** — setup and how-to guides: DMX, connections, light scenes & splits, modulation, MIDI mapping, mixer, remote control, and troubleshooting.
 
+**[Project files and autosave](docs/PROJECTS.md)** — `.cap` / `.cfx` file pairing, selective loads, autosave behavior, and recovery pitfalls.
+
+**[Audio input and music energy](docs/audio-input.md)** — audio setup, beat detection, Advanced Music Energy controls, and how live energy drives scenes and visuals.
+
 **[Community fixture library](docs/CAPTIVATE-FIXTURE-LIBRARY.md)** — browse and share Captivate fixture definitions (no git required to contribute).
 
 ## Download
@@ -126,10 +130,14 @@ CI builds all three platforms on push and publishes assets when you push a versi
 ### More docs
 
 - **[Wiki](https://github.com/NicholasTracy/captivate-2/wiki)** — user guides and troubleshooting
+- [Project files and autosave](docs/PROJECTS.md)
+- [Audio input and music energy](docs/audio-input.md)
 - [Community fixture library](docs/CAPTIVATE-FIXTURE-LIBRARY.md)
 - [Remote control (LAN)](docs/remote-control.md)
+- [Audio input, beat clock, and music energy](docs/audio-input-sync.md)
 - [Laser FB4 / Pangolin BEYOND](docs/laser-fb4-beyond.md)
 - [Visualizer streaming (RTSP / NDI)](docs/visualizer-streaming.md)
+- [WLED fixtures](docs/wled-fixtures.md)
 
 ---
 

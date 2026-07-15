@@ -323,10 +323,12 @@ export function computeRhythmicDrive(input: {
  */
 export function computeMusicalEnergyEstimate(input: PerceivedEnergyInput): number {
   const loudness = clamp01(input.normalizedLoudness)
+  const instant = clamp01(input.loudnessInstant)
   const short = clamp01(input.loudnessShort)
   const long = clamp01(input.loudnessLong)
   const conf = clamp01(input.bpmConfidence)
   const rhythmShare = clamp01(input.rhythmShare)
+  const beatPulse = clamp01(input.beatPulse)
   const fastBreakdown = input.fastBreakdown === true
   const bpmDropRatio = clamp01(input.bpmDropRatio)
   const rhythmEmphasis = clamp01(
@@ -381,9 +383,18 @@ export function computeMusicalEnergyEstimate(input: PerceivedEnergyInput): numbe
 
   let energy = loudness * lerpValue(0.24, 1.04, intensity)
 
-  const buildTrend = clamp01((short - long) / 0.11)
-  energy += buildTrend * lerpValue(0.035, 0.08, 1 - rhythmEmphasis) * loudnessGate
+  const buildTrend = clamp01((short - long) / 0.14)
+  const risingInstant = clamp01((instant - short) / 0.12)
+  const buildBoost =
+    buildTrend * lerpValue(0.06, 0.14, 1 - rhythmEmphasis) * loudnessGate +
+    risingInstant * 0.05
+  energy += buildBoost
   energy -= clamp01((long - short) / 0.11) * lerpValue(0.045, 0.1, bassEmphasis)
+
+  const hitAccent =
+    beatPulse * lerpValue(0.022, 0.045, rhythmEmphasis) +
+    clamp01(input.lowOnset * 3.2) * lerpValue(0.035, 0.018, rhythmEmphasis)
+  energy += hitAccent
 
   if (fastBreakdown) {
     energy = Math.min(energy, loudness * lerpValue(0.5, 0.68, intensity))

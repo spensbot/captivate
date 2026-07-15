@@ -13,47 +13,13 @@ import {
   clearGoboMapCalibrationOverride,
   setGoboMapCalibrationOverride,
 } from '../redux/guiSlice'
+import { getGoboMapPreviewDmxValue } from '../../shared/fixtureMapCalibration'
 
 interface Props {
   ch: ChannelGoboMap
   fixtureID: string
   channelIndex: number
   onChange: (newChannel: ChannelGoboMap) => void
-}
-
-function clampDmxValue(value: number, fallback: number = 0): number {
-  if (!Number.isFinite(value)) return fallback
-  return Math.min(DMX_MAX_VALUE, Math.max(DMX_MIN_VALUE, Math.round(value)))
-}
-
-function getGoboMapPreviewDmxValue(
-  gobos: ChannelGoboMap['gobos'],
-  activeIndex: number
-): number {
-  if (gobos.length === 0) return DMX_MIN_VALUE
-
-  const sorted = gobos
-    .map((gobo, index) => ({
-      index,
-      max: clampDmxValue(gobo.max),
-    }))
-    .sort((left, right) => left.max - right.max)
-
-  const sortedIndex = sorted.findIndex((entry) => entry.index === activeIndex)
-  if (sortedIndex === -1) {
-    return sorted[0]?.max ?? DMX_MIN_VALUE
-  }
-
-  const entry = sorted[sortedIndex]
-  const previousMax = sortedIndex > 0 ? sorted[sortedIndex - 1].max : DMX_MIN_VALUE - 1
-  const rangeMin = Math.min(DMX_MAX_VALUE, Math.max(DMX_MIN_VALUE, previousMax + 1))
-  const rangeMax = Math.min(DMX_MAX_VALUE, Math.max(rangeMin, entry.max))
-
-  if (rangeMin >= rangeMax) {
-    return rangeMax
-  }
-
-  return Math.round((rangeMin + rangeMax) / 2)
 }
 
 export default function GoboMapChannel({
@@ -81,6 +47,7 @@ export default function GoboMapChannel({
     index: number,
     updater: (gobo: ChannelGoboMap['gobos'][number]) => ChannelGoboMap['gobos'][number]
   ) {
+    setActiveIndex(index)
     const nextGobos = ch.gobos.map((gobo, goboIndex) =>
       goboIndex === index ? updater(gobo) : gobo
     )
@@ -208,6 +175,7 @@ export default function GoboMapChannel({
               label=""
               min={DMX_MIN_VALUE}
               max={DMX_MAX_VALUE}
+              onFocus={() => setActiveIndex(index)}
               onChange={(max) => updateGobo(index, (item) => ({ ...item, max }))}
             />
           </GoboRow>

@@ -84,6 +84,8 @@ const LOCAL_ONLY_ACTION_TYPES = new Set<string>([
   'gui/clearColorMapCalibrationOverride',
   'gui/setGoboMapCalibrationOverride',
   'gui/clearGoboMapCalibrationOverride',
+  'gui/setPrismMapCalibrationOverride',
+  'gui/clearPrismMapCalibrationOverride',
   'gui/pushStatusMessage',
   'gui/clearStatusMessages',
   'gui/setStatusLogOpen',
