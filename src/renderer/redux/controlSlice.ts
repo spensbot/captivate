@@ -183,7 +183,7 @@ type ParamsAction = PayloadAction<{
   params: Params
 }>
 
-export const scenesSlice = createSlice({
+const scenesSlice = createSlice({
   name: 'scenes',
   initialState: initControlState(),
   reducers: {
