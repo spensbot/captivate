@@ -199,11 +199,12 @@ const SHARED_GUI_ACTION_TYPES = new Set<string>([
 ])
 
 const SHARED_MIXER_ACTION_TYPES = new Set<string>([
-  'gui/setPageIndex',
-  'gui/setChannelsPerPage',
-  'gui/setActiveMixerUniverse',
-  'gui/setOverwrite',
-  'gui/clearOverwrites',
+  'mixer/setPageIndex',
+  'mixer/setChannelsPerPage',
+  'mixer/setActiveMixerUniverse',
+  'mixer/setOverwrite',
+  'mixer/clearOverwrites',
+  'mixer/setMixerShowAllChannels',
 ])
 
 /** Publish to the engine on the next frame — no debounce — so live controls hit DMX immediately. */

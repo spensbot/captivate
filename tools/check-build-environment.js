@@ -52,12 +52,10 @@ function main() {
     process.env.CAPTIVATE_ALLOW_PROJECTM_BRIDGE_FALLBACK === '1' ||
     process.env.CAPTIVATE_ALLOW_PROJECTM_BRIDGE_FALLBACK === 'true' ||
     process.env.CAPTIVATE_ALLOW_PROJECTM_RUNTIME_FALLBACK === '1' ||
-    process.env.CAPTIVATE_ALLOW_PROJECTM_RUNTIME_FALLBACK === 'true' ||
-    process.env.CAPTIVATE_SKIP_ELECTRON_REBUILD === '1' ||
-    process.env.CAPTIVATE_SKIP_ELECTRON_REBUILD === 'true'
+    process.env.CAPTIVATE_ALLOW_PROJECTM_RUNTIME_FALLBACK === 'true'
   ) {
     console.warn(
-      '[captivate] Warning: CAPTIVATE_ALLOW_PROJECTM_BRIDGE_FALLBACK, CAPTIVATE_ALLOW_PROJECTM_RUNTIME_FALLBACK, or CAPTIVATE_SKIP_ELECTRON_REBUILD is set. Unset these in System Environment Variables for full release builds.'
+      '[captivate] Warning: CAPTIVATE_ALLOW_PROJECTM_BRIDGE_FALLBACK or CAPTIVATE_ALLOW_PROJECTM_RUNTIME_FALLBACK is set. Unset these in System Environment Variables for full release builds.'
     )
   }
 

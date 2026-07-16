@@ -2,6 +2,7 @@ export type Normalized = number // 0 to 1
 let _randomSource = Math.random
 
 export function clampNormalized(val: number) {
+  if (!Number.isFinite(val)) return 0.0
   if (val < 0.0) return 0.0
   if (val > 1.0) return 1.0
   return val

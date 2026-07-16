@@ -72,7 +72,9 @@ function LfoVisualizer({
   const isAudioShape =
     modulator.lfo.shape === LfoShape.AudioBand ||
     modulator.lfo.shape === LfoShape.AudioEnergy
-  const audioValue = getModulatorLfoValue(effectiveLfo, beats, audio, index)
+  const audioValue = getModulatorLfoValue(effectiveLfo, beats, audio, index, {
+    splitIndex: splitIx,
+  })
 
   const waveSamples = useMemo(() => {
     if (isAudioShape || plotWidth <= 0 || plotHeight <= 0) {

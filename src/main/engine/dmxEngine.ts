@@ -37,6 +37,10 @@ import {
   resolveMoverPadTargetsForGroup,
 } from '../../shared/moverPadTargets'
 import {
+  dmxRandomizerSlotIndex,
+  getDmxRandomizerFixtures,
+} from '../../shared/splitRandomizer'
+import {
   getVisualizerDriverOutputParams,
   mergeParamsWithStageLightSample,
   stageLightMapMasterFromEffects,
@@ -774,6 +778,12 @@ function calculateDmxForUniverse(
     state.dmx.fixtureTypesByID,
     state.dmx.moverGroupByFixtureId
   )
+  // Same universe-agnostic flatten used when sizing randomizer slots in engine.ts.
+  const allUniverseFixtures = flatten_fixtures(
+    state.dmx.universe,
+    state.dmx.fixtureTypesByID,
+    state.dmx.moverGroupByFixtureId
+  )
   const universeHasMoverFixtureType = universeHasMovers(
     universeFixtures,
     state.dmx.fixtureTypesByID
@@ -880,6 +890,12 @@ function calculateDmxForUniverse(
       )
 
       const splitSceneFixtures = getFixturesInGroups(all_fixtures, splitGroups)
+      const intensityCeiling = outputParams.intensity ?? 1
+      const randomizerFixtures = getDmxRandomizerFixtures(
+        allUniverseFixtures,
+        splitGroups,
+        intensityCeiling
+      )
       const followOverrideGroupNames =
         state.gui.moverFollowOverrideUseAllGroups === true
           ? undefined
@@ -942,7 +958,14 @@ function calculateDmxForUniverse(
             }
           }
 
-          const randomizerLevel = randomizer[fixtureIdx]?.level ?? 1
+          const randomizerSlot = dmxRandomizerSlotIndex(
+            randomizerFixtures,
+            fixture
+          )
+          const randomizerLevel =
+            randomizerSlot >= 0
+              ? randomizer[randomizerSlot]?.level ?? 1
+              : 1
           const moverAxisOverride =
             channel.type === 'axis'
               ? splitMoverAxisOverrides[fixtureIdx]

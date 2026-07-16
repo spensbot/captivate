@@ -16,7 +16,7 @@
     "check:build-env": "node tools/check-build-environment.js",
     "generate:default-save": "cross-env TS_NODE_TRANSPILE_ONLY=true ts-node scripts/generate-default-save.ts",
     "package:bundle": "node tools/run-with-qualified-node.cjs -- npm run package:bundle:inner",
-    "package:bundle:inner": "node tools/run-with-qualified-node.cjs -- npm run __package:bundle:inner",
+    "package:bundle:inner": "cross-env CAPTIVATE_BUILD_PROJECTM_RUNTIME=1 CAPTIVATE_BUILD_PROJECTM_BRIDGE=1 node tools/run-with-qualified-node.cjs -- npm run __package:bundle:inner",
     "__package:bundle:inner": "node tools/check-build-environment.js && ts-node ./.erb/scripts/clean.js dist && npm run prepare:projectm-bridge && npm run prepare:projectm-runtime && npm run prepare:node-link && npm run rebuild && node tools/rebuild-darwin-universal-natives.cjs && npm run build && npm run verify:release-assets",
     "package": "npm run package:bundle && node tools/run-with-qualified-node.cjs -- node tools/run-electron-builder-installer.cjs",
     "package:installer-only": "node tools/run-with-qualified-node.cjs -- node tools/run-electron-builder-installer.cjs --win",

@@ -211,6 +211,12 @@ skipNdiRuntime:
   DetailPrint "Installing projectM Visualizer runtime to your profile..."
   ExecWait 'robocopy "$INSTDIR\resources\assets\projectm-runtime" "$R1" /E /NFL /NDL /NJH /NJS /nc /ns /np' $4
   DetailPrint "projectM runtime profile install exit code: $4"
+  ; robocopy: 0-7 are success/partial-success; 8+ indicates failure.
+  IntCmp $4 8 0 0 projectMRuntimeCopyFailed
+  Goto skipProjectMRuntime
+projectMRuntimeCopyFailed:
+  DetailPrint "projectM runtime copy failed (robocopy exit $4)."
+  MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to install the projectM Visualizer runtime to your profile. You can retry from Visualizer settings after install."
   Goto skipProjectMRuntime
 projectMRuntimeMissing:
   DetailPrint "projectM runtime was not bundled in this installer. Install it later from Visualizer settings."

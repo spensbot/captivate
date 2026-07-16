@@ -53,6 +53,7 @@ function alphaFromTau(dtSec: number, tauSec: number) {
 
 export default class AudioInputEngine {
   private unsubscribe: (() => void) | null = null
+  private startGeneration = 0
   private stream: MediaStream | null = null
   private context: AudioContext | null = null
   private source: MediaStreamAudioSourceNode | null = null
@@ -239,6 +240,7 @@ export default class AudioInputEngine {
   }
 
   private async startStream(settings: AudioInputSettings) {
+    const generation = ++this.startGeneration
     this.stopAnalysisLoop()
     this.teardownAudioGraph()
 
@@ -281,6 +283,15 @@ export default class AudioInputEngine {
       }
     }
 
+    if (generation !== this.startGeneration) {
+      if (stream !== null) {
+        for (const track of stream.getTracks()) {
+          track.stop()
+        }
+      }
+      return
+    }
+
     if (stream === null) {
       console.warn('AudioInputEngine: unable to start capture stream')
       sendDiagnosticsEvent({
@@ -307,6 +318,17 @@ export default class AudioInputEngine {
         await context.resume()
       } catch {}
     }
+
+    if (generation !== this.startGeneration) {
+      for (const track of stream.getTracks()) {
+        track.stop()
+      }
+      try {
+        await context.close()
+      } catch {}
+      return
+    }
+
     const source = context.createMediaStreamSource(stream)
     const agcMeter = context.createAnalyser()
     agcMeter.fftSize = 2048

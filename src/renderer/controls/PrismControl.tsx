@@ -46,6 +46,7 @@ export default function PrismControl({ splitIndex }: Props) {
 
     for (const fixtureTypeId of dmx.fixtureTypes) {
       const fixtureType = dmx.fixtureTypesByID[fixtureTypeId]
+      if (fixtureType === undefined) continue
       for (const channel of fixtureType.channels) {
         for (const leaf of fixtureChannelLeafChannels(channel)) {
           if (leaf.type !== 'prismMap') continue

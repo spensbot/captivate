@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import {
   useActiveLightScene,
   useControlSelector,
+  useDmxSelector,
   useTypedSelector,
 } from 'renderer/redux/store'
 import styled from 'styled-components'
@@ -10,8 +11,13 @@ import {
   activeInterModParamKeys,
   activeSplitModulationEntries,
 } from '../../shared/modulation'
+import { universeHasMovers } from 'shared/dmxFixtures'
 import { collectLaserLightingGroupNames } from '../laser/laserSplitLink'
-import { hideLaserSplitUi, hideVisSplitUi } from './splitUiVisibility'
+import {
+  hideLaserSplitUi,
+  hideMoversSplitUi,
+  hideVisSplitUi,
+} from './splitUiVisibility'
 
 export default function ModulationMatrix({ index }: { index: number }) {
   const activeSceneId = useControlSelector((control) => control.light.active)
@@ -30,6 +36,9 @@ function SplitSceneModulationMatrix({ modIndex }: { modIndex: number }) {
   const videoEnabled = useTypedSelector((state) => state.gui.videoEnabled)
   const laserWindowOpen = useTypedSelector((state) => state.gui.laserWindowOpen)
   const laser = useTypedSelector((state) => state.laser)
+  const hasMoverFixtures = useDmxSelector((dmx) =>
+    universeHasMovers(dmx.universe, dmx.fixtureTypesByID)
+  )
   const laserGroupNames = useMemo(
     () => new Set(collectLaserLightingGroupNames(laser)),
     [laser.groupSlots, laser.units]
@@ -41,6 +50,9 @@ function SplitSceneModulationMatrix({ modIndex }: { modIndex: number }) {
       shouldIncludeSplit: (splitIndex) => {
         const groups = scene.splitScenes[splitIndex]?.groups
         if (hideVisSplitUi(videoEnabled, groups)) {
+          return false
+        }
+        if (hideMoversSplitUi(hasMoverFixtures, groups)) {
           return false
         }
         if (hideLaserSplitUi(laserWindowOpen, groups, laserGroupNames)) {

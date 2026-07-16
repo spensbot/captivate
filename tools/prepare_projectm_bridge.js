@@ -82,14 +82,18 @@ if (buildDarwinUniversal) {
     )
   }
   console.log(`Created universal projectm_bridge.node at ${destinationPath}`)
-} else {
-  const buildResult = runProjectmGyp(nodeGypBin, electronVersion, process.arch)
-  if (buildResult.error || buildResult.status !== 0) {
-    const reason =
-      buildResult.error?.message ??
-      `node-gyp exited with status ${buildResult.status ?? 'unknown'}`
-    handleBuildFailure(reason)
-  }
+  // Do not run copy_projectm_bridge.js after lipo: it would overwrite the fat
+  // binary with the last single-arch Release build (usually x64).
+  console.log('Native projectM bridge prepared.')
+  process.exit(0)
+}
+
+const buildResult = runProjectmGyp(nodeGypBin, electronVersion, process.arch)
+if (buildResult.error || buildResult.status !== 0) {
+  const reason =
+    buildResult.error?.message ??
+    `node-gyp exited with status ${buildResult.status ?? 'unknown'}`
+  handleBuildFailure(reason)
 }
 
 const copyResult = spawnSync(process.execPath, [copyScriptPath], {

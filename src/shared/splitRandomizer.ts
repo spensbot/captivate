@@ -33,14 +33,46 @@ export function countLedRandomizerSlots(
   )
 }
 
+/** Ordered DMX fixtures that own randomizer slots for a split (must match engine consume). */
+export function getDmxRandomizerFixtures(
+  fixtures: FlattenedFixture[],
+  sceneGroups: SceneGroups,
+  intensityCeiling: number
+): FlattenedFixture[] {
+  return getFixturesInGroups(fixtures, sceneGroups).filter(
+    (fixture) => fixture.intensity <= intensityCeiling
+  )
+}
+
 export function countDmxRandomizerSlots(
   fixtures: FlattenedFixture[],
   sceneGroups: SceneGroups,
   intensityCeiling: number
 ): number {
-  return getFixturesInGroups(fixtures, sceneGroups).filter(
-    (fixture) => fixture.intensity <= intensityCeiling
-  ).length
+  return getDmxRandomizerFixtures(fixtures, sceneGroups, intensityCeiling).length
+}
+
+function flattenedFixtureIdentityKey(fixture: FlattenedFixture): string {
+  const fixtureId =
+    typeof fixture.fixtureId === 'string' ? fixture.fixtureId.trim() : ''
+  if (fixtureId.length > 0) {
+    return `id:${fixtureId}`
+  }
+  const firstCh = fixture.channels[0]?.[0]
+  const typeId =
+    typeof fixture.fixtureTypeId === 'string' ? fixture.fixtureTypeId : ''
+  return `ch:${Number.isFinite(firstCh) ? firstCh : -1}:type:${typeId}`
+}
+
+/** Slot index in the split randomizer array for a DMX fixture, or -1 if filtered out. */
+export function dmxRandomizerSlotIndex(
+  randomizerFixtures: FlattenedFixture[],
+  fixture: FlattenedFixture
+): number {
+  const key = flattenedFixtureIdentityKey(fixture)
+  return randomizerFixtures.findIndex(
+    (entry) => flattenedFixtureIdentityKey(entry) === key
+  )
 }
 
 export function countSplitRandomizerSlots(

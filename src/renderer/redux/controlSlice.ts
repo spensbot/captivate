@@ -234,13 +234,20 @@ const scenesSlice = createSlice({
       { payload: { sceneType, val } }: ScopedAction<{ index: number }>
     ) => {
       const scenes = state[sceneType]
+      if (val.index < 0 || val.index >= scenes.ids.length) {
+        return
+      }
+      // Keep at least one scene so active/UI/engine never orphan.
+      if (scenes.ids.length <= 1) {
+        return
+      }
       const id = scenes.ids[val.index]
+      const removingActive = scenes.active === id
       scenes.ids.splice(val.index, 1)
       delete scenes.byId[id]
-      // This is necessary in a world where you can delete the active scene... Which you currently can't
-      // if (state.active === id) {
-      //   state.active = state.ids[0]
-      // }
+      if (removingActive || scenes.byId[scenes.active] === undefined) {
+        scenes.active = scenes.ids[Math.min(val.index, scenes.ids.length - 1)]
+      }
     },
     setActiveScene: (
       state,
@@ -292,9 +299,13 @@ const scenesSlice = createSlice({
     },
     copyActiveScene: (state, { payload }: PayloadAction<SceneType>) => {
       const scenes = state[payload]
+      const active = scenes.byId[scenes.active]
+      if (active === undefined) {
+        return
+      }
       const id = nanoid()
       scenes.ids.push(id)
-      scenes.byId[id] = cloneDeep(scenes.byId[scenes.active])
+      scenes.byId[id] = cloneDeep(active)
     },
     sortScenesByBombacity: (state, { payload }: PayloadAction<SceneType>) => {
       const scenes = state[payload]
@@ -330,10 +341,12 @@ const scenesSlice = createSlice({
       { payload }: PayloadAction<{ index: number; shape: LfoShape }>
     ) => {
       modifyActiveLightScene(state, (scene) => {
+        const modulator = scene.modulators[payload.index]
+        if (modulator === undefined) return
         const nextShape = normalizeLfoShape(payload.shape)
-        scene.modulators[payload.index].lfo.shape = nextShape
+        modulator.lfo.shape = nextShape
         if (nextShape === LfoShape.AudioBand) {
-          const lfo = scene.modulators[payload.index].lfo
+          const lfo = modulator.lfo
           const cap = 0.65
           if (lfo.audioMax > cap) {
             lfo.audioMax = cap
@@ -433,7 +446,9 @@ const scenesSlice = createSlice({
       { payload }: PayloadAction<{ index: number; newVal: number }>
     ) => {
       modifyActiveLightScene(state, (scene) => {
-        scene.modulators[payload.index].lfo.period = clamp(
+        const modulator = scene.modulators[payload.index]
+        if (modulator === undefined) return
+        modulator.lfo.period = clamp(
           quantizeBeatEighth(payload.newVal),
           0.25,
           32
@@ -445,10 +460,10 @@ const scenesSlice = createSlice({
       { payload }: PayloadAction<{ index: number; amount: number }>
     ) => {
       modifyActiveLightScene(state, (scene) => {
-        scene.modulators[payload.index].lfo.period = clamp(
-          quantizeBeatEighth(
-            scene.modulators[payload.index].lfo.period + payload.amount
-          ),
+        const modulator = scene.modulators[payload.index]
+        if (modulator === undefined) return
+        modulator.lfo.period = clamp(
+          quantizeBeatEighth(modulator.lfo.period + payload.amount),
           0.25,
           16
         )
@@ -460,6 +475,7 @@ const scenesSlice = createSlice({
     ) => {
       modifyActiveLightScene(state, (scene) => {
         const modulator = scene.modulators[payload.index]
+        if (modulator === undefined) return
         modulator.lfo.flip = clampNormalized(modulator.lfo.flip + payload.flip)
         modulator.lfo.phaseShift = quantizePhaseShiftToBeatEighth(
           modulator.lfo.phaseShift + payload.phaseShift,
@@ -530,6 +546,7 @@ const scenesSlice = createSlice({
     },
     resetModulator: (state, { payload }: PayloadAction<number>) => {
       modifyActiveLightScene(state, (scene) => {
+        if (scene.modulators[payload] === undefined) return
         scene.modulators[payload] = initModulator(scene.splitScenes.length)
       })
     },

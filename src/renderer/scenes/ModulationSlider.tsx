@@ -10,9 +10,11 @@ import {
   useModParam,
   useTypedSelector,
 } from '../redux/store'
+import { universeHasMovers } from 'shared/dmxFixtures'
 import { collectLaserLightingGroupNames } from '../laser/laserSplitLink'
 import {
   hideLaserSplitUi,
+  hideMoversSplitUi,
   hideVisSplitUi,
   splitDisplayName,
 } from './splitUiVisibility'
@@ -207,6 +209,9 @@ function AddModulation({ modIndex }: { modIndex: number }) {
   const videoEnabled = useTypedSelector((state) => state.gui.videoEnabled)
   const laserWindowOpen = useTypedSelector((state) => state.gui.laserWindowOpen)
   const laser = useTypedSelector((state) => state.laser)
+  const hasMoverFixtures = useDmxSelector((dmx) =>
+    universeHasMovers(dmx.universe, dmx.fixtureTypesByID)
+  )
   const laserGroupNames = useMemo(
     () => new Set(collectLaserLightingGroupNames(laser)),
     [laser.groupSlots, laser.units]
@@ -221,6 +226,9 @@ function AddModulation({ modIndex }: { modIndex: number }) {
         {indexArray(numSplits).map((splitIndex) => {
           const groups = splitGroupsByIndex[splitIndex]
           if (hideVisSplitUi(videoEnabled, groups)) {
+            return null
+          }
+          if (hideMoversSplitUi(hasMoverFixtures, groups)) {
             return null
           }
           if (hideLaserSplitUi(laserWindowOpen, groups, laserGroupNames)) {

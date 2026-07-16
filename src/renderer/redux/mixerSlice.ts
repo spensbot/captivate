@@ -41,8 +41,8 @@ export function getUniverseOverwrites(
   return state.overwritesByUniverse[clampUniverse(universe)] ?? []
 }
 
-export const guiSlice = createSlice({
-  name: 'gui',
+export const mixerSlice = createSlice({
+  name: 'mixer',
   initialState: initMixerState(),
   reducers: {
     setPageIndex: (state, { payload }: PayloadAction<number>) => {
@@ -86,6 +86,6 @@ export const {
   setOverwrite,
   clearOverwrites,
   setMixerShowAllChannels,
-} = guiSlice.actions
+} = mixerSlice.actions
 
-export default guiSlice.reducer
+export default mixerSlice.reducer

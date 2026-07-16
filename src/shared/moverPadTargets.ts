@@ -87,8 +87,10 @@ export function resolveMoverPadTargetsForGroup(
       ? entry.x > centerX + sideEpsilon
       : entryIndex >= Math.ceil(orderedFixtures.length / 2)
   )
-  const isBottomFlags = orderedFixtures.map((entry) =>
-    hasVerticalSpread ? entry.y < centerY - sideEpsilon : false
+  const isBottomFlags = orderedFixtures.map((entry, entryIndex) =>
+    hasVerticalSpread
+      ? entry.y < centerY - sideEpsilon
+      : entryIndex >= Math.ceil(orderedFixtures.length / 2)
   )
 
   return orderedFixtures.map((entry, entryIndex) => {

@@ -372,6 +372,51 @@ function getColorMapLookup(channel: ChannelColorMap): IndexedColorMapEntry[] {
   return lookup
 }
 
+/** Mid-slot DMX for gobo/prism ranges (same stability idea as color-wheel slots). */
+function mapSlotMaxToMidpointDmx(sortedMaxValues: number[]): number[] {
+  return sortedMaxValues.map((maxValue, index) => {
+    const previousMax =
+      index > 0 ? sortedMaxValues[index - 1]! : DMX_MIN_VALUE - 1
+    const rangeMin = Math.min(
+      DMX_MAX_VALUE,
+      Math.max(DMX_MIN_VALUE, previousMax + 1)
+    )
+    const rangeMax = Math.min(DMX_MAX_VALUE, Math.max(rangeMin, maxValue))
+    return rangeMin >= rangeMax
+      ? rangeMax
+      : Math.round((rangeMin + rangeMax) / 2)
+  })
+}
+
+function getIndexedMapSlotOutputDmx(
+  items: Array<{ max: number }>,
+  selectedIndex: number
+): number {
+  const valid = items
+    .map((item, index) => ({
+      index,
+      max: clampColorMapDmxValue(item.max, DMX_DEFAULT_VALUE),
+    }))
+    .filter((item) => Number.isFinite(item.max))
+    .sort((left, right) => left.max - right.max)
+
+  if (valid.length === 0) {
+    return DMX_DEFAULT_VALUE
+  }
+
+  const midpoints = mapSlotMaxToMidpointDmx(valid.map((item) => item.max))
+  const byOriginalIndex = new Map<number, number>()
+  valid.forEach((item, sortedIndex) => {
+    byOriginalIndex.set(item.index, midpoints[sortedIndex]!)
+  })
+
+  return (
+    byOriginalIndex.get(selectedIndex) ??
+    midpoints[Math.min(selectedIndex, midpoints.length - 1)] ??
+    DMX_DEFAULT_VALUE
+  )
+}
+
 /** Ordered color-wheel slots used for DMX output and the live color-wheel UI. */
 export function listColorMapSlots(channel: ChannelColorMap): IndexedColorMapEntry[] {
   return getColorMapLookup(channel)
@@ -418,20 +463,22 @@ export function getDefaultDmxValue(
       return combined
     }
     case 'goboMap': {
+      if (ch.gobos.length <= 0) return DMX_DEFAULT_VALUE
       const defaultIndex = Math.max(
         0,
         Math.min(Math.round(ch.defaultIndex), ch.gobos.length - 1)
       )
-      return ch.gobos[defaultIndex]?.max ?? DMX_DEFAULT_VALUE
+      return getIndexedMapSlotOutputDmx(ch.gobos, defaultIndex)
     }
     case 'focus':
       return ch.default
     case 'prismMap': {
+      if (ch.prisms.length <= 0) return DMX_DEFAULT_VALUE
       const defaultIndex = Math.max(
         0,
         Math.min(Math.round(ch.defaultIndex), ch.prisms.length - 1)
       )
-      return ch.prisms[defaultIndex]?.max ?? DMX_DEFAULT_VALUE
+      return getIndexedMapSlotOutputDmx(ch.prisms, defaultIndex)
     }
     default: // 'color' | 'strobe' | 'colorMap'
       return DMX_DEFAULT_VALUE
@@ -965,14 +1012,14 @@ export function getDmxValue(
           )
         : Math.max(0, Math.min(Math.round(ch.defaultIndex), goboCount - 1))
 
-      return ch.gobos[selectedIndex]?.max ?? DMX_DEFAULT_VALUE
+      return getIndexedMapSlotOutputDmx(ch.gobos, selectedIndex)
     }
     case 'focus': {
       const rawFocus = params.focus
       if (!Number.isFinite(rawFocus)) {
         return ch.default
       }
-      return rLerp(ch, rawFocus as number)
+      return rLerp(ch, clampNormalized(rawFocus as number))
     }
     case 'prismMap': {
       const prismCount = ch.prisms.length
@@ -989,7 +1036,7 @@ export function getDmxValue(
           )
         : Math.max(0, Math.min(Math.round(ch.defaultIndex), prismCount - 1))
 
-      return ch.prisms[selectedIndex]?.max ?? DMX_DEFAULT_VALUE
+      return getIndexedMapSlotOutputDmx(ch.prisms, selectedIndex)
     }
     case 'custom': {
       const customParam = params[ch.name]

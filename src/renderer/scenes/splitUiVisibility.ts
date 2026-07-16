@@ -22,7 +22,7 @@ export function hideVisSplitUi(
   groups: SplitScene_t['groups'] | undefined
 ): boolean {
   if (videoEnabled) return false
-  return groups?.Visualizer === true
+  return isDedicatedGroupSplit(groups, 'Visualizer')
 }
 
 /** Show Visualizer group in pickers only while detached visualizer is active. */
@@ -53,7 +53,7 @@ export function hideMoversSplitUi(
   groups: SplitScene_t['groups'] | undefined
 ): boolean {
   if (hasMoverFixturesInProject) return false
-  return groups?.Movers === true
+  return isDedicatedGroupSplit(groups, 'Movers')
 }
 
 /** Group filter summary for one split, e.g. `all`, `not movers`, `front, back`. */

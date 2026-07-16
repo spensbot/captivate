@@ -565,9 +565,15 @@ function applySplitModShapingToLfoVal(
   return clampNormalized(v)
 }
 
+export function isAudioLfoShape(shape: LfoShape): boolean {
+  return shape === LfoShape.AudioBand || shape === LfoShape.AudioEnergy
+}
+
 /**
  * LFO definitions after applying `intermod:lfo:*` routes for one split (same rules as the
- * DMX engine). Source LFO values use the split's phase-offset clock when present.
+ * DMX engine). Wave LFO source values use the split's phase-offset clock when present.
+ * Audio LFO sources are peeked (no envelope advance) on the true beat clock so phase
+ * offsets and a later effective-LFO sample cannot corrupt shared envelope state.
  */
 export function effectiveLfosAtSplit(
   scene: LightSceneLike,
@@ -580,9 +586,20 @@ export function effectiveLfosAtSplit(
   const effectiveBeats =
     beats + (Number.isFinite(phaseOff) ? Number(phaseOff) : 0)
 
-  const sourceLfoValues = scene.modulators.map((modulator, sourceIndex) =>
-    getModulatorLfoValue(modulator.lfo, effectiveBeats, audioInput, sourceIndex)
-  )
+  const sourceLfoValues = scene.modulators.map((modulator, sourceIndex) => {
+    if (isAudioLfoShape(modulator.lfo.shape)) {
+      return getModulatorLfoValue(modulator.lfo, beats, audioInput, sourceIndex, {
+        advance: false,
+        splitIndex,
+      })
+    }
+    return getModulatorLfoValue(
+      modulator.lfo,
+      effectiveBeats,
+      audioInput,
+      sourceIndex
+    )
+  })
   const effectiveLfos = scene.modulators.map((modulator) => cloneLfo(modulator.lfo))
   const bandBounds = getAudioBandCutoffSliderBounds(audioInput.nyquistHz)
 
@@ -667,12 +684,15 @@ export function getOutputParams(
   const effectiveLfos = effectiveLfosAtSplit(scene, splitIndex, beats, audioInput)
 
   const snapshots: ModSnapshot[] = scene.modulators.map((modulator, index) => {
-    let lfoVal = getModulatorLfoValue(
-      effectiveLfos[index],
-      effectiveBeats,
-      audioInput,
-      index
-    )
+    const lfo = effectiveLfos[index]
+    // Audio envelopes advance once per split on the true beat clock (never phase-shifted).
+    // Wave LFOs keep the split phase-offset clock.
+    let lfoVal = isAudioLfoShape(lfo.shape)
+      ? getModulatorLfoValue(lfo, beats, audioInput, index, {
+          advance: true,
+          splitIndex,
+        })
+      : getModulatorLfoValue(lfo, effectiveBeats, audioInput, index)
     lfoVal = applySplitModShapingToLfoVal(lfoVal, shaping)
     return {
       modulation: modulator.splitModulations[splitIndex],
@@ -693,22 +713,35 @@ export function getOutputParams(
   return outputParams
 }
 
+export type GetModulatorLfoValueOptions = {
+  /** When false, read the current envelope without advancing it. Default true. */
+  advance?: boolean
+  /** Isolates audio envelope state per lighting split. */
+  splitIndex?: number
+}
+
 export function getModulatorLfoValue(
   lfo: Lfo,
   beats: number,
   audioInput: AudioEngineMetrics,
-  modulatorIndex?: number
+  modulatorIndex?: number,
+  options?: GetModulatorLfoValueOptions
 ) {
+  const advance = options?.advance !== false
+  const splitIndex = options?.splitIndex
+
   if (lfo.shape === LfoShape.AudioBand) {
     if (audioInput.enabled !== true) {
-      const state = getAudioLfoState(lfo, beats, modulatorIndex)
-      state.initialized = false
-      state.peak = 0
-      state.valley = 0
-      state.smoothed = 0
-      state.bandPostSmoothed = 0
-      state.bandPostInitialized = false
-      state.lastBeat = Number.isFinite(beats) ? beats : state.lastBeat
+      const state = getAudioLfoState(lfo, beats, modulatorIndex, splitIndex)
+      if (advance) {
+        state.initialized = false
+        state.peak = 0
+        state.valley = 0
+        state.smoothed = 0
+        state.bandPostSmoothed = 0
+        state.bandPostInitialized = false
+        state.lastBeat = Number.isFinite(beats) ? beats : state.lastBeat
+      }
       return 0
     }
 
@@ -720,22 +753,28 @@ export function getModulatorLfoValue(
       ...band,
       gain: 1,
     })
-    return getAudioBandLevelSmoothed(raw, lfo, beats, modulatorIndex)
+    return getAudioBandLevelSmoothed(raw, lfo, beats, modulatorIndex, {
+      advance,
+      splitIndex,
+    })
   }
 
   if (lfo.shape === LfoShape.AudioEnergy) {
     if (audioInput.enabled !== true) {
-      const state = getAudioLfoState(lfo, beats, modulatorIndex)
-      state.initialized = false
-      state.smoothed = 0
-      state.lastBeat = Number.isFinite(beats) ? beats : state.lastBeat
+      const state = getAudioLfoState(lfo, beats, modulatorIndex, splitIndex)
+      if (advance) {
+        state.initialized = false
+        state.smoothed = 0
+        state.lastBeat = Number.isFinite(beats) ? beats : state.lastBeat
+      }
       return 0
     }
     return getAudioEnergyLevelSmoothed(
       clamp01(audioInput.energyLevel),
       lfo,
       beats,
-      modulatorIndex
+      modulatorIndex,
+      { advance, splitIndex }
     )
   }
 
@@ -753,12 +792,22 @@ interface AudioLfoRuntimeState {
 }
 
 const audioLfoState = new WeakMap<Lfo, AudioLfoRuntimeState>()
-/** Stable across `cloneLfo()` copies (used by engine + UI); keys modulator index. */
-const audioLfoStateByModulatorIndex = new Map<number, AudioLfoRuntimeState>()
+/**
+ * Stable across `cloneLfo()` copies (used by engine + UI).
+ * Keys: `modulatorIndex` or `modulatorIndex:splitIndex` so per-split intermod
+ * envelopes do not fight each other or phase-offset clocks.
+ */
+const audioLfoStateByKey = new Map<string, AudioLfoRuntimeState>()
 
 function clamp01(value: number) {
   if (!Number.isFinite(value)) return 0
   return Math.min(1, Math.max(0, value))
+}
+
+function audioLfoStateKey(modulatorIndex: number, splitIndex?: number): string {
+  return splitIndex === undefined
+    ? String(modulatorIndex)
+    : `${modulatorIndex}:${splitIndex}`
 }
 
 function alphaFromBeats(dtBeats: number, tauBeats: number) {
@@ -766,35 +815,8 @@ function alphaFromBeats(dtBeats: number, tauBeats: number) {
   return 1 - Math.exp(-dtBeats / Math.max(0.001, tauBeats))
 }
 
-function getAudioLfoState(
-  lfo: Lfo,
-  beats: number,
-  modulatorIndex?: number
-): AudioLfoRuntimeState {
-  if (modulatorIndex !== undefined) {
-    const existing = audioLfoStateByModulatorIndex.get(modulatorIndex)
-    if (existing !== undefined) {
-      return existing
-    }
-    const created: AudioLfoRuntimeState = {
-      lastBeat: Number.isFinite(beats) ? beats : 0,
-      initialized: false,
-      peak: 0,
-      valley: 0,
-      smoothed: 0,
-      bandPostSmoothed: 0,
-      bandPostInitialized: false,
-    }
-    audioLfoStateByModulatorIndex.set(modulatorIndex, created)
-    return created
-  }
-
-  const existing = audioLfoState.get(lfo)
-  if (existing !== undefined) {
-    return existing
-  }
-
-  const created: AudioLfoRuntimeState = {
+function createAudioLfoRuntimeState(beats: number): AudioLfoRuntimeState {
+  return {
     lastBeat: Number.isFinite(beats) ? beats : 0,
     initialized: false,
     peak: 0,
@@ -803,6 +825,31 @@ function getAudioLfoState(
     bandPostSmoothed: 0,
     bandPostInitialized: false,
   }
+}
+
+function getAudioLfoState(
+  lfo: Lfo,
+  beats: number,
+  modulatorIndex?: number,
+  splitIndex?: number
+): AudioLfoRuntimeState {
+  if (modulatorIndex !== undefined) {
+    const key = audioLfoStateKey(modulatorIndex, splitIndex)
+    const existing = audioLfoStateByKey.get(key)
+    if (existing !== undefined) {
+      return existing
+    }
+    const created = createAudioLfoRuntimeState(beats)
+    audioLfoStateByKey.set(key, created)
+    return created
+  }
+
+  const existing = audioLfoState.get(lfo)
+  if (existing !== undefined) {
+    return existing
+  }
+
+  const created = createAudioLfoRuntimeState(beats)
   audioLfoState.set(lfo, created)
   return created
 }
@@ -850,13 +897,35 @@ function applyAudioLfoThreshold(raw: number, lfo: Lfo) {
   return clamp01((safeRaw - threshold) / Math.max(0.01, maxLevel - threshold))
 }
 
+function peekAudioBandLevel(
+  raw: number,
+  lfo: Lfo,
+  state: AudioLfoRuntimeState
+) {
+  if (!state.initialized) {
+    return applyAudioLfoThreshold(clamp01(raw), lfo)
+  }
+  const smoothAmt = clamp01(lfo.audioBandSmoothing ?? 0)
+  const post =
+    smoothAmt > 0.0005 && state.bandPostInitialized
+      ? state.bandPostSmoothed
+      : state.smoothed
+  return applyAudioLfoThreshold(post, lfo)
+}
+
 function getAudioBandLevelSmoothed(
   raw: number,
   lfo: Lfo,
   beats: number,
-  modulatorIndex?: number
+  modulatorIndex?: number,
+  options?: GetModulatorLfoValueOptions
 ) {
-  const state = getAudioLfoState(lfo, beats, modulatorIndex)
+  const advance = options?.advance !== false
+  const state = getAudioLfoState(lfo, beats, modulatorIndex, options?.splitIndex)
+  if (!advance) {
+    return peekAudioBandLevel(raw, lfo, state)
+  }
+
   const beatNow = Number.isFinite(beats) ? beats : state.lastBeat
   const dtBeatsRaw = beatNow - state.lastBeat
   const dtBeats = Math.max(0, Math.min(4, dtBeatsRaw))
@@ -893,9 +962,18 @@ function getAudioEnergyLevelSmoothed(
   raw: number,
   lfo: Lfo,
   beats: number,
-  modulatorIndex?: number
+  modulatorIndex?: number,
+  options?: GetModulatorLfoValueOptions
 ) {
-  const state = getAudioLfoState(lfo, beats, modulatorIndex)
+  const advance = options?.advance !== false
+  const state = getAudioLfoState(lfo, beats, modulatorIndex, options?.splitIndex)
+  if (!advance) {
+    if (!state.initialized) {
+      return applyAudioLfoThreshold(clamp01(raw), lfo)
+    }
+    return applyAudioLfoThreshold(state.smoothed, lfo)
+  }
+
   const beatNow = Number.isFinite(beats) ? beats : state.lastBeat
   const dtBeatsRaw = beatNow - state.lastBeat
   const dtBeats = Math.max(0, Math.min(4, dtBeatsRaw))

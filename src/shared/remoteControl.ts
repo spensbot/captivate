@@ -116,12 +116,12 @@ const SHARED_GUI_ACTION_TYPES = new Set<string>([
 ])
 
 const SHARED_MIXER_ACTION_TYPES = new Set<string>([
-  'gui/setPageIndex',
-  'gui/setChannelsPerPage',
-  'gui/setActiveMixerUniverse',
-  'gui/setOverwrite',
-  'gui/clearOverwrites',
-  'gui/setMixerShowAllChannels',
+  'mixer/setPageIndex',
+  'mixer/setChannelsPerPage',
+  'mixer/setActiveMixerUniverse',
+  'mixer/setOverwrite',
+  'mixer/clearOverwrites',
+  'mixer/setMixerShowAllChannels',
 ])
 
 const ALLOWED_USER_COMMANDS = new Set<UserCommand['type']>([

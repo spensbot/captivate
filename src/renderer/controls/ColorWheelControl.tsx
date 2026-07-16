@@ -58,7 +58,8 @@ export default function ColorWheelControl({
 
   const snappedBase = snapToDetent(baseColorWheel, slotCount)
   const snappedOutput = snapToDetent(outputColorWheel ?? snappedBase, slotCount)
-  const selectedIndex = getDetentIndex(snappedOutput, slotCount)
+  // Selection/label follow the manual base slot; live cursor still uses output.
+  const selectedIndex = getDetentIndex(snappedBase, slotCount)
   const selectedSlot = slots[selectedIndex] ?? slots[0]!
   const selectedLabel = selectedSlot.label
 
