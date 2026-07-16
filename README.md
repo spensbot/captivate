@@ -4,6 +4,18 @@
   <img src="design/readme/Thick.png" alt="Captivate 2" width="150" />
 </p>
 
+<p align="center">
+  <a href="https://github.com/NicholasTracy/captivate-2/actions/workflows/build.yml?query=branch%3AMain">
+    <img src="https://github.com/NicholasTracy/captivate-2/actions/workflows/build.yml/badge.svg?branch=Main" alt="Build (Main)" />
+  </a>
+  <a href="https://github.com/NicholasTracy/captivate-2/actions/workflows/build.yml?query=branch%3AMain+event%3Apush">
+    <img src="https://img.shields.io/github/actions/workflow/status/NicholasTracy/captivate-2/build.yml?branch=Main&event=push&label=CI&logo=github" alt="CI status (Main)" />
+  </a>
+  <a href="https://github.com/NicholasTracy/captivate-2/releases/latest">
+    <img src="https://img.shields.io/github/v/release/NicholasTracy/captivate-2?display_name=tag&label=release" alt="Latest release" />
+  </a>
+</p>
+
 **Visual & lighting synth** — live DMX, visuals, and laser control synchronized to music.
 
 [CaptivateSynth.com](https://CaptivateSynth.com)
