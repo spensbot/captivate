@@ -1,17 +1,5 @@
 # Changelog
 
-## 1.1.4
-
-### Fixes
-
-- Atmospherics no longer infinite-loops (React #185) when selecting a fixture without existing control config.
-
-## 1.1.3
-
-### Fixes
-
-- Project load no longer mutates frozen Redux device state when a save omits the device slice (fixes release screenshot demo load).
-
 ## 1.1.2
 
 ### Show control & DMX
@@ -30,6 +18,8 @@
 ### Fixes
 
 - Scene remove/copy guards, audio stream start race, mixer slice naming, and related hardening.
+- Project load no longer mutates frozen Redux device state when a save omits the device slice.
+- Atmospherics no longer infinite-loops (React #185) when selecting a fixture without existing control config.
 
 ## 1.1.1
 

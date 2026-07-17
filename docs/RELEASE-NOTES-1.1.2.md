@@ -32,6 +32,8 @@ This patch release hardens show control and packaging, and adds an automated **s
 - Audio stream start-generation race.
 - Mixer slice rename (`gui` → `mixer`) for clearer remote/control allowlists.
 - Assorted NaN clamping, Y-mirror fallback, and modulator guard fixes.
+- **Project load** — Loading a `.cap` that omits device settings no longer mutates frozen Redux state (`midiClockBpmEnabled` / Link flags).
+- **Atmospherics** — Selecting a newly mapped atmospheric fixture no longer infinite-loops (React error #185); config is created before selection.
 
 ### Installing
 
