@@ -1,4 +1,4 @@
-## What's new in Captivate 2.0.1
+## What's new in Captivate 2 1.0.1
 
 This update adds the **Captivate Community Fixture Library** and a few quality-of-life fixes in the Fixtures area.
 
@@ -18,7 +18,7 @@ More detail: [Community fixture library](https://github.com/NicholasTracy/captiv
 
 ### Installing
 
-Download the installer for your operating system below. You can install over Captivate 2.0.0; your projects and settings are kept.
+Download the installer for your operating system below. You can install over Captivate 2 1.0.0; your projects and settings are kept.
 
 #### macOS first-launch note
 
