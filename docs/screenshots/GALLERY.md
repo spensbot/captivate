@@ -26,13 +26,13 @@ DMX mixer for live channel control
 
 Mover calibration, groups, and floor bounds
 
-![Movers](https://raw.githubusercontent.com/NicholasTracy/captivate-2/Main/docs/screenshots/Captivate_Movers.png) _(image missing — run capture)_
+![Movers](https://raw.githubusercontent.com/NicholasTracy/captivate-2/Main/docs/screenshots/Captivate_Movers.png)
 
 ## Atmospherics
 
 Atmosphere / effect fixtures
 
-![Atmospherics](https://raw.githubusercontent.com/NicholasTracy/captivate-2/Main/docs/screenshots/Captivate_Atmospherics.png) _(image missing — run capture)_
+![Atmospherics](https://raw.githubusercontent.com/NicholasTracy/captivate-2/Main/docs/screenshots/Captivate_Atmospherics.png)
 
 ## LED layouts
 
@@ -56,7 +56,7 @@ Application settings
 
 About Captivate 2
 
-![About](https://raw.githubusercontent.com/NicholasTracy/captivate-2/Main/docs/screenshots/Captivate_About.png) _(image missing — run capture)_
+![About](https://raw.githubusercontent.com/NicholasTracy/captivate-2/Main/docs/screenshots/Captivate_About.png)
 
 ## Visualizer
 
@@ -68,7 +68,7 @@ Audio-reactive visuals synced to your lighting
 
 3D stage lighting preview
 
-![3D lighting preview](https://raw.githubusercontent.com/NicholasTracy/captivate-2/Main/docs/screenshots/Captivate_Lighting_3D.png) _(image missing — run capture)_
+![3D lighting preview](https://raw.githubusercontent.com/NicholasTracy/captivate-2/Main/docs/screenshots/Captivate_Lighting_3D.png)
 
 ## Laser
 
