@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.3
+
+### Fixes
+
+- Project load no longer mutates frozen Redux device state when a save omits the device slice (fixes release screenshot demo load).
+
 ## 1.1.2
 
 ### Show control & DMX

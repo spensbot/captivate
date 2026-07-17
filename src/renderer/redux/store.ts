@@ -114,10 +114,12 @@ export function mergeProjectSave(
     loadedGuiRaw.ledSidebarEnabled !== true
       ? { ...loadedGuiRaw, activePage: 'Universe' as const }
       : loadedGuiRaw
+  // Always clone before fixDeviceState — reusing control.device mutates Immer-
+  // frozen Redux state (e.g. midiClockBpmEnabled) and breaks project load.
   const nextDevice =
     info.config.device && info.state.device
       ? cloneDeep(info.state.device)
-      : control.device
+      : cloneDeep(control.device)
   fixDeviceState(nextDevice)
 
   const cleanState: CleanReduxState = {
