@@ -57,3 +57,9 @@ native/projectm-bridge/build/
 
 # Local-only terminal bootstrap (created from scripts/cursor-terminal-init.example.ps1 via npm run setup:local-cursor-node)
 scripts/cursor-terminal-init.ps1
+
+# Local-only screenshot fixture projects (keep committed demo.cap / demo.cfx)
+tools/screenshots/fixtures/*.cap
+tools/screenshots/fixtures/*.cfx
+!tools/screenshots/fixtures/demo.cap
+!tools/screenshots/fixtures/demo.cfx

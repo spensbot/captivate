@@ -142,6 +142,52 @@ jobs:
           path: release/artifacts/*
           if-no-files-found: error
 
+      # Release-only: capture UI shots from win-unpacked for human review (no auto-commit).
+      - name: Capture release screenshots
+        id: screenshots
+        if: >-
+          runner.os == 'Windows' && (
+            startsWith(github.ref, 'refs/tags/v') ||
+            (github.event_name == 'workflow_dispatch' && inputs.create_release)
+          )
+        continue-on-error: true
+        shell: bash
+        env:
+          CAPTIVATE_SCREENSHOT_OUT: docs/screenshots
+          CAPTIVATE_SCREENSHOT_SETTLE_MS: '1000'
+        run: |
+          set -euo pipefail
+          exe="release/build/win-unpacked/Captivate 2.exe"
+          if [[ ! -f "$exe" ]]; then
+            echo "Missing unpacked app at $exe"
+            ls -la release/build || true
+            ls -laR release/build/win-unpacked || true
+            exit 1
+          fi
+          export CAPTIVATE_SCREENSHOT_APP="$(pwd)/$exe"
+          echo "CAPTIVATE_SCREENSHOT_APP=$CAPTIVATE_SCREENSHOT_APP"
+          npm run screenshots:capture
+          npm run screenshots:gallery
+          cp -f tools/screenshots/REVIEW.md docs/screenshots/REVIEW.md
+          ls -la docs/screenshots/
+
+      - name: Upload screenshot review pack
+        if: >-
+          runner.os == 'Windows' &&
+          steps.screenshots.outcome == 'success' && (
+            startsWith(github.ref, 'refs/tags/v') ||
+            (github.event_name == 'workflow_dispatch' && inputs.create_release)
+          )
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-review
+          path: |
+            docs/screenshots/*.png
+            docs/screenshots/GALLERY.md
+            docs/screenshots/README_SNIPPET.md
+            docs/screenshots/REVIEW.md
+          if-no-files-found: warn
+
   release:
     if: >-
       startsWith(github.ref, 'refs/tags/v') ||
@@ -163,13 +209,28 @@ jobs:
           fi
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
           echo "Release tag: ${tag}"
-      - name: Download artifacts for all builds
+      - name: Download installer artifacts
         uses: actions/download-artifact@v4
         with:
+          pattern: Captivate-*
           path: release/artifacts
           merge-multiple: true
+      - name: Download screenshot review pack
+        id: screenshot_artifact
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: screenshot-review
+          path: release/screenshot-review
       - name: List release files
-        run: ls -la release/artifacts/
+        run: |
+          ls -la release/artifacts/
+          if [[ -d release/screenshot-review ]]; then
+            echo "Screenshot review pack:"
+            ls -la release/screenshot-review/
+          else
+            echo "No screenshot-review artifact (capture skipped or failed)"
+          fi
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -195,3 +256,11 @@ jobs:
               --notes-file "$notes_file"
           fi
           gh release upload "$tag" release/artifacts/* --clobber
+          if [[ -d release/screenshot-review ]] && [[ -n "$(ls -A release/screenshot-review 2>/dev/null)" ]]; then
+            (
+              cd release/screenshot-review
+              zip -r ../screenshots-review.zip .
+            )
+            gh release upload "$tag" release/screenshots-review.zip --clobber
+            echo "Attached screenshots-review.zip for human review (not auto-merged to Main)."
+          fi

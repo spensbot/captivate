@@ -1,0 +1,661 @@
+{
+  "schema": "captivate.fixture-library",
+  "version": 2,
+  "fixtures": [
+    {
+      "id": "AvrusNHGxq7OBvhEkSLgK",
+      "name": "Generic RGB (RGB)",
+      "intensity": 0.5,
+      "manufacturer": "Generic",
+      "channels": [
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 1
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.33,
+            "saturation": 1
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.66,
+            "saturation": 1
+          }
+        }
+      ],
+      "subFixtures": [],
+      "groups": [],
+      "model": {
+        "kind": "auto",
+        "emittersPerSubFixture": 1,
+        "width": 0.2,
+        "bodyShape": "cylinder",
+        "bodyHeight": 0.1524,
+        "bodyDepth": 0.1016,
+        "bodyDiameter": 0.1524,
+        "moverBeamAngleDeg": 9.5,
+        "atmosphereEffect": "fog",
+        "atmosphereNozzleDirection": "up",
+        "washBarLayoutMode": "linear",
+        "washBarWarmWhiteCount": 12,
+        "washBarCoolWhiteCount": 13,
+        "washBarRgbCount": 16,
+        "useCustomEmitterLayout": false,
+        "customEmitters": [
+          {
+            "id": "iOjpKD-NuYfaMQr8OpzSc",
+            "x": 0.5,
+            "y": 0.5,
+            "z": 0.72,
+            "shape": "disc",
+            "size": 0.149352,
+            "channelIndexes": [
+              0
+            ]
+          }
+        ],
+        "emitterFaceAutoSize": true,
+        "parRectLayout": "grid",
+        "parCylinderLayout": "honeycomb"
+      }
+    },
+    {
+      "id": "Zg6-Ux65Qh1eKtWWS1Gp6",
+      "name": "Generic RGB (Dimmer RGB)",
+      "intensity": 0.5,
+      "manufacturer": "Generic",
+      "channels": [
+        {
+          "type": "master",
+          "min": 0,
+          "max": 255,
+          "isOnOff": false
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 1
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.33,
+            "saturation": 1
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.66,
+            "saturation": 1
+          }
+        }
+      ],
+      "subFixtures": [],
+      "groups": [],
+      "model": {
+        "kind": "auto",
+        "emittersPerSubFixture": 1,
+        "width": 0.2,
+        "bodyShape": "cylinder",
+        "bodyHeight": 0.1524,
+        "bodyDepth": 0.1016,
+        "bodyDiameter": 0.1524,
+        "moverBeamAngleDeg": 9.5,
+        "atmosphereEffect": "fog",
+        "atmosphereNozzleDirection": "up",
+        "washBarLayoutMode": "linear",
+        "washBarWarmWhiteCount": 12,
+        "washBarCoolWhiteCount": 13,
+        "washBarRgbCount": 16,
+        "useCustomEmitterLayout": false,
+        "customEmitters": [
+          {
+            "id": "3s4U1tH5wcrRtzCix6tDy",
+            "x": 0.5,
+            "y": 0.5,
+            "z": 0.72,
+            "shape": "disc",
+            "size": 0.149352,
+            "channelIndexes": [
+              0
+            ]
+          }
+        ],
+        "emitterFaceAutoSize": true,
+        "parRectLayout": "grid",
+        "parCylinderLayout": "honeycomb"
+      }
+    },
+    {
+      "id": "_crXsi4Dm7bqbCTnL2KlD",
+      "name": "BARLED200-FX (3 Channel)",
+      "intensity": 0.5,
+      "manufacturer": "AFX",
+      "channels": [
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 1
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.33,
+            "saturation": 1
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.66,
+            "saturation": 1
+          }
+        }
+      ],
+      "subFixtures": [],
+      "groups": [],
+      "model": {
+        "kind": "auto",
+        "emittersPerSubFixture": 1,
+        "width": 0.2,
+        "bodyShape": "cylinder",
+        "bodyHeight": 0.1524,
+        "bodyDepth": 0.1016,
+        "bodyDiameter": 0.1524,
+        "moverBeamAngleDeg": 9.5,
+        "atmosphereEffect": "fog",
+        "atmosphereNozzleDirection": "up",
+        "washBarLayoutMode": "linear",
+        "washBarWarmWhiteCount": 12,
+        "washBarCoolWhiteCount": 13,
+        "washBarRgbCount": 16,
+        "useCustomEmitterLayout": false,
+        "customEmitters": [
+          {
+            "id": "9afK9xWIuk8hsu_4ZIKC1",
+            "x": 0.5,
+            "y": 0.5,
+            "z": 0.72,
+            "shape": "disc",
+            "size": 0.149352,
+            "channelIndexes": [
+              0
+            ]
+          }
+        ],
+        "emitterFaceAutoSize": true,
+        "parRectLayout": "grid",
+        "parCylinderLayout": "honeycomb"
+      }
+    },
+    {
+      "id": "OPXunHp-K4g-a18Vc247S",
+      "name": "Spectra CYC 100 (1 Channel (601, 602))",
+      "intensity": 0.5,
+      "manufacturer": "Altman",
+      "channels": [
+        {
+          "type": "master",
+          "min": 0,
+          "max": 255,
+          "isOnOff": false
+        }
+      ],
+      "subFixtures": [],
+      "groups": [],
+      "model": {
+        "kind": "auto",
+        "emittersPerSubFixture": 1,
+        "width": 0.2,
+        "bodyShape": "cylinder",
+        "bodyHeight": 0.1524,
+        "bodyDepth": 0.1016,
+        "bodyDiameter": 0.1524,
+        "moverBeamAngleDeg": 9.5,
+        "atmosphereEffect": "fog",
+        "atmosphereNozzleDirection": "up",
+        "washBarLayoutMode": "linear",
+        "washBarWarmWhiteCount": 12,
+        "washBarCoolWhiteCount": 13,
+        "washBarRgbCount": 16,
+        "useCustomEmitterLayout": false,
+        "customEmitters": [
+          {
+            "id": "Oa97_meVo6vLctwWCm8VX",
+            "x": 0.5,
+            "y": 0.5,
+            "z": 0.72,
+            "shape": "disc",
+            "size": 0.149352,
+            "channelIndexes": [
+              0
+            ]
+          }
+        ],
+        "emitterFaceAutoSize": true,
+        "parRectLayout": "grid",
+        "parCylinderLayout": "honeycomb"
+      }
+    },
+    {
+      "id": "BWlR_JKlNsvRlkGsmcJTb",
+      "name": "Intimidator Barrel 300 (11 Channel)",
+      "intensity": 0.5,
+      "manufacturer": "Chauvet",
+      "channels": [
+        {
+          "type": "axis",
+          "dir": "x",
+          "isFine": false,
+          "min": 0,
+          "max": 255
+        },
+        {
+          "type": "axis",
+          "dir": "y",
+          "isFine": false,
+          "min": 0,
+          "max": 255
+        },
+        {
+          "type": "custom",
+          "name": "Color",
+          "default": 0,
+          "isControllable": false,
+          "min": 0,
+          "max": 255
+        },
+        {
+          "type": "custom",
+          "name": "Shutter",
+          "default": 0,
+          "isControllable": false,
+          "min": 0,
+          "max": 255
+        },
+        {
+          "type": "master",
+          "min": 0,
+          "max": 255,
+          "isOnOff": false
+        },
+        {
+          "type": "custom",
+          "name": "Gobo Wheel",
+          "default": 0,
+          "isControllable": false,
+          "min": 0,
+          "max": 255
+        },
+        {
+          "type": "custom",
+          "name": "Gobo Rotation",
+          "default": 0,
+          "isControllable": false,
+          "min": 0,
+          "max": 255
+        },
+        {
+          "type": "custom",
+          "name": "Prism",
+          "default": 0,
+          "isControllable": false,
+          "min": 0,
+          "max": 255
+        },
+        {
+          "type": "custom",
+          "name": "Focus",
+          "default": 0,
+          "isControllable": false,
+          "min": 0,
+          "max": 255
+        },
+        {
+          "type": "custom",
+          "name": "Function",
+          "default": 0,
+          "isControllable": false,
+          "min": 0,
+          "max": 255
+        },
+        {
+          "type": "custom",
+          "name": "Movement Macros",
+          "default": 0,
+          "isControllable": false,
+          "min": 0,
+          "max": 255
+        }
+      ],
+      "subFixtures": [],
+      "groups": [],
+      "model": {
+        "kind": "auto",
+        "emittersPerSubFixture": 1,
+        "width": 0.6,
+        "bodyShape": "cylinder",
+        "bodyHeight": 0.18,
+        "bodyDepth": 0.24,
+        "bodyDiameter": 0.6,
+        "moverBeamAngleDeg": 9.5,
+        "atmosphereEffect": "fog",
+        "atmosphereNozzleDirection": "up",
+        "washBarLayoutMode": "linear",
+        "washBarWarmWhiteCount": 12,
+        "washBarCoolWhiteCount": 13,
+        "washBarRgbCount": 16,
+        "useCustomEmitterLayout": false,
+        "customEmitters": [
+          {
+            "id": "g8YDcArRg_sFTAoFKMlII",
+            "x": 0.5,
+            "y": 0.5,
+            "z": 1,
+            "shape": "disc",
+            "size": 0.588,
+            "channelIndexes": [
+              0
+            ]
+          }
+        ],
+        "emitterFaceAutoSize": true,
+        "parRectLayout": "grid",
+        "parCylinderLayout": "honeycomb"
+      }
+    },
+    {
+      "id": "tRXYtyqHCZoWgZSWf8lJG",
+      "name": "Intimidator Beam LED 350 (Advanced)",
+      "intensity": 0.5,
+      "manufacturer": "Chauvet",
+      "channels": [
+        {
+          "type": "axis",
+          "dir": "x",
+          "isFine": false,
+          "min": 0,
+          "max": 255
+        },
+        {
+          "type": "axis",
+          "dir": "x",
+          "isFine": true,
+          "min": 0,
+          "max": 255
+        },
+        {
+          "type": "axis",
+          "dir": "y",
+          "isFine": false,
+          "min": 0,
+          "max": 255
+        },
+        {
+          "type": "axis",
+          "dir": "y",
+          "isFine": true,
+          "min": 0,
+          "max": 255
+        },
+        {
+          "type": "custom",
+          "name": "Pan/Tilt Speed (fast to slow)",
+          "default": 0,
+          "isControllable": false,
+          "min": 0,
+          "max": 255
+        },
+        {
+          "type": "custom",
+          "name": "Color",
+          "default": 0,
+          "isControllable": false,
+          "min": 0,
+          "max": 255
+        },
+        {
+          "type": "custom",
+          "name": "Gobo",
+          "default": 0,
+          "isControllable": false,
+          "min": 0,
+          "max": 255
+        },
+        {
+          "type": "custom",
+          "name": "No function",
+          "default": 0,
+          "isControllable": false,
+          "min": 0,
+          "max": 255
+        },
+        {
+          "type": "custom",
+          "name": "Prism",
+          "default": 0,
+          "isControllable": false,
+          "min": 0,
+          "max": 255
+        },
+        {
+          "type": "custom",
+          "name": "No function2",
+          "default": 0,
+          "isControllable": false,
+          "min": 0,
+          "max": 255
+        },
+        {
+          "type": "master",
+          "min": 0,
+          "max": 255,
+          "isOnOff": false
+        },
+        {
+          "type": "custom",
+          "name": "Shutter",
+          "default": 0,
+          "isControllable": false,
+          "min": 0,
+          "max": 255
+        },
+        {
+          "type": "custom",
+          "name": "Control Functions",
+          "default": 0,
+          "isControllable": false,
+          "min": 0,
+          "max": 255
+        },
+        {
+          "type": "custom",
+          "name": "Movement Macros",
+          "default": 0,
+          "isControllable": false,
+          "min": 0,
+          "max": 255
+        }
+      ],
+      "subFixtures": [],
+      "groups": [],
+      "model": {
+        "kind": "auto",
+        "emittersPerSubFixture": 1,
+        "width": 0.6,
+        "bodyShape": "cylinder",
+        "bodyHeight": 0.18,
+        "bodyDepth": 0.24,
+        "bodyDiameter": 0.6,
+        "moverBeamAngleDeg": 9.5,
+        "atmosphereEffect": "fog",
+        "atmosphereNozzleDirection": "up",
+        "washBarLayoutMode": "linear",
+        "washBarWarmWhiteCount": 12,
+        "washBarCoolWhiteCount": 13,
+        "washBarRgbCount": 16,
+        "useCustomEmitterLayout": false,
+        "customEmitters": [
+          {
+            "id": "LBnXFjY7B6W6-QBtA_2JK",
+            "x": 0.5,
+            "y": 0.5,
+            "z": 1,
+            "shape": "disc",
+            "size": 0.588,
+            "channelIndexes": [
+              0
+            ]
+          }
+        ],
+        "emitterFaceAutoSize": true,
+        "parRectLayout": "grid",
+        "parCylinderLayout": "honeycomb"
+      }
+    },
+    {
+      "id": "XJpELDBUSoTKoe4yFT4F7",
+      "name": "LM108 Wash Moving Head (9 Channel)",
+      "intensity": 0.5,
+      "manufacturer": "Betopper",
+      "channels": [
+        {
+          "type": "axis",
+          "dir": "x",
+          "isFine": false,
+          "min": 0,
+          "max": 255
+        },
+        {
+          "type": "axis",
+          "dir": "y",
+          "isFine": false,
+          "min": 0,
+          "max": 255
+        },
+        {
+          "type": "master",
+          "min": 0,
+          "max": 255,
+          "isOnOff": false
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 1
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.33,
+            "saturation": 1
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.66,
+            "saturation": 1
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 0
+          }
+        },
+        {
+          "type": "strobe",
+          "default_solid": 0,
+          "default_strobe": 255
+        },
+        {
+          "type": "custom",
+          "name": "Pan/Tilt speed",
+          "default": 0,
+          "isControllable": false,
+          "min": 0,
+          "max": 255
+        }
+      ],
+      "subFixtures": [],
+      "groups": [],
+      "model": {
+        "kind": "auto",
+        "emittersPerSubFixture": 1,
+        "width": 0.6,
+        "bodyShape": "cylinder",
+        "bodyHeight": 0.18,
+        "bodyDepth": 0.24,
+        "bodyDiameter": 0.6,
+        "moverBeamAngleDeg": 9.5,
+        "atmosphereEffect": "fog",
+        "atmosphereNozzleDirection": "up",
+        "washBarLayoutMode": "linear",
+        "washBarWarmWhiteCount": 12,
+        "washBarCoolWhiteCount": 13,
+        "washBarRgbCount": 16,
+        "useCustomEmitterLayout": false,
+        "customEmitters": [
+          {
+            "id": "7PpKY0Xpo8Hzdbf5NkayQ",
+            "x": 0.5,
+            "y": 0.5,
+            "z": 1,
+            "shape": "disc",
+            "size": 0.588,
+            "channelIndexes": [
+              0
+            ]
+          }
+        ],
+        "emitterFaceAutoSize": true,
+        "parRectLayout": "grid",
+        "parCylinderLayout": "honeycomb"
+      }
+    },
+    {
+      "id": "demo-captivate-fog",
+      "name": "Demo Fog Machine",
+      "manufacturer": "Captivate Demo",
+      "intensity": 0,
+      "channels": [
+        {
+          "type": "fxtrTrigger",
+          "name": "Fog",
+          "off": 0,
+          "on": 255
+        },
+        {
+          "type": "fxtrLevel",
+          "name": "Volume",
+          "default": 0,
+          "min": 0,
+          "max": 255
+        }
+      ],
+      "subFixtures": [],
+      "groups": [
+        "Atmosphere"
+      ],
+      "model": {
+        "kind": "atmosphericFxtr"
+      }
+    }
+  ]
+}

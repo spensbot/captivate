@@ -1,0 +1,124 @@
+{
+  "outputDir": "docs/screenshots",
+  "settleMs": 700,
+  "viewport": { "width": 1440, "height": 900 },
+  "shots": [
+    {
+      "id": "lighting-scenes",
+      "file": "Captivate_Lighting_Scenes.png",
+      "title": "Light scenes and modulation",
+      "caption": "Light scenes, splits, and modulation",
+      "page": "Modulation",
+      "readme": true,
+      "wiki": true
+    },
+    {
+      "id": "universe",
+      "file": "Captivate_DMX_Settings.png",
+      "title": "Fixture patch / DMX universe",
+      "caption": "Patch fixtures, groups, and DMX addresses",
+      "page": "Universe",
+      "readme": false,
+      "wiki": true
+    },
+    {
+      "id": "mixer",
+      "file": "Captivate_DMX_Mixer.png",
+      "title": "DMX mixer",
+      "caption": "DMX mixer for live channel control",
+      "page": "Mixer",
+      "readme": true,
+      "wiki": true
+    },
+    {
+      "id": "movers",
+      "file": "Captivate_Movers.png",
+      "title": "Movers",
+      "caption": "Mover calibration, groups, and floor bounds",
+      "page": "Movers",
+      "readme": false,
+      "wiki": true,
+      "requires": ["movers"]
+    },
+    {
+      "id": "atmospherics",
+      "file": "Captivate_Atmospherics.png",
+      "title": "Atmospherics",
+      "caption": "Atmosphere / effect fixtures",
+      "page": "Atmospherics",
+      "readme": false,
+      "wiki": true,
+      "requires": ["atmospherics"]
+    },
+    {
+      "id": "led",
+      "file": "Captivate_WLED.png",
+      "title": "LED layouts",
+      "caption": "LED strip / WLED layout editing",
+      "page": "Led",
+      "readme": false,
+      "wiki": true,
+      "requires": ["led"]
+    },
+    {
+      "id": "connections",
+      "file": "Captivate_Connections_Dialog.png",
+      "title": "Connections",
+      "caption": "DMX, MIDI, Link, audio, and remote connections",
+      "page": "Modulation",
+      "overlay": "connections",
+      "readme": false,
+      "wiki": true
+    },
+    {
+      "id": "settings",
+      "file": "Captivate_Settings.png",
+      "title": "Settings",
+      "caption": "Application settings",
+      "page": "Modulation",
+      "overlay": "settings",
+      "readme": false,
+      "wiki": true
+    },
+    {
+      "id": "about",
+      "file": "Captivate_About.png",
+      "title": "About",
+      "caption": "About Captivate 2",
+      "page": "Modulation",
+      "overlay": "about",
+      "readme": false,
+      "wiki": true
+    },
+    {
+      "id": "visualizer-window",
+      "file": "Captivate_Visualizer.png",
+      "title": "Visualizer",
+      "caption": "Audio-reactive visuals synced to your lighting",
+      "page": "Modulation",
+      "openWindow": "Video",
+      "readme": true,
+      "wiki": true
+    },
+    {
+      "id": "lighting3d-window",
+      "file": "Captivate_Lighting_3D.png",
+      "title": "3D lighting preview",
+      "caption": "3D stage lighting preview",
+      "page": "Modulation",
+      "openWindow": "Lighting3D",
+      "readme": false,
+      "wiki": true
+    },
+    {
+      "id": "laser-window",
+      "file": "Captivate_Laser.png",
+      "title": "Laser",
+      "caption": "Laser control window",
+      "page": "Modulation",
+      "openWindow": "Laser",
+      "readme": false,
+      "wiki": true
+    }
+  ]
+}

@@ -42,6 +42,7 @@ import {
   send_control_state,
   send_sync_led_sidebar_menu,
   send_sync_autosave_menu,
+  send_open_page_window,
 } from './ipcHandler'
 import { registerHostTransport } from '../shared/hostTransport'
 import ipc_channels from '../shared/ipc_channels'
@@ -60,6 +61,7 @@ import {
 import { loadFixtureLibraryFromDefaultPath, getDefaultFixtureLibraryPath } from './autosave'
 import { getUndoGroup, undoAction, redoAction } from './controls/UndoRedo'
 import { load, loadFromPath } from './menu/SaveLoad'
+import { applyProjectLoad } from './menu/ProjectSaveLoadDialogs'
 import { reportProjectLoadError } from './menu/ProjectSaveLoadDialogs'
 import {
   applyWorkspacePaths,
@@ -964,6 +966,66 @@ function scheduleControlStatePublish() {
 store.subscribe(() => {
   scheduleControlStatePublish()
 })
+
+function installScreenshotHarness() {
+  const enabled =
+    (window as Window & { captivateScreenshotMode?: boolean })
+      .captivateScreenshotMode === true
+  if (!enabled || !isPrimaryWindow) {
+    return
+  }
+
+  const sleep = (ms: number) =>
+    new Promise<void>((resolve) => {
+      window.setTimeout(resolve, ms)
+    })
+
+  ;(window as Window & { __captivateScreenshot?: unknown }).__captivateScreenshot =
+    {
+      ready: true,
+      async setPage(page: Page) {
+        store.dispatch(setConnectionsMenu(false))
+        store.dispatch(setSettingsOpen(false))
+        store.dispatch(setAboutOpen(false))
+        if (page === 'Led') {
+          store.dispatch(setLedSidebarEnabled(true))
+        }
+        store.dispatch(setActivePage(page))
+        await sleep(50)
+      },
+      async setOverlay(overlay: 'connections' | 'settings' | 'about' | null) {
+        store.dispatch(setConnectionsMenu(overlay === 'connections'))
+        store.dispatch(setSettingsOpen(overlay === 'settings'))
+        store.dispatch(setAboutOpen(overlay === 'about'))
+        await sleep(50)
+      },
+      async closeOverlays() {
+        store.dispatch(setConnectionsMenu(false))
+        store.dispatch(setSettingsOpen(false))
+        store.dispatch(setAboutOpen(false))
+        store.dispatch(hideAppDialog())
+        await sleep(50)
+      },
+      async openPageWindow(page: Page) {
+        send_open_page_window(page)
+        await sleep(100)
+      },
+      async loadProject(filePath: string) {
+        const loaded = await loadFromPath(filePath)
+        if (loaded === null) {
+          throw new Error(`Failed to load project: ${filePath}`)
+        }
+        applyProjectLoad({
+          state: loaded.state,
+          config: getSaveConfig(loaded.state),
+          filePath: loaded.filePath,
+        })
+        await sleep(200)
+      },
+    }
+}
+
+installScreenshotHarness()
 
 const appRoot = document.getElementById('root')
 if (appRoot === null) {

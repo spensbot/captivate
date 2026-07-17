@@ -34,7 +34,11 @@
     "typecheck": "tsc --noEmit",
     "typecheck:node-link": "tsc --noEmit -p release/app/node-link/tsconfig.json",
     "typecheck:all": "npm run typecheck && npm run typecheck:node-link",
-    "setup:local-cursor-node": "node tools/setup-local-cursor-node.cjs"
+    "setup:local-cursor-node": "node tools/setup-local-cursor-node.cjs",
+    "screenshots:demo-project": "cross-env TS_NODE_TRANSPILE_ONLY=true ts-node scripts/generate-screenshot-demo-project.ts",
+    "screenshots:capture": "node tools/screenshots/capture.mjs",
+    "screenshots:gallery": "node tools/screenshots/generate-gallery.mjs",
+    "screenshots:all": "npm run screenshots:capture && npm run screenshots:gallery"
   },
   "browserslist": [],
   "prettier": {
@@ -126,6 +130,7 @@
     "node-gyp": "^12.2.0",
     "npm-run-all": "^4.1.5",
     "patch-package": "^8.0.1",
+    "playwright": "^1.61.1",
     "prettier": "^2.6.2",
     "raw-loader": "^4.0.2",
     "react-refresh": "^0.13.0",

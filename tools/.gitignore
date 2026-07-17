@@ -1,1 +1,3 @@
 fixtures
+!screenshots/fixtures/
+!screenshots/fixtures/**

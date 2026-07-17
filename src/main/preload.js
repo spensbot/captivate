@@ -1,5 +1,10 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
+const screenshotMode =
+  String(process.env.CAPTIVATE_SCREENSHOT || '').trim() === '1'
+
+contextBridge.exposeInMainWorld('captivateScreenshotMode', screenshotMode)
+
 contextBridge.exposeInMainWorld('electron', {
   ipcRenderer: {
     myPing() {
