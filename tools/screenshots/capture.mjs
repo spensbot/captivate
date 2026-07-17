@@ -130,9 +130,33 @@ async function findWindowByPage(app, pageName, timeoutMs = 20000) {
   return null
 }
 
-async function captureShot(app, mainWindow, shot) {
+async function recoverFromErrorBoundary(mainWindow, projectPath) {
+  // If a prior shot crashed the ErrorBoundary, recover so later shots aren't poisoned.
+  const recovered = await mainWindow.evaluate(async () => {
+    const button = Array.from(document.querySelectorAll('button')).find((el) =>
+      /restart from defaults/i.test(el.textContent || '')
+    )
+    if (!button) return false
+    button.click()
+    await new Promise((r) => setTimeout(r, 400))
+    return true
+  })
+  if (!recovered) return
+  console.warn('  recovered from ErrorBoundary (Restart from defaults)')
+  await sleep(settleMs)
+  if (projectPath && fs.existsSync(projectPath)) {
+    await mainWindow.evaluate(async (filePath) => {
+      await window.__captivateScreenshot.loadProject(filePath)
+    }, projectPath)
+    await sleep(settleMs)
+  }
+}
+
+async function captureShot(app, mainWindow, shot, projectPath) {
   const targetPath = path.join(outDir, shot.file)
   console.log(`→ ${shot.id}: ${shot.file}`)
+
+  await recoverFromErrorBoundary(mainWindow, projectPath)
 
   await mainWindow.evaluate(async (spec) => {
     const api = window.__captivateScreenshot
@@ -238,7 +262,7 @@ async function main() {
     let failed = 0
     for (const shot of shots) {
       try {
-        const result = await captureShot(app, mainWindow, shot)
+        const result = await captureShot(app, mainWindow, shot, projectPath)
         if (result.ok) ok += 1
         else failed += 1
       } catch (err) {

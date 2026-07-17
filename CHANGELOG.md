@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.4
+
+### Fixes
+
+- Atmospherics no longer infinite-loops (React #185) when selecting a fixture without existing control config.
+
 ## 1.1.3
 
 ### Fixes

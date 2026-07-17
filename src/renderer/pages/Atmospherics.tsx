@@ -148,10 +148,20 @@ export default function AtmosphericsPage() {
       return
     }
     if (selectedFixtureId === null) return
+
+    // Create missing configs before selection so selectAtmosFxtr can stick.
+    for (const fixture of fixtures) {
+      if (settings.fixtures[fixture.fixtureId] === undefined) {
+        dispatch(ensureAtmosFxtrConfig(fixture.fixtureId))
+        return
+      }
+    }
+
     if (settings.selectedFixtureId !== selectedFixtureId) {
       dispatch(selectAtmosFxtr(selectedFixtureId))
       return
     }
+
     for (const fixture of fixtures) {
       const config = settings.fixtures[fixture.fixtureId]
       if (config === undefined) {

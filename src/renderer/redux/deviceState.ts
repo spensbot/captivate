@@ -899,8 +899,14 @@ export const midiActions = {
       return
     }
     const fixtureId = payload.trim()
-    const exists = state.connectionSettings.atmos.fixtures[fixtureId] !== undefined
-    state.connectionSettings.atmos.selectedFixtureId = exists ? fixtureId : null
+    if (fixtureId.length <= 0) {
+      state.connectionSettings.atmos.selectedFixtureId = null
+      return
+    }
+    // Ensure config exists before selecting — otherwise the Atmospherics page
+    // effect keeps dispatching select → null → select and hits React #185.
+    ensureAtmosFxtrCfgMut(state, fixtureId)
+    state.connectionSettings.atmos.selectedFixtureId = fixtureId
   },
   patchAtmosFxtr: (
     state: DeviceState,
