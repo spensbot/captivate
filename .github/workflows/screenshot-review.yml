@@ -151,34 +151,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Publish Wiki Screenshots page
+      - name: Publish Wiki screenshots (PNGs + Screenshots page)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          if [[ ! -f docs/screenshots/GALLERY.md ]]; then
-            echo "docs/screenshots/GALLERY.md missing; skip wiki publish"
+          if [[ ! -d docs/screenshots ]] || [[ -z "$(ls docs/screenshots/*.png 2>/dev/null || true)" ]]; then
+            echo "No docs/screenshots PNGs; skip wiki publish"
             exit 0
           fi
 
           wiki_url="https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.wiki.git"
           rm -rf /tmp/captivate-wiki
           if ! git clone --depth 1 "$wiki_url" /tmp/captivate-wiki; then
-            echo "::warning::Could not clone wiki (disabled or empty). Skipping."
-            exit 0
+            echo "::error::Could not clone wiki. Ensure the wiki is enabled for this repo."
+            exit 1
           fi
 
-          cp docs/screenshots/GALLERY.md /tmp/captivate-wiki/Screenshots.md
+          node tools/screenshots/publish-wiki.mjs --wiki-dir /tmp/captivate-wiki
+
           cd /tmp/captivate-wiki
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          if git diff --quiet Screenshots.md; then
-            echo "Wiki Screenshots.md already up to date"
+          if [[ -z "$(git status --porcelain)" ]]; then
+            echo "Wiki already up to date"
             exit 0
           fi
 
-          git add Screenshots.md
-          git commit -m "Update Screenshots gallery from docs/screenshots/GALLERY.md"
+          git add -A
+          git commit -m "Update wiki screenshots from docs/screenshots"
           git push
-          echo "Published wiki page: Screenshots"
+          echo "Published wiki PNGs + Screenshots.md"

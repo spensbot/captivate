@@ -91,7 +91,7 @@ Then the **Screenshot review** workflow (`.github/workflows/screenshot-review.ym
      Actions → Screenshot review → `open-pr` + tag (e.g. `v1.1.2`)
 2. **You review** the PR **Files changed** tab (image diffs)
 3. **Merge the PR** (= approve) — commits land on `Main`
-4. **Wiki** page `Screenshots` is published from `docs/screenshots/GALLERY.md` on that push (or run `publish-wiki` manually)
+4. **Wiki** topic images are updated by copying `docs/screenshots/*.png` into the wiki repo (pages like Connections / Mixer reference those filenames), plus a `Screenshots` gallery page. Re-run Actions → Screenshot review → `publish-wiki` anytime.
 
 Local apply (without GitHub):
 
