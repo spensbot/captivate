@@ -74,5 +74,5 @@ Captivate 2 is not Apple-notarized. Use the **architecture-specific** DMG:
 
 Check **About This Mac** → **Chip** (Apple M…) vs **Processor** (Intel).
 
-First launch: drag to Applications, then **right-click → Open** and confirm. See [macOS install guide](https://github.com/NicholasTracy/captivate-2/blob/main/docs/MACOS-INSTALL.md) if Gatekeeper blocks the app.
+First launch: drag to Applications, then **right-click → Open** and confirm. See [macOS install guide](https://github.com/NicholasTracy/captivate-2/blob/Main/docs/MACOS-INSTALL.md) if Gatekeeper blocks the app.
 ```

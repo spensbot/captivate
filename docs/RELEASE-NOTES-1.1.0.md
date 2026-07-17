@@ -70,4 +70,4 @@ Captivate 2 is not Apple-notarized. Download the **architecture-specific** DMG f
 - **Apple Silicon (M1–M4):** `Captivate.2-<version>-arm64.dmg`
 - **Intel Mac:** `Captivate.2-<version>-x64.dmg`
 
-First launch: drag to **Applications**, then **right-click → Open**. See [docs/MACOS-INSTALL.md](https://github.com/NicholasTracy/captivate-2/blob/main/docs/MACOS-INSTALL.md).
+First launch: drag to **Applications**, then **right-click → Open**. See [docs/MACOS-INSTALL.md](https://github.com/NicholasTracy/captivate-2/blob/Main/docs/MACOS-INSTALL.md).
