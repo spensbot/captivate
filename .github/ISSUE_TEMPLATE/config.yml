@@ -1,0 +1,14 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Captivate 2 Wiki (start here)
+    url: https://github.com/NicholasTracy/captivate-2/wiki
+    about: First-time setup, connections, audio, scenes, and troubleshooting.
+  - name: Troubleshooting guide
+    url: https://github.com/NicholasTracy/captivate-2/wiki/Troubleshooting
+    about: Common fixes for DMX, audio, projects, MIDI, Link, and remote control.
+  - name: Discord
+    url: https://discord.gg/96DVPcMUUv
+    about: Community chat and quick setup help.
+  - name: GitHub Discussions
+    url: https://github.com/NicholasTracy/captivate-2/discussions
+    about: Longer-form questions and ideas that are not bug reports.

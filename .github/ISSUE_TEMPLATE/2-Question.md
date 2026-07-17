@@ -1,19 +1,31 @@
 ---
 name: Question
-about: Ask a question.❓
-labels: 'question'
+about: Ask how something works in Captivate 2.
+title: '[Question] '
+labels: question
 ---
 
-## Summary
+For “how do I set this up?” questions, the wiki is often faster than an issue:
 
-<!-- What do you need help with? -->
+- **[Home / first-time path](https://github.com/NicholasTracy/captivate-2/wiki)**
+- **[Troubleshooting](https://github.com/NicholasTracy/captivate-2/wiki/Troubleshooting)**
+- [Discord](https://discord.gg/96DVPcMUUv) · [Discussions](https://github.com/NicholasTracy/captivate-2/discussions)
 
-<!---
-❗️❗️ Also, please consider donating (https://opencollective.com/electron-react-boilerplate-594) ❗️❗️
+If you still need help here, fill this in:
 
-Donations will ensure the following:
+## Question
 
-🔨 Long term maintenance of the project
-🛣 Progress on the roadmap
-🐛 Quick responses to bug reports and help requests
- -->
+<!-- What are you trying to do? -->
+
+## What you already tried
+
+- [ ] Checked the [wiki](https://github.com/NicholasTracy/captivate-2/wiki)
+- [ ] Checked [Troubleshooting](https://github.com/NicholasTracy/captivate-2/wiki/Troubleshooting)
+- [ ] Searched [issues](https://github.com/NicholasTracy/captivate-2/issues) / [discussions](https://github.com/NicholasTracy/captivate-2/discussions)
+
+<!-- Link any page you already read, and what was still unclear. -->
+
+## Environment (if relevant)
+
+- **Captivate 2 version:**
+- **OS:**

@@ -1,15 +1,26 @@
 ---
 name: Feature request
-about: You want something added to the boilerplate. 🎉
-labels: 'enhancement'
+about: Suggest an improvement or new capability for Captivate 2.
+title: '[Feature] '
+labels: enhancement
 ---
 
-<!---
-❗️❗️ Also, please consider donating (https://opencollective.com/electron-react-boilerplate-594) ❗️❗️
+## Problem / goal
 
-Donations will ensure the following:
+<!-- What are you trying to do that is hard or impossible today? -->
 
-🔨 Long term maintenance of the project
-🛣 Progress on the roadmap
-🐛 Quick responses to bug reports and help requests
- -->
+## Proposed idea
+
+<!-- What would you like Captivate to do? Keep it concrete if you can. -->
+
+## Who benefits
+
+<!-- Live show ops, installers, fixture authors, visualizer users, etc. -->
+
+## Alternatives you considered
+
+<!-- Workarounds, other software, or “none yet”. -->
+
+## Extra context (optional)
+
+<!-- Mockups, links, related issues. -->
