@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.1.2
+
+### Show control & DMX
+
+- Audio LFO envelope correctness (per-split state, beat clock, peek vs advance).
+- Randomizer slot identity and universe-safe lookup.
+- Gobo/prism mid-slot DMX, focus clamp, and safer type lookups.
+- Modulation matrix dedicated-group / movers filter fixes.
+
+### Packaging & docs
+
+- projectM packaging env fixes; README CI/release badges.
+- Release CI screenshot review pack (artifact + `screenshots-review.zip`, not auto-merged).
+- Fixture-rich screenshot demo project (`tools/screenshots/fixtures/demo.cap`).
+
+### Fixes
+
+- Scene remove/copy guards, audio stream start race, mixer slice naming, and related hardening.
+
 ## 1.1.1
 
 ### Audio input
