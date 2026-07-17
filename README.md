@@ -33,6 +33,7 @@ Captivate 2 builds on the original [Captivate](https://github.com/spensbot/capti
 
 Configure fixtures once; scenes stay portable when you add gear or change venues.
 
+<!-- BEGIN CAPTIVATE_SCREENSHOTS_README -->
 ## In the app
 
 <p align="center">
@@ -41,16 +42,18 @@ Configure fixtures once; scenes stay portable when you add gear or change venues
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/Captivate_Visualizer.png" alt="Visualizer" width="720" /><br />
-  <em>Audio-reactive visuals synced to your lighting</em>
-</p>
-
-<p align="center">
   <img src="docs/screenshots/Captivate_DMX_Mixer.png" alt="DMX mixer" width="720" /><br />
   <em>DMX mixer for live channel control</em>
 </p>
 
+<p align="center">
+  <img src="docs/screenshots/Captivate_Visualizer.png" alt="Visualizer" width="720" /><br />
+  <em>Audio-reactive visuals synced to your lighting</em>
+</p>
+
 More walkthroughs: **[Wiki](https://github.com/NicholasTracy/captivate-2/wiki)**.
+
+<!-- END CAPTIVATE_SCREENSHOTS_README -->
 
 ## Documentation
 

@@ -1,81 +1,77 @@
 # Screenshots
 
-Generated from `tools/screenshots/manifest.json`. Images live in-repo under `docs/screenshots/`.
+Generated from the Captivate release screenshot review pack.
 
-Hotlink pattern:
-
-```
-https://raw.githubusercontent.com/NicholasTracy/captivate-2/Main/docs/screenshots/<file>.png
-```
+Images are stored in-repo under [`docs/screenshots/`](https://github.com/NicholasTracy/captivate-2/tree/Main/docs/screenshots).
 
 ## Light scenes and modulation
 
 Light scenes, splits, and modulation
 
-![Light scenes and modulation](Captivate_Lighting_Scenes.png)
+![Light scenes and modulation](https://raw.githubusercontent.com/NicholasTracy/captivate-2/Main/docs/screenshots/Captivate_Lighting_Scenes.png)
 
 ## Fixture patch / DMX universe
 
 Patch fixtures, groups, and DMX addresses
 
-![Fixture patch / DMX universe](Captivate_DMX_Settings.png)
+![Fixture patch / DMX universe](https://raw.githubusercontent.com/NicholasTracy/captivate-2/Main/docs/screenshots/Captivate_DMX_Settings.png)
 
 ## DMX mixer
 
 DMX mixer for live channel control
 
-![DMX mixer](Captivate_DMX_Mixer.png)
+![DMX mixer](https://raw.githubusercontent.com/NicholasTracy/captivate-2/Main/docs/screenshots/Captivate_DMX_Mixer.png)
 
 ## Movers
 
 Mover calibration, groups, and floor bounds
 
-![Movers](Captivate_Movers.png) _(image missing — run capture)_
+![Movers](https://raw.githubusercontent.com/NicholasTracy/captivate-2/Main/docs/screenshots/Captivate_Movers.png) _(image missing — run capture)_
 
 ## Atmospherics
 
 Atmosphere / effect fixtures
 
-![Atmospherics](Captivate_Atmospherics.png) _(image missing — run capture)_
+![Atmospherics](https://raw.githubusercontent.com/NicholasTracy/captivate-2/Main/docs/screenshots/Captivate_Atmospherics.png) _(image missing — run capture)_
 
 ## LED layouts
 
 LED strip / WLED layout editing
 
-![LED layouts](Captivate_WLED.png)
+![LED layouts](https://raw.githubusercontent.com/NicholasTracy/captivate-2/Main/docs/screenshots/Captivate_WLED.png)
 
 ## Connections
 
 DMX, MIDI, Link, audio, and remote connections
 
-![Connections](Captivate_Connections_Dialog.png)
+![Connections](https://raw.githubusercontent.com/NicholasTracy/captivate-2/Main/docs/screenshots/Captivate_Connections_Dialog.png)
 
 ## Settings
 
 Application settings
 
-![Settings](Captivate_Settings.png) _(image missing — run capture)_
+![Settings](https://raw.githubusercontent.com/NicholasTracy/captivate-2/Main/docs/screenshots/Captivate_Settings.png)
 
 ## About
 
 About Captivate 2
 
-![About](Captivate_About.png) _(image missing — run capture)_
+![About](https://raw.githubusercontent.com/NicholasTracy/captivate-2/Main/docs/screenshots/Captivate_About.png) _(image missing — run capture)_
 
 ## Visualizer
 
 Audio-reactive visuals synced to your lighting
 
-![Visualizer](Captivate_Visualizer.png)
+![Visualizer](https://raw.githubusercontent.com/NicholasTracy/captivate-2/Main/docs/screenshots/Captivate_Visualizer.png)
 
 ## 3D lighting preview
 
 3D stage lighting preview
 
-![3D lighting preview](Captivate_Lighting_3D.png) _(image missing — run capture)_
+![3D lighting preview](https://raw.githubusercontent.com/NicholasTracy/captivate-2/Main/docs/screenshots/Captivate_Lighting_3D.png) _(image missing — run capture)_
 
 ## Laser
 
 Laser control window
 
-![Laser](Captivate_Laser.png) _(image missing — run capture)_
+![Laser](https://raw.githubusercontent.com/NicholasTracy/captivate-2/Main/docs/screenshots/Captivate_Laser.png) _(image missing — run capture)_

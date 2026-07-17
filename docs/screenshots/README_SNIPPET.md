@@ -1,22 +1,21 @@
 <!-- BEGIN CAPTIVATE_SCREENSHOTS_README -->
 ## In the app
 
-### Light scenes and modulation
+<p align="center">
+  <img src="docs/screenshots/Captivate_Lighting_Scenes.png" alt="Light scenes and modulation" width="720" /><br />
+  <em>Light scenes, splits, and modulation</em>
+</p>
 
-Light scenes, splits, and modulation
+<p align="center">
+  <img src="docs/screenshots/Captivate_DMX_Mixer.png" alt="DMX mixer" width="720" /><br />
+  <em>DMX mixer for live channel control</em>
+</p>
 
-![Light scenes and modulation](docs/screenshots/Captivate_Lighting_Scenes.png)
+<p align="center">
+  <img src="docs/screenshots/Captivate_Visualizer.png" alt="Visualizer" width="720" /><br />
+  <em>Audio-reactive visuals synced to your lighting</em>
+</p>
 
-### DMX mixer
-
-DMX mixer for live channel control
-
-![DMX mixer](docs/screenshots/Captivate_DMX_Mixer.png)
-
-### Visualizer
-
-Audio-reactive visuals synced to your lighting
-
-![Visualizer](docs/screenshots/Captivate_Visualizer.png)
+More walkthroughs: **[Wiki](https://github.com/NicholasTracy/captivate-2/wiki)**.
 
 <!-- END CAPTIVATE_SCREENSHOTS_README -->

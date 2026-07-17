@@ -38,6 +38,7 @@
     "screenshots:demo-project": "cross-env TS_NODE_TRANSPILE_ONLY=true ts-node scripts/generate-screenshot-demo-project.ts",
     "screenshots:capture": "node tools/screenshots/capture.mjs",
     "screenshots:gallery": "node tools/screenshots/generate-gallery.mjs",
+    "screenshots:apply-review": "node tools/screenshots/apply-review.mjs",
     "screenshots:all": "npm run screenshots:capture && npm run screenshots:gallery"
   },
   "browserslist": [],

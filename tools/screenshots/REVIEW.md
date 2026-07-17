@@ -1,13 +1,18 @@
 # Screenshot review pack
 
-Captured automatically during a release build. **Not** committed to Main.
+Captured automatically during a release build. **Not** committed to Main until approved.
 
-## Publish (reviewable)
+## Approve (preferred)
 
-1. Download the `screenshot-review` workflow artifact, or `screenshots-review.zip` from the GitHub Release
-2. Copy PNGs (+ `GALLERY.md` / `README_SNIPPET.md`) into `docs/screenshots/`
-3. Open a PR with the visual updates
-4. Optionally paste `GALLERY.md` into the Wiki Screenshots page
+1. Wait for the **Screenshot review** workflow to open a PR (or run it manually: Actions → Screenshot review → `open-pr`)
+2. Review PNG diffs in the PR
+3. **Merge the PR** — updates `docs/screenshots/` + README; Wiki **Screenshots** publishes on merge
+
+## Manual
+
+```bash
+npm run screenshots:apply-review -- --from path/to/unpacked-screenshots-review
+```
 
 Empty or sparse UI usually means CI had no demo project — add
 `tools/screenshots/fixtures/demo.cap` (see `docs/SCREENSHOTS.md`).

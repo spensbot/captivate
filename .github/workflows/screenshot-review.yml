@@ -1,0 +1,184 @@
+# Screenshot review → approve → publish
+#
+# 1) After a GitHub Release is published (or via workflow_dispatch), open a PR
+#    that swaps in the release's screenshots-review.zip (review in the PR diff).
+# 2) Merge that PR (= approve). A follow-up job updates the Wiki Screenshots page.
+#
+# Manual:
+#   Actions → Screenshot review → Run workflow
+#     action=open-pr, release_tag=v1.1.2
+#     action=publish-wiki  (after merge, or anytime GALLERY.md is current)
+
+name: Screenshot review
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'open-pr (from release zip) or publish-wiki (from Main)'
+        type: choice
+        options:
+          - open-pr
+          - publish-wiki
+        default: open-pr
+      release_tag:
+        description: 'Release tag with screenshots-review.zip (open-pr only)'
+        type: string
+        required: false
+        default: ''
+  push:
+    branches:
+      - Main
+      - main
+    paths:
+      - 'docs/screenshots/GALLERY.md'
+      - 'docs/screenshots/*.png'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: screenshot-review-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  open-review-pr:
+    if: >-
+      github.event_name == 'release' ||
+      (github.event_name == 'workflow_dispatch' && inputs.action == 'open-pr')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve release tag
+        id: meta
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            tag="${{ github.event.release.tag_name }}"
+          elif [[ -n "${{ inputs.release_tag }}" ]]; then
+            tag="${{ inputs.release_tag }}"
+          else
+            tag="$(gh release view --json tagName --jq .tagName)"
+          fi
+          if [[ -z "$tag" ]]; then
+            echo "No release tag resolved"
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Using release tag: $tag"
+
+      - name: Download screenshots-review.zip
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag="${{ steps.meta.outputs.tag }}"
+          mkdir -p /tmp/screenshot-review
+          if ! gh release download "$tag" \
+            --pattern 'screenshots-review.zip' \
+            --dir /tmp/screenshot-review \
+            --clobber; then
+            echo "::error::Release $tag has no screenshots-review.zip"
+            exit 1
+          fi
+          unzip -o /tmp/screenshot-review/screenshots-review.zip -d /tmp/screenshot-review/pack
+          ls -la /tmp/screenshot-review/pack
+
+      - name: Apply review pack (docs + README)
+        run: node tools/screenshots/apply-review.mjs --from /tmp/screenshot-review/pack
+
+      - name: Create or update review PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag="${{ steps.meta.outputs.tag }}"
+          branch="screenshot-review/${tag}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "No screenshot changes versus Main; nothing to PR."
+            exit 0
+          fi
+
+          git checkout -B "$branch"
+          git add docs/screenshots README.md
+          git commit -m "chore(screenshots): review pack from ${tag}
+
+          Apply release screenshot review pack to docs/screenshots and README.
+          Merge this PR to approve and publish; Wiki Screenshots updates on merge.
+          "
+          git push -u origin "$branch" --force
+
+          existing="$(gh pr list --head "$branch" --json number --jq '.[0].number // empty')"
+          title="chore(screenshots): review pack from ${tag}"
+          body_file="$(mktemp)"
+          cat > "$body_file" <<EOF
+          ## Screenshot review (${tag})
+
+          This PR applies \`screenshots-review.zip\` from release **${tag}**.
+
+          ### How to approve
+          1. Review the **Files changed** tab (PNG diffs)
+          2. **Merge this PR** when the shots look good
+          3. Wiki **Screenshots** updates automatically after merge
+
+          ### Source
+          - Release: https://github.com/${{ github.repository }}/releases/tag/${tag}
+          EOF
+          sed -i 's/^          //' "$body_file"
+
+          if [[ -n "$existing" ]]; then
+            gh pr edit "$existing" --title "$title" --body-file "$body_file"
+            echo "Updated PR #$existing"
+          else
+            gh pr create --title "$title" --body-file "$body_file" --base Main --head "$branch"
+          fi
+
+  publish-wiki:
+    if: >-
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_dispatch' && inputs.action == 'publish-wiki')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Publish Wiki Screenshots page
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ ! -f docs/screenshots/GALLERY.md ]]; then
+            echo "docs/screenshots/GALLERY.md missing; skip wiki publish"
+            exit 0
+          fi
+
+          wiki_url="https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.wiki.git"
+          rm -rf /tmp/captivate-wiki
+          if ! git clone --depth 1 "$wiki_url" /tmp/captivate-wiki; then
+            echo "::warning::Could not clone wiki (disabled or empty). Skipping."
+            exit 0
+          fi
+
+          cp docs/screenshots/GALLERY.md /tmp/captivate-wiki/Screenshots.md
+          cd /tmp/captivate-wiki
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet Screenshots.md; then
+            echo "Wiki Screenshots.md already up to date"
+            exit 0
+          fi
+
+          git add Screenshots.md
+          git commit -m "Update Screenshots gallery from docs/screenshots/GALLERY.md"
+          git push
+          echo "Published wiki page: Screenshots"

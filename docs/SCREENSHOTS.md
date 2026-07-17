@@ -80,19 +80,25 @@ Environment knobs:
 
    `https://raw.githubusercontent.com/NicholasTracy/captivate-2/Main/docs/screenshots/<file>.png`
 
-## Release CI (reviewable, not auto-merged)
+## Release CI → review PR → approve (merge)
 
-On a **release build** (`v*` tag or Actions → Build → `create_release: true`), the Windows job:
+On a **release build**, Windows captures shots and attaches `screenshots-review.zip` to the GitHub Release.
 
-1. Captures shots from `release/build/win-unpacked` after the installer pack
-2. Uploads a `screenshot-review` workflow artifact
-3. Attaches `screenshots-review.zip` to the GitHub Release
+Then the **Screenshot review** workflow (`.github/workflows/screenshot-review.yml`):
 
-Screenshots are **not** committed to `Main`. After release:
+1. **Opens a PR** with the PNGs + README “In the app” section updated  
+   - Triggered automatically on `release: published`, or manually:  
+     Actions → Screenshot review → `open-pr` + tag (e.g. `v1.1.2`)
+2. **You review** the PR **Files changed** tab (image diffs)
+3. **Merge the PR** (= approve) — commits land on `Main`
+4. **Wiki** page `Screenshots` is published from `docs/screenshots/GALLERY.md` on that push (or run `publish-wiki` manually)
 
-1. Download the artifact / zip
-2. Copy into `docs/screenshots/`
-3. Open a PR (and optionally update the Wiki from `GALLERY.md`)
+Local apply (without GitHub):
+
+```bash
+# after unpacking screenshots-review.zip somewhere
+npm run screenshots:apply-review -- --from path/to/unpacked-review
+```
 
 Capture failure does not fail the release (`continue-on-error`). The job loads `tools/screenshots/fixtures/demo.cap` when present.
 
