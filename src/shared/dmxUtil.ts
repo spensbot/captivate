@@ -521,10 +521,13 @@ const SYNTHETIC_STROBE_OFF_THRESHOLD = 0.02
 const SYNTHETIC_STROBE_MIN_HZ = 0.5
 const DEFAULT_SYNTHETIC_STROBE_FRAME_RATE_HZ = 30
 const AXIS_FINE_SNAP_DEADBAND_DMX = 0.06
+/** Quantize fine-enabled axis floats (~4 fine LSBs) to avoid channel chatter. */
+const AXIS_FINE_QUANTUM_DMX = 1 / 64
 
 export type MoverAxisOverrides = {
   panDmx?: number
   tiltDmx?: number
+  /** When true, emit fine-channel residue. Default / omitted = coarse travel only. */
   panFineEnabled?: boolean
   tiltFineEnabled?: boolean
 }
@@ -620,7 +623,7 @@ function axisOverrideDmxToChannelValue(
   channel: ChannelAxis,
   dmxValue: number | undefined,
   fixture: FlattenedFixture,
-  fineEnabled: boolean = true
+  fineEnabled: boolean = false
 ): DmxValue | null {
   if (dmxValue === undefined || !Number.isFinite(dmxValue)) {
     return null
@@ -644,8 +647,12 @@ function axisOverrideDmxToChannelValue(
     clamped = nearestStep
   }
   if (!fineEnabled) {
-    // While travelling, keep output on coarse DMX steps to avoid fine-channel chatter.
+    // Travel / coarse-only: whole DMX steps. Fine stays at 0 (not mid), so
+    // 16-bit fixtures do not sit halfway between coarse steps while moving.
     clamped = Math.round(clamped)
+  } else {
+    clamped =
+      Math.round(clamped / AXIS_FINE_QUANTUM_DMX) * AXIS_FINE_QUANTUM_DMX
   }
 
   const increasing = max >= min
@@ -663,9 +670,8 @@ function axisOverrideDmxToChannelValue(
 
   if (channel.isFine) {
     if (!fineEnabled) {
-      // Hold fine channels at center while coarse handles large travel.
-      // Fine should only engage near settle for pinpoint adjustment.
-      return Math.floor(rLerp(channel, 0.5))
+      // Park fine at zero while coarse owns movement.
+      return Math.floor(rLerp(channel, 0))
     }
     return Math.floor(rLerp(channel, fineValue / DMX_MAX_VALUE))
   }
@@ -877,7 +883,7 @@ export function getDmxValue(
           ch,
           axisOverrides?.panDmx,
           fixture,
-          axisOverrides?.panFineEnabled !== false
+          axisOverrides?.panFineEnabled === true
         )
         if (channelOverrideValue !== null) {
           return channelOverrideValue
@@ -909,7 +915,7 @@ export function getDmxValue(
           ch,
           axisOverrides?.tiltDmx,
           fixture,
-          axisOverrides?.tiltFineEnabled !== false
+          axisOverrides?.tiltFineEnabled === true
         )
         if (channelOverrideValue !== null) {
           return channelOverrideValue

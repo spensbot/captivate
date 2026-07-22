@@ -83,10 +83,13 @@ const MOVER_PATH_SETTLE_DISTANCE_DMX = 0.08
 const MOVER_PATH_SETTLE_VELOCITY_DMX_PER_SEC = 0.9
 const MOVER_PATH_IDLE_HOLD_DISTANCE_DMX = 0.2
 const MOVER_PATH_IDLE_HOLD_VELOCITY_DMX_PER_SEC = 0.6
-const MOVER_FINE_ENABLE_DISTANCE_DMX = 0.35
-const MOVER_FINE_ENABLE_VELOCITY_DMX_PER_SEC = 5.5
-const MOVER_FINE_DISABLE_DISTANCE_DMX = 1.5
-const MOVER_FINE_DISABLE_VELOCITY_DMX_PER_SEC = 20
+// Fine channels are only for final alignment inside one coarse DMX step.
+// Coarse must own travel; enable fine only once the commanded target is still
+// and the axis has settled near it. Disable as soon as the target moves again.
+const MOVER_FINE_ENABLE_DISTANCE_DMX = 0.48
+const MOVER_FINE_ENABLE_VELOCITY_DMX_PER_SEC = 0.85
+const MOVER_FINE_DISABLE_DISTANCE_DMX = 0.85
+const MOVER_FINE_DISABLE_VELOCITY_DMX_PER_SEC = 1.8
 const LIGHTING_CONTROL_PARAM_KEYS = [
   'hue',
   'saturation',
@@ -409,11 +412,12 @@ function resolveMoverAxisTargetWithPathing(
 ): MoverAxisOverrides {
 
   if (plannerKey === undefined || plannerKey.length <= 0) {
+    // Without planner state we cannot detect settle vs travel — coarse only.
     return {
-      panDmx: clampDmxFloatValue(targetPanDmx),
-      tiltDmx: clampDmxFloatValue(targetTiltDmx),
-      panFineEnabled: true,
-      tiltFineEnabled: true,
+      panDmx: Math.round(clampDmxFloatValue(targetPanDmx)),
+      tiltDmx: Math.round(clampDmxFloatValue(targetTiltDmx)),
+      panFineEnabled: false,
+      tiltFineEnabled: false,
     }
   }
 
@@ -509,21 +513,33 @@ function resolveMoverAxisTargetWithPathing(
   const priorPanFineEnabled = existingState?.panFineEnabled === true
   const priorTiltFineEnabled = existingState?.tiltFineEnabled === true
 
+  // Any newly accepted target means we are still aiming, not final-aligning.
+  // Slow pad tracking keeps distance≈0 with velocity forced to 0; without this,
+  // fine stays on the whole time and chatters on every sub-DMX float change.
+  const panTargetMoving =
+    Math.abs(stablePanTarget - currentState.panTargetDmx) > 1e-9
+  const tiltTargetMoving =
+    Math.abs(stableTiltTarget - currentState.tiltTargetDmx) > 1e-9
+
   const panDistance = Math.abs(finalPan.value - finalPanTarget)
   const panSpeed = Math.abs(finalPan.velocity)
   const tiltDistance = Math.abs(finalTilt.value - finalTiltTarget)
   const tiltSpeed = Math.abs(finalTilt.velocity)
 
   const panFineEnableCandidate =
+    !panTargetMoving &&
     panDistance <= MOVER_FINE_ENABLE_DISTANCE_DMX &&
     panSpeed <= MOVER_FINE_ENABLE_VELOCITY_DMX_PER_SEC
   const tiltFineEnableCandidate =
+    !tiltTargetMoving &&
     tiltDistance <= MOVER_FINE_ENABLE_DISTANCE_DMX &&
     tiltSpeed <= MOVER_FINE_ENABLE_VELOCITY_DMX_PER_SEC
   const panFineDisableCandidate =
+    panTargetMoving ||
     panDistance >= MOVER_FINE_DISABLE_DISTANCE_DMX ||
     panSpeed >= MOVER_FINE_DISABLE_VELOCITY_DMX_PER_SEC
   const tiltFineDisableCandidate =
+    tiltTargetMoving ||
     tiltDistance >= MOVER_FINE_DISABLE_DISTANCE_DMX ||
     tiltSpeed >= MOVER_FINE_DISABLE_VELOCITY_DMX_PER_SEC
 
@@ -533,6 +549,15 @@ function resolveMoverAxisTargetWithPathing(
   const tiltFineEnabled = priorTiltFineEnabled
     ? !tiltFineDisableCandidate
     : tiltFineEnableCandidate
+
+  // While travelling, publish integer coarse DMX so fine never sees float residue.
+  // When fine is on for final align, quantize lightly to kill LSB chatter.
+  const panOut = panFineEnabled
+    ? Math.round(finalPan.value * 64) / 64
+    : Math.round(finalPan.value)
+  const tiltOut = tiltFineEnabled
+    ? Math.round(finalTilt.value * 64) / 64
+    : Math.round(finalTilt.value)
 
   _moverPathStateByFixtureKey.set(plannerKey, {
     panDmx: finalPan.value,
@@ -547,8 +572,8 @@ function resolveMoverAxisTargetWithPathing(
   })
 
   return {
-    panDmx: finalPan.value,
-    tiltDmx: finalTilt.value,
+    panDmx: panOut,
+    tiltDmx: tiltOut,
     panFineEnabled,
     tiltFineEnabled,
   }
