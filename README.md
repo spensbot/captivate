@@ -18,7 +18,7 @@
 
 **Visual & lighting synth** — live DMX, visuals, and laser control synchronized to music.
 
-[CaptivateSynth.com](https://CaptivateSynth.com)
+**Website:** [https://nicholastracy.github.io/captivate-2/](https://nicholastracy.github.io/captivate-2/)
 
 Captivate 2 builds on the original [Captivate](https://github.com/spensbot/captivate) by Spencer (@spencbot) and contributions from @fwcd’s fork. This project continues development with new features and UI improvements after the original line was discontinued.
 
@@ -158,4 +158,4 @@ CI builds all three platforms on push and publishes assets when you push a versi
 
 Thanks to [electron-react-boilerplate](https://github.com/electron-react-boilerplate/electron-react-boilerplate) for the app boilerplate.
 
-[MIT License](LICENSE)
+[GNU GPL v3 or later](LICENSE) — derivatives must remain open source under the GPL. Captivate 2 incorporates earlier Captivate code originally released under the MIT License (Copyright © Spenser Saling); MIT copyright notices for that material are preserved.

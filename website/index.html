@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Captivate 2 — Visual &amp; Lighting Synth</title>
+    <meta
+      name="description"
+      content="Captivate 2 is a free, open-source visual &amp; lighting synth — live DMX, visuals, and laser control synchronized to music."
+    />
+    <meta property="og:title" content="Captivate 2 — Visual &amp; Lighting Synth" />
+    <meta
+      property="og:description"
+      content="Live DMX, visuals, and laser control synchronized to music. Free and open source for Windows, macOS, and Linux."
+    />
+    <meta property="og:image" content="assets/screenshots/Captivate_Lighting_Scenes.png" />
+    <meta name="theme-color" content="#07080c" />
+    <link rel="icon" href="assets/favicon.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="stage-bg" aria-hidden="true"></div>
+    <div class="stage-grid" aria-hidden="true"></div>
+
+    <header class="site-nav" id="site-nav">
+      <a class="nav-brand" href="index.html">
+        <img src="assets/Thick.png" alt="" width="36" height="36" />
+        Captivate 2
+      </a>
+      <button class="nav-toggle" id="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-links">
+        <span></span>
+        <span class="visually-hidden">Menu</span>
+      </button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#control">Control</a></li>
+        <li><a href="#gallery">Gallery</a></li>
+        <li><a href="#community">Community</a></li>
+        <li><a class="nav-cta" href="download.html">Download</a></li>
+      </ul>
+    </header>
+
+    <main id="main">
+      <section class="hero">
+        <div class="hero-media" aria-hidden="true">
+          <img
+            src="assets/screenshots/Captivate_Lighting_Scenes.png"
+            alt=""
+            width="1600"
+            height="900"
+            fetchpriority="high"
+          />
+        </div>
+        <div class="hero-content">
+          <div class="hero-brand">
+            <img src="assets/Thick.png" alt="Captivate 2 logo" width="110" height="110" />
+            <div class="hero-brand-text">
+              Captivate
+              <span>Version 2</span>
+            </div>
+          </div>
+          <h1>Visual &amp; lighting synth</h1>
+          <p class="hero-support">
+            Live DMX, visuals, and laser control synchronized to music — play your show like an instrument.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-rgb" href="download.html">Download free</a>
+            <a class="btn btn-ghost" href="https://github.com/NicholasTracy/captivate-2" target="_blank" rel="noopener"
+              >View on GitHub</a
+            >
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="features">
+        <div class="wrap">
+          <span class="section-label reveal">What it does</span>
+          <h2 class="section-title reveal">One desk for light, laser, and picture</h2>
+          <p class="section-lead reveal">
+            Configure fixtures once. Scenes stay portable when you add gear or change venues — hundreds of DMX channels
+            collapse into a handful of intuitive parameters.
+          </p>
+
+          <div class="feature-grid">
+            <article class="feature reveal" data-accent="patch">
+              <h3>Live DMX lighting</h3>
+              <p>
+                Fixture library (QLC+, Open Fixture Library, Captivate community), multi-universe USB and Art-Net, spatial
+                layout, and portable scenes.
+              </p>
+            </article>
+            <article class="feature reveal" data-accent="scenes">
+              <h3>Synth-style control</h3>
+              <p>
+                LFOs, modulation matrix, pads, randomizers, plus MIDI and keyboard mapping so you can perform the light
+                show live.
+              </p>
+            </article>
+            <article class="feature reveal" data-accent="viz">
+              <h3>Synced visuals</h3>
+              <p>
+                Built-in visualizers and effects — including MilkDrop-style projectM — tied to the active light scene and
+                music energy.
+              </p>
+            </article>
+            <article class="feature reveal" data-accent="movers">
+              <h3>Music sync</h3>
+              <p>
+                Ableton Link, tap tempo, audio input, beat clock, and Advanced Music Energy to drive scenes with the
+                track.
+              </p>
+            </article>
+            <article class="feature reveal" data-accent="led">
+              <h3>Lasers, WLED &amp; FX</h3>
+              <p>
+                Helios USB and Pangolin FB4 via BEYOND, LED strip layouts, atmospherics, movers with calibration and floor
+                bounds.
+              </p>
+            </article>
+            <article class="feature reveal" data-accent="mixer">
+              <h3>Show-ready UI</h3>
+              <p>
+                Multi-window mixer, laser, 3D lighting preview, and visualizer — plus optional LAN remote control from a
+                browser.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="control">
+        <div class="wrap story">
+          <div class="story-visual reveal">
+            <img
+              src="assets/screenshots/Captivate_Visualizer.png"
+              alt="Captivate 2 visualizer with beat grid scene"
+              width="1280"
+              height="800"
+              loading="lazy"
+            />
+          </div>
+          <div class="story-copy reveal">
+            <span class="section-label">How it feels</span>
+            <h2 class="section-title">Made for musicians, VJs, and lighting operators</h2>
+            <p class="section-lead">
+              Lighting software often locks you into rigid cue lists. Captivate keeps everything in sync and lets you take
+              as much live control as you want.
+            </p>
+            <ul class="story-list">
+              <li>
+                <span class="dot" style="--dot: var(--accent-scenes)"></span>
+                <div>
+                  <strong>Modulation over cue stacks</strong>
+                  Automate brightness, color, and movers with familiar synth tools — or grab the pads mid-song.
+                </div>
+              </li>
+              <li>
+                <span class="dot" style="--dot: var(--accent-viz)"></span>
+                <div>
+                  <strong>Lighting and visuals together</strong>
+                  Visual layers listen to the active light scene so picture and DMX move as one show.
+                </div>
+              </li>
+              <li>
+                <span class="dot" style="--dot: var(--accent-patch)"></span>
+                <div>
+                  <strong>Portable across venues</strong>
+                  Patch fixtures once; scenes keep working when the rig changes.
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="gallery">
+        <div class="wrap">
+          <div class="gallery-head">
+            <div>
+              <span class="section-label reveal">In the app</span>
+              <h2 class="section-title reveal">See the desk</h2>
+            </div>
+            <div class="gallery-tabs reveal" role="tablist" aria-label="Screenshot gallery">
+              <button class="gallery-tab is-active" type="button" role="tab" aria-selected="true" data-index="0">
+                Scenes
+              </button>
+              <button class="gallery-tab" type="button" role="tab" aria-selected="false" data-index="1">Mixer</button>
+              <button class="gallery-tab" type="button" role="tab" aria-selected="false" data-index="2">
+                Visualizer
+              </button>
+              <button class="gallery-tab" type="button" role="tab" aria-selected="false" data-index="3">Patch</button>
+              <button class="gallery-tab" type="button" role="tab" aria-selected="false" data-index="4">3D</button>
+              <button class="gallery-tab" type="button" role="tab" aria-selected="false" data-index="5">WLED</button>
+            </div>
+          </div>
+
+          <div class="gallery-stage reveal" id="gallery-stage">
+            <img
+              class="is-active"
+              src="assets/screenshots/Captivate_Lighting_Scenes.png"
+              alt="Light scenes and modulation"
+              data-caption="Light scenes, splits, and modulation"
+              width="1440"
+              height="810"
+            />
+            <img
+              src="assets/screenshots/Captivate_DMX_Mixer.png"
+              alt="DMX mixer"
+              data-caption="DMX mixer for live channel control"
+              width="1440"
+              height="810"
+              loading="lazy"
+            />
+            <img
+              src="assets/screenshots/Captivate_Visualizer.png"
+              alt="Visualizer"
+              data-caption="Audio-reactive visuals synced to your lighting"
+              width="1440"
+              height="810"
+              loading="lazy"
+            />
+            <img
+              src="assets/screenshots/Captivate_DMX_Settings.png"
+              alt="Fixture patch"
+              data-caption="Patch fixtures, groups, and DMX addresses"
+              width="1440"
+              height="810"
+              loading="lazy"
+            />
+            <img
+              src="assets/screenshots/Captivate_Lighting_3D.png"
+              alt="3D lighting preview"
+              data-caption="3D stage lighting preview"
+              width="1440"
+              height="810"
+              loading="lazy"
+            />
+            <img
+              src="assets/screenshots/Captivate_WLED.png"
+              alt="WLED LED layouts"
+              data-caption="LED strip / WLED layout editing"
+              width="1440"
+              height="810"
+              loading="lazy"
+            />
+          </div>
+          <p class="gallery-caption" id="gallery-caption">Light scenes, splits, and modulation</p>
+        </div>
+      </section>
+
+      <section class="section" id="download">
+        <div class="wrap">
+          <span class="section-label reveal">Get Captivate 2</span>
+          <h2 class="section-title reveal">Free on Windows, macOS &amp; Linux</h2>
+          <p class="section-lead reveal">
+            Installers ship from GitHub Releases. Open source under the GNU GPL — no subscriptions, no account
+            required.
+          </p>
+          <div class="platforms">
+            <a class="platform reveal" href="download.html">
+              <strong>Windows</strong>
+              <span>NSIS installer · x64</span>
+            </a>
+            <a class="platform reveal" href="download.html#macos">
+              <strong>macOS</strong>
+              <span>Apple Silicon &amp; Intel DMGs</span>
+            </a>
+            <a class="platform reveal" href="download.html">
+              <strong>Linux</strong>
+              <span>AppImage</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section class="cta-band">
+        <div class="wrap">
+          <div>
+            <h2>Start a show tonight</h2>
+            <p>Grab the latest build, patch your fixtures, and play.</p>
+          </div>
+          <div class="cta-actions">
+            <a class="btn btn-primary" href="download.html">Download Captivate 2</a>
+            <a
+              class="btn btn-ghost"
+              href="https://www.youtube.com/watch?v=6ZwQ97sySq0"
+              target="_blank"
+              rel="noopener"
+              >Watch intro</a
+            >
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="community">
+        <div class="wrap">
+          <span class="section-label reveal">Community</span>
+          <h2 class="section-title reveal">Learn, share, contribute</h2>
+          <p class="section-lead reveal">
+            Captivate 2 continues the original Captivate project with new features and UI after the original line was
+            discontinued. Built with the community.
+          </p>
+          <div class="community-grid">
+            <a
+              class="community-link reveal"
+              data-accent="wiki"
+              href="https://github.com/NicholasTracy/captivate-2/wiki"
+              target="_blank"
+              rel="noopener"
+            >
+              <strong>Wiki</strong>
+              <span>Setup guides for DMX, scenes, modulation, MIDI, and troubleshooting.</span>
+            </a>
+            <a
+              class="community-link reveal"
+              data-accent="discord"
+              href="https://discord.gg/96DVPcMUUv"
+              target="_blank"
+              rel="noopener"
+            >
+              <strong>Discord</strong>
+              <span>Chat with other operators, VJs, and contributors.</span>
+            </a>
+            <a
+              class="community-link reveal"
+              data-accent="discuss"
+              href="https://github.com/NicholasTracy/captivate-2/discussions"
+              target="_blank"
+              rel="noopener"
+            >
+              <strong>Discussions</strong>
+              <span>Ideas, questions, and feature talk on GitHub.</span>
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap footer-inner">
+        <div class="footer-brand">
+          <img src="assets/Thick.png" alt="" width="28" height="28" />
+          Captivate 2 · GNU GPL v3
+        </div>
+        <div class="footer-links">
+          <a href="download.html">Download</a>
+          <a href="https://github.com/NicholasTracy/captivate-2" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://github.com/NicholasTracy/captivate-2/releases/latest" target="_blank" rel="noopener"
+            >Releases</a
+          >
+          <a href="https://github.com/spensbot/captivate" target="_blank" rel="noopener">Original Captivate</a>
+        </div>
+      </div>
+    </footer>
+
+    <script src="js/main.js" defer></script>
+  </body>
+</html>

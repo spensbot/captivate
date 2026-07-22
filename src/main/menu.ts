@@ -13,7 +13,9 @@ import {
   CAPTIVATE_GITHUB_DISCUSSIONS_URL,
   CAPTIVATE_GITHUB_ISSUES_URL,
   CAPTIVATE_GITHUB_REPO_URL,
+  CAPTIVATE_WEBSITE_URL,
 } from '../shared/githubRepo'
+import { CAPTIVATE_WIKI_HOME } from '../shared/captivateWiki'
 import {
   formatRecentProjectMenuLabel,
   type RecentProjectEntry,
@@ -399,7 +401,7 @@ export default class MenuBuilder {
         {
           label: 'Learn More',
           click() {
-            shell.openExternal('https://captivatesynth.com/')
+            shell.openExternal(CAPTIVATE_WEBSITE_URL)
           },
         },
         {
@@ -417,7 +419,7 @@ export default class MenuBuilder {
         {
           label: 'Tutorials',
           click() {
-            shell.openExternal('https://captivatesynth.com/getting_started')
+            shell.openExternal(CAPTIVATE_WIKI_HOME)
           },
         },
         {
@@ -575,7 +577,7 @@ export default class MenuBuilder {
           {
             label: 'Learn More',
             click() {
-              shell.openExternal('https://captivatesynth.com/')
+              shell.openExternal(CAPTIVATE_WEBSITE_URL)
             },
           },
           {

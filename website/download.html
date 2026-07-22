@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Download Captivate 2</title>
+    <meta
+      name="description"
+      content="Download Captivate 2 for Windows, macOS (Apple Silicon &amp; Intel), and Linux. Free and open source."
+    />
+    <meta name="theme-color" content="#07080c" />
+    <link rel="icon" href="assets/favicon.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="stage-bg" aria-hidden="true"></div>
+    <div class="stage-grid" aria-hidden="true"></div>
+
+    <header class="site-nav" id="site-nav">
+      <a class="nav-brand" href="index.html">
+        <img src="assets/Thick.png" alt="" width="36" height="36" />
+        Captivate 2
+      </a>
+      <button class="nav-toggle" id="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-links">
+        <span></span>
+        <span class="visually-hidden">Menu</span>
+      </button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html#features">Features</a></li>
+        <li><a href="index.html#gallery">Gallery</a></li>
+        <li><a href="index.html#community">Community</a></li>
+        <li><a class="nav-cta" href="download.html" aria-current="page">Download</a></li>
+      </ul>
+    </header>
+
+    <main id="main">
+      <section class="page-hero">
+        <div class="wrap">
+          <span class="section-label">Releases</span>
+          <h1>Download Captivate 2</h1>
+          <p>
+            Free installers for Windows, macOS, and Linux. Assets load from the latest GitHub release so you always get
+            the current build.
+          </p>
+          <p class="release-meta" id="release-meta">Loading latest release…</p>
+          <p class="status-error" id="release-error" hidden></p>
+        </div>
+      </section>
+
+      <section class="section" style="padding-top: 0">
+        <div class="wrap">
+          <div class="download-grid" id="download-grid">
+            <button class="download-card" type="button" data-platform="windows" disabled>
+              <span class="os">Windows</span>
+              <span class="hint">NSIS installer · x64</span>
+              <span class="file">Detecting asset…</span>
+            </button>
+            <button class="download-card" type="button" data-platform="mac-arm64" disabled>
+              <span class="os">macOS · Apple Silicon</span>
+              <span class="hint">M1 / M2 / M3 / M4 · arm64 DMG</span>
+              <span class="file">Detecting asset…</span>
+            </button>
+            <button class="download-card" type="button" data-platform="mac-x64" disabled>
+              <span class="os">macOS · Intel</span>
+              <span class="hint">Intel Mac · x64 DMG</span>
+              <span class="file">Detecting asset…</span>
+            </button>
+            <button class="download-card" type="button" data-platform="linux" disabled>
+              <span class="os">Linux</span>
+              <span class="hint">AppImage</span>
+              <span class="file">Detecting asset…</span>
+            </button>
+          </div>
+
+          <p class="release-meta" style="margin-top: 1.5rem">
+            Prefer browsing manually?
+            <a href="https://github.com/NicholasTracy/captivate-2/releases/latest" target="_blank" rel="noopener"
+              >Open GitHub Releases</a
+            >
+          </p>
+
+          <div class="macos-panel reveal" id="macos">
+            <h2>macOS first launch</h2>
+            <p class="section-lead">
+              Captivate 2 is not Apple-notarized (no paid Developer Program). macOS may warn the first time — that is
+              expected.
+            </p>
+            <table class="macos-table">
+              <thead>
+                <tr>
+                  <th>Mac type</th>
+                  <th>Release file</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Apple Silicon (M1–M4…)</td>
+                  <td><code>Captivate.2-&lt;version&gt;-arm64.dmg</code></td>
+                </tr>
+                <tr>
+                  <td>Intel</td>
+                  <td><code>Captivate.2-&lt;version&gt;-x64.dmg</code></td>
+                </tr>
+              </tbody>
+            </table>
+            <ol>
+              <li>Open the DMG and drag <strong>Captivate 2</strong> to Applications.</li>
+              <li>In Applications, <strong>right-click</strong> Captivate 2.app → Open (not double-click the first time).</li>
+              <li>Click <strong>Open</strong> in the security dialog.</li>
+              <li>If still blocked: System Settings → Privacy &amp; Security → <strong>Open Anyway</strong>.</li>
+            </ol>
+            <p class="release-meta" style="margin-top: 1rem">
+              Full guide:
+              <a
+                href="https://github.com/NicholasTracy/captivate-2/blob/Main/docs/MACOS-INSTALL.md"
+                target="_blank"
+                rel="noopener"
+                >macOS install notes</a
+              >
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="cta-band">
+        <div class="wrap">
+          <div>
+            <h2>Need setup help?</h2>
+            <p>The wiki covers DMX, connections, scenes, MIDI, remote control, and troubleshooting.</p>
+          </div>
+          <div class="cta-actions">
+            <a class="btn btn-primary" href="https://github.com/NicholasTracy/captivate-2/wiki" target="_blank" rel="noopener"
+              >Open the Wiki</a
+            >
+            <a class="btn btn-ghost" href="index.html">Back to home</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap footer-inner">
+        <div class="footer-brand">
+          <img src="assets/Thick.png" alt="" width="28" height="28" />
+          Captivate 2 · GNU GPL v3
+        </div>
+        <div class="footer-links">
+          <a href="index.html">Home</a>
+          <a href="https://github.com/NicholasTracy/captivate-2" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://discord.gg/96DVPcMUUv" target="_blank" rel="noopener">Discord</a>
+        </div>
+      </div>
+    </footer>
+
+    <script src="js/main.js" defer></script>
+    <script src="js/download.js" defer></script>
+  </body>
+</html>

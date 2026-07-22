@@ -39,9 +39,12 @@
     "screenshots:capture": "node tools/screenshots/capture.mjs",
     "screenshots:gallery": "node tools/screenshots/generate-gallery.mjs",
     "screenshots:apply-review": "node tools/screenshots/apply-review.mjs",
+    "screenshots:placeholders": "node tools/screenshots/ensure-placeholders.mjs",
     "screenshots:all": "npm run screenshots:capture && npm run screenshots:gallery"
   },
   "browserslist": [],
+  "homepage": "https://nicholastracy.github.io/captivate-2/",
+  "license": "GPL-3.0-or-later",
   "prettier": {
     "singleQuote": true,
     "semi": false,

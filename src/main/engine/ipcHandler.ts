@@ -3,7 +3,10 @@ import ipcChannels, {
   UserCommand,
   MainCommand,
 } from '../../shared/ipc_channels'
-import { CAPTIVATE_GITHUB_REPO_URL } from '../../shared/githubRepo'
+import {
+  CAPTIVATE_GITHUB_REPO_URL,
+  CAPTIVATE_WEBSITE_URL,
+} from '../../shared/githubRepo'
 import { buildLighting3dRealtimeTick } from './buildLighting3dRealtimeTick'
 import ipcChannelsVisualizer from '../../visualizer/ipcChannels'
 import { CleanReduxState } from '../../renderer/redux/store'
@@ -492,7 +495,7 @@ function buildAboutLinks(pkg: PackageJsonShape): AboutLinkInfo[] {
   return [
     {
       label: 'Website',
-      url: home.length > 0 ? home : 'https://captivatesynth.com/',
+      url: home.length > 0 ? home : CAPTIVATE_WEBSITE_URL,
     },
     {
       label: 'GitHub Repository',
@@ -521,7 +524,7 @@ async function getAppAboutInfo(): Promise<AppAboutInfo> {
       ? pkg.license
       : typeof rootPkg?.license === 'string' && rootPkg.license.length > 0
         ? rootPkg.license
-        : 'MIT'
+        : 'GPL-3.0-or-later'
   const year = new Date().getFullYear()
 
   return {

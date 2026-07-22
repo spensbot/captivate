@@ -1,0 +1,69 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [Main]
+    paths:
+      - "website/**"
+      - ".github/workflows/pages.yml"
+      - "docs/screenshots/**"
+      - "assets/Thick.png"
+      - "assets/favicon.png"
+      - "assets/icon.png"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Sync brand assets into website
+        run: |
+          mkdir -p website/assets/screenshots
+          cp -f assets/Thick.png assets/favicon.png assets/icon.png website/assets/
+          cp -f docs/screenshots/Captivate_Lighting_Scenes.png \
+                docs/screenshots/Captivate_DMX_Mixer.png \
+                docs/screenshots/Captivate_Visualizer.png \
+                docs/screenshots/Captivate_DMX_Settings.png \
+                docs/screenshots/Captivate_Lighting_3D.png \
+                docs/screenshots/Captivate_WLED.png \
+                docs/screenshots/Captivate_Movers.png \
+                docs/screenshots/Captivate_Remote_Login.png \
+                website/assets/screenshots/ || true
+          # Optional screenshots (may be placeholders until captured)
+          for f in Captivate_Laser.png Captivate_Audio_Input.png; do
+            if [ -f "docs/screenshots/$f" ]; then
+              cp -f "docs/screenshots/$f" website/assets/screenshots/
+            fi
+          done
+          touch website/.nojekyll
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: website
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

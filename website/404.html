@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Page not found — Captivate 2</title>
+    <meta name="theme-color" content="#07080c" />
+    <script>
+      // GitHub Pages serves 404.html for unknown paths; set <base> so relative assets resolve.
+      (function () {
+        var parts = location.pathname.split("/").filter(Boolean);
+        var base = parts[0] === "captivate-2" ? "/captivate-2/" : "/";
+        document.write('<base href="' + base + '">');
+      })();
+    </script>
+    <link rel="icon" href="assets/favicon.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <div class="stage-bg" aria-hidden="true"></div>
+    <div class="stage-grid" aria-hidden="true"></div>
+    <main class="page-hero">
+      <div class="wrap">
+        <span class="section-label">404</span>
+        <h1>This cue is empty</h1>
+        <p>That page isn’t part of the show. Head back home or grab the latest download.</p>
+        <div class="hero-actions" style="margin-top: 1.5rem">
+          <a class="btn btn-primary" href="index.html">Home</a>
+          <a class="btn btn-ghost" href="download.html">Download</a>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>
