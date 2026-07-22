@@ -203,6 +203,37 @@ async function captureShot(app, mainWindow, shot, projectPath) {
       // Detached windows may not mount the same harness; still capture.
     }
     await sleep(settleMs)
+
+    if (shot.clickInWindow) {
+      try {
+        await target.evaluate(async (titlePattern) => {
+          const api = window.__captivateScreenshot
+          if (api?.clickByTitle) {
+            await api.clickByTitle(titlePattern)
+            return
+          }
+          const pattern = new RegExp(titlePattern, 'i')
+          const button = Array.from(
+            document.querySelectorAll('button, [role="button"]')
+          ).find((el) => {
+            const title = el.getAttribute('title') || ''
+            const aria = el.getAttribute('aria-label') || ''
+            return pattern.test(title) || pattern.test(aria)
+          })
+          if (!button) {
+            throw new Error(`No button matching ${titlePattern}`)
+          }
+          button.click()
+        }, shot.clickInWindow)
+        await sleep(settleMs)
+      } catch (err) {
+        console.warn(
+          `  clickInWindow failed (${shot.clickInWindow}):`,
+          err?.message || err
+        )
+      }
+    }
+
     await target.screenshot({ path: targetPath })
     return { ok: true, path: targetPath }
   }

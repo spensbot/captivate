@@ -59,10 +59,17 @@ Environment knobs:
 `tools/screenshots/manifest.json` defines each shot:
 
 - `page` — main-window page (`Modulation`, `Universe`, `Mixer`, …)
-- `overlay` — optional `connections` / `settings` / `about`
+- `overlay` — optional `connections` / `settings` / `about` / `newProject` / `audio`
 - `openWindow` — optional detached page (`Video`, `Lighting3D`, `Laser`)
+- `clickInWindow` — optional button `title` to click inside a detached window (e.g. `Streaming Settings`)
 - `readme` / `wiki` — whether to include in generated galleries
 - `requires` — soft tags (`movers`, `atmospherics`, `led`); capture still runs, but missing UI is logged as a skip warning
+
+Missing PNG files can be stubbed before a full capture:
+
+```bash
+npm run screenshots:placeholders
+```
 
 ## Outputs
 

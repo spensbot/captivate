@@ -987,28 +987,48 @@ function installScreenshotHarness() {
         store.dispatch(setConnectionsMenu(false))
         store.dispatch(setSettingsOpen(false))
         store.dispatch(setAboutOpen(false))
+        store.dispatch(setNewProjectDialog(false))
         if (page === 'Led') {
           store.dispatch(setLedSidebarEnabled(true))
         }
         store.dispatch(setActivePage(page))
         await sleep(50)
       },
-      async setOverlay(overlay: 'connections' | 'settings' | 'about' | null) {
+      async setOverlay(
+        overlay:
+          | 'connections'
+          | 'settings'
+          | 'about'
+          | 'newProject'
+          | 'audio'
+          | null
+      ) {
         store.dispatch(setConnectionsMenu(overlay === 'connections'))
         store.dispatch(setSettingsOpen(overlay === 'settings'))
         store.dispatch(setAboutOpen(overlay === 'about'))
+        store.dispatch(setNewProjectDialog(overlay === 'newProject'))
+        await closeAudioMenuIfOpen()
+        if (overlay === 'audio') {
+          await clickByTitle(/audio input settings/i)
+        }
         await sleep(50)
       },
       async closeOverlays() {
         store.dispatch(setConnectionsMenu(false))
         store.dispatch(setSettingsOpen(false))
         store.dispatch(setAboutOpen(false))
+        store.dispatch(setNewProjectDialog(false))
         store.dispatch(hideAppDialog())
+        await closeAudioMenuIfOpen()
         await sleep(50)
       },
       async openPageWindow(page: Page) {
         send_open_page_window(page)
         await sleep(100)
+      },
+      async clickByTitle(titlePattern: string) {
+        await clickByTitle(new RegExp(titlePattern, 'i'))
+        await sleep(80)
       },
       async loadProject(filePath: string) {
         const loaded = await loadFromPath(filePath)
@@ -1023,6 +1043,33 @@ function installScreenshotHarness() {
         await sleep(200)
       },
     }
+
+  async function clickByTitle(pattern: RegExp) {
+    const button = Array.from(
+      document.querySelectorAll('button, [role="button"]')
+    ).find((el) => {
+      const title = el.getAttribute('title') || ''
+      const aria = el.getAttribute('aria-label') || ''
+      return pattern.test(title) || pattern.test(aria)
+    }) as HTMLElement | undefined
+    if (!button) {
+      throw new Error(`No button matching ${pattern}`)
+    }
+    button.click()
+  }
+
+  async function closeAudioMenuIfOpen() {
+    const bodyText = document.body?.innerText || ''
+    // Audio Input popup includes these labels when open.
+    if (!/Audio Input/i.test(bodyText) || !/Audio Mode/i.test(bodyText)) {
+      return
+    }
+    try {
+      await clickByTitle(/audio input settings/i)
+    } catch {
+      // already closed or icon missing
+    }
+  }
 }
 
 installScreenshotHarness()

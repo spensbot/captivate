@@ -3,14 +3,15 @@
   "version": 2,
   "fixtures": [
     {
-      "id": "AvrusNHGxq7OBvhEkSLgK",
-      "name": "Generic RGB (RGB)",
-      "intensity": 0.5,
-      "manufacturer": "Generic",
+      "id": "lK7ahoDM-SCiS8NaFL_Sh",
+      "name": "Mini Par RGBW",
+      "intensity": 0,
+      "manufacturer": "Eliminator",
       "channels": [
         {
           "type": "color",
           "color": {
+            "kind": "color",
             "hue": 0,
             "saturation": 1
           }
@@ -18,591 +19,38 @@
         {
           "type": "color",
           "color": {
-            "hue": 0.33,
+            "kind": "color",
+            "hue": 0.333,
             "saturation": 1
           }
         },
         {
           "type": "color",
           "color": {
-            "hue": 0.66,
-            "saturation": 1
-          }
-        }
-      ],
-      "subFixtures": [],
-      "groups": [],
-      "model": {
-        "kind": "auto",
-        "emittersPerSubFixture": 1,
-        "width": 0.2,
-        "bodyShape": "cylinder",
-        "bodyHeight": 0.1524,
-        "bodyDepth": 0.1016,
-        "bodyDiameter": 0.1524,
-        "moverBeamAngleDeg": 9.5,
-        "atmosphereEffect": "fog",
-        "atmosphereNozzleDirection": "up",
-        "washBarLayoutMode": "linear",
-        "washBarWarmWhiteCount": 12,
-        "washBarCoolWhiteCount": 13,
-        "washBarRgbCount": 16,
-        "useCustomEmitterLayout": false,
-        "customEmitters": [
-          {
-            "id": "iOjpKD-NuYfaMQr8OpzSc",
-            "x": 0.5,
-            "y": 0.5,
-            "z": 0.72,
-            "shape": "disc",
-            "size": 0.149352,
-            "channelIndexes": [
-              0
-            ]
-          }
-        ],
-        "emitterFaceAutoSize": true,
-        "parRectLayout": "grid",
-        "parCylinderLayout": "honeycomb"
-      }
-    },
-    {
-      "id": "Zg6-Ux65Qh1eKtWWS1Gp6",
-      "name": "Generic RGB (Dimmer RGB)",
-      "intensity": 0.5,
-      "manufacturer": "Generic",
-      "channels": [
-        {
-          "type": "master",
-          "min": 0,
-          "max": 255,
-          "isOnOff": false
-        },
-        {
-          "type": "color",
-          "color": {
-            "hue": 0,
+            "kind": "color",
+            "hue": 0.666,
             "saturation": 1
           }
         },
         {
           "type": "color",
           "color": {
-            "hue": 0.33,
-            "saturation": 1
-          }
-        },
-        {
-          "type": "color",
-          "color": {
-            "hue": 0.66,
-            "saturation": 1
-          }
-        }
-      ],
-      "subFixtures": [],
-      "groups": [],
-      "model": {
-        "kind": "auto",
-        "emittersPerSubFixture": 1,
-        "width": 0.2,
-        "bodyShape": "cylinder",
-        "bodyHeight": 0.1524,
-        "bodyDepth": 0.1016,
-        "bodyDiameter": 0.1524,
-        "moverBeamAngleDeg": 9.5,
-        "atmosphereEffect": "fog",
-        "atmosphereNozzleDirection": "up",
-        "washBarLayoutMode": "linear",
-        "washBarWarmWhiteCount": 12,
-        "washBarCoolWhiteCount": 13,
-        "washBarRgbCount": 16,
-        "useCustomEmitterLayout": false,
-        "customEmitters": [
-          {
-            "id": "3s4U1tH5wcrRtzCix6tDy",
-            "x": 0.5,
-            "y": 0.5,
-            "z": 0.72,
-            "shape": "disc",
-            "size": 0.149352,
-            "channelIndexes": [
-              0
-            ]
-          }
-        ],
-        "emitterFaceAutoSize": true,
-        "parRectLayout": "grid",
-        "parCylinderLayout": "honeycomb"
-      }
-    },
-    {
-      "id": "_crXsi4Dm7bqbCTnL2KlD",
-      "name": "BARLED200-FX (3 Channel)",
-      "intensity": 0.5,
-      "manufacturer": "AFX",
-      "channels": [
-        {
-          "type": "color",
-          "color": {
-            "hue": 0,
-            "saturation": 1
-          }
-        },
-        {
-          "type": "color",
-          "color": {
-            "hue": 0.33,
-            "saturation": 1
-          }
-        },
-        {
-          "type": "color",
-          "color": {
-            "hue": 0.66,
-            "saturation": 1
-          }
-        }
-      ],
-      "subFixtures": [],
-      "groups": [],
-      "model": {
-        "kind": "auto",
-        "emittersPerSubFixture": 1,
-        "width": 0.2,
-        "bodyShape": "cylinder",
-        "bodyHeight": 0.1524,
-        "bodyDepth": 0.1016,
-        "bodyDiameter": 0.1524,
-        "moverBeamAngleDeg": 9.5,
-        "atmosphereEffect": "fog",
-        "atmosphereNozzleDirection": "up",
-        "washBarLayoutMode": "linear",
-        "washBarWarmWhiteCount": 12,
-        "washBarCoolWhiteCount": 13,
-        "washBarRgbCount": 16,
-        "useCustomEmitterLayout": false,
-        "customEmitters": [
-          {
-            "id": "9afK9xWIuk8hsu_4ZIKC1",
-            "x": 0.5,
-            "y": 0.5,
-            "z": 0.72,
-            "shape": "disc",
-            "size": 0.149352,
-            "channelIndexes": [
-              0
-            ]
-          }
-        ],
-        "emitterFaceAutoSize": true,
-        "parRectLayout": "grid",
-        "parCylinderLayout": "honeycomb"
-      }
-    },
-    {
-      "id": "OPXunHp-K4g-a18Vc247S",
-      "name": "Spectra CYC 100 (1 Channel (601, 602))",
-      "intensity": 0.5,
-      "manufacturer": "Altman",
-      "channels": [
-        {
-          "type": "master",
-          "min": 0,
-          "max": 255,
-          "isOnOff": false
-        }
-      ],
-      "subFixtures": [],
-      "groups": [],
-      "model": {
-        "kind": "auto",
-        "emittersPerSubFixture": 1,
-        "width": 0.2,
-        "bodyShape": "cylinder",
-        "bodyHeight": 0.1524,
-        "bodyDepth": 0.1016,
-        "bodyDiameter": 0.1524,
-        "moverBeamAngleDeg": 9.5,
-        "atmosphereEffect": "fog",
-        "atmosphereNozzleDirection": "up",
-        "washBarLayoutMode": "linear",
-        "washBarWarmWhiteCount": 12,
-        "washBarCoolWhiteCount": 13,
-        "washBarRgbCount": 16,
-        "useCustomEmitterLayout": false,
-        "customEmitters": [
-          {
-            "id": "Oa97_meVo6vLctwWCm8VX",
-            "x": 0.5,
-            "y": 0.5,
-            "z": 0.72,
-            "shape": "disc",
-            "size": 0.149352,
-            "channelIndexes": [
-              0
-            ]
-          }
-        ],
-        "emitterFaceAutoSize": true,
-        "parRectLayout": "grid",
-        "parCylinderLayout": "honeycomb"
-      }
-    },
-    {
-      "id": "BWlR_JKlNsvRlkGsmcJTb",
-      "name": "Intimidator Barrel 300 (11 Channel)",
-      "intensity": 0.5,
-      "manufacturer": "Chauvet",
-      "channels": [
-        {
-          "type": "axis",
-          "dir": "x",
-          "isFine": false,
-          "min": 0,
-          "max": 255
-        },
-        {
-          "type": "axis",
-          "dir": "y",
-          "isFine": false,
-          "min": 0,
-          "max": 255
-        },
-        {
-          "type": "custom",
-          "name": "Color",
-          "default": 0,
-          "isControllable": false,
-          "min": 0,
-          "max": 255
-        },
-        {
-          "type": "custom",
-          "name": "Shutter",
-          "default": 0,
-          "isControllable": false,
-          "min": 0,
-          "max": 255
-        },
-        {
-          "type": "master",
-          "min": 0,
-          "max": 255,
-          "isOnOff": false
-        },
-        {
-          "type": "custom",
-          "name": "Gobo Wheel",
-          "default": 0,
-          "isControllable": false,
-          "min": 0,
-          "max": 255
-        },
-        {
-          "type": "custom",
-          "name": "Gobo Rotation",
-          "default": 0,
-          "isControllable": false,
-          "min": 0,
-          "max": 255
-        },
-        {
-          "type": "custom",
-          "name": "Prism",
-          "default": 0,
-          "isControllable": false,
-          "min": 0,
-          "max": 255
-        },
-        {
-          "type": "custom",
-          "name": "Focus",
-          "default": 0,
-          "isControllable": false,
-          "min": 0,
-          "max": 255
-        },
-        {
-          "type": "custom",
-          "name": "Function",
-          "default": 0,
-          "isControllable": false,
-          "min": 0,
-          "max": 255
-        },
-        {
-          "type": "custom",
-          "name": "Movement Macros",
-          "default": 0,
-          "isControllable": false,
-          "min": 0,
-          "max": 255
-        }
-      ],
-      "subFixtures": [],
-      "groups": [],
-      "model": {
-        "kind": "auto",
-        "emittersPerSubFixture": 1,
-        "width": 0.6,
-        "bodyShape": "cylinder",
-        "bodyHeight": 0.18,
-        "bodyDepth": 0.24,
-        "bodyDiameter": 0.6,
-        "moverBeamAngleDeg": 9.5,
-        "atmosphereEffect": "fog",
-        "atmosphereNozzleDirection": "up",
-        "washBarLayoutMode": "linear",
-        "washBarWarmWhiteCount": 12,
-        "washBarCoolWhiteCount": 13,
-        "washBarRgbCount": 16,
-        "useCustomEmitterLayout": false,
-        "customEmitters": [
-          {
-            "id": "g8YDcArRg_sFTAoFKMlII",
-            "x": 0.5,
-            "y": 0.5,
-            "z": 1,
-            "shape": "disc",
-            "size": 0.588,
-            "channelIndexes": [
-              0
-            ]
-          }
-        ],
-        "emitterFaceAutoSize": true,
-        "parRectLayout": "grid",
-        "parCylinderLayout": "honeycomb"
-      }
-    },
-    {
-      "id": "tRXYtyqHCZoWgZSWf8lJG",
-      "name": "Intimidator Beam LED 350 (Advanced)",
-      "intensity": 0.5,
-      "manufacturer": "Chauvet",
-      "channels": [
-        {
-          "type": "axis",
-          "dir": "x",
-          "isFine": false,
-          "min": 0,
-          "max": 255
-        },
-        {
-          "type": "axis",
-          "dir": "x",
-          "isFine": true,
-          "min": 0,
-          "max": 255
-        },
-        {
-          "type": "axis",
-          "dir": "y",
-          "isFine": false,
-          "min": 0,
-          "max": 255
-        },
-        {
-          "type": "axis",
-          "dir": "y",
-          "isFine": true,
-          "min": 0,
-          "max": 255
-        },
-        {
-          "type": "custom",
-          "name": "Pan/Tilt Speed (fast to slow)",
-          "default": 0,
-          "isControllable": false,
-          "min": 0,
-          "max": 255
-        },
-        {
-          "type": "custom",
-          "name": "Color",
-          "default": 0,
-          "isControllable": false,
-          "min": 0,
-          "max": 255
-        },
-        {
-          "type": "custom",
-          "name": "Gobo",
-          "default": 0,
-          "isControllable": false,
-          "min": 0,
-          "max": 255
-        },
-        {
-          "type": "custom",
-          "name": "No function",
-          "default": 0,
-          "isControllable": false,
-          "min": 0,
-          "max": 255
-        },
-        {
-          "type": "custom",
-          "name": "Prism",
-          "default": 0,
-          "isControllable": false,
-          "min": 0,
-          "max": 255
-        },
-        {
-          "type": "custom",
-          "name": "No function2",
-          "default": 0,
-          "isControllable": false,
-          "min": 0,
-          "max": 255
-        },
-        {
-          "type": "master",
-          "min": 0,
-          "max": 255,
-          "isOnOff": false
-        },
-        {
-          "type": "custom",
-          "name": "Shutter",
-          "default": 0,
-          "isControllable": false,
-          "min": 0,
-          "max": 255
-        },
-        {
-          "type": "custom",
-          "name": "Control Functions",
-          "default": 0,
-          "isControllable": false,
-          "min": 0,
-          "max": 255
-        },
-        {
-          "type": "custom",
-          "name": "Movement Macros",
-          "default": 0,
-          "isControllable": false,
-          "min": 0,
-          "max": 255
-        }
-      ],
-      "subFixtures": [],
-      "groups": [],
-      "model": {
-        "kind": "auto",
-        "emittersPerSubFixture": 1,
-        "width": 0.6,
-        "bodyShape": "cylinder",
-        "bodyHeight": 0.18,
-        "bodyDepth": 0.24,
-        "bodyDiameter": 0.6,
-        "moverBeamAngleDeg": 9.5,
-        "atmosphereEffect": "fog",
-        "atmosphereNozzleDirection": "up",
-        "washBarLayoutMode": "linear",
-        "washBarWarmWhiteCount": 12,
-        "washBarCoolWhiteCount": 13,
-        "washBarRgbCount": 16,
-        "useCustomEmitterLayout": false,
-        "customEmitters": [
-          {
-            "id": "LBnXFjY7B6W6-QBtA_2JK",
-            "x": 0.5,
-            "y": 0.5,
-            "z": 1,
-            "shape": "disc",
-            "size": 0.588,
-            "channelIndexes": [
-              0
-            ]
-          }
-        ],
-        "emitterFaceAutoSize": true,
-        "parRectLayout": "grid",
-        "parCylinderLayout": "honeycomb"
-      }
-    },
-    {
-      "id": "XJpELDBUSoTKoe4yFT4F7",
-      "name": "LM108 Wash Moving Head (9 Channel)",
-      "intensity": 0.5,
-      "manufacturer": "Betopper",
-      "channels": [
-        {
-          "type": "axis",
-          "dir": "x",
-          "isFine": false,
-          "min": 0,
-          "max": 255
-        },
-        {
-          "type": "axis",
-          "dir": "y",
-          "isFine": false,
-          "min": 0,
-          "max": 255
-        },
-        {
-          "type": "master",
-          "min": 0,
-          "max": 255,
-          "isOnOff": false
-        },
-        {
-          "type": "color",
-          "color": {
-            "hue": 0,
-            "saturation": 1
-          }
-        },
-        {
-          "type": "color",
-          "color": {
-            "hue": 0.33,
-            "saturation": 1
-          }
-        },
-        {
-          "type": "color",
-          "color": {
-            "hue": 0.66,
-            "saturation": 1
-          }
-        },
-        {
-          "type": "color",
-          "color": {
+            "kind": "white",
             "hue": 0,
             "saturation": 0
           }
-        },
-        {
-          "type": "strobe",
-          "default_solid": 0,
-          "default_strobe": 255
-        },
-        {
-          "type": "custom",
-          "name": "Pan/Tilt speed",
-          "default": 0,
-          "isControllable": false,
-          "min": 0,
-          "max": 255
         }
       ],
       "subFixtures": [],
       "groups": [],
       "model": {
-        "kind": "auto",
+        "kind": "parCan",
         "emittersPerSubFixture": 1,
-        "width": 0.6,
+        "width": 0.2,
         "bodyShape": "cylinder",
-        "bodyHeight": 0.18,
-        "bodyDepth": 0.24,
-        "bodyDiameter": 0.6,
+        "bodyHeight": 0.1016,
+        "bodyDepth": 0.127,
+        "bodyDiameter": 0.1016,
         "moverBeamAngleDeg": 9.5,
         "atmosphereEffect": "fog",
         "atmosphereNozzleDirection": "up",
@@ -610,51 +58,3155 @@
         "washBarWarmWhiteCount": 12,
         "washBarCoolWhiteCount": 13,
         "washBarRgbCount": 16,
-        "useCustomEmitterLayout": false,
+        "useCustomEmitterLayout": true,
         "customEmitters": [
           {
-            "id": "7PpKY0Xpo8Hzdbf5NkayQ",
+            "id": "E7EJXC_CFyl5382RabdNK",
             "x": 0.5,
-            "y": 0.5,
-            "z": 1,
+            "y": 0.3652038702450291,
+            "z": 0.72,
+            "size": 0.02057400000004115,
             "shape": "disc",
-            "size": 0.588,
+            "channelIndexes": [
+              3
+            ]
+          },
+          {
+            "id": "wyqDQrUWNp02BQ0zMOcjR",
+            "x": 0.6167368726996283,
+            "y": 0.5673980648774855,
+            "z": 0.72,
+            "size": 0.02057400000004115,
+            "shape": "disc",
+            "channelIndexes": [
+              3
+            ]
+          },
+          {
+            "id": "XWQnOxcfUQutMQq_2A23b",
+            "x": 0.38326312730037176,
+            "y": 0.5673980648774855,
+            "z": 0.72,
+            "size": 0.02057400000004115,
+            "shape": "disc",
+            "channelIndexes": [
+              3
+            ]
+          },
+          {
+            "id": "tiYeycD_Jl5zONv_Myje5",
+            "x": 0.5,
+            "y": 0.13173012484577257,
+            "z": 0.72,
+            "size": 0.02057400000004115,
+            "shape": "disc",
+            "channelIndexes": [
+              1
+            ]
+          },
+          {
+            "id": "ScdbLTUDlNwjIcfpGcodU",
+            "x": 0.7367193127699461,
+            "y": 0.21788890856998427,
+            "z": 0.72,
+            "size": 0.02057400000004115,
+            "shape": "disc",
             "channelIndexes": [
               0
             ]
+          },
+          {
+            "id": "OJwSa58cHK0D_CeZAA8rk",
+            "x": 0.8626750282527211,
+            "y": 0.43605060728984046,
+            "z": 0.72,
+            "size": 0.02057400000004115,
+            "shape": "disc",
+            "channelIndexes": [
+              2
+            ]
+          },
+          {
+            "id": "hngS9ebPAg40ilzYJTvy1",
+            "x": 0.8189310673320847,
+            "y": 0.6841349375771136,
+            "z": 0.72,
+            "size": 0.02057400000004115,
+            "shape": "disc",
+            "channelIndexes": [
+              1
+            ]
+          },
+          {
+            "id": "8mX8eYoKyGqqKEEqGAv2C",
+            "x": 0.6259557154827751,
+            "y": 0.8460604841401753,
+            "z": 0.72,
+            "size": 0.02057400000004115,
+            "shape": "disc",
+            "channelIndexes": [
+              0
+            ]
+          },
+          {
+            "id": "Vk5v_yiqlmeejNEROBLcq",
+            "x": 0.37404428451722505,
+            "y": 0.8460604841401753,
+            "z": 0.72,
+            "size": 0.02057400000004115,
+            "shape": "disc",
+            "channelIndexes": [
+              2
+            ]
+          },
+          {
+            "id": "WAyBeib4963OXVwQuHe2w",
+            "x": 0.18106893266791546,
+            "y": 0.6841349375771139,
+            "z": 0.72,
+            "size": 0.02057400000004115,
+            "shape": "disc",
+            "channelIndexes": [
+              1
+            ]
+          },
+          {
+            "id": "U4DKH8o7Kw9JexwmnFMvE",
+            "x": 0.13732497174727887,
+            "y": 0.4360506072898406,
+            "z": 0.72,
+            "size": 0.02057400000004115,
+            "shape": "disc",
+            "channelIndexes": [
+              0
+            ]
+          },
+          {
+            "id": "IHYT_WHa6qbmZoFCroJWw",
+            "x": 0.2632806872300538,
+            "y": 0.21788890856998433,
+            "z": 0.72,
+            "size": 0.02057400000004115,
+            "shape": "disc",
+            "channelIndexes": [
+              2
+            ]
           }
         ],
-        "emitterFaceAutoSize": true,
+        "emitterFaceAutoSize": false,
         "parRectLayout": "grid",
         "parCylinderLayout": "honeycomb"
       }
     },
     {
-      "id": "demo-captivate-fog",
-      "name": "Demo Fog Machine",
-      "manufacturer": "Captivate Demo",
-      "intensity": 0,
+      "id": "CpUUnrd8saI0Yg4ZWkX5N",
+      "name": "12 LED 3-in-1 Wall Washer (75 Channel)",
+      "intensity": 0.5,
+      "manufacturer": "Laluce Natz",
       "channels": [
         {
-          "type": "fxtrTrigger",
-          "name": "Fog",
-          "off": 0,
-          "on": 255
+          "type": "master",
+          "min": 0,
+          "max": 255,
+          "isOnOff": false
         },
         {
-          "type": "fxtrLevel",
-          "name": "Volume",
-          "default": 0,
-          "min": 0,
-          "max": 255
+          "type": "split",
+          "ranges": [
+            {
+              "id": "ln-strobe-off",
+              "name": "Shutter closed",
+              "min": 0,
+              "max": 10,
+              "channel": {
+                "type": "master",
+                "min": 0,
+                "max": 255,
+                "isOnOff": false
+              }
+            },
+            {
+              "id": "ln-strobe-on",
+              "name": "Strobe",
+              "min": 11,
+              "max": 255,
+              "channel": {
+                "type": "strobe",
+                "default_solid": 0,
+                "default_strobe": 128
+              }
+            }
+          ]
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.11,
+            "saturation": 0.2,
+            "kind": "warmWhite"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.11,
+            "saturation": 0.2,
+            "kind": "warmWhite"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.11,
+            "saturation": 0.2,
+            "kind": "warmWhite"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.11,
+            "saturation": 0.2,
+            "kind": "warmWhite"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.11,
+            "saturation": 0.2,
+            "kind": "warmWhite"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.11,
+            "saturation": 0.2,
+            "kind": "warmWhite"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.11,
+            "saturation": 0.2,
+            "kind": "warmWhite"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.11,
+            "saturation": 0.2,
+            "kind": "warmWhite"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.11,
+            "saturation": 0.2,
+            "kind": "warmWhite"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.11,
+            "saturation": 0.2,
+            "kind": "warmWhite"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.11,
+            "saturation": 0.2,
+            "kind": "warmWhite"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.11,
+            "saturation": 0.2,
+            "kind": "warmWhite"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 0,
+            "kind": "white"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 0,
+            "kind": "white"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 0,
+            "kind": "white"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 0,
+            "kind": "white"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 0,
+            "kind": "white"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 0,
+            "kind": "white"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 0,
+            "kind": "white"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 0,
+            "kind": "white"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 0,
+            "kind": "white"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 0,
+            "kind": "white"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 0,
+            "kind": "white"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 0,
+            "kind": "white"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 0,
+            "kind": "white"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.333,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.666,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.333,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.666,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.333,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.666,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.333,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.666,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.333,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.666,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.333,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.666,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.333,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.666,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.333,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.666,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.333,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.666,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.333,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.666,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.333,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.666,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.333,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.666,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.333,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.666,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.333,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.666,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.333,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.666,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.333,
+            "saturation": 1,
+            "kind": "color"
+          }
+        },
+        {
+          "type": "color",
+          "color": {
+            "hue": 0.666,
+            "saturation": 1,
+            "kind": "color"
+          }
         }
       ],
-      "subFixtures": [],
+      "subFixtures": [
+        {
+          "name": "Warm White 1",
+          "channels": [
+            2
+          ],
+          "groups": [
+            "Warm White"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "Warm White 2",
+          "channels": [
+            3
+          ],
+          "groups": [
+            "Warm White"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "Warm White 3",
+          "channels": [
+            4
+          ],
+          "groups": [
+            "Warm White"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "Warm White 4",
+          "channels": [
+            5
+          ],
+          "groups": [
+            "Warm White"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "Warm White 5",
+          "channels": [
+            6
+          ],
+          "groups": [
+            "Warm White"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "Warm White 6",
+          "channels": [
+            7
+          ],
+          "groups": [
+            "Warm White"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "Warm White 7",
+          "channels": [
+            8
+          ],
+          "groups": [
+            "Warm White"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "Warm White 8",
+          "channels": [
+            9
+          ],
+          "groups": [
+            "Warm White"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "Warm White 9",
+          "channels": [
+            10
+          ],
+          "groups": [
+            "Warm White"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "Warm White 10",
+          "channels": [
+            11
+          ],
+          "groups": [
+            "Warm White"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "Warm White 11",
+          "channels": [
+            12
+          ],
+          "groups": [
+            "Warm White"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "Warm White 12",
+          "channels": [
+            13
+          ],
+          "groups": [
+            "Warm White"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "Cool White 1",
+          "channels": [
+            14
+          ],
+          "groups": [
+            "Cool White"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "Cool White 2",
+          "channels": [
+            15
+          ],
+          "groups": [
+            "Cool White"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "Cool White 3",
+          "channels": [
+            16
+          ],
+          "groups": [
+            "Cool White"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "Cool White 4",
+          "channels": [
+            17
+          ],
+          "groups": [
+            "Cool White"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "Cool White 5",
+          "channels": [
+            18
+          ],
+          "groups": [
+            "Cool White"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "Cool White 6",
+          "channels": [
+            19
+          ],
+          "groups": [
+            "Cool White"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "Cool White 7",
+          "channels": [
+            20
+          ],
+          "groups": [
+            "Cool White"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "Cool White 8",
+          "channels": [
+            21
+          ],
+          "groups": [
+            "Cool White"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "Cool White 9",
+          "channels": [
+            22
+          ],
+          "groups": [
+            "Cool White"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "Cool White 10",
+          "channels": [
+            23
+          ],
+          "groups": [
+            "Cool White"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "Cool White 11",
+          "channels": [
+            24
+          ],
+          "groups": [
+            "Cool White"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "Cool White 12",
+          "channels": [
+            25
+          ],
+          "groups": [
+            "Cool White"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "Cool White 13",
+          "channels": [
+            26
+          ],
+          "groups": [
+            "Cool White"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "RGB 1",
+          "channels": [
+            27,
+            28,
+            29
+          ],
+          "groups": [
+            "RGB"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "RGB 2",
+          "channels": [
+            30,
+            31,
+            32
+          ],
+          "groups": [
+            "RGB"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "RGB 3",
+          "channels": [
+            33,
+            34,
+            35
+          ],
+          "groups": [
+            "RGB"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "RGB 4",
+          "channels": [
+            36,
+            37,
+            38
+          ],
+          "groups": [
+            "RGB"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "RGB 5",
+          "channels": [
+            39,
+            40,
+            41
+          ],
+          "groups": [
+            "RGB"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "RGB 6",
+          "channels": [
+            42,
+            43,
+            44
+          ],
+          "groups": [
+            "RGB"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "RGB 7",
+          "channels": [
+            45,
+            46,
+            47
+          ],
+          "groups": [
+            "RGB"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "RGB 8",
+          "channels": [
+            48,
+            49,
+            50
+          ],
+          "groups": [
+            "RGB"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "RGB 9",
+          "channels": [
+            51,
+            52,
+            53
+          ],
+          "groups": [
+            "RGB"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "RGB 10",
+          "channels": [
+            54,
+            55,
+            56
+          ],
+          "groups": [
+            "RGB"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "RGB 11",
+          "channels": [
+            57,
+            58,
+            59
+          ],
+          "groups": [
+            "RGB"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "RGB 12",
+          "channels": [
+            60,
+            61,
+            62
+          ],
+          "groups": [
+            "RGB"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "RGB 13",
+          "channels": [
+            63,
+            64,
+            65
+          ],
+          "groups": [
+            "RGB"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "RGB 14",
+          "channels": [
+            66,
+            67,
+            68
+          ],
+          "groups": [
+            "RGB"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "RGB 15",
+          "channels": [
+            69,
+            70,
+            71
+          ],
+          "groups": [
+            "RGB"
+          ],
+          "intensity": 1
+        },
+        {
+          "name": "RGB 16",
+          "channels": [
+            72,
+            73,
+            74
+          ],
+          "groups": [
+            "RGB"
+          ],
+          "intensity": 1
+        }
+      ],
       "groups": [
-        "Atmosphere"
+        "Washes"
       ],
       "model": {
-        "kind": "atmosphericFxtr"
+        "kind": "washBar",
+        "emittersPerSubFixture": 1,
+        "width": 1.06,
+        "bodyShape": "box",
+        "bodyHeight": 0.1,
+        "bodyDepth": 0.13,
+        "bodyDiameter": 0.45,
+        "moverBeamAngleDeg": 20.9,
+        "atmosphereEffect": "fog",
+        "atmosphereNozzleDirection": "up",
+        "washBarLayoutMode": "multiStrip",
+        "washBarWarmWhiteCount": 12,
+        "washBarCoolWhiteCount": 13,
+        "washBarRgbCount": 16,
+        "useCustomEmitterLayout": true,
+        "customEmitters": [
+          {
+            "id": "cw-0",
+            "x": 0,
+            "y": 0.5,
+            "z": 0.72,
+            "size": 0.035,
+            "shape": "rect-v",
+            "channelIndexes": [
+              14
+            ],
+            "subFixtureIndex": 12,
+            "rectWidthM": 0.018,
+            "rectHeightM": 0.04688840000009378
+          },
+          {
+            "id": "cw-1",
+            "x": 0.083333,
+            "y": 0.5,
+            "z": 0.72,
+            "size": 0.035,
+            "shape": "rect-v",
+            "channelIndexes": [
+              15
+            ],
+            "subFixtureIndex": 13,
+            "rectWidthM": 0.018,
+            "rectHeightM": 0.04688840000009378
+          },
+          {
+            "id": "cw-2",
+            "x": 0.166667,
+            "y": 0.5,
+            "z": 0.72,
+            "size": 0.035,
+            "shape": "rect-v",
+            "channelIndexes": [
+              16
+            ],
+            "subFixtureIndex": 14,
+            "rectWidthM": 0.018,
+            "rectHeightM": 0.04688840000009378
+          },
+          {
+            "id": "cw-3",
+            "x": 0.25,
+            "y": 0.5,
+            "z": 0.72,
+            "size": 0.035,
+            "shape": "rect-v",
+            "channelIndexes": [
+              17
+            ],
+            "subFixtureIndex": 15,
+            "rectWidthM": 0.018,
+            "rectHeightM": 0.04688840000009378
+          },
+          {
+            "id": "cw-4",
+            "x": 0.333333,
+            "y": 0.5,
+            "z": 0.72,
+            "size": 0.035,
+            "shape": "rect-v",
+            "channelIndexes": [
+              18
+            ],
+            "subFixtureIndex": 16,
+            "rectWidthM": 0.018,
+            "rectHeightM": 0.04688840000009378
+          },
+          {
+            "id": "cw-5",
+            "x": 0.416667,
+            "y": 0.5,
+            "z": 0.72,
+            "size": 0.035,
+            "shape": "rect-v",
+            "channelIndexes": [
+              19
+            ],
+            "subFixtureIndex": 17,
+            "rectWidthM": 0.018,
+            "rectHeightM": 0.04688840000009378
+          },
+          {
+            "id": "cw-6",
+            "x": 0.5,
+            "y": 0.5,
+            "z": 0.72,
+            "size": 0.035,
+            "shape": "rect-v",
+            "channelIndexes": [
+              20
+            ],
+            "subFixtureIndex": 18,
+            "rectWidthM": 0.018,
+            "rectHeightM": 0.04688840000009378
+          },
+          {
+            "id": "cw-7",
+            "x": 0.583333,
+            "y": 0.5,
+            "z": 0.72,
+            "size": 0.035,
+            "shape": "rect-v",
+            "channelIndexes": [
+              21
+            ],
+            "subFixtureIndex": 19,
+            "rectWidthM": 0.018,
+            "rectHeightM": 0.04688840000009378
+          },
+          {
+            "id": "cw-8",
+            "x": 0.666667,
+            "y": 0.5,
+            "z": 0.72,
+            "size": 0.035,
+            "shape": "rect-v",
+            "channelIndexes": [
+              22
+            ],
+            "subFixtureIndex": 20,
+            "rectWidthM": 0.018,
+            "rectHeightM": 0.04688840000009378
+          },
+          {
+            "id": "cw-9",
+            "x": 0.75,
+            "y": 0.5,
+            "z": 0.72,
+            "size": 0.035,
+            "shape": "rect-v",
+            "channelIndexes": [
+              23
+            ],
+            "subFixtureIndex": 21,
+            "rectWidthM": 0.018,
+            "rectHeightM": 0.04688840000009378
+          },
+          {
+            "id": "cw-10",
+            "x": 0.833333,
+            "y": 0.5,
+            "z": 0.72,
+            "size": 0.035,
+            "shape": "rect-v",
+            "channelIndexes": [
+              24
+            ],
+            "subFixtureIndex": 22,
+            "rectWidthM": 0.018,
+            "rectHeightM": 0.04688840000009378
+          },
+          {
+            "id": "cw-11",
+            "x": 0.916667,
+            "y": 0.5,
+            "z": 0.72,
+            "size": 0.035,
+            "shape": "rect-v",
+            "channelIndexes": [
+              25
+            ],
+            "subFixtureIndex": 23,
+            "rectWidthM": 0.018,
+            "rectHeightM": 0.04688840000009378
+          },
+          {
+            "id": "cw-12",
+            "x": 1,
+            "y": 0.5,
+            "z": 0.72,
+            "size": 0.035,
+            "shape": "rect-v",
+            "channelIndexes": [
+              26
+            ],
+            "subFixtureIndex": 24,
+            "rectWidthM": 0.018,
+            "rectHeightM": 0.04688840000009378
+          },
+          {
+            "id": "ww-0",
+            "x": 0.041667,
+            "y": 0.5,
+            "z": 0.72,
+            "size": 0.042,
+            "shape": "disc",
+            "channelIndexes": [
+              2
+            ],
+            "subFixtureIndex": 0
+          },
+          {
+            "id": "ww-1",
+            "x": 0.125,
+            "y": 0.5,
+            "z": 0.72,
+            "size": 0.042,
+            "shape": "disc",
+            "channelIndexes": [
+              3
+            ],
+            "subFixtureIndex": 1
+          },
+          {
+            "id": "ww-2",
+            "x": 0.208333,
+            "y": 0.5,
+            "z": 0.72,
+            "size": 0.042,
+            "shape": "disc",
+            "channelIndexes": [
+              4
+            ],
+            "subFixtureIndex": 2
+          },
+          {
+            "id": "ww-3",
+            "x": 0.291667,
+            "y": 0.5,
+            "z": 0.72,
+            "size": 0.042,
+            "shape": "disc",
+            "channelIndexes": [
+              5
+            ],
+            "subFixtureIndex": 3
+          },
+          {
+            "id": "ww-4",
+            "x": 0.375,
+            "y": 0.5,
+            "z": 0.72,
+            "size": 0.042,
+            "shape": "disc",
+            "channelIndexes": [
+              6
+            ],
+            "subFixtureIndex": 4
+          },
+          {
+            "id": "ww-5",
+            "x": 0.458333,
+            "y": 0.5,
+            "z": 0.72,
+            "size": 0.042,
+            "shape": "disc",
+            "channelIndexes": [
+              7
+            ],
+            "subFixtureIndex": 5
+          },
+          {
+            "id": "ww-6",
+            "x": 0.541667,
+            "y": 0.5,
+            "z": 0.72,
+            "size": 0.042,
+            "shape": "disc",
+            "channelIndexes": [
+              8
+            ],
+            "subFixtureIndex": 6
+          },
+          {
+            "id": "ww-7",
+            "x": 0.625,
+            "y": 0.5,
+            "z": 0.72,
+            "size": 0.042,
+            "shape": "disc",
+            "channelIndexes": [
+              9
+            ],
+            "subFixtureIndex": 7
+          },
+          {
+            "id": "ww-8",
+            "x": 0.708333,
+            "y": 0.5,
+            "z": 0.72,
+            "size": 0.042,
+            "shape": "disc",
+            "channelIndexes": [
+              10
+            ],
+            "subFixtureIndex": 8
+          },
+          {
+            "id": "ww-9",
+            "x": 0.791667,
+            "y": 0.5,
+            "z": 0.72,
+            "size": 0.042,
+            "shape": "disc",
+            "channelIndexes": [
+              11
+            ],
+            "subFixtureIndex": 9
+          },
+          {
+            "id": "ww-10",
+            "x": 0.875,
+            "y": 0.5,
+            "z": 0.72,
+            "size": 0.042,
+            "shape": "disc",
+            "channelIndexes": [
+              12
+            ],
+            "subFixtureIndex": 10
+          },
+          {
+            "id": "ww-11",
+            "x": 0.958333,
+            "y": 0.5,
+            "z": 0.72,
+            "size": 0.042,
+            "shape": "disc",
+            "channelIndexes": [
+              13
+            ],
+            "subFixtureIndex": 11
+          },
+          {
+            "id": "rgb-0-t0",
+            "x": 0,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              11
+            ],
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-0-t1",
+            "x": 0,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              27,
+              28,
+              29
+            ],
+            "subFixtureIndex": 25,
+            "groupId": "aMoF6ioqyY1iaDyqpQdc1",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-0-t2",
+            "x": 0.022,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              27,
+              28,
+              29
+            ],
+            "subFixtureIndex": 25,
+            "groupId": "aMoF6ioqyY1iaDyqpQdc1",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-0-b0",
+            "x": 0,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              14
+            ],
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-0-b1",
+            "x": 0,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              27,
+              28,
+              29
+            ],
+            "subFixtureIndex": 25,
+            "groupId": "aMoF6ioqyY1iaDyqpQdc1",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-0-b2",
+            "x": 0.022,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              27,
+              28,
+              29
+            ],
+            "subFixtureIndex": 25,
+            "groupId": "aMoF6ioqyY1iaDyqpQdc1",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-1-t0",
+            "x": 0.044667,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              27,
+              28,
+              29
+            ],
+            "subFixtureIndex": 25,
+            "groupId": "aMoF6ioqyY1iaDyqpQdc1",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-1-t1",
+            "x": 0.066667,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              30,
+              31,
+              32
+            ],
+            "subFixtureIndex": 26,
+            "groupId": "kzVib8sNrwXI0oXu_Qy1O",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-1-t2",
+            "x": 0.088667,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              30,
+              31,
+              32
+            ],
+            "subFixtureIndex": 26,
+            "groupId": "kzVib8sNrwXI0oXu_Qy1O",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-1-b0",
+            "x": 0.044667,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              27,
+              28,
+              29
+            ],
+            "subFixtureIndex": 25,
+            "groupId": "aMoF6ioqyY1iaDyqpQdc1",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-1-b1",
+            "x": 0.066667,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              30,
+              31,
+              32
+            ],
+            "subFixtureIndex": 26,
+            "groupId": "kzVib8sNrwXI0oXu_Qy1O",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-1-b2",
+            "x": 0.088667,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              30,
+              31,
+              32
+            ],
+            "subFixtureIndex": 26,
+            "groupId": "kzVib8sNrwXI0oXu_Qy1O",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-2-t0",
+            "x": 0.111333,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              30,
+              31,
+              32
+            ],
+            "subFixtureIndex": 26,
+            "groupId": "kzVib8sNrwXI0oXu_Qy1O",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-2-t1",
+            "x": 0.133333,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              33,
+              34,
+              35
+            ],
+            "groupId": "hlKXJuKQw0woMd2NuWWot",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-2-t2",
+            "x": 0.155333,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              33,
+              34,
+              35
+            ],
+            "groupId": "hlKXJuKQw0woMd2NuWWot",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-2-b0",
+            "x": 0.111333,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              30,
+              31,
+              32
+            ],
+            "subFixtureIndex": 26,
+            "groupId": "kzVib8sNrwXI0oXu_Qy1O",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-2-b1",
+            "x": 0.133333,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              33,
+              34,
+              35
+            ],
+            "groupId": "hlKXJuKQw0woMd2NuWWot",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-2-b2",
+            "x": 0.155333,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              33,
+              34,
+              35
+            ],
+            "groupId": "hlKXJuKQw0woMd2NuWWot",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-3-t0",
+            "x": 0.178,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              33,
+              34,
+              35
+            ],
+            "groupId": "hlKXJuKQw0woMd2NuWWot",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-3-t1",
+            "x": 0.2,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              36,
+              37,
+              38
+            ],
+            "groupId": "zeNrS7sL355WQ6dHlZxGm",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-3-t2",
+            "x": 0.222,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              36,
+              37,
+              38
+            ],
+            "groupId": "zeNrS7sL355WQ6dHlZxGm",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-3-b0",
+            "x": 0.178,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              33,
+              34,
+              35
+            ],
+            "subFixtureIndex": 27,
+            "groupId": "hlKXJuKQw0woMd2NuWWot",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-3-b1",
+            "x": 0.2,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              36,
+              37,
+              38
+            ],
+            "groupId": "zeNrS7sL355WQ6dHlZxGm",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-3-b2",
+            "x": 0.222,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              36,
+              37,
+              38
+            ],
+            "groupId": "zeNrS7sL355WQ6dHlZxGm",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-4-t0",
+            "x": 0.244667,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              36,
+              37,
+              38
+            ],
+            "groupId": "zeNrS7sL355WQ6dHlZxGm",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-4-t1",
+            "x": 0.266667,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              39,
+              40,
+              41
+            ],
+            "groupId": "2UPqeq4di5RBd4MzsGfc6",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-4-t2",
+            "x": 0.288667,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              39,
+              40,
+              41
+            ],
+            "groupId": "2UPqeq4di5RBd4MzsGfc6",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-4-b0",
+            "x": 0.244667,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              36,
+              37,
+              38
+            ],
+            "groupId": "zeNrS7sL355WQ6dHlZxGm",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-4-b1",
+            "x": 0.266667,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              39,
+              40,
+              41
+            ],
+            "groupId": "2UPqeq4di5RBd4MzsGfc6",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-4-b2",
+            "x": 0.288667,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              39,
+              40,
+              41
+            ],
+            "groupId": "2UPqeq4di5RBd4MzsGfc6",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-5-t0",
+            "x": 0.311333,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              39,
+              40,
+              41
+            ],
+            "groupId": "2UPqeq4di5RBd4MzsGfc6",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-5-t1",
+            "x": 0.333333,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              42,
+              43,
+              44
+            ],
+            "groupId": "WHL63N7_JoXXGCU9geETL",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-5-t2",
+            "x": 0.355333,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              42,
+              43,
+              44
+            ],
+            "groupId": "WHL63N7_JoXXGCU9geETL",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-5-b0",
+            "x": 0.311333,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              39,
+              40,
+              41
+            ],
+            "groupId": "2UPqeq4di5RBd4MzsGfc6",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-5-b1",
+            "x": 0.333333,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              42,
+              43,
+              44
+            ],
+            "groupId": "WHL63N7_JoXXGCU9geETL",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-5-b2",
+            "x": 0.355333,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              42,
+              43,
+              44
+            ],
+            "groupId": "WHL63N7_JoXXGCU9geETL",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-6-t0",
+            "x": 0.378,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              42,
+              43,
+              44
+            ],
+            "groupId": "WHL63N7_JoXXGCU9geETL",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-6-t1",
+            "x": 0.4,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              45,
+              46,
+              47
+            ],
+            "groupId": "Z0NoIkBx-7XWOWA49AWFs",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-6-t2",
+            "x": 0.422,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              45,
+              46,
+              47
+            ],
+            "groupId": "Z0NoIkBx-7XWOWA49AWFs",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-6-b0",
+            "x": 0.378,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              42,
+              43,
+              44
+            ],
+            "groupId": "WHL63N7_JoXXGCU9geETL",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-6-b1",
+            "x": 0.4,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              45,
+              46,
+              47
+            ],
+            "subFixtureIndex": 31,
+            "groupId": "Z0NoIkBx-7XWOWA49AWFs",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-6-b2",
+            "x": 0.422,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              45,
+              46,
+              47
+            ],
+            "groupId": "Z0NoIkBx-7XWOWA49AWFs",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-7-t0",
+            "x": 0.444667,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              45,
+              46,
+              47
+            ],
+            "groupId": "Z0NoIkBx-7XWOWA49AWFs",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-7-t1",
+            "x": 0.466667,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              48,
+              49,
+              50
+            ],
+            "subFixtureIndex": 32,
+            "groupId": "RrP2QC26gveGa6KmZKhD8",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-7-t2",
+            "x": 0.488667,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              48,
+              49,
+              50
+            ],
+            "subFixtureIndex": 32,
+            "groupId": "RrP2QC26gveGa6KmZKhD8",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-7-b0",
+            "x": 0.444667,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              45,
+              46,
+              47
+            ],
+            "groupId": "Z0NoIkBx-7XWOWA49AWFs",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-7-b1",
+            "x": 0.466667,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              48,
+              49,
+              50
+            ],
+            "subFixtureIndex": 32,
+            "groupId": "RrP2QC26gveGa6KmZKhD8",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-7-b2",
+            "x": 0.488667,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              48,
+              49,
+              50
+            ],
+            "subFixtureIndex": 32,
+            "groupId": "RrP2QC26gveGa6KmZKhD8",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-8-t0",
+            "x": 0.511333,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              48,
+              49,
+              50
+            ],
+            "subFixtureIndex": 32,
+            "groupId": "RrP2QC26gveGa6KmZKhD8",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-8-t1",
+            "x": 0.533333,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              51,
+              52,
+              53
+            ],
+            "subFixtureIndex": 33,
+            "groupId": "5jTKG3BxYUIq-_PIt-F85",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-8-t2",
+            "x": 0.555333,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              51,
+              52,
+              53
+            ],
+            "subFixtureIndex": 33,
+            "groupId": "5jTKG3BxYUIq-_PIt-F85",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-8-b0",
+            "x": 0.511333,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              48,
+              49,
+              50
+            ],
+            "subFixtureIndex": 32,
+            "groupId": "RrP2QC26gveGa6KmZKhD8",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-8-b1",
+            "x": 0.533333,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              51,
+              52,
+              53
+            ],
+            "subFixtureIndex": 33,
+            "groupId": "5jTKG3BxYUIq-_PIt-F85",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-8-b2",
+            "x": 0.555333,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              51,
+              52,
+              53
+            ],
+            "subFixtureIndex": 33,
+            "groupId": "5jTKG3BxYUIq-_PIt-F85",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-9-t0",
+            "x": 0.578,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              51,
+              52,
+              53
+            ],
+            "subFixtureIndex": 33,
+            "groupId": "5jTKG3BxYUIq-_PIt-F85",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-9-t1",
+            "x": 0.6,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              54,
+              55,
+              56
+            ],
+            "subFixtureIndex": 34,
+            "groupId": "-bfK2Ep7zLdrfhm4LfIpV",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-9-t2",
+            "x": 0.622,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              54,
+              55,
+              56
+            ],
+            "subFixtureIndex": 34,
+            "groupId": "-bfK2Ep7zLdrfhm4LfIpV",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-9-b0",
+            "x": 0.578,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              51,
+              52,
+              53
+            ],
+            "subFixtureIndex": 33,
+            "groupId": "5jTKG3BxYUIq-_PIt-F85",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-9-b1",
+            "x": 0.6,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              54,
+              55,
+              56
+            ],
+            "subFixtureIndex": 34,
+            "groupId": "-bfK2Ep7zLdrfhm4LfIpV",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-9-b2",
+            "x": 0.622,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              54,
+              55,
+              56
+            ],
+            "subFixtureIndex": 34,
+            "groupId": "-bfK2Ep7zLdrfhm4LfIpV",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-10-t0",
+            "x": 0.644667,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              54,
+              55,
+              56
+            ],
+            "subFixtureIndex": 34,
+            "groupId": "-bfK2Ep7zLdrfhm4LfIpV",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-10-t1",
+            "x": 0.666667,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              57,
+              58,
+              59
+            ],
+            "subFixtureIndex": 35,
+            "groupId": "50Cdh96-m-HoDErwpxVnD",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-10-t2",
+            "x": 0.688667,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              57,
+              58,
+              59
+            ],
+            "subFixtureIndex": 35,
+            "groupId": "50Cdh96-m-HoDErwpxVnD",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-10-b0",
+            "x": 0.644667,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              54,
+              55,
+              56
+            ],
+            "subFixtureIndex": 34,
+            "groupId": "-bfK2Ep7zLdrfhm4LfIpV",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-10-b1",
+            "x": 0.666667,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              57,
+              58,
+              59
+            ],
+            "subFixtureIndex": 35,
+            "groupId": "50Cdh96-m-HoDErwpxVnD",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-10-b2",
+            "x": 0.688667,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              57,
+              58,
+              59
+            ],
+            "subFixtureIndex": 35,
+            "groupId": "50Cdh96-m-HoDErwpxVnD",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-11-t0",
+            "x": 0.711333,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              57,
+              58,
+              59
+            ],
+            "subFixtureIndex": 35,
+            "groupId": "50Cdh96-m-HoDErwpxVnD",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-11-t1",
+            "x": 0.733333,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              60,
+              61,
+              62
+            ],
+            "subFixtureIndex": 36,
+            "groupId": "_IQp2XvxDHDcHkwMLjyD8",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-11-t2",
+            "x": 0.755333,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              60,
+              61,
+              62
+            ],
+            "subFixtureIndex": 36,
+            "groupId": "_IQp2XvxDHDcHkwMLjyD8",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-11-b0",
+            "x": 0.711333,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              57,
+              58,
+              59
+            ],
+            "subFixtureIndex": 35,
+            "groupId": "50Cdh96-m-HoDErwpxVnD",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-11-b1",
+            "x": 0.733333,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              60,
+              61,
+              62
+            ],
+            "subFixtureIndex": 36,
+            "groupId": "_IQp2XvxDHDcHkwMLjyD8",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-11-b2",
+            "x": 0.755333,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              60,
+              61,
+              62
+            ],
+            "subFixtureIndex": 36,
+            "groupId": "_IQp2XvxDHDcHkwMLjyD8",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-12-t0",
+            "x": 0.778,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              60,
+              61,
+              62
+            ],
+            "subFixtureIndex": 36,
+            "groupId": "_IQp2XvxDHDcHkwMLjyD8",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-12-t1",
+            "x": 0.8,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              63,
+              64,
+              65
+            ],
+            "subFixtureIndex": 37,
+            "groupId": "CWi-2SWhcJ60-ZNpgT2V3",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-12-t2",
+            "x": 0.822,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              63,
+              64,
+              65
+            ],
+            "subFixtureIndex": 37,
+            "groupId": "CWi-2SWhcJ60-ZNpgT2V3",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-12-b0",
+            "x": 0.778,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              60,
+              61,
+              62
+            ],
+            "subFixtureIndex": 36,
+            "groupId": "_IQp2XvxDHDcHkwMLjyD8",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-12-b1",
+            "x": 0.8,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              63,
+              64,
+              65
+            ],
+            "subFixtureIndex": 37,
+            "groupId": "CWi-2SWhcJ60-ZNpgT2V3",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-12-b2",
+            "x": 0.822,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              63,
+              64,
+              65
+            ],
+            "subFixtureIndex": 37,
+            "groupId": "CWi-2SWhcJ60-ZNpgT2V3",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-13-t0",
+            "x": 0.844667,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              63,
+              64,
+              65
+            ],
+            "subFixtureIndex": 37,
+            "groupId": "CWi-2SWhcJ60-ZNpgT2V3",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-13-t1",
+            "x": 0.866667,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              66,
+              67,
+              68
+            ],
+            "subFixtureIndex": 38,
+            "groupId": "DmzHaOn4CykxIjWHha2nB",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-13-t2",
+            "x": 0.888667,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              66,
+              67,
+              68
+            ],
+            "subFixtureIndex": 38,
+            "groupId": "DmzHaOn4CykxIjWHha2nB",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-13-b0",
+            "x": 0.844667,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              63,
+              64,
+              65
+            ],
+            "subFixtureIndex": 37,
+            "groupId": "CWi-2SWhcJ60-ZNpgT2V3",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-13-b1",
+            "x": 0.866667,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              66,
+              67,
+              68
+            ],
+            "subFixtureIndex": 38,
+            "groupId": "DmzHaOn4CykxIjWHha2nB",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-13-b2",
+            "x": 0.888667,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              66,
+              67,
+              68
+            ],
+            "subFixtureIndex": 38,
+            "groupId": "DmzHaOn4CykxIjWHha2nB",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-14-t0",
+            "x": 0.911333,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              66,
+              67,
+              68
+            ],
+            "subFixtureIndex": 38,
+            "groupId": "DmzHaOn4CykxIjWHha2nB",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-14-t1",
+            "x": 0.933333,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              69,
+              70,
+              71
+            ],
+            "subFixtureIndex": 39,
+            "groupId": "eVDCvsX36HrMcvxlcF-CO",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-14-t2",
+            "x": 0.955333,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              69,
+              70,
+              71
+            ],
+            "subFixtureIndex": 39,
+            "groupId": "eVDCvsX36HrMcvxlcF-CO",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-14-b0",
+            "x": 0.911333,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              66,
+              67,
+              68
+            ],
+            "subFixtureIndex": 38,
+            "groupId": "DmzHaOn4CykxIjWHha2nB",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-14-b1",
+            "x": 0.933333,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              69,
+              70,
+              71
+            ],
+            "subFixtureIndex": 39,
+            "groupId": "eVDCvsX36HrMcvxlcF-CO",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-14-b2",
+            "x": 0.955333,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              69,
+              70,
+              71
+            ],
+            "subFixtureIndex": 39,
+            "groupId": "eVDCvsX36HrMcvxlcF-CO",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-15-t0",
+            "x": 0.978,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              69,
+              70,
+              71
+            ],
+            "subFixtureIndex": 39,
+            "groupId": "eVDCvsX36HrMcvxlcF-CO",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-15-t1",
+            "x": 1,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              72,
+              73,
+              74
+            ],
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-15-t2",
+            "x": 1,
+            "y": 0.14,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              72,
+              73,
+              74
+            ],
+            "groupId": "m0bt6WVJQf7tcvihHFsA7",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-15-b0",
+            "x": 0.978,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              69,
+              70,
+              71
+            ],
+            "subFixtureIndex": 39,
+            "groupId": "eVDCvsX36HrMcvxlcF-CO",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-15-b1",
+            "x": 1,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              72,
+              73,
+              74
+            ],
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          },
+          {
+            "id": "rgb-15-b2",
+            "x": 1,
+            "y": 0.86,
+            "z": 0.68,
+            "size": 0.028,
+            "shape": "rect-h",
+            "channelIndexes": [
+              72,
+              73,
+              74
+            ],
+            "groupId": "m0bt6WVJQf7tcvihHFsA7",
+            "rectWidthM": 0.022,
+            "rectHeightM": 0.012
+          }
+        ],
+        "emitterFaceAutoSize": false,
+        "parRectLayout": "line",
+        "parCylinderLayout": "ring"
       }
     }
   ]

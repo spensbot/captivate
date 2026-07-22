@@ -61,6 +61,26 @@
       "requires": ["led"]
     },
     {
+      "id": "new-project",
+      "file": "Captivate_New_Project.png",
+      "title": "New project",
+      "caption": "Create a new project (empty or default scenes)",
+      "page": "Modulation",
+      "overlay": "newProject",
+      "readme": false,
+      "wiki": true
+    },
+    {
+      "id": "audio-input",
+      "file": "Captivate_Audio_Input.png",
+      "title": "Audio input",
+      "caption": "Audio input, beat clock, and music energy settings",
+      "page": "Modulation",
+      "overlay": "audio",
+      "readme": false,
+      "wiki": true
+    },
+    {
       "id": "connections",
       "file": "Captivate_Connections_Dialog.png",
       "title": "Connections",
@@ -98,6 +118,17 @@
       "page": "Modulation",
       "openWindow": "Video",
       "readme": true,
+      "wiki": true
+    },
+    {
+      "id": "visualizer-streaming",
+      "file": "Captivate_Visualizer_Streaming.png",
+      "title": "Visualizer streaming",
+      "caption": "Visualizer streaming / NDI output settings",
+      "page": "Modulation",
+      "openWindow": "Video",
+      "clickInWindow": "Streaming Settings",
+      "readme": false,
       "wiki": true
     },
     {
