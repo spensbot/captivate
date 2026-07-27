@@ -111,5 +111,7 @@ Capture failure does not fail the release (`continue-on-error`). The job loads `
 
 ## Notes
 
-- Capture sets `CAPTIVATE_SCREENSHOT=1` so the renderer exposes a small harness API (`window.__captivateScreenshot`). That API is not available in normal runs.
-- Detached windows are captured when `openWindow` is set; the script focuses the newest window matching that page query.
+- Capture sets `CAPTIVATE_SCREENSHOT=1` so the renderer exposes a small harness API (`window.__captivateScreenshot`). That API is installed only in screenshot mode on the primary window — not in normal runs.
+- `requires` tags are soft warnings only; capture continues even if movers / atmospherics / LED UI is missing.
+- On macOS / Linux, set `CAPTIVATE_SCREENSHOT_APP` to the unpacked binary (`.app` / Electron executable); the Windows `package:win` path is the default example only.
+- Detached windows are captured when `openWindow` is set; the script focuses the newest window matching that page query (timing races are possible on slow machines).
