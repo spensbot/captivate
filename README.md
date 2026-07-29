@@ -65,6 +65,10 @@ More walkthroughs: **[Wiki](https://github.com/NicholasTracy/captivate-2/wiki)**
 
 **[Community fixture library](docs/CAPTIVATE-FIXTURE-LIBRARY.md)** — browse and share Captivate fixture definitions (no git required to contribute).
 
+**[DMX output and movers](docs/dmx-movers.md)** — universe composition, USB / Art-Net routing, and mover fine-channel pathing.
+
+**[Atmospherics](docs/atmospherics.md)** — fog / FX arming, pyro gate, emergency stop, and trigger timing.
+
 ## Download
 
 Installers for Windows, macOS, and Linux are on the [Releases](https://github.com/NicholasTracy/captivate-2/releases/latest) page.
@@ -153,6 +157,8 @@ CI builds all three platforms on push and publishes assets when you push a versi
 - [Laser FB4 / Pangolin BEYOND](docs/laser-fb4-beyond.md)
 - [Visualizer streaming (RTSP / NDI)](docs/visualizer-streaming.md)
 - [WLED fixtures](docs/wled-fixtures.md)
+- [DMX output and movers](docs/dmx-movers.md)
+- [Atmospherics](docs/atmospherics.md)
 
 ---
 
