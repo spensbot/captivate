@@ -1,5 +1,4 @@
 import styled from 'styled-components'
-import { useEffect } from 'react'
 import { useDispatch } from 'react-redux'
 import { IconButton } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
@@ -124,23 +123,6 @@ export default function FixtureChannelPopup(props: Props) {
       })
     )
   }
-
-  useEffect(() => {
-    if (channelIndex <= 0 || !isDefaultMasterChannel(ch)) {
-      return
-    }
-    const previousChannel = channels[channelIndex - 1]
-    if (previousChannel === undefined || previousChannel.type === 'master') {
-      return
-    }
-    dispatch(
-      editFixtureChannel({
-        fixtureID,
-        channelIndex,
-        newChannel: suggestNextChannel(previousChannel),
-      })
-    )
-  }, [channelIndex, ch, channels, dispatch, fixtureID])
 
   return (
     <Content>

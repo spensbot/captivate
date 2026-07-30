@@ -139,11 +139,15 @@ export default function createVisualizerWindow(
   })
 
   const onWindowGeometryMaybeChanged = () => {
-    const visualizer = visualizerContainer.visualizer
-    if (visualizer === null || visualizer.isDestroyed()) {
-      return
+    try {
+      const visualizer = visualizerContainer.visualizer
+      if (visualizer === null || visualizer.isDestroyed()) {
+        return
+      }
+      notifyVisualizerWindowState(visualizerContainer, visualizer, true)
+    } catch {
+      // Geometry events can race with window destruction on close.
     }
-    notifyVisualizerWindowState(visualizerContainer, visualizer, true)
   }
   visualizerContainer.visualizer.on('move', onWindowGeometryMaybeChanged)
   visualizerContainer.visualizer.on('resize', onWindowGeometryMaybeChanged)
@@ -166,14 +170,29 @@ export default function createVisualizerWindow(
   })
 }
 
+function captureVisualizerPlacementSafe(
+  window: BrowserWindow
+): WindowPlacement | null {
+  if (window.isDestroyed()) {
+    return null
+  }
+  try {
+    return captureWindowPlacement(window)
+  } catch {
+    return null
+  }
+}
+
 function notifyVisualizerWindowState(
   visualizerContainer: VisualizerContainer,
   window: BrowserWindow | null,
   isOpen: boolean
 ) {
   const placement =
-    window !== null && !window.isDestroyed()
-      ? captureWindowPlacement(window)
+    window !== null
+      ? captureVisualizerPlacementSafe(window) ??
+        visualizerContainer.visualizerState ??
+        null
       : visualizerContainer.visualizerState ?? null
   if (placement !== null) {
     visualizerContainer.visualizerState = placement

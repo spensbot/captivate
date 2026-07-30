@@ -122,18 +122,31 @@ function flushPersistedWindowLayout() {
   persistedWindowLayoutDirty = false
 }
 
-function captureWindowPlacementSafe(window: BrowserWindow): WindowPlacement {
+function captureWindowPlacementSafe(
+  window: BrowserWindow
+): WindowPlacement | null {
+  if (window.isDestroyed()) {
+    return null
+  }
   try {
     return captureWindowPlacement(window)
   } catch (_error) {
-    const fallbackBounds = window.getBounds()
-    return {
-      x: fallbackBounds.x,
-      y: fallbackBounds.y,
-      width: fallbackBounds.width,
-      height: fallbackBounds.height,
-      isMaximized: window.isMaximized(),
-      isFullScreen: window.isFullScreen(),
+    if (window.isDestroyed()) {
+      return null
+    }
+    try {
+      const fallbackBounds = window.getBounds()
+      return {
+        x: fallbackBounds.x,
+        y: fallbackBounds.y,
+        width: fallbackBounds.width,
+        height: fallbackBounds.height,
+        isMaximized: window.isMaximized(),
+        isFullScreen: window.isFullScreen(),
+      }
+    } catch {
+      // Window can be destroyed between the check and getBounds during close.
+      return null
     }
   }
 }
@@ -145,11 +158,18 @@ function syncDetachedWindowLayoutSnapshot() {
   const detached: DetachedWindowPlacement[] = []
   for (const window of detachedWindows) {
     if (window.isDestroyed()) continue
-    const page = detachedWindowPagesById.get(window.webContents.id)
+    let page: Page | undefined
+    try {
+      page = detachedWindowPagesById.get(window.webContents.id)
+    } catch {
+      continue
+    }
     if (page === undefined) continue
+    const placement = captureWindowPlacementSafe(window)
+    if (placement === null) continue
     detached.push({
       page,
-      ...captureWindowPlacementSafe(window),
+      ...placement,
     })
   }
   persistedWindowLayout.detached = detached
@@ -159,7 +179,12 @@ function syncDetachedWindowLayoutSnapshot() {
 function findDetachedWindowByPage(page: Page): BrowserWindow | null {
   for (const window of detachedWindows) {
     if (window.isDestroyed()) continue
-    const windowPage = detachedWindowPagesById.get(window.webContents.id)
+    let windowPage: Page | undefined
+    try {
+      windowPage = detachedWindowPagesById.get(window.webContents.id)
+    } catch {
+      continue
+    }
     if (windowPage === page) {
       return window
     }
@@ -211,7 +236,12 @@ function countDetachedVisualizerWindows(): number {
   let n = 0
   for (const w of detachedWindows) {
     if (w.isDestroyed()) continue
-    const page = detachedWindowPagesById.get(w.webContents.id)
+    let page: Page | undefined
+    try {
+      page = detachedWindowPagesById.get(w.webContents.id)
+    } catch {
+      continue
+    }
     if (isVisualizerDetachedPage(page)) {
       n += 1
     }
@@ -232,7 +262,13 @@ function countDetachedLaserWindows(): number {
   let n = 0
   for (const w of detachedWindows) {
     if (w.isDestroyed()) continue
-    if (detachedWindowPagesById.get(w.webContents.id) === 'Laser') {
+    let page: Page | undefined
+    try {
+      page = detachedWindowPagesById.get(w.webContents.id)
+    } catch {
+      continue
+    }
+    if (page === 'Laser') {
       n += 1
     }
   }
@@ -346,7 +382,9 @@ function bindVisualizerContainerWindow(window: BrowserWindow | null) {
   visualizerContainer.visualizer = nextWindow
   const placement =
     nextWindow !== null
-      ? captureWindowPlacementSafe(nextWindow)
+      ? captureWindowPlacementSafe(nextWindow) ??
+        visualizerContainer.visualizerState ??
+        null
       : visualizerContainer.visualizerState ?? null
   if (placement !== null) {
     visualizerContainer.visualizerState = placement
@@ -675,17 +713,24 @@ function createAppWindow({
   })
 
   const onWindowGeometryMaybeChanged = () => {
-    if (window.isDestroyed()) {
-      return
-    }
-    if (isMain) {
-      persistedWindowLayout.main = captureWindowPlacementSafe(window)
-      schedulePersistWindowLayout()
-    } else {
-      syncDetachedWindowLayoutSnapshot()
-      if (window === visualizerContainer.visualizer) {
-        bindVisualizerContainerWindow(window)
+    try {
+      if (window.isDestroyed()) {
+        return
       }
+      if (isMain) {
+        const placement = captureWindowPlacementSafe(window)
+        if (placement !== null) {
+          persistedWindowLayout.main = placement
+          schedulePersistWindowLayout()
+        }
+      } else {
+        syncDetachedWindowLayoutSnapshot()
+        if (window === visualizerContainer.visualizer) {
+          bindVisualizerContainerWindow(window)
+        }
+      }
+    } catch {
+      // Geometry events can race with window destruction on close.
     }
   }
   window.on('move', onWindowGeometryMaybeChanged)
@@ -791,27 +836,37 @@ function createAppWindow({
       }
 
       event.preventDefault()
-      if (!window.webContents.isDestroyed()) {
-        window.webContents.send(ipcChannels.detached_window_close_prompt)
+      try {
+        if (!window.isDestroyed() && !window.webContents.isDestroyed()) {
+          window.webContents.send(ipcChannels.detached_window_close_prompt)
+        }
+      } catch {
+        // Window can be mid-destroy while the close prompt is requested.
       }
     })
 
     window.on('closed', () => {
-      telemetryCounter('window.detached', 'closed')
-      const wasVisualizerDetached = isVisualizerDetachedPage(defaultPage)
-      const wasLaserDetached = defaultPage === 'Laser'
-      detachedWindows.delete(window)
-      detachedCloseApprovedWebContentsIds.delete(webContentsId)
-      detachedWindowPagesById.delete(webContentsId)
-      if (window === visualizerContainer.visualizer) {
-        bindVisualizerContainerWindow(findFallbackVisualizerWindow(webContentsId))
-      }
-      syncDetachedWindowLayoutSnapshot()
-      if (wasVisualizerDetached) {
-        syncVideoEnabledToDetachedVisualizerCount()
-      }
-      if (wasLaserDetached) {
-        syncLaserWindowOpenToDetachedCount()
+      try {
+        telemetryCounter('window.detached', 'closed')
+        const wasVisualizerDetached = isVisualizerDetachedPage(defaultPage)
+        const wasLaserDetached = defaultPage === 'Laser'
+        detachedWindows.delete(window)
+        detachedCloseApprovedWebContentsIds.delete(webContentsId)
+        detachedWindowPagesById.delete(webContentsId)
+        if (window === visualizerContainer.visualizer) {
+          bindVisualizerContainerWindow(
+            findFallbackVisualizerWindow(webContentsId)
+          )
+        }
+        syncDetachedWindowLayoutSnapshot()
+        if (wasVisualizerDetached) {
+          syncVideoEnabledToDetachedVisualizerCount()
+        }
+        if (wasLaserDetached) {
+          syncLaserWindowOpenToDetachedCount()
+        }
+      } catch (error) {
+        console.error('Error while cleaning up detached window:', error)
       }
     })
   }
@@ -819,8 +874,11 @@ function createAppWindow({
   engine.getIpcCallbacks()?.register_renderer(window.webContents)
 
   if (isMain) {
-    persistedWindowLayout.main = captureWindowPlacementSafe(window)
-    schedulePersistWindowLayout()
+    const initialMainPlacement = captureWindowPlacementSafe(window)
+    if (initialMainPlacement !== null) {
+      persistedWindowLayout.main = initialMainPlacement
+      schedulePersistWindowLayout()
+    }
     window.on('close', (e) => {
       if (!isClosing) {
         e.preventDefault()
@@ -828,8 +886,11 @@ function createAppWindow({
           window.webContents.send(ipcChannels.app_close_prompt)
         }
       } else {
-        persistedWindowLayout.main = captureWindowPlacementSafe(window)
-        schedulePersistWindowLayout()
+        const placement = captureWindowPlacementSafe(window)
+        if (placement !== null) {
+          persistedWindowLayout.main = placement
+          schedulePersistWindowLayout()
+        }
       }
     })
   }
@@ -901,15 +962,23 @@ async function requestMainWindowQuit(window: BrowserWindow): Promise<void> {
     console.error('Failed to save fixture library on quit:', err)
   }
 
-  persistedWindowLayout.main = captureWindowPlacementSafe(window)
+  const mainPlacement = captureWindowPlacementSafe(window)
+  if (mainPlacement !== null) {
+    persistedWindowLayout.main = mainPlacement
+  }
   syncDetachedWindowLayoutSnapshot()
   if (
     visualizerContainer.visualizer !== null &&
     !visualizerContainer.visualizer.isDestroyed()
   ) {
-    persistedWindowLayout.visualizer = {
-      isOpen: true,
-      placement: captureWindowPlacementSafe(visualizerContainer.visualizer),
+    const visualizerPlacement = captureWindowPlacementSafe(
+      visualizerContainer.visualizer
+    )
+    if (visualizerPlacement !== null) {
+      persistedWindowLayout.visualizer = {
+        isOpen: true,
+        placement: visualizerPlacement,
+      }
     }
   }
 
