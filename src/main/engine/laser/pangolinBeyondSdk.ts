@@ -1,19 +1,27 @@
 import fs from 'fs'
 import path from 'path'
-import koffi from 'koffi'
+import { getKoffi } from '../koffiNative'
 import type { BeyondSdkPoint } from './pangolinBeyondConvert'
 import { beyondZoneListBuffer } from './pangolinBeyondConvert'
 
-koffi.struct('CaptivateBeyondPoint', {
-  x: 'float',
-  y: 'float',
-  z: 'float',
-  pointColor: 'int',
-  repCount: 'uint8',
-  focus: 'uint8',
-  status: 'uint8',
-  zero: 'uint8',
-})
+let beyondStructsRegistered = false
+
+function ensureBeyondStructs() {
+  if (beyondStructsRegistered) {
+    return
+  }
+  getKoffi().struct('CaptivateBeyondPoint', {
+    x: 'float',
+    y: 'float',
+    z: 'float',
+    pointColor: 'int',
+    repCount: 'uint8',
+    focus: 'uint8',
+    status: 'uint8',
+    zero: 'uint8',
+  })
+  beyondStructsRegistered = true
+}
 
 export type PangolinBeyondApi = {
   ldbCreate: () => number
@@ -89,7 +97,8 @@ export function loadPangolinBeyondSdk(target: string): PangolinBeyondApi {
   const dllPath = resolveBeyondDllPath(target)
   if (cachedLib && cachedDllPath === dllPath) return cachedLib
 
-  const lib = koffi.load(dllPath)
+  ensureBeyondStructs()
+  const lib = getKoffi().load(dllPath)
   const api: PangolinBeyondApi = {
     ldbCreate: lib.func('int ldbCreate()'),
     ldbDestroy: lib.func('int ldbDestroy()'),

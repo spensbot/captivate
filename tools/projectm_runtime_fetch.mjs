@@ -12,8 +12,16 @@ import { fileURLToPath } from 'url'
 const GLEW_WINDOWS_ZIP_URL =
   'https://sourceforge.net/projects/glew/files/glew/2.2.0/glew-2.2.0-win32.zip/download'
 
+export function resolveTargetArch() {
+  const fromEnv = process.env.CAPTIVATE_PROJECTM_RUNTIME_ARCH?.trim()
+  if (fromEnv === 'x64' || fromEnv === 'arm64' || fromEnv === 'ia32') {
+    return fromEnv
+  }
+  return process.arch
+}
+
 export function describeCurrentPlatform() {
-  return `${process.platform}/${process.arch}`
+  return `${process.platform}/${resolveTargetArch()}`
 }
 
 export function getPlatformTokens() {
@@ -27,13 +35,14 @@ export function getPlatformTokens() {
 }
 
 export function getArchTokens() {
-  if (process.arch === 'x64') {
+  const arch = resolveTargetArch()
+  if (arch === 'x64') {
     return ['x64', 'amd64', 'x86_64', 'x86-64', 'x84_64']
   }
-  if (process.arch === 'arm64') {
+  if (arch === 'arm64') {
     return ['arm64', 'aarch64']
   }
-  return [process.arch.toLowerCase()]
+  return [arch.toLowerCase()]
 }
 
 function allPlatformTokens() {

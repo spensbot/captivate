@@ -2,8 +2,11 @@
  * Deep ad-hoc sign macOS .app bundles for distribution without Apple Developer ID.
  * Fixes DYLD "different Team IDs" when the main binary and Electron Framework
  * were signed inconsistently by the prebuilt Electron binaries.
+ *
+ * Also re-downloads ffmpeg-static for the target DMG arch (npm install only
+ * fetches the CI host arch, which breaks the other macOS DMG).
  */
-const { execFileSync } = require('child_process')
+const { execFileSync, spawnSync } = require('child_process')
 const fs = require('fs')
 const path = require('path')
 
@@ -24,6 +27,87 @@ function shouldAdhocSign() {
   )
 }
 
+function archToString(arch) {
+  // electron-builder Arch enum: ia32=0, x64=1, armv7l=2, arm64=3
+  if (arch === 3 || arch === 'arm64') {
+    return 'arm64'
+  }
+  if (arch === 1 || arch === 'x64') {
+    return 'x64'
+  }
+  if (typeof arch === 'string' && arch.length > 0) {
+    return arch
+  }
+  return process.arch
+}
+
+function ensureFfmpegStaticForArch(appPath, arch) {
+  const ffmpegDir = path.join(
+    appPath,
+    'Contents',
+    'Resources',
+    'app.asar.unpacked',
+    'node_modules',
+    'ffmpeg-static'
+  )
+  const installJs = path.join(ffmpegDir, 'install.js')
+  const binaryPath = path.join(ffmpegDir, 'ffmpeg')
+  if (!fs.existsSync(installJs)) {
+    console.warn(
+      `[captivate] ffmpeg-static not unpacked at ${ffmpegDir}; skipping arch fix`
+    )
+    return
+  }
+
+  fs.rmSync(binaryPath, { force: true })
+  console.log(`[captivate] Installing ffmpeg-static for darwin/${arch}...`)
+  const result = spawnSync(process.execPath, [installJs], {
+    cwd: ffmpegDir,
+    env: {
+      ...process.env,
+      npm_config_arch: arch,
+      npm_config_platform: 'darwin',
+    },
+    encoding: 'utf8',
+  })
+  if (result.status !== 0) {
+    throw new Error(
+      `ffmpeg-static install failed for darwin/${arch}: ${
+        result.stderr || result.stdout || result.status
+      }`
+    )
+  }
+  if (!fs.existsSync(binaryPath)) {
+    throw new Error(
+      `ffmpeg-static did not produce ${binaryPath} for darwin/${arch}`
+    )
+  }
+}
+
+function ensureProjectMRuntimeForArch(appPath, arch, projectDir) {
+  const staged = path.join(
+    projectDir,
+    '.captivate-darwin-runtime-staging',
+    arch
+  )
+  if (!fs.existsSync(staged)) {
+    console.warn(
+      `[captivate] No staged projectM runtime for ${arch} at ${staged}; keeping bundled assets copy`
+    )
+    return
+  }
+  const dest = path.join(
+    appPath,
+    'Contents',
+    'Resources',
+    'assets',
+    'projectm-runtime'
+  )
+  console.log(`[captivate] Installing projectM runtime for darwin/${arch}...`)
+  fs.rmSync(dest, { recursive: true, force: true })
+  fs.cpSync(staged, dest, { recursive: true })
+}
+
 function codesign(target, entitlements) {
   if (!fs.existsSync(target)) {
     return
@@ -42,7 +126,8 @@ function isSignableFile(fullPath, fileName) {
     fileName.endsWith('.node') ||
     fileName.endsWith('.so') ||
     fileName === 'Electron Framework' ||
-    fileName.endsWith('.exe')
+    fileName.endsWith('.exe') ||
+    fileName === 'ffmpeg'
   ) {
     return true
   }
@@ -82,14 +167,19 @@ exports.default = async function macAdhocSign(context) {
   if (context.electronPlatformName !== 'darwin') {
     return
   }
-  if (!shouldAdhocSign()) {
-    return
-  }
 
   const appName = context.packager.appInfo.productFilename
   const appPath = path.join(context.appOutDir, `${appName}.app`)
   if (!fs.existsSync(appPath)) {
-    throw new Error(`[captivate] mac ad-hoc sign: app not found at ${appPath}`)
+    throw new Error(`[captivate] mac afterPack: app not found at ${appPath}`)
+  }
+
+  const arch = archToString(context.arch)
+  ensureFfmpegStaticForArch(appPath, arch)
+  ensureProjectMRuntimeForArch(appPath, arch, context.packager.projectDir)
+
+  if (!shouldAdhocSign()) {
+    return
   }
 
   const entitlements = path.join(

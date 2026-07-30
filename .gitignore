@@ -46,6 +46,9 @@ npm-debug.log.*
 # Local temporary/debug scratch files
 .tmp-*
 .tmp-projectm/
+.captivate-darwin-universal-staging/
+.captivate-darwin-runtime-staging/
+.captivate-projectm-universal-staging/
 
 # Local runtime binaries (downloaded/installed per machine, not source-controlled)
 assets/projectm-runtime/

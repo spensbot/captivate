@@ -1,7 +1,14 @@
 /**
- * Rebuild release/app native modules for arm64 and x64, then lipo each .node into a
- * universal binary. Required when packaging a fat macOS app: a single host-arch rebuild
- * (arm64 on GitHub macos-latest) leaves x86_64/Rosetta processes loading arm64-only .node files.
+ * Rebuild release/app native modules for arm64 and x64, then lipo each node-gyp
+ * build/Release|Debug .node into a universal binary.
+ *
+ * Required when packaging macOS from a single host arch: a lone host rebuild leaves
+ * the other arch (or Rosetta) loading the wrong .node files. electron-builder may
+ * also rebuild per-DMG, but fat binaries keep CI resilient when that step is skipped.
+ *
+ * Do NOT wipe or lipo vendor multi-arch layouts:
+ * - koffi ships prebuilds under build/koffi/<platform>_<arch>/ (cnoke, not node-gyp)
+ * - usb / @serialport/bindings-cpp ship prebuilds/darwin-x64+arm64 (already fat)
  */
 const { spawnSync } = require('child_process')
 const fs = require('fs')
@@ -42,12 +49,53 @@ function resolveElectronVersion() {
   return match ? match[1] : null
 }
 
-function isDarwinNativeNodeBinary(filePath, rootDir) {
-  const rel = path.relative(rootDir, filePath).replace(/\\/g, '/')
-  if (!rel.includes('/prebuilds/')) {
-    return true
+/** Top-level and @scope/package roots under node_modules. */
+function listPackageRoots(nodeModulesRoot) {
+  const roots = []
+  if (!fs.existsSync(nodeModulesRoot)) {
+    return roots
   }
-  return /\/prebuilds\/darwin-(arm64|x64)\//.test(rel)
+  for (const entry of fs.readdirSync(nodeModulesRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory() || entry.name === '.bin') {
+      continue
+    }
+    const full = path.join(nodeModulesRoot, entry.name)
+    if (entry.name.startsWith('@')) {
+      for (const pkg of fs.readdirSync(full, { withFileTypes: true })) {
+        if (pkg.isDirectory()) {
+          roots.push(path.join(full, pkg.name))
+        }
+      }
+      continue
+    }
+    roots.push(full)
+  }
+  return roots
+}
+
+function packageHasUniversalDarwinPrebuild(pkgRoot) {
+  return fs.existsSync(path.join(pkgRoot, 'prebuilds', 'darwin-x64+arm64'))
+}
+
+function isKoffiPackage(pkgRoot) {
+  return path.basename(pkgRoot) === 'koffi'
+}
+
+/**
+ * Only lipo node-gyp outputs. Never prebuilds/ or koffi cnoke trees.
+ */
+function isLipoCandidateNodeBinary(filePath, rootDir) {
+  const rel = path.relative(rootDir, filePath).replace(/\\/g, '/')
+  if (!rel.endsWith('.node')) {
+    return false
+  }
+  if (rel === 'koffi' || rel.startsWith('koffi/')) {
+    return false
+  }
+  if (rel.includes('/prebuilds/') || rel.startsWith('prebuilds/')) {
+    return false
+  }
+  return /\/build\/(Release|Debug)\//.test(`/${rel}`)
 }
 
 function collectNodeBinaries(rootDir) {
@@ -69,8 +117,7 @@ function collectNodeBinaries(rootDir) {
       }
       if (
         entry.isFile() &&
-        entry.name.endsWith('.node') &&
-        isDarwinNativeNodeBinary(full, rootDir)
+        isLipoCandidateNodeBinary(full, rootDir)
       ) {
         results.push(full)
       }
@@ -88,18 +135,130 @@ function copyTree(filePaths, destRoot, rootDir) {
   }
 }
 
+/**
+ * Wipe only node-gyp outputs. Never delete entire build/ (koffi and similar).
+ * Walks scoped packages (@serialport/bindings-cpp, etc.).
+ */
 function clearPackageBuildDirs(nodeModulesRoot) {
-  if (!fs.existsSync(nodeModulesRoot)) {
-    return
-  }
-  for (const entry of fs.readdirSync(nodeModulesRoot, { withFileTypes: true })) {
-    if (!entry.isDirectory() || entry.name.startsWith('.')) {
+  for (const pkgRoot of listPackageRoots(nodeModulesRoot)) {
+    if (isKoffiPackage(pkgRoot)) {
       continue
     }
-    const buildDir = path.join(nodeModulesRoot, entry.name, 'build')
-    if (fs.existsSync(buildDir)) {
-      fs.rmSync(buildDir, { recursive: true, force: true })
+    const buildDir = path.join(pkgRoot, 'build')
+    for (const sub of ['Release', 'Debug']) {
+      const outDir = path.join(buildDir, sub)
+      if (fs.existsSync(outDir)) {
+        fs.rmSync(outDir, { recursive: true, force: true })
+      }
     }
+  }
+}
+
+/**
+ * Prefer vendor fat prebuilds over a rebuilt single-arch build/Release.
+ * node-gyp-build loads Release first; leaving a thin binary would break the other arch.
+ */
+function preferUniversalDarwinPrebuilds(nodeModulesRoot) {
+  let cleared = 0
+  for (const pkgRoot of listPackageRoots(nodeModulesRoot)) {
+    if (!packageHasUniversalDarwinPrebuild(pkgRoot)) {
+      continue
+    }
+    for (const sub of ['Release', 'Debug']) {
+      const outDir = path.join(pkgRoot, 'build', sub)
+      if (fs.existsSync(outDir)) {
+        fs.rmSync(outDir, { recursive: true, force: true })
+        cleared += 1
+      }
+    }
+    console.log(
+      `[captivate] Using vendor universal prebuild for ${path.relative(nodeModulesRoot, pkgRoot)}`
+    )
+  }
+  return cleared
+}
+
+function assertCriticalNativesPresent(nodeModulesRoot) {
+  const errors = []
+  const koffiArm = path.join(
+    nodeModulesRoot,
+    'koffi',
+    'build',
+    'koffi',
+    'darwin_arm64',
+    'koffi.node'
+  )
+  const koffiX64 = path.join(
+    nodeModulesRoot,
+    'koffi',
+    'build',
+    'koffi',
+    'darwin_x64',
+    'koffi.node'
+  )
+  if (!fs.existsSync(koffiArm) || !fs.existsSync(koffiX64)) {
+    errors.push(
+      'koffi darwin prebuilds missing after universal rebuild (build/koffi/darwin_{arm64,x64}/koffi.node)'
+    )
+  }
+
+  const midiRelease = path.join(nodeModulesRoot, 'midi', 'build', 'Release', 'midi.node')
+  const midiPreArm = path.join(
+    nodeModulesRoot,
+    'midi',
+    'prebuilds',
+    'midi-darwin-arm64',
+    'node-napi-v7.node'
+  )
+  const midiPreX64 = path.join(
+    nodeModulesRoot,
+    'midi',
+    'prebuilds',
+    'midi-darwin-x64',
+    'node-napi-v7.node'
+  )
+  if (!fs.existsSync(midiRelease) && (!fs.existsSync(midiPreArm) || !fs.existsSync(midiPreX64))) {
+    errors.push('midi native missing (need build/Release/midi.node or both darwin prebuilds)')
+  }
+
+  const usbUniv = path.join(
+    nodeModulesRoot,
+    'usb',
+    'prebuilds',
+    'darwin-x64+arm64',
+    'node.napi.node'
+  )
+  if (!fs.existsSync(usbUniv)) {
+    errors.push('usb universal darwin prebuild missing')
+  }
+
+  const serialUniv = path.join(
+    nodeModulesRoot,
+    '@serialport',
+    'bindings-cpp',
+    'prebuilds',
+    'darwin-x64+arm64',
+    'node.napi.node'
+  )
+  if (!fs.existsSync(serialUniv)) {
+    errors.push('@serialport/bindings-cpp universal darwin prebuild missing')
+  }
+
+  const nodeLink = path.join(
+    nodeModulesRoot,
+    'node-link',
+    'build',
+    'Release',
+    'node-link-native.node'
+  )
+  if (!fs.existsSync(nodeLink)) {
+    errors.push('node-link build/Release/node-link-native.node missing')
+  }
+
+  if (errors.length > 0) {
+    throw new Error(
+      `Darwin universal native verification failed:\n  - ${errors.join('\n  - ')}`
+    )
   }
 }
 
@@ -201,6 +360,9 @@ async function main() {
       lipoCount += 1
     }
   }
+
+  preferUniversalDarwinPrebuilds(path.join(appPath, 'node_modules'))
+  assertCriticalNativesPresent(path.join(appPath, 'node_modules'))
 
   fs.rmSync(stagingRoot, { recursive: true, force: true })
   console.log(

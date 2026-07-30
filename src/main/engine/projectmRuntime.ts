@@ -1,7 +1,7 @@
 import { app } from 'electron'
 import { Dirent, existsSync, promises as fsPromises, readdirSync } from 'fs'
-import koffi from 'koffi'
 import path from 'path'
+import { getKoffi } from './koffiNative'
 import {
   getProjectMRuntimeDownloadUrl,
   initProjectMRuntimeDetection,
@@ -220,9 +220,9 @@ export async function listProjectMPresets(
 }
 
 function probeProjectMRuntimeLibrary(libraryPath: string) {
-  let lib: ReturnType<typeof koffi.load>
+  let lib: ReturnType<ReturnType<typeof getKoffi>['load']>
   try {
-    lib = koffi.load(libraryPath)
+    lib = getKoffi().load(libraryPath)
   } catch (err) {
     return {
       loaded: false,

@@ -160,6 +160,7 @@
     "asar": true,
     "asarUnpack": [
       "**/*.{node,dll,so,dylib,exe}",
+      "**/node_modules/koffi/build/**",
       "**/node_modules/ffmpeg-static/**",
       "dist/main/lighting3dPreviewWorker.js"
     ],
