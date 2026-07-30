@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.3
+
+### Fixes
+
+- macOS: stop wiping koffi’s prebuilt natives during darwin universal rebuild (app no longer crashes on launch with “Cannot find the native Koffi module”).
+- macOS: prefer vendor universal prebuilds for `usb` / `@serialport/bindings-cpp`; install correct-arch `ffmpeg-static` and projectM runtime per DMG in afterPack.
+- Lazy-load koffi so a missing native cannot brick main-process boot.
+
 ## 1.1.2
 
 ### Show control & DMX
