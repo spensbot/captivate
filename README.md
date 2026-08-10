@@ -69,6 +69,8 @@ More walkthroughs: **[Wiki](https://github.com/NicholasTracy/captivate-2/wiki)**
 
 **[Atmospherics](docs/atmospherics.md)** — fog / FX arming, pyro gate, emergency stop, and trigger timing.
 
+**[Scene generation](docs/scene-generation.md)** — Extras → Generate Scenes…, rig profiling, and what is replaced vs preserved.
+
 ## Download
 
 Installers for Windows, macOS, and Linux are on the [Releases](https://github.com/NicholasTracy/captivate-2/releases/latest) page.
@@ -146,6 +148,8 @@ npm run package:linux  # Linux
 
 CI builds all three platforms on push and publishes assets when you push a version tag (e.g. `v1.0.0`). See [Releases](https://github.com/NicholasTracy/captivate-2/releases).
 
+macOS packaging keeps per-arch natives (koffi, usb/serialport, lipo’d node-gyp modules). See **[macOS packaging and native modules](docs/macos-packaging-natives.md)** before changing rebuild or afterPack scripts.
+
 ### More docs
 
 - **[Wiki](https://github.com/NicholasTracy/captivate-2/wiki)** — user guides and troubleshooting
@@ -159,6 +163,8 @@ CI builds all three platforms on push and publishes assets when you push a versi
 - [WLED fixtures](docs/wled-fixtures.md)
 - [DMX output and movers](docs/dmx-movers.md)
 - [Atmospherics](docs/atmospherics.md)
+- [Scene generation](docs/scene-generation.md)
+- [macOS packaging and native modules](docs/macos-packaging-natives.md)
 
 ---
 
